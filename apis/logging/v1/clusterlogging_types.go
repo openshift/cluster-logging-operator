@@ -131,6 +131,7 @@ type KibanaSpec struct {
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
 	// Number of instances to deploy for a Kibana deployment
+	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Size",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podCount"}
 	Replicas *int32 `json:"replicas"`
 

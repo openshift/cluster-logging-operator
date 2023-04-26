@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/syslog"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -39,7 +40,11 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 				log.V(9).Info("No Secret found in " + constants.LogCollectorToken)
 			}
 		}
-
+		if lokistack.DefaultLokiOuputNames.Has(o.Name) {
+			outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o, ":")
+			op[MinTLSVersion] = outMinTlsVersion
+			op[Ciphers] = outCiphers
+		}
 		switch o.Type {
 		case logging.OutputTypeElasticsearch:
 			if _, ok := op[elements.CharEncoding]; !ok {

@@ -41,7 +41,6 @@ ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 |outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
 |outputs|array|  *(optional)* Outputs are named destinations for log messages.
 |pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
-|tlsSecurityProfile|object|  TLSSecurityProfile is the default for all external connections and listeners which overrides the cluster default.
 |======================
 
 === .spec.inputs[]
@@ -272,55 +271,6 @@ PipelinesSpec link a set of inputs to a set of outputs.
 =====  Type
 * array
 
-=== .spec.tlsSecurityProfile
-===== Description
-
-=====  Type
-* object
-
-[options="header"]
-|======================
-|Property|Type|Description
-
-|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
-|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
-|modern|object|  *(optional)* modern is a TLS security profile based on:
-|old|object|  *(optional)* old is a TLS security profile based on:
-|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
-|======================
-
-=== .spec.tlsSecurityProfile.custom
-===== Description
-
-=====  Type
-* object
-
-[options="header"]
-|======================
-|Property|Type|Description
-
-|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
-|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
-|======================
-
-=== .spec.tlsSecurityProfile.intermediate
-===== Description
-
-=====  Type
-* object
-
-=== .spec.tlsSecurityProfile.modern
-===== Description
-
-=====  Type
-* object
-
-=== .spec.tlsSecurityProfile.old
-===== Description
-
-=====  Type
-* object
-
 === .status
 ===== Description
 ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
@@ -406,7 +356,7 @@ This is the struct that will contain information pertinent to Log and event coll
 |tolerations|array|  *(optional)* Define the tolerations the Pods will accept
 |fluentd|object|  *(optional)* Fluentd represents the configuration for forwarders of type fluentd.
 |logs|object| **(DEPRECATED)** *(optional)* Deprecated. Specification of Log Collection for the cluster
-|type|string|  *(optional)* The type of Log Collection to configure
+|type|string|  The type of Log Collection to configure
 |======================
 
 === .spec.collection.fluentd
@@ -744,9 +694,9 @@ The LogStoreSpec contains information about how logs are stored.
 |======================
 |Property|Type|Description
 
-|elasticsearch|object|  Specification of the Elasticsearch Log Store component
+|elasticsearch|object| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
 |lokistack|object|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
-|retentionPolicy|object|  *(optional)* Retention policy defines the maximum age for an index after which it should be deleted
+|retentionPolicy|object| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
 |type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
 |======================
 
@@ -1085,8 +1035,8 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
-|kibana|object|  Specification of the Kibana Visualization component
-|ocpConsole|object|  OCPConsole is the specification for the OCP console plugin
+|kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
+|ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
 |type|string|  The type of Visualization to configure
 |======================
 
@@ -1102,7 +1052,7 @@ This is the struct that will contain information pertinent to Log visualization 
 
 |nodeSelector|object|  Define which Nodes the Pods are scheduled on.
 |proxy|object|  Specification of the Kibana Proxy component
-|replicas|int|  Number of instances to deploy for a Kibana deployment
+|replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
 |resources|object|  *(optional)* The resource requirements for Kibana
 |tolerations|array|  
 |======================
@@ -1217,7 +1167,7 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
-|logLimit|int|  *(optional)* LogLimit is the max number of entries returned for a query.
+|logsLimit|int|  *(optional)* LogsLimit is the max number of entries returned for a query.
 |timeout|string|  *(optional)* Timeout is the max duration before a query timeout
 |======================
 

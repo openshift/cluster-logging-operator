@@ -79,7 +79,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 			Topics:         topics,
 			Brokers:        Brokers(o),
 			SecurityConfig: SecurityConfig(o, secret),
-			BufferConfig:   output.Buffer([]string{topics}, bufspec, storeID, &o),
+			BufferConfig:   output.Buffer([]string{"_" + topics}, bufspec, storeID, &o),
 		},
 	}
 }

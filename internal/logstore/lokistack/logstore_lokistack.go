@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -26,6 +27,17 @@ const (
 	lokiStackAppReaderClusterRoleName        = "logging-application-logs-reader"
 	lokiStackAppReaderClusterRoleBindingName = "logging-all-authenticated-application-logs-reader"
 )
+
+var (
+	DefaultLokiOuputNames sets.String
+)
+
+func init() {
+	DefaultLokiOuputNames = sets.NewString()
+	for _, input := range loggingv1.ReservedInputNames.List() {
+		DefaultLokiOuputNames.Insert(FormatOutputNameFromInput(input))
+	}
+}
 
 func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.Time, appendFinalizer func(identifier string) error) error {
 	if deletionTimestamp != nil {
@@ -179,7 +191,7 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 					continue
 				}
 
-				pOut.OutputRefs[i] = lokiStackOutput(input)
+				pOut.OutputRefs[i] = FormatOutputNameFromInput(input)
 				// For loki we don't want to set 'extras[constants.MigrateDefaultOutput] = true'
 				// we want 'default' output to fail per LOG-3437 since we did not create it
 			}
@@ -204,7 +216,7 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 	for input := range needOutput {
 		tenant := getInputTypeFromName(spec, input)
 		outputs = append(outputs, loggingv1.OutputSpec{
-			Name: lokiStackOutput(input),
+			Name: FormatOutputNameFromInput(input),
 			Type: loggingv1.OutputTypeLoki,
 			URL:  lokiStackURL(logStore, namespace, tenant),
 		})
@@ -266,7 +278,8 @@ func LokiStackGatewayService(logStore *loggingv1.LogStoreSpec) string {
 	return fmt.Sprintf("%s-gateway-http", logStore.LokiStack.Name)
 }
 
-func lokiStackOutput(inputName string) string {
+// FormatOutputNameFromInput takes an clf.input and formats the output name for  'default' output
+func FormatOutputNameFromInput(inputName string) string {
 	switch inputName {
 	case loggingv1.InputNameApplication:
 		return loggingv1.OutputNameDefault + "-loki-apps"

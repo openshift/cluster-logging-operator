@@ -275,9 +275,19 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: Define which Nodes the Pods are scheduled on.
         displayName: Kibana Node Selector
-        path: visualization.nodeSelector
+        path: visualization.kibana.nodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:nodeSelector
+      - description: Number of instances to deploy for a Kibana deployment
+        displayName: Kibana Size
+        path: visualization.kibana.replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:podCount
+      - description: The resource requirements for Kibana
+        displayName: Kibana Resource Requirements
+        path: visualization.kibana.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: LogsLimit is the max number of entries returned for a query.
         displayName: OCP Console Log Limit
         path: visualization.ocpConsole.logsLimit
@@ -288,16 +298,6 @@ spec:
         path: visualization.ocpConsole.timeout
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout
-      - description: Number of instances to deploy for a Kibana deployment
-        displayName: Kibana Size
-        path: visualization.replicas
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:podCount
-      - description: The resource requirements for Kibana
-        displayName: Kibana Resource Requirements
-        path: visualization.resources
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       statusDescriptors:
       - displayName: Fluentd status
         path: collection.logs.fluentdStatus.pods

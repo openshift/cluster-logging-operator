@@ -71,6 +71,10 @@ var _ = Describe("[ConsolePlugin]", func() {
 					Name: "testing-stack",
 				},
 			},
+			Visualization: &loggingv1.VisualizationSpec{
+				Type:   loggingv1.VisualizationTypeOCPConsole,
+				Kibana: &loggingv1.KibanaSpec{},
+			},
 		}
 		ExpectOK(c.Recreate(cl))
 

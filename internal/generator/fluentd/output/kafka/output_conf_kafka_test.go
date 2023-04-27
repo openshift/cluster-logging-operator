@@ -47,7 +47,7 @@ var _ = Describe("Generating external kafka server output store config block", f
     <format>
       @type json
     </format>
-    <buffer topic>
+    <buffer _topic>
       @type file
       path '/var/lib/fluentd/kafka_receiver'
       flush_mode interval
@@ -120,7 +120,7 @@ var _ = Describe("Generating external kafka server output store config block", f
     <format>
       @type json
     </format>
-    <buffer topic>
+    <buffer _topic>
       @type file
       path '/var/lib/fluentd/kafka_receiver'
       flush_mode interval
@@ -202,7 +202,7 @@ var _ = Describe("Generating external kafka server output store config block", f
     <format>
       @type json
     </format>
-    <buffer topic>
+    <buffer _topic>
       @type file
       path '/var/lib/fluentd/kafka_receiver'
       flush_mode interval

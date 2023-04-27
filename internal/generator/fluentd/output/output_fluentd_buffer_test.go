@@ -840,7 +840,7 @@ var _ = Describe("Generating fluentd config", func() {
            <format>
                @type json
            </format>
-           <buffer topic>
+           <buffer _topic>
                @type file
                path '/var/lib/fluentd/kafka_receiver'
                flush_mode interval
@@ -887,7 +887,7 @@ var _ = Describe("Generating fluentd config", func() {
            <format>
                @type json
            </format>
-           <buffer topic>
+           <buffer _topic>
                @type file
                path '/var/lib/fluentd/kafka_receiver'
                flush_mode immediate

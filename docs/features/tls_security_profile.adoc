@@ -5,11 +5,10 @@ the https://docs.openshift.com/container-platform/4.6/rest_api/config_apis/apise
 Additionally, this feature enables administrators to define a TLS profile to be used when forwarding
 logs to different outputs.
 
-TLS profiles are configurable for each output or by defining a single profile to apply to all log forwarding outputs. Profiles
+TLS profiles are configurable for each output. Profiles
 are applied according to the following order of precedence:
 
 . Output Spec
-. Cluster Log Forwarder Spec
 . Cluster-wide Config
 
 IMPORTANT: This is a tech-preview feature for output configurations. It is enabled by the feature gate annotation.  The feature gate is ignored for the default log storage of type loki.
@@ -42,8 +41,5 @@ spec:
      - application
      outputRefs:
      - devel
-  tlsSecurityProfile:
-    type: Intermediate
 ----
-This configuration will enable the "Modern" profile for the "production" output and "Intermediate" for "devel"
-
+This configuration will enable the "Modern" profile for the "production" output.

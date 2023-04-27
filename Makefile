@@ -43,7 +43,7 @@ export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
-export LOGGING_VERSION?=5.7
+export LOGGING_VERSION?=5.8
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
@@ -290,7 +290,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.11-v4.14"
+OPENSHIFT_VERSIONS?="v4.12-v4.16"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=$(or $(filename $(OVERLAY)),stable)

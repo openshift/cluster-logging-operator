@@ -105,8 +105,9 @@ type VisualizationSpec struct {
 	// Specification of the Kibana Visualization component
 	//
 	// +deprecated
+	// +nullable
 	// +optional
-	KibanaSpec `json:"kibana,omitempty"`
+	Kibana *KibanaSpec `json:"kibana,omitempty"`
 
 	// OCPConsole is the specification for the OCP console plugin
 	//

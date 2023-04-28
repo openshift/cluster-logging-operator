@@ -24,14 +24,17 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error
 		return nil
 	}
 	var errs []error
-	errs = append(errs, clusterRequest.createOrUpdateKibana())
-
 	spec := clusterRequest.Cluster.Spec
+
+	if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeKibana {
+		errs = append(errs, clusterRequest.createOrUpdateKibana())
+	}
+
 	var consoleSpec *logging.OCPConsoleSpec
 	if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
 		consoleSpec = spec.Visualization.OCPConsole
+		errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion, consoleSpec))
 	}
-	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion, consoleSpec))
 	return utilerrors.NewAggregate(errs)
 }
 
@@ -47,7 +50,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 	}
 
 	cluster := clusterRequest.Cluster
-	cr := kibana.New(cluster.Namespace, constants.KibanaName, cluster.Spec.Visualization, cluster.Spec.LogStore, utils.AsOwner(cluster))
+	kibanaSpec := cluster.Spec.Visualization.Kibana
+	cr := kibana.New(cluster.Namespace, constants.KibanaName, kibanaSpec, cluster.Spec.LogStore, utils.AsOwner(cluster))
 	if err = kibana.Reconcile(clusterRequest.EventRecorder, clusterRequest.Client, cr); err != nil {
 		return
 	}
@@ -61,7 +65,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	cluster := clusterRequest.Cluster
-	cr := kibana.New(cluster.Namespace, constants.KibanaName, cluster.Spec.Visualization, cluster.Spec.LogStore, utils.AsOwner(cluster))
+	cr := kibana.New(cluster.Namespace, constants.KibanaName, &logging.KibanaSpec{}, cluster.Spec.LogStore, utils.AsOwner(cluster))
 
 	err = clusterRequest.Client.Delete(context.TODO(), cr)
 	if err != nil && !errors.IsNotFound(err) && !meta.IsNoMatchError(err) {

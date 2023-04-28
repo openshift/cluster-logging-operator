@@ -17,17 +17,17 @@ var (
 	DefaultKibanaProxyCpuRequest = resource.MustParse("100m")
 )
 
-func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *logging.LogStoreSpec, owner metav1.OwnerReference) *es.Kibana {
+func New(namespace, name string, kibanaSpec *logging.KibanaSpec, logStore *logging.LogStoreSpec, owner metav1.OwnerReference) *es.Kibana {
 
 	resources := &v1.ResourceRequirements{}
 	proxyResources := &v1.ResourceRequirements{}
 	nodeSelector := map[string]string{}
 	tolerations := []v1.Toleration{}
 	replicas := int32(0)
-	if visSpec != nil {
-		nodeSelector = visSpec.NodeSelector
-		tolerations = visSpec.Tolerations
-		resources = visSpec.Resources
+	if kibanaSpec != nil {
+		nodeSelector = kibanaSpec.NodeSelector
+		tolerations = kibanaSpec.Tolerations
+		resources = kibanaSpec.Resources
 		if resources == nil {
 			resources = &v1.ResourceRequirements{
 				Limits: v1.ResourceList{
@@ -40,15 +40,15 @@ func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *l
 			}
 		}
 
-		if visSpec.Replicas != nil {
-			replicas = *visSpec.Replicas
+		if kibanaSpec.Replicas != nil {
+			replicas = *kibanaSpec.Replicas
 		} else {
 			if logStore != nil && logStore.Elasticsearch != nil && logStore.Elasticsearch.NodeCount > 0 {
 				replicas = 1
 			}
 		}
 
-		proxyResources = visSpec.ProxySpec.Resources
+		proxyResources = kibanaSpec.ProxySpec.Resources
 		if proxyResources == nil {
 			proxyResources = &v1.ResourceRequirements{
 				Limits: v1.ResourceList{v1.ResourceMemory: DefaultKibanaProxyMemory},

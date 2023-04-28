@@ -838,6 +838,7 @@ spec:
                 properties:
                   kibana:
                     description: Specification of the Kibana Visualization component
+                    nullable: true
                     properties:
                       nodeSelector:
                         additionalProperties:

@@ -34,14 +34,19 @@ func TestRemoveKibanaCR(t *testing.T) {
 		},
 	}
 
-	clr := &ClusterLoggingRequest{
+	var clr = &ClusterLoggingRequest{
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "openshift-logging",
 			},
+			Spec: logging.ClusterLoggingSpec{
+				Visualization: &logging.VisualizationSpec{
+					Type:   logging.VisualizationTypeKibana,
+					Kibana: &logging.KibanaSpec{},
+				},
+			},
 		},
 	}
-
 	clr.Client = fake.NewFakeClient(kbn) //nolint
 
 	if err := clr.removeKibana(); err != nil {
@@ -62,6 +67,10 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 		LogStore: &logging.LogStoreSpec{
 			Type:      logging.LogStoreTypeLokiStack,
 			LokiStack: logging.LokiStackStoreSpec{Name: "some-loki-stack"},
+		},
+		Visualization: &logging.VisualizationSpec{
+			Type:   logging.VisualizationTypeOCPConsole,
+			Kibana: &logging.KibanaSpec{},
 		},
 	}
 	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", []string{}), nil)

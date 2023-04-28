@@ -33,7 +33,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{},
+						Kibana: &logging.KibanaSpec{},
 					},
 					LogStore: &logging.LogStoreSpec{
 						Elasticsearch: &logging.ElasticsearchSpec{
@@ -86,7 +86,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{},
+						Kibana: &logging.KibanaSpec{},
 					},
 					LogStore: &logging.LogStoreSpec{},
 				},
@@ -135,7 +135,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{},
+						Kibana: &logging.KibanaSpec{},
 					},
 				},
 			},
@@ -183,7 +183,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{
+						Kibana: &logging.KibanaSpec{
 							Replicas: &zeroInt,
 						},
 					},
@@ -238,7 +238,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{
+						Kibana: &logging.KibanaSpec{
 							Replicas: &twoInt,
 						},
 					},
@@ -298,7 +298,7 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{
+						Kibana: &logging.KibanaSpec{
 							Resources: &v1.ResourceRequirements{
 								Limits: v1.ResourceList{
 									v1.ResourceMemory: resource.MustParse("136Mi"),
@@ -372,7 +372,7 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{
+						Kibana: &logging.KibanaSpec{
 							NodeSelector: map[string]string{
 								"test": "test",
 							},
@@ -432,7 +432,7 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					Visualization: &logging.VisualizationSpec{
-						KibanaSpec: logging.KibanaSpec{
+						Kibana: &logging.KibanaSpec{
 							Tolerations: []v1.Toleration{
 								{
 									Key:   "test",
@@ -489,7 +489,7 @@ func TestNewKibanaCR(t *testing.T) {
 		test := test
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
-			got := kibana.New(constants.OpenshiftNS, constants.KibanaName, test.cl.Spec.Visualization, test.cl.Spec.LogStore, utils.AsOwner(test.cl))
+			got := kibana.New(constants.OpenshiftNS, constants.KibanaName, test.cl.Spec.Visualization.Kibana, test.cl.Spec.LogStore, utils.AsOwner(test.cl))
 
 			if got.Spec.ManagementState != test.want.Spec.ManagementState {
 				t.Errorf("ManagementState: got %s, want %s", got.Spec.ManagementState, test.want.Spec.ManagementState)

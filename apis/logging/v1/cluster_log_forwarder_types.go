@@ -63,10 +63,6 @@ type ClusterLogForwarderSpec struct {
 	//
 	// +optional
 	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
-
-	// TLSSecurityProfile is the default for all external connections and listeners which overrides the cluster default.
-	// This setting is used unless one is defined for an output.  The output setting takes precedence
-	TLSSecurityProfile *openshiftv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder

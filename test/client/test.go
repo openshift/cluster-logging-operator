@@ -78,7 +78,7 @@ type NamespaceClient struct {
 	Test
 }
 
-func NewNamesapceClient() *NamespaceClient {
+func NewNamespaceClient() *NamespaceClient {
 	namespace := test.UniqueName("testhack")
 	t := &NamespaceClient{
 		Test{

@@ -2,9 +2,10 @@ package fluentd_test
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"strconv"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,7 +25,8 @@ var _ = Describe("Receiver", func() {
 		r := fluentd.NewReceiver(t.NS.Name, "receiver")
 		r.AddSource(&fluentd.Source{Name: "foo", Type: "forward", Port: 24224})
 		r.AddSource(&fluentd.Source{Name: "bar", Type: "http", Port: 24225})
-		r.Sources["bar"].Cert = certificate.NewCert(nil, r.Host())
+		r.Sources["bar"].CA = certificate.NewCA(nil, "bar")
+		r.Sources["bar"].Cert = certificate.NewCert(r.Sources["bar"].CA, r.Host())
 		ExpectOK(r.Create(t.Client))
 
 		Expect(r.Sources["foo"].HasOutput()).To(BeFalse())
@@ -46,7 +48,7 @@ var _ = Describe("Receiver", func() {
 		g.Go(func() {
 			s := r.Sources["bar"]
 			url := fmt.Sprintf("https://%v:%v/test.tag", s.Host(), s.Port)
-			cmd := runtime.Exec(r.Pod, "curl", "-fsS", "-X", "POST", "-key", "cakey.pem", "--cacert", "cacert.pem", "-d", "json="+msg, url)
+			cmd := runtime.Exec(r.Pod, "curl", "-kv", "--key", r.ConfigPath("bar-key.pem"), "--cert", r.ConfigPath("bar-cert.pem"), "--cacert", r.ConfigPath("bar-ca.pem"), "-d", "json="+msg, url)
 			out, err := cmd.CombinedOutput()
 			ExpectOK(err, "%v\n%v", cmd.Args, string(out))
 		})

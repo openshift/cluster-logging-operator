@@ -3,12 +3,13 @@ package fluentd
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 const (
@@ -97,7 +99,7 @@ func NewReceiver(ns, name string) *Receiver {
 	r.Pod.Spec.Containers = []corev1.Container{{
 		Name:  name,
 		Image: utils.GetComponentImage(constants.FluentdName),
-		Args:  []string{"fluentd", "-c", filepath.Join(configDir, "fluent.conf")},
+		Args:  []string{"fluentd", "--no-supervisor", "-v", "-c", filepath.Join(configDir, "fluent.conf")},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "config",
@@ -222,10 +224,25 @@ func (r *Receiver) Create(c *client.Client) error {
 		s.config()
 	}
 	r.ConfigMap.Data["fluent.conf"] = r.config.String()
-	// Crate and wait for the pod concurrently.
+
+	// Create and wait for the config map, service and pod concurrently.
 	g := errgroup.Group{}
-	g.Go(func() error { return c.Create(r.ConfigMap) })
-	g.Go(func() error { return c.Create(r.service) })
+	g.Go(func() error {
+		if err := c.Create(r.ConfigMap); err != nil {
+			return err
+		}
+		return c.WaitFor(r.ConfigMap, func(e watch.Event) (bool, error) {
+			return e.Type == watch.Added, nil
+		})
+	})
+	g.Go(func() error {
+		if err := c.Create(r.service); err != nil {
+			return err
+		}
+		return c.WaitFor(r.service, func(e watch.Event) (bool, error) {
+			return e.Type == watch.Added, nil
+		})
+	})
 	g.Go(func() error {
 		if err := c.Create(r.Pod); err != nil {
 			return err

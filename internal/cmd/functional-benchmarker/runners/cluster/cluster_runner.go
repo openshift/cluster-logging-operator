@@ -3,12 +3,13 @@ package cluster
 import (
 	"fmt"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -50,7 +51,7 @@ func (r *ClusterRunner) Pod() string {
 }
 
 func (r *ClusterRunner) Deploy() {
-	testclient := client.NewNamesapceClient()
+	testclient := client.NewNamespaceClient()
 	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity, logging.LogCollectionTypeFluentd)
 	r.framework.Conf = r.CollectorConfig
 

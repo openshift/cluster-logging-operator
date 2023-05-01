@@ -1,6 +1,8 @@
 package vector
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -20,38 +22,35 @@ var _ = Describe("Generating outputs", func() {
 		Entry("should honor global minTLSVersion & ciphers with loki as the default logstore regardless of the feature gate setting", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
-					{Name: logging.InputNameApplication, OutputRefs: []string{logging.OutputNameDefault}},
+					{Name: logging.InputNameApplication, OutputRefs: []string{lokistack.FormatOutputNameFromInput(logging.InputNameApplication)}},
 				},
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeLoki,
-						Name: "default",
+						Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
 						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-						Secret: &logging.OutputSecretSpec{
-							Name: "custom-loki-secret",
-						},
 					},
 				},
 			},
 			Secrets: map[string]*corev1.Secret{
-				"default": {
+				constants.LogCollectorToken: {
 					Data: map[string][]byte{
-						"token": []byte("token-for-custom-loki"),
+						"token": []byte("token-for-loki"),
 					},
 				},
 			},
 			Options: generator.Options{},
 			ExpectedConf: `
-[transforms.default_remap]
+[transforms.default_loki_apps_remap]
 type = "remap"
 inputs = ["application"]
 source = '''
   del(.tag)
 '''
 
-[transforms.default_dedot]
+[transforms.default_loki_apps_dedot]
 type = "lua"
-inputs = ["default_remap"]
+inputs = ["default_loki_apps_remap"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -97,32 +96,33 @@ source = '''
     end
 '''
 
-[sinks.default]
+[sinks.default_loki_apps]
 type = "loki"
-inputs = ["default_dedot"]
+inputs = ["default_loki_apps_dedot"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
-[sinks.default.encoding]
+
+[sinks.default_loki_apps.encoding]
 codec = "json"
-[sinks.default.labels]
+
+[sinks.default_loki_apps.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
-[sinks.default.tls]
+
+[sinks.default_loki_apps.tls]
 enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
-key_file = "/var/run/ocp-collector/secrets/custom-loki-secret/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/custom-loki-secret/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
+ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 
 # Bearer Auth Config
-[sinks.default.auth]
+[sinks.default_loki_apps.auth]
 strategy = "bearer"
-token = "token-for-custom-loki"
+token = "token-for-loki"
 
 [transforms.add_nodename_to_metric]
 type = "remap"

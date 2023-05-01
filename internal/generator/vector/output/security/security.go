@@ -50,13 +50,17 @@ func NewTLSConf(o logging.OutputSpec, op generator.Options) TLSConf {
 		ComponentID:        helpers.FormatComponentID(o.Name),
 		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 	}
+	conf.SetTLSProfileFromOptions(op)
+	return conf
+}
+
+func (conf *TLSConf) SetTLSProfileFromOptions(op generator.Options) {
 	if version, found := op[generator.MinTLSVersion]; found {
 		conf.TlsMinVersion = version.(string)
 	}
 	if ciphers, found := op[generator.Ciphers]; found {
 		conf.CipherSuites = ciphers.(string)
 	}
-	return conf
 }
 
 func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) bool {

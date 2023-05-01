@@ -8,7 +8,7 @@ import (
 )
 
 // TLSProfileInfo returns the minTLSVersion, ciphers as a comma-separated list given the available TLSSecurityProfile
-func (op Options) TLSProfileInfo(clfProfile *configv1.TLSSecurityProfile, outputSpec logging.OutputSpec) (string, string) {
+func (op Options) TLSProfileInfo(clfProfile *configv1.TLSSecurityProfile, outputSpec logging.OutputSpec, separator string) (string, string) {
 	var tlsProfileSpec configv1.TLSProfileSpec
 	if outputSpec.TLS != nil && outputSpec.TLS.TLSSecurityProfile != nil {
 		tlsProfileSpec = tls.GetClusterTLSProfileSpec(outputSpec.TLS.TLSSecurityProfile)
@@ -20,6 +20,6 @@ func (op Options) TLSProfileInfo(clfProfile *configv1.TLSSecurityProfile, output
 	}
 
 	minTlsVersion := tls.MinTLSVersion(tlsProfileSpec)
-	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")
+	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), separator)
 	return minTlsVersion, cipherSuites
 }

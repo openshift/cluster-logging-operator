@@ -51,7 +51,7 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 				op[generator.MinTLSVersion] = ""
 				op[generator.Ciphers] = ""
 			} else {
-				outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
+				outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o, ",")
 				op[generator.MinTLSVersion] = outMinTlsVersion
 				op[generator.Ciphers] = outCiphers
 			}
@@ -78,7 +78,7 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		}
 	}
 
-	minTlsVersion, cipherSuites := op.TLSProfileInfo(nil, logging.OutputSpec{})
+	minTlsVersion, cipherSuites := op.TLSProfileInfo(nil, logging.OutputSpec{}, ",")
 	outputs = append(outputs,
 		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites))

@@ -2,6 +2,7 @@ package fluentd
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -25,22 +26,10 @@ func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSp
 
 func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
 	tlsProfileSpec := o[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
-	var minTlsVersion string
-	switch tls.MinTLSVersion(tlsProfileSpec) {
-	case "VersionTLS10":
-		minTlsVersion = "TLS1_1" // no TLS1_0 in fluentd conf
-	case "VersionTLS11":
-		minTlsVersion = "TLS1_1"
-	case "VersionTLS12":
-		minTlsVersion = "TLS1_2"
-	case "VersionTLS13":
-		minTlsVersion = "TLS1_3"
-	}
-	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), ":")
 	return []generator.Element{
 		PrometheusMonitor{
-			TlsMinVersion: minTlsVersion,
-			CipherSuites:  cipherSuites,
+			TlsMinVersion: helpers.TLSMinVersion(tls.MinTLSVersion(tlsProfileSpec)),
+			CipherSuites:  helpers.TLSCiphers(tls.TLSCiphers(tlsProfileSpec)),
 		},
 	}
 }

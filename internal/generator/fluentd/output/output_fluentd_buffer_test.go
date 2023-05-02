@@ -136,7 +136,7 @@ var _ = Describe("Generating fluentd config", func() {
 		<filter **>
 			@type record_modifier
 			<record>
-			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured']);record.delete('structured')) if record['structured'] and record['viaq_index_name'] == 'app-write'}
 			</record>
 			remove_keys _dummy_
 		</filter>
@@ -300,7 +300,7 @@ var _ = Describe("Generating fluentd config", func() {
 		<filter **>
 			@type record_modifier
 			<record>
-			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured']);record.delete('structured')) if record['structured'] and record['viaq_index_name'] == 'app-write'}
 			</record>
 			remove_keys _dummy_
 		</filter>
@@ -451,7 +451,7 @@ var _ = Describe("Generating fluentd config", func() {
 		<filter **>
 			@type record_modifier
 			<record>
-			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+			_dummy_ ${(require 'json';record['message']=JSON.dump(record['structured']);record.delete('structured')) if record['structured'] and record['viaq_index_name'] == 'app-write'}
 			</record>
 			remove_keys _dummy_
 		</filter>

@@ -40,11 +40,13 @@ func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 		RemoveKeys: []string{"_dummy_, _dummy2_, _dummy3_"},
 	}
 
+	// LOG-3249: If viaq_index_name is still 'app-write', it means we cant find the specified index key in the message
+	// and/or the structuredIndexName was not provided. Do not parse and instead re-assemble message and remove structured
 	modRecordRebuildMessage := RecordModifier{
 		Records: []Record{
 			{
 				Key:        "_dummy_",
-				Expression: `${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}`,
+				Expression: `${(require 'json';record['message']=JSON.dump(record['structured']);record.delete('structured')) if record['structured'] and record['viaq_index_name'] == 'app-write'}`,
 			},
 		},
 		RemoveKeys: []string{"_dummy_"},

@@ -17,16 +17,16 @@ var (
 	DefaultKibanaProxyCpuRequest = resource.MustParse("100m")
 )
 
-func New(namespace, name string, kibanaSpec *logging.KibanaSpec, logStore *logging.LogStoreSpec, owner metav1.OwnerReference) *es.Kibana {
-
+func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *logging.LogStoreSpec, owner metav1.OwnerReference) *es.Kibana {
+	kibanaSpec := visSpec.Kibana
 	resources := &v1.ResourceRequirements{}
 	proxyResources := &v1.ResourceRequirements{}
-	nodeSelector := map[string]string{}
-	tolerations := []v1.Toleration{}
 	replicas := int32(0)
+
+	nodeSelector := visSpec.NodeSelector
+	tolerations := visSpec.Tolerations
+
 	if kibanaSpec != nil {
-		nodeSelector = kibanaSpec.NodeSelector
-		tolerations = kibanaSpec.Tolerations
 		resources = kibanaSpec.Resources
 		if resources == nil {
 			resources = &v1.ResourceRequirements{

@@ -176,6 +176,46 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["all-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["app-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
+
+		It("should fail if input has a flow control policy with negative threshold", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "flow-control-input",
+						Application: &loggingv1.Application{
+							GroupLimit: &loggingv1.LimitSpec{
+								Policy:              loggingv1.DropPolicy,
+								MaxRecordsPerSecond: -100,
+							},
+						},
+					},
+				},
+			}
+
+			verifyInputs(forwarderSpec, clfStatus)
+			Expect(clfStatus.Inputs["flow-control-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec flow control policy must not have negative maxRecordsPerSecond"))
+		})
+
+		It("should be valid if input has a flow control policy with non-negative threshold", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "flow-control-input",
+						Application: &loggingv1.Application{
+							ContainerLimit: &loggingv1.LimitSpec{
+								Policy:              loggingv1.DropPolicy,
+								MaxRecordsPerSecond: 10,
+							},
+						},
+					},
+				},
+			}
+
+			verifyInputs(forwarderSpec, clfStatus)
+			Expect(clfStatus.Inputs["flow-control-input"]).To(HaveCondition("Ready", true, "", ""))
+
+		})
+
 	})
 
 	Context("output specs", func() {
@@ -400,6 +440,42 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			})
 			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
+		})
+
+		It("should fail if output policy has negative threshold", func() {
+			forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: "flow-control-output",
+						Type: "loki",
+						URL:  "https://somewhere",
+						Limit: &loggingv1.LimitSpec{
+							Policy:              loggingv1.DropPolicy,
+							MaxRecordsPerSecond: -100,
+						},
+					},
+				},
+			}
+			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["flow-control-output"]).To(HaveCondition("Ready", false, "Invalid", "output \"flow-control-output\": Cannot have negative MaxRecordsPerSecond"))
+		})
+
+		It("should be valid if output policy has non-negative threshold", func() {
+			forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: "flow-control-output",
+						Type: "loki",
+						URL:  "https://somewhere",
+						Limit: &loggingv1.LimitSpec{
+							Policy:              loggingv1.DropPolicy,
+							MaxRecordsPerSecond: 0,
+						},
+					},
+				},
+			}
+			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["flow-control-output"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
 		Context("when validating secrets", func() {

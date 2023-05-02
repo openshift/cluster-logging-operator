@@ -9,6 +9,7 @@ import (
 
 func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	spec, extras = MigrateDefaultOutput(spec, logStore, extras)
+	spec = MigrateFlowControlPolicies(&spec)
 	return spec, extras
 }
 
@@ -96,4 +97,38 @@ func NewDefaultOutput(defaults *loggingv1.OutputDefaults) loggingv1.OutputSpec {
 		}
 	}
 	return spec
+}
+
+// MigrateFlowControlPolicies converts ignore policy to drop policy with '0' maxRecordsPerSecond.
+func MigrateFlowControlPolicies(spec *loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterLogForwarderSpec {
+	for _, inputSpec := range spec.Inputs {
+		if inputSpec.HasPolicy() {
+			app := inputSpec.Application
+			var limit *loggingv1.LimitSpec
+
+			if app.ContainerLimit != nil {
+				limit = app.ContainerLimit
+			} else {
+				limit = app.GroupLimit
+			}
+
+			if limit.Policy == loggingv1.IgnorePolicy {
+				limit.MaxRecordsPerSecond = 0 // make sure we ignore any max value given with Ignore
+				limit.Policy = loggingv1.DropPolicy
+			}
+		}
+	}
+
+	for _, outputSpec := range spec.Outputs {
+		if outputSpec.HasPolicy() {
+			limit := outputSpec.Limit
+
+			if limit.Policy == loggingv1.IgnorePolicy {
+				limit.MaxRecordsPerSecond = 0 // make sure we ignore any max value given with Ignore
+				limit.Policy = loggingv1.DropPolicy
+			}
+		}
+	}
+
+	return *spec
 }

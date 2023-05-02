@@ -1,10 +1,13 @@
 package vector
 
 import (
+	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
@@ -18,6 +21,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var (
+	SinkTransformThrottle = "sink_throttle"
+
+	UserDefinedSinkThrottle = fmt.Sprintf(`%s_%%s`, SinkTransformThrottle)
+)
+
 func OutputFromPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) logging.RouteMap {
 	r := logging.RouteMap{}
 	for _, p := range spec.Pipelines {
@@ -28,11 +37,24 @@ func OutputFromPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Opt
 	return r
 }
 
+func AddThrottleForSink(spec *logging.OutputSpec, inputs []string) []generator.Element {
+	el := []generator.Element{}
+
+	el = append(el, elements.Throttle{
+		ComponentID: fmt.Sprintf(UserDefinedSinkThrottle, spec.Name),
+		Inputs:      helpers.MakeInputs(inputs...),
+		Threshold:   spec.Limit.MaxRecordsPerSecond,
+		KeyField:    "",
+	})
+
+	return el
+}
+
 func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	outputs := []generator.Element{}
 	ofp := OutputFromPipelines(clfspec, op)
 
-	for _, o := range clfspec.Outputs {
+	for idx, o := range clfspec.Outputs {
 		var secret *corev1.Secret
 		if s, ok := secrets[o.Name]; ok {
 			secret = s
@@ -58,23 +80,31 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		}
 
 		inputs := ofp[o.Name].List()
-		switch o.Type {
-		case logging.OutputTypeKafka:
-			outputs = generator.MergeElements(outputs, kafka.Conf(o, inputs, secret, op))
-		case logging.OutputTypeLoki:
-			outputs = generator.MergeElements(outputs, loki.Conf(o, inputs, secret, op))
-		case logging.OutputTypeElasticsearch:
-			outputs = generator.MergeElements(outputs, elasticsearch.Conf(o, inputs, secret, op))
-		case logging.OutputTypeCloudwatch:
-			outputs = generator.MergeElements(outputs, cloudwatch.Conf(o, inputs, secret, op))
-		case logging.OutputTypeGoogleCloudLogging:
-			outputs = generator.MergeElements(outputs, gcl.Conf(o, inputs, secret, op))
-		case logging.OutputTypeSplunk:
-			outputs = generator.MergeElements(outputs, splunk.Conf(o, inputs, secret, op))
-		case logging.OutputTypeHttp:
-			outputs = generator.MergeElements(outputs, http.Conf(o, inputs, secret, op))
-		case logging.OutputTypeSyslog:
-			outputs = generator.MergeElements(outputs, syslog.Conf(o, inputs, secret, op))
+		if o.HasPolicy() && o.GetMaxRecordsPerSecond() > 0 {
+			// Vector Throttle component cannot have zero threshold
+			outputs = append(outputs, AddThrottleForSink(&clfspec.Outputs[idx], inputs)...)
+			inputs = []string{fmt.Sprintf(UserDefinedSinkThrottle, o.Name)}
+		}
+
+		if !o.HasPolicy() || (o.HasPolicy() && o.GetMaxRecordsPerSecond() > 0) {
+			switch o.Type {
+			case logging.OutputTypeKafka:
+				outputs = generator.MergeElements(outputs, kafka.Conf(o, inputs, secret, op))
+			case logging.OutputTypeLoki:
+				outputs = generator.MergeElements(outputs, loki.Conf(o, inputs, secret, op))
+			case logging.OutputTypeElasticsearch:
+				outputs = generator.MergeElements(outputs, elasticsearch.Conf(o, inputs, secret, op))
+			case logging.OutputTypeCloudwatch:
+				outputs = generator.MergeElements(outputs, cloudwatch.Conf(o, inputs, secret, op))
+			case logging.OutputTypeGoogleCloudLogging:
+				outputs = generator.MergeElements(outputs, gcl.Conf(o, inputs, secret, op))
+			case logging.OutputTypeSplunk:
+				outputs = generator.MergeElements(outputs, splunk.Conf(o, inputs, secret, op))
+			case logging.OutputTypeHttp:
+				outputs = generator.MergeElements(outputs, http.Conf(o, inputs, secret, op))
+			case logging.OutputTypeSyslog:
+				outputs = generator.MergeElements(outputs, syslog.Conf(o, inputs, secret, op))
+			}
 		}
 	}
 

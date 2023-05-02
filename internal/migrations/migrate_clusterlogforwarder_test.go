@@ -318,3 +318,118 @@ var _ = Describe("MigrateDefaultOutput", func() {
 	})
 
 })
+
+var _ = Describe(("MigrateInputPolicies"), func() {
+
+	var (
+		beforeSpec *logging.ClusterLogForwarderSpec
+		afterSpec  logging.ClusterLogForwarderSpec
+	)
+
+	BeforeEach(func() {
+		beforeSpec = &logging.ClusterLogForwarderSpec{
+			Inputs: []logging.InputSpec{
+				{
+					Name:        "test",
+					Application: &logging.Application{},
+				},
+			},
+		}
+	})
+
+	Context("should convert ignore policy to drop policy with 0 threshold", func() {
+		It("non-zero threshold", func() {
+			beforeSpec.Inputs[0].Application.ContainerLimit = &logging.LimitSpec{
+				Policy:              logging.IgnorePolicy,
+				MaxRecordsPerSecond: 100,
+			}
+
+			afterSpec = MigrateFlowControlPolicies(beforeSpec)
+			Expect(afterSpec.Inputs[0].Application.ContainerLimit).To(Equal(&logging.LimitSpec{
+				Policy:              logging.DropPolicy,
+				MaxRecordsPerSecond: 0,
+			}))
+		})
+
+		It("zero threshold", func() {
+			beforeSpec.Inputs[0].Application.ContainerLimit = &logging.LimitSpec{
+				Policy:              logging.IgnorePolicy,
+				MaxRecordsPerSecond: 0,
+			}
+
+			afterSpec = MigrateFlowControlPolicies(beforeSpec)
+			Expect(afterSpec.Inputs[0].Application.ContainerLimit).To(Equal(&logging.LimitSpec{
+				Policy:              logging.DropPolicy,
+				MaxRecordsPerSecond: 0,
+			}))
+		})
+
+	})
+
+	It("should not change with drop policy", func() {
+		beforeSpec.Inputs[0].Application.ContainerLimit = &logging.LimitSpec{
+			Policy:              logging.DropPolicy,
+			MaxRecordsPerSecond: 10,
+		}
+
+		afterSpec = MigrateFlowControlPolicies(beforeSpec)
+		Expect(afterSpec.Inputs[0].Application.ContainerLimit).To(Equal(beforeSpec.Inputs[0].Application.ContainerLimit))
+	})
+
+})
+
+var _ = Describe("MigrateOutputPolicies", func() {
+
+	var (
+		beforeSpec *logging.ClusterLogForwarderSpec
+		afterSpec  logging.ClusterLogForwarderSpec
+	)
+
+	BeforeEach(func() {
+		beforeSpec = &logging.ClusterLogForwarderSpec{
+			Outputs: []logging.OutputSpec{
+				{
+					Name: "test",
+				},
+			},
+		}
+	})
+
+	Context("should convert ignore policy to drop policy with 0 threshold", func() {
+		It("non-zero threshold", func() {
+			beforeSpec.Outputs[0].Limit = &logging.LimitSpec{
+				Policy:              logging.IgnorePolicy,
+				MaxRecordsPerSecond: 100,
+			}
+
+			afterSpec = MigrateFlowControlPolicies(beforeSpec)
+			Expect(afterSpec.Outputs[0].Limit).To(Equal(&logging.LimitSpec{
+				Policy:              logging.DropPolicy,
+				MaxRecordsPerSecond: 0,
+			}))
+		})
+
+		It("zero threshold", func() {
+			beforeSpec.Outputs[0].Limit = &logging.LimitSpec{
+				Policy:              logging.IgnorePolicy,
+				MaxRecordsPerSecond: 0,
+			}
+
+			afterSpec = MigrateFlowControlPolicies(beforeSpec)
+			Expect(afterSpec.Outputs[0].Limit).To(Equal(&logging.LimitSpec{
+				Policy:              logging.DropPolicy,
+				MaxRecordsPerSecond: 0,
+			}))
+		})
+	})
+
+	It("should not change with drop policy", func() {
+		beforeSpec.Outputs[0].Limit = &logging.LimitSpec{
+			Policy:              logging.DropPolicy,
+			MaxRecordsPerSecond: 100,
+		}
+
+		afterSpec = MigrateFlowControlPolicies(beforeSpec)
+		Expect(afterSpec.Outputs[0].Limit).To(Equal(beforeSpec.Outputs[0].Limit))
+	})
+})

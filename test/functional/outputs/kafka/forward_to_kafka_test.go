@@ -27,8 +27,6 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 		framework.Cleanup()
 	})
 
-	//	timestamp := "2013-03-28T14:36:03.243000+00:00"
-
 	Context("Application Logs", func() {
 		It("should send large message over Kafka", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -40,6 +38,23 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 			Expect(framework.WritesNApplicationLogsOfSize(1, maxLen)).To(BeNil())
 			// Read line from Kafka output
 			outputlogs, err := framework.ReadApplicationLogsFromKafka("clo-app-topic", "localhost:9092", "kafka-consumer-clo-app-topic")
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+		})
+	})
+	Context("LOG-3458", func() {
+		It("should deliver message to a topic named the same as payload key", func() {
+			topic := "openshift"
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToKafkaOutput(func(output *logging.OutputSpec) {
+					output.Kafka.Topic = topic
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(20, 10)).To(BeNil())
+			// Read line from Kafka output
+			outputlogs, err := framework.ReadApplicationLogsFromKafka(topic, "localhost:9092", kafka.ConsumerNameForTopic(topic))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 		})

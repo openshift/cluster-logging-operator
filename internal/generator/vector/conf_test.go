@@ -1062,7 +1062,6 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 			},
 			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{
-				TLSSecurityProfile: &configv1.TLSSecurityProfile{Type: configv1.TLSProfileModernType},
 				Pipelines: []logging.PipelineSpec{
 					{
 						InputRefs: []string{

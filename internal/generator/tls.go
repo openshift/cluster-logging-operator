@@ -7,13 +7,11 @@ import (
 	"strings"
 )
 
-// TLSProfileInfo returns the minTLSVersion, ciphers as a comma-separated list given the available TLSSecurityProfile
-func (op Options) TLSProfileInfo(clfProfile *configv1.TLSSecurityProfile, outputSpec logging.OutputSpec, separator string) (string, string) {
+// TLSProfileInfo returns the minTLSVersion, ciphers as a delimited list given the available TLSSecurityProfile
+func (op Options) TLSProfileInfo(outputSpec logging.OutputSpec, separator string) (string, string) {
 	var tlsProfileSpec configv1.TLSProfileSpec
 	if outputSpec.TLS != nil && outputSpec.TLS.TLSSecurityProfile != nil {
 		tlsProfileSpec = tls.GetClusterTLSProfileSpec(outputSpec.TLS.TLSSecurityProfile)
-	} else if clfProfile != nil {
-		tlsProfileSpec = tls.GetClusterTLSProfileSpec(clfProfile)
 	} else if _, ok := op[ClusterTLSProfileSpec]; ok {
 		clusterSpec := op[ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
 		tlsProfileSpec = clusterSpec

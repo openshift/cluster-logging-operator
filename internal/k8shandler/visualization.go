@@ -31,8 +31,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error
 	}
 
 	var consoleSpec *logging.OCPConsoleSpec
-	if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
-		consoleSpec = spec.Visualization.OCPConsole
+	if spec.LogStore == nil || spec.LogStore.Type == logging.LogStoreTypeLokiStack {
+		if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
+			consoleSpec = spec.Visualization.OCPConsole
+		}
+		// Will return not found if logStore is nil, as intended
 		errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion, consoleSpec))
 	}
 	return utilerrors.NewAggregate(errs)

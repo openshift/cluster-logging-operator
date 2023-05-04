@@ -255,6 +255,9 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() (*logging.Cluster
 		if !apierrors.IsNotFound(err) {
 			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
 		}
+		if !clusterRequest.IncludesManagedStorage() {
+			return nil, map[string]bool{}
+		}
 		forwarder.Spec = logging.ClusterLogForwarderSpec{}
 	}
 	extras := map[string]bool{}

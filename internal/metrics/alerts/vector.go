@@ -18,30 +18,33 @@ const VectorPrometheusAlerts = `
   - alert: CollectorHighErrorRate
     annotations:
       message: |-
-        {{ $value }}% of records have resulted in an error by vector {{ $labels.instance }} component.
-      summary: "Vector component errors are high"
+        {{ $value }}% of records have resulted in an error by collector {{ $labels.instance }} component.
+      summary: "Collector component errors are high"
     expr: |
-      100 * (
-          sum by(pod, instance)(rate(vector_component_errors_total[2m]))
-        /
-          sum by(pod, instance)(rate(vector_component_received_events_total[2m]))
-        ) > 10
-    for: 15m
+         sum by(pod, instance)(rate(vector_component_errors_total[2m])) > 0.05
+    for: 5m
     labels:
       severity: warning
+      namespace: "openshift-logging"
+  - alert: CollectorSyncFailed
+    annotations:
+      message: |-
+        Collector {{ $labels.instance }} log syncing failed.
+      summary: "Collector component errors"
+    expr: |
+         (sum by (pod, instance, component_name) (rate(vector_events_out_total{component_kind="sink"}[2m]))) == 0
+    for: 5m
+    labels:
+      severity: critical
       namespace: "openshift-logging"
   - alert: CollectorVeryHighErrorRate
     annotations:
       message: |-
-        {{ $value }}% of records have resulted in an error by vector {{ $labels.instance }} component.
-      summary: "Vector component errors are very high"
+        {{ $value }}% of records have resulted in an error by collector {{ $labels.instance }} component.
+      summary: "Collector component errors are very high"
     expr: |
-      100 * (
-          sum by(pod, instance)(rate(vector_component_errors_total[2m]))
-        /
-          sum by(pod, instance)(rate(vector_component_received_events_total[2m]))
-        ) > 25
-    for: 15m
+      sum by(pod, instance)(rate(vector_component_errors_total[2m])) > 0.2
+    for: 5m
     labels:
       severity: critical
       namespace: "openshift-logging"

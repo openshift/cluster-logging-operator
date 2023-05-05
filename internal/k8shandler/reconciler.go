@@ -52,7 +52,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 
 	if instance.GetDeletionTimestamp() != nil {
 		// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
-		if err := lokistack.RemoveRbac(clusterLoggingRequest.Client, clusterLoggingRequest.removeFinalizer); err != nil {
+		if err := lokistack.RemoveRbac(clusterLoggingRequest.Client); err != nil {
 			log.Error(err, "Error removing RBAC for accessing LokiStack.")
 		}
 	}
@@ -154,7 +154,7 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	for _, remove := range []func() error{
 		func() error { return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace) },
 		clusterRequest.removeKibana,
-		func() error { return lokistack.RemoveRbac(clusterRequest.Client, clusterRequest.removeFinalizer) }} {
+		func() error { return lokistack.RemoveRbac(clusterRequest.Client) }} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		if err := remove(); err != nil && !apierrors.IsNotFound(err) {
 			log.Error(err, "Error removing component")

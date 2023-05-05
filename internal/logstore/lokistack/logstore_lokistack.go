@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	lokiStackFinalizer = "logging.openshift.io/lokistack-rbac"
-
 	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
 	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
 
@@ -39,14 +37,10 @@ func init() {
 	}
 }
 
-func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.Time, appendFinalizer func(identifier string) error) error {
+func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.Time) error {
 	if deletionTimestamp != nil {
 		// Skip creation if deleting
 		return nil
-	}
-
-	if err := appendFinalizer(lokiStackFinalizer); err != nil {
-		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
 	}
 
 	if err := reconcile.ClusterRole(k8sClient, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
@@ -68,7 +62,7 @@ func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.T
 	return nil
 }
 
-func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) error {
+func RemoveRbac(k8sClient client.Client) error {
 	if err := reconcile.DeleteClusterRoleBinding(k8sClient, lokiStackAppReaderClusterRoleBindingName); err != nil {
 		return err
 	}
@@ -82,10 +76,6 @@ func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) err
 	}
 
 	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackWriterClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := removeFinalizer(lokiStackFinalizer); err != nil {
 		return err
 	}
 

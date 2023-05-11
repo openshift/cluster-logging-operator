@@ -8,11 +8,18 @@ import (
 )
 
 // NewDaemonSet stubs an instance of a daemonset
-func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
-	labels := map[string]string{
+func NewDaemonSet(daemonsetName, namespace, loggingComponent, component, impl string, podSpec core.PodSpec) *apps.DaemonSet {
+	selectors := map[string]string{
 		"provider":      "openshift",
 		"component":     component,
 		"logging-infra": loggingComponent,
+	}
+	labels := map[string]string{
+
+		"implementation": impl,
+	}
+	for k, v := range selectors {
+		labels[k] = v
 	}
 	return &apps.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
@@ -26,7 +33,7 @@ func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, 
 		},
 		Spec: apps.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: selectors,
 			},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{

@@ -318,7 +318,6 @@ spec:
                     nullable: true
                     type: array
                   type:
-                    default: vector
                     description: The type of Log Collection to configure
                     type: string
                 type: object

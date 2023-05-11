@@ -37,6 +37,7 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 			spec.Collection.CollectorSpec.Tolerations = logSpec.Tolerations
 		}
 	}
+
 	spec.Collection.Logs = nil
 
 	log.V(3).Info("Migrated collectionSpec for reconciliation", "spec", spec)

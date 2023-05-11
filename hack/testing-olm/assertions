@@ -2,12 +2,16 @@
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
 
-	# verify DS
-	os::cmd::try_until_success "oc -n $LOGGING_NS get ds collector" ${TIMEOUT_MIN}
+	assert_collector_exist
 
 	# verify ER
 	os::cmd::try_until_success "oc -n $LOGGING_NS get elasticsearch elasticsearch" ${TIMEOUT_MIN}
 
+}
+
+assert_collector_exist(){
+	# verify DS
+	os::cmd::try_until_success "oc -n $LOGGING_NS get ds collector" ${TIMEOUT_MIN}
 }
 
 assert_kibana_instance_exists() {

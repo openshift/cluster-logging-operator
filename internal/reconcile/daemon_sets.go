@@ -36,6 +36,7 @@ func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.Da
 			return nil
 		}
 		reason = constants.EventReasonUpdateObject
+		current.Labels = desired.Labels
 		current.Spec = desired.Spec
 		return k8Client.Update(context.TODO(), current)
 	})

@@ -1,40 +1,47 @@
 package factory
 
 import (
-	"reflect"
-	"testing"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 )
 
-func TestNewDaemonsetDoesNotDefineMinReadySeconds(t *testing.T) {
+var _ = Describe("#NewDaemonSet", func() {
 
-	podspec := core.PodSpec{}
-	daemonSet := NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", podspec)
+	var (
+		daemonSet   *apps.DaemonSet
+		expSelector = map[string]string{
+			"provider":      "openshift",
+			"component":     "thecomponent",
+			"logging-infra": "thecomponent",
+		}
+		expLabels = map[string]string{
+			"provider":       "openshift",
+			"component":      "thecomponent",
+			"logging-infra":  "thecomponent",
+			"implementation": "collectorImpl",
+		}
+	)
 
-	if daemonSet.Spec.MinReadySeconds != 0 {
-		t.Errorf("Exp. the MinReadySeconds to be the default but was %d", daemonSet.Spec.MinReadySeconds)
-	}
-}
-func TestNewDaemonsetSetsAllLabelsToBeTheSame(t *testing.T) {
+	BeforeEach(func() {
+		daemonSet = NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", "collectorImpl", core.PodSpec{})
+	})
 
-	podspec := core.PodSpec{}
-	daemonSet := NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", podspec)
+	It("should leave the MinReadySeconds as the default", func() {
+		Expect(daemonSet.Spec.MinReadySeconds).ToNot(Equal(0), "Exp. the MinReadySeconds to be the default")
+	})
 
-	expLabels := daemonSet.ObjectMeta.Labels
-	if !reflect.DeepEqual(expLabels, daemonSet.Spec.Selector.MatchLabels) {
-		t.Errorf("Exp. the ObjectMeta.Labels %q to be the same as spec.selector.matchlabels: %q", expLabels, daemonSet.Spec.Selector.MatchLabels)
-	}
-	if !reflect.DeepEqual(expLabels, daemonSet.Spec.Template.ObjectMeta.Labels) {
-		t.Errorf("Exp. the ObjectMeta.Labels %q to be the same as spec.template.objectmeta.labels: %q", expLabels, daemonSet.Spec.Selector.MatchLabels)
-	}
-}
-func TestNewDaemonsetIncludesCriticalPodAnnotation(t *testing.T) {
+	It("should only include the provider, component, logging-infra in the selector", func() {
+		Expect(daemonSet.Spec.Selector.MatchLabels).To(Equal(expSelector), "Exp. the selector to only include: provider, component, logging-infra")
+	})
 
-	podspec := core.PodSpec{}
-	daemonSet := NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", podspec)
+	It("should include the collector implementation in the labels only", func() {
+		Expect(daemonSet.Labels).To(Equal(expLabels))
+		Expect(daemonSet.Spec.Template.Labels).To(Equal(expLabels))
+	})
+	It("should include the critical pod annotation", func() {
+		Expect(daemonSet.Spec.Template.ObjectMeta.Annotations).To(HaveKey("scheduler.alpha.kubernetes.io/critical-pod"))
+	})
 
-	if _, ok := daemonSet.Spec.Template.ObjectMeta.Annotations["scheduler.alpha.kubernetes.io/critical-pod"]; !ok {
-		t.Error("Exp. the daemonset to define the critical pod annotation but it did not")
-	}
-}
+})

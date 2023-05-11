@@ -38,10 +38,11 @@ spec:
   outputs:
     - name: external-es
       type: elasticsearch
+      elasticsearch:
+        version: 8 <1>
       secret:
-        name: es-secret <1>
+        name: es-secret <2>
       url: 'https://example-elasticsearch-secure.com:9200'
-      Version: 8 <2>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -51,5 +52,5 @@ spec:
         - external-es
 ----
 +
-<1> For an `https` prefix, specify the name of the secret required by the endpoint for TLS communication. The secret must exist in the `openshift-logging` project, and must have keys of: `tls.crt`, `tls.key`, and `ca-bundle.crt` that point to the respective certificates that they represent. Otherwise, for `http` and `https` prefixes, you can specify a secret that contains a username and password. 
-<2> Forwarding to an external Elasticsearch of version 8.x or greater requires the `Version` field to be specified otherwise this can be omitted.
+<1> Forwarding to an external Elasticsearch of version 8.x or greater requires the `version` field to be specified otherwise this can be omitted. The `version` field is nested under `elasticsearch`.
+<2> For a `https` prefix, specify the name of the secret required by the endpoint for TLS communication. If the certificate is signed by `custom root ca`, it must have key: `ca-bundle.crt`. If you want to enable Mutual Transport Layer Security (mTLS) between collector and elasticsearch, the secret must have keys of: `tls.crt`, `tls.key` that point to the respective certificates that they represent. Otherwise, for `http` and `https` prefixes, you can specify a secret that contains a username and password.

@@ -37,7 +37,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	log.V(2).Info("Unmarshalled", "forwarder", forwarder)
 
 	clRequest := &k8shandler.ClusterLoggingRequest{
-		ForwarderSpec: forwarder.Spec,
+		Forwarder: forwarder,
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: forwarder.GetNamespace(),

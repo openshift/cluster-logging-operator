@@ -85,3 +85,13 @@ func (nc NamedConditions) IsAllReady() bool {
 	}
 	return true
 }
+
+var CondReady = Condition{Type: ConditionReady, Status: corev1.ConditionTrue}
+
+func CondNotReady(r ConditionReason, format string, args ...interface{}) Condition {
+	return NewCondition(ConditionReady, corev1.ConditionFalse, r, format, args...)
+}
+
+func CondInvalid(format string, args ...interface{}) Condition {
+	return CondNotReady(ReasonInvalid, format, args...)
+}

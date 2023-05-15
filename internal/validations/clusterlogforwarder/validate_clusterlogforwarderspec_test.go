@@ -181,7 +181,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 	Context("output specs", func() {
 		var (
 			client        client.Client
-			cluster       *loggingv1.ClusterLogging
+			namespace     = constants.OpenshiftNS
 			extras        map[string]bool
 			clfStatus     *loggingv1.ClusterLogForwarderStatus
 			output        loggingv1.OutputSpec
@@ -193,13 +193,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			client = fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
 				constants.OpenshiftNS, constants.CollectorSecretName, nil,
 			)).Build()
-			cluster = &loggingv1.ClusterLogging{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: constants.OpenshiftNS,
-				},
-			}
-			extras = map[string]bool{}
 			clfStatus = &loggingv1.ClusterLogForwarderStatus{}
+			extras = map[string]bool{}
 
 			output = loggingv1.OutputSpec{
 				Name: "myOutput",
@@ -235,7 +230,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid,
 				"output \"X\": Exactly one of billingAccountId, folderId, organizationId, or projectId must be set."))
 		})
@@ -254,15 +249,12 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
 		// Ref: https://issues.redhat.com/browse/LOG-3228
 		It("should validate the default output as any other without adding a new one", func() {
-			cluster.Spec.LogStore = &loggingv1.LogStoreSpec{
-				Type: loggingv1.LogStoreTypeElasticsearch,
-			}
 
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Outputs: []loggingv1.OutputSpec{
@@ -274,7 +266,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 			// sanity check
 			Expect(forwarderSpec.Outputs).To(HaveLen(1))
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs[loggingv1.OutputNameDefault]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp. the number of outputs to remain unchanged")
 		})
@@ -286,7 +278,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			})
 			// sanity check
 			Expect(forwarderSpec.Outputs).To(HaveLen(3))
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["myOutput"]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
 			Expect(clfStatus.Outputs["output_2_"]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "duplicate"))
 		})
@@ -297,7 +289,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Type: "elasticsearch",
 				URL:  "http://here",
 			})
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "must have a name"))
 		})
 
@@ -309,7 +301,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			})
 			forwarderSpec.Outputs = outputs
 			extras[constants.MigrateDefaultOutput] = true
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(len(forwarderSpec.Outputs)).To(Equal(len(outputs)), "Exp. outputs with an internal name of 'default' do be kept")
 		})
 
@@ -318,21 +310,21 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Name: "aName",
 				URL:  "http://here",
 			})
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "unknown.*\"\""))
 		})
 
-		It("should drop outputs that have unrecognized types", func() {
+		It("should fail outputs that have unrecognized types", func() {
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name: "aName",
 				Type: "foo",
 				URL:  "http://here",
 			})
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "unknown.*\"foo\""))
 		})
 
-		It("should drop outputs that have an invalid or non-absolute URL", func() {
+		It("should fail outputs that have an invalid or non-absolute URL", func() {
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
 					Name: "aName",
@@ -345,19 +337,19 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					URL:  ":invalid",
 				},
 			}
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "relativeURLPath"))
 			Expect(clfStatus.Outputs["bName"]).To(HaveCondition("Ready", false, "Invalid", ":invalid"))
 		})
 
-		It("should drop Cloudwatch output without OutputTypeSpec", func() {
+		It("should fail Cloudwatch output without OutputTypeSpec", func() {
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
 					Name: "cw",
 					Type: loggingv1.OutputTypeCloudwatch,
 				},
 			}
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["cw"]).To(HaveCondition("Ready", false, "Invalid", "Cloudwatch output requires type spec"))
 		})
 
@@ -371,29 +363,29 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aCloudwatch"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
-		It("should drop outputs that have secrets with no names", func() {
+		It("should fail outputs that have secrets with no names", func() {
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name:   "aName",
 				Type:   "elasticsearch",
 				URL:    "https://somewhere",
 				Secret: &loggingv1.OutputSecretSpec{},
 			})
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "secret has empty name"))
 		})
 
-		It("should drop outputs that have secrets which don't exist", func() {
+		It("should fail outputs that have secrets which don't exist", func() {
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name:   "aName",
 				Type:   "elasticsearch",
 				URL:    "https://somewhere",
 				Secret: &loggingv1.OutputSecretSpec{Name: "mysecret"},
 			})
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
 		})
 
@@ -427,72 +419,72 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
 				})
 
-				It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key and role_arn", func() {
+				It("should fail outputs with secrets that are missing aws_access_key_id and aws_secret_access_key and role_arn", func() {
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
 
-				It("should drop outputs with secrets that is missing aws_secret_access_id", func() {
+				It("should fail outputs with secrets that is missing aws_secret_access_id", func() {
 					secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
 
-				It("should drop outputs with secrets that has empty aws_secret_access_key", func() {
+				It("should fail outputs with secrets that has empty aws_secret_access_key", func() {
 					secret.Data[constants.AWSSecretAccessKey] = []byte{}
 					secret.Data[constants.AWSAccessKeyID] = []byte{1, 2, 3}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
-				It("should drop outputs with secrets that is missing aws_secret_access_key", func() {
+				It("should fail outputs with secrets that is missing aws_secret_access_key", func() {
 					secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
-				It("should drop outputs with secrets that have empty aws_access_key_id", func() {
+				It("should fail outputs with secrets that have empty aws_access_key_id", func() {
 					secret.Data[constants.AWSAccessKeyID] = []byte{}
 					secret.Data[constants.AWSSecretAccessKey] = []byte{1, 2, 3}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
-				It("should accept outputs with secrets that have aws_secret_access_key and aws_access_key_id", func() {
+				It("should pass outputs with secrets that have aws_secret_access_key and aws_access_key_id", func() {
 					secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 					secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				})
-				It("should accept outputs with secrets that have role_arn key with valid arn specified", func() {
+				It("should pass outputs with secrets that have role_arn key with valid arn specified", func() {
 					secret.Data[constants.AWSWebIdentityRoleKey] = []byte("arn:aws:iam::123456789012:role/my-role")
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				})
-				It("should drop outputs with role_arn key but without formatted arn specified", func() {
+				It("should fail outputs with role_arn key but without formatted arn specified", func() {
 					secret.Data[constants.AWSWebIdentityRoleKey] = []byte("role/my-role")
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
 				})
-				It("should accept outputs with secrets that have credentials key with valid arn specified", func() {
+				It("should pass outputs with secrets that have credentials key with valid arn specified", func() {
 					secret.Data[constants.AWSCredentialsKey] = []byte("role_arn = arn:aws:iam::123456789012:role/my-role")
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				})
-				It("should drop outputs with credential key but without formatted arn specified", func() {
+				It("should fail outputs with credential key but without formatted arn specified", func() {
 					secret.Data[constants.AWSCredentialsKey] = []byte("role/my-role")
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
 				})
@@ -508,44 +500,44 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					}
 					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
 				})
-				It("should drop outputs with secrets that have missing tls.key", func() {
+				It("should fail outputs with secrets that have missing tls.key", func() {
 					secret.Data["tls.crt"] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 				})
-				It("should drop outputs with secrets that have empty tls.crt", func() {
+				It("should fail outputs with secrets that have empty tls.crt", func() {
 					secret.Data["tls.crt"] = []byte{}
 					secret.Data["tls.key"] = []byte{1, 2, 3}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 				})
-				It("should drop outputs with secrets that have missing tls.crt", func() {
+				It("should fail outputs with secrets that have missing tls.crt", func() {
 					secret.Data["tls.key"] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 				})
-				It("should drop outputs with secrets that have empty tls.key", func() {
+				It("should fail outputs with secrets that have empty tls.key", func() {
 					secret.Data["tls.key"] = []byte{}
 					secret.Data["tls.crt"] = []byte{1, 2, 3}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 				})
-				It("should accept outputs with secrets that have tls.key and tls.cert", func() {
+				It("should pass outputs with secrets that have tls.key and tls.cert", func() {
 					secret.Data["tls.key"] = []byte{0, 1, 2}
 					secret.Data["tls.crt"] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
-					verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				})
 			})
 		})
 
-		It("should accept well formed outputs", func() {
+		It("should pass well formed outputs", func() {
 			client = fake.NewFakeClient( //nolint
 				&corev1.Secret{
 					TypeMeta: metav1.TypeMeta{
@@ -576,7 +568,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					Secret: &loggingv1.OutputSecretSpec{Name: "mysecret"},
 				},
 			)
-			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", clfStatus))
 			Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)), fmt.Sprintf("status: %+v", clfStatus))
 		})
@@ -650,7 +642,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 		})
 
-		It("should drop all pipelines if output refs are invalid.", func() {
+		It("should fail all pipelines if output refs are invalid.", func() {
 			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
 				{
 					Name:       "aPipeline",
@@ -662,7 +654,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines["aPipeline"]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid:*"))
 		})
 
-		It("should drop all pipelines if even one pipeline does not have a unique name", func() {
+		It("should fail all pipelines if even one pipeline does not have a unique name", func() {
 			forwarderSpec.Pipelines = append(forwarderSpec.Pipelines,
 				loggingv1.PipelineSpec{
 					Name:       "aPipeline",
@@ -685,7 +677,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines["pipeline_1_"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "pipeline must have a name"))
 		})
 
-		It("should drop all pipelines if pipelines have unrecognized inputRefs", func() {
+		It("should fail all pipelines if pipelines have unrecognized inputRefs", func() {
 			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
 				{
 					Name:       "someDefinedPipeline",
@@ -698,7 +690,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, `inputs:.*\[foo]`))
 		})
 
-		It("should drop all pipelines if pipelines have no outputRefs", func() {
+		It("should fail all pipelines if pipelines have no outputRefs", func() {
 			forwarderSpec.Pipelines = append(forwarderSpec.Pipelines,
 				loggingv1.PipelineSpec{
 					Name:       "someDefinedPipeline",
@@ -711,7 +703,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 		// Degraded here means partially valid, which will not be supported
-		It("should drop all pipelines if there are degraded pipelines with some bad outputRefs", func() {
+		It("should fail all pipelines if there are degraded pipelines with some bad outputRefs", func() {
 			forwarderSpec.Pipelines = append(forwarderSpec.Pipelines,
 				loggingv1.PipelineSpec{
 					Name:       "someDefinedPipeline",
@@ -744,7 +736,6 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 	Context("validating all", func() {
 		var (
 			client        client.Client
-			cluster       *loggingv1.ClusterLogging
 			extras        map[string]bool
 			output        loggingv1.OutputSpec
 			otherOutput   loggingv1.OutputSpec
@@ -757,13 +748,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				constants.OpenshiftNS, constants.CollectorSecretName, nil,
 			)).Build()
 
-			cluster = &loggingv1.ClusterLogging{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: constants.OpenshiftNS,
-				},
-			}
-
 			clfInstance = testRunTime.NewClusterLogForwarder()
+			forwarderSpec = &clfInstance.Spec
 
 			extras = map[string]bool{}
 
@@ -778,11 +764,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				URL:  "http://there",
 			}
 
-			forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
-				Outputs: []loggingv1.OutputSpec{
-					output,
-					otherOutput,
-				},
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				output,
+				otherOutput,
 			}
 
 			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
@@ -794,7 +778,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 		})
 
-		It("invalid forwarder spec if outputref is invalid", func() {
+		It("should fail forwarder spec if outputref is invalid", func() {
 			var clusterName = "cluster"
 
 			invalidCW := loggingv1.OutputSpec{
@@ -826,7 +810,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(BeEmpty(), "Exp no inputs")
 			Expect(forwarderSpec.Outputs).To(HaveLen(2), "Exp 1 output")
 
-			clfStatus := ValidateInputsOutputsPipelines(cluster, client, clfInstance, *forwarderSpec, extras)
+			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 
 			Expect(forwarderSpec.Pipelines).To(HaveLen(1), "Exp. not to mutate original spec pipelines")
 			Expect(forwarderSpec.Inputs).To(BeEmpty(), "Exp. not to mutate original spec inputs")
@@ -867,7 +851,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp 1 input")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp 1 output")
 
-			clfStatus := ValidateInputsOutputsPipelines(cluster, client, clfInstance, *forwarderSpec, extras)
+			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 
 			Expect(forwarderSpec.Pipelines).To(HaveLen(1), "Exp. not to mutate original spec pipelines")
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
@@ -909,7 +893,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp 1 input")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp 1 output")
 
-			clfStatus := ValidateInputsOutputsPipelines(cluster, client, clfInstance, *forwarderSpec, extras)
+			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 
 			Expect(forwarderSpec.Pipelines).To(HaveLen(1), "Exp. not to mutate original spec pipelines")
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
@@ -949,7 +933,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp 1 input")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp 1 output")
 
-			clfStatus := ValidateInputsOutputsPipelines(cluster, client, clfInstance, *forwarderSpec, extras)
+			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 
 			Expect(forwarderSpec.Pipelines).To(HaveLen(2), "Exp. not to mutate original spec pipelines")
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
@@ -972,8 +956,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Outputs:   []loggingv1.OutputSpec{},
 				Pipelines: []loggingv1.PipelineSpec{},
 			}
+			clfInstance.Spec = *forwarderSpec
 			Expect(YAMLString(forwarderSpec)).To(EqualLines("{}"))
-			clfStatus := ValidateInputsOutputsPipelines(cluster, client, nil, *forwarderSpec, extras)
+			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 			Expect(YAMLString(clfStatus)).To(EqualLines("{}"))
 		})
 	})

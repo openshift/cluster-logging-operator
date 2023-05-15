@@ -124,8 +124,8 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace s
 		return err
 	}
 	for k, v := range labels {
-		if _, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s --overwrite", namespace, k, v).Run(); err2 != nil {
-			return err2
+		if out, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s --overwrite", namespace, k, v).Run(); err2 != nil {
+			return fmt.Errorf("error: %v response: %s", err2, out)
 		}
 	}
 	return err

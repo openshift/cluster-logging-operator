@@ -38,7 +38,7 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 	}
 }
 
-func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[string]bool) (config string, err error) {
+func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
 		return "", nil
@@ -52,8 +52,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Type)
 	}
 
-	if clusterRequest.ForwarderRequest == nil {
-		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
+	if clusterRequest.Forwarder == nil {
+		clusterRequest.Forwarder = &logging.ClusterLogForwarder{}
 	}
 
 	// Set the output secrets if any
@@ -67,11 +67,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 	op := generator.Options{}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
 	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
-	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.ForwarderRequest, op)
+	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
 	g := forwardergenerator.New(collectorType)
-	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, clusterRequest.Cluster.Namespace, op)
+	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Namespace, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
@@ -97,8 +97,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 }
 
 func (clusterRequest *ClusterLoggingRequest) SetOutputSecrets() {
-	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
-	for _, output := range clusterRequest.ForwarderSpec.Outputs {
+	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.Forwarder.Spec.Outputs))
+	for _, output := range clusterRequest.Forwarder.Spec.Outputs {
 		output := output // Don't bind range variable.
 		if output.Secret == nil {
 			continue

@@ -10,3 +10,10 @@ func NewClusterLogForwarder(namespace, name string) *loggingv1.ClusterLogForward
 	Initialize(clf, namespace, name)
 	return clf
 }
+
+// NewClusterLogging returns a ClusterLogging with default name and namespace.
+func NewClusterLogging(namespace, name string) *loggingv1.ClusterLogging {
+	clf := &loggingv1.ClusterLogging{}
+	Initialize(clf, namespace, name)
+	return clf
+}

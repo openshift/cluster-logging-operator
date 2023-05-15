@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -20,27 +21,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Validate all inputs, outputs, and pipelines without mutating the spec
-func ValidateInputsOutputsPipelines(clusterlogging *loggingv1.ClusterLogging, clfClient client.Client,
-	clfInstance *loggingv1.ClusterLogForwarder, clfSpec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) *loggingv1.ClusterLogForwarderStatus {
+// ValidateInputsOutputsPipelines all inputs, outputs, and pipelines without mutating the spec
+func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
 
 	status := &loggingv1.ClusterLogForwarderStatus{}
 
 	// Check if any defined pipelines and if a clusterLogForwarder instance is available
-	if len(clfSpec.Pipelines) == 0 && clfInstance == nil {
+	if len(clf.Spec.Pipelines) == 0 {
 		log.V(3).Info("ClusterLogForwarder disabled")
-		return status
+		return errors.NewValidationError("ClusterLogForwarder disabled"), status
 	}
 
-	verifyInputs(&clfSpec, status)
+	verifyInputs(&clf.Spec, status)
 	if !status.Inputs.IsAllReady() {
 		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
 	}
-	verifyOutputs(clusterlogging, clfClient, &clfSpec, status, extras)
+	verifyOutputs(clf.Namespace, k8sClient, &clf.Spec, status, extras)
 	if !status.Outputs.IsAllReady() {
 		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
 	}
-	verifyPipelines(&clfSpec, status)
+	verifyPipelines(&clf.Spec, status)
 	if !status.Pipelines.IsAllReady() {
 		log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
 	}
@@ -55,14 +55,12 @@ func ValidateInputsOutputsPipelines(clusterlogging *loggingv1.ClusterLogging, cl
 
 	// All pipelines have to be ready or invalid CLF
 	if len(unready) > 0 {
-		log.V(3).Info("validate clusterlogforwarder. Not all pipelines valid. Invalid CLF", "ForwarderSpec", clfSpec)
+		log.V(3).Info("validate clusterlogforwarder. Not all pipelines valid. Invalid CLF", "ForwarderSpec", clf.Spec)
 		status.Conditions.SetCondition(CondInvalid("invalid clf spec; one or more errors present: %v", unready))
-		// Everything was valid
-	} else {
-		status.Conditions.SetCondition(condReady)
+		return errors.NewValidationError("clusterlogforwarder is not ready"), status
 	}
-
-	return status
+	status.Conditions.SetCondition(condReady)
+	return nil, status
 }
 
 // verifyRefs returns the set of valid refs and a slice of error messages for bad refs.
@@ -174,7 +172,7 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 	}
 }
 
-func verifyOutputs(clusterlogging *loggingv1.ClusterLogging, clfClient client.Client, spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) {
+func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) {
 	status.Outputs = loggingv1.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
 	for i, output := range spec.Outputs {
@@ -200,7 +198,7 @@ func verifyOutputs(clusterlogging *loggingv1.ClusterLogging, clfClient client.Cl
 			status.Outputs.Set(output.Name, CondInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !verifyOutputURL(&output, status.Outputs):
 			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
-		case !verifyOutputSecret(clusterlogging, clfClient, &output, status.Outputs, extras):
+		case !verifyOutputSecret(namespace, clfClient, &output, status.Outputs, extras):
 			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		case output.Type == loggingv1.OutputTypeCloudwatch && output.Cloudwatch == nil:
 			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
@@ -306,7 +304,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 	return true
 }
 
-func verifyOutputSecret(clusterlogging *loggingv1.ClusterLogging, clfClient client.Client, output *loggingv1.OutputSpec, conds loggingv1.NamedConditions, extras map[string]bool) bool {
+func verifyOutputSecret(namespace string, clfClient client.Client, output *loggingv1.OutputSpec, conds loggingv1.NamedConditions, extras map[string]bool) bool {
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
@@ -323,7 +321,7 @@ func verifyOutputSecret(clusterlogging *loggingv1.ClusterLogging, clfClient clie
 		return true
 	}
 	log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)
-	secret, err := getOutputSecret(clusterlogging, clfClient, output.Secret.Name)
+	secret, err := getOutputSecret(namespace, clfClient, output.Secret.Name)
 	if err != nil {
 		return fail(CondMissing("secret %q not found", output.Secret.Name))
 	}
@@ -337,9 +335,9 @@ func verifyOutputSecret(clusterlogging *loggingv1.ClusterLogging, clfClient clie
 	return true
 }
 
-func getOutputSecret(clusterlogging *loggingv1.ClusterLogging, clfClient client.Client, secretName string) (*corev1.Secret, error) {
+func getOutputSecret(namespace string, clfClient client.Client, secretName string) (*corev1.Secret, error) {
 	secret := &corev1.Secret{}
-	namespacedName := types.NamespacedName{Name: secretName, Namespace: clusterlogging.Namespace}
+	namespacedName := types.NamespacedName{Name: secretName, Namespace: namespace}
 
 	log.V(3).Info("Getting object", "namespacedName", namespacedName, "object", secret)
 

@@ -12,8 +12,8 @@ import (
 )
 
 // NewDaemonSet stubs an instance of a daemonset
-func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
-	return factory.NewDaemonSet(daemonsetName, namespace, loggingComponent, component, podSpec)
+func NewDaemonSet(daemonsetName, namespace, loggingComponent, component, impl string, podSpec core.PodSpec) *apps.DaemonSet {
+	return factory.NewDaemonSet(daemonsetName, namespace, loggingComponent, component, impl, podSpec)
 }
 
 // GetDaemonSetList lists DS in namespace with given selector
@@ -41,6 +41,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveDaemonset(daemonsetName strin
 		clusterRequest.Cluster.Namespace,
 		daemonsetName,
 		daemonsetName,
+		"vector", //impl does not matter here
 		core.PodSpec{},
 	)
 

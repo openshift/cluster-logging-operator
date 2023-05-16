@@ -20,7 +20,7 @@ func (s SASL) Template() string {
 sasl_over_ssl %t
 `, s.SaslOverSSL)
 	if s.SaslKeyPassword != "" {
-		conf += `ssl_client_cert_key_password "#{File.exists?({{.SaslKeyPassword}}) ? open({{.SaslKeyPassword}},'r') do |f|f.read end : ''}"`
+		conf += "ssl_client_cert_key_password \"#{File.exists?({{.SaslKeyPassword}}) ? open({{.SaslKeyPassword}},'r') do |f|f.read end : ''}\"\n"
 	}
 	if s.ScramMechanism != "" {
 		conf += fmt.Sprintf(`scram_mechanism "%s"`, s.ScramMechanism)

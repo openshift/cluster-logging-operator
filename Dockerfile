@@ -1,13 +1,5 @@
-### This is a generated file from Dockerfile.in ###
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:rhel_8_golang_1.18)
-FROM registry.redhat.io/ubi8/go-toolset:1.18.9 AS builder
+FROM registry.redhat.io/ubi9/go-toolset:latest AS builder
 
-ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
-ENV OS_GIT_MAJOR=${CI_X_VERSION}
-ENV OS_GIT_MINOR=${CI_Y_VERSION}
-ENV OS_GIT_PATCH=${CI_Z_VERSION}
-ENV SOURCE_GIT_COMMIT=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT}
-ENV SOURCE_GIT_URL=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}
 ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
 ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-.}
 ENV APP_DIR=.
@@ -29,11 +21,9 @@ COPY ${APP_DIR}/internal ./internal
 USER 0
 RUN make build
 
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9)
-FROM quay.io/openshift/origin-cli:4.12 AS origincli
+FROM quay.io/openshift/origin-cli:4.13 AS origincli
 
-#@follow_tag(registry.redhat.io/ubi8:latest)
-FROM registry.redhat.io/ubi8:8.7
+FROM registry.redhat.io/ubi9/ubi:latest
 
 ENV APP_DIR=/opt/apt-root/src
 ENV SRC_DIR=./
@@ -73,9 +63,5 @@ LABEL \
         name="openshift-logging/cluster-logging-rhel8-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
-        io.openshift.build.commit.id=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
-        io.openshift.build.source-location=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL} \
-        io.openshift.build.commit.url=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}/commit/${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
-        version=${CI_CONTAINER_VERSION}
 
 

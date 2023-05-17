@@ -174,12 +174,12 @@ image: .target/image
 # - override the .cache dir for CI, where $HOME/.cache may not be writable.
 # - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
 export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
-lint:  $(GOLANGCI_LINT) lint-dockerfile
+lint:  $(GOLANGCI_LINT) lint-repo
 	$(GOLANGCI_LINT) run --color=never --timeout=3m $(if $(CI),,--fix)
 .PHONY: lint
 
-.PHONY: lint-dockerfile
-lint-dockerfile:
+.PHONY: lint-repo
+lint-repo:
 	@hack/run-linter
 
 .PHONY: fmt

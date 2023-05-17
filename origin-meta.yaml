@@ -1,7 +1,0 @@
-from:
-  - source: registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder\:v(?:[\.0-9\-]*).*
-    target:  registry.redhat.io/ubi8/go-toolset:1.18.9 AS builder
-  - source: registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9.0-([0-9]*).*
-    target: quay.io/openshift/origin-cli:4.12 AS origincli
-  - source: registry.redhat.io/ubi8:8.(\d)-([\.0-9])*
-    target: registry.redhat.io/ubi8:8.7

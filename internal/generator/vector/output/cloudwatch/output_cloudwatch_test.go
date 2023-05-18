@@ -781,6 +781,9 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			BeforeEach(func() {
 				output.Cloudwatch.GroupBy = loggingv1.LogGroupByLogType
 				output.Secret.Name = "my-secret"
+				output.TLS = &loggingv1.OutputTLSSpec{
+					InsecureSkipVerify: false,
+				}
 			})
 
 			It("should provide a valid config", func() {

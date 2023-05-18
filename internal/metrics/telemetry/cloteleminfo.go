@@ -23,6 +23,7 @@ const (
 	OutputTypeKafka          = v1.OutputTypeKafka
 	OutputTypeLoki           = v1.OutputTypeLoki
 	OutputTypeCloudwatch     = v1.OutputTypeCloudwatch
+	OutputTypeHttp           = v1.OutputTypeHttp
 
 	ManagedStatus = "managedStatus"
 	HealthStatus  = "healthStatus"
@@ -48,7 +49,15 @@ func NewTD() *TData {
 		CollectorErrorCount: utils.Float64Map{M: map[string]float64{"CollectorErrorCount": 0}},
 		CLFInfo:             utils.StringMap{M: map[string]string{HealthStatus: IsNotPresent, PipelineNo: IsNotPresent}},
 		CLFInputType:        utils.StringMap{M: map[string]string{InputNameApplication: IsNotPresent, InputNameAudit: IsNotPresent, InputNameInfrastructure: IsNotPresent}},
-		CLFOutputType:       utils.StringMap{M: map[string]string{OutputTypeDefault: IsNotPresent, OutputTypeElasticsearch: IsNotPresent, OutputTypeFluentdForward: IsNotPresent, OutputTypeSyslog: IsNotPresent, OutputTypeKafka: IsNotPresent, OutputTypeLoki: IsNotPresent, OutputTypeCloudwatch: IsNotPresent}},
+		CLFOutputType: utils.StringMap{M: map[string]string{
+			OutputTypeDefault:        IsNotPresent,
+			OutputTypeElasticsearch:  IsNotPresent,
+			OutputTypeFluentdForward: IsNotPresent,
+			OutputTypeSyslog:         IsNotPresent,
+			OutputTypeKafka:          IsNotPresent,
+			OutputTypeLoki:           IsNotPresent,
+			OutputTypeCloudwatch:     IsNotPresent,
+			OutputTypeHttp:           IsNotPresent}},
 	}
 }
 
@@ -80,7 +89,15 @@ var (
 	mCLFOutputType = NewInfoVec(
 		"log_forwarder_output_info",
 		"Clf output type specific metric",
-		[]string{OutputTypeDefault, OutputTypeElasticsearch, OutputTypeFluentdForward, OutputTypeSyslog, OutputTypeKafka, OutputTypeLoki, OutputTypeCloudwatch},
+		[]string{
+			OutputTypeDefault,
+			OutputTypeElasticsearch,
+			OutputTypeFluentdForward,
+			OutputTypeSyslog,
+			OutputTypeKafka,
+			OutputTypeLoki,
+			OutputTypeCloudwatch,
+			OutputTypeHttp},
 	)
 
 	MetricCLList = []prometheus.Collector{
@@ -142,7 +159,8 @@ func SetCLFMetrics(value float64) {
 		OutputTypeSyslog:         CLFOutputType[OutputTypeSyslog],
 		OutputTypeKafka:          CLFOutputType[OutputTypeKafka],
 		OutputTypeLoki:           CLFOutputType[OutputTypeLoki],
-		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch]}).Set(value)
+		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch],
+		OutputTypeHttp:           CLFOutputType[OutputTypeHttp]}).Set(value)
 }
 
 func NewInfoVec(metricname string, metrichelp string, labelNames []string) *prometheus.GaugeVec {

@@ -9,6 +9,39 @@ If CLO is upgraded before EO, it will try to create a Kibana CR but the Kibana C
 
 If this happens, ensure that EO has been updated to at least 4.5 as well so that the Kibana CRD will be created and then delete your running CLO pod. It will restart without the prior error messages and you will see a new Kibana instance roll out (it will be managed by EO instead).
 
+### Orphaned Resources
+Related Jira: https://issues.redhat.com/browse/LOG-3316
+
+When deleting the `openshift-logging` namespace directly, there will be orphaned resources namely `ClusterRoles(CR)`  and `ClusterRoleBindings(CRB)` related to logging.
+
+Originally they were related to `Loki` RBAC CR and CRBs
+
+List of `Loki` CRs and CRBS:
+- logging-application-logs-reader
+- logging-collector-logs-writer
+- logging-all-authenticated-application-logs-reader
+
+The above can be manually removed with
+`oc delete`
+
+Upon further inspection other CRs and CRBs are:
+- cluster-logging-metadata-reader
+- clusterloggings.logging.openshift.io-v1-view
+- clusterloggings.logging.openshift.io-v1-edit
+- clusterloggings.logging.openshift.io-v1-crdview
+- clusterloggings.logging.openshift.io-v1-admin
+- clusterlogforwarders.logging.openshift.io-v1-view
+- clusterlogforwarders.logging.openshift.io-v1-edit
+- clusterlogforwarders.logging.openshift.io-v1-crdview
+- clusterlogforwarders.logging.openshift.io-v1-admin
+
+These can be removed with the below commands.
+```
+oc delete --wait --ignore-not-found crd clusterloggings.logging.openshift.io
+oc delete --wait --ignore-not-found crd collectors.logging.openshift.io
+oc delete --wait --ignore-not-found crd clusterlogforwarders.logging.openshift.io
+```
+
 ## Frequently Asked Questions (FAQs)
 
 1. I've made changes to my `ClusterLogForwarder` (CLF) instance but the collectors are not redeployed/updated. Why is that?

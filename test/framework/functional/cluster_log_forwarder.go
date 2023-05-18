@@ -95,8 +95,8 @@ func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeCloudwatch)
 }
 
-func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
-	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
+func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *logging.OutputSpec)) *ClusterLogForwarderBuilder {
+	kafkaVisitor := func(output *logging.OutputSpec) {
 		output.Type = logging.OutputTypeKafka
 		output.URL = "https://localhost:9093"
 		output.OutputTypeSpec = logging.OutputTypeSpec{
@@ -107,7 +107,11 @@ func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
 		output.Secret = &logging.OutputSecretSpec{
 			Name: "kafka",
 		}
-	}, logging.OutputTypeKafka)
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(kafkaVisitor, logging.OutputTypeKafka)
 }
 
 func (p *PipelineBuilder) ToHttpOutput() *ClusterLogForwarderBuilder {

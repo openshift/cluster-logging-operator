@@ -118,7 +118,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 
 	/////////////////////////////////////////////
 	//step c
-	topics := []string{kafka.AppLogsTopic}
+	topics := []string{output.Kafka.Topic}
 
 	for _, topic := range topics {
 		containername := kafka.ConsumerNameForTopic(topic)

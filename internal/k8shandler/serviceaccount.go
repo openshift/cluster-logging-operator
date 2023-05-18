@@ -12,18 +12,19 @@ import (
 )
 
 // RemoveServiceAccount of given name and namespace
-func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccountName string) error {
+func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount() error {
+	saName := clusterRequest.ResourceNames.ServiceAccount
 
-	serviceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, serviceAccountName)
+	serviceAccount := runtime.NewServiceAccount(clusterRequest.Forwarder.Namespace, saName)
 
-	if serviceAccountName == constants.CollectorServiceAccountName {
+	if saName == constants.CollectorServiceAccountName {
 		// remove our finalizer from the list and update it.
 		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 	}
 
 	err := clusterRequest.Delete(serviceAccount)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v service account: %v", serviceAccountName, err)
+		return fmt.Errorf("Failure deleting %v service account: %v", saName, err)
 	}
 
 	return nil

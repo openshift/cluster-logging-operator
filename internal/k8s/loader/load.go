@@ -2,6 +2,8 @@ package loader
 
 import (
 	"context"
+	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -31,7 +33,7 @@ func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMi
 }
 
 // FetchClusterLogForwarder, migrate and validate
-func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, fetchClusterLogging func() logging.ClusterLogging) (forwarder logging.ClusterLogForwarder, err error, status *logging.ClusterLogForwarderStatus) {
+func FetchClusterLogForwarder(k8sClient client.Client, namespace, name, logstoreSecretName string, isClfReconcile bool, fetchClusterLogging func() logging.ClusterLogging) (forwarder logging.ClusterLogForwarder, err error, status *logging.ClusterLogForwarderStatus) {
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	proto := runtime.NewClusterLogForwarder(namespace, name)
 	if err = k8sClient.Get(context.TODO(), key, proto); err != nil {
@@ -39,17 +41,25 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, f
 			log.Error(err, "Encountered unexpected error getting", "forwarder", key)
 			return logging.ClusterLogForwarder{}, err, nil
 		}
-		// TODO: This will need to change for multi-CLF
-		// CASE: CL without CLF Result: 'default' a CLF
-		if namespace != constants.WatchNamespace && name != constants.SingletonName {
+
+		// CLF Custom resource deleted, needed to stop reconciliation
+		if isClfReconcile {
+			log.Info(fmt.Sprintf("clusterLogForwarder: %s/%s was deleted", namespace, name))
 			return logging.ClusterLogForwarder{}, err, nil
 		}
 	}
+
 	// Do not modify cached copy
 	forwarder = *proto.DeepCopy()
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras)
+	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, logstoreSecretName)
+
+	if fetchClusterLogging().Name == "" {
+		extras[constants.ClusterLoggingAvailable] = false
+	} else {
+		extras[constants.ClusterLoggingAvailable] = true
+	}
 
 	if err, status = clusterlogforwarder.Validate(forwarder, k8sClient, extras); err != nil {
 		return forwarder, err, status

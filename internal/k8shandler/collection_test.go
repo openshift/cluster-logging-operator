@@ -2,7 +2,9 @@ package k8shandler
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
@@ -22,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
+	cli "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -64,6 +66,13 @@ var _ = Describe("Reconciling", func() {
 				Labels: map[string]string{
 					constants.InjectTrustedCABundleLabel: "true",
 				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Name:       "instance",
+						APIVersion: "logging.openshift.io/v1",
+						Controller: utils.GetBool(true),
+					},
+				},
 			},
 			Data: map[string]string{
 				constants.TrustedCABundleKey: "",
@@ -81,7 +90,7 @@ var _ = Describe("Reconciling", func() {
 
 	Describe("Collection", func() {
 		var (
-			client         client.Client
+			client         cli.Client
 			clusterRequest *ClusterLoggingRequest
 			spec           loggingv1.ClusterLogForwarderSpec
 		)
@@ -126,13 +135,16 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:        client,
-					Cluster:       cluster,
-					EventRecorder: record.NewFakeRecorder(100),
-					Forwarder:     runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
+					Client:         client,
+					Cluster:        cluster,
+					EventRecorder:  record.NewFakeRecorder(100),
+					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
+					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceOwner:  utils.AsOwner(cluster),
+					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -191,13 +203,16 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:        client,
-					Cluster:       cluster,
-					EventRecorder: record.NewFakeRecorder(100),
-					Forwarder:     runtime.NewClusterLogForwarder("foo", "bar"),
+					Client:         client,
+					Cluster:        cluster,
+					EventRecorder:  record.NewFakeRecorder(100),
+					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, "bar"),
+					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceOwner:  utils.AsOwner(cluster),
+					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -221,6 +236,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
 			})
 		})
+
 		Context("when creating prometheus rule for collector", func() {
 			BeforeEach(func() {
 				client = fake.NewFakeClient( //nolint
@@ -233,10 +249,18 @@ var _ = Describe("Reconciling", func() {
 					Client:        client,
 					Cluster:       cluster,
 					EventRecorder: record.NewFakeRecorder(100),
-					Forwarder:     &loggingv1.ClusterLogForwarder{},
+					Forwarder: &loggingv1.ClusterLogForwarder{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      constants.SingletonName,
+							Namespace: constants.OpenshiftNS,
+						},
+					},
+					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceOwner:  utils.AsOwner(cluster),
+					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -269,6 +293,7 @@ var _ = Describe("Reconciling", func() {
 					fluentdCABundle,
 					namespace,
 				)
+
 				clusterRequest = &ClusterLoggingRequest{
 					Client:        client,
 					Cluster:       cluster,
@@ -276,8 +301,85 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     &loggingv1.ClusterLogForwarder{},
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
+			})
+		})
+
+		Context("when creating a ClusterLogForwarder not named instance", func() {
+			customCLFName := "custom-clf"
+			vectorSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      customCLFName,
+					Namespace: cluster.GetNamespace(),
+				},
+			}
+			vectorCABundle := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      customCLFName + "-trustbundle",
+					Namespace: cluster.GetNamespace(),
+					Labels: map[string]string{
+						constants.InjectTrustedCABundleLabel: "true",
+					},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Name:       customCLFName,
+							Kind:       "ClusterLogForwarder",
+							APIVersion: "logging.openshift.io/v1",
+							Controller: utils.GetBool(true),
+						},
+					},
+				},
+				Data: map[string]string{
+					constants.TrustedCABundleKey: "",
+				},
+			}
+
+			fwder := runtime.NewClusterLogForwarder(constants.WatchNamespace, customCLFName)
+
+			var getObject = func(objName string, obj cli.Object) error {
+				nsName := types.NamespacedName{Name: objName, Namespace: cluster.GetNamespace()}
+				return client.Get(context.TODO(), nsName, obj)
+			}
+
+			BeforeEach(func() {
+				client = fake.NewFakeClient( //nolint
+					cluster,
+					vectorSecret,
+					vectorCABundle,
+					namespace,
+				)
+				clusterRequest = &ClusterLoggingRequest{
+					Client:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
+					Forwarder:     fwder,
+					ResourceNames: factory.GenerateResourceNames(customCLFName, constants.OpenshiftNS),
+					ResourceOwner: utils.AsOwner(fwder),
+					CollectionSpec: &loggingv1.CollectionSpec{
+						Type: loggingv1.LogCollectionTypeVector,
+					},
+				}
+				extras[constants.MigrateDefaultOutput] = true
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				clusterRequest.Forwarder.Spec = spec
+			})
+			It("should have appropriately named resources", func() {
+				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+
+				// Service Account
+				account := &corev1.ServiceAccount{}
+				Expect(getObject(customCLFName, account)).Should(Succeed())
+
+				// Daemonset
+				ds := &appsv1.DaemonSet{}
+				Expect(getObject(customCLFName, ds)).Should(Succeed())
+
+				// Service account token
+				saSecret := &corev1.Secret{}
+				Expect(getObject(customCLFName+"-token", saSecret)).Should(Succeed())
+
 			})
 		})
 	})

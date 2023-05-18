@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	util "github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.Da
 		}
 		same := false
 
-		if same, updateReason = daemonsets.AreSame(current, desired); same {
+		if same, updateReason = daemonsets.AreSame(current, desired); same && util.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
 			log.V(3).Info("DaemonSet are the same skipping update")
 			return nil
 		}

@@ -2,9 +2,9 @@ package k8shandler
 
 import (
 	"errors"
-	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -39,59 +39,20 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
-	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
-		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
-		return "", nil
-	}
-	switch clusterRequest.Cluster.Spec.Collection.Type {
-	case logging.LogCollectionTypeFluentd:
-		break
-	case logging.LogCollectionTypeVector:
-		break
-	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Type)
-	}
-
-	if clusterRequest.Forwarder == nil {
-		clusterRequest.Forwarder = &logging.ClusterLogForwarder{}
-	}
-
-	// Set the output secrets if any
-	clusterRequest.SetOutputSecrets()
-
-	tokenSecret, err := clusterRequest.getLogCollectorServiceAccountTokenSecret()
-	if err == nil {
-		clusterRequest.OutputSecrets[constants.LogCollectorToken] = tokenSecret
-	}
 
 	op := generator.Options{}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
 	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 
-	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
-	g := forwardergenerator.New(collectorType)
-	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Namespace, op)
+	g := forwardergenerator.New(clusterRequest.CollectionSpec.Type)
+	generatedConfig, err := g.GenerateConf(clusterRequest.CollectionSpec, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Namespace, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
-		if updateError := clusterRequest.UpdateCondition(
-			logging.CollectorDeadEnd,
-			"Collectors are defined but there is no defined LogStore or LogForward destinations",
-			"No defined logstore destination",
-			corev1.ConditionTrue,
-		); updateError != nil {
-			log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
-		}
 		return "", err
 	}
-	// else
-	err = clusterRequest.UpdateCondition(
-		logging.CollectorDeadEnd,
-		"",
-		"",
-		corev1.ConditionFalse,
-	)
+
 	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
 	return generatedConfig, err
 }
@@ -109,17 +70,18 @@ func (clusterRequest *ClusterLoggingRequest) SetOutputSecrets() {
 	}
 }
 
-func (clusterRequest *ClusterLoggingRequest) getLogCollectorServiceAccountTokenSecret() (*corev1.Secret, error) {
+func (clusterRequest *ClusterLoggingRequest) GetLogCollectorServiceAccountTokenSecret() (*corev1.Secret, error) {
+	colTokenName := clusterRequest.ResourceNames.ServiceAccountTokenSecret
 	s := &corev1.Secret{}
-	log.V(9).Info("Fetching Secret", "Name", constants.LogCollectorToken)
-	if err := clusterRequest.Get(constants.LogCollectorToken, s); err != nil {
-		log.V(3).Error(err, "Could not find Secret", "Name", constants.LogCollectorToken)
+	log.V(9).Info("Fetching Secret", "Name", colTokenName)
+	if err := clusterRequest.Get(colTokenName, s); err != nil {
+		log.V(3).Error(err, "Could not find Secret", "Name", colTokenName)
 		return nil, errors.New("Could not retrieve ServiceAccount token")
 	}
 
 	if _, ok := s.Data[constants.TokenKey]; !ok {
 		log.V(9).Info("did not find token in secret", "Name", s.Name)
-		return nil, errors.New("logcollector secret is missing token")
+		return nil, errors.New(colTokenName + " secret is missing token")
 	}
 
 	return s, nil

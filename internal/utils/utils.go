@@ -77,6 +77,10 @@ func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReferenc
 	return false
 }
 
+func HasSameOwner(curr []metav1.OwnerReference, desired []metav1.OwnerReference) bool {
+	return reflect.DeepEqual(curr, desired)
+}
+
 // CalculateMD5Hash returns a MD5 hash of the give text
 func CalculateMD5Hash(text string) (string, error) {
 	// #nosec G401

@@ -22,8 +22,12 @@ var (
 func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	el := []generator.Element{}
 	userDefined := spec.InputMap()
-	for _, p := range spec.Pipelines {
+	for i, p := range spec.Pipelines {
 		inputs := []string{}
+		// Sanitize pipeline name and persist it for config generation
+		p.Name = helpers.FormatComponentID(p.Name)
+		spec.Pipelines[i].Name = p.Name
+
 		for _, inputName := range p.InputRefs {
 			if _, ok := userDefined[inputName]; ok {
 				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))

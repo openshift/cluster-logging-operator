@@ -2,7 +2,6 @@ package gcl
 
 import (
 	"fmt"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
@@ -65,7 +64,7 @@ node_name = "{{"{{hostname}}"}}"
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
+			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	if o.GoogleCloudLogging == nil {

@@ -378,7 +378,7 @@ type = "route"
 inputs = ["application"]
 route.mytestapp = '.kubernetes.namespace_name == "test-ns"'
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["route_application_logs.mytestapp","infrastructure","audit"]
 source = '''
@@ -387,7 +387,7 @@ source = '''
 
 [transforms.kafka_receiver_dedot]
 type = "lua"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -803,7 +803,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
@@ -813,7 +813,7 @@ source = '''
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
 type = "remap"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -925,7 +925,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 # Set Elasticsearch index
 [transforms.es_2_add_es_index]
 type = "remap"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -1410,7 +1410,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
@@ -1420,7 +1420,7 @@ source = '''
 # Set Elasticsearch index
 [transforms.default_add_es_index]
 type = "remap"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -1533,7 +1533,7 @@ ca_file = "/var/run/ocp-collector/secrets/collector/ca-bundle.crt"
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
 type = "remap"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -1651,7 +1651,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 # Set Elasticsearch index
 [transforms.es_2_add_es_index]
 type = "remap"
-inputs = ["pipeline"]
+inputs = ["pipeline_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -2104,7 +2104,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline_with_space]
+[transforms.pipeline_with_space_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
@@ -2114,7 +2114,7 @@ source = '''
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
 type = "remap"
-inputs = ["pipeline_with_space"]
+inputs = ["pipeline_with_space_user_defined"]
 source = '''
   index = "default"
   if (.log_type == "application"){

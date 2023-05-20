@@ -65,7 +65,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
@@ -127,14 +127,14 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline1]
+[transforms.pipeline1_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
   .
 '''
 
-[transforms.pipeline2]
+[transforms.pipeline2_user_defined]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -179,7 +179,7 @@ type = "route"
 inputs = ["application"]
 route.myapplogs = '(.kubernetes.namespace_name == "test-ns1") || (.kubernetes.namespace_name == "test-ns2")'
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = '''
@@ -230,7 +230,7 @@ type = "route"
 inputs = ["application"]
 route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.namespace_name == "myapp2")) && ((.kubernetes.labels.key1 == "value1") && (.kubernetes.labels.key2 == "value2"))'
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = '''
@@ -274,7 +274,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure"]
 source = '''
@@ -316,7 +316,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure"]
 source = '''
@@ -364,7 +364,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.detect_exceptions_pipeline]
+[transforms.detect_exceptions_pipeline_user_defined]
 type = "detect_exceptions"
 inputs = ["application","infrastructure"]
 languages = ["All"]
@@ -372,9 +372,64 @@ group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.contai
 expire_after_ms = 2000
 multiline_flush_interval_ms = 1000
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
-inputs = ["detect_exceptions_pipeline"]
+inputs = ["detect_exceptions_pipeline_user_defined"]
+source = '''
+  .
+'''
+`,
+		}),
+		Entry("pipeline with spaces are sanitized", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit,
+						},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline with space",
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube")'
+
+# Set log_type to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = '''
+  .log_type = "application"
+'''
+
+# Set log_type to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = '''
+  .log_type = "infrastructure"
+'''
+
+# Set log_type to "audit"
+[transforms.audit]
+type = "remap"
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
+  .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+'''
+
+[transforms.pipeline_with_space_user_defined]
+type = "remap"
+inputs = ["application","infrastructure","audit"]
 source = '''
   .
 '''

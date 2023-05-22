@@ -243,7 +243,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bo
 	}
 
 	// TODO Drop migration upon introduction of v2
-	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
+	clusterLogging.Spec = migrations.MigrateClusterLogging(clusterLogging.Spec)
 
 	return clusterLogging, nil
 }

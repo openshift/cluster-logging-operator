@@ -2,12 +2,21 @@ package migrations
 
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
+
+func MigrateClusterLogging(spec loggingv1.ClusterLoggingSpec) loggingv1.ClusterLoggingSpec {
+	spec = MigrateCollectionSpec(spec)
+	if spec.Visualization != nil {
+		*spec.Visualization = MigrateVisualizationSpec(*spec.Visualization)
+	}
+
+	return spec
+}
 
 // MigrateCollectionSpec moves fluentd tuning and collection.logs.* to collection for
 // spec that is common to all collectors
-func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggingSpec {
+func MigrateCollectionSpec(spec loggingv1.ClusterLoggingSpec) loggingv1.ClusterLoggingSpec {
 	log.V(3).Info("Migrating collectionSpec for reconciliation call", "spec", spec)
 	if spec.Collection == nil {
 		return spec
@@ -42,4 +51,30 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 
 	log.V(3).Info("Migrated collectionSpec for reconciliation", "spec", spec)
 	return spec
+}
+
+func MigrateVisualizationSpec(visSpec loggingv1.VisualizationSpec) loggingv1.VisualizationSpec {
+	if visSpec.Type == loggingv1.VisualizationTypeKibana {
+		visSpec = MigrateKibanaSpecs(visSpec)
+	}
+	return visSpec
+}
+
+func MigrateKibanaSpecs(visSpec loggingv1.VisualizationSpec) loggingv1.VisualizationSpec {
+	if visSpec.Kibana == nil {
+		log.V(2).Info("kibana visualization specs empty")
+		return visSpec
+	}
+
+	log.V(3).Info("Migrating kibana visualization specs")
+	// Migrate nodeSelector and Tolerations
+	if visSpec.Kibana.NodeSelector != nil {
+		visSpec.NodeSelector = visSpec.Kibana.NodeSelector
+	}
+
+	if visSpec.Kibana.Tolerations != nil {
+		visSpec.Tolerations = visSpec.Kibana.Tolerations
+	}
+
+	return visSpec
 }

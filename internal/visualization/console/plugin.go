@@ -2,6 +2,7 @@ package console
 
 import (
 	"context"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
@@ -9,9 +10,10 @@ import (
 )
 
 // ReconcilePlugin reconciles the console plugin to expose log querying of storage
-func ReconcilePlugin(k8sClient client.Client, logStore *logging.LogStoreSpec, owner client.Object, clusterVersion string, consoleSpec *logging.OCPConsoleSpec) error {
+func ReconcilePlugin(k8sClient client.Client, logStore *logging.LogStoreSpec, owner client.Object, clusterVersion string, visSpec *logging.VisualizationSpec) error {
+
 	lokiService := lokistack.LokiStackGatewayService(logStore)
-	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, FeaturesForOCP(clusterVersion)), consoleSpec)
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, FeaturesForOCP(clusterVersion)), visSpec)
 	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())

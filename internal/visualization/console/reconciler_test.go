@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +41,10 @@ func assertConfig(t *testing.T, r *Reconciler) {
 	d := &r.deployment
 	if assert.NoError(t, c.Get(ctx, client.ObjectKeyFromObject(d), d)) {
 		assert.Equal(t, r.Image, d.Spec.Template.Spec.Containers[0].Image)
+		if r.visSpec != nil {
+			assert.Equal(t, r.visSpec.NodeSelector, d.Spec.Template.Spec.NodeSelector)
+			assert.Equal(t, r.visSpec.Tolerations, d.Spec.Template.Spec.Tolerations)
+		}
 	}
 
 	for _, o := range []client.Object{&r.deployment, &r.service, &r.configMap} {
@@ -114,6 +120,21 @@ func TestVerifyResources(t *testing.T) {
 func TestReconcileCreatesObjects(t *testing.T) {
 	c := fakeClient()
 	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}), nil)
+	require.NoError(t, r.Reconcile(ctx))
+	assertConfig(t, r)
+}
+
+func TestReconcileCreatesObjectsWithNodeSelectorTolerations(t *testing.T) {
+	c := fakeClient()
+	visSpec := &loggingv1.VisualizationSpec{
+		NodeSelector: map[string]string{"testKey": "testVal"},
+		Tolerations: []corev1.Toleration{{
+			Key:      "testToleration",
+			Operator: corev1.TolerationOpExists,
+			Effect:   corev1.TaintEffectNoSchedule,
+		}},
+	}
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}), visSpec)
 	require.NoError(t, r.Reconcile(ctx))
 	assertConfig(t, r)
 }

@@ -17,9 +17,11 @@ var _ = Describe("#NewDaemonSet", func() {
 			"logging-infra": "thecomponent",
 		}
 		expLabels = map[string]string{
-			"provider":       "openshift",
-			"component":      "thecomponent",
-			"logging-infra":  "thecomponent",
+			"provider":                           "openshift",
+			"component":                          "thecomponent",
+			"logging-infra":                      "thecomponent",
+			"pod-security.kubernetes.io/enforce": "privileged",
+			"security.openshift.io/scc.podSecurityLabelSync": "false",
 			"implementation": "collectorImpl",
 		}
 	)

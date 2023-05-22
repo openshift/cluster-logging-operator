@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
 	"strings"
 
@@ -66,17 +67,19 @@ var (
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec)
+type CommonLabelVisitor func(o runtime.Object)
 
 type Factory struct {
-	ConfigHash    string
-	CollectorSpec logging.CollectionSpec
-	CollectorType logging.LogCollectionType
-	ClusterID     string
-	ImageName     string
-	TrustedCAHash string
-	Visit         Visitor
-	Secrets       map[string]*v1.Secret
-	ForwarderSpec logging.ClusterLogForwarderSpec
+	ConfigHash             string
+	CollectorSpec          logging.CollectionSpec
+	CollectorType          logging.LogCollectionType
+	ClusterID              string
+	ImageName              string
+	TrustedCAHash          string
+	Visit                  Visitor
+	Secrets                map[string]*v1.Secret
+	ForwarderSpec          logging.ClusterLogForwarderSpec
+	CommonLabelInitializer CommonLabelVisitor
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -104,7 +107,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec) *Factory {
+func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string) *Factory {
 	factory := &Factory{
 		ClusterID:     clusterID,
 		ConfigHash:    confHash,
@@ -114,6 +117,9 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		Visit:         fluentd.CollectorVisitor,
 		Secrets:       secrets,
 		ForwarderSpec: forwarderSpec,
+		CommonLabelInitializer: func(o runtime.Object) {
+			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName)
+		},
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
@@ -124,7 +130,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec)
+	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec,  f.CommonLabelInitializer)
 	return ds
 }
 

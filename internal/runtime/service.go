@@ -30,6 +30,16 @@ func (builder *ServiceBuilder) AddServicePort(port int32, targetPort int) *Servi
 	return builder
 }
 
+func (builder *ServiceBuilder) AddLabel(key, val string) *ServiceBuilder {
+	builder.Service.Labels[key] = val
+	return builder
+}
+
+func (builder *ServiceBuilder) WithServicePort(servicePorts []corev1.ServicePort) *ServiceBuilder {
+	builder.Service.Spec.Ports = servicePorts
+	return builder
+}
+
 // SvcClusterLocal returns the svc.cluster.local hostname for name and namespace.
 func SvcClusterLocal(namespace, name string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace)

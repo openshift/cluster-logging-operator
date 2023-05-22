@@ -3,6 +3,7 @@ package runtime
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // NewNamespace returns a corev1.Namespace with name.
@@ -13,12 +14,12 @@ func NewNamespace(name string) *corev1.Namespace {
 }
 
 // NewConfigMap returns a corev1.ConfigMap with namespace, name and data.
-func NewConfigMap(namespace, name string, data map[string]string) *corev1.ConfigMap {
+func NewConfigMap(namespace, name string, data map[string]string, visitors ...func(o runtime.Object)) *corev1.ConfigMap {
 	if data == nil {
 		data = map[string]string{}
 	}
 	cm := &corev1.ConfigMap{Data: data}
-	Initialize(cm, namespace, name)
+	Initialize(cm, namespace, name, visitors...)
 	return cm
 }
 
@@ -30,9 +31,9 @@ func NewPod(namespace, name string, containers ...corev1.Container) *corev1.Pod 
 }
 
 // NewService returns a corev1.Service with namespace and name.
-func NewService(namespace, name string) *corev1.Service {
+func NewService(namespace, name string, visitors ...func(o runtime.Object)) *corev1.Service {
 	svc := &corev1.Service{}
-	Initialize(svc, namespace, name)
+	Initialize(svc, namespace, name, visitors...)
 	return svc
 }
 
@@ -44,18 +45,18 @@ func NewServiceAccount(namespace, name string) *corev1.ServiceAccount {
 }
 
 // NewSecret returns a corev1.Secret with namespace and name.
-func NewSecret(namespace, name string, data map[string][]byte) *corev1.Secret {
+func NewSecret(namespace, name string, data map[string][]byte, visitors ...func(o runtime.Object)) *corev1.Secret {
 	if data == nil {
 		data = map[string][]byte{}
 	}
 	s := &corev1.Secret{Data: data}
-	Initialize(s, namespace, name)
+	Initialize(s, namespace, name, visitors...)
 	return s
 }
 
 // NewDaemonSet returns a daemon set.
-func NewDaemonSet(namespace, name string) *appsv1.DaemonSet {
+func NewDaemonSet(namespace, name string, visitors ...func(o runtime.Object)) *appsv1.DaemonSet {
 	ds := &appsv1.DaemonSet{}
-	Initialize(ds, namespace, name)
+	Initialize(ds, namespace, name, visitors...)
 	return ds
 }

@@ -2,8 +2,10 @@ package runtime
 
 import (
 	"fmt"
-
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/version"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,8 +88,23 @@ func Labels(o runtime.Object) map[string]string {
 	return l
 }
 
+// SetCommonLabels initialize given object labels with K8s Common labels
+// These are recommended labels. They make it easier to manage applications but aren't required for any core tooling.
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
+func SetCommonLabels(object runtime.Object, collectorType, instanceName string) {
+	common := map[string]string{
+		constants.LabelK8sName:      collectorType,
+		constants.LabelK8sInstance:  instanceName,
+		constants.LabelK8sComponent: constants.CollectorName,
+		constants.LabelK8sPartOf:    constants.ClusterLogging,
+		constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+		constants.LabelK8sVersion:   version.Version,
+	}
+	utils.AddLabels(Meta(object), common)
+}
+
 // Initialize sets name, namespace and type metadata deduced from Go type.
-func Initialize(o runtime.Object, namespace, name string) {
+func Initialize(o runtime.Object, namespace, name string, visitors ...func(o runtime.Object)) {
 	m := Meta(o)
 	m.SetNamespace(namespace)
 	m.SetName(name)
@@ -96,6 +113,9 @@ func Initialize(o runtime.Object, namespace, name string) {
 		"pod-security.kubernetes.io/enforce":             "privileged",
 		"security.openshift.io/scc.podSecurityLabelSync": "false",
 	})
+	for _, visitor := range visitors {
+		visitor(o)
+	}
 }
 
 // ServiceDomainName returns "name.namespace.svc".

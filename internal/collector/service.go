@@ -13,7 +13,7 @@ import (
 )
 
 // ReconcileService reconciles the service specifically for the collector that exposes the collector metrics
-func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileService(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
 	desired := factory.NewService(
 		constants.CollectorName,
 		namespace,
@@ -30,6 +30,7 @@ func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespac
 				Name:       ExporterPortName,
 			},
 		},
+		f.CommonLabelInitializer,
 	)
 
 	desired.Annotations = map[string]string{

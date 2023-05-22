@@ -25,6 +25,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 				"run.sh":              fluentd.RunScript,
 				"cleanInValidJson.rb": fluentd.CleanInValidJson,
 			},
+			f.CommonLabelInitializer,
 		)
 		utils.AddOwnerRefToObject(collectorConfigMap, owner)
 		return reconcile.Configmap(k8sClient, k8sClient, collectorConfigMap)
@@ -34,7 +35,9 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			constants.CollectorConfigSecretName,
 			map[string][]byte{
 				"vector.toml": []byte(collectorConfig),
-			})
+			},
+			f.CommonLabelInitializer)
+
 		utils.AddOwnerRefToObject(secret, owner)
 		return reconcile.Secret(er, k8sClient, secret)
 	}

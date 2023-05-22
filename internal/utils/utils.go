@@ -499,3 +499,20 @@ func ToJsonLogs(logs []string) string {
 	}
 	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
 }
+
+func AddLabels(object metav1.Object, labels map[string]string) {
+	existed := object.GetLabels()
+	for key, val := range existed {
+		labels[key] = val
+	}
+	object.SetLabels(labels)
+}
+
+func GetCollectorName(collectorType logging.LogCollectionType) string {
+	if collectorType == logging.LogCollectionTypeFluentd {
+		return constants.FluentdName
+	} else if collectorType == logging.LogCollectionTypeVector {
+		return constants.VectorName
+	}
+	return "unknown"
+}

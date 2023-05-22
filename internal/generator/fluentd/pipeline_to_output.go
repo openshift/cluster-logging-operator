@@ -44,6 +44,7 @@ const (
   <parse>
     @type json
     json_parser oj
+    keep_time_key true
   </parse>
 </filter>
 {{end}}`

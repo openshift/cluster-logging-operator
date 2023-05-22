@@ -166,7 +166,6 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
 	It("should not parse invalid json message into structured", func() {
-		// This test case is disabled to fix the behavior of invalid json parsing
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -229,8 +228,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		Expect(logs[0].Message).To(BeEmpty())
 	})
 
-	It("should not parse raise warn message in collector container : LOG-1806", func() {
-		// This test case is disabled to fix the behavior of invalid json parsing
+	It("should not raise parser error message in collector container : LOG-1806", func() {
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		Expect(framework.Deploy()).To(BeNil())
 

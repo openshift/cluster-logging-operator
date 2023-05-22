@@ -45,7 +45,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 
 		// Write log line as input to fluentd
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 		// Read line from Log Forward output
 		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")

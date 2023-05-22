@@ -280,9 +280,10 @@ type PipelineSpec struct {
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// Name is optional, but must be unique in the `pipelines` list if provided.
+	// Name must be unique in the `pipelines` list
 	//
-	// +optional
+	// 	+kubebuilder:validation:minLength:=1
+	//	+required
 	Name string `json:"name,omitempty"`
 
 	// Parse enables parsing of log entries into structured logs

@@ -248,7 +248,7 @@ PipelinesSpec link a set of inputs to a set of outputs.
 |detectMultilineErrors|bool|  *(optional)* DetectMultilineErrors enables multiline error detection of container logs
 |inputRefs|array|  InputRefs lists the names (`input.name`) of inputs to this pipeline.
 |labels|object|  *(optional)* Labels applied to log records passing through this pipeline.
-|name|string|  *(optional)* Name is optional, but must be unique in the `pipelines` list if provided.
+|name|string|  Name must be unique in the `pipelines` list
 |outputRefs|array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 |parse|string|  *(optional)* Parse enables parsing of log entries into structured logs
 |======================

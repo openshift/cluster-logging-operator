@@ -570,8 +570,7 @@ spec:
                         in the log record.
                       type: object
                     name:
-                      description: Name is optional, but must be unique in the `pipelines`
-                        list if provided.
+                      description: Name must be unique in the `pipelines` list
                       type: string
                     outputRefs:
                       description: "OutputRefs lists the names (`output.name`) of

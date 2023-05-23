@@ -2,7 +2,7 @@ package kafka
 
 const (
 	SASLMechanismPlain = "PLAIN"
-	SASLMechamisnSSL   = "SCRAM-SHA-256"
+	SASLMechanismSSL   = "SCRAM-SHA-256"
 )
 
 type SASL struct {

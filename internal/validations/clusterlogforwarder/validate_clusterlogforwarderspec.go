@@ -257,27 +257,50 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		conds.Set(output.Name, c)
 		return false
 	}
-	if output.URL == "" {
-		// Some output types allow a missing URL
-		// TODO (alanconway) move output-specific valiation to the output implementation.
-		if output.Type == loggingv1.OutputTypeKafka || output.Type == loggingv1.OutputTypeCloudwatch ||
-			output.Type == loggingv1.OutputTypeGoogleCloudLogging || output.Type == loggingv1.OutputTypeLoki {
-			return true
-		} else {
-			return fail(CondInvalid("URL is required for output type %v", output.Type))
+
+	if output.Type == loggingv1.OutputTypeKafka {
+		brokerUrls := []string{}
+		if output.URL != "" {
+			brokerUrls = append(brokerUrls, output.URL)
 		}
-	}
-	u, err := url.Parse(output.URL)
-	if err != nil {
-		return fail(CondInvalid("invalid URL: %v", err))
-	}
-	if err := url.CheckAbsolute(u); err != nil {
-		return fail(CondInvalid("invalid URL: %v", err))
-	}
-	if output.Type == loggingv1.OutputTypeSyslog {
-		scheme := strings.ToLower(u.Scheme)
-		if !(scheme == `tcp` || scheme == `tls` || scheme == `udp`) {
-			return fail(CondInvalid("invalid URL scheme: %v", u.Scheme))
+		if output.Kafka != nil { // Add optional extra broker URLs.
+			brokerUrls = append(brokerUrls, output.Kafka.Brokers...)
+		}
+		if len(brokerUrls) == 0 {
+			return fail(CondInvalid("no broker URLs specified"))
+		}
+		for _, b := range brokerUrls {
+			u, err := url.Parse(b)
+			if err == nil {
+				err = url.CheckAbsolute(u)
+			}
+			if err != nil {
+				return fail(CondInvalid("invalid URL: %v", err))
+			}
+		}
+	} else {
+		if output.URL == "" {
+			// Some output types allow a missing URL
+			// TODO (alanconway) move output-specific valiation to the output implementation.
+			if output.Type == loggingv1.OutputTypeCloudwatch ||
+				output.Type == loggingv1.OutputTypeGoogleCloudLogging || output.Type == loggingv1.OutputTypeLoki {
+				return true
+			} else {
+				return fail(CondInvalid("URL is required for output type %v", output.Type))
+			}
+		}
+		u, err := url.Parse(output.URL)
+		if err == nil {
+			err = url.CheckAbsolute(u)
+		}
+		if err != nil {
+			return fail(CondInvalid("invalid URL: %v", err))
+		}
+		if output.Type == loggingv1.OutputTypeSyslog {
+			scheme := strings.ToLower(u.Scheme)
+			if !(scheme == `tcp` || scheme == `tls` || scheme == `udp`) {
+				return fail(CondInvalid("invalid URL scheme: %v", u.Scheme))
+			}
 		}
 	}
 	return true

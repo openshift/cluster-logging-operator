@@ -171,9 +171,11 @@ type Kafka struct {
 	// +optional
 	Topic string `json:"topic,omitempty"`
 
-	// Brokers specifies the list of brokers
-	// to register in addition to the main output URL
-	// on initial connect to enhance reliability.
+	// Brokers specifies the list of broker endpoints of a Kafka cluster.
+	// The list represents only the initial set used by the collector's Kafka client for the
+	// first connection only. The collector's Kafka client fetches constantly an updated list
+	// from Kafka. These updates are not reconciled back to the collector configuration.
+	// If none provided the target URL from the OutputSpec is used as fallback.
 	//
 	// +optional
 	Brokers []string `json:"brokers,omitempty"`

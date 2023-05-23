@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -161,7 +160,7 @@ func HTTPError(resp *http.Response) error {
 	if resp.Status[0] == '2' {
 		return nil
 	}
-	msg, _ := ioutil.ReadAll(resp.Body)
+	msg, _ := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
 	if txt, err := HTMLBodyText(bytes.NewReader(msg)); err == nil {
 		msg = txt

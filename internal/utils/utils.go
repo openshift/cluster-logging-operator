@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -188,7 +187,7 @@ func GetFileContents(filePath string) []byte {
 		return nil
 	}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
+	contents, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		log.Error(err, "Operator unable to read local file to get contents")
 		return nil
@@ -246,7 +245,7 @@ func GetWorkingDirFilePath(toFile string) string {
 
 func WriteToWorkingDirFile(toFile string, value []byte) error {
 
-	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
+	if err := os.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
 		return fmt.Errorf("Unable to write to working dir: %v", err)
 	}
 

@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -46,8 +45,8 @@ var _ = Describe("telemetry", func() {
 	Describe("Testing ServiceMonitor Spec", func() {
 		Context("With config/prometheus/servicemonitor.yaml", func() {
 			It("Should generate bundle/manifests/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml spec correctly", func() {
-				sm, _ := ioutil.ReadFile(smYamlFile)
-				msm, _ := ioutil.ReadFile(manifestFile)
+				sm, _ := os.ReadFile(smYamlFile)
+				msm, _ := os.ReadFile(manifestFile)
 				Expect(sm).To(MatchYAML(msm))
 			})
 			It("Info metric must have version, managedStatus, healthStatus as default values", func() {

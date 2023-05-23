@@ -162,7 +162,7 @@ clean:
 	find -name .kube | xargs rm -rf
 
 spotless: clean
-	go clean -cache -testcache ./...
+	go clean -cache -testcache
 
 .PHONY: image
 image: .target/image
@@ -272,6 +272,7 @@ test-forwarder-generator: bin/forwarder-generator
 
 .PHONY: test-functional-benchmarker
 test-functional-benchmarker: bin/functional-benchmarker
+	@rm -rf /tmp/benchmark-test
 	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp/benchmark-test 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit

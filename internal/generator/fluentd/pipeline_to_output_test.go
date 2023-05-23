@@ -162,6 +162,7 @@ var _ = Describe("Testing Config Generation", func() {
     <parse>
       @type json
       json_parser oj
+      keep_time_key true
     </parse>
   </filter>
   

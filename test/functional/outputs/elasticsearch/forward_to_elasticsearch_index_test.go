@@ -29,6 +29,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		jsonLog            = `
            {
 			"host":"localhost",
+			"time":"2023-05-01 12:12:12.3958",
 			"labels": {
 			  "client": "unknown",
 			  "testname" : "json parsing"
@@ -47,6 +48,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		outputLogTemplate.ViaqIndexName = "app-write"
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 	})
+
 	AfterEach(func() {
 		framework.Cleanup()
 	})
@@ -80,7 +82,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			return nil
 		}
 
-		It("should send logs spec'd by structuredTypeName", func() {
+		It("should send logs spec'd by structuredTypeName and keep the time field in structured object", func() {
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withStructuredTypeName,
@@ -104,7 +106,10 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
 			outputLogTemplate.Message = ""
+			outputLogTemplate.Structured = map[string]interface{}{"*": "*"}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+			// Changing fluentd config to keep the time key if it exists in the message (matches vector)
+			Expect(outputTestLog).To(HaveField("Structured", HaveKey("time")))
 		})
 		It("should not send logs spec'd by structuredTypeName for infrastructure sources", func() {
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, client.UseInfraNamespaceTestOption)
@@ -216,6 +221,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			outputLogTemplate.Structured = map[string]interface{}{"*": "*"}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
+
 		Context("and enabling sending each container log to different indices", func() {
 			It("should send one container's log as defined by the annotation and the other defined by structuredTypeKey", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -256,13 +262,11 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 					// Compare to expected template
 					Expect(logs[0].Kubernetes.ContainerName).To(Equal(containerName), "Exp. to find a log entry for container", containerName, "in index", index)
 				}
-
 			})
 		})
 
 		Context("if structured type name/key not configured", func() {
-
-			It("should send logs to app-write", func() {
+			It("should send logs to app-write and not parse", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToElasticSearchOutput()
@@ -282,13 +286,14 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
+				// expect structured to be empty and message not empty
+				outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
-				Expect(outputTestLog.Structured).To(BeEmpty())
 			})
 		})
 
 		Context("if elasticsearch structuredTypeKey wrongly configured", func() {
-			It("should send logs to app-write", func() {
+			It("should send logs to app-write and remove structured fields", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
@@ -314,12 +319,14 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
+				// expect structured to be empty and message not empty
+				outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})
 
 		Context("if json parsing failed", func() {
-			It("should send logs to app-write", func() {
+			It("should send logs to app-write and remove structured fields", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(withK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
@@ -329,10 +336,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Write log line as input to fluentd
 				invalidJson := `{"key":"v}`
 				timestamp := "2020-11-04T18:13:59.061892+00:00"
-				//expectedMessage := invalidJson
 				applicationLogLine := functional.NewCRIOLogMessage(timestamp, invalidJson, false)
 				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
-
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 				raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, AppIndex)
 				Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -345,6 +350,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
+				// expect structured to be empty and message not empty
 				outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})

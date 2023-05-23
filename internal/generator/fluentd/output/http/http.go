@@ -132,7 +132,7 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 		if security.HasPassphrase(secret) {
 			p := Passphrase{
-				Passphrase: security.GetFromSecret(secret, constants.Passphrase),
+				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
 			}
 			conf = append(conf, p)
 		}

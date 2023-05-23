@@ -115,8 +115,13 @@ else
     echo "Requested buffer size per output $TOTAL_LIMIT_SIZE_PER_BUFFER for $NUM_OUTPUTS buffers exceeds maximum available size  $TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER bytes per output"
     TOTAL_LIMIT_SIZE_PER_BUFFER=$TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER
 fi
-echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $TOTAL_LIMIT_SIZE_PER_BUFFER bytes"
 export TOTAL_LIMIT_SIZE_PER_BUFFER
+
+total_limit_size=$(awk '/total_limit_size/{print $2; exit}' $FLUENT_CONF)
+if [[ -z "$total_limit_size" ]] || [[ "$total_limit_size" == *TOTAL_LIMIT_SIZE_PER_BUFFER* ]]; then
+  total_limit_size="$TOTAL_LIMIT_SIZE_PER_BUFFER"
+fi
+echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $total_limit_size bytes"
 
 ##
 # Calculate the max number of queued chunks given the size of each chunk
@@ -126,8 +131,13 @@ BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8388608})
 BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE_PER_BUFFER / $BUFFER_SIZE_LIMIT)
 echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"
 export BUFFER_QUEUE_LIMIT
-echo "Setting chunk_limit_size for each buffer to $BUFFER_SIZE_LIMIT"
 export BUFFER_SIZE_LIMIT
+
+chunk_limit_size=$(awk '/chunk_limit_size/{print $2; exit}' $FLUENT_CONF)
+if [[ -z "$chunk_limit_size" ]] || [[ "$chunk_limit_size" == *BUFFER_SIZE_LIMIT* ]]; then
+  chunk_limit_size="$BUFFER_SIZE_LIMIT"
+fi
+echo "Setting chunk_limit_size for each buffer to $chunk_limit_size"
 
 issue_deprecation_warnings
 

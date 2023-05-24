@@ -675,19 +675,32 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				})
 			verifyPipelines(&forwarderSpec, clfStatus)
-			Expect(clfStatus.Pipelines).To(HaveKey("pipeline_1_"))
-			Expect(clfStatus.Pipelines["pipeline_1_"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "duplicate"))
+			Expect(clfStatus.Pipelines).To(HaveKey("duplicate_1"))
+			Expect(clfStatus.Pipelines["duplicate_1"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "duplicate"))
 			Expect(clfStatus.Pipelines).To(HaveLen(2))
 		})
 
-		It("should not allow pipelines with empty/missing names", func() {
-			forwarderSpec.Pipelines = append(forwarderSpec.Pipelines,
-				loggingv1.PipelineSpec{
+		It("should allow anonymous pipelines, giving them pipeline_%i names", func() {
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
+				{
 					OutputRefs: []string{otherOutput.Name},
 					InputRefs:  []string{loggingv1.InputNameInfrastructure},
-				})
+				},
+				{
+					OutputRefs: []string{otherOutput.Name},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+				},
+				{
+					OutputRefs: []string{otherOutput.Name},
+					InputRefs:  []string{loggingv1.InputNameAudit},
+				},
+			}
 			verifyPipelines(&forwarderSpec, clfStatus)
-			Expect(clfStatus.Pipelines["pipeline_1_"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "pipeline must have a name"))
+			for i := 0; i < 3; i++ {
+				p := fmt.Sprintf("pipeline_%v", i)
+				Expect(clfStatus.Pipelines).To(HaveKey(p))
+				Expect(clfStatus.Pipelines[p]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
+			}
 		})
 
 		It("should drop all pipelines if pipelines have unrecognized inputRefs", func() {

@@ -20,6 +20,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const UserDefinedSuffix = `_user_defined`
+
+func trimUserDefined(name string) string {
+	return strings.TrimSuffix(name, UserDefinedSuffix)
+}
+
 // Validate all inputs, outputs, and pipelines without mutating the spec
 func ValidateInputsOutputsPipelines(clusterlogging *loggingv1.ClusterLogging, clfClient client.Client,
 	clfInstance *loggingv1.ClusterLogForwarder, clfSpec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) *loggingv1.ClusterLogForwarderStatus {
@@ -107,25 +113,25 @@ func verifyPipelines(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.
 	inputs := sets.StringKeySet(spec.InputMap())
 
 	for i, pipeline := range spec.Pipelines {
-		// Don't allow empty names since this no longer mutates the spec
+		// Give anonymous pipelines internal "pipeline_[0..n]" names
 		if pipeline.Name == "" {
-			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
-			status.Pipelines.Set(pipeline.Name, CondInvalid("pipeline must have a name"))
-			names.Insert(pipeline.Name)
-			continue
+			pipeline.Name = fmt.Sprintf("pipeline_%v", i)
+		} else {
+			pipeline.Name += UserDefinedSuffix
 		}
+		spec.Pipelines[i].Name = pipeline.Name
 
 		if names.Has(pipeline.Name) {
 			original := pipeline.Name
-			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
-			status.Pipelines.Set(pipeline.Name, CondInvalid("duplicate name %q", original))
+			pipeline.Name = fmt.Sprintf("duplicate_%v", i)
+			status.Pipelines.Set(pipeline.Name, CondInvalid("duplicate name %q", trimUserDefined(original)))
 			continue
 		}
 		names.Insert(pipeline.Name)
 
 		// Verify pipeline labels
 		if _, err := json.Marshal(pipeline.Labels); err != nil {
-			status.Pipelines.Set(pipeline.Name, CondInvalid("invalid pipeline labels"))
+			status.Pipelines.Set(trimUserDefined(pipeline.Name), CondInvalid("invalid pipeline labels"))
 			continue
 		}
 
@@ -136,10 +142,10 @@ func verifyPipelines(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.
 		// Partially valid pipelines invalidate CLF
 		if msgs := append(msgIn, msgOut...); len(msgs) > 0 { // Something wrong
 			msg := strings.Join(msgs, ", ")
-			status.Pipelines.Set(pipeline.Name, CondInvalid("invalid: %v", msg))
+			status.Pipelines.Set(trimUserDefined(pipeline.Name), CondInvalid("invalid: %v", msg))
 			continue
 		} else {
-			status.Pipelines.Set(pipeline.Name, condReady) // Ready
+			status.Pipelines.Set(trimUserDefined(pipeline.Name), condReady) // Ready
 		}
 	}
 }

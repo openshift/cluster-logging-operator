@@ -191,32 +191,35 @@ func Tenant(l *logging.Loki) Element {
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
-	if o.Secret != nil {
-		hasTLS := false
-		conf = append(conf, security.TLSConf{
-			ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		})
 
-		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
-			hasTLS = true
-			kc := TLSKeyCert{
-				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
-			}
-			conf = append(conf, kc)
+	hasTLS := false
+	conf = append(conf, security.TLSConf{
+		ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
+	})
+
+	if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
+		hasTLS = true
+		kc := TLSKeyCert{
+			CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
+			KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
 		}
-		if o.Name == logging.OutputNameDefault || security.HasCABundle(secret) {
-			hasTLS = true
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
-			}
-			conf = append(conf, ca)
+		conf = append(conf, kc)
+	}
+	if o.Name == logging.OutputNameDefault || security.HasCABundle(secret) {
+		hasTLS = true
+		ca := CAFile{
+			CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 		}
-		if !hasTLS {
-			return []Element{}
-		}
-	} else if secret != nil {
+		conf = append(conf, ca)
+	}
+	if o.TLS != nil && o.TLS.InsecureSkipVerify {
+		hasTLS = true
+	}
+	if !hasTLS {
+		return []Element{}
+	}
+	if o.Secret == nil && secret != nil {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		return []Element{
 			security.TLSConf{

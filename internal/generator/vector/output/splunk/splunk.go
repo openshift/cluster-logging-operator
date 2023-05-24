@@ -97,9 +97,6 @@ func Encoding(o logging.OutputSpec) Element {
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	var conf []Element
-	if o.Secret == nil {
-		return conf
-	}
 	hasTLS := false
 	u, _ := url.Parse(o.URL)
 	if urlhelper.IsTLSScheme(u.Scheme) {
@@ -123,6 +120,9 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 			}
 			conf = append(conf, ca)
+			hasTLS = true
+		}
+		if o.TLS != nil && o.TLS.InsecureSkipVerify {
 			hasTLS = true
 		}
 	}

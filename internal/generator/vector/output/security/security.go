@@ -54,7 +54,7 @@ enabled = true
 verify_certificate = false
 verify_hostname = false
 {{- end }}
-{{- end}}`
+{{ end }}`
 }
 
 var NoSecrets = map[string]*corev1.Secret{}

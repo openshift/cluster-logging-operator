@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
+	"io"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -47,14 +48,14 @@ func main() {
 		log.Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
-			return ioutil.ReadAll(stdin)
+			return io.ReadAll(stdin)
 		}
 	case "":
 		log.Info("received empty yamlfile")
 		reader = func() ([]byte, error) { return []byte{}, nil }
 	default:
 		log.Info("reading log forwarder from yaml file", "filename", *yamlFile)
-		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
+		reader = func() ([]byte, error) { return os.ReadFile(*yamlFile) }
 	}
 
 	content, err := reader()

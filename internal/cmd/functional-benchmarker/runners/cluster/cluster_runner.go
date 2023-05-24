@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -113,7 +112,7 @@ func (r *ClusterRunner) Deploy() {
 
 func (r *ClusterRunner) ReadApplicationLogs() ([]string, error) {
 
-	artifacts, err := ioutil.ReadDir(r.ArtifactDir)
+	artifacts, err := os.ReadDir(r.ArtifactDir)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +125,7 @@ func (r *ClusterRunner) ReadApplicationLogs() ([]string, error) {
 	logs := []string{}
 	for _, file := range files {
 		filePath := path.Join(r.ArtifactDir, file)
-		result, err := ioutil.ReadFile(filePath)
+		result, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Error(err, "Trying to read application logs", "path", file)
 		}

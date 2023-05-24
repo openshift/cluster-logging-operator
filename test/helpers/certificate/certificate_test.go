@@ -2,7 +2,7 @@ package certificate_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -25,7 +25,7 @@ var _ = Describe("Certificate", func() {
 		client := ca.Client(nil)
 		resp, err := client.Get(server.URL)
 		ExpectOK(err)
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		ExpectOK(err)
 		Expect(strings.TrimSpace(string(b))).To(Equal("success!"))
 
@@ -44,7 +44,7 @@ var _ = Describe("Certificate", func() {
 		client := ca.Client(clientCert)
 		resp, err := client.Get(server.URL)
 		ExpectOK(err)
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		ExpectOK(err)
 		Expect(strings.TrimSpace(string(b))).To(Equal("success!"))
 

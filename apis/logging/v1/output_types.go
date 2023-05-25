@@ -233,19 +233,18 @@ type Loki struct {
 	// +optional
 	TenantKey string `json:"tenantKey,omitempty"`
 
-	// LabelKeys is a list of meta-data field keys to replace the default Loki labels.
-	//
-	// Loki label names must match the regular expression "[a-zA-Z_:][a-zA-Z0-9_:]*".
-	// Illegal characters in meta-data keys are replaced with "_" to form the label name.
-	// For example meta-data key "kubernetes.labels.foo" becomes Loki label "kubernetes_labels_foo".
+	// LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
 	//
 	// If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
-	// These keys are translated to Loki labels by replacing '.' with '_' as: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
-	// Note that not all logs will include all of these keys: audit logs and infrastructure journal logs do not have namespace or pod name.
+	//
+	// Note: Loki label names must match the regular expression "[a-zA-Z_:][a-zA-Z0-9_:]*"
+	// Log record keys may contain characters like "." and "/" that are not allowed in Loki labels.
+	// Log record keys are translated to Loki labels by replacing any illegal characters with '_'.
+	// For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
 	//
 	// Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 	// See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
-	// You can still query based on any log record field using query filters.
+	// Loki queries can also query based on any log record field (not just labels) using query filters.
 	//
 	// +optional
 	LabelKeys []string `json:"labelKeys,omitempty"`

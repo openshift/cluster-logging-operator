@@ -46,7 +46,6 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				Labels:     map[string]string{"logging": "logging-value"},
 			})
 
-		Expect(f.Deploy()).To(BeNil())
 	})
 
 	AfterEach(func() {
@@ -54,6 +53,9 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	})
 
 	Context("with vector not ordered events", func() {
+		BeforeEach(func() {
+			Expect(f.Deploy()).To(BeNil())
+		})
 		It("should accept not ordered event", func() {
 			now := time.Now()
 			tsNow := functional.CRIOTime(now)
@@ -77,6 +79,32 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(strings.Contains(lines[0], "Present days")).To(BeTrue())
 			Expect(strings.Contains(lines[1], "A long time ago in a galaxy far, far away....")).To(BeTrue())
 			Expect(strings.Contains(lines[2], "Present days")).To(BeTrue())
+		})
+	})
+	Context("when label keys are defined that include slashes. Ref LOG-4095", func() {
+		const myValue = "foobarvalue"
+		BeforeEach(func() {
+			f.Labels["foo/bar"] = myValue
+			f.Forwarder.Spec.Outputs[0].Loki.LabelKeys = []string{
+				"kubernetes.namespace_name",
+				"kubernetes.pod_name",
+				"kubernetes.labels.foo/bar",
+			}
+			Expect(f.Deploy()).To(BeNil())
+		})
+		It("should handle the configuration so the collector starts", func() {
+			now := time.Now()
+			tsNow := functional.CRIOTime(now)
+			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(Succeed())
+
+			query := fmt.Sprintf(`{kubernetes_labels_foo_bar=%q}`, myValue)
+			result, err := l.QueryUntil(query, "", 1)
+			Expect(err).To(BeNil())
+			Expect(result).NotTo(BeNil())
+			Expect(len(result)).To(Equal(1))
+			lines := result[0].Lines()
+			Expect(len(lines)).To(Equal(1))
 		})
 	})
 

@@ -16,14 +16,16 @@ const (
 	InputNameAudit          = v1.InputNameAudit
 	InputNameInfrastructure = v1.InputNameInfrastructure
 
-	OutputTypeDefault        = "default"
-	OutputTypeElasticsearch  = v1.OutputTypeElasticsearch
-	OutputTypeFluentdForward = v1.OutputTypeFluentdForward
-	OutputTypeSyslog         = v1.OutputTypeSyslog
-	OutputTypeKafka          = v1.OutputTypeKafka
-	OutputTypeLoki           = v1.OutputTypeLoki
-	OutputTypeCloudwatch     = v1.OutputTypeCloudwatch
-	OutputTypeHttp           = v1.OutputTypeHttp
+	OutputTypeDefault            = "default"
+	OutputTypeElasticsearch      = v1.OutputTypeElasticsearch
+	OutputTypeFluentdForward     = v1.OutputTypeFluentdForward
+	OutputTypeSyslog             = v1.OutputTypeSyslog
+	OutputTypeKafka              = v1.OutputTypeKafka
+	OutputTypeLoki               = v1.OutputTypeLoki
+	OutputTypeCloudwatch         = v1.OutputTypeCloudwatch
+	OutputTypeHttp               = v1.OutputTypeHttp
+	OutputTypeGoogleCloudLogging = v1.OutputTypeGoogleCloudLogging
+	OutputTypeSplunk             = v1.OutputTypeSplunk
 
 	ManagedStatus = "managedStatus"
 	HealthStatus  = "healthStatus"
@@ -50,14 +52,16 @@ func NewTD() *TData {
 		CLFInfo:             utils.StringMap{M: map[string]string{HealthStatus: IsNotPresent, PipelineNo: IsNotPresent}},
 		CLFInputType:        utils.StringMap{M: map[string]string{InputNameApplication: IsNotPresent, InputNameAudit: IsNotPresent, InputNameInfrastructure: IsNotPresent}},
 		CLFOutputType: utils.StringMap{M: map[string]string{
-			OutputTypeDefault:        IsNotPresent,
-			OutputTypeElasticsearch:  IsNotPresent,
-			OutputTypeFluentdForward: IsNotPresent,
-			OutputTypeSyslog:         IsNotPresent,
-			OutputTypeKafka:          IsNotPresent,
-			OutputTypeLoki:           IsNotPresent,
-			OutputTypeCloudwatch:     IsNotPresent,
-			OutputTypeHttp:           IsNotPresent}},
+			OutputTypeDefault:            IsNotPresent,
+			OutputTypeElasticsearch:      IsNotPresent,
+			OutputTypeFluentdForward:     IsNotPresent,
+			OutputTypeSyslog:             IsNotPresent,
+			OutputTypeKafka:              IsNotPresent,
+			OutputTypeLoki:               IsNotPresent,
+			OutputTypeCloudwatch:         IsNotPresent,
+			OutputTypeHttp:               IsNotPresent,
+			OutputTypeSplunk:             IsNotPresent,
+			OutputTypeGoogleCloudLogging: IsNotPresent}},
 	}
 }
 
@@ -97,7 +101,9 @@ var (
 			OutputTypeKafka,
 			OutputTypeLoki,
 			OutputTypeCloudwatch,
-			OutputTypeHttp},
+			OutputTypeHttp,
+			OutputTypeSplunk,
+			OutputTypeGoogleCloudLogging},
 	)
 
 	MetricCLList = []prometheus.Collector{
@@ -153,14 +159,16 @@ func SetCLFMetrics(value float64) {
 		InputNameInfrastructure: CLFInputType[InputNameInfrastructure]}).Set(value)
 
 	mCLFOutputType.With(prometheus.Labels{
-		OutputTypeDefault:        CLFOutputType[OutputTypeDefault],
-		OutputTypeElasticsearch:  CLFOutputType[OutputTypeElasticsearch],
-		OutputTypeFluentdForward: CLFOutputType[OutputTypeFluentdForward],
-		OutputTypeSyslog:         CLFOutputType[OutputTypeSyslog],
-		OutputTypeKafka:          CLFOutputType[OutputTypeKafka],
-		OutputTypeLoki:           CLFOutputType[OutputTypeLoki],
-		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch],
-		OutputTypeHttp:           CLFOutputType[OutputTypeHttp]}).Set(value)
+		OutputTypeDefault:            CLFOutputType[OutputTypeDefault],
+		OutputTypeElasticsearch:      CLFOutputType[OutputTypeElasticsearch],
+		OutputTypeFluentdForward:     CLFOutputType[OutputTypeFluentdForward],
+		OutputTypeSyslog:             CLFOutputType[OutputTypeSyslog],
+		OutputTypeKafka:              CLFOutputType[OutputTypeKafka],
+		OutputTypeLoki:               CLFOutputType[OutputTypeLoki],
+		OutputTypeCloudwatch:         CLFOutputType[OutputTypeCloudwatch],
+		OutputTypeHttp:               CLFOutputType[OutputTypeHttp],
+		OutputTypeSplunk:             CLFOutputType[OutputTypeSplunk],
+		OutputTypeGoogleCloudLogging: CLFOutputType[OutputTypeGoogleCloudLogging]}).Set(value)
 }
 
 func NewInfoVec(metricname string, metrichelp string, labelNames []string) *prometheus.GaugeVec {

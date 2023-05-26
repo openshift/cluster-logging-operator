@@ -55,18 +55,19 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 	outputName := vectorhelpers.FormatComponentID(o.Name)
 	dedottedID := normalize.ID(outputName, "dedot")
+	brokers, genTlsConf := Brokers(o)
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(o, []string{dedottedID}, secret, op),
+			Output(o, []string{dedottedID}, secret, op, brokers),
 			Encoding(o, op),
 		},
-		TLSConf(o, secret, op),
+		TLSConf(o, secret, op, genTlsConf),
 		SASLConf(o, secret),
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, brokers string) Element {
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
@@ -75,28 +76,37 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 		ComponentID:      vectorhelpers.FormatComponentID(o.Name),
 		Inputs:           vectorhelpers.MakeInputs(inputs...),
 		Topic:            fmt.Sprintf("%q", Topics(o)),
-		BootstrapServers: fmt.Sprintf("%q", Brokers(o)),
+		BootstrapServers: fmt.Sprintf("%q", brokers),
 	}
 }
 
-// Brokers returns the list of broker endpoints of a kafka cluster.
-// The list represents only the initial set used by the collector's kafka client for the
-// first connention only. The collector's kafka client fetches constantly an updated list
-// from kafka. These updates are not reconciled back to the collector configuration.
+// Brokers returns the list of broker endpoints of a Kafka cluster.
+// The list represents only the initial set used by the collector's Kafka client for the
+// first connection only. The collector's Kafka client fetches constantly an updated list
+// from Kafka. These updates are not reconciled back to the collector configuration.
 // The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
 // valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
 // Finally, if neither approach works the current collector process will be terminated.
-func Brokers(o logging.OutputSpec) string {
-	brokers := []string{o.URL} // Put o.URL first in the list.
-	if o.Kafka != nil {        // Add optional extra broker URLs.
-		brokers = append(brokers, o.Kafka.Brokers...)
+func Brokers(o logging.OutputSpec) (string, bool) {
+	genTLSConf := false // is there a TLS endpoint among the brokers
+	brokerUrls := []string{}
+	if o.URL != "" {
+		brokerUrls = append(brokerUrls, o.URL)
 	}
-	for i, s := range brokers { // Convert URLs to hostnames
-		// FIXME URL parse error is being ignored.
+	if o.Kafka != nil { // Add optional extra broker URLs.
+		brokerUrls = append(brokerUrls, o.Kafka.Brokers...)
+	}
+	brokerHosts := []string{}
+	for _, s := range brokerUrls { // Convert URLs to hostnames
 		u, _ := url.Parse(s)
-		brokers[i] = u.Host
+		if u != nil {
+			if !genTLSConf {
+				genTLSConf = urlhelper.IsTLSScheme(u.Scheme)
+			}
+			brokerHosts = append(brokerHosts, u.Host)
+		}
 	}
-	return strings.Join(brokers, ",")
+	return strings.Join(brokerHosts, ","), genTLSConf
 }
 
 // Topic returns the name of an existing kafka topic.
@@ -131,11 +141,11 @@ timestamp_format = "rfc3339"
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
 	if o.Secret != nil {
 		conf := []Element{}
 
-		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+		if tlsConf := security.GenerateTLSConf(o, secret, op, genTLSConf); tlsConf != nil {
 			// KafkaInsecure (InsecureTLS)
 			if o.TLS != nil && o.TLS.InsecureSkipVerify {
 				conf = append(conf, InsecureTLS{

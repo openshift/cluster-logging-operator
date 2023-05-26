@@ -112,7 +112,7 @@ objects:
 parameters:
   - name: IMAGE
     displayName: Image
-    value: "quay.io/openshift-logging/fluentd:1.14.5"
+    value: "quay.io/openshift-logging/fluentd:5.8.0"
   - name: INSTANCE
     displayName: Instance
     value: "01"

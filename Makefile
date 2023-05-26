@@ -47,7 +47,7 @@ export LOGGING_VERSION?=5.8
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.8.0
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)

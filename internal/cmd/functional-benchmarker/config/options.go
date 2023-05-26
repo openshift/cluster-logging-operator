@@ -49,7 +49,7 @@ func InitOptions() Options {
 	}
 	fs := flag.NewFlagSet("functional-benchmarker", flag.ExitOnError)
 
-	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:1.14.6", "The Image to use to run the benchmark")
+	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:5.8.0", "The Image to use to run the benchmark")
 	//fs.IntVar(&options.TotalMessages, "tot-messages", 10000, "The number of messages to write per stressor")
 	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")

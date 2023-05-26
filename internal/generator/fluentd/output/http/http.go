@@ -25,6 +25,7 @@ type Http struct {
 	Headers        Element
 	SecurityConfig []Element
 	BufferConfig   []Element
+	ContentType    string
 
 	// Encoding is set by plugin according to
 }
@@ -38,7 +39,7 @@ func (h Http) Template() string {
 @type http
 endpoint {{.URI}}
 http_method {{.Method}}
-content_type "application/x-ndjson"
+content_type {{.ContentType}}
 {{kv  .Headers -}}
 {{compose .SecurityConfig}}
 {{compose .BufferConfig}}
@@ -69,6 +70,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 			URI:            o.URL,
 			Method:         Method(o.Http),
 			Headers:        Headers(o),
+			ContentType:    ContentType(o),
 			SecurityConfig: SecurityConfig(o, secret),
 			BufferConfig:   output.Buffer(output.NOKEYS, bufspec, storeID, &o),
 		},
@@ -80,6 +82,13 @@ func Headers(o logging.OutputSpec) Element {
 		return Nil
 	}
 	return KV("headers", utils.ToHeaderStr(o.Http.Headers, "%q:%q"))
+}
+
+func ContentType(o logging.OutputSpec) string {
+	if o.Http == nil || len(o.Http.Headers) == 0 || o.Http.Headers["Content-Type"] == "" {
+		return "application/x-ndjson"
+	}
+	return o.Http.Headers["Content-Type"]
 }
 
 func Method(h *logging.Http) string {

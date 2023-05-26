@@ -199,14 +199,19 @@ func GetFromSecret(secret *corev1.Secret, name string) string {
 	return ""
 }
 
-func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op generator.Options) *TLSConf {
-	u, _ := url.Parse(o.URL)
-	if urlhelper.IsTLSScheme(u.Scheme) || o.URL == "" {
+func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op generator.Options, genTLSConf bool) *TLSConf {
+	if !genTLSConf {
+		if o.URL == "" {
+			genTLSConf = true
+		} else if u, _ := url.Parse(o.URL); u != nil {
+			genTLSConf = urlhelper.IsTLSScheme(u.Scheme)
+		}
+	}
+	if genTLSConf {
 		tlsConf := NewTLSConf(o, op)
 		if addTLSSettings(o, secret, &tlsConf) {
 			return &tlsConf
 		}
 	}
-
 	return nil
 }

@@ -364,10 +364,6 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		It("should allow specific outputs that do not require URL", func() {
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
-					Name: "aKafka",
-					Type: loggingv1.OutputTypeKafka,
-				},
-				{
 					Name: "aCloudwatch",
 					Type: loggingv1.OutputTypeCloudwatch,
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
@@ -376,7 +372,6 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Outputs["aKafka"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Outputs["aCloudwatch"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
@@ -1050,24 +1045,69 @@ func Test_verifyOutputURL(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "With kafka without url",
+			name: "With kafka without URL or brokers",
 			args: args{
 				output: &loggingv1.OutputSpec{
 					Name: "test-output",
 					Type: "kafka",
-					URL:  "",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With kafka with a valid URL",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "kafka",
+					URL:  "https://local.svc",
 				},
 				conds: loggingv1.NamedConditions{},
 			},
 			want: true,
 		},
 		{
-			name: "With kafka",
+			name: "With Kafka with an invalid URL",
 			args: args{
 				output: &loggingv1.OutputSpec{
 					Name: "test-output",
 					Type: "kafka",
-					URL:  "https://local.svc",
+					URL:  "foo://",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With Kafka with an invalid broker",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "kafka",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Kafka: &loggingv1.Kafka{
+							Topic:   `topic`,
+							Brokers: []string{`foo://`},
+						},
+					},
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With kafka without a URL, with valid brokers",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "kafka",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Kafka: &loggingv1.Kafka{
+							Topic:   `topic`,
+							Brokers: []string{`tls://broker1:9092`, `tls://broker2:9092`, `tls://broker3:9092`},
+						},
+					},
 				},
 				conds: loggingv1.NamedConditions{},
 			},

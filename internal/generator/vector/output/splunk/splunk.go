@@ -93,7 +93,7 @@ func Encoding(o logging.OutputSpec) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+	if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 		return []Element{tlsConf}
 	}
 

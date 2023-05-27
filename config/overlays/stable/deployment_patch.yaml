@@ -17,7 +17,7 @@ spec:
             - name: RELATED_IMAGE_VECTOR
               value: quay.io/openshift-logging/vector:0.21-rh
             - name: RELATED_IMAGE_FLUENTD
-              value: quay.io/openshift-logging/fluentd:1.14.5
+              value: quay.io/openshift-logging/fluentd:5.8.0
             - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
               value: quay.io/openshift-logging/log-file-metric-exporter:1.0
             - name: OPERATOR_NAME

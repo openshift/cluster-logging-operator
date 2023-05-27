@@ -49,7 +49,7 @@ spec:
           - name: RELATED_IMAGE_VECTOR
             value: quay.io/openshift-logging/vector:latest
           - name: RELATED_IMAGE_FLUENTD
-            value: quay.io/openshift-logging/fluentd:latest
+            value: quay.io/openshift-logging/fluentd:5.8.0
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
             value: quay.io/openshift-logging/log-file-metric-exporter:latest
           - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN

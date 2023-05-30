@@ -296,6 +296,134 @@ crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 `,
 		}),
+		Entry("with tls without secret", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type:   logging.OutputTypeElasticsearch,
+						Name:   "es-1",
+						URL:    "http://es.svc.infra.cluster:9200",
+						Secret: nil,
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: security.NoSecrets,
+			ExpectedConf: `
+# Set Elasticsearch index
+[transforms.es_1_add_es_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  .write_index = index + "-write"
+  ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
+'''
+
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_index"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+        dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        flatten_labels(event)
+        prune_labels(event)
+        emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+
+    function flatten_labels(event)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+    end 
+
+	function prune_labels(event)
+		local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
+		local keys = {}
+		for k,v in pairs(event.log.kubernetes.labels) do
+			for index, e in pairs(exclusions) do
+				if k == e then
+					keys[k] = v
+				end
+			end
+		end
+		event.log.kubernetes.labels = keys
+	end
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_dedot_and_flatten"]
+endpoint = "http://es.svc.infra.cluster:9200"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
+encoding.except_fields = ["write_index"]
+request.timeout_secs = 2147483648
+id_key = "_id"
+
+[sinks.es_1.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+`,
+		}),
 		Entry("without security", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{

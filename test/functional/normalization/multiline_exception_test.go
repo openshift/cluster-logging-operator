@@ -33,6 +33,14 @@ var _ = Describe("[Functional][Normalization] Multi-line exception detection", f
 				at Object.InjectedScript._evaluateOn (https://<anonymous>/file.js?foo=bar:875:140)
 				at Object.InjectedScript.evaluate (<anonymous>)`
 
+		jsV8Exception = `V8 errors stack trace
+			eval at Foo.a (eval at Bar.z (myscript.js:10:3))
+			at new Contructor.Name (native)
+			at new FunctionName (unknown location)
+			at Type.functionName [as methodName] (file(copy).js?query='yes':12:9)
+			at functionName [as methodName] (native)
+			at Type.main(sample(copy).js:6:4)`
+
 		nodeJSException = `ReferenceError: myArray is not defined
   at next (/app/node_modules/express/lib/router/index.js:256:14)
   at /app/node_modules/express/lib/router/index.js:615:15
@@ -111,6 +119,7 @@ created by main.main
 	},
 		Entry("of Java services", javaException, nil),
 		Entry("of JS client side exception", jsClientSideException, nil),
+		Entry("of V8 errors stack trace", jsV8Exception, nil),
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
 		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {

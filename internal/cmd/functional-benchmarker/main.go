@@ -6,7 +6,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -90,7 +89,7 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 		if out, err = oc.Logs().WithNamespace(runner.Namespace()).WithPod(runner.Pod()).WithContainer(strings.ToLower(container)).Run(); err == nil {
 
 			/* #nosec G306*/
-			err = ioutil.WriteFile(path.Join(artifactDir, container+".logs"), []byte(out), 0755)
+			err = os.WriteFile(path.Join(artifactDir, container+".logs"), []byte(out), 0755)
 			if err != nil {
 				log.Error(err, "Error writing collector logs to artifactDir")
 			}

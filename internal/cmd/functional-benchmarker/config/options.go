@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"time"
@@ -102,14 +102,14 @@ func ReadConfig(configFile string, baseline bool) string {
 		log.V(1).Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
-			return ioutil.ReadAll(stdin)
+			return io.ReadAll(stdin)
 		}
 	case "":
 		log.V(1).Info("received empty configFile. Generating from CLF")
 		return ""
 	default:
 		log.V(1).Info("reading configfile", "filename", configFile)
-		reader = func() ([]byte, error) { return ioutil.ReadFile(configFile) }
+		reader = func() ([]byte, error) { return os.ReadFile(configFile) }
 	}
 	content, err := reader()
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	htmllib "html"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -38,7 +37,7 @@ func exportLatency(outDir string, logs stats.PerfLogs) {
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", i, value))
 	}
 	log.V(3).Info("Writing latency data", "outDir", outDir, "data", buffer)
-	err := ioutil.WriteFile(path.Join(outDir, "latency.data"), []byte(strings.Join(buffer, "\n")), 0755)
+	err := os.WriteFile(path.Join(outDir, "latency.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
 		log.Error(err, "Error writing latency data")
 	}
@@ -53,7 +52,7 @@ func exportMemory(outDir string, samples []stats.Sample) {
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", sample.Time, value/1024/1024))
 	}
 	log.V(3).Info("Writing resource metric data", "outDir", outDir, "memoryInMb", buffer)
-	err := ioutil.WriteFile(path.Join(outDir, "mem.data"), []byte(strings.Join(buffer, "\n")), 0755)
+	err := os.WriteFile(path.Join(outDir, "mem.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
 		log.Error(err, "Error writing resource Memory Metrics")
 	}
@@ -68,7 +67,7 @@ func exportCPU(outDir string, samples []stats.Sample) {
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", sample.Time, cpu))
 	}
 	log.V(3).Info("Writing resource metric data", "outDir", outDir, "cpu", buffer)
-	err := ioutil.WriteFile(path.Join(outDir, "cpu.data"), []byte(strings.Join(buffer, "\n")), 0755)
+	err := os.WriteFile(path.Join(outDir, "cpu.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
 		log.Error(err, "Error writing resource CPU Metrics")
 	}
@@ -101,7 +100,7 @@ func exportLoss(outDir string, samples stats.LossStats) {
 		}
 
 		log.V(3).Info("Writing message losses data", "outDir", outDir, "losses", buffer)
-		err = ioutil.WriteFile(path.Join(outDir, fmt.Sprintf("%s-loss.data", stream)), []byte(strings.Join(buffer, "\n")), 0755)
+		err = os.WriteFile(path.Join(outDir, fmt.Sprintf("%s-loss.data", stream)), []byte(strings.Join(buffer, "\n")), 0755)
 		if err != nil {
 			log.Error(err, "Error writing message loss metrics", "stream", stream)
 		}
@@ -220,7 +219,7 @@ func (r *GNUPlotReporter) generateStats() {
 			lossFmtFun(),
 			escapeFn(o.CollectorConfig),
 		)
-		err := ioutil.WriteFile(path.Join(r.ArtifactDir, file), []byte(out), 0755)
+		err := os.WriteFile(path.Join(r.ArtifactDir, file), []byte(out), 0755)
 		if err != nil {
 			log.Error(err, "Error writing file")
 		}

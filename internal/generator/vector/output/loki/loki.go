@@ -190,7 +190,7 @@ func Tenant(l *logging.Loki) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil {
+	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			return []Element{tlsConf}
 		}

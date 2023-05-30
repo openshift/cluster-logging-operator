@@ -91,6 +91,37 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
+		splunkSinkTlsSkipVerify = splunkDedot + `
+[sinks.splunk_hec]
+type = "splunk_hec"
+inputs = ["splunk_hec_dedot"]
+endpoint = "https://splunk-web:8088/endpoint"
+compression = "none"
+default_token = "` + hecToken + `"
+[sinks.splunk_hec.encoding]
+codec = "json"
+[sinks.splunk_hec.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
+`
+		splunkSinkTlsSkipVerifyNoCert = splunkDedot + `
+[sinks.splunk_hec]
+type = "splunk_hec"
+inputs = ["splunk_hec_dedot"]
+endpoint = "https://splunk-web:8088/endpoint"
+compression = "none"
+default_token = ""
+[sinks.splunk_hec.encoding]
+codec = "json"
+[sinks.splunk_hec.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+`
 		splunkSinkPassphrase = splunkDedot + `
 [sinks.splunk_hec]
 type = "splunk_hec"
@@ -146,6 +177,36 @@ key_pass = "junk"
 			},
 		}
 
+		outputWithTlsSkipVerify = loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeSplunk,
+			Name: "splunk_hec",
+			URL:  "https://splunk-web:8088/endpoint",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Splunk: &loggingv1.Splunk{},
+			},
+			Secret: &loggingv1.OutputSecretSpec{
+				Name: "vector-splunk-secret-tls",
+			},
+			TLS: &loggingv1.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			},
+		}
+
+		outputWithTlsSkipVerifyNoCert = loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeSplunk,
+			Name: "splunk_hec",
+			URL:  "https://splunk-web:8088/endpoint",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Splunk: &loggingv1.Splunk{},
+			},
+			//Secret: &loggingv1.OutputSecretSpec{
+			//	Name: "vector-splunk-secret",
+			//},
+			TLS: &loggingv1.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			},
+		}
+
 		secrets = map[string]*corev1.Secret{
 			output.Secret.Name: {
 				Data: map[string][]byte{
@@ -193,6 +254,20 @@ key_pass = "junk"
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTls))
+		})
+
+		It("should provide a valid config with tls.insecureSkipVerify=true", func() {
+			element := Conf(outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerify))
+		})
+
+		It("should provide a valid config with tls.insecureSkipVerify=true without secret", func() {
+			element := Conf(outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerifyNoCert))
 		})
 	})
 })

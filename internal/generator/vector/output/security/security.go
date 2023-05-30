@@ -83,6 +83,9 @@ func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) 
 	if conf.TlsMinVersion != "" || conf.CipherSuites != "" {
 		addTLS = true
 	}
+	if conf.InsecureSkipVerify {
+		addTLS = true
+	}
 
 	return addTLS
 }
@@ -116,7 +119,7 @@ ca_file = {{ .CAFilePath }}
 {{- if .PassPhrase }}
 key_pass = "{{ .PassPhrase }}"
 {{- end }}
-{{- end}}`
+{{ end }}`
 }
 
 var NoSecrets = map[string]*corev1.Secret{}

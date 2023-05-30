@@ -65,7 +65,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
@@ -127,14 +127,14 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline1]
+[transforms.pipeline1_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''
   .
 '''
 
-[transforms.pipeline2]
+[transforms.pipeline2_user_defined]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -179,7 +179,7 @@ type = "route"
 inputs = ["application"]
 route.myapplogs = '(.kubernetes.namespace_name == "test-ns1") || (.kubernetes.namespace_name == "test-ns2")'
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = '''
@@ -230,7 +230,7 @@ type = "route"
 inputs = ["application"]
 route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.namespace_name == "myapp2")) && ((.kubernetes.labels.key1 == "value1") && (.kubernetes.labels.key2 == "value2"))'
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = '''
@@ -274,7 +274,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure"]
 source = '''
@@ -316,7 +316,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
 inputs = ["application","infrastructure"]
 source = '''
@@ -364,7 +364,7 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-[transforms.detect_exceptions_pipeline]
+[transforms.detect_exceptions_pipeline_user_defined]
 type = "detect_exceptions"
 inputs = ["application","infrastructure"]
 languages = ["All"]
@@ -372,9 +372,9 @@ group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.contai
 expire_after_ms = 2000
 multiline_flush_interval_ms = 1000
 
-[transforms.pipeline]
+[transforms.pipeline_user_defined]
 type = "remap"
-inputs = ["detect_exceptions_pipeline"]
+inputs = ["detect_exceptions_pipeline_user_defined"]
 source = '''
   .
 '''
@@ -427,7 +427,7 @@ source = '''
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.pipeline_with_space]
+[transforms.pipeline_with_space_user_defined]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = '''

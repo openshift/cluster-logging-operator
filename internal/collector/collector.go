@@ -130,7 +130,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec,  f.CommonLabelInitializer)
+	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer)
 	return ds
 }
 

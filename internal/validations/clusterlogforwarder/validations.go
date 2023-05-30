@@ -16,4 +16,5 @@ func Validate(clf v1.ClusterLogForwarder) error {
 var validations = []func(clf v1.ClusterLogForwarder) error{
 	validateSingleton,
 	validateJsonParsingToElasticsearch,
+	validateUrlAccordingToTls,
 }

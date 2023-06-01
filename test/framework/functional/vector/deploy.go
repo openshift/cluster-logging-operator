@@ -47,6 +47,7 @@ func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, n
 		AddEnvVarFromFieldRef("VECTOR_SELF_NODE_NAME", "spec.nodeName").
 		AddVolumeMount("config", "/etc/vector", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
+		AddVolumeMount("certs", "/etc/collector/metrics", "", true).
 		WithCmd([]string{"/opt/app-root/src/run.sh"})
 }
 

@@ -181,7 +181,9 @@ func LokiLabelFilter(l *logging.Loki) Element {
 	rs := []Record{}
 	for _, k := range lokiLabelKeys(l) {
 		tempName := strings.Replace(k, ".", "_", -1)
+		tempName = strings.Replace(tempName, "/", "_", -1)
 		recordKeys := strings.Replace(k, ".", `","`, -1)
+		recordKeys = strings.Replace(recordKeys, "/", "_", -1)
 		var r Record
 		switch k {
 		case lokiLabelKubernetesHost:
@@ -214,6 +216,7 @@ func LokiLabel(l *logging.Loki) []string {
 	labels := []string{}
 	for _, k := range lokiLabelKeys(l) {
 		tempName := strings.Replace(k, ".", "_", -1)
+		tempName = strings.Replace(tempName, "/", "_", -1)
 		labels = append(labels, fmt.Sprintf("%v _%v", tempName, tempName))
 	}
 	return labels

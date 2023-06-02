@@ -75,14 +75,33 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 			})
 		})
 
-		Context("when new collection fields are set", func() {
-			It("should ignore deprecated fields", func() {
+		Context("when new collection and deprecated fields are set", func() {
+			It("should prefer deprecated fields", func() {
 
 				cl.Collection.Type = LogCollectionTypeFluentd
+				cl.Collection.Resources = &corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("1000Gi"),
+						corev1.ResourceCPU:    resource.MustParse("4"),
+					},
+					Requests: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("15Gi"),
+						corev1.ResourceCPU:    resource.MustParse("18"),
+					},
+				}
+				cl.Collection.Tolerations = []corev1.Toleration{
+					{Key: "abc", Operator: corev1.TolerationOpExists, Value: "bar", Effect: corev1.TaintEffectNoExecute},
+				}
+				cl.Collection.NodeSelector = map[string]string{"ignorme": "yes"}
 
 				Expect(MigrateCollectionSpec(cl)).To(Equal(ClusterLoggingSpec{
 					Collection: &CollectionSpec{
-						Type:    LogCollectionTypeFluentd,
+						Type: LogCollectionTypeFluentd,
+						CollectorSpec: CollectorSpec{
+							Resources:    resources,
+							NodeSelector: nodeSelector,
+							Tolerations:  tolerations,
+						},
 						Fluentd: fluentTuning,
 					},
 				}))

@@ -18,12 +18,6 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 		spec.Forwarder = nil
 	}
 
-	if spec.Collection.Type != "" && spec.Collection.Type.IsSupportedCollector() {
-		log.V(3).Info("collectionSpec already using latest. removing spec.Collection.Logs while reconciling")
-		spec.Collection.Logs = nil
-		return spec
-	}
-
 	logSpec := spec.Collection.Logs
 	if logSpec != nil {
 		spec.Collection.Type = logSpec.Type

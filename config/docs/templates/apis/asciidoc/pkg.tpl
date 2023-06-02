@@ -7,7 +7,7 @@ toc::[]
 {{ range .packages -}}
 
     {{- range (sortedTypes (visibleTypes .Types )) -}}
-        {{- if isObjectRoot . -}}
+        {{if isObjectRoot . }}
 
 == {{ (typeDisplayName .) }}
 {{  (comments .CommentLines) }}

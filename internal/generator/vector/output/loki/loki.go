@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -193,12 +194,13 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 
 	hasTLS := false
+	u, _ := url.Parse(o.URL)
 	conf = append(conf, security.TLSConf{
 		ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 	})
 
-	if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
+	if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret)) {
 		hasTLS = true
 		kc := TLSKeyCert{
 			CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
@@ -206,7 +208,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 		conf = append(conf, kc)
 	}
-	if o.Name == logging.OutputNameDefault || security.HasCABundle(secret) {
+	if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasCABundle(secret)) {
 		hasTLS = true
 		ca := CAFile{
 			CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
@@ -216,10 +218,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if o.TLS != nil && o.TLS.InsecureSkipVerify {
 		hasTLS = true
 	}
-	if !hasTLS {
-		return []Element{}
-	}
-	if o.Secret == nil && secret != nil {
+	if o.Secret == nil && secret != nil && url.IsTLSScheme(u.Scheme) {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		return []Element{
 			security.TLSConf{
@@ -229,6 +228,9 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 				CAFilePath: `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
 			},
 		}
+	}
+	if !hasTLS {
+		return []Element{}
 	}
 	return conf
 }

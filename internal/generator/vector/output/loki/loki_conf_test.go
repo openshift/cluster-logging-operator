@@ -84,45 +84,45 @@ var _ = Describe("Generate vector config", func() {
 		hooks.init = "init"
 		hooks.process = "process"
 		source = '''
-		 function init()
-		     count = 0
-		 end
-		 function process(event, emit)
-		     count = count + 1
-		     event.log.openshift.sequence = count
-		     if event.log.kubernetes == nil then
-		         emit(event)
-		         return
-		     end
-		     if event.log.kubernetes.labels == nil then
-		         emit(event)
-		         return
-		     end
+		function init()
+		    count = 0
+		end
+		function process(event, emit)
+		    count = count + 1
+		    event.log.openshift.sequence = count
+		    if event.log.kubernetes == nil then
+		        emit(event)
+		        return
+		    end
+		    if event.log.kubernetes.labels == nil then
+		        emit(event)
+		        return
+		    end
 				dedot(event.log.kubernetes.namespace_labels)
-		     dedot(event.log.kubernetes.labels)
-		     emit(event)
-		 end
+		    dedot(event.log.kubernetes.labels)
+		    emit(event)
+		end
 		
-		 function dedot(map)
-		     if map == nil then
-		         return
-		     end
-		     local new_map = {}
-		     local changed_keys = {}
-		     for k, v in pairs(map) do
-		         local dedotted = string.gsub(k, "[./]", "_")
-		         if dedotted ~= k then
-		             new_map[dedotted] = v
-		             changed_keys[k] = true
-		         end
-		     end
-		     for k in pairs(changed_keys) do
-		         map[k] = nil
-		     end
-		     for k, v in pairs(new_map) do
-		         map[k] = v
-		     end
-		 end
+		function dedot(map)
+		    if map == nil then
+		        return
+		    end
+		    local new_map = {}
+		    local changed_keys = {}
+		    for k, v in pairs(map) do
+		        local dedotted = string.gsub(k, "[./]", "_")
+		        if dedotted ~= k then
+		            new_map[dedotted] = v
+		            changed_keys[k] = true
+		        end
+		    end
+		    for k in pairs(changed_keys) do
+		        map[k] = nil
+		    end
+		    for k, v in pairs(new_map) do
+		        map[k] = v
+		    end
+		end
 		'''
 		
 		[sinks.loki_receiver]
@@ -188,45 +188,45 @@ var _ = Describe("Generate vector config", func() {
 		hooks.init = "init"
 		hooks.process = "process"
 		source = '''
-		 function init()
-		     count = 0
-		 end
-		 function process(event, emit)
-		     count = count + 1
-		     event.log.openshift.sequence = count
-		     if event.log.kubernetes == nil then
-		         emit(event)
-		         return
-		     end
-		     if event.log.kubernetes.labels == nil then
-		         emit(event)
-		         return
-		     end
+		function init()
+		   count = 0
+		end
+		function process(event, emit)
+		   count = count + 1
+		   event.log.openshift.sequence = count
+		   if event.log.kubernetes == nil then
+		       emit(event)
+		       return
+		   end
+		   if event.log.kubernetes.labels == nil then
+		       emit(event)
+		       return
+		   end
 				dedot(event.log.kubernetes.namespace_labels)
-		     dedot(event.log.kubernetes.labels)
-		     emit(event)
-		 end
+		   dedot(event.log.kubernetes.labels)
+		   emit(event)
+		end
 		
-		 function dedot(map)
-		     if map == nil then
-		         return
-		     end
-		     local new_map = {}
-		     local changed_keys = {}
-		     for k, v in pairs(map) do
-		         local dedotted = string.gsub(k, "[./]", "_")
-		         if dedotted ~= k then
-		             new_map[dedotted] = v
-		             changed_keys[k] = true
-		         end
-		     end
-		     for k in pairs(changed_keys) do
-		         map[k] = nil
-		     end
-		     for k, v in pairs(new_map) do
-		         map[k] = v
-		     end
-		 end
+		function dedot(map)
+		   if map == nil then
+		       return
+		   end
+		   local new_map = {}
+		   local changed_keys = {}
+		   for k, v in pairs(map) do
+		       local dedotted = string.gsub(k, "[./]", "_")
+		       if dedotted ~= k then
+		           new_map[dedotted] = v
+		           changed_keys[k] = true
+		       end
+		   end
+		   for k in pairs(changed_keys) do
+		       map[k] = nil
+		   end
+		   for k, v in pairs(new_map) do
+		       map[k] = v
+		   end
+		end
 		'''
 		
 		[sinks.loki_receiver]
@@ -290,45 +290,45 @@ var _ = Describe("Generate vector config", func() {
 		hooks.init = "init"
 		hooks.process = "process"
 		source = '''
-		 function init()
-		     count = 0
-		 end
-		 function process(event, emit)
-		     count = count + 1
-		     event.log.openshift.sequence = count
-		     if event.log.kubernetes == nil then
-		         emit(event)
-		         return
-		     end
-		     if event.log.kubernetes.labels == nil then
-		         emit(event)
-		         return
-		     end
+		function init()
+		   count = 0
+		end
+		function process(event, emit)
+		   count = count + 1
+		   event.log.openshift.sequence = count
+		   if event.log.kubernetes == nil then
+		       emit(event)
+		       return
+		   end
+		   if event.log.kubernetes.labels == nil then
+		       emit(event)
+		       return
+		   end
 				dedot(event.log.kubernetes.namespace_labels)
-		     dedot(event.log.kubernetes.labels)
-		     emit(event)
-		 end
+		   dedot(event.log.kubernetes.labels)
+		   emit(event)
+		end
 		
-		 function dedot(map)
-		     if map == nil then
-		         return
-		     end
-		     local new_map = {}
-		     local changed_keys = {}
-		     for k, v in pairs(map) do
-		         local dedotted = string.gsub(k, "[./]", "_")
-		         if dedotted ~= k then
-		             new_map[dedotted] = v
-		             changed_keys[k] = true
-		         end
-		     end
-		     for k in pairs(changed_keys) do
-		         map[k] = nil
-		     end
-		     for k, v in pairs(new_map) do
-		         map[k] = v
-		     end
-		 end
+		function dedot(map)
+		   if map == nil then
+		       return
+		   end
+		   local new_map = {}
+		   local changed_keys = {}
+		   for k, v in pairs(map) do
+		       local dedotted = string.gsub(k, "[./]", "_")
+		       if dedotted ~= k then
+		           new_map[dedotted] = v
+		           changed_keys[k] = true
+		       end
+		   end
+		   for k in pairs(changed_keys) do
+		       map[k] = nil
+		   end
+		   for k, v in pairs(new_map) do
+		       map[k] = v
+		   end
+		end
 		'''
 		
 		[sinks.loki_receiver]
@@ -392,45 +392,45 @@ var _ = Describe("Generate vector config", func() {
 		hooks.init = "init"
 		hooks.process = "process"
 		source = '''
-		 function init()
-		     count = 0
-		 end
-		 function process(event, emit)
-		     count = count + 1
-		     event.log.openshift.sequence = count
-		     if event.log.kubernetes == nil then
-		         emit(event)
-		         return
-		     end
-		     if event.log.kubernetes.labels == nil then
-		         emit(event)
-		         return
-		     end
+		function init()
+		   count = 0
+		end
+		function process(event, emit)
+		   count = count + 1
+		   event.log.openshift.sequence = count
+		   if event.log.kubernetes == nil then
+		       emit(event)
+		       return
+		   end
+		   if event.log.kubernetes.labels == nil then
+		       emit(event)
+		       return
+		   end
 				dedot(event.log.kubernetes.namespace_labels)
-		     dedot(event.log.kubernetes.labels)
-		     emit(event)
-		 end
+		   dedot(event.log.kubernetes.labels)
+		   emit(event)
+		end
 		
-		 function dedot(map)
-		     if map == nil then
-		         return
-		     end
-		     local new_map = {}
-		     local changed_keys = {}
-		     for k, v in pairs(map) do
-		         local dedotted = string.gsub(k, "[./]", "_")
-		         if dedotted ~= k then
-		             new_map[dedotted] = v
-		             changed_keys[k] = true
-		         end
-		     end
-		     for k in pairs(changed_keys) do
-		         map[k] = nil
-		     end
-		     for k, v in pairs(new_map) do
-		         map[k] = v
-		     end
-		 end
+		function dedot(map)
+		   if map == nil then
+		       return
+		   end
+		   local new_map = {}
+		   local changed_keys = {}
+		   for k, v in pairs(map) do
+		       local dedotted = string.gsub(k, "[./]", "_")
+		       if dedotted ~= k then
+		           new_map[dedotted] = v
+		           changed_keys[k] = true
+		       end
+		   end
+		   for k in pairs(changed_keys) do
+		       map[k] = nil
+		   end
+		   for k, v in pairs(new_map) do
+		       map[k] = v
+		   end
+		end
 		'''
 		
 		[sinks.loki_receiver]
@@ -494,45 +494,45 @@ var _ = Describe("Generate vector config", func() {
 		hooks.init = "init"
 		hooks.process = "process"
 		source = '''
-		  function init()
-		      count = 0
-		  end
-		  function process(event, emit)
-		      count = count + 1
-		      event.log.openshift.sequence = count
-		      if event.log.kubernetes == nil then
-		          emit(event)
-		          return
-		      end
-		      if event.log.kubernetes.labels == nil then
-		          emit(event)
-		          return
-		      end
+		function init()
+		    count = 0
+		end
+		function process(event, emit)
+		    count = count + 1
+		    event.log.openshift.sequence = count
+		    if event.log.kubernetes == nil then
+		        emit(event)
+		        return
+		    end
+		    if event.log.kubernetes.labels == nil then
+		        emit(event)
+		        return
+		    end
 				dedot(event.log.kubernetes.namespace_labels)
-		      dedot(event.log.kubernetes.labels)
-		      emit(event)
-		  end
+		    dedot(event.log.kubernetes.labels)
+		    emit(event)
+		end
 		
-		  function dedot(map)
-		      if map == nil then
-		          return
-		      end
-		      local new_map = {}
-		      local changed_keys = {}
-		      for k, v in pairs(map) do
-		          local dedotted = string.gsub(k, "[./]", "_")
-		          if dedotted ~= k then
-		              new_map[dedotted] = v
-		              changed_keys[k] = true
-		          end
-		      end
-		      for k in pairs(changed_keys) do
-		          map[k] = nil
-		      end
-		      for k, v in pairs(new_map) do
-		          map[k] = v
-		      end
-		  end
+		function dedot(map)
+		    if map == nil then
+		        return
+		    end
+		    local new_map = {}
+		    local changed_keys = {}
+		    for k, v in pairs(map) do
+		        local dedotted = string.gsub(k, "[./]", "_")
+		        if dedotted ~= k then
+		            new_map[dedotted] = v
+		            changed_keys[k] = true
+		        end
+		    end
+		    for k in pairs(changed_keys) do
+		        map[k] = nil
+		    end
+		    for k, v in pairs(new_map) do
+		        map[k] = v
+		    end
+		end
 		'''
 		
 		[sinks.loki_receiver]
@@ -569,6 +569,201 @@ var _ = Describe("Generate vector config", func() {
 						TLS: &logging.OutputTLSSpec{
 							InsecureSkipVerify: true,
 						},
+					},
+				},
+			},
+			ExpectedConf: `
+		[transforms.loki_receiver_remap]
+		type = "remap"
+		inputs = ["application"]
+		source = '''
+		del(.tag)
+		'''
+		
+		[transforms.loki_receiver_dedot]
+		type = "lua"
+		inputs = ["loki_receiver_remap"]
+		version = "2"
+		hooks.init = "init"
+		hooks.process = "process"
+		source = '''
+		function init()
+		    count = 0
+		end
+		function process(event, emit)
+		    count = count + 1
+		    event.log.openshift.sequence = count
+		    if event.log.kubernetes == nil then
+		        emit(event)
+		        return
+		    end
+		    if event.log.kubernetes.labels == nil then
+		        emit(event)
+		        return
+		    end
+				dedot(event.log.kubernetes.namespace_labels)
+		    dedot(event.log.kubernetes.labels)
+		    emit(event)
+		end
+		
+		function dedot(map)
+		    if map == nil then
+		        return
+		    end
+		    local new_map = {}
+		    local changed_keys = {}
+		    for k, v in pairs(map) do
+		        local dedotted = string.gsub(k, "[./]", "_")
+		        if dedotted ~= k then
+		            new_map[dedotted] = v
+		            changed_keys[k] = true
+		        end
+		    end
+		    for k in pairs(changed_keys) do
+		        map[k] = nil
+		    end
+		    for k, v in pairs(new_map) do
+		        map[k] = v
+		    end
+		end
+		'''
+		
+		[sinks.loki_receiver]
+		type = "loki"
+		inputs = ["loki_receiver_dedot"]
+		endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+		out_of_order_action = "accept"
+		healthcheck.enabled = false
+		
+		[sinks.loki_receiver.encoding]
+		codec = "json"
+		
+		[sinks.loki_receiver.labels]
+		kubernetes_container_name = "{{kubernetes.container_name}}"
+		kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+		kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+		kubernetes_pod_name = "{{kubernetes.pod_name}}"
+		log_type = "{{log_type}}"
+		
+		[sinks.loki_receiver.tls]
+		enabled = true
+		verify_certificate = false
+		verify_hostname = false
+		`,
+		}),
+		Entry("with TLS insecureSkipVerify=true no certificate and some secret", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"foo": []byte("bar"),
+					},
+				},
+			},
+			ExpectedConf: `
+		[transforms.loki_receiver_remap]
+		type = "remap"
+		inputs = ["application"]
+		source = '''
+		del(.tag)
+		'''
+		
+		[transforms.loki_receiver_dedot]
+		type = "lua"
+		inputs = ["loki_receiver_remap"]
+		version = "2"
+		hooks.init = "init"
+		hooks.process = "process"
+		source = '''
+		function init()
+		    count = 0
+		end
+		function process(event, emit)
+		    count = count + 1
+		    event.log.openshift.sequence = count
+		    if event.log.kubernetes == nil then
+		        emit(event)
+		        return
+		    end
+		    if event.log.kubernetes.labels == nil then
+		        emit(event)
+		        return
+		    end
+				dedot(event.log.kubernetes.namespace_labels)
+		    dedot(event.log.kubernetes.labels)
+		    emit(event)
+		end
+		
+		function dedot(map)
+		    if map == nil then
+		        return
+		    end
+		    local new_map = {}
+		    local changed_keys = {}
+		    for k, v in pairs(map) do
+		        local dedotted = string.gsub(k, "[./]", "_")
+		        if dedotted ~= k then
+		            new_map[dedotted] = v
+		            changed_keys[k] = true
+		        end
+		    end
+		    for k in pairs(changed_keys) do
+		        map[k] = nil
+		    end
+		    for k, v in pairs(new_map) do
+		        map[k] = v
+		    end
+		end
+		'''
+		
+		[sinks.loki_receiver]
+		type = "loki"
+		inputs = ["loki_receiver_dedot"]
+		endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+		out_of_order_action = "accept"
+		healthcheck.enabled = false
+		
+		[sinks.loki_receiver.encoding]
+		codec = "json"
+		
+		[sinks.loki_receiver.labels]
+		kubernetes_container_name = "{{kubernetes.container_name}}"
+		kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+		kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+		kubernetes_pod_name = "{{kubernetes.pod_name}}"
+		log_type = "{{log_type}}"
+		
+		[sinks.loki_receiver.tls]
+		enabled = true
+		verify_certificate = false
+		verify_hostname = false
+		`,
+		}),
+		Entry("with default CA", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"ca-bundle.crt": []byte("junk"),
 					},
 				},
 			},
@@ -645,102 +840,6 @@ var _ = Describe("Generate vector config", func() {
 		kubernetes_pod_name = "{{kubernetes.pod_name}}"
 		log_type = "{{log_type}}"
 		
-		[sinks.loki_receiver.tls]
-		enabled = true
-		verify_certificate = false
-		verify_hostname = false
-		`,
-		}),
-		Entry("with default CA", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-					},
-				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"ca-bundle.crt": []byte("junk"),
-					},
-				},
-			},
-			ExpectedConf: `
-		[transforms.loki_receiver_remap]
-		type = "remap"
-		inputs = ["application"]
-		source = '''
-		 del(.tag)
-		'''
-
-		[transforms.loki_receiver_dedot]
-		type = "lua"
-		inputs = ["loki_receiver_remap"]
-		version = "2"
-		hooks.init = "init"
-		hooks.process = "process"
-		source = '''
-		   function init()
-		       count = 0
-		   end
-		   function process(event, emit)
-		       count = count + 1
-		       event.log.openshift.sequence = count
-		       if event.log.kubernetes == nil then
-		           emit(event)
-		           return
-		       end
-		       if event.log.kubernetes.labels == nil then
-		           emit(event)
-		           return
-		       end
-				dedot(event.log.kubernetes.namespace_labels)
-		       dedot(event.log.kubernetes.labels)
-		       emit(event)
-		   end
-
-		   function dedot(map)
-		       if map == nil then
-		           return
-		       end
-		       local new_map = {}
-		       local changed_keys = {}
-		       for k, v in pairs(map) do
-		           local dedotted = string.gsub(k, "[./]", "_")
-		           if dedotted ~= k then
-		               new_map[dedotted] = v
-		               changed_keys[k] = true
-		           end
-		       end
-		       for k in pairs(changed_keys) do
-		           map[k] = nil
-		       end
-		       for k, v in pairs(new_map) do
-		           map[k] = v
-		       end
-		   end
-		'''
-
-		[sinks.loki_receiver]
-		type = "loki"
-		inputs = ["loki_receiver_dedot"]
-		endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-		out_of_order_action = "accept"
-		healthcheck.enabled = false
-
-		[sinks.loki_receiver.encoding]
-		codec = "json"
-
-		[sinks.loki_receiver.labels]
-		kubernetes_container_name = "{{kubernetes.container_name}}"
-		kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-		kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-		kubernetes_pod_name = "{{kubernetes.pod_name}}"
-		log_type = "{{log_type}}"
-
 		[sinks.loki_receiver.tls]
 		enabled = true
 		ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

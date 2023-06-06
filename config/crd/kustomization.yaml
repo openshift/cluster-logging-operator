@@ -4,6 +4,7 @@
 resources:
 - bases/logging.openshift.io_clusterlogforwarders.yaml
 - bases/logging.openshift.io_clusterloggings.yaml
+- bases/logging.openshift.io_logfilemetricexporters.yaml
 
 # +kubebuilder:scaffold:crdkustomizeresource
 

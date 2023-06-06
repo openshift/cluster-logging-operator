@@ -19,7 +19,9 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -51,12 +53,16 @@ func GetAnnotation(key string, meta metav1.ObjectMeta) (string, bool) {
 	return "", false
 }
 
-func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
+func AsOwner(o runtime.Object) metav1.OwnerReference {
+	m, err := meta.Accessor(o)
+	if err != nil {
+		panic(err)
+	}
 	return metav1.OwnerReference{
 		APIVersion: logging.GroupVersion.String(),
-		Kind:       "ClusterLogging",
-		Name:       o.Name,
-		UID:        o.UID,
+		Kind:       o.GetObjectKind().GroupVersionKind().Kind,
+		Name:       m.GetName(),
+		UID:        m.GetUID(),
 		Controller: GetBool(true),
 	}
 }

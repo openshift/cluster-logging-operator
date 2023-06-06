@@ -8,16 +8,19 @@ import (
 
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/openshift/cluster-logging-operator/internal/metrics"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -40,6 +43,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	// Cancel previous info metrics
 	telemetry.SetCLFMetrics(0)
 	telemetry.SetCLMetrics(0)
+	telemetry.SetLFMEMetrics(0)
 	defer func() {
 		telemetry.SetCLMetrics(1)
 		telemetry.SetCLFMetrics(1)
@@ -94,6 +98,28 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 		// No clf and no logStore so remove the collector https://issues.redhat.com/browse/LOG-2703
 		removeCollectorAndUpdate(clusterLoggingRequest)
 		return clusterLoggingRequest.Cluster, nil
+	}
+
+	// Create a LogFileMetricExporter if none exists
+	if clusterLoggingRequest.Cluster.Name == constants.SingletonName {
+		var lfmeInstance *loggingv1alpha1.LogFileMetricExporter
+		if lfmeInstance, err = getLogFileMetricExporter(clusterLoggingRequest.Client); err != nil {
+			return nil, err
+		}
+
+		// // No LFME so make a new one
+		if lfmeInstance == nil {
+			lfmeInstance = runtime.NewLogFileMetricExporter(constants.WatchNamespace, clusterLoggingRequest.Cluster.Name)
+			if err := ReconcileForLogFileMetricExporter(lfmeInstance,
+				clusterLoggingRequest.Client,
+				clusterLoggingRequest.EventRecorder,
+				clusterLoggingRequest.ClusterID,
+				utils.AsOwner(clusterLoggingRequest.Cluster)); err != nil {
+				log.V(2).Error(err, "virtual logfilemetricexporter could not be created")
+				r.Event(lfmeInstance, "Error", string(logging.ReasonInvalid), err.Error())
+				telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, constants.UnHealthyStatus)
+			}
+		}
 	}
 
 	if clusterLoggingRequest.IncludesManagedStorage() {
@@ -225,6 +251,62 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	///////
 
 	return nil
+}
+
+func ReconcileForLogFileMetricExporter(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
+	requestClient client.Client,
+	er record.EventRecorder,
+	clusterID string,
+	owner metav1.OwnerReference) (err error) {
+
+	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
+
+	// Try and get the instance of cluster logging, if not there,
+	// don't need a LFME
+	clusterLogging := &logging.ClusterLogging{}
+	if err := requestClient.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return errors.New("error retrieving ClusterLogging instance")
+		}
+		log.V(3).Info("no ClusterLogging named 'instance' found")
+		clusterLogging = nil
+	}
+
+	// Check for forwarder
+	clusterLogForwarder := &logging.ClusterLogForwarder{}
+	if err := requestClient.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogForwarder); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return errors.New("error retrieving ClusterLogForwarder instance")
+		}
+		log.V(3).Info("no ClusterLogForwarder named 'instance' found")
+		clusterLogForwarder = nil
+	}
+
+	// No CL or CLF named instance so return, no need to reconcile
+	if clusterLogging == nil && clusterLogForwarder == nil {
+		return errors.New("no ClusterLogging or ClusterLogForwarder named instance")
+	}
+
+	// Make the daemonset along with metric services for Log file metric exporter
+	if err := logmetricexporter.Reconcile(lfmeInstance, requestClient, er, clusterLogging, owner); err != nil {
+		return err
+	}
+	// Successfully reconciled a LFME, set telemetry to deployed
+	telemetry.SetLFMEMetrics(1)
+	return nil
+}
+
+func getLogFileMetricExporter(reqClient client.Client) (lfmeInstance *loggingv1alpha1.LogFileMetricExporter, err error) {
+	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
+	logFileMetricExporter := &loggingv1alpha1.LogFileMetricExporter{}
+	if err = reqClient.Get(context.TODO(), nsname, logFileMetricExporter); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, errors.New("error getting logFileMetricExporter")
+		}
+		return nil, nil
+	}
+
+	return logFileMetricExporter, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {

@@ -31,6 +31,7 @@ const (
 	HealthStatus  = "healthStatus"
 	VersionNo     = "version"
 	PipelineNo    = "pipelineInfo"
+	Deployed      = "deployed"
 )
 
 // placeholder for keeping clo info which will be used for clo metrics update
@@ -41,6 +42,7 @@ type TData struct {
 	CLFInfo             utils.StringMap
 	CLFInputType        utils.StringMap
 	CLFOutputType       utils.StringMap
+	LFMEInfo            utils.StringMap
 }
 
 // IsNotPresent stands for managedStatus and healthStatus true and healthy
@@ -62,6 +64,7 @@ func NewTD() *TData {
 			OutputTypeHttp:               IsNotPresent,
 			OutputTypeSplunk:             IsNotPresent,
 			OutputTypeGoogleCloudLogging: IsNotPresent}},
+		LFMEInfo: utils.StringMap{M: map[string]string{Deployed: IsNotPresent, HealthStatus: IsNotPresent}},
 	}
 }
 
@@ -106,6 +109,12 @@ var (
 			OutputTypeGoogleCloudLogging},
 	)
 
+	mLFMEInfo = NewInfoVec(
+		"log_file_metric_exporter_info",
+		"LFME health and deployed status specific metric",
+		[]string{Deployed, HealthStatus},
+	)
+
 	MetricCLList = []prometheus.Collector{
 		mCLInfo,
 	}
@@ -116,6 +125,10 @@ var (
 		mCLFInputType,
 		mCLFOutputType,
 	}
+
+	MetricLFMEList = []prometheus.Collector{
+		mLFMEInfo,
+	}
 )
 
 func RegisterMetrics() error {
@@ -125,6 +138,10 @@ func RegisterMetrics() error {
 	}
 
 	for _, metric := range MetricCLFList {
+		metrics.Registry.MustRegister(metric)
+	}
+
+	for _, metric := range MetricLFMEList {
 		metrics.Registry.MustRegister(metric)
 	}
 
@@ -169,6 +186,15 @@ func SetCLFMetrics(value float64) {
 		OutputTypeHttp:               CLFOutputType[OutputTypeHttp],
 		OutputTypeSplunk:             CLFOutputType[OutputTypeSplunk],
 		OutputTypeGoogleCloudLogging: CLFOutputType[OutputTypeGoogleCloudLogging]}).Set(value)
+}
+
+func SetLFMEMetrics(value float64) {
+	LFMEInfo := Data.LFMEInfo.M
+
+	mLFMEInfo.With(prometheus.Labels{
+		Deployed:     LFMEInfo[Deployed],
+		HealthStatus: LFMEInfo[HealthStatus],
+	}).Set(value)
 }
 
 func NewInfoVec(metricname string, metrichelp string, labelNames []string) *prometheus.GaugeVec {

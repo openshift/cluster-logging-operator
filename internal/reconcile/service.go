@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
@@ -34,11 +35,13 @@ func Service(er record.EventRecorder, k8Client client.Client, desired *corev1.Se
 			log.V(3).Info("Service is the same skipping update")
 			return nil
 		}
+
 		reason = constants.EventReasonUpdateObject
 		//Explicitly copying because services are immutable
 		current.Labels = desired.Labels
 		current.Spec.Selector = desired.Spec.Selector
 		current.Spec.Ports = desired.Spec.Ports
+		current.OwnerReferences = desired.OwnerReferences
 		return k8Client.Update(context.TODO(), current)
 	})
 

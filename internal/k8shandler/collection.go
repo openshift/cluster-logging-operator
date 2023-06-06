@@ -12,6 +12,8 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/metrics"
+	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -84,12 +86,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 		instance := clusterRequest.Cluster
 		factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *instance.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.ForwarderSpec, instance.Name)
 
-		if err := factory.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster)); err != nil {
+		if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, collector.MetricsPortName, constants.CollectorMetricSecretName, collector.MetricsPort, utils.AsOwner(cluster), factory.CommonLabelInitializer); err != nil {
 			log.Error(err, "collector.ReconcileService")
 			return err
 		}
 
-		if err := collector.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster)); err != nil {
+		if err := metrics.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, collector.MetricsPortName, utils.AsOwner(cluster)); err != nil {
 			log.Error(err, "collector.ReconcileServiceMonitor")
 			return err
 		}
@@ -165,7 +167,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 			return
 		}
 
-		collector.RemoveServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Cluster.Namespace, constants.CollectorName)
+		metrics.RemoveServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Cluster.Namespace, constants.CollectorName)
 
 		if err = clusterRequest.RemovePrometheusRule(name); err != nil {
 			return

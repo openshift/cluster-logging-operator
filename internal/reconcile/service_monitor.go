@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
@@ -36,6 +37,7 @@ func ServiceMonitor(er record.EventRecorder, k8Client client.Client, desired *mo
 		current.Labels = desired.Labels
 		current.Spec = desired.Spec
 		current.Annotations = desired.Annotations
+		current.OwnerReferences = desired.OwnerReferences
 
 		return k8Client.Update(context.TODO(), current)
 	})

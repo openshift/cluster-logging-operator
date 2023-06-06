@@ -1,0 +1,152 @@
+
+== Forwarding JSON Structured Logs
+
+Allows structured JSON log entries to be forwarded as JSON objects.
+
+=== ClusterLogForwarder configuration
+
+*pipelines* field:
+
+* `parse`: (string, optional) Currently the only allowed value is "json".
+If set, attempt to parse log entries as JSON objects.
+
+With the following forwarder configuration:
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  pipelines:
+    - name: my-json-logs
+      outputRefs:
+        - default
+      inputRefs:
+        - application
+        - infrastructure
+      parse: json
+----
+
+* For each pipeline, if `parse: json` is set _and_ the log is valid JSON, the output record will include a `structured` field _equivalent_ to the JSON entry.
+
+
+=== Relationship between `structured` and `message` fields:
+
+* The original `message` field will be removed when the new `structured` field is included.
+* If there is no valid JSON data found, the `structured` field will not be present.
+* Both `message` and `structured` fields _should not_ be present in the same entry.
+
+For example, an application sends this structured log message:
+
+[source,json]
+----
+{"level":"info","method":"get","source":"homepage"}
+----
+
+Typically, the forwarded log record looks like this:
+
+[source,json]
+----
+{"message":"{\"level\":\"info\",\"method\":\"get\",\"source\":\"homepage\"}",
+ "more fields..."}
+----
+
+The new record with JSON parsing enabled replaces `message` field with a `structured` object:
+
+[source,json]
+----
+{"structured": {"level":"info","method":"get","source":"homepage"},
+ "more fields..."}
+----
+
+
+
+
+=== Output type: Elasticsearch
+
+With Elasticsearch, JSON records with different formats *must* go to different indices, otherwise type conflicts and cardinality problems can occur.
+This is a *required* part of the configuration. The elasticsearch output must be configured with a *"structured type"* that is used to construct an index name.
+
+*  `structuredTypeKey`: (string, optional) Use the value of this meta-data key (if present and non-empty) as the structured type.
+*  `structuredTypeName`: (string, optional) Name to use for the structured type, unless _"structuredTypeKey"_ is set, and the value is present.
+
+==== Notes:
+* *At least one* of the structuredType options must be set when forwarding to an Elasticsearch type output
+* The Elasticsearch _index_ for structured records is formed by prepending "app-" to the structured type and appending "-write".
+* Unstructured records are not sent to the structured index, they are indexed as usual in application, infrastructure or audit indices.
+* If `structureTypeKey` is not found in the log entry, and no `structuredTypeName` is specified as a fallback, forward an _unstructured_ record without a `structured` field.
+
+
+==== Example
+
+For elasticsearch outputs, we must separate logs with different formats into different indices.
+Lets assume we have:
+
+* Applications logging in two structured JSON formats called "apache" and "google".
+* Each of our application pods have been labelled with the appropriate `logFormat=apache` or `logFormat=google`
+
+With the following forwarder configuration:
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: default
+      type: elasticsearch
+      elasticsearch:
+        structuredTypeKey: kubernetes.labels.logFormat
+  pipelines:
+    - name: my-formatted-logs
+      outputRefs:
+        - default
+      inputRefs:
+        - application
+      parse: json
+----
+. After parsing into _structured_, these log record will go to the index `app-apache-write`:
++
+[source,json]
+----
+{
+  "structured":{"name":"fred","home":"bedrock"},
+  "kubernetes":{"labels":{"logFormat": "apache", ...}}
+}
+----
+
+. This _structured_ log record will go to the index `app-google-write`:
++
+[source,json]
+----
+{
+  "structured":{"name":"wilma","home":"bedrock"},
+  "kubernetes":{"labels":{"logFormat": "google", ...}}
+}
+----
+
+*Note*: In the example above, only _structured_ logs that contain a `logFormat` label go to the `google` or `apache` index.
+All others go to the default application index as _unstructured_ records, including:
+
+* Records with missing or empty `logFormat` label.
+* Records that could not be parsed as JSON,  _even if_ they have a `logFormat` label.
+
+==== Elasticsearch Implementation Details
+It is *important* not to overload elasticsearch with too many indices.
+
+Only use distinct structured types for distinct log _formats_, *not* for each application or namespace.
+For example, most Apache applications use the same JSON log format and should use the same structured type, for example "LogApache".
+
+It is up to the user to ensure that logs sent to an index are consistent, otherwise index explosion and type confusion are still possible.
+
+Structured indices are created automatically by the managed default store.
+In order to forward to an external Elasticsearch instance, indices must be created in advance.
+

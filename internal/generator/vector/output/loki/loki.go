@@ -191,34 +191,38 @@ func Tenant(l *logging.Loki) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
 
-	hasTLS := false
 	u, _ := url.Parse(o.URL)
-	conf = append(conf, security.TLSConf{
-		ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-	})
+	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
+		hasTLS := false
+		conf := []Element{}
+		conf = append(conf, security.TLSConf{
+			ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
+		})
 
-	if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret)) {
-		hasTLS = true
-		kc := TLSKeyCert{
-			CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-			KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
+		if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret)) {
+			hasTLS = true
+			kc := TLSKeyCert{
+				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
+				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
+			}
+			conf = append(conf, kc)
 		}
-		conf = append(conf, kc)
-	}
-	if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasCABundle(secret)) {
-		hasTLS = true
-		ca := CAFile{
-			CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
+		if o.Secret != nil && (o.Name == logging.OutputNameDefault || security.HasCABundle(secret)) {
+			hasTLS = true
+			ca := CAFile{
+				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
+			}
+			conf = append(conf, ca)
 		}
-		conf = append(conf, ca)
-	}
-	if o.TLS != nil && o.TLS.InsecureSkipVerify {
-		hasTLS = true
-	}
-	if o.Secret == nil && secret != nil && url.IsTLSScheme(u.Scheme) {
+		if o.TLS != nil && o.TLS.InsecureSkipVerify {
+			hasTLS = true
+		}
+		if hasTLS {
+			return conf
+		}
+	} else if secret != nil && url.IsTLSScheme(u.Scheme) {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		return []Element{
 			security.TLSConf{
@@ -229,10 +233,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			},
 		}
 	}
-	if !hasTLS {
-		return []Element{}
-	}
-	return conf
+	return []Element{}
 }
 
 func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {

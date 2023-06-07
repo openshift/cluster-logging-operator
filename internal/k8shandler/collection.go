@@ -48,11 +48,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
 
-		if err = clusterRequest.removeCollectorSecretIfOwnedByCLO(); err != nil {
-			log.Error(err, "Can't fully clean up old secret created by CLO")
-			return
-		}
-
 		// LOG-2620: containers violate PodSecurity
 		if err = clusterRequest.addSecurityLabelsToNamespace(); err != nil {
 			log.Error(err, "Error adding labels to logging Namespace")
@@ -126,23 +121,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 		}
 	}
 
-	return nil
-}
-
-// need for smooth upgrade CLO to the 5.4 version, after moving certificates generation to the EO side
-// see details: https://issues.redhat.com/browse/LOG-1923
-func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO() (err error) {
-	secret, err := clusterRequest.GetSecret(constants.CollectorSecretName)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
-		err = clusterRequest.RemoveSecret(constants.CollectorSecretName)
-		if err != nil && !errors.IsNotFound(err) {
-			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.CollectorSecretName))
-			return err
-		}
-	}
 	return nil
 }
 

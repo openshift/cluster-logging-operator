@@ -5,7 +5,7 @@
 The topics in this `/docs` directory are a place for developers to share development-related information with other developers.
 These are informal and unofficial docs. They are not carefully maintained or updated.
 
-For the official documentation, see https://docs.openshift.com/container-platform/4.11/logging/cluster-logging-deploying.html
+For the official documentation, see https://docs.openshift.com/container-platform/latest/logging/cluster-logging-deploying.html
 
 == Where can you get help with these docs?
 
@@ -24,6 +24,7 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 * link:features/logforwarding/outputs/google-cloud-forwarding.adoc[Forward logs to Google Cloud Logging]
 * link:features/logforwarding/outputs/splunk-forwarding.adoc[Forward logs to Splunk]
 * link:features/logforwarding/outputs/send-logs-to-fluentd-http.adoc[Send logs to Fluentd over Http]
+* link:features/logforwarding/inputs/http-input.adoc[Send logs to Fluentd over Http]
 
 == Relevant links
 

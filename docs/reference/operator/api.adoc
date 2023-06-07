@@ -56,6 +56,7 @@ InputSpec defines a selector of log messages.
 
 |application|object|  *(optional)* Application, if present, enables named set of `application` logs that
 |name|string|  Name used to refer to the input of a `pipeline`.
+|source|object|  Source to receive logs from non-cluster sources.
 |======================
 
 === .spec.inputs[].application
@@ -99,6 +100,72 @@ A label selector is a label query over a set of resources.
 
 =====  Type
 * object
+
+=== .spec.inputs[].source
+===== Description
+SourceSpec is a union of input source types.
+
+The fields of this struct define the set of known source types.
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|http|object|  
+|======================
+
+=== .spec.inputs[].source.http
+===== Description
+HTTPSource receives encoded logs as a HTTP endpoint.
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|format|string|  Format is the format of incoming log data.
+|logType|string|  LogType indicates the type of logs received from this source.
+|name|string|  Name of the source.
+|port|object|  Port that this source will listen on.
+|======================
+
+=== .spec.inputs[].source.http.port
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|appProtocol|string|  *(optional)* The application protocol for this port.
+|name|string|  *(optional)* The name of this port within the service. This must be a DNS_LABEL.
+|nodePort|int|  *(optional)* The port on each node on which this service is exposed when type is
+|port|int|  The port that will be exposed by this service.
+|protocol|string|  *(optional)* The IP protocol for this port. Supports &#34;TCP&#34;, &#34;UDP&#34;, and &#34;SCTP&#34;.
+|targetPort|object|  *(optional)* Number or name of the port to access on the pods targeted by the service.
+|======================
+
+=== .spec.inputs[].source.http.port.targetPort
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|IntVal|int|  
+|StrVal|string|  
+|Type|int|  
+|======================
 
 === .spec.outputDefaults
 ===== Description

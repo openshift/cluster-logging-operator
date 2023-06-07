@@ -1,0 +1,23 @@
+=== Receiving logs over HTTP
+
+You can receive logs from outside the cluster over HTTP by creating an HTTP `source` and associating it with an input.
+For example, to receive audit logs over HTTP:
+
+.http-intput.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+ inputs:
+   - name: my-http-logs
+     source: my-http-source
+
+ sources:
+   name: my-http-source
+   http:
+     port: 12345
+----

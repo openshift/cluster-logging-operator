@@ -44,11 +44,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 		return clusterRequest.removeKibana()
 	}
 
-	if err = kibana.RemoveIfOwnedByCLO(clusterRequest.Client, clusterRequest.Cluster.Namespace, utils.AsOwner(clusterRequest.Cluster)); err != nil {
-		log.Error(err, "Can't fully clean up old version version for Kibana")
-		return
-	}
-
 	cluster := clusterRequest.Cluster
 	kibanaSpec := cluster.Spec.Visualization.Kibana
 	cr := kibana.New(cluster.Namespace, constants.KibanaName, kibanaSpec, cluster.Spec.LogStore, utils.AsOwner(cluster))

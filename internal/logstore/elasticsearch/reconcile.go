@@ -13,11 +13,6 @@ import (
 )
 
 func Reconcile(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace string, ownerRef v1.OwnerReference, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
-	if err := RemoveIfSecretOwnedByCLO(k8sClient, namespace, ownerRef); err != nil {
-		log.Error(err, "Can't fully clean up old secret created by CLO")
-		return err
-	}
-
 	if err := ReconcileCustomResource(k8sClient, logStore, namespace, ownerRef); err != nil {
 		return err
 	}

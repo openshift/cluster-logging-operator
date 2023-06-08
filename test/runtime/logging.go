@@ -16,8 +16,7 @@ func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
 // collection configuration. No store, visualization or curation are configured,
 // see ClusterLoggingDefaultXXX to add them.
 func NewClusterLogging() *loggingv1.ClusterLogging {
-	cl := &loggingv1.ClusterLogging{}
-	runtime.Initialize(cl, constants.WatchNamespace, constants.SingletonName)
+	cl := runtime.NewClusterLogging(constants.WatchNamespace, constants.SingletonName)
 	test.MustUnmarshal(`
     collection:
       type: fluentd

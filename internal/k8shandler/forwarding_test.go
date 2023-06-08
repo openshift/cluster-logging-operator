@@ -44,18 +44,18 @@ var _ = DescribeTable("#generateCollectorConfig",
 	func(cluster logging.ClusterLogging, forwardSpec logging.ClusterLogForwarderSpec) {
 		clusterRequest := &ClusterLoggingRequest{
 			Cluster: &cluster,
-			ForwarderRequest: &logging.ClusterLogForwarder{
+			Forwarder: &logging.ClusterLogForwarder{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      constants.SingletonName,
 					Namespace: constants.OpenshiftNS,
 				},
+				Spec: forwardSpec,
 			},
-			ForwarderSpec: forwardSpec,
 		}
 
 		clusterRequest.Client = fake.NewFakeClient(clusterRequest.Cluster) //nolint
 
-		_, err := clusterRequest.generateCollectorConfig(map[string]bool{})
+		_, err := clusterRequest.generateCollectorConfig()
 		Expect(err).To(BeNil(), "Generating the collector config should not produce an error: %s=%s %s=%s", "clusterRequest", test.YAMLString(clusterRequest))
 	},
 	Entry("Valid collector config", logging.ClusterLogging{

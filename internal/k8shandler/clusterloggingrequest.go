@@ -24,11 +24,9 @@ type ClusterLoggingRequest struct {
 
 	Cluster       *logging.ClusterLogging
 	EventRecorder record.EventRecorder
-	// ForwarderRequest is a logforwarder instance
-	ForwarderRequest *logging.ClusterLogForwarder
 
-	// ForwarderSpec is the normalized and sanitized logforwarder spec
-	ForwarderSpec logging.ClusterLogForwarderSpec
+	// Forwarder is a logforwarder instance
+	Forwarder *logging.ClusterLogForwarder
 
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret

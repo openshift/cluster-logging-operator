@@ -10,23 +10,21 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map[string]bool) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	if !clusterRequest.isManaged() {
 		return nil
 	}
@@ -70,7 +68,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 			return
 		}
 
-		if collectorConfig, err = clusterRequest.generateCollectorConfig(extras); err != nil {
+		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
 		}
@@ -84,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 		}
 
 		instance := clusterRequest.Cluster
-		factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *instance.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.ForwarderSpec, instance.Name)
+		factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *instance.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, instance.Name)
 
 		if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, collector.MetricsPortName, constants.CollectorMetricSecretName, collector.MetricsPort, utils.AsOwner(cluster), factory.CommonLabelInitializer); err != nil {
 			log.Error(err, "collector.ReconcileService")
@@ -115,6 +113,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map
 			return err
 		}
 
+		// TODO Move me out of here
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
 			log.V(9).Error(err, "unable to update status for the collector")
 		}
@@ -200,28 +199,16 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType
 	return nil
 }
 
+// UpdateFluentdStatus will modify the CL status with the expectation it will be persisted when
+// ClusterLogging reconciliation is completed
 func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
 	if err != nil {
 		return fmt.Errorf("Failed to get status of the collector: %v", err)
 	}
-
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		instance, err := clusterRequest.getClusterLogging(true)
-		if err != nil {
-			return err
-		}
-
-		if !compareFluentdCollectorStatus(fluentdStatus, instance.Status.Collection.Logs.FluentdStatus) {
-			instance.Status.Collection.Logs.FluentdStatus = fluentdStatus
-			return clusterRequest.UpdateStatus(instance)
-		}
-		return nil
-	})
-	if retryErr != nil {
-		return fmt.Errorf("Failed to update Cluster Logging collector status: %v", retryErr)
+	if !compareFluentdCollectorStatus(fluentdStatus, clusterRequest.Cluster.Status.Collection.Logs.FluentdStatus) {
+		clusterRequest.Cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
 	}
-
 	return nil
 }
 

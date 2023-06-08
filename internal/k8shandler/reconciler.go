@@ -9,11 +9,10 @@ import (
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
@@ -30,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string) (instance *logging.ClusterLogging, err error) {
+func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Cluster:        cl,
 		Client:         requestClient,
@@ -38,6 +37,9 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 		EventRecorder:  r,
 		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
+	}
+	if forwarder != nil {
+		clusterLoggingRequest.Forwarder = forwarder
 	}
 
 	// Cancel previous info metrics
@@ -49,12 +51,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 		telemetry.SetCLFMetrics(1)
 	}()
 
-	if instance, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
-		return nil, err
-	}
-	clusterLoggingRequest.Cluster = instance
-
-	if instance.GetDeletionTimestamp() != nil {
+	if cl.GetDeletionTimestamp() != nil {
 		// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
 		if err := lokistack.RemoveRbac(clusterLoggingRequest.Client, clusterLoggingRequest.removeFinalizer); err != nil {
 			log.Error(err, "Error removing RBAC for accessing LokiStack.")
@@ -69,32 +66,8 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	// CL is managed by default set it as 1
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
 	updateInfofromCL(&clusterLoggingRequest)
-	forwarder, extras := clusterLoggingRequest.getLogForwarder()
-	if forwarder != nil {
-		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
-			return nil, err
-		}
-		clusterLoggingRequest.ForwarderRequest = forwarder
-		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 
-		// Verify clf inputs, outputs, pipelines AFTER migration
-		status := clusterlogforwarder.ValidateInputsOutputsPipelines(
-			clusterLoggingRequest.Cluster,
-			clusterLoggingRequest.Client,
-			clusterLoggingRequest.ForwarderRequest,
-			clusterLoggingRequest.ForwarderSpec,
-			extras)
-
-		clusterLoggingRequest.ForwarderRequest.Status = *status
-
-		// Rejected if clf condition is not ready
-		// Do not create or update the collection
-		if status.Conditions.IsFalseFor(logging.ConditionReady) {
-			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-			return clusterLoggingRequest.Cluster, errors.New("invalid clusterlogforwarder spec. No change in collection")
-		}
-
-	} else if !clusterLoggingRequest.IncludesManagedStorage() {
+	if !forwarder.Status.IsReady() && !clusterLoggingRequest.IncludesManagedStorage() {
 		// No clf and no logStore so remove the collector https://issues.redhat.com/browse/LOG-2703
 		removeCollectorAndUpdate(clusterLoggingRequest)
 		return clusterLoggingRequest.Cluster, nil
@@ -110,7 +83,9 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 		// // No LFME so make a new one
 		if lfmeInstance == nil {
 			lfmeInstance = runtime.NewLogFileMetricExporter(constants.WatchNamespace, clusterLoggingRequest.Cluster.Name)
-			if err := ReconcileForLogFileMetricExporter(lfmeInstance,
+			if err := ReconcileForLogFileMetricExporter(
+				*clusterLoggingRequest.Cluster,
+				lfmeInstance,
 				clusterLoggingRequest.Client,
 				clusterLoggingRequest.EventRecorder,
 				clusterLoggingRequest.ClusterID,
@@ -140,7 +115,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(extras); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
 		return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -188,57 +163,39 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	}
 }
 
-func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client, er record.EventRecorder, clusterID string) (err error) {
+func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clusterLogging *logging.ClusterLogging, requestClient client.Client, er record.EventRecorder, clusterID string) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
 		EventRecorder: er,
+		Cluster:       clusterLogging,
 		ClusterID:     clusterID,
 	}
 	if forwarder != nil {
-		clusterLoggingRequest.ForwarderRequest = forwarder
-		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
+		clusterLoggingRequest.Forwarder = forwarder
 	}
 
-	var clusterLogging *logging.ClusterLogging
-	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
-		return err
-	}
+	//TODO This should never be.  Shortly will always need 1:1 between CLF and CL
 	if clusterLogging == nil {
 		return nil
 	}
 
-	extras := map[string]bool{}
-	clusterLoggingRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterLogging.Spec.LogStore, extras)
-	clusterLoggingRequest.Cluster = clusterLogging
-
-	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+	//TODO Moved from reconciler#ReconcileForClusterLogForwarder
+	// Does this field need to be added to CLF?  Does it go away?
+	if !clusterLoggingRequest.isManaged() {
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		return nil
 	}
 
-	// Verify clf inputs, outputs, pipelines AFTER migration
-	status := clusterlogforwarder.ValidateInputsOutputsPipelines(
-		clusterLoggingRequest.Cluster,
-		clusterLoggingRequest.Client,
-		clusterLoggingRequest.ForwarderRequest,
-		clusterLoggingRequest.ForwarderSpec,
-		extras)
-
-	clusterLoggingRequest.ForwarderRequest.Status = *status
-
 	// Rejected if clf condition is not ready
 	// Do not create or update the collection
-	if status.Conditions.IsFalseFor(logging.ConditionReady) {
+	if clusterLogging.Status.Conditions.IsFalseFor(logging.ConditionReady) {
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		return nil
 	}
 
 	// If valid, generate the appropriate config
-	err = clusterLoggingRequest.CreateOrUpdateCollection(extras)
-	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
-
-	if err != nil {
-		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
+		msg := fmt.Sprintf("Unable to reconcile collection for %q/%q: %v", clusterLoggingRequest.Cluster.Namespace, clusterLoggingRequest.Cluster.Name, err)
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, msg)
 		return errors.New(msg)
@@ -253,39 +210,12 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	return nil
 }
 
-func ReconcileForLogFileMetricExporter(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
+func ReconcileForLogFileMetricExporter(clusterLogging logging.ClusterLogging,
+	lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	requestClient client.Client,
 	er record.EventRecorder,
 	clusterID string,
 	owner metav1.OwnerReference) (err error) {
-
-	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
-
-	// Try and get the instance of cluster logging, if not there,
-	// don't need a LFME
-	clusterLogging := &logging.ClusterLogging{}
-	if err := requestClient.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return errors.New("error retrieving ClusterLogging instance")
-		}
-		log.V(3).Info("no ClusterLogging named 'instance' found")
-		clusterLogging = nil
-	}
-
-	// Check for forwarder
-	clusterLogForwarder := &logging.ClusterLogForwarder{}
-	if err := requestClient.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogForwarder); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return errors.New("error retrieving ClusterLogForwarder instance")
-		}
-		log.V(3).Info("no ClusterLogForwarder named 'instance' found")
-		clusterLogForwarder = nil
-	}
-
-	// No CL or CLF named instance so return, no need to reconcile
-	if clusterLogging == nil && clusterLogForwarder == nil {
-		return errors.New("no ClusterLogging or ClusterLogForwarder named instance")
-	}
 
 	// Make the daemonset along with metric services for Log file metric exporter
 	if err := logmetricexporter.Reconcile(lfmeInstance, requestClient, er, clusterLogging, owner); err != nil {
@@ -330,20 +260,6 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bo
 	return clusterLogging, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getLogForwarder() (*logging.ClusterLogForwarder, map[string]bool) {
-	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: clusterRequest.Cluster.Namespace}
-	forwarder := runtime.NewClusterLogForwarder(clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name)
-	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
-		if !apierrors.IsNotFound(err) {
-			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
-		}
-		forwarder.Spec = logging.ClusterLogForwarderSpec{}
-	}
-	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
-	return forwarder, extras
-}
-
 func updateInfofromCL(request *ClusterLoggingRequest) {
 	clspec := request.Cluster.Spec
 	if clspec.LogStore != nil && clspec.LogStore.Type != "" {
@@ -361,8 +277,8 @@ func updateInfofromCLF(request *ClusterLoggingRequest) {
 	//CLO got two custom resources CL, CFL, CLF here is meant for forwarding logs to third party systems
 
 	//CLO CLF pipelines and set of output specs
-	lgpipeline := request.ForwarderSpec.Pipelines
-	outputs := request.ForwarderSpec.OutputMap()
+	lgpipeline := request.Forwarder.Spec.Pipelines
+	outputs := request.Forwarder.Spec.OutputMap()
 	log.V(1).Info("OutputMap", "outputs", outputs)
 
 	for _, pipeline := range lgpipeline {

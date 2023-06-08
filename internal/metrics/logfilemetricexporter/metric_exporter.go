@@ -22,7 +22,7 @@ import (
 func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	requestClient client.Client,
 	er record.EventRecorder,
-	clInstance *loggingv1.ClusterLogging,
+	clInstance loggingv1.ClusterLogging,
 	owner metav1.OwnerReference) error {
 
 	// Adding common labels

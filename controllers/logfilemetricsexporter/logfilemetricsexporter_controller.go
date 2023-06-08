@@ -81,7 +81,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 		lfmeInstance.Status.Conditions.SetCondition(
 			condNotReady(loggingv1.ReasonInvalid,
 				failMessage))
-		r.Recorder.Event(lfmeInstance, "Error", string(loggingv1.ReasonInvalid), failMessage)
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), failMessage)
 		return r.updateStatus(lfmeInstance)
 	}
 
@@ -96,11 +96,11 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, constants.UnHealthyStatus)
 		log.V(2).Error(reconcileErr, "logfilemetricexporter-controller returning, error")
 
-		r.Recorder.Event(lfmeInstance, "Error", string(loggingv1.ReasonInvalid), reconcileErr.Error())
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), reconcileErr.Error())
 	} else {
 		if !lfmeInstance.Status.Conditions.SetCondition(condReady) {
 			telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, constants.HealthyStatus)
-			r.Recorder.Event(lfmeInstance, "Normal", string(condReady.Type), "LogFileMetricExporter deployed and ready")
+			r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, string(condReady.Type), "LogFileMetricExporter deployed and ready")
 		}
 	}
 

@@ -1,6 +1,7 @@
 package logfilemetricexporter
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -63,9 +64,9 @@ func Tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 	return append(defaultTolerations, exporter.Spec.Tolerations...)
 }
 
-func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, collectionType loggingv1.LogCollectionType, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
+func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, collectionType loggingv1.LogCollectionType, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
 	podSpec := NewPodSpec(exporter, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(name, namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, string(collectionType), *podSpec)
+	ds := coreFactory.NewDaemonSet(name, namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, string(collectionType), *podSpec, visitors...)
 	return ds
 }
 

@@ -287,21 +287,22 @@ func updateInfofromCLF(request *ClusterLoggingRequest) {
 		inref := pipeline.InputRefs
 		outref := pipeline.OutputRefs
 
-		for labelname := range telemetry.Data.CLFInputType.M {
+		telemetry.Data.CLFInputType.Range(func(labelname, value interface{}) bool {
 			log.V(1).Info("iter over labelnames", "labelname", labelname)
-			telemetry.Data.CLFInputType.Set(labelname, constants.IsNotPresent) //reset to zero
+			telemetry.Data.CLFInputType.Set(labelname.(string), constants.IsNotPresent) //reset to zero
 			for _, inputtype := range inref {
 				log.V(1).Info("iter over inputtype", "inputtype", inputtype)
 				if inputtype == labelname {
 					log.V(1).Info("labelname and inputtype", "labelname", labelname, "inputtype", inputtype) //when matched print matched labelname with input type stated in CLF spec
-					telemetry.Data.CLFInputType.Set(labelname, constants.IsPresent)                          //input type present in CLF spec
+					telemetry.Data.CLFInputType.Set(labelname.(string), constants.IsPresent)                 //input type present in CLF spec
 				}
 			}
-		}
+			return true // continue iterating
+		})
 
-		for labelname := range telemetry.Data.CLFOutputType.M {
+		telemetry.Data.CLFOutputType.Range(func(labelname, value interface{}) bool {
 			log.V(1).Info("iter over labelnames", "labelname", labelname)
-			telemetry.Data.CLFOutputType.Set(labelname, constants.IsNotPresent) //reset to zero
+			telemetry.Data.CLFOutputType.Set(labelname.(string), constants.IsNotPresent) //reset to zero
 			for _, outputname := range outref {
 				log.V(1).Info("iter over outref", "outputname", outputname)
 				if outputname == "default" {
@@ -313,11 +314,12 @@ func updateInfofromCLF(request *ClusterLoggingRequest) {
 					outputtype := output.Type
 					if outputtype == labelname {
 						log.V(1).Info("labelname and outputtype", "labelname", labelname, "outputtype", outputtype)
-						telemetry.Data.CLFOutputType.Set(labelname, constants.IsPresent) //when matched print matched labelname with output type stated in CLF spec
+						telemetry.Data.CLFOutputType.Set(labelname.(string), constants.IsPresent) //when matched print matched labelname with output type stated in CLF spec
 					}
 				}
 			}
-		}
+			return true // continue iterating
+		})
 		log.V(1).Info("post updating inputtype and outputtype")
 		telemetry.Data.CLFInfo.Set("pipelineInfo", strconv.Itoa(npipelines))
 	}

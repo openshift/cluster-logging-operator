@@ -23,10 +23,10 @@ var _ = Describe("telemetry", func() {
 		data          = NewTD()
 		mdir          string
 		smYamlFile    string
-		CLinfo        = data.CLInfo.M
-		CLFinputType  = data.CLFInputType.M
-		CLFoutputType = data.CLFOutputType.M
-		LFMEInfo      = data.LFMEInfo.M
+		CLinfo        = data.CLInfo
+		CLFinputType  = data.CLFInputType
+		CLFoutputType = data.CLFOutputType
+		LFMEInfo      = data.LFMEInfo
 		manifestFile  string
 	)
 
@@ -51,10 +51,10 @@ var _ = Describe("telemetry", func() {
 				Expect(sm).To(MatchYAML(msm))
 			})
 			It("Info metric must have version, managedStatus, healthStatus as default values", func() {
-				Expect(CLinfo["version"]).To(Equal(version.Version))
-				Expect(CLFinputType["application"]).To(Equal("0"))
-				Expect(CLFoutputType["elasticsearch"]).To(Equal("0"))
-				Expect(LFMEInfo[Deployed]).To(Equal("0"))
+				Expect(CLinfo.Get("version")).To(Equal(version.Version))
+				Expect(CLFinputType.Get("application")).To(Equal("0"))
+				Expect(CLFoutputType.Get("elasticsearch")).To(Equal("0"))
+				Expect(LFMEInfo.Get(Deployed)).To(Equal("0"))
 			})
 		})
 	})

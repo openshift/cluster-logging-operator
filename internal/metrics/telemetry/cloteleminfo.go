@@ -36,24 +36,24 @@ const (
 
 // placeholder for keeping clo info which will be used for clo metrics update
 type TData struct {
-	CLInfo              utils.StringMap
-	CLLogStoreType      utils.StringMap
-	CollectorErrorCount utils.Float64Map
-	CLFInfo             utils.StringMap
-	CLFInputType        utils.StringMap
-	CLFOutputType       utils.StringMap
-	LFMEInfo            utils.StringMap
+	CLInfo              *utils.StringMap
+	CLLogStoreType      *utils.StringMap
+	CollectorErrorCount *utils.Float64Map
+	CLFInfo             *utils.StringMap
+	CLFInputType        *utils.StringMap
+	CLFOutputType       *utils.StringMap
+	LFMEInfo            *utils.StringMap
 }
 
 // IsNotPresent stands for managedStatus and healthStatus true and healthy
 func NewTD() *TData {
 	return &TData{
-		CLInfo:              utils.StringMap{M: map[string]string{VersionNo: version.Version, ManagedStatus: IsNotPresent, HealthStatus: IsNotPresent}},
-		CLLogStoreType:      utils.StringMap{M: map[string]string{OutputTypeElasticsearch: IsNotPresent, OutputTypeLoki: IsNotPresent}},
-		CollectorErrorCount: utils.Float64Map{M: map[string]float64{"CollectorErrorCount": 0}},
-		CLFInfo:             utils.StringMap{M: map[string]string{HealthStatus: IsNotPresent, PipelineNo: IsNotPresent}},
-		CLFInputType:        utils.StringMap{M: map[string]string{InputNameApplication: IsNotPresent, InputNameAudit: IsNotPresent, InputNameInfrastructure: IsNotPresent}},
-		CLFOutputType: utils.StringMap{M: map[string]string{
+		CLInfo:              utils.InitStringMap(map[string]string{VersionNo: version.Version, ManagedStatus: IsNotPresent, HealthStatus: IsNotPresent}),
+		CLLogStoreType:      utils.InitStringMap(map[string]string{OutputTypeElasticsearch: IsNotPresent, OutputTypeLoki: IsNotPresent}),
+		CollectorErrorCount: utils.InitFloat64Map(map[string]float64{"CollectorErrorCount": 0}),
+		CLFInfo:             utils.InitStringMap(map[string]string{HealthStatus: IsNotPresent, PipelineNo: IsNotPresent}),
+		CLFInputType:        utils.InitStringMap(map[string]string{InputNameApplication: IsNotPresent, InputNameAudit: IsNotPresent, InputNameInfrastructure: IsNotPresent}),
+		CLFOutputType: utils.InitStringMap(map[string]string{
 			OutputTypeDefault:            IsNotPresent,
 			OutputTypeElasticsearch:      IsNotPresent,
 			OutputTypeFluentdForward:     IsNotPresent,
@@ -63,8 +63,8 @@ func NewTD() *TData {
 			OutputTypeCloudwatch:         IsNotPresent,
 			OutputTypeHttp:               IsNotPresent,
 			OutputTypeSplunk:             IsNotPresent,
-			OutputTypeGoogleCloudLogging: IsNotPresent}},
-		LFMEInfo: utils.StringMap{M: map[string]string{Deployed: IsNotPresent, HealthStatus: IsNotPresent}},
+			OutputTypeGoogleCloudLogging: IsNotPresent}),
+		LFMEInfo: utils.InitStringMap(map[string]string{Deployed: IsNotPresent, HealthStatus: IsNotPresent}),
 	}
 }
 
@@ -149,51 +149,51 @@ func RegisterMetrics() error {
 }
 
 func SetCLMetrics(value float64) {
-	CLInfo := Data.CLInfo.M
+	CLInfo := Data.CLInfo
 	mCLInfo.With(prometheus.Labels{
-		VersionNo:     CLInfo[VersionNo],
-		ManagedStatus: CLInfo[ManagedStatus],
-		HealthStatus:  CLInfo[HealthStatus]}).Set(value)
+		VersionNo:     CLInfo.Get(VersionNo),
+		ManagedStatus: CLInfo.Get(ManagedStatus),
+		HealthStatus:  CLInfo.Get(HealthStatus)}).Set(value)
 }
 
 func SetCLFMetrics(value float64) {
-	CLInfo := Data.CLInfo.M
-	CErrorCount := Data.CollectorErrorCount.M
-	CLFInfo := Data.CLFInfo.M
-	CLFInputType := Data.CLFInputType.M
-	CLFOutputType := Data.CLFOutputType.M
+	CLInfo := Data.CLInfo
+	CErrorCount := Data.CollectorErrorCount
+	CLFInfo := Data.CLFInfo
+	CLFInputType := Data.CLFInputType
+	CLFOutputType := Data.CLFOutputType
 
 	mCollectorErrorCount.With(prometheus.Labels{
-		VersionNo: CLInfo[VersionNo]}).Set(CErrorCount["CollectorErrorCount"])
+		VersionNo: CLInfo.Get(VersionNo)}).Set(CErrorCount.Get("CollectorErrorCount"))
 
 	mCLFInfo.With(prometheus.Labels{
-		HealthStatus: CLFInfo[HealthStatus],
-		PipelineNo:   CLFInfo[PipelineNo]}).Set(value)
+		HealthStatus: CLFInfo.Get(HealthStatus),
+		PipelineNo:   CLFInfo.Get(PipelineNo)}).Set(value)
 
 	mCLFInputType.With(prometheus.Labels{
-		InputNameApplication:    CLFInputType[InputNameApplication],
-		InputNameAudit:          CLFInputType[InputNameAudit],
-		InputNameInfrastructure: CLFInputType[InputNameInfrastructure]}).Set(value)
+		InputNameApplication:    CLFInputType.Get(InputNameApplication),
+		InputNameAudit:          CLFInputType.Get(InputNameAudit),
+		InputNameInfrastructure: CLFInputType.Get(InputNameInfrastructure)}).Set(value)
 
 	mCLFOutputType.With(prometheus.Labels{
-		OutputTypeDefault:            CLFOutputType[OutputTypeDefault],
-		OutputTypeElasticsearch:      CLFOutputType[OutputTypeElasticsearch],
-		OutputTypeFluentdForward:     CLFOutputType[OutputTypeFluentdForward],
-		OutputTypeSyslog:             CLFOutputType[OutputTypeSyslog],
-		OutputTypeKafka:              CLFOutputType[OutputTypeKafka],
-		OutputTypeLoki:               CLFOutputType[OutputTypeLoki],
-		OutputTypeCloudwatch:         CLFOutputType[OutputTypeCloudwatch],
-		OutputTypeHttp:               CLFOutputType[OutputTypeHttp],
-		OutputTypeSplunk:             CLFOutputType[OutputTypeSplunk],
-		OutputTypeGoogleCloudLogging: CLFOutputType[OutputTypeGoogleCloudLogging]}).Set(value)
+		OutputTypeDefault:            CLFOutputType.Get(OutputTypeDefault),
+		OutputTypeElasticsearch:      CLFOutputType.Get(OutputTypeElasticsearch),
+		OutputTypeFluentdForward:     CLFOutputType.Get(OutputTypeFluentdForward),
+		OutputTypeSyslog:             CLFOutputType.Get(OutputTypeSyslog),
+		OutputTypeKafka:              CLFOutputType.Get(OutputTypeKafka),
+		OutputTypeLoki:               CLFOutputType.Get(OutputTypeLoki),
+		OutputTypeCloudwatch:         CLFOutputType.Get(OutputTypeCloudwatch),
+		OutputTypeHttp:               CLFOutputType.Get(OutputTypeHttp),
+		OutputTypeSplunk:             CLFOutputType.Get(OutputTypeSplunk),
+		OutputTypeGoogleCloudLogging: CLFOutputType.Get(OutputTypeGoogleCloudLogging)}).Set(value)
 }
 
 func SetLFMEMetrics(value float64) {
-	LFMEInfo := Data.LFMEInfo.M
+	LFMEInfo := Data.LFMEInfo
 
 	mLFMEInfo.With(prometheus.Labels{
-		Deployed:     LFMEInfo[Deployed],
-		HealthStatus: LFMEInfo[HealthStatus],
+		Deployed:     LFMEInfo.Get(Deployed),
+		HealthStatus: LFMEInfo.Get(HealthStatus),
 	}).Set(value)
 }
 

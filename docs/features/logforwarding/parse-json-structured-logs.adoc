@@ -3,7 +3,15 @@
 
 Allows structured JSON log entries to be forwarded as JSON objects.
 
-=== ClusterLogForwarder configuration
+*WARNING: Advanced Usage with Potential Implications*
+
+This section describes an advanced usage of the API that can adversely impact cluster performance, stability, and resources.
+When using Elasticsearch, shard explosion is a possibility under certain conditions.
+
+Index creation and parsing with Elasticsearch should only be executed by experienced users who have assessed the shard explosion possibility.
+Please use caution and ensure a thorough understanding of the potential risks involved.
+
+=== ClusterLogForwarder Configuration
 
 *pipelines* field:
 
@@ -34,7 +42,7 @@ spec:
 * For each pipeline, if `parse: json` is set _and_ the log is valid JSON, the output record will include a `structured` field _equivalent_ to the JSON entry.
 
 
-=== Relationship between `structured` and `message` fields:
+==== Relationship between `structured` and `message` fields:
 
 * The original `message` field will be removed when the new `structured` field is included.
 * If there is no valid JSON data found, the `structured` field will not be present.
@@ -64,30 +72,46 @@ The new record with JSON parsing enabled replaces `message` field with a `struct
 ----
 
 
-
-
 === Output type: Elasticsearch
 
-With Elasticsearch, JSON records with different formats *must* go to different indices, otherwise type conflicts and cardinality problems can occur.
-This is a *required* part of the configuration. The elasticsearch output must be configured with a *"structured type"* that is used to construct an index name.
+Elasticsearch requires that JSON records with different structures or schemas *must* go to separate indices.
+This is a *required* part of the configuration.
+Type conflicts and cardinality problems can occur when a schema includes different field names and types.
+
+The elasticsearch output must be configured with a *"structured type"* to construct an index name.
 
 *  `structuredTypeKey`: (string, optional) Use the value of this meta-data key (if present and non-empty) as the structured type.
 *  `structuredTypeName`: (string, optional) Name to use for the structured type, unless _"structuredTypeKey"_ is set, and the value is present.
 
 ==== Notes:
-* *At least one* of the structuredType options must be set when forwarding to an Elasticsearch type output
-* The Elasticsearch _index_ for structured records is formed by prepending "app-" to the structured type and appending "-write".
-* Unstructured records are not sent to the structured index, they are indexed as usual in application, infrastructure or audit indices.
-* If `structureTypeKey` is not found in the log entry, and no `structuredTypeName` is specified as a fallback, forward an _unstructured_ record without a `structured` field.
+* *At least one* of the structuredType options must be set when forwarding to an Elasticsearch output
+* The _index_ for structured records is formed by prepending "app-" to the structured type and appending "-write".
+* If `structureTypeKey` is not found in the record, and no `structuredTypeName` is specified as a fallback, forward an _unstructured_ record.
+* _Unstructured_ records are not sent to the structured index, and are indexed as usual in app, infra or audit indices.
+
+==== Elasticsearch Implementation Details
+*WARNING:* Do not overload elasticsearch with too many indices.
+Only use distinct structured _types_ for distinct log _formats_.  *Do not* use a structured _type_ for each application or namespace.
+
+Users must ensure that logs sent to an index are consistent.  Otherwise, it may result in index explosion and data inconsistency.
+For example, most Apache applications use the same JSON log format and should use the same _structured type_.
+
+===== Index Creation
+To ensure a smooth operation, it is important to note that our default configuration involves writing to an alias and index rollover.
+We suggest users configure their indices following a similar approach:
+
+. Create the initial index as the primary target.
+. Define the alias, which is used as a virtual name for the index.
+. Configure rollover to manage the transition between indices.
+. Create custom mappings (optional) to define the data structure and types.
 
 
-==== Example
+=== Example
 
-For elasticsearch outputs, we must separate logs with different formats into different indices.
-Lets assume we have:
+Logs with different structures or schemas into separate indices. Lets assume we have:
 
-* Applications logging in two structured JSON formats called "apache" and "google".
-* Each of our application pods have been labelled with the appropriate `logFormat=apache` or `logFormat=google`
+* Applications logging in two different JSON formats called "apache" and "google".
+* All application pods have been labeled with the appropriate `logFormat=apache` or `logFormat=google`
 
 With the following forwarder configuration:
 
@@ -139,14 +163,4 @@ All others go to the default application index as _unstructured_ records, includ
 * Records with missing or empty `logFormat` label.
 * Records that could not be parsed as JSON,  _even if_ they have a `logFormat` label.
 
-==== Elasticsearch Implementation Details
-It is *important* not to overload elasticsearch with too many indices.
-
-Only use distinct structured types for distinct log _formats_, *not* for each application or namespace.
-For example, most Apache applications use the same JSON log format and should use the same structured type, for example "LogApache".
-
-It is up to the user to ensure that logs sent to an index are consistent, otherwise index explosion and type confusion are still possible.
-
-Structured indices are created automatically by the managed default store.
-In order to forward to an external Elasticsearch instance, indices must be created in advance.
 

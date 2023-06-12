@@ -126,7 +126,7 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.M["healthStatus"] = UnHealthyStatus
+		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -137,7 +137,7 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.M["healthStatus"] = UnHealthyStatus
+		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -157,7 +157,7 @@ func main() {
 		cloversion = version.Version
 		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
 	}
-	telemetry.Data.CLInfo.M["version"] = cloversion
+	telemetry.Data.CLInfo.Set("version", cloversion)
 
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {

@@ -25,8 +25,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 	var (
 		instance *functional.CollectorFunctionalFramework
 	)
-	//appNamespace2 := "application-ns2"
-	appLabels1 := map[string]string{"name": "app1", "env": "env1"}
+
 	appLabels2 := map[string]string{"name": "app1", "fallback": "env2"}
 
 	AfterEach(func() {
@@ -35,13 +34,14 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 
 	Describe("when CLF has input selectors to collect application logs", func() {
 		Describe("from pods identified by labels", func() {
-
+			appLabels1 := map[string]string{"name": "app1", "env": "env1", "local.test/logtype": "user"}
 			It("should send logs from specific applications by using labels", func() {
 				instance = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 				instance.Labels = map[string]string{
-					"name":     "app1",
-					"env":      "env1",
-					"fallback": "env2",
+					"name":               "app1",
+					"env":                "env1",
+					"fallback":           "env2",
+					"local.test/logtype": "user",
 				}
 				builder := functional.NewClusterLogForwarderBuilder(instance.Forwarder).
 					FromInputWithVisitor("application-logs1",
@@ -97,7 +97,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 		})
 		Describe("from pods identified by labels and namespaces", func() {
 			It("should only send logs with labels name:app1 and env:env1 from namespace application-ns1", func() {
-
+				appLabels1 := map[string]string{"name": "app1", "env": "env1"}
 				instance = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 				instance.Labels = map[string]string{
 					"name": "app1",

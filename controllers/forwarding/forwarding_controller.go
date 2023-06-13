@@ -75,6 +75,10 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	if !k8shandler.IsManaged(r.Client, r.Recorder, r.ClusterID) {
+		return ctrl.Result{}, nil
+	}
+
 	if err := clusterlogforwarder.Validate(*instance); err != nil {
 		instance.Status.Conditions.SetCondition(condInvalid("validation failed: %v", err))
 		return r.updateStatus(instance)

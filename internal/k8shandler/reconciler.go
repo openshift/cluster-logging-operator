@@ -162,6 +162,23 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	}
 }
 
+func IsManaged(requestClient client.Client, er record.EventRecorder, clusterID string) bool {
+	clusterLoggingRequest := ClusterLoggingRequest{
+		Client:        requestClient,
+		EventRecorder: er,
+		ClusterID:     clusterID,
+	}
+	clusterLogging, _ := clusterLoggingRequest.getClusterLogging(false)
+	if clusterLogging == nil {
+		return false
+	}
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
+		return false
+	}
+	return true
+}
+
 func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client, er record.EventRecorder, clusterID string) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,

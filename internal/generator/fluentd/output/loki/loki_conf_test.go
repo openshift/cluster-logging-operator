@@ -90,6 +90,11 @@ var _ = Describe("[internal][generator][fluentd][output][loki] #Conf", func() {
 						Secret: &logging.OutputSecretSpec{
 							Name: "es-1",
 						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Loki: &logging.Loki{
+								LabelKeys: []string{"kubernetes.labels.foo/bar"},
+							},
+						},
 					},
 				},
 			},
@@ -113,11 +118,8 @@ var _ = Describe("[internal][generator][fluentd][output][loki] #Conf", func() {
   <filter **>
     @type record_modifier
     <record>
-      _kubernetes_container_name ${record.dig("kubernetes","container_name")}
       _kubernetes_host "#{ENV['NODE_NAME']}"
-      _kubernetes_namespace_name ${record.dig("kubernetes","namespace_name")}
-      _kubernetes_pod_name ${record.dig("kubernetes","pod_name")}
-      _log_type ${record.dig("log_type")}
+      _kubernetes_labels_foo_bar ${record.dig("kubernetes","labels","foo_bar")}
     </record>
   </filter>
   
@@ -129,11 +131,8 @@ var _ = Describe("[internal][generator][fluentd][output][loki] #Conf", func() {
     min_version TLS1_2
 	ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
     <label>
-      kubernetes_container_name _kubernetes_container_name
       kubernetes_host _kubernetes_host
-      kubernetes_namespace_name _kubernetes_namespace_name
-      kubernetes_pod_name _kubernetes_pod_name
-      log_type _log_type
+      kubernetes_labels_foo_bar _kubernetes_labels_foo_bar
     </label>
     <buffer>
       @type file

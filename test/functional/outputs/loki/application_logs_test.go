@@ -29,11 +29,14 @@ func TestLokiOutput(t *testing.T) {
 		ts     = functional.CRIOTime(tsTime)
 	)
 
+	const myValue = "foobarvalue"
+
 	// testCase does common setup/teardown around a testFunc
 	testCase := func(name string, lokiSpec *logging.Loki, testFunc func(t *testing.T)) {
 		t.Helper()
 		t.Run(name, func(t *testing.T) {
 			f = functional.NewFluentdFunctionalFrameworkForTest(t)
+			f.Labels["foo/bar"] = myValue
 			defer f.Cleanup()
 
 			// Start a Loki server
@@ -109,13 +112,14 @@ func TestLokiOutput(t *testing.T) {
 			"kubernetes.labels.k8s",
 			"openshift.labels.logging",
 			"kubernetes.container_name",
+			"kubernetes.labels.foo/bar",
 		}},
 		func(t *testing.T) {
 			msg := functional.NewFullCRIOLogMessage(ts, "application log message")
 			require.NoError(t, f.WriteMessagesToApplicationLog(msg, 1))
 
 			// Verify we can query by Loki labels
-			query := fmt.Sprintf(`{kubernetes_labels_k8s=%q, openshift_labels_logging=%q}`, "k8s-value", "logging-value")
+			query := fmt.Sprintf(`{kubernetes_labels_k8s=%q, openshift_labels_logging=%q, kubernetes_labels_foo_bar=%q}`, "k8s-value", "logging-value", myValue)
 			r, err := l.QueryUntil(query, "", 1)
 			assert.NoError(t, err, query)
 			records := r[0].Records()
@@ -126,6 +130,7 @@ func TestLokiOutput(t *testing.T) {
 				"kubernetes_container_name": f.Pod.Spec.Containers[0].Name,
 				"kubernetes_labels_k8s":     "k8s-value",
 				"openshift_labels_logging":  "logging-value",
+				"kubernetes_labels_foo_bar": myValue,
 				"kubernetes_host":           functional.FunctionalNodeName,
 			}
 			labels := r[0].Stream

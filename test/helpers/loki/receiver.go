@@ -112,6 +112,17 @@ func (r *Receiver) Create(c *client.Client) error {
 	})
 }
 
+// Delete the receiver's resources. Blocks till created.
+func (r *Receiver) Delete(c *client.Client) error {
+	r.timeout = c.Timeout()
+	for _, o := range []crclient.Object{r.Pod, r.service, r.route} {
+		if err := c.Delete(o); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ExternalURL returns the URL of the external route. Only valid after Create()
 func (r *Receiver) ExternalURL(path string) *url.URL {
 	return &url.URL{Scheme: "http", Host: r.route.Spec.Host, Path: path}

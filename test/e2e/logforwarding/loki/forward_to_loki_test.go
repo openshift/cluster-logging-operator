@@ -95,22 +95,27 @@ func TestLogForwardingToLokiWithVector(t *testing.T) {
 
 func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *loggingv1.ClusterLogForwarder) {
 	c := client.ForTest(t)
-	defer e2e.NewE2ETestFramework().Cleanup()
+	framework := e2e.NewE2ETestFramework()
+	defer framework.Cleanup()
+	framework.AddCleanup(func() error { return c.Delete(cl) })
+	framework.AddCleanup(func() error { return c.Delete(clf) })
+
 	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
+	framework.AddCleanup(func() error { return rcv.Delete(c.Client) })
+
 	gen := runtime.NewLogGenerator(c.NS.Name, rcv.Name, 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
+	framework.AddCleanup(func() error { return c.Delete(gen) })
 	clf.Spec.Outputs[0].URL = rcv.InternalURL("").String()
 
 	// Start independent components in parallel to speed up the test.
 	var g errgroup.Group
 	g.Go(func() error { return c.Recreate(cl) })
-	defer func(r *loggingv1.ClusterLogging) { _ = c.Delete(r) }(cl)
 	g.Go(func() error { return c.Recreate(clf) })
-	defer func(r *loggingv1.ClusterLogForwarder) { _ = c.Delete(r) }(clf)
 	g.Go(func() error { return rcv.Create(c.Client) })
 	g.Go(func() error { return c.Create(gen) })
+
 	require.NoError(t, g.Wait())
 	require.NoError(t, c.WaitFor(clf, client.ClusterLogForwarderReady))
-	framework := e2e.NewE2ETestFramework()
 	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
 
 	// Now the actual test.

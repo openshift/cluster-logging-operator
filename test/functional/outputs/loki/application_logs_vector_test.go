@@ -84,11 +84,11 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	Context("when label keys are defined that include slashes. Ref LOG-4095", func() {
 		const myValue = "foobarvalue"
 		BeforeEach(func() {
-			f.Labels["foo/bar"] = myValue
+			f.Labels["app.kubernetes.io/name"] = myValue
 			f.Forwarder.Spec.Outputs[0].Loki.LabelKeys = []string{
 				"kubernetes.namespace_name",
 				"kubernetes.pod_name",
-				"kubernetes.labels.foo/bar",
+				"kubernetes.labels.app.kubernetes.io/name",
 			}
 			Expect(f.Deploy()).To(BeNil())
 		})
@@ -98,7 +98,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(Succeed())
 
-			query := fmt.Sprintf(`{kubernetes_labels_foo_bar=%q}`, myValue)
+			query := fmt.Sprintf(`{kubernetes_labels_app_kubernetes_io_name=%q}`, myValue)
 			result, err := l.QueryUntil(query, "", 1)
 			Expect(err).To(BeNil())
 			Expect(result).NotTo(BeNil())

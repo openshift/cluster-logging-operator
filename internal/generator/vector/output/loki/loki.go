@@ -179,8 +179,9 @@ func lokiLabels(lo *logging.Loki) []Label {
 
 func formatLokiLabelValue(value string) string {
 	if strings.HasPrefix(value, "kubernetes.labels.") || strings.HasPrefix(value, "kubernetes.namespace_labels.") {
-		parts := strings.SplitAfterN(value, ".", 2)
+		parts := strings.SplitAfterN(value, "labels.", 2)
 		key := strings.ReplaceAll(parts[1], "/", "_")
+		key = strings.ReplaceAll(key, ".", "_")
 		value = fmt.Sprintf("%s%s", parts[0], key)
 	}
 	return fmt.Sprintf("{{%s}}", value)

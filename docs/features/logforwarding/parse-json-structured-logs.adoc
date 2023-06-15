@@ -74,7 +74,8 @@ The new record with JSON parsing enabled replaces `message` field with a `struct
 
 === Output type: Elasticsearch
 
-Elasticsearch requires that JSON records with different structures or schemas *must* go to separate indices.
+Elasticsearch requires that keys must have the same types (e.g. object, int, string),
+thus JSON records with different structures or schemas *must* go to separate indices.
 This is a *required* part of the configuration.
 Type conflicts and cardinality problems can occur when a schema includes different field names and types.
 

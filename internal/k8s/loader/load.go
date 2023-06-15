@@ -8,25 +8,29 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogging"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // FetchClusterLogging, migrate and validate
-func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMigrations bool) (logging.ClusterLogging, error) {
+func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMigrations bool) (clusterLogging logging.ClusterLogging, err error) {
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	proto := runtime.NewClusterLogging(namespace, name)
 	if err := k8sClient.Get(context.TODO(), key, proto); err != nil {
 		return logging.ClusterLogging{}, err
 	}
 	// Do not modify cached copy
-	clusterLogging := *proto.DeepCopy()
+	clusterLogging = *proto.DeepCopy()
 	if skipMigrations {
 		return clusterLogging, nil
 	}
 	// TODO Drop migration upon introduction of v2
 	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
+	if err = clusterlogging.Validate(clusterLogging, k8sClient, map[string]bool{}); err != nil {
+		return clusterLogging, err
+	}
 	return clusterLogging, nil
 }
 

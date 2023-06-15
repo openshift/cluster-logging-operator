@@ -15,7 +15,7 @@ func (e *ValidationError) Error() string {
 
 func NewValidationError(msg string, args ...interface{}) *ValidationError {
 	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args)
+		msg = fmt.Sprintf(msg, args...)
 	}
 	return &ValidationError{msg: msg}
 }

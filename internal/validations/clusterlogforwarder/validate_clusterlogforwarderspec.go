@@ -211,6 +211,9 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			status.Outputs.Set(output.Name,
 				CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 					output.Name))
+		case output.Type == loggingv1.OutputTypeSplunk && constants.FluentdName == clusterlogging.Spec.Collection.Type:
+			log.V(3).Info("verifyOutputs failed", "reason", "Splunk output not supported by Fluentd collector", "output name", output.Name)
+			status.Outputs.Set(output.Name, CondInvalid("output %q: Splunk output not supported by Fluentd collector", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
 		}

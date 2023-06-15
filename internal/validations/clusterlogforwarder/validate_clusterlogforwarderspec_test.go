@@ -389,6 +389,36 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
 		})
 
+		It("should drop Splunk for Fluent", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "splunk",
+					Type: loggingv1.OutputTypeSplunk,
+					URL:  "https://somewhere",
+				},
+			}
+			cluster.Spec.Collection = &loggingv1.CollectionSpec{
+				Type: loggingv1.LogCollectionTypeFluentd,
+			}
+			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["splunk"]).To(HaveCondition("Ready", false, "Invalid", "Splunk output not supported by Fluentd collector"))
+		})
+
+		It("should pass Splunk for Vector", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "splunk",
+					Type: loggingv1.OutputTypeSplunk,
+					URL:  "https://somewhere",
+				},
+			}
+			cluster.Spec.Collection = &loggingv1.CollectionSpec{
+				Type: loggingv1.LogCollectionTypeVector,
+			}
+			verifyOutputs(cluster, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["splunk"]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
+		})
+
 		Context("when validating secrets", func() {
 			var secret *corev1.Secret
 			BeforeEach(func() {

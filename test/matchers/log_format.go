@@ -2,15 +2,15 @@ package matchers
 
 import (
 	"fmt"
-	"reflect"
-	"regexp"
-	"strings"
-	"time"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/test"
 	testtypes "github.com/openshift/cluster-logging-operator/test/helpers/types"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
+	"regexp"
+	"strings"
+	"time"
 )
 
 type LogMatcher struct {
@@ -138,11 +138,19 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		return true
 	}
 	if reflect.TypeOf(templateValue).Name() == "Time" {
-
-		templateTime := templateValue.(time.Time)
-		valueTime := value.(time.Time)
-		if templateTime.UTC() == valueTime.UTC() {
-			return true
+		fmt.Println("         >>>>>>>>>>>>>>>>>>>>>>>>>>> " + reflect.TypeOf(templateValue).PkgPath())
+		if reflect.TypeOf(templateValue).String() == "v1.Time" {
+			templateTime := templateValue.(v1.Time)
+			valueTime := value.(v1.Time)
+			if templateTime.UTC() == valueTime.UTC() {
+				return true
+			}
+		} else if reflect.TypeOf(templateValue).String() == "time.Time" {
+			templateTime := templateValue.(time.Time)
+			valueTime := value.(time.Time)
+			if templateTime.UTC() == valueTime.UTC() {
+				return true
+			}
 		}
 
 		// Any time value not Nil is ok if template value is empty time and also does not equal the value for time.Time{}

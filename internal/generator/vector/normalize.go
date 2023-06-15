@@ -112,6 +112,7 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 				RemoveNodeLabels,
 				RemoveTimestampEnd,
 				FixTimestampField,
+				MergeJsonMessageField,
 			}), "\n"),
 		},
 	}

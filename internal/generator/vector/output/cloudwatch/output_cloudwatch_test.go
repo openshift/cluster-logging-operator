@@ -136,7 +136,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
@@ -158,7 +157,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 `
@@ -178,7 +176,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 verify_certificate = false
@@ -201,7 +198,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
@@ -222,7 +218,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 verify_certificate = false
@@ -245,7 +240,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 key_file = "/var/run/ocp-collector/secrets/vector-tls-credentials/tls.key"
@@ -266,7 +260,6 @@ encoding.codec = "json"
 request.concurrency = 2
 healthcheck.enabled = false
 [sinks.cw.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 verify_certificate = false

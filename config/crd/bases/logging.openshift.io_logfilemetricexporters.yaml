@@ -19,11 +19,7 @@ spec:
     singular: logfilemetricexporter
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.managementState
-      name: Management State
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: A Log File Metric Exporter instance. LogFileMetricExporter is

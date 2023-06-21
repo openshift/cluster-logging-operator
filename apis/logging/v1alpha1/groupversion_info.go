@@ -11,6 +11,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Package v1alpha1 contains API Schema definitions for the logging v1alpha1 API group
+// +kubebuilder:object:generate=true
+// +groupName=logging.openshift.io
 package v1alpha1
 
 import (

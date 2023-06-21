@@ -139,8 +139,6 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 			Expect(podSpec.NodeSelector).To(HaveKeyWithValue("kubernetes.io/os", "linux"))
 
 			// Tolerations
-			Expect(podSpec.Tolerations).ToNot(BeEmpty())
-			Expect(podSpec.Tolerations).To(HaveLen(2))
 			Expect(podSpec.Tolerations).To(Equal(defaultTolerations))
 		})
 
@@ -156,6 +154,7 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 			}
 
 			finalTolerations := []corev1.Toleration{
+				testTol1,
 				{
 					Key:      "node-role.kubernetes.io/master",
 					Operator: corev1.TolerationOpExists,
@@ -166,7 +165,6 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 					Operator: corev1.TolerationOpExists,
 					Effect:   corev1.TaintEffectNoSchedule,
 				},
-				testTol1,
 			}
 
 			testNodeSelect := map[string]string{
@@ -186,11 +184,36 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 			Expect(podSpec.NodeSelector).To(HaveKeyWithValue("test2", "someOtherVal"))
 
 			// Tolerations
-			Expect(podSpec.Tolerations).ToNot(BeEmpty())
-			Expect(podSpec.Tolerations).To(HaveLen(3))
+			Expect(podSpec.Tolerations).To(ContainElement(testTol1))
+			Expect(podSpec.Tolerations).To(Equal(finalTolerations))
+		})
+
+		It("should not have duplicate tolerations in the pod spec", func() {
+			testTol1 := corev1.Toleration{
+				Key:      "node-role.kubernetes.io/master",
+				Operator: corev1.TolerationOpEqual,
+				Effect:   corev1.TaintEffectNoSchedule,
+			}
+
+			logFileMetricExporter.Spec.Tolerations = []corev1.Toleration{
+				testTol1,
+			}
+
+			finalTolerations := []corev1.Toleration{
+				testTol1,
+				{
+					Key:      "node.kubernetes.io/disk-pressure",
+					Operator: corev1.TolerationOpExists,
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			}
+
+			podSpec := NewPodSpec(*logFileMetricExporter, tlsProfileSpec)
+			Expect(podSpec.Containers).ToNot(BeEmpty())
+
+			// Tolerations
 			Expect(podSpec.Tolerations).To(ContainElement(testTol1))
 			Expect(podSpec.Tolerations).To(Equal(finalTolerations))
 		})
 	})
-
 })

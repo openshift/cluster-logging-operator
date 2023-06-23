@@ -290,6 +290,9 @@ type CollectionSpec struct {
 	Fluentd *FluentdForwarderSpec `json:"fluentd,omitempty"`
 }
 
+// Specification of Log Collection for the cluster
+// See spec.collection
+// +deprecated
 type LogCollectionSpec struct {
 	// The type of Log Collection to configure
 	Type LogCollectionType `json:"type"`

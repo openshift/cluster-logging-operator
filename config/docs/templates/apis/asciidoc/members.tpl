@@ -4,6 +4,9 @@
 
 === {{ .Path }}
 ===== Description
+{{ if (isDeprecatedMember .Member) }}
+  {{ "**(DEPRECATED)**" }}
+{{ end }}
 {{ if .Type.Elem -}}
   {{ (comments .Type.Elem.CommentLines) }}
 {{- else -}}

@@ -28,6 +28,7 @@ For more details see the documentation on the API fields.
 
 === .spec
 ===== Description
+
 ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 
 =====  Type
@@ -45,6 +46,7 @@ ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 
 === .spec.inputs[]
 ===== Description
+
 InputSpec defines a selector of log messages.
 
 =====  Type
@@ -60,6 +62,7 @@ InputSpec defines a selector of log messages.
 
 === .spec.inputs[].application
 ===== Description
+
 Application log selector.
 All conditions in the selector must be satisfied (logical AND) to select logs.
 
@@ -82,6 +85,7 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 
 === .spec.inputs[].application.selector
 ===== Description
+
 A label selector is a label query over a set of resources.
 
 =====  Type
@@ -115,6 +119,7 @@ A label selector is a label query over a set of resources.
 
 === .spec.outputDefaults.elasticsearch
 ===== Description
+
 ElasticsearchStructuredSpec is spec related to structured log changes to determine the elasticsearch index
 
 =====  Type
@@ -131,6 +136,7 @@ ElasticsearchStructuredSpec is spec related to structured log changes to determi
 
 === .spec.outputs[]
 ===== Description
+
 Output defines a destination for log messages.
 
 =====  Type
@@ -158,6 +164,7 @@ Output defines a destination for log messages.
 
 === .spec.outputs[].secret
 ===== Description
+
 OutputSecretSpec is a secret reference containing name only, no namespace.
 
 =====  Type
@@ -172,6 +179,7 @@ OutputSecretSpec is a secret reference containing name only, no namespace.
 
 === .spec.outputs[].tls
 ===== Description
+
 OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
 
 =====  Type
@@ -236,6 +244,7 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 
 === .spec.pipelines[]
 ===== Description
+
 PipelinesSpec link a set of inputs to a set of outputs.
 
 =====  Type
@@ -273,6 +282,7 @@ PipelinesSpec link a set of inputs to a set of outputs.
 
 === .status
 ===== Description
+
 ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 
 =====  Type
@@ -310,7 +320,9 @@ ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 ===== Description
 
 =====  Type
-* Conditions== ClusterLogging
+* Conditions
+
+== ClusterLogging
 A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
 
 [options="header"]
@@ -323,6 +335,7 @@ A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clust
 
 === .spec
 ===== Description
+
 ClusterLoggingSpec defines the desired state of ClusterLogging
 
 =====  Type
@@ -342,6 +355,7 @@ ClusterLoggingSpec defines the desired state of ClusterLogging
 
 === .spec.collection
 ===== Description
+
 This is the struct that will contain information pertinent to Log and event collection
 
 =====  Type
@@ -361,6 +375,7 @@ This is the struct that will contain information pertinent to Log and event coll
 
 === .spec.collection.fluentd
 ===== Description
+
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
 =====  Type
@@ -376,6 +391,7 @@ FluentdForwarderSpec represents the configuration for forwarders of type fluentd
 
 === .spec.collection.fluentd.buffer
 ===== Description
+
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
 parameters to configure buffer and queue sizing, flush operations and retry
@@ -411,6 +427,7 @@ https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 === .spec.collection.fluentd.inFile
 ===== Description
+
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
 
@@ -430,6 +447,11 @@ https://docs.fluentd.org/input/tail#parameters
 === .spec.collection.logs
 ===== Description
 
+**(DEPRECATED)**
+
+Specification of Log Collection for the cluster
+See spec.collection
+
 =====  Type
 * object
 
@@ -443,6 +465,7 @@ https://docs.fluentd.org/input/tail#parameters
 
 === .spec.collection.logs.fluentd
 ===== Description
+
 CollectorSpec is spec to define scheduling and resources for a collector
 
 =====  Type
@@ -514,6 +537,9 @@ CollectorSpec is spec to define scheduling and resources for a collector
 
 === .spec.curation
 ===== Description
+
+**(DEPRECATED)**
+
 This is the struct that will contain information pertinent to Log curation (Curator)
 
 =====  Type
@@ -600,6 +626,9 @@ This is the struct that will contain information pertinent to Log curation (Cura
 
 === .spec.forwarder
 ===== Description
+
+**(DEPRECATED)**
+
 ForwarderSpec contains global tuning parameters for specific forwarder implementations.
 This field is not required for general use, it allows performance tuning by users
 familiar with the underlying forwarder technology.
@@ -617,6 +646,7 @@ Currently supported: `fluentd`.
 
 === .spec.forwarder.fluentd
 ===== Description
+
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
 =====  Type
@@ -632,6 +662,7 @@ FluentdForwarderSpec represents the configuration for forwarders of type fluentd
 
 === .spec.forwarder.fluentd.buffer
 ===== Description
+
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
 parameters to configure buffer and queue sizing, flush operations and retry
@@ -667,6 +698,7 @@ https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 === .spec.forwarder.fluentd.inFile
 ===== Description
+
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
 
@@ -685,6 +717,7 @@ https://docs.fluentd.org/input/tail#parameters
 
 === .spec.logStore
 ===== Description
+
 The LogStoreSpec contains information about how logs are stored.
 
 =====  Type
@@ -702,6 +735,8 @@ The LogStoreSpec contains information about how logs are stored.
 
 === .spec.logStore.elasticsearch
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -906,6 +941,7 @@ The LogStoreSpec contains information about how logs are stored.
 
 === .spec.logStore.lokistack
 ===== Description
+
 LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
 It points to an existing LokiStack in the same namespace.
 
@@ -921,6 +957,8 @@ It points to an existing LokiStack in the same namespace.
 
 === .spec.logStore.retentionPolicy
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -1026,6 +1064,7 @@ It points to an existing LokiStack in the same namespace.
 
 === .spec.visualization
 ===== Description
+
 This is the struct that will contain information pertinent to Log visualization (Kibana)
 
 =====  Type
@@ -1036,14 +1075,14 @@ This is the struct that will contain information pertinent to Log visualization 
 |Property|Type|Description
 
 |kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
 |ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
 |type|string|  The type of Visualization to configure
 |======================
 
 === .spec.visualization.kibana
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -1052,11 +1091,11 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
-|nodeSelector|object| **(DEPRECATED)** Define which Nodes the Pods are scheduled on.
+|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
 |proxy|object|  Specification of the Kibana Proxy component
 |replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
 |resources|object|  *(optional)* The resource requirements for Kibana
-|tolerations|array| **(DEPRECATED)** Define the tolerations the Pods will accept
+|tolerations|array|  
 |======================
 
 === .spec.visualization.kibana.nodeSelector
@@ -1159,12 +1198,6 @@ This is the struct that will contain information pertinent to Log visualization 
 =====  Type
 * int
 
-=== .spec.visualization.nodeSelector
-===== Description
-
-=====  Type
-* object
-
 === .spec.visualization.ocpConsole
 ===== Description
 
@@ -1179,31 +1212,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |timeout|string|  *(optional)* Timeout is the max duration before a query timeout
 |======================
 
-=== .spec.visualization.tolerations[]
-===== Description
-
-=====  Type
-* array
-
-[options="header"]
-|======================
-|Property|Type|Description
-
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
-|======================
-
-=== .spec.visualization.tolerations[].tolerationSeconds
-===== Description
-
-=====  Type
-* int
-
 === .status
 ===== Description
+
 ClusterLoggingStatus defines the observed state of ClusterLogging
 
 =====  Type
@@ -1222,6 +1233,8 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 
 === .status.collection
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -1264,6 +1277,7 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 
 === .status.collection.logs.fluentdStatus.clusterCondition
 ===== Description
+
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
 =====  Type
@@ -1312,6 +1326,7 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 
 === .status.curation.curatorStatus[].clusterCondition
 ===== Description
+
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
 =====  Type
@@ -1452,3 +1467,106 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 =====  Type
 * array
 
+== LogFileMetricExporter
+A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the logFileMetricExporters API
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|spec|object|  
+|status|object|  
+|======================
+
+=== .spec
+===== Description
+
+LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
+|resources|object|  *(optional)* The resource requirements for the LogFileMetricExporter
+|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+|======================
+
+=== .spec.nodeSelector
+===== Description
+
+=====  Type
+* object
+
+=== .spec.resources
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.resources.limits
+===== Description
+
+=====  Type
+* object
+
+=== .spec.resources.requests
+===== Description
+
+=====  Type
+* object
+
+=== .spec.tolerations[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+=== .spec.tolerations[].tolerationSeconds
+===== Description
+
+=====  Type
+* int
+
+=== .status
+===== Description
+
+LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|conditions|object|  Conditions of the Log File Metrics Exporter.
+|======================
+
+=== .status.conditions
+===== Description
+
+=====  Type
+* object

@@ -144,7 +144,7 @@ var _ = Describe("Reconciling", func() {
 					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -212,7 +212,7 @@ var _ = Describe("Reconciling", func() {
 					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -260,7 +260,7 @@ var _ = Describe("Reconciling", func() {
 					CollectionSpec: cluster.Spec.Collection,
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -301,7 +301,7 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     &loggingv1.ClusterLogForwarder{},
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 		})
@@ -361,7 +361,7 @@ var _ = Describe("Reconciling", func() {
 					},
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
+				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 			It("should have appropriately named resources", func() {

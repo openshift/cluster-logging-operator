@@ -9,6 +9,9 @@ resources:
 - cluster-logging-operator_clusterrolebinding.yaml
 - cluster-logging-operator_role.yaml
 - cluster-logging-operator_rolebinding.yaml
+- collect-application-logs-clusterrole.yaml
+- collect-audit-logs-clusterrole.yaml
+- collect-infrastructure-logs-clusterrole.yaml
 #- leader_election_role.yaml
 #- leader_election_role_binding.yaml
 # Comment the following 4 lines if you want to disable

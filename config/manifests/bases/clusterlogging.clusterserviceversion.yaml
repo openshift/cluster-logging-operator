@@ -219,6 +219,47 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podStatuses
       version: v1
+    - description: A Log File Metric Exporter instance. LogFileMetricExporter is the
+        Schema for the logFileMetricExporters API
+      displayName: Log File Metric Exporter
+      kind: LogFileMetricExporter
+      name: logfilemetricexporters.logging.openshift.io
+      resources:
+      - kind: DaemonSet
+        name: ""
+        version: v1
+      - kind: Pod
+        name: ""
+        version: v1
+      - kind: Service
+        name: ""
+        version: v1
+      - kind: ServiceMonitor
+        name: ""
+        version: v1
+      specDescriptors:
+      - description: Define which Nodes the Pods are scheduled on.
+        displayName: LogFileMetricExporter Node Selector
+        path: nodeSelector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:ConfigMap
+      - description: The resource requirements for the LogFileMetricExporter
+        displayName: LogFileMetricExporter Resource Requirements
+        path: resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Define the tolerations the Pods will accept
+        displayName: LogFileMetricExporter Pod Tolerations
+        path: tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
+      statusDescriptors:
+      - description: Conditions of the Log File Metrics Exporter.
+        displayName: Log File Metrics Exporter Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:logFileMetricsExporterConditions
+      version: v1alpha1
   description: |-
     # Red Hat OpenShift Logging
     The Red Hat OpenShift Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.

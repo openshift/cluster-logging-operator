@@ -37,10 +37,9 @@ type LogFileMetricExporterStatus struct {
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=lfme
-// +kubebuilder:printcolumn:name="Management State",JSONPath=".spec.managementState",type=string
 // +kubebuilder:object:root=true
-// +operator-sdk:csv:customresourcedefinitions:displayName="Log File Metric Exporter",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
 // A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the logFileMetricExporters API
+// +operator-sdk:csv:customresourcedefinitions:displayName="Log File Metric Exporter",resources={{Pod,v1}, {Service,v1}, {ServiceMonitor,v1}, {DaemonSet, v1}}
 type LogFileMetricExporter struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

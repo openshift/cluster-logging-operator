@@ -1,8 +1,9 @@
 package logfilemetricexporter
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	apps "k8s.io/api/apps/v1"
@@ -45,23 +46,41 @@ var (
 	}
 )
 
-// ResourceRequirements returns the resource requirements for a given metric-exporter implementation
+// resourceRequirements returns the resource requirements for a given metric-exporter implementation
 // or it's default if none are specified
-func ResourceRequirements(exporter loggingv1a1.LogFileMetricExporter) v1.ResourceRequirements {
+func resourceRequirements(exporter loggingv1a1.LogFileMetricExporter) v1.ResourceRequirements {
 	if exporter.Spec.Resources == nil {
 		return v1.ResourceRequirements{}
 	}
 	return *exporter.Spec.Resources
 }
 
-func NodeSelector(exporter loggingv1a1.LogFileMetricExporter) map[string]string {
+func nodeSelector(exporter loggingv1a1.LogFileMetricExporter) map[string]string {
 	return exporter.Spec.NodeSelector
 }
-func Tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
+
+func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 	if exporter.Spec.Tolerations == nil {
 		return defaultTolerations
 	}
-	return append(defaultTolerations, exporter.Spec.Tolerations...)
+
+	// Add default tolerations if tolerations spec'd
+	// Spec'd tolerations take precedence
+	finalTolerations := make([]v1.Toleration, len(exporter.Spec.Tolerations))
+	copy(finalTolerations, exporter.Spec.Tolerations)
+
+	tolerationMap := make(map[string]bool)
+	for _, tol := range exporter.Spec.Tolerations {
+		tolerationMap[tol.Key] = true
+	}
+
+	for _, defaultTol := range defaultTolerations {
+		if exists := tolerationMap[defaultTol.Key]; !exists {
+			finalTolerations = append(finalTolerations, defaultTol)
+		}
+	}
+
+	return finalTolerations
 }
 
 func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, collectionType loggingv1.LogCollectionType, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
@@ -73,11 +92,11 @@ func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name st
 func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
-		NodeSelector:                  utils.EnsureLinuxNodeSelector(NodeSelector(exporter)),
+		NodeSelector:                  utils.EnsureLinuxNodeSelector(nodeSelector(exporter)),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            constants.CollectorServiceAccountName,
 		TerminationGracePeriodSeconds: utils.GetInt64(10),
-		Tolerations:                   Tolerations(exporter),
+		Tolerations:                   tolerations(exporter),
 		Volumes: []v1.Volume{
 			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
 			{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
@@ -96,7 +115,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
 	exporterContainer := coreFactory.NewContainer(constants.LogfilesmetricexporterName,
 		constants.LogfilesmetricexporterName,
-		v1.PullIfNotPresent, ResourceRequirements(exporter))
+		v1.PullIfNotPresent, resourceRequirements(exporter))
 
 	exporterContainer.Ports = []v1.ContainerPort{
 		{

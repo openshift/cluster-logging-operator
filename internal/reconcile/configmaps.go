@@ -25,6 +25,7 @@ func Configmap(k8Client client.Writer, reader client.Reader, configMap *corev1.C
 		} else {
 			current.Data = configMap.Data
 			current.Labels = configMap.Labels
+			current.Annotations = configMap.Annotations
 		}
 		return k8Client.Update(context.TODO(), current)
 	})

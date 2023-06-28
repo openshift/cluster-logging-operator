@@ -119,27 +119,13 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 
 	Context("new exporter podspec", func() {
 		It("should spec a new default pod with default tolerations and NodeSelector", func() {
-
-			defaultTolerations := []corev1.Toleration{
-				{
-					Key:      "node-role.kubernetes.io/master",
-					Operator: corev1.TolerationOpExists,
-					Effect:   corev1.TaintEffectNoSchedule,
-				},
-				{
-					Key:      "node.kubernetes.io/disk-pressure",
-					Operator: corev1.TolerationOpExists,
-					Effect:   corev1.TaintEffectNoSchedule,
-				},
-			}
-
 			podSpec := NewPodSpec(*logFileMetricExporter, tlsProfileSpec)
 			Expect(podSpec.NodeSelector).ToNot(BeEmpty())
 			Expect(podSpec.NodeSelector).To(HaveLen(1))
 			Expect(podSpec.NodeSelector).To(HaveKeyWithValue("kubernetes.io/os", "linux"))
 
 			// Tolerations
-			Expect(podSpec.Tolerations).To(Equal(defaultTolerations))
+			Expect(podSpec.Tolerations).To(Equal(constants.DefaultTolerations()))
 		})
 
 		It("should spec a new pod with defined tolerations and NodeSelector", func() {
@@ -153,19 +139,10 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 				testTol1,
 			}
 
-			finalTolerations := []corev1.Toleration{
+			expectedTolerations := []corev1.Toleration{
 				testTol1,
-				{
-					Key:      "node-role.kubernetes.io/master",
-					Operator: corev1.TolerationOpExists,
-					Effect:   corev1.TaintEffectNoSchedule,
-				},
-				{
-					Key:      "node.kubernetes.io/disk-pressure",
-					Operator: corev1.TolerationOpExists,
-					Effect:   corev1.TaintEffectNoSchedule,
-				},
 			}
+			expectedTolerations = append(expectedTolerations, constants.DefaultTolerations()...)
 
 			testNodeSelect := map[string]string{
 				"testNode": "testval",
@@ -185,7 +162,7 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 
 			// Tolerations
 			Expect(podSpec.Tolerations).To(ContainElement(testTol1))
-			Expect(podSpec.Tolerations).To(Equal(finalTolerations))
+			Expect(podSpec.Tolerations).To(Equal(expectedTolerations))
 		})
 
 		It("should not have duplicate tolerations in the pod spec", func() {
@@ -199,7 +176,7 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 				testTol1,
 			}
 
-			finalTolerations := []corev1.Toleration{
+			expectedTolerations := []corev1.Toleration{
 				testTol1,
 				{
 					Key:      "node.kubernetes.io/disk-pressure",
@@ -213,7 +190,7 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 
 			// Tolerations
 			Expect(podSpec.Tolerations).To(ContainElement(testTol1))
-			Expect(podSpec.Tolerations).To(Equal(finalTolerations))
+			Expect(podSpec.Tolerations).To(Equal(expectedTolerations))
 		})
 	})
 })

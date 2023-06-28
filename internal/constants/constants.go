@@ -1,5 +1,7 @@
 package constants
 
+import v1 "k8s.io/api/core/v1"
+
 var WatchNamespace string
 
 func init() {
@@ -147,3 +149,18 @@ const (
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}
 var ExtraNoProxyList = []string{ElasticsearchFQDN}
+
+func DefaultTolerations() []v1.Toleration {
+	return []v1.Toleration{
+		{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+}

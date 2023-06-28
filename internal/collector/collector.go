@@ -48,21 +48,6 @@ const (
 	tmpPath                         = "/tmp"
 )
 
-var (
-	defaultTolerations = []v1.Toleration{
-		{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-		{
-			Key:      "node.kubernetes.io/disk-pressure",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
-)
-
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec)
 type CommonLabelVisitor func(o runtime.Object)
 
@@ -138,7 +123,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            constants.CollectorServiceAccountName,
 		TerminationGracePeriodSeconds: utils.GetInt64(10),
-		Tolerations:                   defaultTolerations,
+		Tolerations:                   constants.DefaultTolerations(),
 		Volumes: []v1.Volume{
 			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
 			{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},

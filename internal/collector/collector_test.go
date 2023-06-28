@@ -66,7 +66,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 
 		Context("and evaluating tolerations", func() {
 			It("should add only defaults when none are defined", func() {
-				Expect(podSpec.Tolerations).To(Equal(defaultTolerations))
+				Expect(podSpec.Tolerations).To(Equal(constants.DefaultTolerations()))
 			})
 
 			It("should add the default and additional ones that are defined", func() {
@@ -84,7 +84,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					},
 				}
 				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
-				expTolerations := append(defaultTolerations, providedToleration)
+				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
 

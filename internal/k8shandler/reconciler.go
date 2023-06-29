@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
@@ -29,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string) (instance *logging.ClusterLogging, err error) {
+func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Cluster:        cl,
 		Client:         requestClient,
@@ -37,9 +38,17 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 		EventRecorder:  r,
 		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
+		ResourceOwner:  utils.AsOwner(cl),
+		ResourceNames:  resourceNames,
 	}
 	if forwarder != nil {
 		clusterLoggingRequest.Forwarder = forwarder
+	}
+
+	if collectionSpec, err := CheckCollectionType(cl, forwarder); err != nil {
+		return clusterLoggingRequest.Cluster, err
+	} else {
+		clusterLoggingRequest.CollectionSpec = collectionSpec
 	}
 
 	// Cancel previous info metrics
@@ -134,7 +143,7 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 
 func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	log.V(3).Info("forwarder not found and logStore not found so removing collector")
-	if err := clusterRequest.removeCollector(constants.CollectorName); err != nil {
+	if err := clusterRequest.removeCollector(); err != nil {
 		log.Error(err, "Error removing collector")
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 	}
@@ -153,7 +162,9 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(1).Info("Removing managed store components...")
 	for _, remove := range []func() error{
-		func() error { return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace) },
+		func() error {
+			return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret)
+		},
 		clusterRequest.removeKibana,
 		func() error { return lokistack.RemoveRbac(clusterRequest.Client, clusterRequest.removeFinalizer) }} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
@@ -163,25 +174,35 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	}
 }
 
-func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clusterLogging *logging.ClusterLogging, requestClient client.Client, er record.EventRecorder, clusterID string) (err error) {
+func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clusterLogging *logging.ClusterLogging, requestClient client.Client, er record.EventRecorder, clusterID string, resourceNames *factory.ForwarderResourceNames) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
 		EventRecorder: er,
 		Cluster:       clusterLogging,
 		ClusterID:     clusterID,
 	}
+
 	if forwarder != nil {
 		clusterLoggingRequest.Forwarder = forwarder
+		clusterLoggingRequest.ResourceNames = resourceNames
 	}
 
-	//TODO This should never be.  Shortly will always need 1:1 between CLF and CL
-	if clusterLogging == nil {
-		return nil
+	// Owner will be CL instance if CLF is named instance
+	if forwarder.Name == constants.SingletonName {
+		clusterLoggingRequest.ResourceOwner = utils.AsOwner(clusterLogging)
+	} else {
+		clusterLoggingRequest.ResourceOwner = utils.AsOwner(forwarder)
 	}
 
-	//TODO Moved from reconciler#ReconcileForClusterLogForwarder
-	// Does this field need to be added to CLF?  Does it go away?
-	if !clusterLoggingRequest.isManaged() {
+	if collectionSpec, err := CheckCollectionType(clusterLogging, forwarder); err != nil {
+		return err
+	} else {
+		clusterLoggingRequest.CollectionSpec = collectionSpec
+	}
+
+	clusterLoggingRequest.Cluster = clusterLogging
+
+	if clusterLogging != nil && clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		return nil
 	}
@@ -195,7 +216,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clu
 
 	// If valid, generate the appropriate config
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
-		msg := fmt.Sprintf("Unable to reconcile collection for %q/%q: %v", clusterLoggingRequest.Cluster.Namespace, clusterLoggingRequest.Cluster.Name, err)
+		msg := fmt.Sprintf("Unable to reconcile collection for %q/%q: %v", clusterLoggingRequest.Forwarder.Namespace, clusterLoggingRequest.Forwarder.Name, err)
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, msg)
 		return errors.New(msg)
@@ -208,6 +229,38 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clu
 	///////
 
 	return nil
+}
+
+func CheckCollectionType(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder) (*logging.CollectionSpec, error) {
+
+	var collectionSpec *logging.CollectionSpec
+
+	// Forwarder named instance must have ClusterLogging instance specified
+	if forwarder.Name == constants.SingletonName {
+		if cl == nil || cl.Spec.Collection == nil {
+			log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
+			return nil, fmt.Errorf("'collection' section is not specified in the ClusterLogging resource")
+		}
+
+		// Check if collection type is valid
+		switch cl.Spec.Collection.Type {
+		case logging.LogCollectionTypeFluentd:
+			break
+		case logging.LogCollectionTypeVector:
+			break
+		default:
+			return nil, fmt.Errorf("%s collector does not support pipelines feature", cl.Spec.Collection.Type)
+		}
+
+		collectionSpec = cl.Spec.Collection
+	} else {
+		// Make a default collection spec with just the type
+		collectionSpec = &logging.CollectionSpec{
+			Type: logging.LogCollectionTypeVector,
+		}
+	}
+
+	return collectionSpec, nil
 }
 
 func ReconcileForLogFileMetricExporter(clusterLogging logging.ClusterLogging,

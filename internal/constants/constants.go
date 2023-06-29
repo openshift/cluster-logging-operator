@@ -142,7 +142,8 @@ const (
 	EventReasonRemoveObject         = "RemoveObject"
 	EventReasonUpdateObject         = "UpdateObject"
 
-	MigrateDefaultOutput = "default-replaced"
+	MigrateDefaultOutput    = "default-replaced"
+	ClusterLoggingAvailable = "isClusterLoggingAvailable"
 
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 )

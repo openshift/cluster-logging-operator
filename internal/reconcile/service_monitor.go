@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	util "github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	v1 "k8s.io/api/core/v1"
@@ -29,7 +30,7 @@ func ServiceMonitor(er record.EventRecorder, k8Client client.Client, desired *mo
 			}
 			return fmt.Errorf("failed to get %v servicemonitor: %w", key, err)
 		}
-		if servicemonitor.AreSame(current, desired) {
+		if servicemonitor.AreSame(current, desired) && util.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
 			log.V(3).Info("ServiceMonitor are the same skipping update")
 			return nil
 		}

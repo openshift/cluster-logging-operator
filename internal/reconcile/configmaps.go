@@ -3,6 +3,8 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -20,11 +22,12 @@ func Configmap(k8Client client.Writer, reader client.Reader, configMap *corev1.C
 			}
 			return fmt.Errorf("Failed to get %v configmap: %v", key, err)
 		}
-		if configmaps.AreSame(current, configMap, opts...) {
+		if configmaps.AreSame(current, configMap, opts...) && utils.HasSameOwner(current.OwnerReferences, configMap.OwnerReferences) {
 			return nil
 		} else {
 			current.Data = configMap.Data
 			current.Labels = configMap.Labels
+			current.OwnerReferences = configMap.OwnerReferences
 		}
 		return k8Client.Update(context.TODO(), current)
 	})

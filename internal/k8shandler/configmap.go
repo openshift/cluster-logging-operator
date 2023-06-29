@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName strin
 
 	configMap := NewConfigMap(
 		configmapName,
-		clusterRequest.Cluster.Namespace,
+		clusterRequest.Forwarder.Namespace,
 		map[string]string{},
 	)
 

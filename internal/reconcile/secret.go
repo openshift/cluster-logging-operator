@@ -3,13 +3,15 @@ package reconcile
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -28,12 +30,13 @@ func Secret(er record.EventRecorder, k8Client client.Client, desired *corev1.Sec
 			}
 			return fmt.Errorf("failed to get %v Secret: %w", key, err)
 		}
-		if reflect.DeepEqual(current.Data, desired.Data) {
+		if reflect.DeepEqual(current.Data, desired.Data) && utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
 			// identical; no need to update.
 			log.V(3).Info("Secret are the same skipping update")
 			return nil
 		}
 		current.Data = desired.Data
+		current.OwnerReferences = desired.OwnerReferences
 		reason = constants.EventReasonUpdateObject
 		return k8Client.Update(context.TODO(), current)
 	})

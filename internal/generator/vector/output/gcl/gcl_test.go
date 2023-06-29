@@ -213,7 +213,6 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_tls.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 verify_certificate = false
@@ -318,7 +317,6 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_tls.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 verify_certificate = false

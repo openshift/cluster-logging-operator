@@ -90,6 +90,10 @@ func CollectorLogsPath(namespace string) string {
 	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
 }
 
+func LogFilesMetricExporterLogsPath(namespace string) string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
+}
+
 func ElasticSearchLogStoreLogsPath(namespace string) string {
 	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
 }
@@ -106,6 +110,7 @@ func ExcludeContainerPaths(namespace string) string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
 			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(namespace), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(LogFilesMetricExporterLogsPath(namespace), constants.LogfilesmetricexporterName)),
 			fmt.Sprintf("%q", fmt.Sprintf(ElasticSearchLogStoreLogsPath(namespace), constants.ElasticsearchName)),
 			fmt.Sprintf("%q", fmt.Sprintf(LokiLogStoreLogsPath(namespace), constants.LokiName)),
 			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(namespace), constants.KibanaName)),

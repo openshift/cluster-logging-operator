@@ -2,8 +2,10 @@ package reconcile_test
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
 	core "k8s.io/api/core/v1"
 	faketools "k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,7 +35,7 @@ var _ = Describe("reconciling ", func() {
 		)
 	)
 
-	var _ = DescribeTable("Secrets", func(initial, desired *core.Secret) {
+	var _ = DescribeTable("Secrets data", func(initial, desired *core.Secret) {
 
 		eventRecorder := &faketools.FakeRecorder{}
 		k8sClient := fake.NewClientBuilder().WithRuntimeObjects(initial).Build()
@@ -90,5 +92,103 @@ var _ = Describe("reconciling ", func() {
 					"testca": []byte(caCrtStr),
 				},
 			)),
+	)
+
+	var _ = DescribeTable("Secrets labels", func(initial, desired *core.Secret, opts ...secrets.ComparisonOption) {
+
+		eventRecorder := &faketools.FakeRecorder{}
+		k8sClient := fake.NewClientBuilder().WithRuntimeObjects(initial).Build()
+
+		Expect(reconcile.Secret(eventRecorder, k8sClient, desired, opts...)).To(Succeed(), "Expect no error reconciling secrets")
+
+		key := client.ObjectKeyFromObject(desired)
+		act := &core.Secret{}
+		Expect(k8sClient.Get(context.TODO(), key, act)).To(Succeed(), "Exp. no error after reconciliation to try and verify")
+
+		Expect(cmp.Diff(act.Labels, desired.Labels)).To(BeEmpty(), "Exp. the secret data to be the same")
+		Expect(cmp.Diff(act.Labels, initial.Labels)).To(Not(BeEmpty()), "Exp. the secret data have been updated")
+	},
+		Entry("when secrets labels are different",
+			runtime.NewSecret(
+				"test-secret",
+				"test-namespace",
+				map[string][]byte{
+					"testca":  []byte(caCrtStr),
+					"testkey": []byte(caKeyStr),
+				},
+				func(o runtime.Object) {
+					runtime.SetCommonLabels(o, "other-collector", "other-instance", constants.CollectorName)
+				}),
+			runtime.NewSecret(
+				"test-secret",
+				"test-namespace",
+				map[string][]byte{
+					"testca":  []byte(caCrtStr),
+					"testkey": []byte(caKeyStr),
+				},
+				func(o runtime.Object) {
+					runtime.SetCommonLabels(o, "my-collector", "instance", constants.CollectorName)
+				}), secrets.CompareLabels),
+		Entry("when secret labels not exist",
+			runtime.NewSecret(
+				"test-secret",
+				"test-namespace",
+				map[string][]byte{
+					"testca":  []byte(caCrtStr),
+					"testkey": []byte(caKeyStr),
+				}),
+			runtime.NewSecret(
+				"test-secret",
+				"test-namespace",
+				map[string][]byte{
+					"testca":  []byte(caCrtStr),
+					"testkey": []byte(caKeyStr),
+				},
+				func(o runtime.Object) {
+					runtime.SetCommonLabels(o, "my-collector", "instance", constants.CollectorName)
+				}), secrets.CompareLabels),
+	)
+
+	initialSecret := runtime.NewSecret(
+		"test-secret",
+		"test-namespace",
+		map[string][]byte{
+			"testca":  []byte(caCrtStr),
+			"testkey": []byte(caKeyStr),
+		})
+	initialSecret.Annotations = map[string]string{"one": "two"}
+
+	desireSecret := runtime.NewSecret(
+		"test-secret",
+		"test-namespace",
+		map[string][]byte{
+			"testca":  []byte(caCrtStr),
+			"testkey": []byte(caKeyStr),
+		})
+	desireSecret.Annotations = map[string]string{"foo": "bar"}
+
+	var _ = DescribeTable("Secrets annotations", func(initial, desired *core.Secret, opts ...secrets.ComparisonOption) {
+		eventRecorder := &faketools.FakeRecorder{}
+		k8sClient := fake.NewClientBuilder().WithRuntimeObjects(initial).Build()
+
+		Expect(reconcile.Secret(eventRecorder, k8sClient, desired, opts...)).To(Succeed(), "Expect no error reconciling secrets")
+
+		key := client.ObjectKeyFromObject(desired)
+		act := &core.Secret{}
+		Expect(k8sClient.Get(context.TODO(), key, act)).To(Succeed(), "Exp. no error after reconciliation to try and verify")
+
+		Expect(cmp.Diff(act.Annotations, desired.Annotations)).To(BeEmpty(), "Exp. the secret data to be the same")
+		Expect(cmp.Diff(act.Annotations, initial.Annotations)).To(Not(BeEmpty()), "Exp. the secret data have been updated")
+	},
+		Entry("when secrets annotations are different", initialSecret, desireSecret, secrets.CompareAnnotations),
+		Entry("when secret annotations not exist",
+			runtime.NewSecret(
+				"test-secret",
+				"test-namespace",
+				map[string][]byte{
+					"testca":  []byte(caCrtStr),
+					"testkey": []byte(caKeyStr),
+				}),
+			desireSecret, secrets.CompareAnnotations),
 	)
 })

@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -12,8 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Reconcile(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace string, ownerRef v1.OwnerReference, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
-	if err := ReconcileCustomResource(k8sClient, logStore, namespace, ownerRef); err != nil {
+func Reconcile(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace, logstoreSecretName string, ownerRef v1.OwnerReference, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
+	if err := ReconcileCustomResource(k8sClient, logStore, namespace, logstoreSecretName, ownerRef); err != nil {
 		return err
 	}
 
@@ -24,11 +25,11 @@ func Reconcile(k8sClient client.Client, logStore *logging.LogStoreSpec, namespac
 	return nil
 }
 
-func ReconcileCustomResource(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace string, ownerRef v1.OwnerReference) (err error) {
+func ReconcileCustomResource(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace, logstoreSecretName string, ownerRef v1.OwnerReference) (err error) {
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		desired := NewElasticsearchCR(logStore, namespace, constants.ElasticsearchName, nil, ownerRef)
-		current := NewEmptyElasticsearchCR(namespace, constants.ElasticsearchName)
+		desired := NewElasticsearchCR(logStore, namespace, constants.ElasticsearchName, logstoreSecretName, nil, ownerRef)
+		current := NewEmptyElasticsearchCR(namespace, constants.ElasticsearchName, logstoreSecretName)
 		key := client.ObjectKeyFromObject(current)
 		if err = k8sClient.Get(context.TODO(), key, current); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -36,7 +37,7 @@ func ReconcileCustomResource(k8sClient client.Client, logStore *logging.LogStore
 			}
 			return fmt.Errorf("Failed to get Elasticsearch CR: %v", err)
 		}
-		desired = NewElasticsearchCR(logStore, namespace, constants.ElasticsearchName, current, ownerRef)
+		desired = NewElasticsearchCR(logStore, namespace, constants.ElasticsearchName, logstoreSecretName, current, ownerRef)
 		if current, different := IsElasticsearchCRDifferent(current, desired); different {
 			return k8sClient.Update(context.TODO(), current)
 		}

@@ -2,15 +2,17 @@ package k8shandler
 
 import (
 	"context"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,6 +32,14 @@ type ClusterLoggingRequest struct {
 
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
+
+	// Custom resource names for custom CLF
+	ResourceNames *factory.ForwarderResourceNames
+
+	// Owner of collector resources
+	ResourceOwner metav1.OwnerReference
+
+	CollectionSpec *logging.CollectionSpec
 }
 
 type ClusterLogForwarderVerifier struct {
@@ -75,7 +85,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object client.Object) 
 }
 
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object client.Object) error {
-	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.Cluster.Namespace}
+	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.Forwarder.Namespace}
 
 	log.V(3).Info("Getting object", "namespacedName", namespacedName, "object", object)
 
@@ -94,7 +104,7 @@ func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, ob
 	log.V(3).Info("Listing selector object", "selector", selector, "object", object)
 
 	listOpts := []client.ListOption{
-		client.InNamespace(clusterRequest.Cluster.Namespace),
+		client.InNamespace(clusterRequest.Forwarder.Namespace),
 		client.MatchingLabels(selector),
 	}
 
@@ -110,7 +120,7 @@ func (clusterRequest *ClusterLoggingRequest) Delete(object client.Object) error 
 	return clusterRequest.Client.Delete(context.TODO(), object)
 }
 
-func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status v1.ConditionStatus) error {
+func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status corev1.ConditionStatus) error {
 	instance, err := clusterRequest.getClusterLogging(true)
 	if err != nil {
 		return err

@@ -31,21 +31,6 @@ const (
 	metricsVolumePath               = "/etc/logfilemetricexporter/metrics"
 )
 
-var (
-	defaultTolerations = []v1.Toleration{
-		{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-		{
-			Key:      "node.kubernetes.io/disk-pressure",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
-)
-
 // resourceRequirements returns the resource requirements for a given metric-exporter implementation
 // or it's default if none are specified
 func resourceRequirements(exporter loggingv1a1.LogFileMetricExporter) v1.ResourceRequirements {
@@ -61,7 +46,7 @@ func nodeSelector(exporter loggingv1a1.LogFileMetricExporter) map[string]string 
 
 func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 	if exporter.Spec.Tolerations == nil {
-		return defaultTolerations
+		return constants.DefaultTolerations()
 	}
 
 	// Add default tolerations if tolerations spec'd
@@ -74,7 +59,7 @@ func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 		tolerationMap[tol.Key] = true
 	}
 
-	for _, defaultTol := range defaultTolerations {
+	for _, defaultTol := range constants.DefaultTolerations() {
 		if exists := tolerationMap[defaultTol.Key]; !exists {
 			finalTolerations = append(finalTolerations, defaultTol)
 		}

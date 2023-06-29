@@ -1,11 +1,12 @@
 package elasticsearch
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch/indexmanagement"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
-	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -42,7 +43,7 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	//check defaults
 	resources := elasticsearchCR.Spec.Spec.Resources
@@ -84,7 +85,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.Spec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, elasticsearchCR.Spec.Spec.NodeSelector)
@@ -103,7 +104,7 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	limitMemory := resource.MustParse("120Gi")
 	requestMemory := resource.MustParse("100Gi")
@@ -150,7 +151,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore2 := &logging.LogStoreSpec{
 		Elasticsearch: &logging.ElasticsearchSpec{
@@ -158,7 +159,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 		},
 	}
 
-	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -177,7 +178,7 @@ func TestDifferenceFoundWhenProxyResourcesAreChanged(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore2 := &logging.LogStoreSpec{
 		Elasticsearch: &logging.ElasticsearchSpec{
@@ -188,7 +189,7 @@ func TestDifferenceFoundWhenProxyResourcesAreChanged(t *testing.T) {
 		},
 	}
 
-	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -203,14 +204,14 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore2 := &logging.LogStoreSpec{
 		Elasticsearch: &logging.ElasticsearchSpec{
 			NodeCount: 2,
 		},
 	}
-	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -224,7 +225,7 @@ func TestDefaultRedundancyUsedWhenOmitted(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.ZeroRedundancy) {
 		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.ZeroRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
@@ -239,7 +240,7 @@ func TestUseRedundancyWhenSpecified(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.SingleRedundancy) {
 		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.SingleRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
@@ -262,7 +263,7 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	// verify that we have two nodes
 	if len(elasticsearchCR.Spec.Nodes) != 2 {
@@ -319,7 +320,7 @@ func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	// verify that we have two nodes
 	if len(elasticsearchCR.Spec.Nodes) != 1 {
@@ -351,10 +352,10 @@ func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore.Elasticsearch.NodeCount = 4
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -370,10 +371,10 @@ func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore.Elasticsearch.NodeCount = 5
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -389,7 +390,7 @@ func TestNewESCRNoTolerations(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
@@ -414,7 +415,7 @@ func TestNewESCRWithTolerations(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
@@ -431,13 +432,13 @@ func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
 	logstore.Elasticsearch.NodeCount = 4
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	diffCR, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -457,13 +458,13 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
 	logstore.Elasticsearch.NodeCount = 3
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	diffCR, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -483,12 +484,12 @@ func TestESNodesPreservedWhenCountDecFrom4To2(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
 	logstore.Elasticsearch.NodeCount = 2
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", elasticsearchCR, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, elasticsearchCR, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -520,13 +521,13 @@ func TestESNodesPreservedWhenCountDecFrom3To0(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
 	logstore.Elasticsearch.NodeCount = 0
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	_, different := IsElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -554,7 +555,7 @@ func TestIndexManagementChanges(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore2 := &logging.LogStoreSpec{
 		Type: "elasticsearch",
@@ -565,7 +566,7 @@ func TestIndexManagementChanges(t *testing.T) {
 		},
 	}
 
-	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore2, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 	diffCR, different := IsElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
 	if !different {
 		t.Errorf("Expected that difference would be found due to retention policy change")
@@ -588,7 +589,7 @@ func TestIndexManagementNamespacePruning(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore = &logging.LogStoreSpec{
 		Type: "elasticsearch",
@@ -605,7 +606,7 @@ func TestIndexManagementNamespacePruning(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	diffCR, different := IsElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
 	if !different {
@@ -631,7 +632,7 @@ func TestIndexManagementDeleteByPercentage(t *testing.T) {
 	}
 	ownerRef := metav1.OwnerReference{}
 	existing := &elasticsearch.Elasticsearch{}
-	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR1 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	logstore = &logging.LogStoreSpec{
 		Type: "elasticsearch",
@@ -642,7 +643,7 @@ func TestIndexManagementDeleteByPercentage(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", existing, ownerRef)
+	elasticsearchCR2 := NewElasticsearchCR(logstore, constants.OpenshiftNS, "test-app-name", constants.CollectorName, existing, ownerRef)
 
 	diffCR, different := IsElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
 	if !different {

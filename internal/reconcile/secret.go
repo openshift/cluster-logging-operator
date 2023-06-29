@@ -3,8 +3,10 @@ package reconcile
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -28,12 +30,14 @@ func Secret(er record.EventRecorder, k8Client client.Client, desired *corev1.Sec
 			return fmt.Errorf("failed to get %v Secret: %w", key, err)
 		}
 		if secrets.AreSame(current, desired, opts...) {
+			// identical; no need to update.
+			log.V(3).Info("Secret are the same skipping update")
 			return nil
-		} else {
-			current.Data = desired.Data
-			current.Labels = desired.Labels
-			current.Annotations = desired.Annotations
 		}
+		current.Data = desired.Data
+		current.Labels = desired.Labels
+		current.Annotations = desired.Annotations
+		current.OwnerReferences = desired.OwnerReferences
 		reason = constants.EventReasonUpdateObject
 		return k8Client.Update(context.TODO(), current)
 	})

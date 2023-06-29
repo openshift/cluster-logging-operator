@@ -16,7 +16,6 @@ import (
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -24,7 +23,6 @@ const (
 	clusterLoggingPriorityClassName = "system-node-critical"
 	MetricsPort                     = int32(24231)
 	MetricsPortName                 = "metrics"
-	metricsVolumeName               = "collector-metrics"
 	logContainers                   = "varlogcontainers"
 	logContainersValue              = "/var/log/containers"
 	logPods                         = "varlogpods"
@@ -48,22 +46,7 @@ const (
 	tmpPath                         = "/tmp"
 )
 
-var (
-	defaultTolerations = []v1.Toleration{
-		{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-		{
-			Key:      "node.kubernetes.io/disk-pressure",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
-)
-
-type Visitor func(collector *v1.Container, podSpec *v1.PodSpec)
+type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames)
 type CommonLabelVisitor func(o runtime.Object)
 
 type Factory struct {
@@ -77,6 +60,7 @@ type Factory struct {
 	Secrets                map[string]*v1.Secret
 	ForwarderSpec          logging.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
+	ResourceNames          *factory.ForwarderResourceNames
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -104,7 +88,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string) *Factory {
+func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string, resNames *factory.ForwarderResourceNames) *Factory {
 	factory := &Factory{
 		ClusterID:     clusterID,
 		ConfigHash:    confHash,
@@ -117,6 +101,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		CommonLabelInitializer: func(o runtime.Object) {
 			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName, constants.CollectorName)
 		},
+		ResourceNames: resNames,
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
@@ -127,7 +112,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer)
+	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer)
 	return ds
 }
 
@@ -136,9 +121,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
 		PriorityClassName:             clusterLoggingPriorityClassName,
-		ServiceAccountName:            constants.CollectorServiceAccountName,
+		ServiceAccountName:            f.ResourceNames.ServiceAccount,
 		TerminationGracePeriodSeconds: utils.GetInt64(10),
-		Tolerations:                   defaultTolerations,
+		Tolerations:                   constants.DefaultTolerations(),
 		Volumes: []v1.Volume{
 			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
 			{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
@@ -149,7 +134,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 			{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
 			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
 			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
-			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: constants.CollectorMetricSecretName}}},
+			{Name: f.ResourceNames.SecretMetrics, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 	}
@@ -159,9 +144,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	collector := f.NewCollectorContainer(secretNames, clusterID)
 
-	addTrustedCABundle(collector, podSpec, trustedCABundle)
+	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
-	f.Visit(collector, podSpec)
+	f.Visit(collector, podSpec, f.ResourceNames)
 
 	addWebIdentityForCloudwatch(collector, podSpec, forwarderSpec, f.Secrets)
 
@@ -205,7 +190,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 		{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
 		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
 		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
-		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
+		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
 	// List of _unique_ output secret names, several outputs may use the same secret.
@@ -258,22 +243,22 @@ func AddSecurityContextTo(container *v1.Container) *v1.Container {
 	return container
 }
 
-func addTrustedCABundle(collector *v1.Container, podSpec *v1.PodSpec, trustedCABundleCM *v1.ConfigMap) {
+func addTrustedCABundle(collector *v1.Container, podSpec *v1.PodSpec, trustedCABundleCM *v1.ConfigMap, name string) {
 	if trustedCABundleCM != nil && hasTrustedCABundle(trustedCABundleCM) {
 		collector.VolumeMounts = append(collector.VolumeMounts,
 			v1.VolumeMount{
-				Name:      constants.CollectorTrustedCAName,
+				Name:      name,
 				ReadOnly:  true,
 				MountPath: constants.TrustedCABundleMountDir,
 			})
 
 		podSpec.Volumes = append(podSpec.Volumes,
 			v1.Volume{
-				Name: constants.CollectorTrustedCAName,
+				Name: name,
 				VolumeSource: v1.VolumeSource{
 					ConfigMap: &v1.ConfigMapVolumeSource{
 						LocalObjectReference: v1.LocalObjectReference{
-							Name: constants.CollectorTrustedCAName,
+							Name: name,
 						},
 						Items: []v1.KeyToPath{
 							{

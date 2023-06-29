@@ -48,13 +48,14 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 			}
 			return fmt.Errorf("failed to get %v ConfigMap: %w", key, err)
 		}
-		if val := current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel]; val == "true" {
+		if val := current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel]; val == "true" && utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
 			return nil
 		}
 		if current.ObjectMeta.Labels == nil {
 			current.ObjectMeta.Labels = map[string]string{}
 		}
 		current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
+		current.OwnerReferences = desired.OwnerReferences
 		reason = constants.EventReasonUpdateObject
 		if err := k8sClient.Update(context.TODO(), current); err != nil {
 			return err
@@ -88,7 +89,7 @@ func GetTrustedCABundle(k8sClient client.Client, namespace, name string) (*corev
 		}
 		trustedCAHash, err = CalcTrustedCAHashValue(cm)
 		if err != nil {
-			log.V(1).Info("Error trying to calculate the Trusted CA Hash value", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
+			log.V(1).Info("Error trying to calculate the Trusted CA Hash value", "configmapName", name, "key", constants.TrustedCABundleKey, "err", err)
 			return false, nil
 		}
 		return true, nil
@@ -98,7 +99,7 @@ func GetTrustedCABundle(k8sClient client.Client, namespace, name string) (*corev
 	}
 
 	if trustedCAHash == "" {
-		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", name, "key", constants.TrustedCABundleKey, "err", err)
 	}
 	return cm, trustedCAHash
 }

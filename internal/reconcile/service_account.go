@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -29,7 +30,8 @@ func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1
 		}
 
 		same := false
-		if same = utils.AreMapsSame(current.Annotations, desired.Annotations); same {
+		if same = (utils.AreMapsSame(current.Annotations, desired.Annotations) &&
+			utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences)); same {
 			log.V(3).Info("ServiceAccount are the same skipping update")
 			return nil
 		}
@@ -42,6 +44,9 @@ func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1
 				current.Annotations[key] = value
 			}
 		}
+
+		current.OwnerReferences = desired.OwnerReferences
+
 		return k8Client.Update(context.TODO(), current)
 	})
 

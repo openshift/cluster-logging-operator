@@ -2,8 +2,6 @@ resources:
 #- role.yaml
 #- clusterrole_binding.yaml
 #- role_binding.yaml
-- log-collector-privileged_role.yaml
-- log_collector_privileged_binding.yaml
 - metadata_reader_clusterrole.yaml
 - prometheus_role.yaml
 - prometheus_role_binding.yaml

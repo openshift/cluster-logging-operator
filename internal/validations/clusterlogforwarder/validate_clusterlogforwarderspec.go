@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
@@ -40,7 +41,7 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 	if !status.Outputs.IsAllReady() {
 		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
 	}
-	verifyPipelines(&clf.Spec, status)
+	verifyPipelines(clf.Name, &clf.Spec, status)
 	if !status.Pipelines.IsAllReady() {
 		log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
 	}
@@ -64,10 +65,11 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 }
 
 // verifyRefs returns the set of valid refs and a slice of error messages for bad refs.
-func verifyRefs(what string, status loggingv1.ClusterLogForwarderStatus, refs []string, allowed sets.String) (sets.String, []string) {
+func verifyRefs(what, forwarderName string, status loggingv1.ClusterLogForwarderStatus, refs []string, allowed sets.String) (sets.String, []string) {
 
 	good, bad := sets.NewString(), sets.NewString()
 
+	msg := []string{}
 	for _, ref := range refs {
 		if what == "inputs" {
 			if loggingv1.ReservedInputNames.Has(ref) ||
@@ -77,14 +79,18 @@ func verifyRefs(what string, status loggingv1.ClusterLogForwarderStatus, refs []
 				bad.Insert(ref)
 			}
 		} else {
-			if allowed.Has(ref) && status.Outputs[ref].IsTrueFor(loggingv1.ConditionReady) {
+			// Check if custom CLF is forwarding to default store
+			if forwarderName != constants.SingletonName && ref == loggingv1.OutputNameDefault {
+				msg = append(msg, "custom ClusterLogForwarders cannot forward to the `default` log store")
+				bad.Insert(ref)
+			} else if allowed.Has(ref) && status.Outputs[ref].IsTrueFor(loggingv1.ConditionReady) {
 				good.Insert(ref)
 			} else {
 				bad.Insert(ref)
 			}
 		}
 	}
-	msg := []string{}
+
 	if len(bad) > 0 {
 		msg = append(msg, fmt.Sprintf("unrecognized %s: %v", what, bad.List()))
 	}
@@ -94,7 +100,7 @@ func verifyRefs(what string, status loggingv1.ClusterLogForwarderStatus, refs []
 	return good, msg
 }
 
-func verifyPipelines(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus) {
+func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus) {
 	// Validate each pipeline and add a status object.
 	status.Pipelines = loggingv1.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
@@ -105,6 +111,7 @@ func verifyPipelines(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.
 	inputs := sets.StringKeySet(spec.InputMap())
 
 	for i, pipeline := range spec.Pipelines {
+
 		// Don't allow empty names since this no longer mutates the spec
 		if pipeline.Name == "" {
 			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
@@ -127,8 +134,8 @@ func verifyPipelines(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.
 			continue
 		}
 
-		_, msgIn := verifyRefs("inputs", *status, pipeline.InputRefs, inputs)
-		_, msgOut := verifyRefs("outputs", *status, pipeline.OutputRefs, outputs)
+		_, msgIn := verifyRefs("inputs", forwarderName, *status, pipeline.InputRefs, inputs)
+		_, msgOut := verifyRefs("outputs", forwarderName, *status, pipeline.OutputRefs, outputs)
 
 		// Pipelines must all be valid for CLF to be considered valid
 		// Partially valid pipelines invalidate CLF

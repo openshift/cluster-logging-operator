@@ -255,10 +255,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 		// Ref: https://issues.redhat.com/browse/LOG-3228
 		It("should validate the default output as any other without adding a new one", func() {
-
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Outputs: []loggingv1.OutputSpec{
-					migrations.NewDefaultOutput(nil),
+					migrations.NewDefaultOutput(nil, constants.CollectorName),
 				},
 			}
 
@@ -620,6 +619,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Outputs: []loggingv1.OutputSpec{
 					output,
 					otherOutput,
+					migrations.NewDefaultOutput(nil, constants.CollectorName),
 				},
 				Pipelines: []loggingv1.PipelineSpec{
 					{
@@ -636,8 +636,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					otherInput.Name: []status.Condition{condReady},
 				},
 				Outputs: loggingv1.NamedConditions{
-					output.Name:      []status.Condition{condReady},
-					otherOutput.Name: []status.Condition{condReady},
+					output.Name:                 []status.Condition{condReady},
+					otherOutput.Name:            []status.Condition{condReady},
+					loggingv1.OutputNameDefault: []status.Condition{condReady},
 				},
 			}
 		})
@@ -650,7 +651,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				},
 			}
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			Expect(clfStatus.Pipelines["aPipeline"]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid:*"))
 		})
 
@@ -661,7 +662,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					OutputRefs: []string{output.Name, otherOutput.Name},
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				})
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			Expect(clfStatus.Pipelines).To(HaveKey("pipeline_1_"))
 			Expect(clfStatus.Pipelines["pipeline_1_"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "duplicate"))
 			Expect(clfStatus.Pipelines).To(HaveLen(2))
@@ -673,7 +674,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					OutputRefs: []string{otherOutput.Name},
 					InputRefs:  []string{loggingv1.InputNameInfrastructure},
 				})
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			Expect(clfStatus.Pipelines["pipeline_1_"]).To(HaveCondition(loggingv1.ConditionReady, false, "Invalid", "pipeline must have a name"))
 		})
 
@@ -685,7 +686,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					InputRefs:  []string{"foo"},
 				},
 			}
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
 			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, `inputs:.*\[foo]`))
 		})
@@ -697,7 +698,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					OutputRefs: []string{},
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				})
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
 			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "no valid outputs"))
 		})
@@ -710,7 +711,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					OutputRefs: []string{output.Name, otherOutput.Name, "aMissingOutput"},
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				})
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
 			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
@@ -724,13 +725,26 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					OutputRefs: []string{output.Name, otherOutput.Name},
 					InputRefs:  []string{input.Name, otherInput.Name},
 				})
-			verifyPipelines(&forwarderSpec, clfStatus)
+			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
 			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
 			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid:*"))
 		})
 
+		It("should fail if clusterlogforwarder not named instance forwarding to the default logstore", func() {
+			forwarderSpec.Pipelines = append(forwarderSpec.Pipelines,
+				loggingv1.PipelineSpec{
+					Name:       "someDefinedPipeline",
+					OutputRefs: []string{output.Name, otherOutput.Name, loggingv1.OutputNameDefault},
+					InputRefs:  []string{otherInput.Name},
+				})
+			verifyPipelines("custom-clf-name", &forwarderSpec, clfStatus)
+			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
+			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
+			conds := clfStatus.Pipelines["someDefinedPipeline"]
+			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid: custom ClusterLogForwarders cannot forward to the `default` log store*"))
+		})
 	})
 
 	Context("validating all", func() {
@@ -794,7 +808,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				invalidCW,
-				migrations.NewDefaultOutput(nil),
+				migrations.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			extras[constants.MigrateDefaultOutput] = true
@@ -831,7 +845,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil),
+				migrations.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{
@@ -873,7 +887,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil),
+				migrations.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{
@@ -915,7 +929,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil),
+				migrations.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{

@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,8 +33,10 @@ func Service(er record.EventRecorder, k8Client client.Client, desired *corev1.Se
 		same := false
 
 		if same, updateReason = services.AreSame(current, desired); same {
-			log.V(3).Info("Service is the same skipping update")
-			return nil
+			if utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
+				log.V(3).Info("Service is the same skipping update")
+				return nil
+			}
 		}
 
 		reason = constants.EventReasonUpdateObject

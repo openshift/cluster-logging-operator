@@ -1,5 +1,7 @@
 package constants
 
+import v1 "k8s.io/api/core/v1"
+
 var WatchNamespace string
 
 func init() {
@@ -140,10 +142,26 @@ const (
 	EventReasonRemoveObject         = "RemoveObject"
 	EventReasonUpdateObject         = "UpdateObject"
 
-	MigrateDefaultOutput = "default-replaced"
+	MigrateDefaultOutput    = "default-replaced"
+	ClusterLoggingAvailable = "isClusterLoggingAvailable"
 
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}
 var ExtraNoProxyList = []string{ElasticsearchFQDN}
+
+func DefaultTolerations() []v1.Toleration {
+	return []v1.Toleration{
+		{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+}

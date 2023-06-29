@@ -3,11 +3,13 @@ package clusterlogging
 import (
 	"context"
 
+	"strings"
+	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
-	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -92,13 +94,19 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	clf, err, _ := loader.FetchClusterLogForwarder(r.Client, constants.WatchNamespace, constants.SingletonName, func() loggingv1.ClusterLogging { return instance })
+	resourceNames := factory.GenerateResourceNames(request.NamespacedName.Name, request.NamespacedName.Namespace)
+
+	clf, err, _ := loader.FetchClusterLogForwarder(r.Client, constants.WatchNamespace, constants.SingletonName, resourceNames.InternalLogStoreSecret, false, func() loggingv1.ClusterLogging { return instance })
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
-	if _, err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID); err != nil {
+	if _, err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
+		instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("error reconciling clusterlogging instance: %v", err))
+	} else {
+		// Set condition ready if no errors
+		instance.Status.Conditions.SetCondition(loggingv1.CondReady)
 	}
 
 	if result, err := r.updateStatus(&instance); err != nil {

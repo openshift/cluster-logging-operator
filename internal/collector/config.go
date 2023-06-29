@@ -4,7 +4,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -15,12 +14,12 @@ import (
 )
 
 // ReconcileCollectorConfig reconciles a collector config specifically for the collector defined by the factory
-func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, namespace, name, collectorConfig string, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, namespace, collectorConfig string, owner metav1.OwnerReference) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
 	if f.CollectorType == logging.LogCollectionTypeFluentd {
 		collectorConfigMap := runtime.NewConfigMap(
 			namespace,
-			name,
+			f.ResourceNames.ConfigMap,
 			map[string]string{
 				"fluent.conf":         collectorConfig,
 				"run.sh":              fluentd.RunScript,
@@ -33,7 +32,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 	} else if f.CollectorType == logging.LogCollectionTypeVector {
 		secret := runtime.NewSecret(
 			namespace,
-			constants.CollectorConfigSecretName,
+			f.ResourceNames.ConfigMap,
 			map[string][]byte{
 				"vector.toml": []byte(collectorConfig),
 			},

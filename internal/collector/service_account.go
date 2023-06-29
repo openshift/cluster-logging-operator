@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	security "github.com/openshift/api/security/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -15,6 +15,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const sccName = "log-collector-scc"
 
 var (
 	RequiredDropCapabilities = []corev1.Capability{
@@ -33,8 +35,8 @@ var (
 )
 
 // ReconcileServiceAccount reconciles the serviceaccount specifically for a collector deployment
-func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) (err error) {
-	serviceAccount := runtime.NewServiceAccount(namespace, name)
+func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
+	serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
 	utils.AddOwnerRefToObject(serviceAccount, owner)
 	serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 	if serviceAccount, err = reconcile.ServiceAccount(er, k8sClient, serviceAccount); err != nil {
@@ -43,8 +45,7 @@ func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, n
 	if err = reconcile.SecurityContextConstraints(k8sClient, NewSCC()); err != nil {
 		return err
 	}
-
-	return reconcileServiceAccountTokenSecret(serviceAccount, k8sClient, namespace, constants.LogCollectorToken, owner)
+	return reconcileServiceAccountTokenSecret(serviceAccount, k8sClient, namespace, resNames.ServiceAccountTokenSecret, owner)
 }
 
 func reconcileServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
@@ -59,21 +60,22 @@ func reconcileServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount, k
 	if err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(desired), current); err == nil {
 		accountName := desired.Annotations[corev1.ServiceAccountNameKey]
 		accountUID := desired.Annotations[corev1.ServiceAccountUIDKey]
-		if accountName != serviceAccount.Name || accountUID != string(serviceAccount.UID) {
+		if (accountName != serviceAccount.Name || accountUID != string(serviceAccount.UID)) &&
+			!utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
 			// Delete secret, so that we can create a new one next loop
 			if err := k8sClient.Delete(context.TODO(), current); err != nil {
 				return nil
 			}
-			return fmt.Errorf("deleted stale secret: %s", constants.LogCollectorToken)
+			return fmt.Errorf("deleted stale secret: %s", name)
 		}
 		// Existing secret is up-to-date
 		return nil
 	} else if !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get logcollector token secret: %w", err)
+		return fmt.Errorf("failed to get %s token secret: %w", name, err)
 	}
 
 	if err := k8sClient.Create(context.TODO(), desired); err != nil {
-		return fmt.Errorf("failed to create logcollector token secret: %w", err)
+		return fmt.Errorf("failed to create %s token secret: %w", name, err)
 	}
 
 	return nil
@@ -81,7 +83,7 @@ func reconcileServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount, k
 
 func NewSCC() *security.SecurityContextConstraints {
 
-	scc := runtime.NewSCC("log-collector-scc")
+	scc := runtime.NewSCC(sccName)
 	scc.AllowPrivilegedContainer = false
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true

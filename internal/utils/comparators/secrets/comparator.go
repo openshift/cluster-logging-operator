@@ -2,6 +2,7 @@ package secrets
 
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"reflect"
 )
@@ -22,6 +23,11 @@ func AreSame(actual *corev1.Secret, desired *corev1.Secret, options ...Compariso
 	dataAreEqual := reflect.DeepEqual(actual.Data, desired.Data)
 	if !dataAreEqual {
 		log.V(3).Info("Compare secrets", "dateAreEqual", dataAreEqual)
+		return false
+	}
+	ownerEqual := utils.HasSameOwner(actual.OwnerReferences, desired.OwnerReferences)
+	if !ownerEqual {
+		log.V(3).Info("Compare secrets", "ownerEqual", ownerEqual)
 		return false
 	}
 	labelsAreEqual := true

@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -38,7 +39,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveDaemonset(daemonsetName strin
 
 	daemonset := NewDaemonSet(
 		daemonsetName,
-		clusterRequest.Cluster.Namespace,
+		clusterRequest.Forwarder.Namespace,
 		daemonsetName,
 		daemonsetName,
 		"vector", //impl does not matter here

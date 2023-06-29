@@ -14,8 +14,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +35,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			CollectorType: logging.LogCollectionTypeFluentd,
 			ImageName:     constants.FluentdName,
 			Visit:         fluentd.CollectorVisitor,
+			ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
 		}
 		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
 		collector = podSpec.Containers[0]
@@ -60,13 +63,47 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				},
 			}))
 		})
+		Context("with custom ClusterLogForwarder name", func() {
+			It("should have volumemount with custom name", func() {
+				factory.ResourceNames = coreFactory.GenerateResourceNames("custom-clf", constants.WatchNamespace)
+				expectedContainerVolume := v1.VolumeMount{
+					Name:      "custom-clf-metrics",
+					ReadOnly:  true,
+					MountPath: metricsVolumePath}
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				collector = podSpec.Containers[0]
+				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
+			})
+		})
 	})
 
 	Describe("when creating the podSpec", func() {
+		var verifyProxyVolumesAndVolumeMounts = func(container v1.Container, podSpec v1.PodSpec, trustedca string) {
+			found := false
+			for _, elem := range container.VolumeMounts {
+				if elem.Name == trustedca {
+					found = true
+					Expect(elem.MountPath).To(Equal(constants.TrustedCABundleMountDir), "VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
+					break
+				}
+			}
+			if !found {
+				Fail(fmt.Sprintf("Trusted ca-bundle VolumeMount %s not found for collector", trustedca))
+			}
+
+			for _, elem := range podSpec.Volumes {
+				if elem.Name == trustedca {
+					Expect(elem.VolumeSource.ConfigMap).To(Not(BeNil()), "Exp. the podSpec to have a mounted configmap for the trusted ca-bundle")
+					Expect(elem.VolumeSource.ConfigMap.LocalObjectReference.Name).To(Equal(trustedca), "Volume %s: ConfigMap.LocalObjectReference.Name expected %s, actual %s", trustedca, elem.VolumeSource.ConfigMap.LocalObjectReference.Name, trustedca)
+					return
+				}
+			}
+			Fail(fmt.Sprintf("Volume %s not found for collector", trustedca))
+		}
 
 		Context("and evaluating tolerations", func() {
 			It("should add only defaults when none are defined", func() {
-				Expect(podSpec.Tolerations).To(Equal(defaultTolerations))
+				Expect(podSpec.Tolerations).To(Equal(constants.DefaultTolerations()))
 			})
 
 			It("should add the default and additional ones that are defined", func() {
@@ -84,7 +121,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					},
 				}
 				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
-				expTolerations := append(defaultTolerations, providedToleration)
+				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
 
@@ -125,29 +162,6 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
 			}
 
-			var verifyProxyVolumesAndVolumeMounts = func(container v1.Container, podSpec v1.PodSpec, trustedca string) {
-				found := false
-				for _, elem := range container.VolumeMounts {
-					if elem.Name == trustedca {
-						found = true
-						Expect(elem.MountPath).To(Equal(constants.TrustedCABundleMountDir), "VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
-						break
-					}
-				}
-				if !found {
-					Fail(fmt.Sprintf("Trusted ca-bundle VolumeMount %s not found for collector", trustedca))
-				}
-
-				for _, elem := range podSpec.Volumes {
-					if elem.Name == trustedca {
-						Expect(elem.VolumeSource.ConfigMap).To(Not(BeNil()), "Exp. the podSpec to have a mounted configmap for the trusted ca-bundle")
-						Expect(elem.VolumeSource.ConfigMap.LocalObjectReference.Name).To(Equal(trustedca), "Volume %s: ConfigMap.LocalObjectReference.Name expected %s, actual %s", trustedca, elem.VolumeSource.ConfigMap.LocalObjectReference.Name, trustedca)
-						return
-					}
-				}
-				Fail(fmt.Sprintf("Volume %s not found for collector", trustedca))
-			}
-
 			It("should add the proxy variables to the collector", func() {
 				_httpProxy := os.Getenv("http_proxy")
 				_httpsProxy := os.Getenv("https_proxy")
@@ -180,6 +194,35 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				verifyEnvVar(collector, "https_proxy", httpproxy)
 				verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
 				verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
+			})
+		})
+
+		Context("and using custom named ClusterLogForwarder", func() {
+
+			It("should have custom named podSpec resources based on CLF name", func() {
+				factory.ResourceNames = coreFactory.GenerateResourceNames("custom-clf", constants.WatchNamespace)
+				expectedPodSpecMetricsVol := v1.Volume{
+					Name: "custom-clf-metrics",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "custom-clf-metrics",
+						}}}
+
+				caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
+				podSpec = *factory.NewPodSpec(&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "openshift-logging",
+						Name:      factory.ResourceNames.CaTrustBundle,
+					},
+					Data: map[string]string{
+						constants.TrustedCABundleKey: caBundle,
+					},
+				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil))
+
+				collector = podSpec.Containers[0]
+				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
+				Expect(podSpec.ServiceAccountName).To(Equal("custom-clf"))
+				verifyProxyVolumesAndVolumeMounts(collector, podSpec, "custom-clf-trustbundle")
 			})
 		})
 	})
@@ -308,6 +351,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				ImageName:     constants.FluentdName,
 				Visit:         fluentd.CollectorVisitor,
 				Secrets:       secrets,
+				ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
 			}
 		})
 		Context("when collector has a secret containing a credentials key", func() {
@@ -357,6 +401,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				ImageName:     constants.VectorName,
 				Visit:         vector.CollectorVisitor,
 				Secrets:       secrets,
+				ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
 			}
 		})
 		Context("when collector has a secret containing a credentials key", func() {

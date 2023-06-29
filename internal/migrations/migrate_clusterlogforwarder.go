@@ -7,14 +7,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 )
 
-func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
-	spec, extras = MigrateDefaultOutput(spec, logStore, extras)
+func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+	spec, extras = MigrateDefaultOutput(spec, logStore, extras, logstoreSecretName)
 	return spec, extras
 }
 
 // MigrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or
 // selectively replaces it if it is.  It will apply OutputDefaults unless they are already defined.
-func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	// ClusterLogging without ClusterLogForwarder
 	if len(spec.Pipelines) == 0 && len(spec.Inputs) == 0 && len(spec.Outputs) == 0 && spec.OutputDefaults == nil {
 		if logStore != nil {
@@ -26,7 +26,7 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 				},
 			}
 			if logStore.Type == loggingv1.LogStoreTypeElasticsearch {
-				spec.Outputs = []loggingv1.OutputSpec{NewDefaultOutput(nil)}
+				spec.Outputs = []loggingv1.OutputSpec{NewDefaultOutput(nil, logstoreSecretName)}
 				spec.Pipelines[0].Name = "default_pipeline_0_"
 			}
 		}
@@ -51,7 +51,7 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 			return spec, extras
 		} else {
 			found := false
-			defaultOutput := NewDefaultOutput(spec.OutputDefaults)
+			defaultOutput := NewDefaultOutput(spec.OutputDefaults, logstoreSecretName)
 			outputs := []loggingv1.OutputSpec{}
 			for _, output := range spec.Outputs {
 				if output.Name == loggingv1.OutputNameDefault {
@@ -83,12 +83,12 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 	return spec, extras
 }
 
-func NewDefaultOutput(defaults *loggingv1.OutputDefaults) loggingv1.OutputSpec {
+func NewDefaultOutput(defaults *loggingv1.OutputDefaults, logstoreSecretName string) loggingv1.OutputSpec {
 	spec := loggingv1.OutputSpec{
 		Name:   loggingv1.OutputNameDefault,
 		Type:   loggingv1.OutputTypeElasticsearch,
 		URL:    constants.LogStoreURL,
-		Secret: &loggingv1.OutputSecretSpec{Name: constants.CollectorSecretName},
+		Secret: &loggingv1.OutputSecretSpec{Name: logstoreSecretName},
 	}
 	if defaults != nil && defaults.Elasticsearch != nil {
 		spec.Elasticsearch = &loggingv1.Elasticsearch{

@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestAreMapsSameWhenBothAreEmpty(t *testing.T) {
@@ -165,5 +166,33 @@ var _ = Describe("GetProxyEnvVars", func() {
 				Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
 			}
 		}
+	})
+})
+
+var _ = Describe("TestOwnership", func() {
+	var (
+		owner1 = []metav1.OwnerReference{
+			{
+				Name: "test-1",
+				UID:  "test-123",
+				Kind: "test-kind1",
+			},
+		}
+
+		owner2 = []metav1.OwnerReference{
+			{
+				Name: "test-2",
+				UID:  "test-123",
+				Kind: "test-kind1",
+			},
+		}
+	)
+
+	It("should return true for same owners", func() {
+		Expect(HasSameOwner(owner1, owner1)).To(BeTrue())
+	})
+
+	It("should return false for different owners", func() {
+		Expect(HasSameOwner(owner1, owner2)).To(BeFalse())
 	})
 })

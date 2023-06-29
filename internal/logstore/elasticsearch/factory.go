@@ -22,14 +22,14 @@ var (
 	defaultEsProxyCpuRequest resource.Quantity = resource.MustParse("100m")
 )
 
-func NewEmptyElasticsearchCR(namespace, name string) *elasticsearch.Elasticsearch {
+func NewEmptyElasticsearchCR(namespace, name, logstoreSecretName string) *elasticsearch.Elasticsearch {
 	return &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				"logging.openshift.io/elasticsearch-cert-management": "true",
-				"logging.openshift.io/elasticsearch-cert.collector":  "system.logging.fluentd",
+				"logging.openshift.io/elasticsearch-cert-management":            "true",
+				"logging.openshift.io/elasticsearch-cert." + logstoreSecretName: "system.logging.fluentd",
 			},
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -40,7 +40,7 @@ func NewEmptyElasticsearchCR(namespace, name string) *elasticsearch.Elasticsearc
 	}
 }
 
-func NewElasticsearchCR(logStore *logging.LogStoreSpec, namespace, name string, existing *elasticsearch.Elasticsearch, ownerRef metav1.OwnerReference) *elasticsearch.Elasticsearch {
+func NewElasticsearchCR(logStore *logging.LogStoreSpec, namespace, name, logstoreSecretName string, existing *elasticsearch.Elasticsearch, ownerRef metav1.OwnerReference) *elasticsearch.Elasticsearch {
 
 	var esNodes []elasticsearch.ElasticsearchNode
 	logStoreSpec := logging.LogStoreSpec{
@@ -116,7 +116,7 @@ func NewElasticsearchCR(logStore *logging.LogStoreSpec, namespace, name string, 
 
 	indexManagementSpec := indexmanagement.NewSpec(logStoreSpec.RetentionPolicy)
 
-	es := NewEmptyElasticsearchCR(namespace, name)
+	es := NewEmptyElasticsearchCR(namespace, name, logstoreSecretName)
 	es.Spec = elasticsearch.ElasticsearchSpec{
 		Spec: elasticsearch.ElasticsearchNodeSpec{
 			Resources:      *resources,

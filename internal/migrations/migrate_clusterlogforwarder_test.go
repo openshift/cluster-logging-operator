@@ -51,14 +51,14 @@ var _ = Describe("MigrateDefaultOutput", func() {
 
 	It("should not add the default OutputSpec when it is not referenced by a pipeline", func() {
 		// This is equal to returning (spec, nil) and will only pass if 2nd param is nil
-		forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+		forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 		Expect(forwarderSpec).To(Equal(spec))
 		Expect(extras).To(Equal(map[string]bool{}))
 	})
 
 	It("should add the default OutputSpec when default logstore exists and spec is empty ", func() {
 		logstore = &logging.LogStoreSpec{Type: logging.OutputTypeElasticsearch}
-		forwarderSpec, extras := MigrateClusterLogForwarderSpec(logging.ClusterLogForwarderSpec{}, logstore, extras)
+		forwarderSpec, extras := MigrateClusterLogForwarderSpec(logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName)
 		Expect(forwarderSpec).To(Equal(
 			logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
@@ -68,7 +68,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 						OutputRefs: []string{logging.OutputNameDefault},
 					},
 				},
-				Outputs: []logging.OutputSpec{NewDefaultOutput(nil)},
+				Outputs: []logging.OutputSpec{NewDefaultOutput(nil, constants.CollectorName)},
 			},
 		))
 		Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
@@ -82,7 +82,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			},
 		}
 
-		spec, extras = MigrateClusterLogForwarderSpec(logging.ClusterLogForwarderSpec{}, logstore, extras)
+		spec, extras = MigrateClusterLogForwarderSpec(logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName)
 
 		Expect(spec).To(Equal(
 			logging.ClusterLogForwarderSpec{
@@ -131,7 +131,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			},
 		}
 
-		spec, extras = MigrateClusterLogForwarderSpec(spec, logstore, extras)
+		spec, extras = MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 
 		Expect(spec).To(Equal(
 			logging.ClusterLogForwarderSpec{
@@ -169,11 +169,11 @@ var _ = Describe("MigrateDefaultOutput", func() {
 		Context("and outputs does not explicitly spec 'default'", func() {
 			BeforeEach(func() {
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(nil))
+				exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 			})
 
 			It("should add the default OutputSpec", func() {
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})
@@ -187,7 +187,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 				exp.Outputs[1].Elasticsearch = &logging.Elasticsearch{ElasticsearchStructuredSpec: *spec.OutputDefaults.Elasticsearch}
 				exp.OutputDefaults = spec.OutputDefaults
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and OutputDefault %v", pipelines, spec.OutputDefaults))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
@@ -212,9 +212,9 @@ var _ = Describe("MigrateDefaultOutput", func() {
 					Pipelines: pipelines,
 				}
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(nil))
+				exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})
@@ -227,9 +227,9 @@ var _ = Describe("MigrateDefaultOutput", func() {
 					OutputDefaults: &logging.OutputDefaults{Elasticsearch: &logging.ElasticsearchStructuredSpec{StructuredTypeKey: "abc"}},
 				}
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}))
+				exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}, constants.CollectorName))
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and ElasticsearchSpec %v", pipelines, esSpec))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})
@@ -251,11 +251,11 @@ var _ = Describe("MigrateDefaultOutput", func() {
 		Context("and outputs does not explicitly spec 'default'", func() {
 			BeforeEach(func() {
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(nil))
+				exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 			})
 
 			It("should add the default OutputSpec", func() {
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})
@@ -268,7 +268,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 				exp.Outputs[1].Elasticsearch = &logging.Elasticsearch{ElasticsearchStructuredSpec: *spec.OutputDefaults.Elasticsearch}
 				exp.OutputDefaults = spec.OutputDefaults
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and OutputDefault %v", pipelines, spec.OutputDefaults))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
@@ -293,9 +293,9 @@ var _ = Describe("MigrateDefaultOutput", func() {
 					Pipelines: pipelines,
 				}
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(nil))
+				exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})
@@ -308,9 +308,9 @@ var _ = Describe("MigrateDefaultOutput", func() {
 					OutputDefaults: &logging.OutputDefaults{Elasticsearch: &logging.ElasticsearchStructuredSpec{StructuredTypeKey: "abc"}},
 				}
 				exp = *spec.DeepCopy()
-				exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}))
+				exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}, constants.CollectorName))
 
-				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras)
+				forwarderSpec, extras := MigrateClusterLogForwarderSpec(spec, logstore, extras, constants.CollectorName)
 				Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and ElasticsearchSpec %v", pipelines, esSpec))
 				Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 			})

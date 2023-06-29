@@ -106,7 +106,7 @@ func ContainerLogPaths() string {
 
 func ExcludeContainerPaths(namespace string) string {
 	paths := []string{}
-	for _, comp := range []string{constants.CollectorName, constants.ElasticsearchName, constants.KibanaName} {
+	for _, comp := range []string{constants.CollectorName, constants.LogfilesmetricexporterName, constants.ElasticsearchName, constants.KibanaName} {
 		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", namespace, comp))
 	}
 	paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_*/%s*/*.log\"", namespace, constants.LokiName))

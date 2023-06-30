@@ -5,16 +5,15 @@ filters:
       - jcantrill
       - periklis
       - alanconway
-      - vimalk78
+      - cahartma
     reviewers:
       - jcantrill
       - alanconway
       - vimalk78
       - syedriko
       - vparfonov
-      - pmoogi-redhat
-      - ajaygupta978
       - cahartma
+      - Clee2691
   "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.in
     labels:
       - midstream/Dockerfile

@@ -23,24 +23,31 @@ func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 }
 
 type ContainerBuilder struct {
-	container  *corev1.Container
-	podBuilder *PodBuilder
+	container     *corev1.Container
+	podBuilder    *PodBuilder
+	initContainer bool
 }
 
-type InitContainerBuilder struct {
-	initcontainer *corev1.Container
-	podBuilder    *PodBuilder
+func (builder *ContainerBuilder) containers() *[]corev1.Container {
+	if builder.initContainer {
+		return &builder.podBuilder.Pod.Spec.InitContainers
+	} else {
+		return &builder.podBuilder.Pod.Spec.Containers
+	}
 }
 
 func (builder *ContainerBuilder) End() *PodBuilder {
-	builder.podBuilder.Pod.Spec.Containers = append(builder.podBuilder.Pod.Spec.Containers, *builder.container)
+	containers := builder.containers()
+	*containers = append(*containers, *builder.container)
 	return builder.podBuilder
 }
+
 func (builder *ContainerBuilder) Update() *PodBuilder {
-	for i := range builder.podBuilder.Pod.Spec.Containers {
-		if builder.podBuilder.Pod.Spec.Containers[i].Name == builder.container.Name {
-			builder.podBuilder.Pod.Spec.Containers[i] = *(builder.container)
-			return builder.podBuilder
+	containers := builder.containers()
+	for i := range *containers {
+		if (*containers)[i].Name == builder.container.Name {
+			(*containers)[i] = *(builder.container)
+			break
 		}
 	}
 	return builder.podBuilder
@@ -114,6 +121,7 @@ func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 	}
 	return builder
 }
+
 func (builder *ContainerBuilder) WithImagePullPolicy(policy corev1.PullPolicy) *ContainerBuilder {
 	builder.container.ImagePullPolicy = policy
 	return builder
@@ -131,6 +139,7 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	}
 	return &containerBuilder
 }
+
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	return builder.AddConfigMapVolumeWithPermissions(name, configMapName, utils.GetInt32(0644))
 }
@@ -210,59 +219,16 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 	return builder
 }
 
-func (builder *InitContainerBuilder) End() *PodBuilder {
-	builder.podBuilder.Pod.Spec.InitContainers = append(builder.podBuilder.Pod.Spec.InitContainers, *builder.initcontainer)
-	return builder.podBuilder
-}
-
-func (builder *InitContainerBuilder) WithCmdArgs(cmdAgrgs []string) *InitContainerBuilder {
-	builder.initcontainer.Command = []string{cmdAgrgs[0]}
-	builder.initcontainer.Args = cmdAgrgs[1:]
-	return builder
-}
-
-func (builder *InitContainerBuilder) AddEnvVarFromEnvVarSource(name string, value string) *InitContainerBuilder {
-
-	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
-		Name: name,
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
-				FieldPath: value,
-			},
-		},
-	})
-
-	return builder
-}
-
-// added functions for support kafka in the functional pod
-func (builder *InitContainerBuilder) AddVolumeMount(name, path, subPath string, readonly bool) *InitContainerBuilder {
-	builder.initcontainer.VolumeMounts = append(builder.initcontainer.VolumeMounts, corev1.VolumeMount{
-		Name:      name,
-		ReadOnly:  readonly,
-		MountPath: path,
-		SubPath:   subPath,
-	})
-	return builder
-}
-
-func (builder *InitContainerBuilder) AddEnvVar(name, value string) *InitContainerBuilder {
-	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
-		Name:  name,
-		Value: value,
-	})
-	return builder
-}
-
-func (builder *PodBuilder) AddInitContainer(name, image string) *InitContainerBuilder {
-	containerBuilder := InitContainerBuilder{
-		initcontainer: &corev1.Container{
+func (builder *PodBuilder) AddInitContainer(name, image string) *ContainerBuilder {
+	containerBuilder := ContainerBuilder{
+		container: &corev1.Container{
 			Name:            strings.ToLower(name),
 			Image:           image,
 			Env:             []corev1.EnvVar{},
 			ImagePullPolicy: corev1.PullAlways,
 		},
-		podBuilder: builder,
+		podBuilder:    builder,
+		initContainer: true,
 	}
 	return &containerBuilder
 }

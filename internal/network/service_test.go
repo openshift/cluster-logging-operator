@@ -72,6 +72,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Service", func() {
 			reqClient,
 			constants.WatchNamespace,
 			constants.LogfilesmetricexporterName,
+			constants.LogfilesmetricexporterName,
 			portName,
 			certSecret,
 			port,

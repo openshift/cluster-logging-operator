@@ -50,7 +50,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		AddVolumeMount("configmapkafka", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).
 		AddVolumeMount("zookeeper-data", "/var/lib/zookeeper", "", false).
-		WithCmdArgs([]string{"./bin/bash", "/etc/kafka-configmap/init.sh"}).
+		WithCmd([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
 		End()
 
 	//standup container running zookeeper
@@ -88,7 +88,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		AddEnvVar("POD_NAME", "functional").
 		AddEnvVar("POD_NAMESPACE", b.Pod.Namespace).
 		AddEnvVar("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
-		WithCmdArgs([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
+		WithCmd([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
 		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).
 		AddVolumeMount("extensions", "/opt/kafka/libs/extensions", "", false).

@@ -317,7 +317,7 @@ spec:
   - name: Fluentd
     url: https://www.fluentd.org/
   - name: Documentation
-    url: https://github.com/openshift/cluster-logging-operator/blob/master/README.md
+    url: https://github.com/openshift/cluster-logging-operator/blob/master/README.adoc
   - name: Red Hat OpenShift Logging Operator
     url: https://github.com/openshift/cluster-logging-operator
   minKubeVersion: 1.18.3

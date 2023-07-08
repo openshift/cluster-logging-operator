@@ -1,5 +1,4 @@
 //go:build vector
-// +build vector
 
 package loki
 

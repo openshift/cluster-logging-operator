@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -12,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Configmap(k8Client client.Writer, reader client.Reader, configMap *corev1.ConfigMap, opts ...configmaps.ComparisonOption) error {
+func Configmap(k8Client client.Writer, reader client.Reader, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &corev1.ConfigMap{}
 		key := client.ObjectKeyFromObject(configMap)

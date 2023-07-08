@@ -2,10 +2,11 @@ package reconcile_test
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	core "k8s.io/api/core/v1"
 	faketools "k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,7 +95,7 @@ var _ = Describe("reconciling ", func() {
 			)),
 	)
 
-	var _ = DescribeTable("Secrets labels", func(initial, desired *core.Secret, opts ...secrets.ComparisonOption) {
+	var _ = DescribeTable("Secrets labels", func(initial, desired *core.Secret, opts ...comparators.ComparisonOption) {
 
 		eventRecorder := &faketools.FakeRecorder{}
 		k8sClient := fake.NewClientBuilder().WithRuntimeObjects(initial).Build()
@@ -128,7 +129,7 @@ var _ = Describe("reconciling ", func() {
 				},
 				func(o runtime.Object) {
 					runtime.SetCommonLabels(o, "my-collector", "instance", constants.CollectorName)
-				}), secrets.CompareLabels),
+				}), comparators.CompareLabels),
 		Entry("when secret labels not exist",
 			runtime.NewSecret(
 				"test-secret",
@@ -146,7 +147,7 @@ var _ = Describe("reconciling ", func() {
 				},
 				func(o runtime.Object) {
 					runtime.SetCommonLabels(o, "my-collector", "instance", constants.CollectorName)
-				}), secrets.CompareLabels),
+				}), comparators.CompareLabels),
 	)
 
 	initialSecret := runtime.NewSecret(
@@ -167,7 +168,7 @@ var _ = Describe("reconciling ", func() {
 		})
 	desireSecret.Annotations = map[string]string{"foo": "bar"}
 
-	var _ = DescribeTable("Secrets annotations", func(initial, desired *core.Secret, opts ...secrets.ComparisonOption) {
+	var _ = DescribeTable("Secrets annotations", func(initial, desired *core.Secret, opts ...comparators.ComparisonOption) {
 		eventRecorder := &faketools.FakeRecorder{}
 		k8sClient := fake.NewClientBuilder().WithRuntimeObjects(initial).Build()
 
@@ -180,7 +181,7 @@ var _ = Describe("reconciling ", func() {
 		Expect(cmp.Diff(act.Annotations, desired.Annotations)).To(BeEmpty(), "Exp. the secret data to be the same")
 		Expect(cmp.Diff(act.Annotations, initial.Annotations)).To(Not(BeEmpty()), "Exp. the secret data have been updated")
 	},
-		Entry("when secrets annotations are different", initialSecret, desireSecret, secrets.CompareAnnotations),
+		Entry("when secrets annotations are different", initialSecret, desireSecret, comparators.CompareAnnotations),
 		Entry("when secret annotations not exist",
 			runtime.NewSecret(
 				"test-secret",
@@ -189,6 +190,6 @@ var _ = Describe("reconciling ", func() {
 					"testca":  []byte(caCrtStr),
 					"testkey": []byte(caKeyStr),
 				}),
-			desireSecret, secrets.CompareAnnotations),
+			desireSecret, comparators.CompareAnnotations),
 	)
 })

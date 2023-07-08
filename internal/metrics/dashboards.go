@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +54,7 @@ func ReconcileDashboards(writer client.Writer, reader client.Reader, collection 
 		collectionType = collection.Type
 	}
 	cm := newDashboardConfigMap(collectionType)
-	if err := reconcile.Configmap(writer, reader, cm, configmaps.CompareLabels); err != nil {
+	if err := reconcile.Configmap(writer, reader, cm, comparators.CompareLabels); err != nil {
 		return err
 	}
 

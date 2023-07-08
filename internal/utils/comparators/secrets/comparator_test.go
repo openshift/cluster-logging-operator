@@ -3,6 +3,7 @@ package secrets_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,15 +41,15 @@ var _ = Describe("secrets#AreSame", func() {
 			desired = current.DeepCopy()
 		})
 		It("should recognize when they are the same", func() {
-			Expect(secrets.AreSame(current, desired, secrets.CompareLabels, secrets.CompareAnnotations)).To(BeTrue())
+			Expect(secrets.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeTrue())
 		})
 		It("should recognize when the labels are different", func() {
 			current.Labels["foo"] = "abc"
-			Expect(secrets.AreSame(current, desired, secrets.CompareLabels, secrets.CompareAnnotations)).To(BeFalse())
+			Expect(secrets.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeFalse())
 		})
 		It("should recognize when the annotations are different", func() {
 			current.Annotations["foo"] = "abc"
-			Expect(secrets.AreSame(current, desired, secrets.CompareLabels, secrets.CompareAnnotations)).To(BeFalse())
+			Expect(secrets.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeFalse())
 		})
 	})
 })

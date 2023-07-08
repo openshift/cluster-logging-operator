@@ -107,7 +107,7 @@ const (
 	PodLogDir       = "/var/log/pods"
 
 	// Annotation Names
-	AnnotationServingCertSecretName = "service.alpha.openshift.io/serving-cert-secret-name"
+	AnnotationServingCertSecretName = "service.beta.openshift.io/serving-cert-secret-name"
 
 	// K8s recommended label names: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelK8sName      = "app.kubernetes.io/name"       // The name of the application (string)

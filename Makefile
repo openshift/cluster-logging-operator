@@ -176,7 +176,7 @@ image: .target/image
 # - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
 export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
 lint:  $(GOLANGCI_LINT) lint-repo
-	$(GOLANGCI_LINT) run --color=never --timeout=3m $(if $(CI),,--fix)
+	$(GOLANGCI_LINT) run --color=never --timeout=3m --build-tags vector $(if $(CI),,--fix)
 .PHONY: lint
 
 .PHONY: lint-repo

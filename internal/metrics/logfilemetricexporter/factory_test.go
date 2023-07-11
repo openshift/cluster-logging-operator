@@ -49,7 +49,7 @@ var _ = Describe("LogFileMetricExporter functions", func() {
 		logFileMetricExporter = &loggingv1a1.LogFileMetricExporter{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SingletonName,
-				Namespace: constants.WatchNamespace,
+				Namespace: constants.OpenshiftNS,
 			},
 		}
 

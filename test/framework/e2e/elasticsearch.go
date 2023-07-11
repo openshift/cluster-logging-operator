@@ -145,7 +145,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		LabelSelector: "component=elasticsearch",
 	}
 
-	pods, err := es.Framework.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
+	pods, err := es.Framework.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}
-	stdout, err := es.Framework.PodExec(constants.WatchNamespace, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
+	stdout, err := es.Framework.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
 	if err != nil {
 		return nil, err
 	}

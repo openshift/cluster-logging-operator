@@ -24,6 +24,7 @@ const ClusterLogForwarderKind = "ClusterLogForwarder"
 
 // ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 type ClusterLogForwarderSpec struct {
+
 	// Inputs are named filters for log messages to be forwarded.
 	//
 	// There are three built-in inputs named `application`, `infrastructure` and
@@ -50,7 +51,7 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
-	// ServiceAccountName is the service account's name provided by the admin.
+	// ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
 	//
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`

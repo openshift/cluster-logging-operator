@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
 
 	. "github.com/onsi/ginkgo"
@@ -35,7 +36,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			CollectorType: logging.LogCollectionTypeFluentd,
 			ImageName:     constants.FluentdName,
 			Visit:         fluentd.CollectorVisitor,
-			ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
+			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 		}
 		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
 		collector = podSpec.Containers[0]
@@ -65,7 +66,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 		})
 		Context("with custom ClusterLogForwarder name", func() {
 			It("should have volumemount with custom name", func() {
-				factory.ResourceNames = coreFactory.GenerateResourceNames("custom-clf", constants.WatchNamespace)
+				factory.ResourceNames = coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf"))
 				expectedContainerVolume := v1.VolumeMount{
 					Name:      "custom-clf-metrics",
 					ReadOnly:  true,
@@ -200,7 +201,9 @@ var _ = Describe("Factory#NewPodSpec", func() {
 		Context("and using custom named ClusterLogForwarder", func() {
 
 			It("should have custom named podSpec resources based on CLF name", func() {
-				factory.ResourceNames = coreFactory.GenerateResourceNames("custom-clf", constants.WatchNamespace)
+				clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf")
+				clf.Spec.ServiceAccountName = "custom-clf"
+				factory.ResourceNames = coreFactory.GenerateResourceNames(clf)
 				expectedPodSpecMetricsVol := v1.Volume{
 					Name: "custom-clf-metrics",
 					VolumeSource: v1.VolumeSource{
@@ -351,7 +354,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				ImageName:     constants.FluentdName,
 				Visit:         fluentd.CollectorVisitor,
 				Secrets:       secrets,
-				ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
+				ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 			}
 		})
 		Context("when collector has a secret containing a credentials key", func() {
@@ -401,7 +404,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				ImageName:     constants.VectorName,
 				Visit:         vector.CollectorVisitor,
 				Secrets:       secrets,
-				ResourceNames: coreFactory.GenerateResourceNames(constants.SingletonName, constants.WatchNamespace),
+				ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 			}
 		})
 		Context("when collector has a secret containing a credentials key", func() {

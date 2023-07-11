@@ -37,7 +37,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName, "elasticsearch"})
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
 	}, framework.DefaultCleanUpTimeout)
 
 	DescribeTable("when the output is a CLO managed elasticsearch and no explicit forwarder is configured should default to forwarding logs to the spec'd logstore", func(collectorType helpers.LogComponentType) {

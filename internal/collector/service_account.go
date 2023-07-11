@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	security "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -36,16 +37,16 @@ var (
 
 // ReconcileServiceAccount reconciles the serviceaccount specifically for a collector deployment
 func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
-	serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
-	utils.AddOwnerRefToObject(serviceAccount, owner)
-	serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-	if serviceAccount, err = reconcile.ServiceAccount(er, k8sClient, serviceAccount); err != nil {
-		return err
+	if namespace == constants.OpenshiftNS && resNames.ServiceAccount == constants.CollectorServiceAccountName {
+		serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
+		utils.AddOwnerRefToObject(serviceAccount, owner)
+		serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+		if serviceAccount, err = reconcile.ServiceAccount(er, k8sClient, serviceAccount); err != nil {
+			return err
+		}
+		return reconcileServiceAccountTokenSecret(serviceAccount, k8sClient, namespace, resNames.ServiceAccountTokenSecret, owner)
 	}
-	if err = reconcile.SecurityContextConstraints(k8sClient, NewSCC()); err != nil {
-		return err
-	}
-	return reconcileServiceAccountTokenSecret(serviceAccount, k8sClient, namespace, resNames.ServiceAccountTokenSecret, owner)
+	return nil
 }
 
 func reconcileServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {

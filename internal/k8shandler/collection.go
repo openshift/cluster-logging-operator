@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"reflect"
 	"time"
 
@@ -59,6 +60,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	if err = clusterRequest.addSecurityLabelsToNamespace(); err != nil {
 		log.Error(err, "Error adding labels to logging Namespace")
 		return
+	}
+
+	if err = reconcile.SecurityContextConstraints(clusterRequest.Client, collector.NewSCC()); err != nil {
+		log.V(9).Error(err, "reconcile.SecurityContextConstraints")
+		return err
 	}
 
 	if err = collector.ReconcileServiceAccount(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {

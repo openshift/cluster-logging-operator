@@ -1,0 +1,16 @@
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: my-collector
+spec:
+  serviceAccountName: mine
+  outputs:
+  - name: test
+    type: elasticsearch
+    url: http://myplace.com
+  pipelines:
+   - name: application-logs 
+     inputRefs: 
+     - application
+     outputRefs:
+     - test 

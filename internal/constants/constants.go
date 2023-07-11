@@ -1,23 +1,10 @@
 package constants
 
-import v1 "k8s.io/api/core/v1"
-
-var WatchNamespace string
-
-func init() {
-	//TODO Enable when we allow deployment in different NS
-	//ns, found := os.LookupEnv("WATCH_NAMESPACE")
-	//if !found {
-	//	log.Error(fmt.Errorf("Exiting. %s must be set", watchNamespaceEnvVar), "Failed to get watch namespace")
-	//	os.Exit(1)
-	//}
-	WatchNamespace = OpenshiftNS
-}
+import (
+	v1 "k8s.io/api/core/v1"
+)
 
 const (
-	// watchNamespaceEnvVar
-	// https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
-	//watchNamespaceEnvVar = "WATCH_NAMESPACE"
 
 	// Keys used in ClusterLogForwarder.Output Secrets keys.
 	// Documented with OutputSpec.Secret in ../../apis/logging/v1/cluster_log_forwarder_types.go

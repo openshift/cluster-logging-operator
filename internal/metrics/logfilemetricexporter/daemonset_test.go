@@ -57,7 +57,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SingletonName,
-				Namespace: constants.WatchNamespace,
+				Namespace: constants.OpenshiftNS,
 			},
 		}
 
@@ -75,7 +75,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			recorder,
 			reqClient,
-			constants.WatchNamespace,
+			constants.OpenshiftNS,
 			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
 
 		// Check if daemonset is available
@@ -99,7 +99,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			recorder,
 			reqClient,
-			constants.WatchNamespace,
+			constants.OpenshiftNS,
 			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset
@@ -127,7 +127,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			recorder,
 			reqClient,
-			constants.WatchNamespace,
+			constants.OpenshiftNS,
 			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset
@@ -163,7 +163,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			recorder,
 			reqClient,
-			constants.WatchNamespace,
+			constants.OpenshiftNS,
 			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset

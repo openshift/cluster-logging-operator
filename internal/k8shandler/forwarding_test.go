@@ -43,6 +43,13 @@ func HaveCondition(t logging.ConditionType, s bool, r logging.ConditionReason, m
 
 var _ = DescribeTable("#generateCollectorConfig",
 	func(cluster logging.ClusterLogging, forwardSpec logging.ClusterLogForwarderSpec) {
+		clf := &logging.ClusterLogForwarder{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
+			},
+			Spec: forwardSpec,
+		}
 		clusterRequest := &ClusterLoggingRequest{
 			Cluster: &cluster,
 			Forwarder: &logging.ClusterLogForwarder{
@@ -52,7 +59,7 @@ var _ = DescribeTable("#generateCollectorConfig",
 				},
 				Spec: forwardSpec,
 			},
-			ResourceNames: factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+			ResourceNames: factory.GenerateResourceNames(*clf),
 			CollectionSpec: &logging.CollectionSpec{
 				Type: logging.LogCollectionTypeVector,
 			},
@@ -136,14 +143,15 @@ var _ = Describe("#generateCollectorConfig", func() {
 				},
 			}
 
-			clusterRequest := &ClusterLoggingRequest{
-				Forwarder: &logging.ClusterLogForwarder{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      constants.SingletonName,
-						Namespace: constants.OpenshiftNS,
-					},
+			clf := logging.ClusterLogForwarder{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      constants.SingletonName,
+					Namespace: constants.OpenshiftNS,
 				},
-				ResourceNames: factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+			}
+			clusterRequest := &ClusterLoggingRequest{
+				Forwarder:     &clf,
+				ResourceNames: factory.GenerateResourceNames(clf),
 				CollectionSpec: &logging.CollectionSpec{
 					Type: logging.LogCollectionTypeVector,
 				},

@@ -30,7 +30,7 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.SingletonName,
-			Namespace: constants.WatchNamespace,
+			Namespace: constants.OpenshiftNS,
 		},
 		Spec: cl.ClusterLoggingSpec{
 			ManagementState: cl.ManagementStateManaged,

@@ -27,6 +27,10 @@ const (
 	lokiStackAppViewClusterRoleName   = "cluster-logging-application-view"
 	lokiStackInfraViewClusterRoleName = "cluster-logging-infrastructure-view"
 	lokiStackAuditViewClusterRoleName = "cluster-logging-audit-view"
+
+	applicationLogs    = "application"
+	infrastructureLogs = "infrastructure"
+	auditLogs          = "audit"
 )
 
 var (
@@ -58,15 +62,15 @@ func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.T
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackAppViewClusterRole); err != nil {
+	if err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAppViewClusterRoleName, applicationLogs)); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackInfraViewClusterRole); err != nil {
+	if err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackViewClusterRole(lokiStackInfraViewClusterRoleName, infrastructureLogs)); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading infrastructure logs.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackAuditViewClusterRole); err != nil {
+	if err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAuditViewClusterRoleName, auditLogs)); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
 	}
 
@@ -138,64 +142,26 @@ func newLokiStackWriterClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	)
 }
 
-func newLokiStackAppViewClusterRole() *rbacv1.ClusterRole {
-	return runtime.NewClusterRole(
-		lokiStackAppViewClusterRoleName,
-		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"loki.grafana.com",
+func newLokiStackViewClusterRole(name, logType string) func() *rbacv1.ClusterRole {
+	return func() *rbacv1.ClusterRole {
+		return runtime.NewClusterRole(
+			name,
+			rbacv1.PolicyRule{
+				APIGroups: []string{
+					"loki.grafana.com",
+				},
+				Resources: []string{
+					logType,
+				},
+				ResourceNames: []string{
+					"logs",
+				},
+				Verbs: []string{
+					"get",
+				},
 			},
-			Resources: []string{
-				"application",
-			},
-			ResourceNames: []string{
-				"logs",
-			},
-			Verbs: []string{
-				"get",
-			},
-		},
-	)
-}
-
-func newLokiStackInfraViewClusterRole() *rbacv1.ClusterRole {
-	return runtime.NewClusterRole(
-		lokiStackInfraViewClusterRoleName,
-		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"loki.grafana.com",
-			},
-			Resources: []string{
-				"infrastructure",
-			},
-			ResourceNames: []string{
-				"logs",
-			},
-			Verbs: []string{
-				"get",
-			},
-		},
-	)
-}
-
-func newLokiStackAuditViewClusterRole() *rbacv1.ClusterRole {
-	return runtime.NewClusterRole(
-		lokiStackAuditViewClusterRoleName,
-		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"loki.grafana.com",
-			},
-			Resources: []string{
-				"audit",
-			},
-			ResourceNames: []string{
-				"logs",
-			},
-			Verbs: []string{
-				"get",
-			},
-		},
-	)
+		)
+	}
 }
 
 func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {

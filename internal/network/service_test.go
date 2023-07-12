@@ -17,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("Reconcile LogFileMetricExporter Service", func() {
+var _ = Describe("Reconcile Service", func() {
 
 	defer GinkgoRecover()
 
@@ -51,28 +51,30 @@ var _ = Describe("Reconcile LogFileMetricExporter Service", func() {
 			cluster,
 			namespace,
 		)
-		recorder   = record.NewFakeRecorder(100)
-		portName   = "test-port"
-		port       = int32(1337)
-		certSecret = "test-secret"
+		recorder      = record.NewFakeRecorder(100)
+		portName      = "test-port"
+		port          = int32(1337)
+		certSecret    = "test-secret"
+		componentName = "some-component"
+		serviceName   = "test-service"
 
 		commonLabels = func(o runtime.Object) {
-			runtime.SetCommonLabels(o, "vector", cluster.Name, constants.LogfilesmetricexporterName)
+			runtime.SetCommonLabels(o, "vector", cluster.Name, componentName)
 		}
 
 		owner = utils.AsOwner(cluster)
 
-		serviceKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: cluster.GetNamespace()}
+		serviceKey      = types.NamespacedName{Name: serviceName, Namespace: cluster.GetNamespace()}
 		serviceInstance = &corev1.Service{}
 	)
 
 	It("should successfully reconcile the service", func() {
-		// Reconcile the exporter daemonset
+		// Reconcile the service
 		Expect(ReconcileService(recorder,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName,
-			constants.LogfilesmetricexporterName,
+			serviceName,
+			componentName,
 			portName,
 			certSecret,
 			port,
@@ -82,7 +84,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Service", func() {
 		// Get and check the service
 		Expect(reqClient.Get(context.TODO(), serviceKey, serviceInstance)).Should(Succeed())
 
-		Expect(serviceInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
+		Expect(serviceInstance.Name).To(Equal(serviceName))
 		Expect(serviceInstance.Spec.Ports).ToNot(BeEmpty(), "Exp. to have spec.Ports")
 
 		Expect(serviceInstance.Spec.Ports[0].Port).

@@ -27,7 +27,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 
 	// Adding common labels
 	commonLabels := func(o runtime.Object) {
-		runtime.SetCommonLabels(o, "lfme-service", lfmeInstance.Name, constants.LogfilesmetricexporterName)
+		runtime.SetCommonLabels(o, "lfme-service", constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName)
 	}
 
 	if err := network.ReconcileService(er, requestClient, lfmeInstance.Namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
@@ -35,7 +35,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := metrics.ReconcileServiceMonitor(er, requestClient, lfmeInstance.Namespace, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
+	if err := metrics.ReconcileServiceMonitor(er, requestClient, lfmeInstance.Namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
 		return err
 	}

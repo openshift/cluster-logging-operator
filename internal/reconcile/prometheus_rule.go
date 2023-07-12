@@ -7,7 +7,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -31,7 +30,7 @@ func PrometheusRule(er record.EventRecorder, k8Client client.Client, desired *mo
 			}
 			return fmt.Errorf("failed to get %v Secret: %w", key, err)
 		}
-		if reflect.DeepEqual(current.Spec, desired.Spec) && utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
+		if reflect.DeepEqual(current.Spec, desired.Spec) {
 			// identical; no need to update.
 			log.V(3).Info("PrometheusRule are the same skipping update")
 			return nil

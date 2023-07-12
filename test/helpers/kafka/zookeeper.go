@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	apps "k8s.io/api/apps/v1"
@@ -67,9 +68,10 @@ func NewZookeeperStatefuleSet(namespace string) *apps.StatefulSet {
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app":       zookeeperDeploymentName,
-						"component": zookeeperComponent,
-						"provider":  zookeeperProvider,
+						"app":                      zookeeperDeploymentName,
+						"component":                zookeeperComponent,
+						"provider":                 zookeeperProvider,
+						constants.LabelK8sInstance: zookeeperComponent,
 					},
 				},
 				Spec: v1.PodSpec{
@@ -208,7 +210,7 @@ func NewZookeeperService(namespace string) *v1.Service {
 			Port: zookeeperLeaderElectionPort,
 		},
 	}
-	return factory.NewService(zookeeperDeploymentName, namespace, zookeeperComponent, ports)
+	return factory.NewService(zookeeperDeploymentName, namespace, zookeeperComponent, zookeeperComponent, ports)
 }
 
 func NewZookeeperConfigMap(namespace string) *v1.ConfigMap {

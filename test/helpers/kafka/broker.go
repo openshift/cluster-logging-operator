@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
@@ -77,9 +78,10 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app":       DeploymentName,
-						"component": kafkaBrokerComponent,
-						"provider":  kafkaBrokerProvider,
+						"app":                      DeploymentName,
+						"component":                kafkaBrokerComponent,
+						"provider":                 kafkaBrokerProvider,
+						constants.LabelK8sInstance: kafkaBrokerComponent,
 					},
 				},
 				Spec: v1.PodSpec{
@@ -285,7 +287,7 @@ func NewBrokerService(namespace string) *v1.Service {
 			Port: 9093,
 		},
 	}
-	return factory.NewService(DeploymentName, namespace, kafkaBrokerComponent, ports)
+	return factory.NewService(DeploymentName, namespace, kafkaBrokerComponent, kafkaBrokerComponent, ports)
 }
 
 func NewBrokerRBAC(namespace string) (*rbacv1.ClusterRole, *rbacv1.ClusterRoleBinding) {

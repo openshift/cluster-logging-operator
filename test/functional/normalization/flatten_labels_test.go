@@ -5,19 +5,19 @@ package normalization
 
 import (
 	"fmt"
-	log "github.com/ViaQ/logerr/v2/log/static"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"regexp"
 	"sort"
 	"time"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
+	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

@@ -15,10 +15,6 @@ const (
 	ParseJson = "json"
 )
 
-var (
-	UserDefinedInput = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
-)
-
 func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	el := []generator.Element{}
 	userDefined := spec.InputMap()
@@ -27,9 +23,16 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 		spec.Pipelines[i].Name = p.Name
 		inputs := []string{}
 		for _, inputName := range p.InputRefs {
-			if _, ok := userDefined[inputName]; ok {
+			input, isUserDefined := userDefined[inputName]
+			switch {
+			case isUserDefined && input.HasPolicy():
+				if input.GetMaxRecordsPerSecond() > 0 {
+					// if threshold is zero, then don't add to pipeline
+					inputs = append(inputs, fmt.Sprintf(UserDefinedSourceThrottle, input.Name))
+				}
+			case isUserDefined:
 				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
-			} else {
+			default:
 				inputs = append(inputs, inputName)
 			}
 		}

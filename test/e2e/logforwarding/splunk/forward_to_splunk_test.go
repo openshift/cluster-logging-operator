@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"testing"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -19,9 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -102,7 +103,7 @@ func testLogForwardingToSplunk(t *testing.T, cl *loggingv1.ClusterLogging, clf *
 	clf.Spec.Outputs[0].URL = framework.SplunkEndpoint.String()
 
 	var g errgroup.Group
-	g.Go(func() error { return c.Recreate(cl) })
+	require.NoError(t, c.Recreate(cl))
 	defer func(r *loggingv1.ClusterLogging) { _ = c.Delete(r) }(cl)
 	g.Go(func() error { return c.Recreate(clf) })
 	defer func(r *loggingv1.ClusterLogForwarder) { _ = c.Delete(r) }(clf)

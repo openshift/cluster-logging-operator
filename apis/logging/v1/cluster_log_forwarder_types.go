@@ -50,6 +50,11 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
+	// ServiceAccountName is the service account's name provided by the admin.
+	//
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
 	// DEPRECATED OutputDefaults specify forwarder config explicitly for the
 	// default managed log store named 'default'.  If there is a need to spec
 	// the managed logstore, define an outputSpec like the following where the

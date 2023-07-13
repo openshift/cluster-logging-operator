@@ -625,6 +625,10 @@ spec:
                   - outputRefs
                   type: object
                 type: array
+              serviceAccountName:
+                description: ServiceAccountName is the service account's name provided
+                  by the admin.
+                type: string
             type: object
           status:
             description: Status of the ClusterLogForwarder

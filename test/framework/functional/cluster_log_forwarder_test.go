@@ -42,7 +42,8 @@ pipelines:
   name: forward-pipeline
   outputRefs:
   - elasticsearch
-  - syslog`))
+  - syslog
+`))
 		})
 	})
 

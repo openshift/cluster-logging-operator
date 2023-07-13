@@ -7,8 +7,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 )
 
-func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	spec, extras = MigrateDefaultOutput(spec, logStore, extras, logstoreSecretName)
+	if namespace == constants.OpenshiftNS && name == constants.SingletonName {
+		spec.ServiceAccountName = constants.CollectorServiceAccountName
+	}
 	return spec, extras
 }
 

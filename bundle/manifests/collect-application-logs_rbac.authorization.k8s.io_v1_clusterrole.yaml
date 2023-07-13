@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: collect-application-logs
+rules:
+- apiGroups:
+  - logging.openshift.io
+  resourceNames:
+  - application
+  resources:
+  - logs
+  verbs:
+  - collect

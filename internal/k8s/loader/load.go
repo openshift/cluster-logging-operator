@@ -57,14 +57,13 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name, logstore
 	forwarder = *proto.DeepCopy()
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, logstoreSecretName)
+	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Namespace, forwarder.Name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, logstoreSecretName)
 
 	if fetchClusterLogging().Name == "" {
 		extras[constants.ClusterLoggingAvailable] = false
 	} else {
 		extras[constants.ClusterLoggingAvailable] = true
 	}
-
 	if err, status = clusterlogforwarder.Validate(forwarder, k8sClient, extras); err != nil {
 		return forwarder, err, status
 	}

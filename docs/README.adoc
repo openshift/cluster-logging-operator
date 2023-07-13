@@ -15,8 +15,8 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 
 * link:administration/configuration.md[Configuring and Tuning Cluster Logging]
 * link:administration/deploy-event-router.md[Deploying Event Router]
-* link:contributing/README.md[Contributing the Cluster Logging Operator]
-* link:contributing/REVIEW.md[PR Review Guidelines]
+* link:contributing/README.adoc[Contributing the Cluster Logging Operator]
+* link:contributing/REVIEW.adoc[PR Review Guidelines]
 * link:administration/troubleshooting.md[Troubleshooting the cluster logging operator]
 * link:administration/unmanaged_configuration.md[Unmanaged Configurations for Cluster Logging]
 * link:administration/output_url_field.md[Using the clusterlogforwarder.output.url field]

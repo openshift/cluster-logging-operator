@@ -95,7 +95,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *collectionSpec, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Name, clusterRequest.ResourceNames)
 
-	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}

@@ -14,11 +14,11 @@ import (
 )
 
 // ReconcileService reconciles the service that exposes metrics
-func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespace, name, portName, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespace, name, selectorComponent, portName, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
 		name,
 		namespace,
-		name,
+		selectorComponent,
 		[]v1.ServicePort{
 			{
 				Port:       portNum,

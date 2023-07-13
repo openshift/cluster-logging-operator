@@ -250,17 +250,9 @@ type Loki struct {
 	LabelKeys []string `json:"labelKeys,omitempty"`
 }
 
-// GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging
+// GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging.
+// Exactly one of billingAccountID, organizationID, folderID, or projectID must be set.
 type GoogleCloudLogging struct {
-	// Only one of BillingAccountID, OrganizationID, FolderID, or ProjectID can be used to send logs.
-	// If more than one are configured, the priority is as follows
-	// 1. BillingAccountID
-	// 2. OrganizationID
-	// 3. FolderID
-	// 4. ProjectID
-	//
-	// Reference: https://cloud.google.com/billing/docs/concepts
-
 	// +optional
 	BillingAccountID string `json:"billingAccountId,omitempty"`
 

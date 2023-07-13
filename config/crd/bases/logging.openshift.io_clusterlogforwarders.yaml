@@ -218,7 +218,8 @@ spec:
                       type: object
                     googleCloudLogging:
                       description: GoogleCloudLogging provides configuration for sending
-                        logs to Google Cloud Logging
+                        logs to Google Cloud Logging. Exactly one of billingAccountID,
+                        organizationID, folderID, or projectID must be set.
                       properties:
                         billingAccountId:
                           type: string

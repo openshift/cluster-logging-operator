@@ -24,8 +24,13 @@ const (
 	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
 	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
 
-	lokiStackAppReaderClusterRoleName        = "logging-application-logs-reader"
-	lokiStackAppReaderClusterRoleBindingName = "logging-all-authenticated-application-logs-reader"
+	lokiStackAppViewClusterRoleName   = "cluster-logging-application-view"
+	lokiStackInfraViewClusterRoleName = "cluster-logging-infrastructure-view"
+	lokiStackAuditViewClusterRoleName = "cluster-logging-audit-view"
+
+	applicationLogs    = "application"
+	infrastructureLogs = "infrastructure"
+	auditLogs          = "audit"
 )
 
 var (
@@ -57,23 +62,31 @@ func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.T
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
+	if err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAppViewClusterRoleName, applicationLogs)); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	if err := reconcile.ClusterRoleBinding(k8sClient, lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for reading application logs.")
+	if err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackViewClusterRole(lokiStackInfraViewClusterRoleName, infrastructureLogs)); err != nil {
+		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading infrastructure logs.")
+	}
+
+	if err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAuditViewClusterRoleName, auditLogs)); err != nil {
+		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
 	}
 
 	return nil
 }
 
 func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) error {
-	if err := reconcile.DeleteClusterRoleBinding(k8sClient, lokiStackAppReaderClusterRoleBindingName); err != nil {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAppViewClusterRoleName); err != nil {
 		return err
 	}
 
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAppReaderClusterRoleName); err != nil {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackInfraViewClusterRoleName); err != nil {
+		return err
+	}
+
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAuditViewClusterRoleName); err != nil {
 		return err
 	}
 
@@ -129,40 +142,26 @@ func newLokiStackWriterClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	)
 }
 
-func newLokiStackAppReaderClusterRole() *rbacv1.ClusterRole {
-	return runtime.NewClusterRole(
-		lokiStackAppReaderClusterRoleName,
-		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"loki.grafana.com",
+func newLokiStackViewClusterRole(name, logType string) func() *rbacv1.ClusterRole {
+	return func() *rbacv1.ClusterRole {
+		return runtime.NewClusterRole(
+			name,
+			rbacv1.PolicyRule{
+				APIGroups: []string{
+					"loki.grafana.com",
+				},
+				Resources: []string{
+					logType,
+				},
+				ResourceNames: []string{
+					"logs",
+				},
+				Verbs: []string{
+					"get",
+				},
 			},
-			Resources: []string{
-				"application",
-			},
-			ResourceNames: []string{
-				"logs",
-			},
-			Verbs: []string{
-				"get",
-			},
-		},
-	)
-}
-
-func newLokiStackAppReaderClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return runtime.NewClusterRoleBinding(
-		lokiStackAppReaderClusterRoleBindingName,
-		rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     lokiStackAppReaderClusterRoleName,
-		},
-		rbacv1.Subject{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Group",
-			Name:     "system:authenticated",
-		},
-	)
+		)
+	}
 }
 
 func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {

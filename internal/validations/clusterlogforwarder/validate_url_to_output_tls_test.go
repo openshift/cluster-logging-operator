@@ -54,15 +54,27 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Output URL vs Out
 			}
 			Expect(validateUrlAccordingToTls(*clf)).To(Succeed())
 		})
-		It("should pass pass validation when secure URL and exist TLS config: tls.InsecureSkipVerify=false", func() {
+		It("should pass validation when secure URL and exist TLS config: tls.InsecureSkipVerify=false", func() {
 			clf.Spec.Outputs[0].URL = "https://local.svc:514"
 			clf.Spec.Outputs[0].TLS = &v1.OutputTLSSpec{
 				InsecureSkipVerify: false,
 			}
 			Expect(validateUrlAccordingToTls(*clf)).To(Succeed())
 		})
-		It("should pass pass validation when secure URL and exist TLS config: tls.TLSSecurityProfile", func() {
+		It("should pass validation when secure URL and exist TLS config: tls.TLSSecurityProfile", func() {
 			clf.Spec.Outputs[0].URL = "https://local.svc:514"
+			clf.Spec.Outputs[0].TLS = &v1.OutputTLSSpec{
+				TLSSecurityProfile: &configv1.TLSSecurityProfile{
+					Type: configv1.TLSProfileOldType,
+				},
+			}
+			Expect(validateUrlAccordingToTls(*clf)).To(Succeed())
+		})
+		It("should pass validation when URL not provided for specific Output type", func() {
+			clf.Spec.Outputs[0].GoogleCloudLogging = &v1.GoogleCloudLogging{
+				BillingAccountID: "billing-1",
+				LogID:            "vector-1",
+			}
 			clf.Spec.Outputs[0].TLS = &v1.OutputTLSSpec{
 				TLSSecurityProfile: &configv1.TLSSecurityProfile{
 					Type: configv1.TLSProfileOldType,

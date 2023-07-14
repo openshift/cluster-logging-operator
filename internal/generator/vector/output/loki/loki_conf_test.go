@@ -558,7 +558,6 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
-enabled = true
 verify_certificate = false
 verify_hostname = false
 ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
@@ -651,7 +650,6 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
-enabled = true
 verify_certificate = false
 verify_hostname = false
 `,
@@ -751,7 +749,6 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 [sinks.loki_receiver.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 
@@ -861,7 +858,6 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
-enabled = true
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 # Bearer Auth Config
 [sinks.loki_receiver.auth]

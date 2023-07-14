@@ -146,12 +146,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "https://es.svc.infra.cluster:9200"
+endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 
 # Basic Auth Config
 [sinks.es_1.auth]
@@ -282,15 +283,15 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "https://es.svc.infra.cluster:9200"
+endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 
 [sinks.es_1.tls]
-enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -408,12 +409,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", helpers.ConfGenerateTest{
@@ -570,15 +572,15 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "https://es-1.svc.messaging.cluster.local:9200"
+endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 
 [sinks.es_1.tls]
-enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -682,15 +684,15 @@ source = '''
 [sinks.es_2]
 type = "elasticsearch"
 inputs = ["es_2_dedot_and_flatten"]
-endpoint = "https://es-2.svc.messaging.cluster.local:9200"
+endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 
 [sinks.es_2.tls]
-enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
@@ -826,12 +828,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with StructuredTypeName", helpers.ConfGenerateTest{
@@ -960,12 +963,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with both StructuredTypeKey and StructuredTypeName", helpers.ConfGenerateTest{
@@ -1100,12 +1104,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with StructuredTypeKey, StructuredTypeName, container annotations enabled", helpers.ConfGenerateTest{
@@ -1253,12 +1258,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("without an Elasticsearch version", helpers.ConfGenerateTest{
@@ -1373,12 +1379,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with an Elasticsearch version less than our default", helpers.ConfGenerateTest{
@@ -1502,12 +1509,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v5"
 `,
 		}),
 		Entry("with our default Elasticsearch version", helpers.ConfGenerateTest{
@@ -1631,12 +1639,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v6"
 `,
 		}),
 		Entry("with Elasticsearch version 7", helpers.ConfGenerateTest{
@@ -1760,12 +1769,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+api_version = "v7"
 `,
 		}),
 		Entry("with an Elasticsearch version greater than latest version", helpers.ConfGenerateTest{
@@ -1889,13 +1899,13 @@ source = '''
 [sinks.es_1]
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
+endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
+api_version = "v9"
 `,
 		}),
 	)

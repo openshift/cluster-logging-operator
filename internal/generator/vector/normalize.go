@@ -34,9 +34,11 @@ if !exists(.level) {
   }
 }
 `
-	RemoveSourceType = `del(.source_type)`
-	RemoveStream     = `del(.stream)`
-	RemovePodIPs     = `del(.kubernetes.pod_ips)`
+	RemoveSourceType   = `del(.source_type)`
+	RemoveStream       = `del(.stream)`
+	RemovePodIPs       = `del(.kubernetes.pod_ips)`
+	RemoveNodeLabels   = `del(.kubernetes.node_labels)`
+	RemoveTimestampEnd = `del(.timestamp_end)`
 
 	ParseHostAuditLogs = `
 match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -45,8 +47,8 @@ envelop |= {"type": match1.type}
 
 match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
 if err == null {
-  sp = split(match2.ts_record,":")
-  if length(sp) == 2 {
+  sp, err = split(match2.ts_record,":")
+  if err == null && length(sp) == 2 {
       ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
       envelop |= {"record_id": sp[1]}
       . |= {"audit.linux" : envelop}
@@ -107,6 +109,8 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 				RemoveSourceType,
 				RemoveStream,
 				RemovePodIPs,
+				RemoveNodeLabels,
+				RemoveTimestampEnd,
 				FixTimestampField,
 			}), "\n"),
 		},

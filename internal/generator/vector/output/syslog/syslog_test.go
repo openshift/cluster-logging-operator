@@ -27,7 +27,8 @@ inputs = ["syslog_xyz_json"]
 address = "logserver:514"
 mode = "xyz"
 
-[sinks.syslog_xyz.encoding.codec.syslog]
+[sinks.syslog_xyz.encoding]
+codec = "syslog"
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"
@@ -46,7 +47,8 @@ inputs = ["syslog_tcp_json"]
 address = "logserver:514"
 mode = "tcp"
 
-[sinks.syslog_tcp.encoding.codec.syslog]
+[sinks.syslog_tcp.encoding]
+codec = "syslog"
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"
@@ -65,7 +67,8 @@ inputs = ["syslog_udp_json"]
 address = "logserver:514"
 mode = "udp"
 
-[sinks.syslog_udp.encoding.codec.syslog]
+[sinks.syslog_udp.encoding]
+codec = "syslog"
 rfc = "rfc3164"
 facility = "kern"
 severity = "critical"
@@ -90,7 +93,8 @@ inputs = ["syslog_tls_json"]
 address = "logserver:6514"
 mode = "tcp"
 
-[sinks.syslog_tls.encoding.codec.syslog]
+[sinks.syslog_tls.encoding]
+codec = "syslog"
 rfc = "rfc5424"
 facility = "$$.message.facility"
 severity = "$$.message.severity"

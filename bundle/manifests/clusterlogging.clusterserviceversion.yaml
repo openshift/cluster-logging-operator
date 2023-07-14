@@ -284,6 +284,19 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:select:fluentd
         - urn:alm:descriptor:com.tectonic.ui:select:vector
+      - description: Deprecated. Specification of the Curation component for the cluster
+          This component was specifically for use with Elasticsearch and was replaced
+          by index management spec
+        displayName: Curation
+        path: curation
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: Deprecated. Specification for Forwarder component for the cluster
+          See spec.collection.fluentd
+        displayName: Forwarder
+        path: forwarder
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: Number of nodes to deploy for Elasticsearch
         displayName: Elasticsearch Size
         path: logStore.elasticsearch.nodeCount

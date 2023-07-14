@@ -24,8 +24,7 @@ func NewDaemonSet(daemonsetName, namespace, loggingComponent, component, impl st
 	}
 
 	annotations := map[string]string{
-		"scheduler.alpha.kubernetes.io/critical-pod": "",
-		"target.workload.openshift.io/management":    `{"effect": "PreferredDuringScheduling"}`,
+		"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
 	}
 
 	strategy := apps.DaemonSetUpdateStrategy{

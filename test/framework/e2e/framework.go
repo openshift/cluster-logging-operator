@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 
@@ -104,6 +105,9 @@ func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) error {
+	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
+		return err
+	}
 	pod := runtime.NewLogGenerator(namespace, "log-generator", 1000, 0, "My life is my message")
 	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
 	opts := metav1.CreateOptions{}

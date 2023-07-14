@@ -32,12 +32,12 @@ const (
 )
 
 var (
-	InfraContainerLogs = OR(
+	InfraContainerLogs = AND(NotNull(K8sNamespaceName), OR(
 		StartWith(K8sNamespaceName, NsKube+"-"),
 		StartWith(K8sNamespaceName, NsOpenshift+"-"),
 		Eq(K8sNamespaceName, NsDefault),
 		Eq(K8sNamespaceName, NsOpenshift),
-		Eq(K8sNamespaceName, NsKube))
+		Eq(K8sNamespaceName, NsKube)))
 	AppContainerLogs = Neg(Paren(InfraContainerLogs))
 
 	AddLogTypeApp   = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)

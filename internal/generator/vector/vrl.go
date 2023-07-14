@@ -46,4 +46,7 @@ var (
 	Neg = func(expr string) string {
 		return fmt.Sprintf("!%s", expr)
 	}
+	NotNull = func(expr string) string {
+		return fmt.Sprintf("%s != null", expr)
+	}
 )

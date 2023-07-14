@@ -1,9 +1,8 @@
 package generator
 
 import (
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 const (
@@ -34,7 +33,7 @@ func GatherSources(forwarder *logging.ClusterLogForwarderSpec, op Options) sets.
 			}
 		}
 	}
-	return types
+	return *types
 }
 
 func InputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {
@@ -44,7 +43,8 @@ func InputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 		for _, inRef := range pipeline.InputRefs {
 			if input, ok := inputs[inRef]; ok {
 				// User defined input spec, unwrap.
-				for t := range input.Types() {
+				types := input.Types()
+				for _, t := range types.List() {
 					result.Insert(t, pipeline.Name)
 				}
 			} else {

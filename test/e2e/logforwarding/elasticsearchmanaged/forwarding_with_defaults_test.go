@@ -1,6 +1,7 @@
 package elasticsearchmanaged
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"strings"
@@ -58,7 +59,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AssertLogStoreHasIndex := func(store framework.LogStore, prefix string) {
 			estore := store.(*framework.ElasticLogStore)
 			var indices framework.Indices
-			pollErr := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (found bool, err error) {
+			pollErr := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 10*time.Minute, true, func(cxt context.Context) (found bool, err error) {
 				indices, err = estore.Indices()
 				if err != nil {
 					log.Error(err, "Error retrieving indices from elasticsearch")

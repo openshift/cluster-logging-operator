@@ -1,6 +1,7 @@
 package fluent_test
 
 import (
+	"context"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -160,7 +161,7 @@ func (f *Fixture) cleanFluentDBuffers(c *client.Client) {
 	}
 
 	ExpectOK(c.Recreate(ds))
-	_ = wait.PollImmediate(time.Second*10, time.Minute*5, func() (bool, error) {
+	_ = wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*5, true, func(cxt context.Context) (done bool, err error) {
 		ExpectOK(c.Get(ds))
 		return ds.Status.DesiredNumberScheduled == ds.Status.CurrentNumberScheduled, nil
 	})

@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -35,8 +36,8 @@ var (
 		"app.kubernetes.io/part-of":    Splunk,
 	}
 
-	HecToken      = utils.GetRandomWord(16)
-	AdminPassword = utils.GetRandomWord(16)
+	HecToken      = rand.Word(16)
+	AdminPassword = rand.Word(16)
 
 	SplunkEndpoint = url.URL{
 		Scheme: "http",

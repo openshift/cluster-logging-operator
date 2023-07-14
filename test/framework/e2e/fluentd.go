@@ -117,7 +117,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
-	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		output, err := fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "Error polling fluent-receiver for logs")
@@ -130,7 +130,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 		}
 		return value > 0, nil
 	})
-	if err == wait.ErrWaitTimeout {
+	if wait.Interrupted(err) {
 		return false, err
 	}
 	return true, err
@@ -150,14 +150,14 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
-	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		if result, err = fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
 			clolog.Error(err, "Failed to fetch logs from fluent-receiver ")
 			return false, nil
 		}
 		return true, nil
 	})
-	if err == wait.ErrWaitTimeout {
+	if wait.Interrupted(err) {
 		return "", err
 	}
 	return result, nil

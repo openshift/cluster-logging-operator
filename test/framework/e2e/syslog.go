@@ -102,7 +102,7 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	}
 	podName := pods.Items[0].Name
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		output, err := syslog.tc.PodExec(constants.OpenshiftNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "failed to fetch logs from syslog-receiver")
@@ -115,7 +115,7 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 		}
 		return value > 0, nil
 	})
-	if err == wait.ErrWaitTimeout {
+	if wait.Interrupted(err) {
 		return false, err
 	}
 	return true, err
@@ -138,7 +138,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	clolog.V(3).Info("running expression", "expression", cmd)
 	var value string
 
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		output, err := syslog.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "failed to fetch logs from syslog-receiver")
@@ -147,7 +147,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 		value = strings.TrimSpace(output)
 		return true, nil
 	})
-	if err == wait.ErrWaitTimeout {
+	if wait.Interrupted(err) {
 		return NotFound, err
 	}
 	return value, nil

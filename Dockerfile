@@ -60,7 +60,7 @@ LABEL \
         com.redhat.delivery.appregistry="false" \
         maintainer="AOS Logging <team-logging@redhat.com>" \
         License="Apache-2.0" \
-        name="openshift-logging/cluster-logging-rhel8-operator" \
+        name="openshift-logging/cluster-logging-rhel9-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
 

@@ -14,8 +14,8 @@ func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) (
 		allGroups       []string
 		logGroupsOutput *cwl.DescribeLogGroupsOutput
 	)
-	err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-		logGroupsOutput, err = svc.DescribeLogGroups(context.TODO(), &cwl.DescribeLogGroupsInput{})
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		logGroupsOutput, err = svc.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
 		if err != nil || len(logGroupsOutput.LogGroups) == 0 {
 			return false, err
 		}
@@ -38,8 +38,8 @@ func (f *CollectorFunctionalFramework) GetLogGroupByType(client *cwl.Client, inp
 		myGroups        []string
 		logGroupsOutput *cwl.DescribeLogGroupsOutput
 	)
-	err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-		logGroupsOutput, err = client.DescribeLogGroups(context.TODO(), &cwl.DescribeLogGroupsInput{})
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		logGroupsOutput, err = client.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
 		if err != nil || len(logGroupsOutput.LogGroups) == 0 {
 			return false, err
 		}
@@ -70,10 +70,10 @@ func (f *CollectorFunctionalFramework) GetLogStreamsByGroup(client *cwl.Client, 
 		myStreams        []string
 		logStreamsOutput *cwl.DescribeLogStreamsOutput
 	)
-	err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		// TODO: need to query for log group or get more log group info above
 		logStreamsOutput, err = client.DescribeLogStreams(
-			context.TODO(),
+			cxt,
 			&cwl.DescribeLogStreamsInput{LogGroupName: &groupName},
 		)
 		if err != nil || len(logStreamsOutput.LogStreams) == 0 {
@@ -96,10 +96,10 @@ func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cw
 		myMessages      []string
 		logEventsOutput *cwl.GetLogEventsOutput
 	)
-	err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		// NOTE:  This is assuming only one stream is created for this group
 		logEventsOutput, err = client.GetLogEvents(
-			context.TODO(),
+			cxt,
 			&cwl.GetLogEventsInput{
 				LogGroupName:  &groupName,
 				LogStreamName: &streamName,

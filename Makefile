@@ -110,7 +110,14 @@ openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
 .PHONY: build
-build: bin/cluster-logging-operator
+build: bin/cluster-logging-operator build-functional-e2e-tests
+
+.PHONY: build-functional-e2e-tests
+build-functional-e2e-tests:
+	for d in $$(find ./test/e2e -type d -name "*" -not -path '*/.*'); do go test -c $$d --tags fluentd; done
+	for d in $$(find ./test/e2e -type d -name "*" -not -path '*/.*'); do go test -c $$d --tags vector; done
+	for d in $$(find ./test/functional -type d -name "*"  -not -path '*/.*'); do go test -c $$d --tags fluentd; done
+	for d in $$(find ./test/functional -type d -name "*"  -not -path '*/.*'); do go test -c $$d --tags vector; done
 
 .PHONY: build-debug
 build-debug:
@@ -176,7 +183,8 @@ image: .target/image
 # - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
 export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
 lint:  $(GOLANGCI_LINT) lint-repo
-	$(GOLANGCI_LINT) run --color=never --timeout=3m --build-tags vector $(if $(CI),,--fix)
+	$(GOLANGCI_LINT) run --color=never --build-tags fluentd --timeout=3m $(if $(CI),,--fix)
+	$(GOLANGCI_LINT) run --color=never --build-tags vector --timeout=3m $(if $(CI),,--fix)
 .PHONY: lint
 
 .PHONY: lint-repo

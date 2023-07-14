@@ -11,8 +11,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
@@ -166,9 +166,9 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 func lokiLabelKeys(l *logging.Loki) []string {
 	var keys sets.String
 	if l != nil && len(l.LabelKeys) != 0 {
-		keys = sets.NewString(l.LabelKeys...)
+		keys = *sets.NewString(l.LabelKeys...)
 	} else {
-		keys = sets.NewString(defaultLabelKeys...)
+		keys = *sets.NewString(defaultLabelKeys...)
 	}
 	// Ensure required tags for serialization
 	keys.Insert(requiredLabelKeys...)

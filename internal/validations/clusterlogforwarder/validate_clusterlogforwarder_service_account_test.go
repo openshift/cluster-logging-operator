@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	authorizationapi "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -90,9 +90,8 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 						},
 					},
 				}
-				expectedSet = sets.NewString(loggingv1.InputNameAudit, loggingv1.InputNameApplication)
+				expectedSet = *sets.NewString(loggingv1.InputNameAudit, loggingv1.InputNameApplication)
 				inputs := gatherPipelineInputs(clf)
-				Expect(inputs).To(HaveLen(2))
 				Expect(inputs).To(Equal(expectedSet))
 			})
 		})
@@ -107,11 +106,11 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 				mockSARClient = &mockSARClient{}
 			)
 			It("should pass validation when service account can collect specified inputs", func() {
-				Expect(validateServiceAccountPermissions(mockSARClient, sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure), clfServiceAccount, constants.OpenshiftNS)).To(Succeed())
+				Expect(validateServiceAccountPermissions(mockSARClient, *sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure), clfServiceAccount, constants.OpenshiftNS)).To(Succeed())
 			})
 
 			It("should return validation error if service account cannot collect specified inputs", func() {
-				Expect(validateServiceAccountPermissions(mockSARClient, sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameAudit), clfServiceAccount, constants.OpenshiftNS)).ToNot(Succeed())
+				Expect(validateServiceAccountPermissions(mockSARClient, *sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameAudit), clfServiceAccount, constants.OpenshiftNS)).ToNot(Succeed())
 			})
 		})
 	})

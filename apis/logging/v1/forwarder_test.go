@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 var _ = Describe("ClusterLogForwarderSpec", func() {
@@ -27,14 +28,14 @@ var _ = Describe("ClusterLogForwarderSpec", func() {
 		}
 		routes := v1.NewRoutes(spec.Pipelines)
 		Expect(routes.ByInput).To(Equal(v1.RouteMap{
-			v1.InputNameAudit:          {"X": {}, "Y": {}, "Z": {}},
-			v1.InputNameApplication:    {"X": {}, "Y": {}},
-			v1.InputNameInfrastructure: {"Y": {}, "Z": {}},
+			v1.InputNameAudit:          sets.NewString("X", "Y", "Z"),
+			v1.InputNameApplication:    sets.NewString("X", "Y"),
+			v1.InputNameInfrastructure: sets.NewString("Y", "Z"),
 		}))
 		Expect(routes.ByOutput).To(Equal(v1.RouteMap{
-			"X": {v1.InputNameApplication: {}, v1.InputNameAudit: {}},
-			"Y": {v1.InputNameApplication: {}, v1.InputNameInfrastructure: {}, v1.InputNameAudit: {}},
-			"Z": {v1.InputNameInfrastructure: {}, v1.InputNameAudit: {}},
+			"X": sets.NewString(v1.InputNameApplication, v1.InputNameAudit),
+			"Y": sets.NewString(v1.InputNameApplication, v1.InputNameInfrastructure, v1.InputNameAudit),
+			"Z": sets.NewString(v1.InputNameInfrastructure, v1.InputNameAudit),
 		}))
 	})
 })

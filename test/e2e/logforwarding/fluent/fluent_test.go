@@ -22,7 +22,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		c          *client.Test
 		f          *Fixture
 		portOffset int
-		logTypes   = loggingv1.ReservedInputNames.UnsortedList()
+		logTypes   = loggingv1.ReservedInputNames.List()
 		e2e        *framework.E2ETestFramework
 	)
 	BeforeEach(func() {

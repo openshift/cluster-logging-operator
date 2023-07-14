@@ -1,11 +1,11 @@
 package functional
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -28,7 +28,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 	if found, o := OptionsInclude("port", options); found {
 		port = o.Value
 	}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, maxDuration, true, func(cxt context.Context) (done bool, err error) {
 		cmd := `curl -X GET "localhost:` + port + `/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {
 	"query": {

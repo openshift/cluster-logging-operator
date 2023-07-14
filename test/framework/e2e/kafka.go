@@ -33,7 +33,7 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, 
 }
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
-	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
 			if err == types.ErrParse {
@@ -56,7 +56,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 }
 
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
-	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
 			if err == types.ErrParse {
@@ -79,7 +79,7 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 }
 
 func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
 		if err != nil {
 			if err == types.ErrParse {

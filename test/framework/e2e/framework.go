@@ -237,7 +237,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
-	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+	return wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}", constants.OpenshiftNS)).Run()
 		if err == nil {
 			if numUnavail == "" {
@@ -264,7 +264,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 // WaitForResourceCondition retrieves resource info given a selector and evaluates the jsonPath output against the provided condition.
 func (tc *E2ETestFramework) WaitForResourceCondition(namespace, kind, name, selector, jsonPath string, maxtimes int, isSatisfied func(string) (bool, error)) error {
 	times := 0
-	return wait.PollImmediate(5*time.Second, defaultTimeout, func() (bool, error) {
+	return wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, defaultTimeout, true, func(cxt context.Context) (done bool, err error) {
 		out, err := oc.Get().WithNamespace(namespace).Resource(kind, name).Selector(selector).OutputJsonpath(jsonPath).Run()
 		clolog.V(3).Error(err, "Error returned from retrieving resources")
 		if err == nil {
@@ -290,7 +290,8 @@ func (tc *E2ETestFramework) WaitForResourceCondition(namespace, kind, name, sele
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	clolog.V(3).Info("Waiting for elasticsearch")
-	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
+
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
@@ -330,7 +331,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 }
 
 func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
-	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -361,7 +362,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 	}
 	clolog.Info("waiting for pods to complete with labels in namespace:", "labels", labels, "namespace", namespace, "options", options)
 
-	return wait.PollImmediate(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(cxt context.Context) (done bool, err error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -382,7 +383,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 }
 
 func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInterval, timeout time.Duration) error {
-	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -614,7 +615,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	} else {
 		clolog.Info("DaemonSet to clean fluent buffers created")
 	}
-	_ = wait.PollImmediate(time.Second*10, time.Minute*5, func() (bool, error) {
+	_ = wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*5, true, func(cxt context.Context) (done bool, err error) {
 		desired, err2 := oc.Get().Resource("daemonset", "clean-buffers").WithNamespace("default").OutputJsonpath("{.status.desiredNumberScheduled}").Run()
 		if err2 != nil {
 			return false, nil

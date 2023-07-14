@@ -16,9 +16,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -91,13 +91,13 @@ func verifyRefs(what, forwarderName string, status loggingv1.ClusterLogForwarder
 		}
 	}
 
-	if len(bad) > 0 {
+	if bad.Len() > 0 {
 		msg = append(msg, fmt.Sprintf("unrecognized %s: %v", what, bad.List()))
 	}
-	if len(good) == 0 {
+	if good.Len() == 0 {
 		msg = append(msg, fmt.Sprintf("no valid %s", what))
 	}
-	return good, msg
+	return *good, msg
 }
 
 func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus) {
@@ -106,10 +106,15 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 	names := sets.NewString() // Collect pipeline names
 
 	// Known output names, note if "default" is enabled it will already be in the OutputMap()
-	outputs := sets.StringKeySet(spec.OutputMap())
+	outputs := *sets.NewString()
+	for k := range spec.OutputMap() {
+		outputs.Insert(k)
+	}
 	// Known input names, reserved names not in InputMap() we don't expose default inputs.
-	inputs := sets.StringKeySet(spec.InputMap())
-
+	inputs := *sets.NewString()
+	for k := range spec.InputMap() {
+		inputs.Insert(k)
+	}
 	for i, pipeline := range spec.Pipelines {
 
 		// Don't allow empty names since this no longer mutates the spec

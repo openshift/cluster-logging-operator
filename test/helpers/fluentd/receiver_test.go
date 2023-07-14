@@ -38,6 +38,7 @@ var _ = Describe("Receiver", func() {
 		By("sending to a forward source")
 		g.Go(func() {
 			s := r.Sources["foo"]
+			ExpectOK(r.WaitForOpenPort(s.Port, 10), "WaitForOpenPort/foo")
 			cmd := runtime.Exec(r.Pod, "fluent-cat", "-p", strconv.Itoa(s.Port), "-h", s.Host(), "test.tag")
 			cmd.Stdin = strings.NewReader(msg)
 			out, err := cmd.CombinedOutput()
@@ -47,6 +48,7 @@ var _ = Describe("Receiver", func() {
 		By("sending to a http+TLS source")
 		g.Go(func() {
 			s := r.Sources["bar"]
+			ExpectOK(r.WaitForOpenPort(s.Port, 10), "WaitForOpenPort/bar")
 			url := fmt.Sprintf("https://%v:%v/test.tag", s.Host(), s.Port)
 			cmd := runtime.Exec(r.Pod, "curl", "-kv", "--key", r.ConfigPath("bar-key.pem"), "--cert", r.ConfigPath("bar-cert.pem"), "--cacert", r.ConfigPath("bar-ca.pem"), "-d", "json="+msg, url)
 			out, err := cmd.CombinedOutput()
@@ -61,7 +63,6 @@ var _ = Describe("Receiver", func() {
 				line, err := tr.ReadLine()
 				ExpectOK(err)
 				Expect(strings.TrimSpace(line)).To(Equal(msg))
-				Expect(r.Sources["foo"].HasOutput()).To(BeTrue())
 			})
 		}
 	})

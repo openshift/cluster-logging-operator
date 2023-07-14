@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -18,6 +19,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -258,4 +260,12 @@ func (r *Receiver) Host() string { return runtime.ServiceDomainName(r.service) }
 // ConfigPath returns a path relative to the configuration dir.
 func (r *Receiver) ConfigPath(path ...string) string {
 	return filepath.Join(append([]string{configDir}, path...)...)
+}
+
+func (r *Receiver) WaitForOpenPort(port int, timeoutSec int) (ret error) {
+	portProbe := fmt.Sprintf(`</dev/tcp/localhost/%d &>/dev/null`, port)
+	return wait.PollImmediate(1*time.Second, time.Duration(timeoutSec)*time.Second, func() (bool, error) {
+		ret = testruntime.Exec(r.Pod, "timeout", "1", "bash", "-c", portProbe).Run()
+		return ret == nil, ret
+	})
 }

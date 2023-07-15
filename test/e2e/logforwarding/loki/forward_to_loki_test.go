@@ -110,8 +110,7 @@ func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *lo
 
 	// Start independent components in parallel to speed up the test.
 	var g errgroup.Group
-	g.Go(func() error { return c.Recreate(cl) })
-	g.Go(func() error { return c.Recreate(clf) })
+	e2e.RecreateClClfAsync(&g, c, cl, clf)
 	g.Go(func() error { return rcv.Create(c.Client) })
 	g.Go(func() error { return c.Create(gen) })
 

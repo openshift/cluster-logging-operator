@@ -102,9 +102,8 @@ func testLogForwardingToSplunk(t *testing.T, cl *loggingv1.ClusterLogging, clf *
 	clf.Spec.Outputs[0].URL = framework.SplunkEndpoint.String()
 
 	var g errgroup.Group
-	g.Go(func() error { return c.Recreate(cl) })
+	framework.RecreateClClfAsync(&g, c, cl, clf)
 	defer func(r *loggingv1.ClusterLogging) { _ = c.Delete(r) }(cl)
-	g.Go(func() error { return c.Recreate(clf) })
 	defer func(r *loggingv1.ClusterLogForwarder) { _ = c.Delete(r) }(clf)
 	g.Go(func() error { return c.Create(gen) })
 	require.NoError(t, g.Wait())

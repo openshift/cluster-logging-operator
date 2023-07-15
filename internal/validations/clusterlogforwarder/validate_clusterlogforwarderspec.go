@@ -257,10 +257,7 @@ func verifyGoogleCloudLogging(gcl *loggingv1.GoogleCloudLogging) bool {
 	if gcl.OrganizationID != "" {
 		i += 1
 	}
-	if i > 1 {
-		return false
-	}
-	return true
+	return i == 1
 }
 
 func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditions) bool {

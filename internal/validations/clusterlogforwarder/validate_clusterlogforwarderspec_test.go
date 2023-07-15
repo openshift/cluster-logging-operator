@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
@@ -286,43 +287,50 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 		})
 
-		It("should fail googlecloudlogging output with more than one spec", func() {
-			forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
-				Outputs: []loggingv1.OutputSpec{
-					{
-						Name: "X",
-						Type: "googleCloudLogging",
-						OutputTypeSpec: loggingv1.OutputTypeSpec{
-							GoogleCloudLogging: &loggingv1.GoogleCloudLogging{
-								OrganizationID: "redhat",
-								ProjectID:      "project1",
+		DescribeTable("googlecloudlogging output validation",
+			func(gcl *loggingv1.GoogleCloudLogging, expectedPass bool) {
+				forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
+					Outputs: []loggingv1.OutputSpec{
+						{
+							Name: "X",
+							Type: "googleCloudLogging",
+							OutputTypeSpec: loggingv1.OutputTypeSpec{
+								GoogleCloudLogging: gcl,
 							},
 						},
 					},
-				},
-			}
-			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid,
-				"output \"X\": Exactly one of billingAccountId, folderId, organizationId, or projectId must be set."))
-		})
-
-		It("should validate googlecloudlogging output", func() {
-			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
-				Outputs: []loggingv1.OutputSpec{
-					{
-						Name: "X",
-						Type: "googleCloudLogging",
-						OutputTypeSpec: loggingv1.OutputTypeSpec{
-							GoogleCloudLogging: &loggingv1.GoogleCloudLogging{
-								ProjectID: "project1",
-							},
-						},
-					},
-				},
-			}
-			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", true, "", ""))
-		})
+				}
+				verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+				if expectedPass {
+					Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", true, "", ""))
+				} else {
+					Expect(clfStatus.Outputs["X"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid,
+						"output \"X\": Exactly one of billingAccountId, folderId, organizationId, or projectId must be set."))
+				}
+			},
+			// number of subsets: 2^4 = 16
+			// 4C0
+			Entry("empty", &loggingv1.GoogleCloudLogging{}, false),
+			// 4C1
+			Entry("billingAccountID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID"}, true),
+			Entry("organizationID", &loggingv1.GoogleCloudLogging{OrganizationID: "organizationID"}, true),
+			Entry("folderID", &loggingv1.GoogleCloudLogging{FolderID: "folderID"}, true),
+			Entry("projectID", &loggingv1.GoogleCloudLogging{ProjectID: "projectID"}, true),
+			// 4C2
+			Entry("billingAccountID, organizationID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", OrganizationID: "organizationID"}, false),
+			Entry("billingAccountID, folderID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", FolderID: "folderID"}, false),
+			Entry("billingAccountID, projectID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", ProjectID: "projectID"}, false),
+			Entry("organizationID, folderID", &loggingv1.GoogleCloudLogging{OrganizationID: "organizationID", FolderID: "folderID"}, false),
+			Entry("organizationID, projectID", &loggingv1.GoogleCloudLogging{OrganizationID: "organizationID", ProjectID: "projectID"}, false),
+			Entry("projectID, folderID", &loggingv1.GoogleCloudLogging{ProjectID: "projectID", FolderID: "folderID"}, false),
+			// 4C3
+			Entry("billingAccountID, organizationID, projectID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", OrganizationID: "organizationID", ProjectID: "projectID"}, false),
+			Entry("billingAccountID, organizationID, folderID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", OrganizationID: "organizationID", FolderID: "folderID"}, false),
+			Entry("organizationID, projectID, folderID", &loggingv1.GoogleCloudLogging{OrganizationID: "organizationID", ProjectID: "projectID", FolderID: "folderID"}, false),
+			Entry("billingAccountID, ProjectID, folderID", &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID", ProjectID: "projectID", FolderID: "folderID"}, false),
+			// 4C4
+			Entry("all", &loggingv1.GoogleCloudLogging{OrganizationID: "organizationID", BillingAccountID: "billingAccountID", ProjectID: "projectID", FolderID: "folderID"}, false),
+		)
 
 		// Ref: https://issues.redhat.com/browse/LOG-3228
 		It("should validate the default output as any other without adding a new one", func() {
@@ -473,7 +481,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 		})
 
-		It("should fail if output has a negtive limit threshold", func() {
+		It("should fail if output has a negative limit threshold", func() {
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name: "custom-output",
 				Type: "elasticsearch",

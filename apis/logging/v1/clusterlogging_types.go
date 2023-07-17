@@ -59,6 +59,7 @@ type ClusterLoggingSpec struct {
 	// +nullable
 	// +optional
 	// +deprecated
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	Curation *CurationSpec `json:"curation,omitempty"`
 
 	// Deprecated. Specification for Forwarder component for the cluster
@@ -67,6 +68,7 @@ type ClusterLoggingSpec struct {
 	// +nullable
 	// +optional
 	// +deprecated
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	Forwarder *ForwarderSpec `json:"forwarder,omitempty"`
 }
 

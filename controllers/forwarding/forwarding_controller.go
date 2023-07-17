@@ -2,6 +2,7 @@ package forwarding
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -54,20 +55,13 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	telemetry.SetCLFMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetCLFMetrics(1) }()
 
-	// CL only needed if Forwarder is named instance
-	var cl logging.ClusterLogging
-	if request.Name == constants.SingletonName {
-		var err error
-		cl, err = loader.FetchClusterLogging(r.Client, constants.WatchNamespace, constants.SingletonName, false)
-		if err != nil && !errors.IsNotFound(err) {
-			return ctrl.Result{}, err
-		}
+	cl, err := r.fetchOrStubClusterLogging(request)
+	if err != nil && !errors.IsNotFound(err) {
+		return ctrl.Result{}, err
 	}
 
-	resourceNames := factory.GenerateResourceNames(request.NamespacedName.Name, request.NamespacedName.Namespace)
-
 	// Fetch the ClusterLogForwarder instance
-	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, resourceNames.InternalLogStoreSecret, true, func() logging.ClusterLogging { return cl })
+	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, true, func() logging.ClusterLogging { return *cl })
 	if status != nil {
 		instance.Status = *status
 	}
@@ -89,7 +83,8 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(&instance, &cl, r.Client, r.Recorder, r.ClusterID, resourceNames)
+	resourceNames := factory.GenerateResourceNames(instance)
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(&instance, cl, r.Client, r.Recorder, r.ClusterID, resourceNames)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
@@ -112,6 +107,29 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	}
 
 	return ctrl.Result{}, reconcileErr
+}
+
+// fetchOrStubClusterLogging retrieves ClusterLogging as one of:
+// * ClusterLogging <Namespace>/<Name> for ClusterLogForwarder <Namespace>/<Name>
+// * ClusterLogging only providing spec.collection.type=vector  for ClusterLogForwarder <Namespace>/<Name> when CL NotFound
+func (r *ReconcileForwarder) fetchOrStubClusterLogging(request ctrl.Request) (*logging.ClusterLogging, error) {
+	cl, err := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return nil, err
+		}
+		if request.NamespacedName.Namespace != constants.OpenshiftNS || (request.NamespacedName.Namespace == constants.OpenshiftNS && request.NamespacedName.Name != constants.SingletonName) {
+			cl = *loggingruntime.NewClusterLogging(request.NamespacedName.Namespace, request.NamespacedName.Name)
+			cl.Spec = logging.ClusterLoggingSpec{
+				Collection: &logging.CollectionSpec{
+					Type: logging.LogCollectionTypeVector,
+				},
+			}
+		} else {
+			return nil, fmt.Errorf("ClusterLogging (%s/%s) to support ClusterLogForwarder of same namespace and name not found", request.NamespacedName.Namespace, request.NamespacedName.Name)
+		}
+	}
+	return &cl, nil
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (ctrl.Result, error) {

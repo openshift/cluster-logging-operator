@@ -2,11 +2,10 @@ package factory
 
 import (
 	"fmt"
-	"reflect"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 )
 
 var _ = Describe("Collector Resource Name Generator", func() {
@@ -24,15 +23,13 @@ var _ = Describe("Collector Resource Name Generator", func() {
 			InternalLogStoreSecret:           constants.CollectorName,
 			SecretMetrics:                    constants.CollectorMetricSecretName,
 			ServiceAccountTokenSecret:        constants.LogCollectorToken,
-			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.WatchNamespace, constants.CollectorName),
+			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.OpenshiftNS, constants.CollectorName),
 			ConfigMap:                        constants.CollectorConfigSecretName,
 		}
 
-		actualResNames := GenerateResourceNames(clfName, constants.WatchNamespace)
+		clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, clfName)
 
-		equal := reflect.DeepEqual(actualResNames, expectedResNames)
-
-		Expect(equal).To(BeTrue())
+		Expect(GenerateResourceNames(clf)).To(BeEquivalentTo(expectedResNames))
 
 	})
 
@@ -46,12 +43,12 @@ var _ = Describe("Collector Resource Name Generator", func() {
 			InternalLogStoreSecret:           clfName + "-default",
 			SecretMetrics:                    clfName + "-metrics",
 			ServiceAccountTokenSecret:        clfName + "-token",
-			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.WatchNamespace, clfName),
+			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.OpenshiftNS, clfName),
 			ConfigMap:                        clfName + "-config",
 		}
 
-		actualResNames := GenerateResourceNames(clfName, constants.WatchNamespace)
-		equal := reflect.DeepEqual(actualResNames, expectedResNames)
-		Expect(equal).To(BeTrue())
+		clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, clfName)
+		clf.Spec.ServiceAccountName = clfName
+		Expect(GenerateResourceNames(clf)).To(BeEquivalentTo(expectedResNames))
 	})
 })

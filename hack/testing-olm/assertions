@@ -10,8 +10,9 @@ assert_resources_exist(){
 }
 
 assert_collector_exist(){
+  local name=${1:-collector}
 	# verify DS
-	os::cmd::try_until_success "oc -n $LOGGING_NS get ds collector" ${TIMEOUT_MIN}
+	os::cmd::try_until_success "oc -n $LOGGING_NS get ds $name" ${TIMEOUT_MIN}
 }
 
 assert_kibana_instance_exists() {

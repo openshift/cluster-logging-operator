@@ -53,7 +53,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	telemetry.SetLFMEMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetLFMEMetrics(1) }()
 
-	clusterLogging, err := loader.FetchClusterLogging(r.Client, constants.WatchNamespace, constants.SingletonName, false)
+	clusterLogging, err := loader.FetchClusterLogging(r.Client, constants.OpenshiftNS, constants.SingletonName, false)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("no ClusterLogging named instance")

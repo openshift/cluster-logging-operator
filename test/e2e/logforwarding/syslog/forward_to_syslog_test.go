@@ -211,7 +211,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
-			e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName, "syslog-receiver"})
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "syslog-receiver"})
 			generatorPayload = map[string]string{}
 		})
 	})

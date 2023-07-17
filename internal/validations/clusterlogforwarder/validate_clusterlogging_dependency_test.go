@@ -18,8 +18,9 @@ var _ = Describe("[internal][validations] Validate clusterlogging dependency", f
 		clf = loggingv1.ClusterLogForwarder{}
 	})
 
-	Context("with clusterlogforwarder named `instance`", func() {
+	Context("with clusterlogforwarder named `instance` in 'openshift-logging'", func() {
 		BeforeEach(func() {
+			clf.Namespace = constants.OpenshiftNS
 			clf.Name = constants.SingletonName
 		})
 		It("should fail if clusterlogging not available", func() {

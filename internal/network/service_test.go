@@ -70,7 +70,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Service", func() {
 		// Reconcile the exporter daemonset
 		Expect(ReconcileService(recorder,
 			reqClient,
-			constants.WatchNamespace,
+			constants.OpenshiftNS,
 			constants.LogfilesmetricexporterName,
 			constants.LogfilesmetricexporterName,
 			portName,

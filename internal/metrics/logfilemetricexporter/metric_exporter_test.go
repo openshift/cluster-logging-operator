@@ -80,7 +80,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 
 	It("Should reconcile successfully a daemonset, service, and service monitor", func() {
 
-		runtime.Initialize(lfmeInstance, constants.WatchNamespace, constants.SingletonName)
+		runtime.Initialize(lfmeInstance, constants.OpenshiftNS, constants.SingletonName)
 
 		lfmeInstance.Spec = loggingv1alpha1.LogFileMetricExporterSpec{
 			Resources: &corev1.ResourceRequirements{

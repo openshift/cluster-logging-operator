@@ -93,13 +93,12 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		return ctrl.Result{}, nil
 	}
-
-	resourceNames := factory.GenerateResourceNames(request.NamespacedName.Name, request.NamespacedName.Namespace)
-
-	clf, err, _ := loader.FetchClusterLogForwarder(r.Client, constants.WatchNamespace, constants.SingletonName, resourceNames.InternalLogStoreSecret, false, func() loggingv1.ClusterLogging { return instance })
+	clf, err, _ := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false, func() loggingv1.ClusterLogging { return instance })
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
+
+	resourceNames := factory.GenerateResourceNames(clf)
 	if _, err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
@@ -139,7 +138,7 @@ func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
 		return false, ctrl.Request{}
 	}
 
-	if constants.WatchNamespace != obj.GetNamespace() {
+	if constants.OpenshiftNS != obj.GetNamespace() {
 		// ignore object in another namespace
 		return false, ctrl.Request{}
 	}
@@ -151,7 +150,7 @@ func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
 	return true, ctrl.Request{
 		NamespacedName: types.NamespacedName{
 			Name:      constants.SingletonName,
-			Namespace: constants.WatchNamespace,
+			Namespace: constants.OpenshiftNS,
 		},
 	}
 }

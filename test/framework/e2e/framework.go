@@ -224,7 +224,7 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	clolog.Info("Waiting for component to be ready", "component", component)
 	switch component {
 	case helpers.ComponentTypeVisualization:
-		return tc.waitForDeployment(constants.WatchNamespace, "kibana", defaultRetryInterval, defaultTimeout)
+		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeCollectorVector:
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeStore:
@@ -238,7 +238,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}", constants.WatchNamespace)).Run()
+		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}", constants.OpenshiftNS)).Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"
@@ -294,7 +294,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
-		pods, err := tc.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
+		pods, err := tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				clolog.V(2).Error(err, "Did not find elasticsearch pods")
@@ -655,7 +655,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 
 func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
 	ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
-	serverCert := certificate.NewCert(ca, "", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, constants.WatchNamespace))
+	serverCert := certificate.NewCert(ca, "", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, constants.OpenshiftNS))
 
 	data := map[string][]byte{
 		"tls.key":       serverCert.PrivateKeyPEM(),
@@ -670,17 +670,17 @@ func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string
 	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
-		constants.WatchNamespace,
+		constants.OpenshiftNS,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Create(context.TODO(), secret, sOpts)
+	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts)
 	if err == nil {
 		return newSecret, nil
 	}
 	if errors.IsAlreadyExists(err) {
 		sOpts := metav1.UpdateOptions{}
-		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Update(context.TODO(), secret, sOpts)
+		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), secret, sOpts)
 		if err == nil {
 			return updatedSecret, nil
 		}

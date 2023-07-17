@@ -91,7 +91,7 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 
 		// // No LFME so make a new one
 		if lfmeInstance == nil {
-			lfmeInstance = runtime.NewLogFileMetricExporter(constants.WatchNamespace, clusterLoggingRequest.Cluster.Name)
+			lfmeInstance = runtime.NewLogFileMetricExporter(constants.OpenshiftNS, clusterLoggingRequest.Cluster.Name)
 			if err := ReconcileForLogFileMetricExporter(
 				*clusterLoggingRequest.Cluster,
 				lfmeInstance,
@@ -187,11 +187,12 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, clu
 		clusterLoggingRequest.ResourceNames = resourceNames
 	}
 
-	// Owner will be CL instance if CLF is named instance
-	if forwarder.Name == constants.SingletonName {
-		clusterLoggingRequest.ResourceOwner = utils.AsOwner(clusterLogging)
-	} else {
+	// Owner is always the forwarder unless its a "virtual" resource (e.g. legacy CLF)
+	// which means CL is not virtual and should have a UID
+	if forwarder.UID != "" {
 		clusterLoggingRequest.ResourceOwner = utils.AsOwner(forwarder)
+	} else {
+		clusterLoggingRequest.ResourceOwner = utils.AsOwner(clusterLogging)
 	}
 
 	if collectionSpec, err := CheckCollectionType(clusterLogging, forwarder); err != nil {
@@ -280,7 +281,7 @@ func ReconcileForLogFileMetricExporter(clusterLogging logging.ClusterLogging,
 }
 
 func getLogFileMetricExporter(reqClient client.Client) (lfmeInstance *loggingv1alpha1.LogFileMetricExporter, err error) {
-	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
+	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	logFileMetricExporter := &loggingv1alpha1.LogFileMetricExporter{}
 	if err = reqClient.Get(context.TODO(), nsname, logFileMetricExporter); err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -293,7 +294,7 @@ func getLogFileMetricExporter(reqClient client.Client) (lfmeInstance *loggingv1a
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {
-	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
+	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {

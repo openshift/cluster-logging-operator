@@ -24,7 +24,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 	var (
 		collector               string
 		runInCollectorContainer = func(command string, args ...string) (string, error) {
-			return oc.Exec().WithNamespace(constants.WatchNamespace).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
+			return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
 		}
 		checkMountReadOnly = func(mount string) {
 			touchFile := mount + "/1"
@@ -45,7 +45,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName})
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName})
 	}, framework.DefaultCleanUpTimeout)
 
 	var _ = DescribeTable("collector containers should have tight security settings", func(collectorType logging.LogCollectionType) {
@@ -61,7 +61,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SingletonName,
-				Namespace: constants.WatchNamespace,
+				Namespace: constants.OpenshiftNS,
 			},
 			Spec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
@@ -98,7 +98,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 		nodes = len(strings.Split(out, "\n"))
 		log.V(3).Info("Waiting for a stable number collectors to be ready", "nodes", nodes)
-		if err := e2e.WaitForResourceCondition(constants.WatchNamespace, "daemonset", constants.CollectorName, "", "{.status.numberReady}", 10,
+		if err := e2e.WaitForResourceCondition(constants.OpenshiftNS, "daemonset", constants.CollectorName, "", "{.status.numberReady}", 10,
 			func(out string) (bool, error) {
 				ready, err := strconv.Atoi(strings.TrimSpace(out))
 				if err != nil {
@@ -113,7 +113,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeCollector, err))
 		}
 
-		pod, err := oc.Get().WithNamespace(constants.WatchNamespace).Pod().Selector("component=collector").OutputJsonpath("{.items[0].metadata.name}").Run()
+		pod, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").OutputJsonpath("{.items[0].metadata.name}").Run()
 		Expect(err).To(BeNil())
 		collector = pod
 		Expect(collector).To(Not(BeNil()))
@@ -146,7 +146,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		By("not running as a privileged container")
-		result, err = oc.Get().WithNamespace(constants.WatchNamespace).Pod().Selector("component=collector").
+		result, err = oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())

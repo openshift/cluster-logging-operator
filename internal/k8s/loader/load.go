@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -37,7 +38,7 @@ func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMi
 }
 
 // FetchClusterLogForwarder, migrate and validate
-func FetchClusterLogForwarder(k8sClient client.Client, namespace, name, logstoreSecretName string, isClfReconcile bool, fetchClusterLogging func() logging.ClusterLogging) (forwarder logging.ClusterLogForwarder, err error, status *logging.ClusterLogForwarderStatus) {
+func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, isClfReconcile bool, fetchClusterLogging func() logging.ClusterLogging) (forwarder logging.ClusterLogForwarder, err error, status *logging.ClusterLogForwarderStatus) {
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	proto := runtime.NewClusterLogForwarder(namespace, name)
 	if err = k8sClient.Get(context.TODO(), key, proto); err != nil {
@@ -55,9 +56,10 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name, logstore
 
 	// Do not modify cached copy
 	forwarder = *proto.DeepCopy()
+	internalLogStoreSecret := factory.GenerateResourceNames(forwarder).InternalLogStoreSecret
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Namespace, forwarder.Name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, logstoreSecretName)
+	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret)
 
 	extras[constants.ClusterLoggingAvailable] = (fetchClusterLogging().Name != "")
 	if err, status = clusterlogforwarder.Validate(forwarder, k8sClient, extras); err != nil {

@@ -75,7 +75,7 @@ func (clusterRequest *ClusterLoggingRequest) GetLogCollectorServiceAccountTokenS
 	s := &corev1.Secret{}
 	log.V(9).Info("Fetching Secret", "Name", colTokenName)
 	if err := clusterRequest.Get(colTokenName, s); err != nil {
-		log.V(3).Error(err, "Could not find Secret", "Name", colTokenName)
+		log.V(3).Error(err, "Could not find ServiceAccount token secret", "Name", colTokenName)
 		return nil, errors.New("Could not retrieve ServiceAccount token")
 	}
 

@@ -139,7 +139,7 @@ var _ = Describe("Reconciling", func() {
 					Cluster:        cluster,
 					EventRecorder:  record.NewFakeRecorder(100),
 					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
-					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 					ResourceOwner:  utils.AsOwner(cluster),
 					CollectionSpec: cluster.Spec.Collection,
 				}
@@ -207,7 +207,7 @@ var _ = Describe("Reconciling", func() {
 					Cluster:        cluster,
 					EventRecorder:  record.NewFakeRecorder(100),
 					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, "bar"),
-					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 					ResourceOwner:  utils.AsOwner(cluster),
 					CollectionSpec: cluster.Spec.Collection,
 				}
@@ -255,7 +255,7 @@ var _ = Describe("Reconciling", func() {
 							Namespace: constants.OpenshiftNS,
 						},
 					},
-					ResourceNames:  factory.GenerateResourceNames(constants.SingletonName, constants.OpenshiftNS),
+					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 					ResourceOwner:  utils.AsOwner(cluster),
 					CollectionSpec: cluster.Spec.Collection,
 				}
@@ -335,7 +335,7 @@ var _ = Describe("Reconciling", func() {
 				},
 			}
 
-			fwder := runtime.NewClusterLogForwarder(constants.WatchNamespace, customCLFName)
+			fwder := runtime.NewClusterLogForwarder(constants.OpenshiftNS, customCLFName)
 
 			var getObject = func(objName string, obj cli.Object) error {
 				nsName := types.NamespacedName{Name: objName, Namespace: cluster.GetNamespace()}
@@ -354,7 +354,7 @@ var _ = Describe("Reconciling", func() {
 					Cluster:       cluster,
 					EventRecorder: record.NewFakeRecorder(100),
 					Forwarder:     fwder,
-					ResourceNames: factory.GenerateResourceNames(customCLFName, constants.OpenshiftNS),
+					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, customCLFName)),
 					ResourceOwner: utils.AsOwner(fwder),
 					CollectionSpec: &loggingv1.CollectionSpec{
 						Type: loggingv1.LogCollectionTypeVector,
@@ -368,17 +368,9 @@ var _ = Describe("Reconciling", func() {
 				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
-				// Service Account
-				account := &corev1.ServiceAccount{}
-				Expect(getObject(customCLFName, account)).Should(Succeed())
-
 				// Daemonset
 				ds := &appsv1.DaemonSet{}
 				Expect(getObject(customCLFName, ds)).Should(Succeed())
-
-				// Service account token
-				saSecret := &corev1.Secret{}
-				Expect(getObject(customCLFName+"-token", saSecret)).Should(Succeed())
 
 			})
 		})

@@ -1,9 +1,11 @@
 package cloudwatch
 
 type AWSKey struct {
-	KeyIDPath     string
-	KeySecretPath string
-	KeyRoleArn    string
+	KeyIDPath           string
+	KeySecretPath       string
+	KeyRoleArn          string
+	KeyRoleSessionName  string
+	KeyWebIdentityToken string
 }
 
 func (a AWSKey) Name() string {
@@ -15,9 +17,9 @@ func (a AWSKey) Template() string {
 	if len(a.KeyRoleArn) > 0 {
 		return `{{define "` + a.Name() + `" -}}
 <web_identity_credentials>
-  role_arn "#{ENV['AWS_ROLE_ARN']}"
-  web_identity_token_file "#{ENV['AWS_WEB_IDENTITY_TOKEN_FILE']}"
-  role_session_name "#{ENV['AWS_ROLE_SESSION_NAME']}"
+  role_arn "{{ .KeyRoleArn }}"
+  web_identity_token_file "{{ .KeyWebIdentityToken }}"
+  role_session_name "{{ .KeyRoleSessionName }}"
 </web_identity_credentials>
 {{end}}`
 	}

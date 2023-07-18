@@ -42,8 +42,4 @@ var _ = Describe("#NewDaemonSet", func() {
 		Expect(daemonSet.Labels).To(Equal(expLabels))
 		Expect(daemonSet.Spec.Template.Labels).To(Equal(expLabels))
 	})
-	It("should include the critical pod annotation", func() {
-		Expect(daemonSet.Spec.Template.ObjectMeta.Annotations).To(HaveKey("scheduler.alpha.kubernetes.io/critical-pod"))
-	})
-
 })

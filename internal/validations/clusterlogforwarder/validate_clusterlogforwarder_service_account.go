@@ -25,6 +25,10 @@ func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.
 		return nil, nil
 	}
 
+	if clf.Namespace == constants.OpenshiftNS && clf.Spec.ServiceAccountName == constants.CollectorServiceAccountName {
+		return errors.NewValidationError(constants.CollectorServiceAccountName + " is a reserved serviceaccount name for legacy ClusterLogForwarder(openshift-logging/instance)"), nil
+	}
+
 	if clf.Spec.ServiceAccountName == "" {
 		return errors.NewValidationError("custom clusterlogforwarders must specify a service account name"), nil
 	}

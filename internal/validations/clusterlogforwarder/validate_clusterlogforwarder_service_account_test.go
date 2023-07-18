@@ -129,6 +129,19 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 		Expect(ValidateServiceAccount(singletonClf, k8sClient, extras)).To(Succeed())
 	})
 
+	It("should fail validation when namespace is openshift-logging and SA name is 'logcollector' because this is reserved for the legacy usecase", func() {
+		singletonClf := loggingv1.ClusterLogForwarder{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "anything",
+				Namespace: constants.OpenshiftNS,
+			},
+			Spec: loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: constants.CollectorServiceAccountName,
+			},
+		}
+		Expect(ValidateServiceAccount(singletonClf, k8sClient, extras)).To(MatchError(MatchRegexp("reserved serviceaccount")))
+	})
+
 	It("should return an error if custom clusterlogforwarder does not include a service account name", func() {
 		Expect(ValidateServiceAccount(customClf, k8sClient, extras)).ToNot(Succeed())
 	})

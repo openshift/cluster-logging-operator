@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -8,16 +10,27 @@ import (
 )
 
 func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
-	spec, extras = MigrateDefaultOutput(spec, logStore, extras, logstoreSecretName)
+	spec, extras = migrateDefaultOutput(spec, logStore, extras, logstoreSecretName)
 	if namespace == constants.OpenshiftNS && name == constants.SingletonName {
 		spec.ServiceAccountName = constants.CollectorServiceAccountName
 	}
+	spec = migratePipelines(spec)
 	return spec, extras
 }
 
-// MigrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or
+func migratePipelines(spec loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterLogForwarderSpec {
+	// Do not allow anonymous pipelines
+	for i := range spec.Pipelines {
+		if spec.Pipelines[i].Name == "" {
+			spec.Pipelines[i].Name = fmt.Sprintf("pipeline_%v", i)
+		}
+	}
+	return spec
+}
+
+// migrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or
 // selectively replaces it if it is.  It will apply OutputDefaults unless they are already defined.
-func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+func migrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	// ClusterLogging without ClusterLogForwarder
 	if len(spec.Pipelines) == 0 && len(spec.Inputs) == 0 && len(spec.Outputs) == 0 && spec.OutputDefaults == nil {
 		if logStore != nil {

@@ -969,7 +969,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 	})
 })
 
-func TestFluendConfGenerator(t *testing.T) {
+func TestFluentdConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fluend Conf Generation")
+	RunSpecs(t, "Fluentd Conf Generation")
 }

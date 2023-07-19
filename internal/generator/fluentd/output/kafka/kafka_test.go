@@ -445,7 +445,7 @@ var _ = Describe("Generate fluentd config", func() {
 	)
 })
 
-func TestFluendConfGenerator(t *testing.T) {
+func TestFluentdConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Fluentd Conf Generation")
 }

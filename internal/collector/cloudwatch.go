@@ -11,19 +11,22 @@ import (
 )
 
 // Add volumes and env vars if output type is cloudwatch and role is found in the secret
-func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) {
+func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret, collectorType logging.LogCollectionType) {
 	if secrets == nil {
 		return
 	}
 	for _, o := range forwarderSpec.Outputs {
-		// output secrets are keyed by output name
-		secret := secrets[o.Name]
 		if o.Type == logging.OutputTypeCloudwatch {
+			secret := secrets[o.Name]
 			if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
 				log.V(3).Info("Found sts key in secret")
-				// Originally for fluentd and now for vector to use as well
 				AddWebIdentityTokenVolumes(collector, podSpec)
-				AddWebIdentityTokenEnvVars(collector, o, secret)
+				// LOG-4084 fluentd no longer setting env vars
+				if collectorType == logging.LogCollectionTypeVector {
+					log.V(3).Info("Found vector collector")
+					AddWebIdentityTokenEnvVars(collector, o, secret)
+				}
+				return
 			}
 		}
 	}
@@ -60,8 +63,7 @@ func AddWebIdentityTokenVolumes(collector *v1.Container, podSpec *v1.PodSpec) {
 // AddWebIdentityTokenEnvVars Appends web identity env vars based on attributes of the secret and forwarder spec
 func AddWebIdentityTokenEnvVars(collector *v1.Container, output logging.OutputSpec, secret *v1.Secret) {
 	// Necessary for vector to use sts
-	// Also updated fluentd config to read from these as env vars
-	log.V(3).Info("Adding env vars for sts Cloudwatch")
+	log.V(3).Info("Adding env vars for vector sts Cloudwatch")
 	collector.Env = append(collector.Env,
 		v1.EnvVar{
 			Name:  constants.AWSRegionEnvVarKey,

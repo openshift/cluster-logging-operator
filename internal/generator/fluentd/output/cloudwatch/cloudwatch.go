@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 
@@ -106,7 +107,9 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) Element {
 	// First check for credentials or role_arn key, indicating a sts-enabled authentication
 	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
 		return AWSKey{
-			KeyRoleArn: ParseRoleArn(secret),
+			KeyRoleArn:          ParseRoleArn(secret),
+			KeyRoleSessionName:  constants.AWSRoleSessionName,
+			KeyWebIdentityToken: path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath),
 		}
 	}
 	// Use ID and Secret

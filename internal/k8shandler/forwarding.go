@@ -24,8 +24,6 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 	}
 	for key, value := range forwarder.Annotations {
 		switch key {
-		case constants.PreviewTLSSecurityProfile:
-			fallthrough
 		case constants.UseOldRemoteSyslogPlugin:
 			if strings.ToLower(value) == constants.Enabled {
 				options[key] = ""

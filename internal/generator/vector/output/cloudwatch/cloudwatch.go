@@ -27,8 +27,7 @@ func (e Endpoint) Name() string {
 func (e Endpoint) Template() (ret string) {
 	ret = `{{define "` + e.Name() + `" -}}`
 	if e.URL != "" {
-		ret += `endpoint = "{{ .URL }}"
-tls.verify_certificate = false`
+		ret += `endpoint = "{{ .URL }}"`
 	}
 	ret += `{{end}}`
 	return

@@ -42,9 +42,6 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		}
 
 	},
-		Entry("enables TLS Security profile for enabled", PreviewTLSSecurityProfile, "", PreviewTLSSecurityProfile, "enabled"),
-		Entry("enables TLS Security profile for enabled", PreviewTLSSecurityProfile, "", PreviewTLSSecurityProfile, "eNabled"),
-		Entry("disables TLS Security profile for true", "", "", PreviewTLSSecurityProfile, "true"),
 		Entry("enables old remote syslog for enabled", UseOldRemoteSyslogPlugin, "", UseOldRemoteSyslogPlugin, "enabled"),
 		Entry("enables old remote syslog for enabled", UseOldRemoteSyslogPlugin, "", UseOldRemoteSyslogPlugin, "eNabled"),
 		Entry("disables old remote syslog for true", "", "", UseOldRemoteSyslogPlugin, "true"),

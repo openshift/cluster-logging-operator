@@ -230,7 +230,7 @@ var _ = Describe("fluentd conf generation", func() {
 	)
 })
 
-func TestFluendConfGenerator(t *testing.T) {
+func TestFluentdConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fluend Conf Generation")
+	RunSpecs(t, "Fluentd Conf Generation")
 }

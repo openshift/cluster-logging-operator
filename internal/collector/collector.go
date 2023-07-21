@@ -148,7 +148,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	f.Visit(collector, podSpec, f.ResourceNames)
 
-	addWebIdentityForCloudwatch(collector, podSpec, forwarderSpec, f.Secrets)
+	addWebIdentityForCloudwatch(collector, podSpec, forwarderSpec, f.Secrets, f.CollectorType)
 
 	podSpec.Containers = []v1.Container{
 		*collector,

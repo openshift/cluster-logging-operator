@@ -100,7 +100,7 @@ var _ = Describe("Helpers for outputLabelConf", func() {
 	})
 })
 
-func TestFluendConfGenerator(t *testing.T) {
+func TestFluentdConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fluend Conf Generation")
+	RunSpecs(t, "Fluentd Conf Generation")
 }

@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -121,13 +122,13 @@ func (clusterRequest *ClusterLoggingRequest) Delete(object client.Object) error 
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status corev1.ConditionStatus) error {
-	instance, err := clusterRequest.getClusterLogging(true)
+	instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 	if err != nil {
 		return err
 	}
 
 	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, message) {
-		return clusterRequest.UpdateStatus(instance)
+		return clusterRequest.UpdateStatus(&instance)
 	}
 	return nil
 }

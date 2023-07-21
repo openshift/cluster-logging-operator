@@ -2,10 +2,11 @@ package k8shandler
 
 import (
 	"github.com/ViaQ/logerr/v2/kverrors"
+	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 )
 
 func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) error {
-	instance, err := clusterRequest.getClusterLogging(true)
+	instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 	if err != nil {
 		return kverrors.Wrap(err, "Error getting ClusterLogging for appending finalizer.")
 	}
@@ -18,7 +19,7 @@ func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) 
 	}
 
 	instance.Finalizers = append(instance.GetFinalizers(), identifier)
-	if err := clusterRequest.Update(instance); err != nil {
+	if err := clusterRequest.Update(&instance); err != nil {
 		return kverrors.Wrap(err, "Can not update ClusterLogging finalizers.")
 	}
 
@@ -26,7 +27,7 @@ func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) 
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeFinalizer(identifier string) error {
-	instance, err := clusterRequest.getClusterLogging(true)
+	instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 	if err != nil {
 		return kverrors.Wrap(err, "Error getting ClusterLogging for removing finalizer.")
 	}
@@ -48,7 +49,7 @@ func (clusterRequest *ClusterLoggingRequest) removeFinalizer(identifier string) 
 	}
 
 	instance.Finalizers = finalizers
-	if err := clusterRequest.Update(instance); err != nil {
+	if err := clusterRequest.Update(&instance); err != nil {
 		return kverrors.Wrap(err, "Failed to remove finalizer from ClusterLogging.")
 	}
 

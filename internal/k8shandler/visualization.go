@@ -6,6 +6,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	"github.com/openshift/cluster-logging-operator/internal/visualization/kibana"
@@ -77,14 +78,14 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		instance, err := clusterRequest.getClusterLogging(true)
+		instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 		if err != nil {
 			return err
 		}
 
 		if !kibana.CompareStatus(kibanaStatus, instance.Status.Visualization.KibanaStatus) {
 			instance.Status.Visualization.KibanaStatus = kibanaStatus
-			return clusterRequest.UpdateStatus(instance)
+			return clusterRequest.UpdateStatus(&instance)
 		}
 		return nil
 	})

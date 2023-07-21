@@ -11,16 +11,13 @@ are applied according to the following order of precedence:
 . Output Spec
 . Cluster-wide Config
 
-IMPORTANT: This is a tech-preview feature for output configurations. It is enabled by the feature gate annotation.  The feature gate is ignored for the default log storage of type loki.
-
 .Enable TLS Security Profile feature
 [source]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
-  annotations:
-    logging.openshift.io/preview-tls-security-profile: enabled
+  name: instance
 spec:
   outputs:
   - name: devel

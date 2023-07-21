@@ -54,8 +54,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	DescribeTable("Generate full vector.toml", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			Options: generator.Options{
-				constants.PreviewTLSSecurityProfile: "",
-				generator.ClusterTLSProfileSpec:     tls.GetClusterTLSProfileSpec(nil),
+				generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
 			},
 			CLSpec: logging.CollectionSpec{
 				Fluentd: &logging.FluentdForwarderSpec{
@@ -162,8 +161,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 
 		Entry("with complex spec for elasticsearch default v6 & latest version", testhelpers.ConfGenerateTest{
 			Options: generator.Options{
-				constants.PreviewTLSSecurityProfile: "",
-				generator.ClusterTLSProfileSpec:     tls.GetClusterTLSProfileSpec(&configv1.TLSSecurityProfile{Type: configv1.TLSProfileIntermediateType}),
+				generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(&configv1.TLSSecurityProfile{Type: configv1.TLSProfileIntermediateType}),
 			},
 			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{

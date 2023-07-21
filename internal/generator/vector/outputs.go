@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -68,15 +67,13 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			}
 		}
 
-		if op.Has(constants.PreviewTLSSecurityProfile) || lokistack.DefaultLokiOuputNames.Has(o.Name) {
-			if o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeElasticsearch {
-				op[generator.MinTLSVersion] = ""
-				op[generator.Ciphers] = ""
-			} else {
-				outMinTlsVersion, outCiphers := op.TLSProfileInfo(o, ",")
-				op[generator.MinTLSVersion] = outMinTlsVersion
-				op[generator.Ciphers] = outCiphers
-			}
+		if o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeElasticsearch {
+			op[generator.MinTLSVersion] = ""
+			op[generator.Ciphers] = ""
+		} else {
+			outMinTlsVersion, outCiphers := op.TLSProfileInfo(o, ",")
+			op[generator.MinTLSVersion] = outMinTlsVersion
+			op[generator.Ciphers] = outCiphers
 		}
 
 		inputs := ofp[o.Name].List()

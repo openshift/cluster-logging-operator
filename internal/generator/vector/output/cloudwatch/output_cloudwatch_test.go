@@ -28,7 +28,7 @@ inputs = ["cw-forward"]
 source = '''
   .group_name = "default"
   .stream_name = "default"
-  
+
   if (.file != null) {
    .file = "kubernetes" + replace!(.file, "/", ".")
    .stream_name = del(.file)
@@ -494,9 +494,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
-endpoint = "` + endpoint + `"
-tls.verify_certificate = false
-`
+endpoint = "` + endpoint + `"`
 			element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
@@ -702,7 +700,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 				}
 				expConf := `
 			` + transformBegin + `
-			
+
 			if ( .log_type == "application" ) {
 			.group_name = ( "` + groupPrefix + `." + .log_type ) ?? "application"
 			}
@@ -714,11 +712,11 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			.group_name = "` + groupPrefix + `.infrastructure"
 			.stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 			}
-			
+
 			` + transformEnd + `
 
 			` + dedotted + `
-			
+
 			` + cwSinkRoleTLS + `
 			`
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], op)
@@ -733,7 +731,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 				}
 				expConf := `
 			` + transformBegin + `
-			
+
 			if ( .log_type == "application" ) {
 			.group_name = ( "` + groupPrefix + `." + .log_type ) ?? "application"
 			}
@@ -745,11 +743,11 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			.group_name = "` + groupPrefix + `.infrastructure"
 			.stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 			}
-			
+
 			` + transformEnd + `
 
 			` + dedotted + `
-			
+
 			` + cwSinkRoleTLSInsecure + `
 			`
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], op)
@@ -829,7 +827,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 				}
 				expConf := `
 			` + transformBegin + `
-			
+
 			if ( .log_type == "application" ) {
 			.group_name = ( "` + groupPrefix + `." + .log_type ) ?? "application"
 			}
@@ -841,11 +839,11 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			.group_name = "` + groupPrefix + `.infrastructure"
 			.stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 			}
-			
+
 			` + transformEnd + `
 
 			` + dedotted + `
-			
+
 			` + cwSinkRoleTLSCredentials + `
 			`
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], op)
@@ -860,7 +858,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 				}
 				expConf := `
 			` + transformBegin + `
-			
+
 			if ( .log_type == "application" ) {
 			.group_name = ( "` + groupPrefix + `." + .log_type ) ?? "application"
 			}
@@ -872,11 +870,11 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			.group_name = "` + groupPrefix + `.infrastructure"
 			.stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 			}
-			
+
 			` + transformEnd + `
 
 			` + dedotted + `
-			
+
 			` + cwSinkRoleTLSInsecureCredentials + `
 			`
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], op)

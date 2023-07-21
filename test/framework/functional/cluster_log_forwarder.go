@@ -165,6 +165,9 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Secret: &logging.OutputSecretSpec{
 					Name: "cloudwatch",
 				},
+				TLS: &logging.OutputTLSSpec{
+					InsecureSkipVerify: true,
+				},
 			}
 		case logging.OutputTypeHttp:
 			output = &logging.OutputSpec{

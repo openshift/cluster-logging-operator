@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -9,7 +11,18 @@ import (
 
 func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	spec, extras = MigrateDefaultOutput(spec, logStore, extras)
+	spec = migratePipelines(spec)
 	return spec, extras
+}
+
+func migratePipelines(spec loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterLogForwarderSpec {
+	// Do not allow anonymous pipelines
+	for i := range spec.Pipelines {
+		if spec.Pipelines[i].Name == "" {
+			spec.Pipelines[i].Name = fmt.Sprintf("pipeline_%v", i)
+		}
+	}
+	return spec
 }
 
 // MigrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or

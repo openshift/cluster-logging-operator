@@ -1,8 +1,7 @@
 package k8shandler
 
 import (
-	"sync"
-
+	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 
@@ -18,7 +17,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 	switch clusterRequest.Cluster.Spec.LogStore.Type {
 	case logging.LogStoreTypeElasticsearch:
 		fetchClusterLogging := func() (*logging.ClusterLogging, error) {
-			return clusterRequest.getClusterLogging(true)
+			instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
+			return &instance, err
 		}
 		return eslogstore.Reconcile(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret, utils.AsOwner(clusterRequest.Cluster), fetchClusterLogging)
 	case logging.LogStoreTypeLokiStack:
@@ -26,30 +26,4 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 	default:
 		return nil
 	}
-}
-
-func LoadElasticsearchSecretMap() map[string][]byte {
-	var results = map[string][]byte{}
-	_ = Syncronize(func() error {
-		results = map[string][]byte{
-			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
-			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
-			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
-			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
-			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
-			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
-			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
-		}
-		return nil
-	})
-	return results
-}
-
-var mutex sync.Mutex
-
-// Syncronize blocks single threads access using the certificate mutex
-func Syncronize(action func() error) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-	return action()
 }

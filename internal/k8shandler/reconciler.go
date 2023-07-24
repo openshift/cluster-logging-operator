@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
-	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -291,27 +290,6 @@ func getLogFileMetricExporter(reqClient client.Client) (lfmeInstance *loggingv1a
 	}
 
 	return logFileMetricExporter, nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {
-	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
-	clusterLogging := &logging.ClusterLogging{}
-
-	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
-		return nil, err
-	}
-
-	// Do not modify cached copy
-	clusterLogging = clusterLogging.DeepCopy()
-
-	if skipMigrations {
-		return clusterLogging, nil
-	}
-
-	// TODO Drop migration upon introduction of v2
-	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
-
-	return clusterLogging, nil
 }
 
 func updateInfofromCL(request *ClusterLoggingRequest) {

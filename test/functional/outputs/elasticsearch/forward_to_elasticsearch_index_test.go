@@ -1,6 +1,3 @@
-//go:build fluentd || vector
-// +build fluentd vector
-
 package elasticsearch
 
 import (

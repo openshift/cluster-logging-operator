@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +39,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			f.CommonLabelInitializer)
 
 		utils.AddOwnerRefToObject(secret, owner)
-		return reconcile.Secret(er, k8sClient, secret, secrets.CompareLabels)
+		return reconcile.Secret(er, k8sClient, secret, comparators.CompareLabels)
 	}
 
 	return nil

@@ -9,6 +9,8 @@ type ValidationError struct {
 	msg string
 }
 
+var validationErrorType = reflect.TypeOf(&ValidationError{})
+
 func (e *ValidationError) Error() string {
 	return e.msg
 }
@@ -21,6 +23,5 @@ func NewValidationError(msg string, args ...interface{}) *ValidationError {
 }
 
 func IsValidationError(err error) bool {
-	neededType := reflect.TypeOf(&ValidationError{})
-	return reflect.TypeOf(err).AssignableTo(neededType)
+	return reflect.TypeOf(err).AssignableTo(validationErrorType)
 }

@@ -4,19 +4,13 @@ import (
 	"reflect"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	corev1 "k8s.io/api/core/v1"
-)
-
-type ComparisonOption int
-
-const (
-	CompareAnnotations ComparisonOption = 0
-	CompareLabels      ComparisonOption = 1
 )
 
 // AreSame compares configmaps for equality and return true equal otherwise false.  This comparison
 // only compares the data of the configmap by default unless otherwise configured
-func AreSame(actual *corev1.ConfigMap, desired *corev1.ConfigMap, options ...ComparisonOption) bool {
+func AreSame(actual *corev1.ConfigMap, desired *corev1.ConfigMap, options ...comparators.ComparisonOption) bool {
 	log.V(5).Info("Compare configmaps", "actual", actual)
 	log.V(5).Info("Compare configmaps", "desired", desired)
 	log.V(5).Info("Compare configmaps", "options", options)
@@ -25,9 +19,9 @@ func AreSame(actual *corev1.ConfigMap, desired *corev1.ConfigMap, options ...Com
 	annotationsAreEqual := true
 	for _, opt := range options {
 		switch opt {
-		case CompareAnnotations:
+		case comparators.CompareAnnotations:
 			annotationsAreEqual = reflect.DeepEqual(actual.Annotations, desired.Annotations)
-		case CompareLabels:
+		case comparators.CompareLabels:
 			labelsAreEqual = reflect.DeepEqual(actual.Labels, desired.Labels)
 		}
 	}

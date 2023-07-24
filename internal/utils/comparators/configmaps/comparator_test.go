@@ -3,6 +3,7 @@ package configmaps_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,15 +41,15 @@ var _ = Describe("configmaps#AreSame", func() {
 			desired = current.DeepCopy()
 		})
 		It("should recognize when they are the same", func() {
-			Expect(configmaps.AreSame(current, desired, configmaps.CompareLabels, configmaps.CompareAnnotations)).To(BeTrue())
+			Expect(configmaps.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeTrue())
 		})
 		It("should recognize when the labels are different", func() {
 			current.Labels["foo"] = "abc"
-			Expect(configmaps.AreSame(current, desired, configmaps.CompareLabels, configmaps.CompareAnnotations)).To(BeFalse())
+			Expect(configmaps.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeFalse())
 		})
 		It("should recognize when the annotations are different", func() {
 			current.Annotations["foo"] = "abc"
-			Expect(configmaps.AreSame(current, desired, configmaps.CompareLabels, configmaps.CompareAnnotations)).To(BeFalse())
+			Expect(configmaps.AreSame(current, desired, comparators.CompareLabels, comparators.CompareAnnotations)).To(BeFalse())
 		})
 	})
 })

@@ -1,5 +1,4 @@
 //go:build fluentd
-// +build fluentd
 
 package loki
 

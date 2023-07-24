@@ -3,6 +3,8 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/secrets"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -16,7 +18,7 @@ import (
 
 // Secret reconciles a Secret to the desired spec returning an error
 // if there is an issue creating or updating to the desired state
-func Secret(er record.EventRecorder, k8Client client.Client, desired *corev1.Secret, opts ...secrets.ComparisonOption) error {
+func Secret(er record.EventRecorder, k8Client client.Client, desired *corev1.Secret, opts ...comparators.ComparisonOption) error {
 	reason := constants.EventReasonGetObject
 	updateReason := ""
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {

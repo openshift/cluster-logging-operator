@@ -26,7 +26,7 @@ type PipelineBuilder struct {
 }
 
 type InputSpecVisitor func(spec *logging.InputSpec)
-type OutputSpecVisiter func(spec *logging.OutputSpec)
+type OutputSpecVisitor func(spec *logging.OutputSpec)
 type PipelineSpecVisitor func(spec *logging.PipelineSpec)
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
@@ -118,7 +118,7 @@ func (p *PipelineBuilder) ToHttpOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeHttp)
 }
 
-func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec

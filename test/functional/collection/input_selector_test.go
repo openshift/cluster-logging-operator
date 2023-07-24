@@ -2,11 +2,11 @@ package collection
 
 import (
 	"fmt"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"runtime"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"

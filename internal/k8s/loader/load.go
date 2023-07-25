@@ -31,6 +31,7 @@ func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMi
 	}
 	// TODO Drop migration upon introduction of v2
 	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
+	clusterLogging.Spec = migrations.MigrateVisualizationSpec(clusterLogging.Spec)
 	if err = clusterlogging.Validate(clusterLogging, k8sClient, map[string]bool{}); err != nil {
 		return clusterLogging, err
 	}

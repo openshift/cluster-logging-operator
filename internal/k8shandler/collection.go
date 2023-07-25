@@ -3,9 +3,10 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"reflect"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -99,18 +100,19 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return
 	}
 
-	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *collectionSpec, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Name, clusterRequest.ResourceNames)
+	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *collectionSpec, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames)
 
 	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
 
-	if err := metrics.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, collector.MetricsPortName, clusterRequest.ResourceOwner); err != nil {
+	if err := metrics.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceOwner); err != nil {
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
 	}
-	if err := collector.ReconcilePrometheusRule(clusterRequest.EventRecorder, clusterRequest.Client, collectionSpec.Type, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceOwner); err != nil {
+
+	if err := collector.ReconcilePrometheusRule(clusterRequest.EventRecorder, clusterRequest.Client, collectionSpec.Type, clusterRequest.Forwarder.Namespace, constants.CollectorName, clusterRequest.ResourceOwner); err != nil {
 		log.V(9).Error(err, "collector.ReconcilePrometheusRule")
 	}
 

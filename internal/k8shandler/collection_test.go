@@ -264,14 +264,14 @@ var _ = Describe("Reconciling", func() {
 				clusterRequest.Forwarder.Spec = spec
 			})
 
-			It("a fluentd collector should create the logging_fluentd alerts", func() {
+			It("a fluentd collector should create the logging_collector alerts", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
 				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				rule := &monitoringv1.PrometheusRule{}
 				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
-				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_fluentd.alerts"))
-				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("FluentdNodeDown"))
+				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_collector.alerts"))
+				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("CollectorNodeDown"))
 			})
 			It("a vector collector should create the logging_collector alerts", func() {
 				// Set collector to vector

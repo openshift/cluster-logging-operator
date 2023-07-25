@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	core "k8s.io/api/core/v1"
 )
@@ -16,6 +17,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveService(serviceName string) e
 		serviceName,
 		clusterRequest.Forwarder.Namespace,
 		serviceName,
+		constants.CollectorName,
 		[]core.ServicePort{},
 	)
 

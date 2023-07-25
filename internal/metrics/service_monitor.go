@@ -21,7 +21,7 @@ const (
 	prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 )
 
-func NewServiceMonitor(namespace, name, portName string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
+func NewServiceMonitor(namespace, name, component, portName string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
 	var endpoint = []monitoringv1.Endpoint{
 		{
 			Port:   portName,
@@ -33,6 +33,19 @@ func NewServiceMonitor(namespace, name, portName string, owner metav1.OwnerRefer
 					ServerName: fmt.Sprintf("%s.%s.svc", name, namespace),
 				},
 			},
+			// Replaces labels that have `-` with `_`
+			// Example:
+			// app_kubernetes_io_part-of -> app_kubernetes_io_part_of
+			MetricRelabelConfigs: []*monitoringv1.RelabelConfig{
+				{
+					SourceLabels: []monitoringv1.LabelName{
+						"__name__",
+					},
+					TargetLabel: "__name__",
+					Regex:       "(.*)-(.*)",
+					Replacement: "${1}_${2}",
+				},
+			},
 		},
 	}
 
@@ -42,11 +55,18 @@ func NewServiceMonitor(namespace, name, portName string, owner metav1.OwnerRefer
 		Endpoints: endpoint,
 		Selector: metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"logging-infra": "support",
+				"logging-infra":             "support",
+				constants.LabelK8sInstance:  name,
+				constants.LabelK8sComponent: component,
 			},
 		},
 		NamespaceSelector: monitoringv1.NamespaceSelector{
 			MatchNames: []string{namespace},
+		},
+		PodTargetLabels: []string{
+			constants.LabelK8sName,
+			constants.LabelK8sComponent,
+			constants.LabelK8sPartOf,
 		},
 	}
 
@@ -55,8 +75,8 @@ func NewServiceMonitor(namespace, name, portName string, owner metav1.OwnerRefer
 	return desired
 }
 
-func ReconcileServiceMonitor(er record.EventRecorder, k8sClient client.Client, namespace, name, portName string, owner metav1.OwnerReference) error {
-	desired := NewServiceMonitor(namespace, name, portName, owner)
+func ReconcileServiceMonitor(er record.EventRecorder, k8sClient client.Client, namespace, name, component, portName string, owner metav1.OwnerReference) error {
+	desired := NewServiceMonitor(namespace, name, component, portName, owner)
 	return reconcile.ServiceMonitor(er, k8sClient, desired)
 }
 

@@ -54,34 +54,37 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 			cluster,
 			namespace,
 		)
-		recorder = record.NewFakeRecorder(100)
-		owner    = utils.AsOwner(cluster)
-		portName = "test-port"
+		recorder    = record.NewFakeRecorder(100)
+		owner       = utils.AsOwner(cluster)
+		portName    = "test-port"
+		serviceName = "test-service"
+		component   = "test-component"
 
-		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: cluster.GetNamespace()}
+		serviceMonitorKey = types.NamespacedName{Name: serviceName, Namespace: cluster.GetNamespace()}
 		smInstance        = &monitoringv1.ServiceMonitor{}
 	)
 
-	It("should successfully reconcile the ServiceMonitor for LogFileMetricExporter", func() {
+	It("should successfully reconcile the ServiceMonitor", func() {
 		// Reconcile the exporter daemonset
 		Expect(ReconcileServiceMonitor(recorder,
 			reqClient,
 			cluster.GetNamespace(),
-			constants.LogfilesmetricexporterName,
+			serviceName,
+			component,
 			portName,
 			owner)).To(Succeed())
 
 		// Get and check the ServiceMonitor
 		Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())
 
-		Expect(smInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
+		Expect(smInstance.Name).To(Equal(serviceName))
 
-		expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
+		expJobLabel := fmt.Sprintf("monitor-%s", serviceName)
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
 		Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
 		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(portName))
 
-		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
+		svcURL := fmt.Sprintf("%s.openshift-logging.svc", serviceName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
 			To(Equal(svcURL))
 	})

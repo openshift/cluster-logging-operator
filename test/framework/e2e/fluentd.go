@@ -373,14 +373,18 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(rootDir string, secure
 		serviceAccount.Name,
 		podSpec,
 	)
+	// Add instance label to pod spec template. Service now selects using instance name as well
+	fluentDeployment.Spec.Template.Labels[constants.LabelK8sInstance] = serviceAccount.Name
 
 	fluentDeployment, err = tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Create(context.TODO(), fluentDeployment, dOpts)
 	if err != nil {
 		return nil, err
 	}
+
 	service := factory.NewService(
 		serviceAccount.Name,
 		constants.OpenshiftNS,
+		serviceAccount.Name,
 		serviceAccount.Name,
 		[]corev1.ServicePort{
 			{

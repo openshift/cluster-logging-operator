@@ -409,6 +409,9 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		podSpec,
 	)
 
+	// Add instance label to pod spec template. Service now selects using instance name as well
+	syslogDeployment.Spec.Template.Labels[constants.LabelK8sInstance] = serviceAccount.Name
+
 	syslogDeployment, err = tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Create(context.TODO(), syslogDeployment, dOpts)
 	if err != nil {
 		return nil, err
@@ -416,6 +419,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	service := factory.NewService(
 		serviceAccount.Name,
 		constants.OpenshiftNS,
+		serviceAccount.Name,
 		serviceAccount.Name,
 		[]corev1.ServicePort{
 			{

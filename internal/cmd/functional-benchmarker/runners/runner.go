@@ -8,7 +8,7 @@ import (
 
 type Runner interface {
 	Deploy()
-	ReadApplicationLogs() ([]string, error)
+	ReadApplicationLogs() (stats.PerfLogs, error)
 	FetchApplicationLogs() error
 	SampleCollector() *stats.Sample
 	Cleanup()

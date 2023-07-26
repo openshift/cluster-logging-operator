@@ -1,10 +1,13 @@
 package cluster
 
 import (
+	"bufio"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -51,19 +54,34 @@ func (r *ClusterRunner) Pod() string {
 
 func (r *ClusterRunner) Deploy() {
 	testclient := client.NewNamespaceClient()
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity, logging.LogCollectionTypeFluentd)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity, logging.LogCollectionType(r.CollectorImpl))
 	r.framework.Conf = r.CollectorConfig
 
 	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).
-		FromInput(logging.InputNameApplication).
-		ToFluentForwardOutput()
+		FromInputWithVisitor("benchmark", func(spec *logging.InputSpec) {
+			spec.Application = &logging.Application{
+				Namespaces: []string{r.Namespace()},
+			}
+		}).
+		ToHttpOutput()
 
 	//modify config to only collect loader containers
 	r.framework.VisitConfig = func(conf string) string {
-		pattern := fmt.Sprintf("/var/log/pods/%s_*/loader-*/*.log", r.framework.Namespace)
+		//vector
+		pattern := `exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log"`
+		conf = strings.Replace(conf, `exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*.log"`, pattern, 1)
+
+		//fluentd
+		pattern = fmt.Sprintf("/var/log/pods/%s_*/loader-*/*.log", r.framework.Namespace)
 		conf = strings.Replace(conf, "/var/log/pods/*/*/*.log", pattern, 1)
 		conf = strings.Replace(conf, "/var/log/pods/**/*.log", pattern, 1)
-		return conf
+
+		//remove vector prometheus sink
+		n := strings.Index(conf, "[sinks.prometheus_output]")
+		if n == -1 {
+			return conf
+		}
+		return conf[0:n]
 	}
 
 	err := r.framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
@@ -89,7 +107,6 @@ func (r *ClusterRunner) Deploy() {
 				AddVolumeMount(containerVolumeName, constants.ContainerLogDir, "", true).
 				AddVolumeMount(PodLogsDirName, constants.PodLogDir, "", true).
 				AddEnvVarFromFieldRef("NAMESPACE", "metadata.namespace").
-				AddEnvVar("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", "0.9").
 				WithPrivilege()
 			if r.RequestCPU != "" {
 				collectorBuilder.ResourceRequirements(corev1.ResourceRequirements{
@@ -99,8 +116,7 @@ func (r *ClusterRunner) Deploy() {
 				})
 			}
 			collectorBuilder.Update()
-
-			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0])
+			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0], utils.GetComponentImage(constants.VectorName))
 		},
 	})
 	if err != nil {
@@ -110,7 +126,7 @@ func (r *ClusterRunner) Deploy() {
 
 }
 
-func (r *ClusterRunner) ReadApplicationLogs() ([]string, error) {
+func (r *ClusterRunner) ReadApplicationLogs() (stats.PerfLogs, error) {
 
 	artifacts, err := os.ReadDir(r.ArtifactDir)
 	if err != nil {
@@ -118,39 +134,78 @@ func (r *ClusterRunner) ReadApplicationLogs() ([]string, error) {
 	}
 	files := []string{}
 	for _, file := range artifacts {
-		if strings.HasPrefix(file.Name(), "kubernetes.") {
+		if strings.HasPrefix(file.Name(), "loader-") {
 			files = append(files, file.Name())
 		}
 	}
-	logs := []string{}
+	mt := sync.Mutex{}
+	logs := stats.PerfLogs{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(files))
 	for _, file := range files {
 		filePath := path.Join(r.ArtifactDir, file)
-		result, err := os.ReadFile(filePath)
-		if err != nil {
-			log.Error(err, "Trying to read application logs", "path", file)
-		}
-		appLogs := strings.Split(strings.TrimSpace(string(result)), "\n")
-		log.V(4).Info("App logs", "file", file, "logs", appLogs)
-		logs = append(logs, appLogs...)
+		go func() {
+			defer wg.Done()
+			entries, err := ReadAndParseFile(filePath)
+			if err != nil {
+				log.Error(err, "Trying to read application logs", "path", filePath)
+			}
+			log.V(4).Info("App logs", "file", filePath, "logs", entries)
+			defer mt.Unlock()
+			mt.Lock()
+			logs = append(logs, entries...)
+		}()
 	}
+	wg.Wait()
 	log.V(3).Info("Returning all app logs", "logs", logs)
 	return logs, nil
 }
+
+func ReadAndParseFile(filePath string) (stats.PerfLogs, error) {
+	log.V(4).Info("Reading and parsing file", "file", filePath)
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Error(err, "Unable to open file for analysis", "file", filePath)
+	}
+	defer file.Close()
+
+	entries := stats.PerfLogs{}
+	scanner := bufio.NewScanner(file)
+	purged := 0
+	for scanner.Scan() {
+		if entry := stats.NewPerfLog(scanner.Text()); entry != nil {
+			entries = append(entries, *entry)
+		} else {
+			purged += 1
+		}
+	}
+
+	if purged > 0 {
+		log.V(0).Info("Purged entries while parsing results", "purged", purged, "file", filePath)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Error(err, "Failed scanning file for analysis", "file", filePath)
+		return nil, err
+	}
+	return entries, nil
+}
+
 func (r *ClusterRunner) FetchApplicationLogs() error {
-	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(logging.OutputTypeFluentdForward).
+	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(logging.OutputTypeHttp).
 		WithCmd("ls", "/tmp").Run()
 	if err != nil {
 		return err
 	}
 	files := []string{}
 	for _, file := range strings.Split(out, "\n") {
-		if strings.HasPrefix(file, "kubernetes.") && strings.HasSuffix(file, "log.log") {
+		if strings.HasPrefix(file, "loader-") {
 			files = append(files, file)
 		}
 	}
 	for _, file := range files {
 		cmd := fmt.Sprintf("oc cp %s/%s:/tmp/%s %s/%s -c %s  --request-timeout=3m", r.framework.Namespace, r.framework.Name, file,
-			r.ArtifactDir, file, strings.ToLower(logging.OutputTypeFluentdForward))
+			r.ArtifactDir, file, strings.ToLower(logging.OutputTypeHttp))
 		log.V(2).Info("copy command", "cmd", cmd)
 		out, err := oc.Literal().From(cmd).Run()
 		if err != nil {

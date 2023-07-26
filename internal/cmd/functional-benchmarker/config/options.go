@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"io"
 	"os"
 	"time"
@@ -17,7 +18,8 @@ import (
 
 const (
 	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:latest"
-	ContainerLogDir  = "/var/log/pods"
+	imageVector      = "quay.io/openshift-logging/vector:5.8"
+	imageFluentd     = "quay.io/openshift-logging/fluentd:5.8"
 )
 
 type Options struct {
@@ -35,6 +37,7 @@ type Options struct {
 	ArtifactDir         string
 	CollectorConfigPath string
 	CollectorConfig     string
+	CollectorImpl       string
 	ReadTimeout         string
 	RunDuration         string
 	SampleDuration      string
@@ -49,16 +52,16 @@ func InitOptions() Options {
 	}
 	fs := flag.NewFlagSet("functional-benchmarker", flag.ExitOnError)
 
-	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:5.8.0", "The Image to use to run the benchmark")
+	fs.StringVar(&options.Image, "image", imageVector, "The Image to use to run the benchmark (fluentd default: "+imageFluentd+")")
 	//fs.IntVar(&options.TotalMessages, "tot-messages", 10000, "The number of messages to write per stressor")
 	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
 	fs.IntVar(&options.Verbosity, "verbosity", 0, "The output log level")
 	fs.BoolVar(&options.DoCleanup, "do-cleanup", true, "set to false to preserve the namespace")
 	fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
-	fs.BoolVar(&options.Sample, "sample", false, "set to true to dump a Sample message")
 	//fs.StringVar(&options.Platform, "platform", "cluster", "The runtime environment: cluster, local. local requires podman")
 	fs.StringVar(&options.PayloadSource, "payload-source", "synthetic", "The load message profile: synthetic,application,simple")
+	fs.StringVar(&options.CollectorImpl, "collector-impl", "vector", "The collector implementation: fluentd, vector")
 
 	fs.StringVar(&options.ReadTimeout, "read-timeout", test.SuccessTimeout().String(), "The read timeout duration to wait for logs")
 	fs.StringVar(&options.RunDuration, "run-duration", "5m", "The duration of the test run")
@@ -75,6 +78,8 @@ func InitOptions() Options {
 		os.Exit(1)
 	}
 
+	log.V(3).Info("Parsed options", "options", options)
+
 	if options.RequestCPU != "" {
 		if _, err := resource.ParseQuantity(options.RequestCPU); err != nil {
 			fmt.Printf("Error parsing request-cpu %q: %v", options.RequestCPU, err)
@@ -84,8 +89,15 @@ func InitOptions() Options {
 
 	log.V(1).Info("Starting functional benchmarker", "args", options)
 
-	if err := os.Setenv(constants.FluentdImageEnvVar, options.Image); err != nil {
-		log.Error(err, "Error setting fluent Image env var")
+	imageEnvVar := constants.VectorImageEnvVar
+	if options.CollectorImpl == string(logging.LogCollectionTypeFluentd) {
+		imageEnvVar = constants.FluentdImageEnvVar
+		if options.Image == imageVector {
+			options.Image = imageFluentd
+		}
+	}
+	if err := os.Setenv(imageEnvVar, options.Image); err != nil {
+		log.Error(err, "Error setting collector Image env var")
 		os.Exit(1)
 	}
 

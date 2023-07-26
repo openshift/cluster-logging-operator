@@ -2,12 +2,7 @@ package stats
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
-	"strconv"
-	"strings"
-
-	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 type LossStats struct {
@@ -51,28 +46,13 @@ func (l *LossStats) LossStatsFor(stream string) (*StreamLossStats, error) {
 		return nil, fmt.Errorf("No lost entries found for %s", stream)
 	}
 
-	purged := 0
-	validEntries := []PerfLog{}
-	for _, entry := range entries {
-		seqId, err := GetSequenceIdFrom(entry.Message)
-		if err != nil {
-			log.Error(err, "purging entry. failed getting sequenceid", "entry", entry)
-			purged += 1
-		} else {
-			entry.SequenceId = seqId
-			validEntries = append(validEntries, entry)
-		}
-	}
-	entries = validEntries
-
 	sort.Slice(entries, func(l int, r int) bool {
 		return entries[l].SequenceId < entries[r].SequenceId
 	})
 
 	lossStats := StreamLossStats{
-		Collected: len(entries) + purged,
+		Collected: len(entries),
 		Entries:   entries,
-		Purged:    purged,
 	}
 	if len(entries) == 0 {
 		return &lossStats, nil
@@ -97,7 +77,7 @@ func (l *LossStats) Streams() []string {
 func splitEntriesByLoader(logs PerfLogs) map[string][]PerfLog {
 	results := map[string][]PerfLog{}
 	for _, entry := range logs {
-		streamName := getStreamName(entry)
+		streamName := entry.Stream
 		streams, found := results[streamName]
 		if !found {
 			streams = []PerfLog{}
@@ -107,33 +87,4 @@ func splitEntriesByLoader(logs PerfLogs) map[string][]PerfLog {
 	}
 
 	return results
-}
-
-func getStreamName(entry PerfLog) string {
-	if entry.Kubernetes.ContainerName != "" {
-		return entry.Kubernetes.ContainerName
-	}
-	match := reSeqenceId.FindStringSubmatch(entry.Message)
-	if len(match) > 0 {
-		for i, name := range reSeqenceId.SubexpNames() {
-			if name == "stream" {
-				return match[i]
-			}
-		}
-	}
-	return ""
-}
-
-var reSeqenceId = regexp.MustCompile(`(goloader seq) - (?P<stream>functional\.0\.[0-9A-Z]*) - (?P<seqid>\d{10})( -)?(.*)?`)
-
-func GetSequenceIdFrom(message string) (int, error) {
-	match := reSeqenceId.FindStringSubmatch(message)
-	if len(match) > 0 {
-		for i, name := range reSeqenceId.SubexpNames() {
-			if name == "seqid" {
-				return strconv.Atoi(strings.TrimSpace(match[i]))
-			}
-		}
-	}
-	return 0, fmt.Errorf("message is not the expected format containing sequence number: %s", message)
 }

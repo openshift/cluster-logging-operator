@@ -2,7 +2,7 @@ package clusterlogging
 
 import (
 	"context"
-
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"strings"
 	"time"
 
@@ -143,7 +143,7 @@ func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
 		return false, ctrl.Request{}
 	}
 
-	if value, exists := obj.GetLabels()["component"]; !exists || value != constants.ElasticsearchName {
+	if !utils.HasOwner(obj, constants.ElasticsearchName) {
 		return false, ctrl.Request{}
 	}
 

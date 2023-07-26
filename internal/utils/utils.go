@@ -77,6 +77,17 @@ func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReferenc
 	return false
 }
 
+// HasOwner Checking is given object has owner with given name
+func HasOwner(object metav1.Object, owner string) bool {
+	references := object.GetOwnerReferences()
+	for _, reference := range references {
+		if reference.Name == owner {
+			return true
+		}
+	}
+	return false
+}
+
 func HasSameOwner(curr []metav1.OwnerReference, desired []metav1.OwnerReference) bool {
 	return reflect.DeepEqual(curr, desired)
 }

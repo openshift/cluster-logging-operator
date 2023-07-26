@@ -1,0 +1,59 @@
+= Cluster Log Forwarding
+
+The link:../reference/operator/api.adoc[ClusterLogForwarder] custom resource is the API for specifying the collection and forwarding
+of cluster logs (e.g. application, infrastructure, audit).  The operator supports two modes: Legacy and Multiple-instance.  It operates
+in either of these modes without additional configuration to the operator.  These modes were implemented as part of the
+link:https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/multi-cluster-log-forwarder.md[Multi ClusterLogForwarder]
+feature
+
+== Legacy Mode
+
+In this mode, the operator is opinionated about the names of ClusterLogging and ClusterLogForwarder objects and the namespace where they reside:
+
+* ClusterLogging in namespace 'openshift-logging' named 'instance' **does not** require any instance of a ClusterLogForwarder
+* ClusterLogForwarder in namespace 'openshift-logging' named 'instance' **does** require ClusterLogging in namespace 'openshift-logging' named 'instance'
+* The use of the name 'instance' in the namespace 'openshift-logging' for ClusterLogging or ClusterLogForwarder is reserved to support the legacy use-case
+* The use of the name 'collector' in the namespace 'openshift-logging' for ClusterLogForwarder is reserved to support the legacy use-case
+
+== Multiple-instance Mode
+
+This mode allows additional instances of ClusterLogForwarder. The following is possible except for the restrictions of the legacy mode:
+
+* ClusterLogForwarder instances in any namespace with any name
+* ClusterLogForwarder instances without a dependency on ClusterLogging
+* Log source collection authorized/restricted by cluster RBAC
+* Isolated collector deployments per ClusterLogForwarder
+
+NOTE: Vector is the only collector implementation supported in this mode
+
+=== Prerequisites
+
+This mode is "opt-in" by cluster administrators and requires the following in order for the operator to deploy a log collector
+in response to an instance of ClusterLogForwarder:
+
+* a serviceaccount for use by the collector and referenced in the ClusterLogForwarder spec
+* the serviceaccount bound to one or more cluster roles deployed by the operator: collect-application-logs, collect-infrastructure-logs, collect-audit-logs
+* a serviceaccount token if required by any outputs
+
+NOTE: Each input defined in the ClusterLogForwarder spec must have a corresponding rolebinding for the spec to be valid
+
+=== Restrictions
+
+The following restrictions apply and are enforced by the operator when evaluating a ClusterLogForwarder:
+
+* An output name can not be named 'default'
+* A pipeline can not reference an output named 'default'
+
+Note: 'default' is the reserved word to reference the log store managed
+by ClusterLogging
+
+NOTE: The status section of the ClusterLogForwarder may provide useful information when collectors do not deploy as expected
+
+=== Modifying the Collector Resources and Scheduling
+
+Some log forwarding deployments may require the administrator to modify the resources or scheduling of the collector.  This
+is accomplished by creating a ClusterLogging object that is in the same namespace and named the same as the ClusterLogForwarder
+that it supports.  The operator will only honor the following fields:
+
+* spec.collection
+* spec.managementState

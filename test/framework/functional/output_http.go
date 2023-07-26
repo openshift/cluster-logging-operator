@@ -18,11 +18,12 @@ import (
 )
 
 const (
-	VectorHttpSourceConfTemplate = `
-[sources.my_source]
+	VectorHttpSourceConfTemplate = "" +
+		`[sources.my_source]
 type = "http"
 address = "127.0.0.1:8090"
-encoding = "ndjson"
+decoding.codec = "json"
+framing.method = "newline_delimited"
 
 {{ if ne .MinTLS "" }}
 [sources.my_source.tls]
@@ -37,11 +38,27 @@ key_file = "/tmp/secrets/http/tls.key"
 crt_file = "/tmp/secrets/http/tls.crt"
 {{ end }}
 
-[sinks.my_sink]
+[transforms.app_logs]
+type = "remap"
 inputs = ["my_source"]
-type = "file"
-path = "/tmp/app-logs"
+source = '''
+ .epoc_out = to_float(now())
+ mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.fZ")
+ if err != null {
+   mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.f%z")
+   if err != null {
+     log("Unable to parse @timestamp: " + err, level: "error")
+   }
+ }
+ .epoc_in = to_float(mytime)
 
+'''
+
+[sinks.my_sink]
+inputs = ["app_logs"]
+type = "file"
+path = "{{.Path}}"
+		
 [sinks.my_sink.encoding]
 codec = "json"
 `
@@ -72,7 +89,10 @@ codec = "json"
 `
 )
 
-func VectorConfFactory(profile configv1.TLSProfileType) string {
+func VectorConfFactory(profile configv1.TLSProfileType, path string) string {
+	if path == "" {
+		path = "/tmp/app-logs"
+	}
 	minTLS := ""
 	ciphers := ""
 	if profile != "" {
@@ -91,9 +111,11 @@ func VectorConfFactory(profile configv1.TLSProfileType) string {
 	if err := tmpl.ExecuteTemplate(b, "", struct {
 		MinTLS  string
 		Ciphers string
+		Path    string
 	}{
 		MinTLS:  minTLS,
 		Ciphers: ciphers,
+		Path:    path,
 	}); err != nil {
 		log.V(0).Error(err, "Unable execute vector http conf template")
 		os.Exit(1)
@@ -102,14 +124,14 @@ func VectorConfFactory(profile configv1.TLSProfileType) string {
 }
 
 func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.AddVectorHttpOutputWithConfig(b, output, "", nil)
+	return f.AddVectorHttpOutputWithConfig(b, output, "", nil, "")
 }
 
-func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output logging.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret) error {
+func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output logging.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, path string) error {
 	log.V(2).Info("Adding vector http output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	toml := VectorConfFactory(profile)
+	toml := VectorConfFactory(profile, path)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"vector.toml": toml,
 	})
@@ -151,5 +173,13 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().
 		AddConfigMapVolume(config.Name, config.Name)
+	return nil
+}
+
+func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec, image string) error {
+	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, "/tmp/{{kubernetes.container_name}}.log"); err != nil {
+		return err
+	}
+	b.GetContainer(logging.OutputTypeHttp).WithImage(image).Update()
 	return nil
 }

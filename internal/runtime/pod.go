@@ -183,6 +183,11 @@ func (builder *PodBuilder) GetContainer(name string) *ContainerBuilder {
 	return b
 }
 
+func (builder *ContainerBuilder) WithImage(image string) *ContainerBuilder {
+	builder.container.Image = image
+	return builder
+}
+
 func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {
 	builder.container.SecurityContext = &corev1.SecurityContext{
 		RunAsUser: &uid,

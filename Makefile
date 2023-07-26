@@ -235,7 +235,7 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 .PHONY: test-functional
-test-functional: test-functional-benchmarker test-functional-fluentd test-functional-vector
+test-functional: test-functional-fluentd test-functional-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
@@ -243,14 +243,14 @@ test-functional: test-functional-benchmarker test-functional-fluentd test-functi
 	go test -cover -race ./test/helpers/...
 
 .PHONY: test-functional-fluentd
-test-functional-fluentd:
+test-functional-fluentd: test-functional-benchmarker-fluentd
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector
-test-functional-vector:
+test-functional-vector: test-functional-benchmarker-vector
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
@@ -270,9 +270,13 @@ test-forwarder-generator: bin/forwarder-generator
 	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
 
 
-.PHONY: test-functional-benchmarker
-test-functional-benchmarker: bin/functional-benchmarker
-	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp/benchmark-test 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+.PHONY: test-functional-benchmarker-vector
+test-functional-benchmarker-vector: bin/functional-benchmarker
+	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker -image=$(IMAGE_LOGGING_VECTOR) --collector-impl=vector --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+
+.PHONY: test-functional-benchmarker-fluentd
+test-functional-benchmarker-fluentd: bin/functional-benchmarker
+	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker -image=$(IMAGE_LOGGING_FLUENTD) --collector-impl=fluentd --artifact-dir=/tmp/benchmark-test-fluentd 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator

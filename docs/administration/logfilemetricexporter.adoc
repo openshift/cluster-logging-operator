@@ -1,0 +1,31 @@
+= Collecting Container Log Metrics
+
+The cluster logging solution distributes a component called the "Log File Metrics Exporter" that enables a Prometheus metrics endpoint.
+It is deployed as a daemonset on the cluster to gather metrics about the volume of logs being produced by container workloads on a cluster.
+Prior to the implementation of the link:https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/multi-cluster-log-forwarder.md[Multi ClusterLogForwarder]
+feature, this component was deployed as second container of the log collector pod.
+
+== Deployment
+
+A link:../reference/operator/api.adoc[LogFileMetricsExporter] is deployed as part of a link:clusterlogforwarder.adoc[legacy deployment] to support earlier behaviors
+of ClusterLogging.  It is possible to also deploy a LogFileMetricsExporter separately as part of link:clusterlogforwarder.adoc[Multi ClusterLogForwarder]
+by creating a LogFileMetricsExporter object.  For example:
+
+.LogFileMetricsExporter Example
+[source]
+----
+apiVersion: "logging.openshift.io/v1alpha1"
+kind: "LogFileMetricExporter"
+metadata:
+  name: "instance"
+  namespace: "openshift-logging"
+spec:
+  resources:
+    limits:
+      cpu: "500m"
+    requests:
+      cpu: "200m"
+      memory: "128Mi"
+----
+
+NOTE: The operator will only reconcile an object named 'instance' in the 'openshift-logging' namespace

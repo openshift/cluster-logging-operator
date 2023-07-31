@@ -2,7 +2,9 @@
 
 Administrators create a `ClusterLogForwarder` instance to specify which logs will be collected, how they will be transformed, and to where they will be forwarded.  The operator will deploy a collector based upon this specification.  There are two collector options supported by this operator: https://www.fluentd.org/[fluentd] and https://vector.dev/[vector].  Vector is the newest collector implementation and the difference in feature parity is identified below.
 
-NOTE: Some features implemented in fluentd may not be implemented for vector.  Justifications for this variance will be documented below.
+NOTE: Some features implemented in fluentd may not be implemented for vector.  Justifications for this variance is documented below.
+
+See the link:../administration/clusterlogforwarder.adoc[ClusterLogForwarder] documentation for deploying and administration information.
 
 === Log Sources
 Following is a list of possible log sources that are collected from each node in the cluster:

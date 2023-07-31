@@ -1,0 +1,5 @@
+= Administration
+
+* link:clusterlogforwarder.adoc[Log Collection and Forwarding]
+* Enabling event collection by link:deploy-event-router.md[Deploying the Event Router]
+* link:logfilemetricexporter.adoc[Collecting Container Log Metrics]

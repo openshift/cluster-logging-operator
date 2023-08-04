@@ -9,8 +9,8 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,7 +38,7 @@ var (
 )
 
 func init() {
-	DefaultLokiOuputNames = sets.NewString()
+	DefaultLokiOuputNames = *sets.NewString()
 	for _, input := range loggingv1.ReservedInputNames.List() {
 		DefaultLokiOuputNames.Insert(FormatOutputNameFromInput(input))
 	}

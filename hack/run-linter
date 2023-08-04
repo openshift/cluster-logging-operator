@@ -3,7 +3,7 @@
 set -euo pipefail
 
 hashDir(){
-  (find $1 -type f -print0  | sort -z | xargs -0 sha1sum;
+  (find $1 -type f -print0  | sort -z | xargs -0 grep -v 'createdAt' |sha1sum;
    find $1 \( -type f -o -type d \) -print0 | sort -z | xargs -0 stat -c '%n %a') | sha1sum
 }
 

@@ -1,6 +1,7 @@
 package functional
 
 import (
+	"context"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -302,7 +303,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 	log.V(2).Info("waiting for service endpoints to be ready")
-	err = wait.PollImmediate(time.Second*2, time.Second*10, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*2, time.Second*10, true, func(cxt context.Context) (done bool, err error) {
 		ips, err := oc.Get().WithNamespace(f.Test.NS.Name).Resource("endpoints", f.Name).OutputJsonpath("{.subsets[*].addresses[*].ip}").Run()
 		if err != nil {
 			return false, nil
@@ -317,7 +318,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return fmt.Errorf("service could not be started")
 	}
 	log.V(2).Info("waiting for the collector to be ready")
-	err = wait.PollImmediate(time.Second*2, time.Second*90, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second*2, time.Second*90, true, func(cxt context.Context) (done bool, err error) {
 		output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
 		if err != nil {
 			return false, nil

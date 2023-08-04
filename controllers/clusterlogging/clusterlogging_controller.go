@@ -2,6 +2,9 @@ package clusterlogging
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"strings"
 	"time"
@@ -11,10 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -32,8 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 var _ reconcile.Reconciler = &ReconcileClusterLogging{}
@@ -132,95 +129,32 @@ func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLoggin
 	return ctrl.Result{}, nil
 }
 
-func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
-	if obj.GetNamespace() == "" {
-		// ignore cluster scope objects
-		return false, ctrl.Request{}
-	}
-
-	if constants.OpenshiftNS != obj.GetNamespace() {
-		// ignore object in another namespace
-		return false, ctrl.Request{}
-	}
-
-	if value, exists := obj.GetLabels()["component"]; !exists || value != constants.ElasticsearchName {
-		return false, ctrl.Request{}
-	}
-
-	return true, ctrl.Request{
-		NamespacedName: types.NamespacedName{
-			Name:      constants.SingletonName,
-			Namespace: constants.OpenshiftNS,
-		},
-	}
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
-	onAllExceptGenericEventsPredicate := predicate.Funcs{
-		UpdateFunc: func(evt event.UpdateEvent) bool {
-			return true
-		},
-		CreateFunc: func(evt event.CreateEvent) bool {
-			return true
-		},
-		DeleteFunc: func(evt event.DeleteEvent) bool {
-			return true
-		},
-		GenericFunc: func(evt event.GenericEvent) bool {
-			return false
-		},
-	}
-
-	var toElasticsearchRelatedObjRequestMapper handler.MapFunc = func(obj client.Object) []ctrl.Request {
-		isElasticsearchRelatedObj, reconcileRequest := IsElasticsearchRelatedObj(obj)
-		if isElasticsearchRelatedObj {
-			return []ctrl.Request{reconcileRequest}
-		}
-		return []ctrl.Request{}
-	}
-
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &loggingv1.ClusterLogging{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &loggingv1.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &rbacv1.Role{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &rbacv1.RoleBinding{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
-			handler.EnqueueRequestsFromMapFunc(toElasticsearchRelatedObjRequestMapper),
-			builder.WithPredicates(onAllExceptGenericEventsPredicate),
-		)
-
-	return controllerBuilder.
 		For(&loggingv1.ClusterLogging{}).
-		Complete(r)
+		Owns(&corev1.Service{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.ServiceAccount{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.DaemonSet{}).
+		Watches(&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+				if obj.GetNamespace() == constants.OpenshiftNS && obj.GetLabels()["component"] == constants.ElasticsearchName {
+					return []reconcile.Request{
+						{
+							NamespacedName: types.NamespacedName{
+								Namespace: obj.GetNamespace(),
+								Name:      obj.GetName(),
+							},
+						},
+					}
+				}
+				return nil
+			}))
+
+	return controllerBuilder.Complete(r)
 }

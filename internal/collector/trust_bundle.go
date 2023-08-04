@@ -81,7 +81,7 @@ func GetTrustedCABundle(k8sClient client.Client, namespace, name string) (*corev
 
 	cm := &corev1.ConfigMap{}
 	trustedCAHash := ""
-	err := wait.PollImmediate(5*time.Second, 30*time.Second, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := k8sClient.Get(context.TODO(), key, cm); err != nil {
 			log.Error(err, "Error retrieving the Trusted CA Bundle")

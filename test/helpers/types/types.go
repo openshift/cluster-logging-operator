@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	rand2 "github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	"math/rand"
 	"strings"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -570,9 +570,9 @@ func (l Logs) NonEmpty() bool {
 }
 
 func NewMockPod() *v1.Pod {
-	uuidStr := string(utils.GetRandomWord(16))
-	podName := string(utils.GetRandomWord(8))
-	namespace := string(utils.GetRandomWord(8))
+	uuidStr := string(rand2.Word(16))
+	podName := string(rand2.Word(8))
+	namespace := string(rand2.Word(8))
 	fakePod := v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Pod",
@@ -593,7 +593,7 @@ func NewMockEvent(ref *v1.ObjectReference, eventType, reason, message string) *v
 	}
 	return &v1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      string(utils.GetRandomWord(8)),
+			Name:      string(rand2.Word(8)),
 			Namespace: ref.Namespace,
 		},
 		InvolvedObject: *ref,

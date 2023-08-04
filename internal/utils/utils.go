@@ -6,15 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
-	"os"
-	"os/exec"
-	"path"
-	"path/filepath"
-	"reflect"
-	"strings"
-	"time"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -22,16 +13,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"strings"
 )
 
 const (
-	DefaultWorkingDir = "/tmp/ocp-clo"
-	DefaultScriptsDir = "./scripts"
-	OsNodeLabel       = "kubernetes.io/os"
-	LinuxValue        = "linux"
+	OsNodeLabel = "kubernetes.io/os"
+	LinuxValue  = "linux"
 )
 
-var DefaultNodeSelector = map[string]string{OsNodeLabel: LinuxValue}
+var (
+	DefaultNodeSelector = map[string]string{OsNodeLabel: LinuxValue}
+)
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -41,16 +37,6 @@ var COMPONENT_IMAGES = map[string]string{
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
 	constants.ConsolePluginName:          constants.ConsolePluginImageEnvVar,
-}
-
-// GetAnnotation returns the value of an annoation for a given key and true if the key was found
-func GetAnnotation(key string, meta metav1.ObjectMeta) (string, bool) {
-	for k, value := range meta.Annotations {
-		if k == key {
-			return value, true
-		}
-	}
-	return "", false
 }
 
 func AsOwner(o runtime.Object) metav1.OwnerReference {
@@ -65,16 +51,6 @@ func AsOwner(o runtime.Object) metav1.OwnerReference {
 		UID:        m.GetUID(),
 		Controller: GetBool(true),
 	}
-}
-
-// IsOwnedBy Checking is given object owned by given OwnerReference
-func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReference) bool {
-	for _, reference := range references {
-		if reference.Name == ownerRef.Name && reference.Kind == ownerRef.Kind {
-			return true
-		}
-	}
-	return false
 }
 
 func HasSameOwner(curr []metav1.OwnerReference, desired []metav1.OwnerReference) bool {
@@ -159,14 +135,6 @@ func isTolerationSame(lhs, rhs v1.Toleration) bool {
 		tolerationSecondsBool
 }
 
-func AppendTolerations(lhsTolerations, rhsTolerations []v1.Toleration) []v1.Toleration {
-	if lhsTolerations == nil {
-		lhsTolerations = []v1.Toleration{}
-	}
-
-	return append(lhsTolerations, rhsTolerations...)
-}
-
 // AddOwnerRefToObject adds the parent as an owner to the child
 func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 	if (metav1.OwnerReference{}) != ownerRef {
@@ -227,55 +195,6 @@ func GetShareDir() string {
 	return defaultShareDir
 }
 
-func GetScriptsDir() string {
-	scriptsDir := os.Getenv("SCRIPTS_DIR")
-	if scriptsDir == "" {
-		return DefaultScriptsDir
-	}
-	return scriptsDir
-}
-
-func GetDirFileContents(dirPath, filePath string) []byte {
-	return GetFileContents(path.Join(dirPath, filePath))
-}
-
-func GetWorkingDirFileContents(filePath string) []byte {
-	return GetFileContents(GetWorkingDirFilePath(filePath))
-}
-func GetWorkingDir() string {
-	workingDir := os.Getenv("WORKING_DIR")
-	if workingDir == "" {
-		workingDir = DefaultWorkingDir
-	}
-	return workingDir
-}
-func GetWorkingDirFilePath(toFile string) string {
-	return path.Join(GetWorkingDir(), toFile)
-}
-
-func WriteToWorkingDirFile(toFile string, value []byte) error {
-
-	if err := os.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
-		return fmt.Errorf("Unable to write to working dir: %v", err)
-	}
-
-	return nil
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-func GetRandomWord(wordSize int) []byte {
-	b := make([]rune, wordSize)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
-	}
-	return []byte(string(b))
-}
-
 func GetBool(value bool) *bool {
 	b := value
 	return &b
@@ -299,26 +218,6 @@ func GetEnvVar(name string, envVars []v1.EnvVar) (v1.EnvVar, bool) {
 		}
 	}
 	return v1.EnvVar{}, false
-}
-
-func CheckFileExists(filePath string) error {
-	_, err := os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("'%s' not found", filePath)
-		}
-		return err
-	}
-	return nil
-}
-
-func ContainsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
 }
 
 func RemoveString(slice []string, s string) (result []string) {

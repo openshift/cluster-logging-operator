@@ -1,10 +1,9 @@
 package v1
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"reflect"
 	"strings"
-
-	sets "k8s.io/apimachinery/pkg/util/sets"
 )
 
 // Reserved input names.
@@ -67,7 +66,11 @@ func (status ClusterLogForwarderStatus) IsReady() bool {
 }
 
 // RouteMap maps input names to connected outputs or vice-versa.
-type RouteMap map[string]sets.String
+type RouteMap map[string]*sets.String
+
+func New() RouteMap {
+	return RouteMap{}
+}
 
 func (m RouteMap) Insert(k, v string) {
 	if m[k] == nil {
@@ -91,8 +94,8 @@ type Routes struct {
 
 func NewRoutes(pipelines []PipelineSpec) Routes {
 	r := Routes{
-		ByInput:  map[string]sets.String{},
-		ByOutput: map[string]sets.String{},
+		ByInput:  New(),
+		ByOutput: New(),
 	}
 	for _, p := range pipelines {
 		for _, inRef := range p.InputRefs {
@@ -141,7 +144,7 @@ func (input *InputSpec) Types() sets.String {
 	if input.Audit != nil {
 		result.Insert(InputNameAudit)
 	}
-	return result
+	return *result
 }
 
 // HasPolicy returns whether the input spec has flow control policies defined in it.

@@ -45,8 +45,7 @@ import (
 
 // Change below variables to serve metrics on different host or port.
 var (
-	scheme   = apiruntime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = apiruntime.NewScheme()
 )
 
 const (
@@ -105,13 +104,13 @@ func main() {
 		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
 	clusterVersion, err := getClusterVersion(mgr.GetAPIReader())
 	if err != nil {
-		setupLog.Error(err, "unable to retrieve the clusterID")
+		log.Error(err, "unable to retrieve the clusterID")
 		os.Exit(1)
 	}
 	clusterID := string(clusterVersion.Spec.ClusterID)
@@ -128,7 +127,7 @@ func main() {
 		ClusterVersion: clusterVersion.Status.Desired.Version,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
+		log.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
 		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
@@ -139,7 +138,7 @@ func main() {
 		ClusterVersion: clusterVersion.Status.Desired.Version,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
+		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
 		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
@@ -152,7 +151,7 @@ func main() {
 		ClusterVersion: clusterVersion.Status.Desired.Version,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
+		log.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
 		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, UnHealthyStatus)
 		os.Exit(1)
 	}
@@ -160,11 +159,11 @@ func main() {
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
+		log.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
+		log.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 

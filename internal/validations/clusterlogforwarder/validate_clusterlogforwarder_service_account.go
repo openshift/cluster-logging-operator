@@ -9,12 +9,12 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	authorizationapi "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -68,7 +68,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 
 	// Perform subject access reviews for each spec'd input
 	var failedInputs []string
-	for input := range inputs {
+	for _, input := range inputs.List() {
 		log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] validating %q for user: %v", inputs, username))
 		sar := createSubjectAccessReview(username, clfNamespace, "collect", "logs", input, loggingv1.GroupVersion.Group)
 		if err = k8sClient.Create(context.TODO(), sar); err != nil {
@@ -97,7 +97,7 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
 			inputRefs.Insert(input)
 		}
 	}
-	return inputRefs
+	return *inputRefs
 }
 
 func createSubjectAccessReview(user, namespace, verb, resource, name, resourceAPIGroup string) *authorizationapi.SubjectAccessReview {

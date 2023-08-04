@@ -89,7 +89,7 @@ func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs
 }
 
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
@@ -102,7 +102,7 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 }
 
 func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
@@ -115,7 +115,7 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 }
 
 func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'

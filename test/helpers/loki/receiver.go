@@ -2,6 +2,7 @@ package loki
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -102,8 +103,10 @@ func (r *Receiver) Create(c *client.Client) error {
 		return err
 	}
 	// Wait till we can get the metrics page, means server is up.
-	return wait.PollImmediate(time.Second, r.timeout, func() (bool, error) {
-		resp, err := http.Get(r.ExternalURL("/metrics").String())
+	return wait.PollUntilContextTimeout(context.TODO(), time.Second, r.timeout, true, func(ctx context.Context) (done bool, err error) {
+		req, _ := http.NewRequestWithContext(ctx, "GET", r.ExternalURL("/metrics").String(), nil)
+		client := &http.Client{}
+		resp, err := client.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
 			err = test.HTTPError(resp)
@@ -179,8 +182,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 // QueryUntil repeats the query until at least n lines are received.
 func (r *Receiver) QueryUntil(logQL string, orgID string, n int) (values []StreamValues, err error) {
 	log.V(2).Info("Loki QueryUntil", "query", logQL, "n", n)
-	err = wait.PollImmediate(time.Second, r.timeout, func() (bool, error) {
-		var err error
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, r.timeout, true, func(cxt context.Context) (done bool, err error) {
 		values, err = r.Query(logQL, orgID, n)
 		if err != nil {
 			return false, err

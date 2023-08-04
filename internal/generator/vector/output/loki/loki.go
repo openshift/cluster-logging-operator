@@ -14,8 +14,8 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -148,9 +148,9 @@ func Encoding(o logging.OutputSpec) Element {
 func lokiLabelKeys(l *logging.Loki) []string {
 	var keys sets.String
 	if l != nil && len(l.LabelKeys) != 0 {
-		keys = sets.NewString(l.LabelKeys...)
+		keys = *sets.NewString(l.LabelKeys...)
 	} else {
-		keys = sets.NewString(defaultLabelKeys...)
+		keys = *sets.NewString(defaultLabelKeys...)
 	}
 	// Ensure required tags for serialization
 	keys.Insert(requiredLabelKeys...)

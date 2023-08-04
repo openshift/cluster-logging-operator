@@ -56,7 +56,7 @@ func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string
 	var result string
 	outputFilename := "/shared/consumed.logs"
 	cmd := fmt.Sprintf("tail -1 %s", outputFilename)
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, maxDuration, true, func(cxt context.Context) (done bool, err error) {
 		result, err = f.RunCommand(consumercontainername, "/bin/bash", "-c", cmd)
 		if result != "" && err == nil {
 			return true, nil
@@ -141,7 +141,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 }
 
 func (f *CollectorFunctionalFramework) ReadFileFrom(outputName, filePath string) (result string, err error) {
-	err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		result, err = f.RunCommand(strings.ToLower(outputName), "cat", filePath)
 		if result != "" && err == nil {
 			return true, nil

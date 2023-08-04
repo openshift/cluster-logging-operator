@@ -1,6 +1,7 @@
 package normalization
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -53,7 +54,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 
-		err := wait.PollImmediate(5*time.Second, 60*time.Second, func() (done bool, err error) {
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 60*time.Minute, true, func(cxt context.Context) (found bool, err error) {
 			ns := framework.Test.NS
 			if err := framework.Test.Client.Get(ns); err != nil {
 				log.V(0).Error(err, "Failed trying to get NS to update labels")

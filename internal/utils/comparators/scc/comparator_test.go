@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	security "github.com/openshift/api/security/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/internal/utils/comparators/scc"
 )
@@ -15,14 +15,14 @@ import (
 var _ = Describe("scc#AreSame", func() {
 
 	It("should succeed when they are the same", func() {
-		left := collector.NewSCC()
+		left := auth.NewSCC()
 		right := left.DeepCopy()
 		same, reason := AreSame(*left, *right)
 		Expect(same).To(BeTrue(), fmt.Sprintf("Exp. comparator to succeed when fields are the same, reason: %s are different", reason))
 	})
 
 	DescribeTable("should fail with different", func(modifications ...func(*security.SecurityContextConstraints)) {
-		left := collector.NewSCC()
+		left := auth.NewSCC()
 		right := left.DeepCopy()
 		if len(modifications) > 0 {
 			modifications[0](right)

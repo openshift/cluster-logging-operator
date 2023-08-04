@@ -46,7 +46,7 @@ func AsOwner(o runtime.Object) metav1.OwnerReference {
 		panic(err)
 	}
 	return metav1.OwnerReference{
-		APIVersion: logging.GroupVersion.String(),
+		APIVersion: fmt.Sprintf("%s/%s", o.GetObjectKind().GroupVersionKind().Group, o.GetObjectKind().GroupVersionKind().Version),
 		Kind:       o.GetObjectKind().GroupVersionKind().Kind,
 		Name:       m.GetName(),
 		UID:        m.GetUID(),

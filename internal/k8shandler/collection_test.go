@@ -53,6 +53,7 @@ var _ = Describe("Reconciling", func() {
 				},
 			},
 		}
+
 		fluentdSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.CollectorName,
@@ -68,6 +69,7 @@ var _ = Describe("Reconciling", func() {
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					{
+						Kind:       "ClusterLogging",
 						Name:       "instance",
 						APIVersion: "logging.openshift.io/v1",
 						Controller: utils.GetPtr(true),
@@ -128,6 +130,7 @@ var _ = Describe("Reconciling", func() {
 				}
 			)
 			BeforeEach(func() {
+				cluster.TypeMeta.SetGroupVersionKind(loggingv1.GroupVersion.WithKind("ClusterLogging"))
 				client = fake.NewFakeClient( //nolint
 					cluster,
 					fluentdSecret,

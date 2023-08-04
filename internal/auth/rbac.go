@@ -1,4 +1,4 @@
-package collector
+package auth
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ReconcileRBAC reconciles the service specifically for the collector that exposes the collector metrics
+// ReconcileRBAC reconciles the RBAC specifically for the service account and SCC
 func ReconcileRBAC(er record.EventRecorder, k8sClient client.Client, saNamespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) error {
 	desiredCRB := NewMetaDataReaderClusterRoleBinding(saNamespace, resNames.MetadataReaderClusterRoleBinding, resNames.ServiceAccount, owner)
 	if err := reconcile.ClusterRoleBinding(k8sClient, resNames.MetadataReaderClusterRoleBinding, func() *rbacv1.ClusterRoleBinding { return desiredCRB }); err != nil {

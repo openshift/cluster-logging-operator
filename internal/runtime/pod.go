@@ -101,8 +101,8 @@ func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *C
 
 func (builder *ContainerBuilder) WithPodSecurity() *ContainerBuilder {
 	builder.container.SecurityContext = &corev1.SecurityContext{
-		AllowPrivilegeEscalation: utils.GetBool(false),
-		RunAsNonRoot:             utils.GetBool(true),
+		AllowPrivilegeEscalation: utils.GetPtr(false),
+		RunAsNonRoot:             utils.GetPtr(true),
 		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{
 				"ALL",
@@ -117,7 +117,7 @@ func (builder *ContainerBuilder) WithPodSecurity() *ContainerBuilder {
 
 func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 	builder.container.SecurityContext = &corev1.SecurityContext{
-		Privileged: utils.GetBool(true),
+		Privileged: utils.GetPtr(true),
 	}
 	return builder
 }
@@ -141,7 +141,7 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 }
 
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
-	return builder.AddConfigMapVolumeWithPermissions(name, configMapName, utils.GetInt32(0644))
+	return builder.AddConfigMapVolumeWithPermissions(name, configMapName, utils.GetPtr[int32](0644))
 }
 
 func (builder *PodBuilder) AddConfigMapVolumeWithPermissions(name, configMapName string, permissions *int32) *PodBuilder {

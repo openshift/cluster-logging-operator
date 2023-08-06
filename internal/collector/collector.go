@@ -122,7 +122,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
-		TerminationGracePeriodSeconds: utils.GetInt64(10),
+		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   constants.DefaultTolerations(),
 		Volumes: []v1.Volume{
 			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
@@ -234,8 +234,8 @@ func AddSecurityContextTo(container *v1.Container) *v1.Container {
 		SELinuxOptions: &v1.SELinuxOptions{
 			Type: "spc_t",
 		},
-		ReadOnlyRootFilesystem:   utils.GetBool(true),
-		AllowPrivilegeEscalation: utils.GetBool(false),
+		ReadOnlyRootFilesystem:   utils.GetPtr(true),
+		AllowPrivilegeEscalation: utils.GetPtr(false),
 		SeccompProfile: &v1.SeccompProfile{
 			Type: v1.SeccompProfileTypeRuntimeDefault,
 		},

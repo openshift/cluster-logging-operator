@@ -309,7 +309,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: utils.GetBool(false),
+			AllowPrivilegeEscalation: utils.GetPtr(false),
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{"ALL"},
 			},
@@ -330,7 +330,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		},
 		ServiceAccountName: serviceAccount.Name,
 		SecurityContext: &corev1.PodSecurityContext{
-			RunAsNonRoot: utils.GetBool(true),
+			RunAsNonRoot: utils.GetPtr(true),
 			SeccompProfile: &corev1.SeccompProfile{
 				Type: corev1.SeccompProfileTypeRuntimeDefault,
 			},

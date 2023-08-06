@@ -27,7 +27,7 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 		Image:   "quay.io/quay/busybox",
 		Command: []string{"sh", "-c", cmd},
 		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: utils.GetBool(false),
+			AllowPrivilegeEscalation: utils.GetPtr(false),
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{"ALL"},
 			},
@@ -35,7 +35,7 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 	})
 	l.Spec.RestartPolicy = corev1.RestartPolicyNever
 	l.Spec.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: utils.GetBool(true),
+		RunAsNonRoot: utils.GetPtr(true),
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},

@@ -3,10 +3,11 @@ package console
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -218,7 +219,7 @@ func (r *Reconciler) mutateService() error {
 func (r *Reconciler) mutateDeployment() error {
 	o := &r.deployment
 	o.Spec = appv1.DeploymentSpec{
-		Replicas: utils.GetInt32(1),
+		Replicas: utils.GetPtr[int32](1),
 		Selector: &metav1.LabelSelector{MatchLabels: r.selector()},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: r.selector()},
@@ -275,7 +276,7 @@ func (r *Reconciler) mutateDeployment() error {
 									Name: r.Name,
 								},
 								DefaultMode: r.defaultMode(),
-								Optional:    utils.GetBool(true),
+								Optional:    utils.GetPtr(true),
 							},
 						},
 					},

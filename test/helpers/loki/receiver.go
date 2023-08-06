@@ -56,7 +56,7 @@ func NewReceiver(ns, name string) *Receiver {
 		Image: Image,
 		Ports: []corev1.ContainerPort{{Name: name, ContainerPort: Port}},
 		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: utils.GetBool(false),
+			AllowPrivilegeEscalation: utils.GetPtr(false),
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{"ALL"},
 			},
@@ -69,8 +69,8 @@ func NewReceiver(ns, name string) *Receiver {
 		},
 	}}
 	r.Pod.Spec.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: utils.GetBool(true),
-		RunAsUser:    utils.GetInt64(10001), // uid of user loki in the loki image
+		RunAsNonRoot: utils.GetPtr(true),
+		RunAsUser:    utils.GetPtr[int64](10001), // uid of user loki in the loki image
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},

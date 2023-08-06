@@ -28,7 +28,7 @@ func NewDeployment(deploymentName string, namespace string, loggingComponent str
 			},
 		},
 		Spec: apps.DeploymentSpec{
-			Replicas: utils.GetInt32(1),
+			Replicas: utils.GetPtr[int32](1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"provider":      "openshift",

@@ -112,14 +112,14 @@ func NewReceiver(ns, name string) *Receiver {
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: utils.GetBool(false),
+			AllowPrivilegeEscalation: utils.GetPtr(false),
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{"ALL"},
 			},
 		},
 	}}
 	r.Pod.Spec.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: utils.GetBool(true),
+		RunAsNonRoot: utils.GetPtr(true),
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},

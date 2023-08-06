@@ -3,16 +3,17 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -264,7 +265,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	b := runtime.NewPodBuilder(f.Pod).
 		WithLabels(f.Labels).
 		AddConfigMapVolume("config", f.Name).
-		AddConfigMapVolumeWithPermissions("entrypoint", f.Name, utils.GetInt32(0755)).
+		AddConfigMapVolumeWithPermissions("entrypoint", f.Name, utils.GetPtr[int32](0755)).
 		AddConfigMapVolume("certs", certsName)
 	b = f.collector.BuildCollectorContainer(
 		b.AddContainer(constants.CollectorName, f.image).

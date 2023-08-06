@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	security "github.com/openshift/api/security/v1"
@@ -89,8 +90,8 @@ func NewSCC() *security.SecurityContextConstraints {
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true
 	scc.Volumes = DesiredSCCVolumes
-	scc.DefaultAllowPrivilegeEscalation = utils.GetBool(false)
-	scc.AllowPrivilegeEscalation = utils.GetBool(false)
+	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
+	scc.AllowPrivilegeEscalation = utils.GetPtr(false)
 	scc.RunAsUser = security.RunAsUserStrategyOptions{
 		Type: security.RunAsUserStrategyRunAsAny,
 	}

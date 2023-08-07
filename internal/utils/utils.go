@@ -6,6 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"strings"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -13,11 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"reflect"
-	"strings"
 )
 
 const (
@@ -49,7 +50,7 @@ func AsOwner(o runtime.Object) metav1.OwnerReference {
 		Kind:       o.GetObjectKind().GroupVersionKind().Kind,
 		Name:       m.GetName(),
 		UID:        m.GetUID(),
-		Controller: GetBool(true),
+		Controller: GetPtr(true),
 	}
 }
 
@@ -195,19 +196,8 @@ func GetShareDir() string {
 	return defaultShareDir
 }
 
-func GetBool(value bool) *bool {
-	b := value
-	return &b
-}
-
-func GetInt32(value int32) *int32 {
-	i := value
-	return &i
-}
-
-func GetInt64(value int64) *int64 {
-	i := value
-	return &i
+func GetPtr[T any](value T) *T {
+	return &value
 }
 
 // GetEnvVar returns EnvVar entry that matches the given name

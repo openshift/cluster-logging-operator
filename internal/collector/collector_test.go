@@ -1,8 +1,9 @@
 package collector
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -57,8 +58,8 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				SELinuxOptions: &v1.SELinuxOptions{
 					Type: "spc_t",
 				},
-				ReadOnlyRootFilesystem:   utils.GetBool(true),
-				AllowPrivilegeEscalation: utils.GetBool(false),
+				ReadOnlyRootFilesystem:   utils.GetPtr(true),
+				AllowPrivilegeEscalation: utils.GetPtr(false),
 				SeccompProfile: &v1.SeccompProfile{
 					Type: v1.SeccompProfileTypeRuntimeDefault,
 				},

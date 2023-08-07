@@ -42,7 +42,7 @@ func CollectorVisitor(collectorContainer *v1.Container, podSpec *v1.PodSpec, res
 	)
 
 	podSpec.Volumes = append(podSpec.Volumes,
-		v1.Volume{Name: certsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: resNames.InternalLogStoreSecret, Optional: utils.GetBool(true)}}},
+		v1.Volume{Name: certsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: resNames.InternalLogStoreSecret, Optional: utils.GetPtr(true)}}},
 		v1.Volume{Name: common.ConfigVolumeName, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: resNames.ConfigMap}}}},
 		v1.Volume{Name: common.DataDir, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: dataDir}}},
 		v1.Volume{Name: common.EntrypointVolumeName, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: resNames.ConfigMap}}}},

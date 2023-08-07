@@ -301,7 +301,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(rootDir string, secure
 			},
 		},
 		SecurityContext: &corev1.SecurityContext{
-			Privileged: utils.GetBool(true),
+			Privileged: utils.GetPtr(true),
 		},
 	}
 	podSpec := corev1.PodSpec{

@@ -23,7 +23,7 @@ type Config struct {
 
 func (cf *Config) Namespace() string        { return cf.Owner.GetNamespace() }
 func (cf *Config) CreatedBy() string        { return fmt.Sprintf("%v_%v", cf.Namespace(), cf.Owner.GetName()) }
-func (cf *Config) defaultMode() *int32      { return utils.GetInt32(420) }
+func (cf *Config) defaultMode() *int32      { return utils.GetPtr[int32](420) }
 func (cf *Config) pluginBackendPort() int32 { return 9443 }
 
 // NewConfig returns a config with default settings.

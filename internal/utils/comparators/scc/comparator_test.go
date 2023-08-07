@@ -33,8 +33,8 @@ var _ = Describe("scc#AreSame", func() {
 		same, _ := AreSame(*left, *right)
 		Expect(same).To(BeFalse(), "Exp. comparator to fail for dissimilar property")
 	},
-		Entry("Priority nil", func(right *security.SecurityContextConstraints) { right.Priority = nil }, func(left *security.SecurityContextConstraints) { left.Priority = utils.GetInt32(12) }),
-		Entry("Priority different value", func(right *security.SecurityContextConstraints) { right.Priority = utils.GetInt32(12) }),
+		Entry("Priority nil", func(right *security.SecurityContextConstraints) { right.Priority = nil }, func(left *security.SecurityContextConstraints) { left.Priority = utils.GetPtr[int32](12) }),
+		Entry("Priority different value", func(right *security.SecurityContextConstraints) { right.Priority = utils.GetPtr[int32](12) }),
 		Entry("AllowPrivilegedContainer", func(right *security.SecurityContextConstraints) { right.AllowPrivilegedContainer = true }),
 		Entry("RequiredDropCapabilities", func(right *security.SecurityContextConstraints) {
 			right.RequiredDropCapabilities = append(right.RequiredDropCapabilities, "foo")
@@ -42,9 +42,9 @@ var _ = Describe("scc#AreSame", func() {
 		Entry("AllowHostDirVolumePlugin", func(right *security.SecurityContextConstraints) { right.AllowHostDirVolumePlugin = false }),
 		Entry("Volumes", func(none *security.SecurityContextConstraints) {}, func(left *security.SecurityContextConstraints) { left.Volumes = left.Volumes[1:] }),
 		Entry("DefaultAllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) {
-			right.DefaultAllowPrivilegeEscalation = utils.GetBool(true)
+			right.DefaultAllowPrivilegeEscalation = utils.GetPtr(true)
 		}),
-		Entry("AllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) { right.AllowPrivilegeEscalation = utils.GetBool(true) }),
+		Entry("AllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) { right.AllowPrivilegeEscalation = utils.GetPtr(true) }),
 		Entry("RunAsUser", func(right *security.SecurityContextConstraints) {
 			right.RunAsUser = security.RunAsUserStrategyOptions{}
 		}),

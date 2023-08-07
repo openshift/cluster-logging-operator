@@ -70,7 +70,7 @@ var _ = Describe("Reconciling", func() {
 					{
 						Name:       "instance",
 						APIVersion: "logging.openshift.io/v1",
-						Controller: utils.GetBool(true),
+						Controller: utils.GetPtr(true),
 					},
 				},
 			},
@@ -326,7 +326,7 @@ var _ = Describe("Reconciling", func() {
 							Name:       customCLFName,
 							Kind:       "ClusterLogForwarder",
 							APIVersion: "logging.openshift.io/v1",
-							Controller: utils.GetBool(true),
+							Controller: utils.GetPtr(true),
 						},
 					},
 				},

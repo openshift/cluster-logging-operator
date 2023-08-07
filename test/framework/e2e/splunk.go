@@ -3,6 +3,8 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"net/url"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -11,7 +13,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"net/url"
 
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -261,9 +262,9 @@ func newSplunkStatefulSet() *apps.StatefulSet {
 						},
 					},
 					SecurityContext: &v1.PodSecurityContext{
-						RunAsUser:    utils.GetInt64(41812),
-						RunAsNonRoot: utils.GetBool(true),
-						FSGroup:      utils.GetInt64(41812),
+						RunAsUser:    utils.GetPtr[int64](41812),
+						RunAsNonRoot: utils.GetPtr(true),
+						FSGroup:      utils.GetPtr[int64](41812),
 					},
 				},
 			},

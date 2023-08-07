@@ -80,7 +80,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(nodeSelector(exporter)),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            constants.CollectorServiceAccountName,
-		TerminationGracePeriodSeconds: utils.GetInt64(10),
+		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   tolerations(exporter),
 		Volumes: []v1.Volume{
 			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},

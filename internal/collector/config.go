@@ -14,7 +14,7 @@ import (
 )
 
 // ReconcileCollectorConfig reconciles a collector config specifically for the collector defined by the factory
-func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, namespace, collectorConfig string, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, reader client.Reader, namespace, collectorConfig string, owner metav1.OwnerReference) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
 	if f.CollectorType == logging.LogCollectionTypeFluentd {
 		collectorConfigMap := runtime.NewConfigMap(
@@ -28,7 +28,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			f.CommonLabelInitializer,
 		)
 		utils.AddOwnerRefToObject(collectorConfigMap, owner)
-		return reconcile.Configmap(k8sClient, collectorConfigMap)
+		return reconcile.Configmap(k8sClient, reader, collectorConfigMap)
 	} else if f.CollectorType == logging.LogCollectionTypeVector {
 		secret := runtime.NewSecret(
 			namespace,

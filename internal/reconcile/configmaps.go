@@ -13,11 +13,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Configmap(k8Client client.Client, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
+func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &corev1.ConfigMap{}
 		key := client.ObjectKeyFromObject(configMap)
-		if err := k8Client.Get(context.TODO(), key, current); err != nil {
+		if err := reader.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				return k8Client.Create(context.TODO(), configMap)
 			}

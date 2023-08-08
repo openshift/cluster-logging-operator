@@ -45,7 +45,7 @@ var _ = Describe("ReconcileDashboards", func() {
 			setup(nil)
 		})
 		It("should create a new dashboard configmap", func() {
-			Expect(ReconcileDashboards(fakeClient, collectionSpec)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient, collectionSpec)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})
@@ -56,13 +56,13 @@ var _ = Describe("ReconcileDashboards", func() {
 			initial := newDashboardConfigMap(collectionType)
 			initial.Labels[DashboardHashName] = "abc"
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, collectionSpec)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient, collectionSpec)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp), "Exp the configmap to be updated")
 		})
 
 		It("should do nothing to the configmap when the dashboard is the same", func() {
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, collectionSpec)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient, collectionSpec)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})

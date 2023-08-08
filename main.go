@@ -133,6 +133,7 @@ func main() {
 	}
 	if err = (&forwarding.ReconcileForwarder{
 		Client:         mgr.GetClient(),
+		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("clusterlogforwarder"),
 		ClusterVersion: clusterVersion.Status.Desired.Version,

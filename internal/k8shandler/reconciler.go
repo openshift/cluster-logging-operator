@@ -23,11 +23,12 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
-func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) (err error) {
+func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) (err error) {
+	log.V(3).Info("Reconciling", "ClusterLogging", cl, "ClusterLogForwarder", forwarder)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Cluster:        cl,
-		CollectionSpec: cl.Spec.Collection,
 		Client:         requestClient,
+		Reader:         reader,
 		EventRecorder:  r,
 		Forwarder:      forwarder,
 		ClusterVersion: clusterVersion,
@@ -88,7 +89,7 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 	}
 
 	// Reconcile metrics Dashboards
-	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, clusterLoggingRequest.Cluster.Spec.Collection); err != nil {
+	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, clusterLoggingRequest.Reader, clusterLoggingRequest.Cluster.Spec.Collection); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}

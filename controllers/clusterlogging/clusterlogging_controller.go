@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -108,7 +109,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	resourceNames := factory.GenerateResourceNames(clf)
-	if err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
+	if err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 		instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("error reconciling clusterlogging instance: %v", err))
@@ -167,7 +168,7 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.DaemonSet{}).
-		Owns(&v1.ServiceMonitor{}).
+		Owns(&monitoringv1.ServiceMonitor{}).
 		Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 				if obj.GetNamespace() == constants.OpenshiftNS && obj.GetLabels()["component"] == constants.ElasticsearchName {

@@ -28,35 +28,16 @@ import (
 
 // CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
-	if !clusterRequest.isManaged() {
-		return nil
-	}
-	cluster := clusterRequest.Cluster
-	collectorConfig := ""
-	collectorConfHash := ""
-
-	// Default to vector collector type
-	collectionSpec := &logging.CollectionSpec{
-		Type: logging.LogCollectionTypeVector,
-	}
 	log.V(9).Info("Entering CreateOrUpdateCollection")
 	defer func() {
 		log.V(9).Info("Leaving CreateOrUpdateCollection")
 	}()
 
-	if cluster != nil && clusterRequest.Forwarder.Name == constants.SingletonName {
-		if cluster.Spec.Collection != nil && cluster.Spec.Collection.Type.IsSupportedCollector() {
-			// Change collector type dependent on clusterLogging
-			collectionSpec = cluster.Spec.Collection
-		} else {
-			if err = clusterRequest.RemoveServiceAccount(); err != nil {
-				return
-			}
-			if err = clusterRequest.removeCollector(); err != nil {
-				return
-			}
-		}
+	if !clusterRequest.isManaged() {
+		return nil
 	}
+	collectorConfig := ""
+	collectorConfHash := ""
 
 	// LOG-2620: containers violate PodSecurity
 	if err = clusterRequest.addSecurityLabelsToNamespace(); err != nil {
@@ -106,7 +87,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return
 	}
 
-	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *collectionSpec, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames)
+	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames)
 
 	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
@@ -118,7 +99,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err = factory.ReconcileCollectorConfig(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, collectorConfig, clusterRequest.ResourceOwner); err != nil {
+	if err = factory.ReconcileCollectorConfig(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Reader, clusterRequest.Forwarder.Namespace, collectorConfig, clusterRequest.ResourceOwner); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}
@@ -132,7 +113,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err = clusterRequest.UpdateCollectorStatus(collectionSpec.Type); err != nil {
+	if err = clusterRequest.UpdateCollectorStatus(clusterRequest.Cluster.Spec.Collection.Type); err != nil {
 		log.V(9).Error(err, "unable to update status for the collector")
 	}
 
@@ -240,6 +221,9 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() error {
+	if clusterRequest.Forwarder.Namespace != constants.OpenshiftNS {
+		return nil
+	}
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterRequest.Forwarder.Namespace,

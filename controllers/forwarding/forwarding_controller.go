@@ -36,7 +36,13 @@ var _ reconcile.Reconciler = &ReconcileForwarder{}
 type ReconcileForwarder struct {
 	// This Client, initialized using mgr.Client() above, is a split Client
 	// that reads objects from the cache and writes to the apiserver
-	Client   client.Client
+	Client client.Client
+
+	// Reader is an initialized client.Reader that reads objects directly from the apiserver
+	// instead of the cache. Useful for cases where need to read/write to a namespace other than
+	// the deployed namespace (e.g. openshift-config-managed)
+	Reader client.Reader
+
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
@@ -51,7 +57,7 @@ type ReconcileForwarder struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
+	log.V(3).Info("clusterlogforwarder-controller fetching LF instance", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
 	r.Recorder.Event(loggingruntime.NewClusterLogForwarder(request.NamespacedName.Namespace, request.NamespacedName.Name), corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 
 	telemetry.SetCLFMetrics(0) // Cancel previous info metric
@@ -86,7 +92,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
 	resourceNames := factory.GenerateResourceNames(instance)
-	reconcileErr := k8shandler.Reconcile(cl, &instance, r.Client, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames)
+	reconcileErr := k8shandler.Reconcile(cl, &instance, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)

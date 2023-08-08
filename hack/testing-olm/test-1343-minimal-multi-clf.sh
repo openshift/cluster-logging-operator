@@ -58,7 +58,7 @@ os::cmd::expect_success "oc create ns $LOGGING_NS"
 
 # deploy ClusterLogForwarder
 os::cmd::expect_success "oc -n $LOGGING_NS create sa mine"
-os::cmd::expect_success "oc -n $LOGGING_NS create rolebinding collect-application-logs --clusterrole=collect-application-logs --serviceaccount=$LOGGING_NS:mine"
+os::cmd::expect_success "oc -n $LOGGING_NS create clusterrolebinding collect-application-logs --clusterrole=collect-application-logs --serviceaccount=$LOGGING_NS:mine"
 os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/clusterlogforwarder/cr.yaml"
 
 assert_collector_exist my-collector

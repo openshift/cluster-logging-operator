@@ -18,6 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	//allNamesapces is used for determining cluster scoped bindings
+	allNamespaces = ""
+)
+
 func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
 	// Do not need to validate SA if legacy forwarder
 	if clf.Name == constants.SingletonName && clf.Namespace == constants.OpenshiftNS {
@@ -70,7 +75,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 	var failedInputs []string
 	for _, input := range inputs.List() {
 		log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] validating %q for user: %v", inputs, username))
-		sar := createSubjectAccessReview(username, clfNamespace, "collect", "logs", input, loggingv1.GroupVersion.Group)
+		sar := createSubjectAccessReview(username, allNamespaces, "collect", "logs", input, loggingv1.GroupVersion.Group)
 		if err = k8sClient.Create(context.TODO(), sar); err != nil {
 			return err
 		}

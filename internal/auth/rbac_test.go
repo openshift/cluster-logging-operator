@@ -1,9 +1,9 @@
-package collector_test
+package auth_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
+	auth "github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("NewMetaDataReaderClusterRoleBinding", func() {
 	It("should stub a well-formed clusterrolebinding", func() {
-		Expect(test.YAMLString(collector.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "cluster-logging-metadata-reader", "logcollector", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "cluster-logging-metadata-reader", "logcollector", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -34,7 +34,7 @@ subjects:
 
 var _ = Describe("ServiceAccount SCC Role & RoleBinding", func() {
 	It("should stub a well-formed role", func() {
-		Expect(test.YAMLString(collector.NewServiceAccountSCCRole(constants.OpenshiftNS, "scc", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRole(constants.OpenshiftNS, "scc", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -48,7 +48,7 @@ rules:
 - apiGroups:
     - security.openshift.io
   resourceNames:
-    - log-collector-scc
+    - logging-scc
   resources:
     - securitycontextconstraints
   verbs:
@@ -57,7 +57,7 @@ rules:
 	})
 
 	It("should stub a well-formed roleBinding", func() {
-		Expect(test.YAMLString(collector.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "scc", "customSA", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "scc", "customSA", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

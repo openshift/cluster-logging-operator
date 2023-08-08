@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -63,18 +64,23 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return
 	}
 
-	if err = reconcile.SecurityContextConstraints(clusterRequest.Client, collector.NewSCC()); err != nil {
+	// Remove legacy SecurityContextConstraint named `log-collector-scc` before reconciling a new one
+	if err = auth.RemoveSecurityContextConstraint(clusterRequest.Client, "log-collector-scc"); err != nil {
+		return
+	}
+
+	if err = reconcile.SecurityContextConstraints(clusterRequest.Client, auth.NewSCC()); err != nil {
 		log.V(9).Error(err, "reconcile.SecurityContextConstraints")
 		return err
 	}
 
-	if err = collector.ReconcileServiceAccount(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {
+	if err = auth.ReconcileServiceAccount(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {
 		log.V(9).Error(err, "collector.ReconcileServiceAccount")
 		return
 	}
 
 	// This also reconciles the ServiceAccount role and role bindings for the SCC
-	if err = collector.ReconcileRBAC(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {
+	if err = auth.ReconcileRBAC(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {
 		log.V(9).Error(err, "collector.ReconcileRBAC")
 		return
 	}

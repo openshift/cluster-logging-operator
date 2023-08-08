@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	configv1 "github.com/openshift/api/config/v1"
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	loggingv1a1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -68,9 +67,9 @@ func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 	return finalTolerations
 }
 
-func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, collectionType loggingv1.LogCollectionType, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
+func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
 	podSpec := NewPodSpec(exporter, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(name, namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, string(collectionType), *podSpec, visitors...)
+	ds := coreFactory.NewDaemonSet(name, namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, "", *podSpec, visitors...)
 	return ds
 }
 
@@ -79,7 +78,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(nodeSelector(exporter)),
 		PriorityClassName:             clusterLoggingPriorityClassName,
-		ServiceAccountName:            constants.CollectorServiceAccountName,
+		ServiceAccountName:            constants.LogfilesmetricexporterName,
 		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   tolerations(exporter),
 		Volumes: []v1.Volume{

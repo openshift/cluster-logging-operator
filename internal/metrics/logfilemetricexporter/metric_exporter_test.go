@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	securityv1 "github.com/openshift/api/security/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -25,7 +26,8 @@ import (
 var _ = Describe("Reconcile LogFileMetricExporter", func() {
 
 	defer GinkgoRecover()
-	_ = monitoringv1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	_ = monitoringv1.AddToScheme(scheme.Scheme)
+	_ = securityv1.AddToScheme(scheme.Scheme)
 
 	var (
 		cluster = &loggingv1.ClusterLogging{
@@ -96,7 +98,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		}
 
 		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, recorder, *cluster, utils.AsOwner(lfmeInstance))).To(Succeed())
+		Expect(Reconcile(lfmeInstance, reqClient, recorder, utils.AsOwner(lfmeInstance))).To(Succeed())
 
 		// Daemonset
 		// Get and check the daemonset

@@ -3,15 +3,10 @@ package logfilemetricsexporter
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"strings"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -22,10 +17,13 @@ import (
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -53,14 +51,6 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	telemetry.SetLFMEMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetLFMEMetrics(1) }()
 
-	clusterLogging, err := loader.FetchClusterLogging(r.Client, constants.OpenshiftNS, constants.SingletonName, false)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return ctrl.Result{}, fmt.Errorf("no ClusterLogging named instance")
-		}
-		return ctrl.Result{}, err
-	}
-
 	lfmeInstance := loggingruntime.NewLogFileMetricExporter(request.NamespacedName.Namespace, request.NamespacedName.Name)
 	r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, "ReconcilingLFMECR", "Reconciling Log File Metrics Exporter resource")
 
@@ -87,7 +77,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
 
-	reconcileErr := k8shandler.ReconcileForLogFileMetricExporter(clusterLogging, lfmeInstance, r.Client, r.Recorder, r.ClusterID, utils.AsOwner(lfmeInstance))
+	reconcileErr := k8shandler.ReconcileForLogFileMetricExporter(lfmeInstance, r.Client, r.Recorder, r.ClusterID, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
 		lfmeInstance.Status.Conditions.SetCondition(
@@ -128,10 +118,10 @@ func (r *ReconcileLogFileMetricExporter) updateStatus(instance *loggingv1alpha1.
 }
 
 func (r *ReconcileLogFileMetricExporter) SetupWithManager(mgr ctrl.Manager) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &loggingv1alpha1.LogFileMetricExporter{}}, &handler.EnqueueRequestForObject{})
-
-	return controllerBuilder.
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&loggingv1alpha1.LogFileMetricExporter{}).
+		Owns(&appsv1.DaemonSet{}).
+		Owns(&corev1.Service{}).
+		Owns(&monitoringv1.ServiceMonitor{}).
 		Complete(r)
 }

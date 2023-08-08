@@ -3,6 +3,7 @@ package collector
 import (
 	"path"
 
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	. "github.com/onsi/ginkgo"
@@ -53,7 +54,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 		It("should set a security context", func() {
 			Expect(collector.SecurityContext).To(Equal(&v1.SecurityContext{
 				Capabilities: &v1.Capabilities{
-					Drop: RequiredDropCapabilities,
+					Drop: auth.RequiredDropCapabilities,
 				},
 				SELinuxOptions: &v1.SELinuxOptions{
 					Type: "spc_t",

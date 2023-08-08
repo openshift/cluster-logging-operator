@@ -76,7 +76,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			recorder,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
 
 		// Check if daemonset is available
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -100,7 +100,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			recorder,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -128,7 +128,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			recorder,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -164,7 +164,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			recorder,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, cluster.Spec.Collection.Type, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())

@@ -1,4 +1,4 @@
-package collector
+package auth
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
-	security "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -18,27 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const sccName = "log-collector-scc"
-
-var (
-	RequiredDropCapabilities = []corev1.Capability{
-		"CHOWN",
-		"DAC_OVERRIDE",
-		"FSETID",
-		"FOWNER",
-		"SETGID",
-		"SETUID",
-		"SETPCAP",
-		"NET_BIND_SERVICE",
-		"KILL",
-	}
-
-	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
-)
-
-// ReconcileServiceAccount reconciles the serviceaccount specifically for a collector deployment
+// ReconcileServiceAccount reconciles the serviceaccount for collector or logfilemetricexporter
 func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
-	if namespace == constants.OpenshiftNS && resNames.ServiceAccount == constants.CollectorServiceAccountName {
+	if namespace == constants.OpenshiftNS && (resNames.ServiceAccount == constants.CollectorServiceAccountName || resNames.ServiceAccount == constants.LogfilesmetricexporterName) {
 		serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
 		utils.AddOwnerRefToObject(serviceAccount, owner)
 		serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
@@ -81,25 +62,4 @@ func reconcileServiceAccountTokenSecret(serviceAccount *corev1.ServiceAccount, k
 	}
 
 	return nil
-}
-
-func NewSCC() *security.SecurityContextConstraints {
-
-	scc := runtime.NewSCC(sccName)
-	scc.AllowPrivilegedContainer = false
-	scc.RequiredDropCapabilities = RequiredDropCapabilities
-	scc.AllowHostDirVolumePlugin = true
-	scc.Volumes = DesiredSCCVolumes
-	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
-	scc.AllowPrivilegeEscalation = utils.GetPtr(false)
-	scc.RunAsUser = security.RunAsUserStrategyOptions{
-		Type: security.RunAsUserStrategyRunAsAny,
-	}
-	scc.SELinuxContext = security.SELinuxContextStrategyOptions{
-		Type: security.SELinuxStrategyRunAsAny,
-	}
-	scc.ReadOnlyRootFilesystem = true
-	scc.ForbiddenSysctls = []string{"*"}
-	scc.SeccompProfiles = []string{"runtime/default"}
-	return scc
 }

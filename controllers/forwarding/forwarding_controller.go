@@ -3,6 +3,9 @@ package forwarding
 import (
 	"context"
 	"fmt"
+	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"strings"
 	"time"
 
@@ -83,7 +86,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
 	resourceNames := factory.GenerateResourceNames(instance)
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(&instance, cl, r.Client, r.Recorder, r.ClusterID, resourceNames)
+	reconcileErr := k8shandler.Reconcile(cl, &instance, r.Client, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
@@ -152,5 +155,14 @@ func (r *ReconcileForwarder) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
 	return controllerBuilder.
 		For(&logging.ClusterLogForwarder{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&appsv1.DaemonSet{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
+		Owns(&v1.ServiceMonitor{}).
 		Complete(r)
 }

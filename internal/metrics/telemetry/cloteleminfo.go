@@ -156,6 +156,18 @@ func SetCLMetrics(value float64) {
 		HealthStatus:  CLInfo.Get(HealthStatus)}).Set(value)
 }
 
+// CancelMetrics resets previous info metrics
+func CancelMetrics() {
+	SetCLFMetrics(0)
+	SetCLMetrics(0)
+	SetLFMEMetrics(0)
+}
+
+func UpdateMetrics() {
+	SetCLMetrics(1)
+	SetCLFMetrics(1)
+}
+
 func SetCLFMetrics(value float64) {
 	CLInfo := Data.CLInfo
 	CErrorCount := Data.CollectorErrorCount

@@ -19,7 +19,8 @@ import (
 
 type ClusterLoggingRequest struct {
 	Client client.Client
-	Reader client.Reader
+
+	CollectionSpec *logging.CollectionSpec
 
 	ClusterVersion string
 	//ClusterID is the unique identifier of the cluster in which the operator is deployed
@@ -39,27 +40,22 @@ type ClusterLoggingRequest struct {
 
 	// Owner of collector resources
 	ResourceOwner metav1.OwnerReference
-
-	CollectionSpec *logging.CollectionSpec
-}
-
-type ClusterLogForwarderVerifier struct {
-	VerifyOutputSecret func(output *logging.OutputSpec, conds logging.NamedConditions) bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {
 	return clusterRequest.Cluster != nil && clusterRequest.Cluster.Spec.LogStore != nil
 }
 
+func (clusterRequest *ClusterLoggingRequest) IsLegacyDeployment() bool {
+	return clusterRequest.Cluster != nil &&
+		clusterRequest.Cluster.Namespace == constants.OpenshiftNS &&
+		clusterRequest.Cluster.Name == constants.SingletonName
+}
+
 // true if equals "Managed" or empty
 func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged ||
 		clusterRequest.Cluster.Spec.ManagementState == ""
-}
-
-func (clusterRequest *ClusterLoggingRequest) Create(object client.Object) error {
-	err := clusterRequest.Client.Create(context.TODO(), object)
-	return err
 }
 
 // Update the runtime Object or return error

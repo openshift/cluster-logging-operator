@@ -28,7 +28,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			f.CommonLabelInitializer,
 		)
 		utils.AddOwnerRefToObject(collectorConfigMap, owner)
-		return reconcile.Configmap(k8sClient, k8sClient, collectorConfigMap)
+		return reconcile.Configmap(k8sClient, collectorConfigMap)
 	} else if f.CollectorType == logging.LogCollectionTypeVector {
 		secret := runtime.NewSecret(
 			namespace,

@@ -48,13 +48,13 @@ func newDashboardConfigMap(collectionType logging.LogCollectionType) *corev1.Con
 	return cm
 }
 
-func ReconcileDashboards(writer client.Writer, reader client.Reader, collection *logging.CollectionSpec) (err error) {
+func ReconcileDashboards(k8Client client.Client, collection *logging.CollectionSpec) (err error) {
 	collectionType := logging.LogCollectionTypeFluentd
 	if collection != nil {
 		collectionType = collection.Type
 	}
 	cm := newDashboardConfigMap(collectionType)
-	if err := reconcile.Configmap(writer, reader, cm, comparators.CompareLabels); err != nil {
+	if err := reconcile.Configmap(k8Client, cm, comparators.CompareLabels); err != nil {
 		return err
 	}
 

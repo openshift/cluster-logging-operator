@@ -20,8 +20,6 @@ import (
 type ClusterLoggingRequest struct {
 	Client client.Client
 
-	CollectionSpec *logging.CollectionSpec
-
 	ClusterVersion string
 	//ClusterID is the unique identifier of the cluster in which the operator is deployed
 	ClusterID string

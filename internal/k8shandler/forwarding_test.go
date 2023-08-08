@@ -50,6 +50,9 @@ var _ = DescribeTable("#generateCollectorConfig",
 			},
 			Spec: forwardSpec,
 		}
+		cluster.Spec.Collection = &logging.CollectionSpec{
+			Type: logging.LogCollectionTypeVector,
+		}
 		clusterRequest := &ClusterLoggingRequest{
 			Cluster: &cluster,
 			Forwarder: &logging.ClusterLogForwarder{
@@ -60,9 +63,6 @@ var _ = DescribeTable("#generateCollectorConfig",
 				Spec: forwardSpec,
 			},
 			ResourceNames: factory.GenerateResourceNames(*clf),
-			CollectionSpec: &logging.CollectionSpec{
-				Type: logging.LogCollectionTypeVector,
-			},
 		}
 
 		clusterRequest.Client = fake.NewFakeClient(clusterRequest.Cluster) //nolint
@@ -150,11 +150,15 @@ var _ = Describe("#generateCollectorConfig", func() {
 				},
 			}
 			clusterRequest := &ClusterLoggingRequest{
+				Cluster: &logging.ClusterLogging{
+					Spec: logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Type: logging.LogCollectionTypeVector,
+						},
+					},
+				},
 				Forwarder:     &clf,
 				ResourceNames: factory.GenerateResourceNames(clf),
-				CollectionSpec: &logging.CollectionSpec{
-					Type: logging.LogCollectionTypeVector,
-				},
 			}
 			clusterRequest.Forwarder.Spec = forwarderSpec
 			clusterRequest.Client = fake.NewFakeClient() //nolint

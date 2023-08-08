@@ -24,9 +24,9 @@ import (
 )
 
 func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) (err error) {
+	log.V(3).Info("Reconciling", "ClusterLogging", cl, "ClusterLogForwarder", forwarder)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Cluster:        cl,
-		CollectionSpec: cl.Spec.Collection,
 		Client:         requestClient,
 		EventRecorder:  r,
 		Forwarder:      forwarder,

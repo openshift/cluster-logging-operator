@@ -50,7 +50,7 @@ type ReconcileForwarder struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
+	log.V(3).Info("clusterlogforwarder-controller fetching LF instance", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
 	r.Recorder.Event(loggingruntime.NewClusterLogForwarder(request.NamespacedName.Namespace, request.NamespacedName.Name), corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 
 	telemetry.SetCLFMetrics(0) // Cancel previous info metric

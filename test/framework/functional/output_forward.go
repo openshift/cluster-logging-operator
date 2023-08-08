@@ -81,65 +81,6 @@ const (
 <match **>
   @type stdout
 </match>`
-
-	UnsecureFluentConfBenchmark = `
-<system>
-  log_level debug
-</system>
-<source>
-  @type forward
-</source>
-
-<filter kubernetes.** var.log.containers.**>
-  @type record_transformer
-  enable_ruby
-  <record>
-    epoc_out ${Time.now.to_f}
-    epoc_in ${Time.parse(record['@timestamp']).to_f}
-    level info
-  </record>
-</filter>
-
-<match kubernetes.** var.log.containers.**>
-  @type file
-  append true
-  path /tmp/${tag}
-  <format>
-    @type json
-  </format>
-  <buffer tag>
-    chunk_limit_size 12Gb
-    flush_mode immediate
-    flush_thread_count 2
-  </buffer>
-</match>
-
-<filter linux-audit.log**>
-  @type parser
-  key_name @timestamp
-  reserve_data true
-  <parse>
-	@type regexp
-	expression (?<time>[^\]]*)
-    time_type string
-	time_key time
-    time_format %Y-%m-%dT%H:%M:%S.%N%z
-  </parse>
-</filter>
-
-<match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
-	@type file
-	path /tmp/audit.logs
-	append true
-	symlink_path /tmp/audit-logs
-	<format>
-		@type json
-	</format>
-</match>
-	
-<match **>
-  @type stdout
-</match>`
 )
 
 func (f *CollectorFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
@@ -169,8 +110,4 @@ func (f *CollectorFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, o
 	}
 	config := strings.Replace(unsecureFluentConf, defaultFluentdforwardPort, outURL.Port(), 1)
 	return f.addForwardOutputWithConf(b, output, config)
-}
-
-func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.addForwardOutputWithConf(b, output, UnsecureFluentConfBenchmark)
 }

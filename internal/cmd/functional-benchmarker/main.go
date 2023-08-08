@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -19,7 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/runners"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test"
 )
 
 // HACK - This command is for development use only
@@ -83,9 +81,15 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	}
 	statistics := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 
+	fetchContainerLogs(runner, artifactDir)
+
+	return metrics, statistics, runner.Config(), nil
+}
+
+func fetchContainerLogs(runner runners.Runner, artifactDir string) {
 	var err error
 	var out string
-	for _, container := range []string{constants.CollectorName, logging.OutputTypeFluentdForward} {
+	for _, container := range []string{constants.CollectorName, logging.OutputTypeHttp} {
 
 		if out, err = oc.Logs().WithNamespace(runner.Namespace()).WithPod(runner.Pod()).WithContainer(strings.ToLower(container)).Run(); err == nil {
 
@@ -98,32 +102,15 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 			log.Error(err, "Error retrieving collector logs from container", "container")
 		}
 	}
-
-	return metrics, statistics, runner.Config(), nil
 }
 
 func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime, endTime time.Time) *stats.Statistics {
-	raw, err := runner.ReadApplicationLogs()
+	logs, err := runner.ReadApplicationLogs()
 	if err != nil {
 		log.Error(err, "Error reading logs")
 		return &stats.Statistics{}
 	}
-	log.V(4).Info("Raw logs", "raw", raw)
-	logs := stats.PerfLogs{}
-	for _, entry := range raw {
-		perflog := stats.PerfLog{}
-		err = json.Unmarshal([]byte(entry), &perflog)
-		if err != nil {
-			log.Error(err, "Error parsing log entry. skipping", "raw", entry)
-		} else {
-			logs = append(logs, perflog)
-		}
-	}
-
 	log.V(4).Info("Parsed logs", "parsed", logs)
-	if sample && len(logs) > 0 {
-		fmt.Printf("Sample:\n%s\n", test.JSONString(logs[0]))
-	}
 	return stats.NewStatisics(logs, msgSize, endTime.Sub(startTime))
 }
 

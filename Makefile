@@ -110,7 +110,7 @@ openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
 .PHONY: build
-build: bin/cluster-logging-operator build-functional-e2e-tests
+build: bin/cluster-logging-operator
 
 .PHONY: build-functional-e2e-tests
 build-functional-e2e-tests:

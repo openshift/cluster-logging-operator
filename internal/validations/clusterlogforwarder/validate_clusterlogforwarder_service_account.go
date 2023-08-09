@@ -81,7 +81,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 		}
 		// If input is spec'd but SA isn't authorized to collect it, fail validation
 		if !sar.Status.Allowed {
-			log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] Not authorized to collect %s-logs", input))
+			log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] %s %s-logs", errors.NotAuthorizedToCollect, input))
 			failedInputs = append(failedInputs, input)
 		}
 	}

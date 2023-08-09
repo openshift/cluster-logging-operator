@@ -3,6 +3,7 @@ package forwarding
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -30,7 +31,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var _ reconcile.Reconciler = &ReconcileForwarder{}
+var (
+	_ reconcile.Reconciler = &ReconcileForwarder{}
+
+	// periodicRequeue to ensure CLF collection permissions are still valid.  We can not watch
+	// ClusterRoleBindings since there is no effective way to associate known CLF with a given binding to
+	// avoid needing to reconcile all CRB events
+	periodicRequeue = ctrl.Result{
+		RequeueAfter: time.Minute * 5,
+	}
+)
 
 // ReconcileForwarder reconciles a ClusterLogForwarder object
 type ReconcileForwarder struct {
@@ -75,6 +85,12 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	}
 	if err != nil {
 		log.V(3).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())
+		if validationerrors.MustUndeployCollector(err) {
+			name := factory.GenerateResourceNames(instance).DaemonSetName()
+			if deleteErr := collector.Remove(r.Client, instance.Namespace, name); deleteErr != nil {
+				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
+			}
+		}
 		if validationerrors.IsValidationError(err) {
 			condition := logging.CondInvalid("validation failed: %v", err)
 			instance.Status.Conditions.SetCondition(condition)
@@ -115,7 +131,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		return result, err
 	}
 
-	return ctrl.Result{}, reconcileErr
+	return periodicRequeue, reconcileErr
 }
 
 // fetchOrStubClusterLogging retrieves ClusterLogging as one of:
@@ -154,7 +170,7 @@ func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder)
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	return periodicRequeue, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

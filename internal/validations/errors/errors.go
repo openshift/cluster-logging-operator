@@ -3,6 +3,11 @@ package errors
 import (
 	"fmt"
 	"reflect"
+	"strings"
+)
+
+const (
+	NotAuthorizedToCollect = "Not authorized to collect"
 )
 
 type ValidationError struct {
@@ -24,4 +29,8 @@ func NewValidationError(msg string, args ...interface{}) *ValidationError {
 
 func IsValidationError(err error) bool {
 	return reflect.TypeOf(err).AssignableTo(validationErrorType)
+}
+
+func MustUndeployCollector(err error) bool {
+	return !strings.Contains(err.Error(), NotAuthorizedToCollect)
 }

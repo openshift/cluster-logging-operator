@@ -449,6 +449,10 @@ type FluentdInFileSpec struct {
 	//ReadLinesLimit represents the number of lines to read with each I/O operation
 	// +optional
 	ReadLinesLimit int `json:"readLinesLimit"`
+
+	//OpenOnEveryUpdate Opens and closes the file on every update instead of leaving it open until it gets rotated.
+	// +optional
+	OpenOnEveryUpdate bool `json:"openOnEveryUpdate"`
 }
 
 // FluentdBufferSpec represents a subset of fluentd buffer parameters to tune

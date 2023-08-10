@@ -441,6 +441,7 @@ https://docs.fluentd.org/input/tail#parameters
 |======================
 |Property|Type|Description
 
+|openOnEveryUpdate|bool|  *(optional)* OpenOnEveryUpdate Opens and closes the file on every update instead of leaving it open until it gets rotated.
 |readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 
@@ -712,6 +713,7 @@ https://docs.fluentd.org/input/tail#parameters
 |======================
 |Property|Type|Description
 
+|openOnEveryUpdate|bool|  *(optional)* OpenOnEveryUpdate Opens and closes the file on every update instead of leaving it open until it gets rotated.
 |readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 

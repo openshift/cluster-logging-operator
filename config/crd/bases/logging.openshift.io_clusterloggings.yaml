@@ -141,6 +141,11 @@ spec:
                           all fluentd in-tail inputs. \n For general parameters refer
                           to: https://docs.fluentd.org/input/tail#parameters"
                         properties:
+                          openOnEveryUpdate:
+                            description: OpenOnEveryUpdate Opens and closes the file
+                              on every update instead of leaving it open until it
+                              gets rotated.
+                            type: boolean
                           readLinesLimit:
                             description: ReadLinesLimit represents the number of lines
                               to read with each I/O operation
@@ -515,6 +520,11 @@ spec:
                           all fluentd in-tail inputs. \n For general parameters refer
                           to: https://docs.fluentd.org/input/tail#parameters"
                         properties:
+                          openOnEveryUpdate:
+                            description: OpenOnEveryUpdate Opens and closes the file
+                              on every update instead of leaving it open until it
+                              gets rotated.
+                            type: boolean
                           readLinesLimit:
                             description: ReadLinesLimit represents the number of lines
                               to read with each I/O operation

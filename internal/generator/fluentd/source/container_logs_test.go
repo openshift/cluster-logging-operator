@@ -27,4 +27,13 @@ var _ = Describe("ContainerLogs", func() {
 			Expect(conf.ReadLinesLimit()).To(Equal("\n  read_lines_limit 12"))
 		})
 	})
+	Context("#OpenOnEveryUpdate", func() {
+		It("should return nothing when there are no InFile tuning", func() {
+			Expect(conf.OpenOnEveryUpdate()).To(BeEmpty())
+		})
+		It("should return nothing when the InFile tuning is a negative number", func() {
+			conf.Tunings = &logging.FluentdInFileSpec{OpenOnEveryUpdate: true}
+			Expect(conf.OpenOnEveryUpdate()).To(Equal("\n  open_on_every_update true"))
+		})
+	})
 })

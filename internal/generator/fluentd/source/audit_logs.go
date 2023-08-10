@@ -19,6 +19,13 @@ func (cl AuditLog) ReadLinesLimit() string {
 	return "\n  read_lines_limit " + strconv.Itoa(cl.Tunings.ReadLinesLimit)
 }
 
+func (cl AuditLog) OpenOnEveryUpdate() string {
+	if cl.Tunings == nil || !cl.Tunings.OpenOnEveryUpdate {
+		return ""
+	}
+	return "\n  open_on_every_update true"
+}
+
 const HostAuditLogTemplate = `
 {{define "inputSourceHostAuditTemplate" -}}
 # {{.Desc}}
@@ -30,6 +37,7 @@ const HostAuditLogTemplate = `
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
   follow_inodes true
   {{- .ReadLinesLimit }}
+  {{- .OpenOnEveryUpdate }}
   tag linux-audit.log
   <parse>
     @type viaq_host_audit

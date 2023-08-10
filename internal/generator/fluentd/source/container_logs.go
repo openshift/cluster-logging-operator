@@ -22,6 +22,13 @@ func (cl ContainerLogs) ReadLinesLimit() string {
 	return "\n  read_lines_limit " + strconv.Itoa(cl.Tunings.ReadLinesLimit)
 }
 
+func (cl ContainerLogs) OpenOnEveryUpdate() string {
+	if cl.Tunings == nil || !cl.Tunings.OpenOnEveryUpdate {
+		return ""
+	}
+	return "\n  open_on_every_update true"
+}
+
 func (cl ContainerLogs) Name() string {
 	return "inputContainerSourceTemplate"
 }
@@ -41,6 +48,7 @@ func (cl ContainerLogs) Template() string {
   tag kubernetes.*
   read_from_head "true"
   {{- .ReadLinesLimit }}
+  {{- .OpenOnEveryUpdate }}
   skip_refresh_on_startup true
   @label @{{.OutLabel}}
   <parse>

@@ -28,7 +28,6 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,9 +79,6 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			if err := metrics.RemoveDashboardConfigMap(r.Client); err != nil && !errors.IsNotFound(err) {
-				log.V(1).Error(err, "error deleting grafana configmap")
-			}
 			return ctrl.Result{}, nil
 		}
 		if validationerrors.IsValidationError(err) {
@@ -126,13 +122,6 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 }
 
 func removeClusterLogging(k8Client client.Client, removeFinalizer func(string) error) {
-	// Request object not found, could have been deleted after reconcile request.
-	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-	// Return and don't requeue
-	if err := metrics.RemoveDashboardConfigMap(k8Client); err != nil && !errors.IsNotFound(err) {
-		log.V(1).Error(err, "error deleting grafana configmap")
-	}
-
 	// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
 	if err := lokistack.RemoveRbac(k8Client, removeFinalizer); err != nil {
 		log.Error(err, "Error removing RBAC for accessing LokiStack.")

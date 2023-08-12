@@ -240,54 +240,6 @@ var _ = Describe("Reconciling", func() {
 			})
 		})
 
-		Context("when creating prometheus rule for collector", func() {
-			BeforeEach(func() {
-				client = fake.NewFakeClient( //nolint
-					cluster,
-					fluentdSecret,
-					fluentdCABundle,
-					namespace,
-				)
-				clusterRequest = &ClusterLoggingRequest{
-					Client:        client,
-					Cluster:       cluster,
-					EventRecorder: record.NewFakeRecorder(100),
-					Forwarder: &loggingv1.ClusterLogForwarder{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      constants.SingletonName,
-							Namespace: constants.OpenshiftNS,
-						},
-					},
-					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
-					ResourceOwner:  utils.AsOwner(cluster),
-					CollectionSpec: cluster.Spec.Collection,
-				}
-				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
-				clusterRequest.Forwarder.Spec = spec
-			})
-
-			It("a fluentd collector should create the logging_collector alerts", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
-
-				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
-				rule := &monitoringv1.PrometheusRule{}
-				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
-				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_collector.alerts"))
-				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("CollectorNodeDown"))
-			})
-			It("a vector collector should create the logging_collector alerts", func() {
-				// Set collector to vector
-				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
-				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
-
-				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
-				rule := &monitoringv1.PrometheusRule{}
-				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
-				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_collector.alerts"))
-				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("CollectorNodeDown"))
-			})
-		})
 		Context("when removing collector", func() {
 			BeforeEach(func() {
 				client = fake.NewFakeClient( //nolint

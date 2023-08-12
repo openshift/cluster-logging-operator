@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: collector
+spec:
+  groups:
+  - name: logging_collector.alerts
+    rules:
+    - alert: CollectorNodeDown
+      annotations:
+        message: Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod
+          }} collector component for more than 10m.
+        summary: Collector cannot be scraped
+      expr: |
+        up{app_kubernetes_io_component = "collector", app_kubernetes_io_part_of = "cluster-logging"} == 0
+      for: 10m
+      labels:
+        service: collector
+        severity: critical
+    - alert: CollectorHighErrorRate
+      annotations:
+        message: '{{ $value }}% of records have resulted in an error by {{ $labels.namespace
+          }}/{{ $labels.pod }} collector component.'
+        summary: '{{ $labels.namespace }}/{{ $labels.pod }} collector component errors
+          are high'
+      expr: |
+        100 * (
+            collector:log_num_errors:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
+          /
+            collector:received_events:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
+          ) > 0.001
+      for: 15m
+      labels:
+        service: collector
+        severity: critical
+    - alert: CollectorVeryHighErrorRate
+      annotations:
+        message: '{{ $value }}% of records have resulted in an error by {{ $labels.namespace
+          }}/{{ $labels.pod }} collector component.'
+        summary: '{{ $labels.namespace }}/{{ $labels.pod }} collector component errors
+          are very high'
+      expr: |
+        100 * (
+            collector:log_num_errors:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
+          /
+            collector:received_events:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
+          ) > 0.05
+      for: 15m
+      labels:
+        service: collector
+        severity: critical
+    - alert: FluentdQueueLengthIncreasing
+      annotations:
+        message: For the last hour, fluentd {{ $labels.pod }} output '{{ $labels.plugin_id
+          }}' average buffer queue length has increased continuously.
+        summary: Fluentd pod {{ $labels.pod }} is unable to keep up with traffic over
+          time for forwarder output {{ $labels.plugin_id }}.
+      expr: |
+        sum by (pod,plugin_id) ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
+      for: 1h
+      labels:
+        service: collector
+        severity: Warning
+  - name: logging_clusterlogging_telemetry.rules
+    rules:
+    - expr: |
+        sum by(cluster)(log_collected_bytes_total)
+      record: cluster:log_collected_bytes_total:sum
+    - expr: |
+        sum by(cluster)(log_logged_bytes_total)
+      record: cluster:log_logged_bytes_total:sum
+    - expr: |
+        sum by(pod, namespace, app_kubernetes_io_part_of)(rate(vector_component_errors_total[2m])) or sum by(pod, namespace, app_kubernetes_io_part_of)(rate(fluentd_output_status_num_errors[2m]))
+      record: collector:log_num_errors:sum_rate
+    - expr: |
+        sum by(pod, namespace, app_kubernetes_io_part_of)(rate(vector_component_received_events_total[2m])) or sum by(pod, namespace, app_kubernetes_io_part_of)(rate(fluentd_output_status_emit_records[2m]))
+      record: collector:received_events:sum_rate

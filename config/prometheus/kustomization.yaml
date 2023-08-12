@@ -1,3 +1,4 @@
 resources:
 - servicemonitor.yaml
 - service.yaml
+- collector_alerts.yaml

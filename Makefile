@@ -96,6 +96,9 @@ ci-check: check
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
 
+bin/forwarder-object-generator: force
+	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-object-generator
+
 bin/functional-benchmarker: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/functional-benchmarker
 

@@ -28,7 +28,10 @@ func InitLogger(component string) logr.Logger {
 
 		verbosity = envVerbosity
 	}
+	return InitLoggerWithVerbosity(component, verbosity)
+}
 
+func InitLoggerWithVerbosity(component string, verbosity int) logr.Logger {
 	logger := log.NewLogger(component, log.WithVerbosity(verbosity))
 	static.SetLogger(logger)
 	return logger

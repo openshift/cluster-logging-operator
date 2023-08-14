@@ -49,8 +49,7 @@ trap cleanup exit
 
 if [ "${DO_SETUP:-false}" == "true" ] ; then
   os::log::info "Deploying cluster-logging-operator"
-  ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
-  ${repo_dir}/olm_deploy/scripts/operator-install.sh
+  ${repo_dir}/make deploy
 fi
 
 # Enable console plugin

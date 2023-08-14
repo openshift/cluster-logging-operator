@@ -216,20 +216,9 @@ deploy-image: .target/image
 	hack/deploy-image.sh
 
 .PHONY: deploy
-deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
-
-.PHONY: install
-install:
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
-	$(MAKE) cluster-logging-operator-install
-
-.PHONY: deploy-catalog
-deploy-catalog:
-	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
-	$(MAKE) cluster-logging-catalog-build
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
-	$(MAKE) cluster-logging-catalog-deploy
+deploy:  deploy-image deploy-elasticsearch-operator
+	$(MAKE) OVERLAY=config/overlays/stable deploy-bundle
+	$(MAKE) OVERLAY=config/overlays/stable run-bundle
 
 .PHONY: deploy-elasticsearch-operator
 deploy-elasticsearch-operator:
@@ -337,7 +326,7 @@ deploy-bundle: bundle bundle.Dockerfile
 	podman push --tls-verify=false ${BUNDLE_TAG}
 	@echo "To run the bundle without this Makefile:"
 	@echo "    oc create ns $(NAMESPACE)"
-	@echo "    run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG)"
+	@echo "    run bundle -n $(NAMESPACE) --install-mode AllNamespaces $(BUNDLE_TAG)"
 	@touch $@
 
 .PHONY: clean-bundle
@@ -354,7 +343,7 @@ namespace:
 .PHONY: run-bundle
 run-bundle: namespace $(OPERATOR_SDK) ## Run the overlay bundle image, assumes it has been pushed
 	$(OPERATOR_SDK) cleanup --delete-all cluster-logging || true
-	$(WATCH_EVENTS)	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG); $(WAIT_FOR_OPERATOR)
+	$(WATCH_EVENTS)	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode AllNamespaces $(BUNDLE_TAG); $(WAIT_FOR_OPERATOR)
 
 .PHONY: apply
 apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.
@@ -380,13 +369,10 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 test-e2e-clo-metric:
 	test/e2e/telemetry/clometrics_test.sh
 
-.PHONY: test-svt
-test-svt:
-	hack/svt/test-svt.sh
-
 .PHONY: undeploy
 undeploy:
-	hack/undeploy.sh
+	$(OPERATOR_SDK) cleanup --delete-all cluster-logging
+	oc delete namespace $(NAMESPACE)
 
 .PHONY: redeploy
 redeploy:
@@ -395,40 +381,3 @@ redeploy:
 
 .PHONY: undeploy-all
 undeploy-all: undeploy undeploy-elasticsearch-operator
-
-.PHONY: cluster-logging-catalog
-cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
-
-.PHONY: cluster-logging-cleanup
-cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
-
-.PHONY: cluster-logging-catalog-build
-# builds an operator-registry image containing the cluster-logging operator
-cluster-logging-catalog-build: .target/cluster-logging-catalog-build
-.target/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
-	olm_deploy/scripts/catalog-build.sh
-	touch $@
-
-.PHONY: cluster-logging-catalog-deploy
-# deploys the operator registry image and creates a catalogsource referencing it
-cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
-	olm_deploy/scripts/catalog-deploy.sh
-
-.PHONY: cluster-logging-catalog-uninstall
-# deletes the catalogsource and catalog namespace
-cluster-logging-catalog-uninstall:
-	olm_deploy/scripts/catalog-uninstall.sh
-
-.PHONY: cluster-logging-operator-install
-# installs the cluster-logging operator from the deployed operator-registry/catalogsource.
-cluster-logging-operator-install:
-	olm_deploy/scripts/operator-install.sh
-
-.PHONY: cluster-logging-operator-uninstall
-# uninstalls the cluster-logging operator
-cluster-logging-operator-uninstall:
-	olm_deploy/scripts/operator-uninstall.sh
-
-.PHONY: gen-dockerfiles
-gen-dockerfiles:
-	./hack/generate-dockerfile-from-midstream > Dockerfile

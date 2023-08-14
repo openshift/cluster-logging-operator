@@ -30,8 +30,7 @@ cleanup(){
   runtime="$(($end_seconds - $start_seconds))s"
 
   if [ "${DO_CLEANUP:-false}" == "true" ] ; then
-    ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-    ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+    ${repo_dir}/make deploy
   fi
 
   set -e
@@ -50,8 +49,7 @@ if [ "${DO_SETUP:-false}" == "true" ] ; then
   fi
 
   os::log::info "Deploying cluster-logging-operator"
-  ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
-  ${repo_dir}/olm_deploy/scripts/operator-install.sh
+  ${repo_dir}/make deploy
 fi
 
 reset_logging(){

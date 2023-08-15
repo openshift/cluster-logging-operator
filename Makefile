@@ -315,8 +315,8 @@ endif
 .PHONY: bundle
 bundle: $(GEN_TIMESTAMP) $(KUSTOMIZE) $(find config -name *.yaml) ## Generate operator bundle.
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	@@if [ -f $(OVERLAY)/patch ] ; then $(OVERLAY)/patch ; fi
 	$(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	@@if [ -f $(OVERLAY)/patch ] ; then $(OVERLAY)/patch ; fi
 	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 	$(OPERATOR_SDK) bundle validate ./bundle
 	@touch $@

@@ -49,12 +49,12 @@ if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
 fi
 
 os::log::info "Deploying cluster-logging-operator"
-${repo_dir}/make deploy
+${repo_dir}/make OVERLAY=./config/overlays/ci deploy
 
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
-  if [ -n $INCLUDES ] ; then
+  if [ -n "${INCLUDES}" ] ; then
     if ! echo $test | grep -P -q "$INCLUDES" ; then
       os::log::info "==============================================================="
 	    os::log::info "excluding e2e $test "

@@ -1,13 +1,9 @@
-#/bin/bash
-
-declare -A images=( /
- ["vector"]=${IMAGE_LOGGING_VECTOR} /
- ["fluentd"]=${IMAGE_LOGGING_FLUENTD} /
- ["log-file-metric-exporter"]=${IMAGE_LOG_FILE_METRIC_EXPORTER} /
- ["logging-view-plugin"]=${IMAGE_LOGGING_CONSOLE_PLUGIN} /
- )
-
-for i in "${!images[@]}" ; do
-  image="quay.io/openshift-logging/${$i}:ci"
-  sed -i "s/$image/${images[$i]}/g" ../../../bundle/manifests/clusterlogging.clusterserviceversion.yaml
+#!/bin/bash
+repo_dir="$(dirname $0)/../../.."
+declare -A images=(["vector"]=${IMAGE_LOGGING_VECTOR} ["fluentd"]=${IMAGE_LOGGING_FLUENTD} ["log-file-metric-exporter"]=${IMAGE_LOG_FILE_METRIC_EXPORTER} ["logging-view-plugin"]=${IMAGE_LOGGING_CONSOLE_PLUGIN})
+for i in ${!images[@]} ; do
+  image="quay\.io\/openshift-logging\/${i}\:ci"
+  if [[ ! -z "${images[$i]" ] ; then
+    sed "s|$image|${images[$i]}|g" $repo_dir/bundle/manifests/clusterlogging.clusterserviceversion.yaml
+  fi
 done

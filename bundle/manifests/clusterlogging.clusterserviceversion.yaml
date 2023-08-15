@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2023-08-03T18:11:24Z"
+    createdAt: "2023-08-14T21:30:51Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     olm.skipRange: '>=5.6.0-0 <5.8.0'
@@ -136,7 +136,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v5.8.0
+  name: clusterlogging.v5.8.0-preview.1
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
@@ -512,6 +512,16 @@ spec:
               - command:
                 - cluster-logging-operator
                 env:
+                - name: RELATED_IMAGE_VECTOR
+                  value: quay.io/openshift-logging/vector:ci
+                - name: RELATED_IMAGE_FLUENTD
+                  value: quay.io/openshift-logging/fluentd:ci
+                - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
+                  value: quay.io/openshift-logging/log-file-metric-exporter:ci
+                - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
+                  value: quay.io/openshift-logging/logging-view-plugin:ci
+                - name: OPERATOR_NAME
+                  value: cluster-logging-operator
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -520,17 +530,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: cluster-logging-operator
-                - name: RELATED_IMAGE_VECTOR
-                  value: quay.io/openshift-logging/vector:latest
-                - name: RELATED_IMAGE_FLUENTD
-                  value: quay.io/openshift-logging/fluentd:5.8.0
-                - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
-                  value: quay.io/openshift-logging/log-file-metric-exporter:latest
-                - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-                  value: quay.io/openshift-logging/logging-view-plugin:5.8
-                image: quay.io/openshift-logging/cluster-logging-operator:latest
+                image: quay.io/openshift-logging/cluster-logging-operator:5.8.0-preview.1
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
                 resources: {}
@@ -647,12 +647,12 @@ spec:
   provider:
     name: Red Hat, Inc
   relatedImages:
-  - image: quay.io/openshift-logging/vector:latest
+  - image: quay.io/openshift-logging/vector:ci
     name: vector
-  - image: quay.io/openshift-logging/fluentd:5.8.0
+  - image: quay.io/openshift-logging/fluentd:ci
     name: fluentd
-  - image: quay.io/openshift-logging/log-file-metric-exporter:latest
+  - image: quay.io/openshift-logging/log-file-metric-exporter:ci
     name: log-file-metric-exporter
-  - image: quay.io/openshift-logging/logging-view-plugin:5.8
+  - image: quay.io/openshift-logging/logging-view-plugin:ci
     name: logging-console-plugin
-  version: 5.8.0
+  version: 5.8.0-preview.1

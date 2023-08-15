@@ -15,12 +15,12 @@ spec:
           env:
             # EDIT HERE: change the 'value' fields to the related images you want to use.
             - name: RELATED_IMAGE_VECTOR
-              value: quay.io/openshift-logging/vector:5.8
+              value: quay.io/openshift-logging/vector:ci
             - name: RELATED_IMAGE_FLUENTD
-              value: quay.io/openshift-logging/fluentd:5.8.0
+              value: quay.io/openshift-logging/fluentd:ci
             - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
-              value: quay.io/openshift-logging/log-file-metric-exporter:1.0
+              value: quay.io/openshift-logging/log-file-metric-exporter:ci
             - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-              value: quay.io/openshift-logging/logging-view-plugin:5.8.0
+              value: quay.io/openshift-logging/logging-view-plugin:ci
             - name: OPERATOR_NAME
               value: cluster-logging-operator

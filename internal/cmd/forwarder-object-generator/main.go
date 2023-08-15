@@ -25,10 +25,10 @@ import (
 
 // HACK - This command is for development use only
 func main() {
-	utils.InitLoggerWithVerbosity("collection-object-generator", 1)
+	utils.InitLoggerWithVerbosity("collection-object-generator", 0)
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
-	secretsFlag := flag.String("objects", "", "colon delimited list of objects in the form of name=key1,key1")
+	secretsFlag := flag.String("secrets", "", "colon delimited list of secrets in the form of name=key1,key1")
 	help := flag.Bool("help", false, "This message")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
@@ -42,33 +42,33 @@ func main() {
 	var reader func() ([]byte, error)
 	switch *yamlFile {
 	case "-":
-		log.V(2).Info("Reading from stdin")
+		log.V(3).Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return io.ReadAll(stdin)
 		}
 	case "":
-		log.V(2).Info("received empty yamlfile")
+		log.V(3).Info("received empty yamlfile")
 		reader = func() ([]byte, error) { return []byte{}, nil }
 	default:
-		log.V(2).Info("reading log forwarder from yaml file", "filename", *yamlFile)
+		log.V(3).Info("reading log forwarder from yaml file", "filename", *yamlFile)
 		reader = func() ([]byte, error) { return os.ReadFile(*yamlFile) }
 	}
 
 	content, err := reader()
 	if err != nil {
-		log.V(2).Error(err, "Error reading file ", "file", yamlFile)
+		log.Error(err, "Error reading file ", "file", yamlFile)
 		os.Exit(1)
 	}
 
 	clfYaml := string(content)
-	log.Info("Finished reading yaml", "content", clfYaml)
+	log.V(3).Info("Finished reading yaml", "content", clfYaml)
 	clf, err := forwarder.UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
 		log.Error(err, "Error UnMarshalling CLF", "file", yamlFile)
 		os.Exit(1)
 	}
-	log.V(2).Info("Unmarshalled", "forwarder", clfYaml)
+	log.V(3).Info("Unmarshalled", "forwarder", clfYaml)
 	clf.ObjectMeta.SetUID(types.UID(" "))
 	resourceNames := factory.GenerateResourceNames(*clf)
 
@@ -123,6 +123,7 @@ func main() {
 		if err != nil {
 			log.Error(err, "Unable to unmarshal resource: %v", m)
 		}
+		fmt.Println("---")
 		fmt.Println(string(m))
 	}
 

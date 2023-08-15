@@ -14,14 +14,14 @@ func TestLokiReceiverCanPushAndQueryLogs(t *testing.T) {
 	l := loki.NewReceiver(c.NS.Name, "loki")
 	require.NoError(t, l.Create(c.Client))
 	sv := loki.StreamValues{
-		Stream: map[string]string{"test": "loki"},
+		Stream: map[string]string{"test": "loki", "functional": "test"},
 		Values: loki.MakeValues([]string{"hello", "there", "mr. frog"}),
 	}
 	require.NoError(t, l.Push(sv))
 
 	labels, err := l.Labels()
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, []string{"__name__", "test"}, labels)
+	assert.ElementsMatch(t, []string{"test", "functional"}, labels)
 
 	result, err := l.QueryUntil(`{test="loki"}`, "", 3)
 	require.NoError(t, err)

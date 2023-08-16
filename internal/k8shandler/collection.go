@@ -118,10 +118,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err := collector.ReconcilePrometheusRule(clusterRequest.EventRecorder, clusterRequest.Client, collectionSpec.Type, clusterRequest.Forwarder.Namespace, constants.CollectorName, clusterRequest.ResourceOwner); err != nil {
-		log.V(9).Error(err, "collector.ReconcilePrometheusRule")
-	}
-
 	if err = factory.ReconcileCollectorConfig(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, collectorConfig, clusterRequest.ResourceOwner); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
@@ -164,10 +160,6 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector() (err error) {
 		}
 
 		metrics.RemoveServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, commonName)
-
-		if err = clusterRequest.RemovePrometheusRule(commonName); err != nil {
-			return
-		}
 
 		if err = clusterRequest.RemoveConfigMap(clusterRequest.ResourceNames.ConfigMap); err != nil {
 			return

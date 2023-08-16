@@ -78,7 +78,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
+		instance, err, _ := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 		if err != nil {
 			return err
 		}

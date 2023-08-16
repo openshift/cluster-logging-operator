@@ -39,9 +39,10 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 	Context("service account existence", func() {
 
 		It("should fail when no service account found", func() {
+			customClf.Spec.ServiceAccountName = providedSAName
 			k8sClient = fake.NewClientBuilder().Build()
 			err, _ := ValidateServiceAccount(customClf, k8sClient, extras)
-			Expect(err).To(MatchError(MatchRegexp("service account: .+ not found")))
+			Expect(err).To(MatchError(MatchRegexp("service account not found: .+")))
 		})
 
 		It("should succeed when service account is found", func() {

@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/internal/factory"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
@@ -19,24 +18,23 @@ import (
 )
 
 // FetchClusterLogging, migrate and validate
-func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMigrations bool) (clusterLogging logging.ClusterLogging, err error) {
+func FetchClusterLogging(k8sClient client.Client, namespace, name string, skipMigrations bool) (clusterLogging logging.ClusterLogging, err error, migrationMessages []logging.Condition) {
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	proto := runtime.NewClusterLogging(namespace, name)
 	if err := k8sClient.Get(context.TODO(), key, proto); err != nil {
-		return logging.ClusterLogging{}, err
+		return logging.ClusterLogging{}, err, nil
 	}
 	// Do not modify cached copy
 	clusterLogging = *proto.DeepCopy()
 	if skipMigrations {
-		return clusterLogging, nil
+		return clusterLogging, nil, nil
 	}
 	// TODO Drop migration upon introduction of v2
-	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
-	clusterLogging.Spec = migrations.MigrateVisualizationSpec(clusterLogging.Spec)
+	clusterLogging.Spec, migrationMessages = migrations.MigrateClusterLogging(clusterLogging.Spec)
 	if err = clusterlogging.Validate(clusterLogging, k8sClient, map[string]bool{}); err != nil {
-		return clusterLogging, err
+		return clusterLogging, err, migrationMessages
 	}
-	return clusterLogging, nil
+	return clusterLogging, nil, migrationMessages
 }
 
 // FetchClusterLogForwarder, migrate and validate

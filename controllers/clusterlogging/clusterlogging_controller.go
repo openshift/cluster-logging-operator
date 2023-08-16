@@ -72,7 +72,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	// Fetch the ClusterLogging instance
-	instance, err := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
+	instance, err, migrationConditions := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			removeClusterLogging(r.Client, removeFinalizer)
@@ -81,13 +81,21 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 			// Return and don't requeue
 			return ctrl.Result{}, nil
 		}
+		setMigrationStatusConditions(&instance, migrationConditions)
 		if validationerrors.IsValidationError(err) {
 			instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("validation failed: %v", err))
 			return r.updateStatus(&instance)
 		}
+
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
 	}
+	setMigrationStatusConditions(&instance, migrationConditions)
+	defer func() {
+		if _, err := r.updateStatus(&instance); err != nil {
+			log.Error(err, "Error while updating status for ClusterLogging %s/%s", instance.Namespace, instance.Name)
+		}
+	}()
 
 	if instance.GetDeletionTimestamp() != nil {
 		removeClusterLogging(r.Client, removeFinalizer)
@@ -114,10 +122,6 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		instance.Status.Conditions.SetCondition(loggingv1.CondReady)
 	}
 
-	if result, err := r.updateStatus(&instance); err != nil {
-		return result, err
-	}
-
 	return ctrl.Result{}, err
 }
 
@@ -125,6 +129,12 @@ func removeClusterLogging(k8Client client.Client, removeFinalizer func(string) e
 	// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
 	if err := lokistack.RemoveRbac(k8Client, removeFinalizer); err != nil {
 		log.Error(err, "Error removing RBAC for accessing LokiStack.")
+	}
+}
+
+func setMigrationStatusConditions(cl *loggingv1.ClusterLogging, conditions []loggingv1.Condition) {
+	for _, cond := range conditions {
+		cl.Status.Conditions.SetCondition(cond)
 	}
 }
 

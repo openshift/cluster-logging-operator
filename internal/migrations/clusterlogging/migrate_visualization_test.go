@@ -1,4 +1,4 @@
-package migrations
+package clusterlogging
 
 import (
 	. "github.com/onsi/ginkgo"

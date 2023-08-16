@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Image        = "grafana/loki:2.5.0"
+	Image        = "grafana/loki:2.8.4"
 	Port         = int32(3100)
 	lokiReceiver = "loki-receiver"
 )
@@ -55,6 +55,13 @@ func NewReceiver(ns, name string) *Receiver {
 		Name:  name,
 		Image: Image,
 		Ports: []corev1.ContainerPort{{Name: name, ContainerPort: Port}},
+		Args: []string{
+			"-config.file=/etc/loki/local-config.yaml",
+			"-print-config-stderr=true",
+			"-server.grpc-max-recv-msg-size-bytes", "20971520",
+			"-distributor.ingestion-rate-limit-mb", "200",
+			"-distributor.ingestion-burst-size-mb", "200",
+		},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: utils.GetPtr(false),
 			Capabilities: &corev1.Capabilities{

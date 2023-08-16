@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	authorizationapi "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("[internal][validations] validate clusterlogforwarder service account", func() {
+var _ = Describe("[internal][validations] validate clusterlogforwarder permissions", func() {
 	var (
-		k8sClient client.Client
-		customClf loggingv1.ClusterLogForwarder
-		extras    map[string]bool
+		k8sClient      client.Client
+		customClf      loggingv1.ClusterLogForwarder
+		extras         map[string]bool
+		providedSAName = "test-serviceAccount"
 	)
 
 	BeforeEach(func() {
@@ -29,20 +29,23 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 				Name:      "test-clf",
 				Namespace: constants.OpenshiftNS,
 			},
+			Spec: loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: providedSAName,
+			},
 		}
 		extras = map[string]bool{}
 	})
 
 	Context("service account existence", func() {
+
 		It("should fail when no service account found", func() {
 			k8sClient = fake.NewClientBuilder().Build()
-			serviceAccount, err := getServiceAccount(customClf.Spec.ServiceAccountName, customClf.Namespace, k8sClient)
-			Expect(serviceAccount).To(BeNil())
+			err, _ := ValidateServiceAccount(customClf, k8sClient, extras)
 			Expect(err).To(MatchError(MatchRegexp("service account: .+ not found")))
 		})
 
 		It("should succeed when service account is found", func() {
-			providedSAName := "test-serviceAccount"
+
 			clfServiceAccount := &corev1.ServiceAccount{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      providedSAName,
@@ -50,72 +53,89 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 				},
 			}
 			k8sClient = fake.NewClientBuilder().WithObjects(clfServiceAccount).Build()
-			customClf.Spec.ServiceAccountName = providedSAName
+			//customClf.Spec.ServiceAccountName = providedSAName
 
 			serviceAccount, err := getServiceAccount(customClf.Spec.ServiceAccountName, customClf.Namespace, k8sClient)
 			Expect(serviceAccount).ToNot(BeNil())
 			Expect(err).To(BeNil())
 		})
+
+		It("should return an error if custom clusterlogforwarder does not include a service account name", func() {
+			customClf.Spec.ServiceAccountName = ""
+			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).ToNot(Succeed())
+		})
 	})
 
-	Context("validate permissions", func() {
-		Context("gather clf inputs", func() {
-			var expectedSet sets.String
-
-			var clf = loggingv1.ClusterLogForwarder{
+	Context("when evaluating inputs", func() {
+		var (
+			clfServiceAccount = &corev1.ServiceAccount{
 				ObjectMeta: v1.ObjectMeta{
-					Name:      "custom-clf",
+					Name:      "test-serviceAccount",
 					Namespace: constants.OpenshiftNS,
 				},
 			}
-			BeforeEach(func() {
-				clf.Spec = loggingv1.ClusterLogForwarderSpec{}
-			})
-
-			It("should gather all inputs from clf.spec.pipelines", func() {
-				clf.Spec = loggingv1.ClusterLogForwarderSpec{
-					Pipelines: []loggingv1.PipelineSpec{
-						{
-							Name: "pipeline1",
-							InputRefs: []string{
-								loggingv1.InputNameAudit,
-								loggingv1.InputNameApplication,
-							},
-						},
-						{
-							Name: "pipeline2",
-							InputRefs: []string{
-								loggingv1.InputNameApplication,
-							},
-						},
-					},
-				}
-				expectedSet = *sets.NewString(loggingv1.InputNameAudit, loggingv1.InputNameApplication)
-				inputs := gatherPipelineInputs(clf)
-				Expect(inputs).To(Equal(expectedSet))
-			})
+		)
+		BeforeEach(func() {
+			k8sClient = &mockSARClient{
+				fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+			}
 		})
-		Context("subjectAccessReview", func() {
-			var (
-				clfServiceAccount = &corev1.ServiceAccount{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "test-serviceAccount",
-						Namespace: constants.OpenshiftNS,
+		It("should pass validation when service account can collect specified inputs", func() {
+			inputName := "some-custom-namespace"
+			customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: clfServiceAccount.Name,
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "my-custom-input",
+						Application: &loggingv1.Application{
+							Namespaces: []string{inputName},
+						},
 					},
-				}
-				mockSARClient = &mockSARClient{}
-			)
-			It("should pass validation when service account can collect specified inputs", func() {
-				Expect(validateServiceAccountPermissions(mockSARClient, *sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure), clfServiceAccount, constants.OpenshiftNS)).To(Succeed())
-			})
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							inputName,
+						},
+					},
+					{
+						Name: "pipeline2",
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+						},
+					},
+				},
+			}
+			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed())
+		})
 
-			It("should return validation error if service account cannot collect specified inputs", func() {
-				Expect(validateServiceAccountPermissions(mockSARClient, *sets.NewString(loggingv1.InputNameApplication, loggingv1.InputNameAudit), clfServiceAccount, constants.OpenshiftNS)).ToNot(Succeed())
-			})
+		It("should return validation error if service account cannot collect specified inputs", func() {
+			customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: clfServiceAccount.Name,
+
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameAudit,
+						},
+					},
+					{
+						Name: "pipeline2",
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+						},
+					},
+				},
+			}
+			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Not(Succeed()))
 		})
 	})
 
-	It("should not validate clusterlogforwarder named 'instance'", func() {
+	It("should not validate clusterlogforwarder named 'instance' in the namespace 'openshift-logging'", func() {
 		singletonClf := loggingv1.ClusterLogForwarder{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      constants.SingletonName,
@@ -141,9 +161,6 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder service a
 		Expect(ValidateServiceAccount(singletonClf, k8sClient, extras)).To(MatchError(MatchRegexp("reserved serviceaccount")))
 	})
 
-	It("should return an error if custom clusterlogforwarder does not include a service account name", func() {
-		Expect(ValidateServiceAccount(customClf, k8sClient, extras)).ToNot(Succeed())
-	})
 })
 
 // Mocking a subject access review

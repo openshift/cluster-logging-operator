@@ -1132,6 +1132,7 @@ spec:
             properties:
               collection:
                 description: Deprecated.
+                nullable: true
                 properties:
                   logs:
                     properties:

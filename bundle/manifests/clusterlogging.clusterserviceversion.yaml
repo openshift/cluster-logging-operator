@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2023-08-10T21:58:26Z"
+    createdAt: "2023-08-17T17:23:48Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     olm.skipRange: '>=5.6.0-0 <5.8.0'
@@ -337,11 +337,6 @@ spec:
         path: visualization.ocpConsole.timeout
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout
-      statusDescriptors:
-      - displayName: Fluentd status
-        path: collection.logs.fluentdStatus.pods
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:podStatuses
       version: v1
     - description: A Log File Metric Exporter instance. LogFileMetricExporter is the
         Schema for the logFileMetricExporters API

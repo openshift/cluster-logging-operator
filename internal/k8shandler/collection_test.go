@@ -138,13 +138,13 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:         client,
-					Cluster:        cluster,
-					EventRecorder:  record.NewFakeRecorder(100),
-					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
-					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
-					ResourceOwner:  utils.AsOwner(cluster),
-					CollectionSpec: cluster.Spec.Collection,
+					Client:        client,
+					Reader:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
+					Forwarder:     runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
+					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+					ResourceOwner: utils.AsOwner(cluster),
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
@@ -206,13 +206,13 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:         client,
-					Cluster:        cluster,
-					EventRecorder:  record.NewFakeRecorder(100),
-					Forwarder:      runtime.NewClusterLogForwarder(constants.OpenshiftNS, "bar"),
-					ResourceNames:  factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
-					ResourceOwner:  utils.AsOwner(cluster),
-					CollectionSpec: cluster.Spec.Collection,
+					Client:        client,
+					Reader:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
+					Forwarder:     runtime.NewClusterLogForwarder(constants.OpenshiftNS, "bar"),
+					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+					ResourceOwner: utils.AsOwner(cluster),
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)
@@ -251,6 +251,7 @@ var _ = Describe("Reconciling", func() {
 
 				clusterRequest = &ClusterLoggingRequest{
 					Client:        client,
+					Reader:        client,
 					Cluster:       cluster,
 					EventRecorder: record.NewFakeRecorder(100),
 					Forwarder:     &loggingv1.ClusterLogForwarder{},
@@ -304,16 +305,17 @@ var _ = Describe("Reconciling", func() {
 					vectorCABundle,
 					namespace,
 				)
+				cluster.Spec.Collection = &loggingv1.CollectionSpec{
+					Type: loggingv1.LogCollectionTypeVector,
+				}
 				clusterRequest = &ClusterLoggingRequest{
 					Client:        client,
+					Reader:        client,
 					Cluster:       cluster,
 					EventRecorder: record.NewFakeRecorder(100),
 					Forwarder:     fwder,
 					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, customCLFName)),
 					ResourceOwner: utils.AsOwner(fwder),
-					CollectionSpec: &loggingv1.CollectionSpec{
-						Type: loggingv1.LogCollectionTypeVector,
-					},
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret)

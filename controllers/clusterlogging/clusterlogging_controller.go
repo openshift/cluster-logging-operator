@@ -3,6 +3,7 @@ package clusterlogging
 import (
 	"context"
 
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -15,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,10 +68,15 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	telemetry.SetCLMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetCLMetrics(1) }()
 
+	removeFinalizer := func(identifier string) error {
+		return k8shandler.RemoveFinalizer(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, identifier)
+	}
+
 	// Fetch the ClusterLogging instance
 	instance, err := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			removeClusterLogging(r.Client, removeFinalizer)
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -86,6 +93,11 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	if instance.GetDeletionTimestamp() != nil {
+		removeClusterLogging(r.Client, removeFinalizer)
+		return ctrl.Result{}, nil
+	}
+
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
 		// if cluster is set to unmanaged then set managedStatus as 0
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
@@ -97,7 +109,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	resourceNames := factory.GenerateResourceNames(clf)
-	if _, err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
+	if err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 		instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("error reconciling clusterlogging instance: %v", err))
@@ -111,6 +123,20 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	return ctrl.Result{}, err
+}
+
+func removeClusterLogging(k8Client client.Client, removeFinalizer func(string) error) {
+	// Request object not found, could have been deleted after reconcile request.
+	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+	// Return and don't requeue
+	if err := metrics.RemoveDashboardConfigMap(k8Client); err != nil && !errors.IsNotFound(err) {
+		log.V(1).Error(err, "error deleting grafana configmap")
+	}
+
+	// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
+	if err := lokistack.RemoveRbac(k8Client, removeFinalizer); err != nil {
+		log.Error(err, "Error removing RBAC for accessing LokiStack.")
+	}
 }
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (ctrl.Result, error) {
@@ -142,6 +168,7 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.DaemonSet{}).
+		Owns(&monitoringv1.ServiceMonitor{}).
 		Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
 				if obj.GetNamespace() == constants.OpenshiftNS && obj.GetLabels()["component"] == constants.ElasticsearchName {

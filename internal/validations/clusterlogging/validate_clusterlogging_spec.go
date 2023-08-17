@@ -9,6 +9,9 @@ import (
 func validateClusterLoggingSpec(cl v1.ClusterLogging) error {
 
 	if cl.Namespace == constants.OpenshiftNS && cl.Name == constants.SingletonName {
+		if cl.Spec.Collection != nil && !cl.Spec.Collection.Type.IsSupportedCollector() {
+			return errors.NewValidationError("Collector implementation is not supported: %q", cl.Spec.Collection.Type)
+		}
 		return nil
 	}
 	spec := cl.Spec

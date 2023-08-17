@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Configmap(k8Client client.Writer, reader client.Reader, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
+func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &corev1.ConfigMap{}
 		key := client.ObjectKeyFromObject(configMap)

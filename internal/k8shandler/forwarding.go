@@ -43,8 +43,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 
-	g := forwardergenerator.New(clusterRequest.CollectionSpec.Type)
-	generatedConfig, err := g.GenerateConf(clusterRequest.CollectionSpec, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Namespace, op)
+	g := forwardergenerator.New(clusterRequest.Cluster.Spec.Collection.Type)
+	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Namespace, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

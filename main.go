@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -108,6 +109,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Clean up
+	defer func() {
+		if err := cleanUpResources(mgr.GetClient()); err != nil {
+			log.V(3).Error(err, "error with resource cleanup")
+		}
+	}()
+
 	clusterVersion, err := getClusterVersion(mgr.GetAPIReader())
 	if err != nil {
 		log.Error(err, "unable to retrieve the clusterID")
@@ -181,6 +189,11 @@ func main() {
 		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
 
+	// Create the dashboard
+	if err := initLoggingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
+		log.V(2).Error(err, "couldn't load all logging resources")
+	}
+
 	log.Info("Starting the Cmd.")
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
@@ -227,4 +240,20 @@ func getClusterVersion(k8client client.Reader) (*configv1.ClusterVersion, error)
 		return nil, err
 	}
 	return clusterVersion, nil
+}
+
+func initLoggingResources(k8sClient client.Client, reader client.Reader) error {
+	// Create dashboard config map on CLO install
+	if err := dashboard.ReconcileDashboards(k8sClient, reader); err != nil {
+		return err
+	}
+	return nil
+}
+
+func cleanUpResources(k8sClient client.Client) error {
+	// Remove the dashboard config map
+	if err := dashboard.RemoveDashboardConfigMap(k8sClient); err != nil {
+		return err
+	}
+	return nil
 }

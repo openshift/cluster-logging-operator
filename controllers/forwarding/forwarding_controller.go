@@ -85,6 +85,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 			// Error reading - requeue the request.
 			return ctrl.Result{}, err
 		}
+
 		// else the object is not found -- meaning it was removed so stop reconciliation
 		return ctrl.Result{}, nil
 	}

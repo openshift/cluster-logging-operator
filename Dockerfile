@@ -12,7 +12,6 @@ RUN if [ -n $CACHE_DEPS ]; then go mod download ; fi
 COPY ${APP_DIR}/.bingo .bingo
 COPY ${APP_DIR}/Makefile ./Makefile
 COPY ${APP_DIR}/version ./version
-COPY ${APP_DIR}/files ./files
 COPY ${APP_DIR}/main.go .
 COPY ${APP_DIR}/apis ./apis
 COPY ${APP_DIR}/controllers ./controllers
@@ -45,7 +44,6 @@ COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
 
 RUN mkdir -p /usr/share/logging/
 
-COPY --from=builder $APP_DIR/files/ /usr/share/logging/
 COPY --from=origincli /usr/bin/oc /usr/bin
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 

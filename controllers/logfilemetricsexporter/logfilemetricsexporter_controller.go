@@ -2,7 +2,7 @@ package logfilemetricsexporter
 
 import (
 	"context"
-	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 	"strings"
 	"time"
 
@@ -64,19 +64,15 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 		return ctrl.Result{}, nil
 	}
 
-	// Check for singleton. Must be named instance
-	if lfmeInstance.Name != constants.SingletonName {
-		failMessage := fmt.Sprintf("Invalid name %q, singleton instance must be named %q",
-			lfmeInstance.Name, constants.SingletonName)
-		lfmeInstance.Status.Conditions.SetCondition(
-			condNotReady(loggingv1.ReasonInvalid,
-				failMessage))
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), failMessage)
+	// Validate LogFileMetricExporter instance
+	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
+		condition := loggingv1.CondInvalid("validation failed: %v", err)
+		lfmeInstance.Status.Conditions.SetCondition(condition)
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), condition.Message)
 		return r.updateStatus(lfmeInstance)
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-
 	reconcileErr := k8shandler.ReconcileForLogFileMetricExporter(lfmeInstance, r.Client, r.Recorder, r.ClusterID, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {

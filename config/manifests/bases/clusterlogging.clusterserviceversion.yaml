@@ -225,11 +225,6 @@ spec:
         path: visualization.ocpConsole.timeout
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout
-      statusDescriptors:
-      - displayName: Fluentd status
-        path: collection.logs.fluentdStatus.pods
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:podStatuses
       version: v1
     - description: A Log File Metric Exporter instance. LogFileMetricExporter is the
         Schema for the logFileMetricExporters API

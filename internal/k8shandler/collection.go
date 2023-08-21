@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/auth"
@@ -13,7 +12,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
@@ -113,10 +111,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err = clusterRequest.UpdateCollectorStatus(clusterRequest.Cluster.Spec.Collection.Type); err != nil {
-		log.V(9).Error(err, "unable to update status for the collector")
-	}
-
 	return nil
 }
 
@@ -159,65 +153,6 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector() (err error) {
 	}
 
 	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType logging.LogCollectionType) (err error) {
-	if collectorType == logging.LogCollectionTypeFluentd {
-		return clusterRequest.UpdateFluentdStatus()
-	}
-	return nil
-}
-
-// UpdateFluentdStatus will modify the CL status with the expectation it will be persisted when
-// ClusterLogging reconciliation is completed
-func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
-	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
-	if err != nil {
-		return fmt.Errorf("Failed to get status of the collector: %v", err)
-	}
-	if !compareFluentdCollectorStatus(fluentdStatus, clusterRequest.Cluster.Status.Collection.Logs.FluentdStatus) {
-		clusterRequest.Cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-	}
-	return nil
-}
-
-func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool {
-	if lhs.DaemonSet != rhs.DaemonSet {
-		return false
-	}
-
-	if len(lhs.Conditions) != len(rhs.Conditions) {
-		return false
-	}
-
-	if len(lhs.Conditions) > 0 {
-		if !reflect.DeepEqual(lhs.Conditions, rhs.Conditions) {
-			return false
-		}
-	}
-
-	if len(lhs.Nodes) != len(rhs.Nodes) {
-		return false
-	}
-
-	if len(lhs.Nodes) > 0 {
-		if !reflect.DeepEqual(lhs.Nodes, rhs.Nodes) {
-
-			return false
-		}
-	}
-
-	if len(lhs.Pods) != len(rhs.Pods) {
-		return false
-	}
-
-	if len(lhs.Pods) > 0 {
-		if !reflect.DeepEqual(lhs.Pods, rhs.Pods) {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() error {

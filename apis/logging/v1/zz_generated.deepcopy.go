@@ -345,8 +345,16 @@ func (in *ClusterLoggingStatus) DeepCopyInto(out *ClusterLoggingStatus) {
 	*out = *in
 	in.Visualization.DeepCopyInto(&out.Visualization)
 	in.LogStore.DeepCopyInto(&out.LogStore)
-	in.Collection.DeepCopyInto(&out.Collection)
-	in.Curation.DeepCopyInto(&out.Curation)
+	if in.Collection != nil {
+		in, out := &in.Collection, &out.Collection
+		*out = new(CollectionStatus)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Curation != nil {
+		in, out := &in.Curation, &out.Curation
+		*out = new(CurationStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	out.Conditions = in.Conditions.DeepCopy()
 }
 

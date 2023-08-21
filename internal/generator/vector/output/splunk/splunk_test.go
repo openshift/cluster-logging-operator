@@ -73,6 +73,7 @@ inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
+timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 `
@@ -83,6 +84,7 @@ inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
+timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
@@ -97,6 +99,7 @@ inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
+timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
@@ -113,6 +116,7 @@ inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = ""
+timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
@@ -126,6 +130,7 @@ inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
+timestamp_key = "@timestamp"
 
 [sinks.splunk_hec.encoding]
 codec = "json"

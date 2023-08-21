@@ -38,6 +38,7 @@ inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 compression = "none"
 default_token = "{{.DefaultToken}}"
+timestamp_key = "@timestamp"
 {{end}}`
 }
 

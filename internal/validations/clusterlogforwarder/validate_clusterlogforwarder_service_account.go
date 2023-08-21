@@ -95,14 +95,25 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 
 func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
 	inputRefs := sets.NewString()
+	inputTypes := sets.NewString()
 
 	// Collect inputs from clf pipelines
 	for _, pipeline := range clf.Spec.Pipelines {
 		for _, input := range pipeline.InputRefs {
 			inputRefs.Insert(input)
+			if input == loggingv1.InputNameInfrastructure || input == loggingv1.InputNameAudit {
+				inputTypes.Insert(input)
+			}
 		}
 	}
-	return *inputRefs
+
+	for _, input := range clf.Spec.Inputs {
+		if inputRefs.Has(input.Name) && input.Application != nil {
+			inputTypes.Insert(loggingv1.InputNameApplication)
+		}
+	}
+
+	return *inputTypes
 }
 
 func createSubjectAccessReview(user, namespace, verb, resource, name, resourceAPIGroup string) *authorizationapi.SubjectAccessReview {

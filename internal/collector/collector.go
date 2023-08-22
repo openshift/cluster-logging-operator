@@ -1,14 +1,13 @@
 package collector
 
 import (
-	"path"
-
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"path"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -48,6 +47,7 @@ const (
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames)
 type CommonLabelVisitor func(o runtime.Object)
+type PodLabelVisitor func(o runtime.Object)
 
 type Factory struct {
 	ConfigHash             string
@@ -60,6 +60,7 @@ type Factory struct {
 	Secrets                map[string]*v1.Secret
 	ForwarderSpec          logging.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
+	PodLabelVisitor        PodLabelVisitor
 	ResourceNames          *factory.ForwarderResourceNames
 }
 
@@ -101,18 +102,20 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		CommonLabelInitializer: func(o runtime.Object) {
 			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName, constants.CollectorName)
 		},
-		ResourceNames: resNames,
+		ResourceNames:   resNames,
+		PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
 		factory.Visit = vector.CollectorVisitor
+		factory.PodLabelVisitor = vector.PodLogExcludeLabel
 	}
 	return factory
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
-	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer)
+	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return ds
 }
 

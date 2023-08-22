@@ -3,6 +3,7 @@ package vector
 import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -32,4 +33,9 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: resNames.ConfigMap, Optional: utils.GetPtr(true)}}},
 		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: vectorDataPath}}},
 	)
+}
+
+// PodLogExcludeLabel by default, the kubernetes_logs source will skip logs from the Pods that have a vector.dev/exclude: "true" label.
+func PodLogExcludeLabel(o runtime.Object) {
+	utils.AddLabels(runtime.Meta(o), map[string]string{"vector.dev/exclude": "true"})
 }

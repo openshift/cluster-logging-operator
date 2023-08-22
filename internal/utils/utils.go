@@ -175,27 +175,6 @@ func GetFileContents(filePath string) []byte {
 	return contents
 }
 
-const defaultShareDir = "/usr/share/logging"
-
-func GetShareDir() string {
-	// shareDir is <repo-root>/files - try to find from working dir.
-	const sep = string(os.PathSeparator)
-	const repoRoot = sep + "cluster-logging-operator"
-	wd, err := os.Getwd()
-	if err != nil {
-		log.V(3).Error(err, "Error determining share directory. Returning default", "default", defaultShareDir)
-		return defaultShareDir
-	}
-	log.V(5).Info("GetShareDir", "workingdir", wd)
-	i := strings.LastIndex(wd, repoRoot)
-	if i >= 0 {
-		shareDir := filepath.Join(wd[:i+len(repoRoot)], "files")
-		log.V(5).Info("GetShareDir", "sharedir", shareDir)
-		return shareDir
-	}
-	return defaultShareDir
-}
-
 func GetPtr[T any](value T) *T {
 	return &value
 }

@@ -42,8 +42,6 @@ RUN INSTALL_PKGS=" \
 
 COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
 
-RUN mkdir -p /usr/share/logging/
-
 COPY --from=origincli /usr/bin/oc /usr/bin
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 

@@ -18,6 +18,10 @@ type ForwarderResourceNames struct {
 	ServiceAccountTokenSecret        string
 }
 
+func (f *ForwarderResourceNames) DaemonSetName() string {
+	return f.CommonName
+}
+
 // GenerateResourceNames is a factory for naming of objects based on ClusterLogForwarder namespace and name
 func GenerateResourceNames(clf logging.ClusterLogForwarder) *ForwarderResourceNames {
 	resBaseName := clf.Name

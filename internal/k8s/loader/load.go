@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -58,9 +59,10 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, i
 	// Do not modify cached copy
 	forwarder = *proto.DeepCopy()
 	internalLogStoreSecret := factory.GenerateResourceNames(forwarder).InternalLogStoreSecret
+	saTokenSecret := factory.GenerateResourceNames(forwarder).ServiceAccountTokenSecret
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret)
+	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret, saTokenSecret)
 
 	extras[constants.ClusterLoggingAvailable] = (fetchClusterLogging().Name != "")
 	if err, status = clusterlogforwarder.Validate(forwarder, k8sClient, extras); err != nil {

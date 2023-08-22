@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
 func TestProcessPipelinesForLokiStack(t *testing.T) {
@@ -47,6 +48,9 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: loggingv1.OutputNameDefault + "-loki-apps",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
@@ -75,11 +79,17 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: loggingv1.OutputNameDefault + "-loki-apps",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 				{
 					Name: loggingv1.OutputNameDefault + "-loki-infra",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
@@ -114,11 +124,17 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: loggingv1.OutputNameDefault + "-loki-apps",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 				{
 					Name: loggingv1.OutputNameDefault + "-loki-infra",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
@@ -154,6 +170,9 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: loggingv1.OutputNameDefault + "-loki-infra",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
@@ -188,11 +207,17 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: loggingv1.OutputNameDefault + "-loki-audit",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/audit",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 				{
 					Name: loggingv1.OutputNameDefault + "-loki-infra",
 					Type: loggingv1.OutputTypeLoki,
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
 				},
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
@@ -228,7 +253,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			}
 			var outputs []loggingv1.OutputSpec
 			var pipelines []loggingv1.PipelineSpec
-			outputs, pipelines, _ = ProcessForwarderPipelines(logStore, "aNamespace", tc.spec, map[string]bool{})
+			outputs, pipelines, _ = ProcessForwarderPipelines(logStore, "aNamespace", tc.spec, map[string]bool{}, constants.LogCollectorToken)
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

@@ -42,6 +42,7 @@ ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 |outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
 |outputs|array|  *(optional)* Outputs are named destinations for log messages.
 |pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
+|serviceAccountName|string|  *(optional)* ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
 |======================
 
 === .spec.inputs[]
@@ -538,8 +539,22 @@ CollectorSpec is spec to define scheduling and resources for a collector
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.collection.logs.fluentd.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.collection.logs.fluentd.resources.limits
@@ -627,8 +642,22 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.curation.curator.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.curation.curator.resources.limits
@@ -825,8 +854,22 @@ The LogStoreSpec contains information about how logs are stored.
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.logStore.elasticsearch.proxy.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.logStore.elasticsearch.proxy.resources.limits
@@ -851,8 +894,22 @@ The LogStoreSpec contains information about how logs are stored.
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.logStore.elasticsearch.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.logStore.elasticsearch.resources.limits
@@ -1169,8 +1226,22 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.visualization.kibana.proxy.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.visualization.kibana.proxy.resources.limits
@@ -1201,8 +1272,22 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.visualization.kibana.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.visualization.kibana.resources.limits
@@ -1268,7 +1353,7 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 
 |collection|object| **(DEPRECATED)** *(optional)* Deprecated.
 |conditions|object|  *(optional)* 
-|curation|object|  *(optional)* 
+|curation|object| **(DEPRECATED)** *(optional)* 
 |logStore|object|  *(optional)* 
 |visualization|object|  *(optional)* 
 |======================
@@ -1339,6 +1424,8 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 
 === .status.curation
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -1553,8 +1640,22 @@ LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 |======================
 |Property|Type|Description
 
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 |limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+=== .spec.resources.claims[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
 === .spec.resources.limits

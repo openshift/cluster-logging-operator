@@ -10,6 +10,10 @@ import (
 func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Section {
 	return []generator.Section{
 		{
+			Global(),
+			`vector global options`,
+		},
+		{
 			Sources(clfspec, namespace, op),
 			`
 			Set of all input sources, as defined in CLF spec
@@ -22,7 +26,7 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 		{
 			NormalizeLogs(clfspec, op),
 			`
-			- set 'level' field 
+			- set 'level' field
 			- rename fields as per data model
 			- remove unused fields
 			`,

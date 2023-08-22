@@ -1,3 +1,5 @@
+expire_metrics_secs = 60
+
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"

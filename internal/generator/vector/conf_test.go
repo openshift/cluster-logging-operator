@@ -93,6 +93,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: `
+expire_metrics_secs = 60
+
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
@@ -525,6 +527,8 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 				},
 			},
 			ExpectedConf: `
+expire_metrics_secs = 60
+
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
@@ -1136,6 +1140,8 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 				},
 			},
 			ExpectedConf: `
+expire_metrics_secs = 60
+
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
@@ -1831,6 +1837,8 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 				},
 			},
 			ExpectedConf: `
+expire_metrics_secs = 60
+
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"

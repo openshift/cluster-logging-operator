@@ -80,6 +80,22 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
 			}
 		})
+		It("should pass validation for application logs", func() {
+			inputName := "some-custom-namespace"
+			customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: clfServiceAccount.Name,
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							inputName,
+						},
+					},
+				},
+			}
+			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed())
+		})
 		It("should pass validation when service account can collect specified inputs", func() {
 			inputName := "some-custom-namespace"
 			customClf.Spec = loggingv1.ClusterLogForwarderSpec{

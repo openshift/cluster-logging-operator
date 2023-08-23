@@ -45,7 +45,7 @@ func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.
 	}
 	// If SA present, validate permissions based off spec'd CLF inputs
 	clfInputs := gatherPipelineInputs(clf)
-	if err = validateServiceAccountPermissions(k8sClient, clfInputs, serviceAccount, clf.Namespace); err != nil {
+	if err = validateServiceAccountPermissions(k8sClient, clfInputs, serviceAccount, clf.Namespace, clf.Name); err != nil {
 		return err, nil
 	}
 	return nil, nil
@@ -67,7 +67,12 @@ func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1
 // ValidateServiceAccountPermissions validates a service account for permissions to collect
 // inputs specified by the CLF.
 // ie. collect-application-logs, collect-audit-logs, collect-infrastructure-logs
-func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, serviceAccount *corev1.ServiceAccount, clfNamespace string) error {
+func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, serviceAccount *corev1.ServiceAccount, clfNamespace, name string) error {
+	if inputs.Len() == 0 {
+		err := errors.NewValidationError("There is an error in the input permission validation; no inputs were found to evaluate")
+		log.Error(err, "Error while evaluating ClusterLogForwarder permissions", "namespace", clfNamespace, "name", name)
+		return err
+	}
 	var err error
 	var username = fmt.Sprintf("system:serviceaccount:%s:%s", serviceAccount.Namespace, serviceAccount.Name)
 
@@ -101,7 +106,7 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
 	for _, pipeline := range clf.Spec.Pipelines {
 		for _, input := range pipeline.InputRefs {
 			inputRefs.Insert(input)
-			if input == loggingv1.InputNameInfrastructure || input == loggingv1.InputNameAudit {
+			if loggingv1.ReservedInputNames.Has(input) {
 				inputTypes.Insert(input)
 			}
 		}

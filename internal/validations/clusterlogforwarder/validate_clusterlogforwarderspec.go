@@ -332,7 +332,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 		return false
 	}
 	// Only for ES. If default replaced, the "collector" secret will be created later
-	if output.Type == loggingv1.OutputTypeElasticsearch && extras[constants.MigrateDefaultOutput] {
+	if (output.Type == loggingv1.OutputTypeElasticsearch || output.Type == loggingv1.OutputTypeLoki) && extras[constants.MigrateDefaultOutput] {
 		return true
 	}
 	log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)

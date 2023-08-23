@@ -9,8 +9,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 )
 
-func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
-	spec, extras = migrateDefaultOutput(spec, logStore, extras, logstoreSecretName)
+func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+	spec, extras = migrateDefaultOutput(spec, logStore, extras, logstoreSecretName, saTokenSecret)
 	if namespace == constants.OpenshiftNS && name == constants.SingletonName {
 		spec.ServiceAccountName = constants.CollectorServiceAccountName
 	}
@@ -30,7 +30,7 @@ func migratePipelines(spec loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterL
 
 // migrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or
 // selectively replaces it if it is.  It will apply OutputDefaults unless they are already defined.
-func migrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+func migrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	// ClusterLogging without ClusterLogForwarder
 	if len(spec.Pipelines) == 0 && len(spec.Inputs) == 0 && len(spec.Outputs) == 0 && spec.OutputDefaults == nil {
 		if logStore != nil {
@@ -51,11 +51,11 @@ func migrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 	if logStore != nil && logStore.Type == loggingv1.LogStoreTypeLokiStack {
 		var outputs []loggingv1.OutputSpec
 		var pipelines []loggingv1.PipelineSpec
-		outputs, pipelines, extras = lokistack.ProcessForwarderPipelines(logStore, constants.OpenshiftNS, spec, extras)
+		outputs, pipelines, extras = lokistack.ProcessForwarderPipelines(logStore, constants.OpenshiftNS, spec, extras, saTokenSecret)
 
 		spec.Outputs = outputs
 		spec.Pipelines = pipelines
-
+		extras[constants.MigrateDefaultOutput] = true
 		return spec, extras
 	}
 

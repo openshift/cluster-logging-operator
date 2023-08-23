@@ -164,7 +164,7 @@ func newLokiStackViewClusterRole(name, logType string) func() *rbacv1.ClusterRol
 	}
 }
 
-func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {
+func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool, saTokenSecret string) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {
 	needOutput := make(map[string]bool)
 	inPipelines := spec.Pipelines
 	pipelines := []loggingv1.PipelineSpec{}
@@ -218,6 +218,9 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 			Name: FormatOutputNameFromInput(input),
 			Type: loggingv1.OutputTypeLoki,
 			URL:  lokiStackURL(logStore, namespace, tenant),
+			Secret: &loggingv1.OutputSecretSpec{
+				Name: saTokenSecret,
+			},
 		})
 	}
 

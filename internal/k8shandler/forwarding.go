@@ -1,7 +1,6 @@
 package k8shandler
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -66,21 +65,4 @@ func (clusterRequest *ClusterLoggingRequest) SetOutputSecrets() {
 		secret, _ := clusterRequest.GetSecret(output.Secret.Name)
 		clusterRequest.OutputSecrets[output.Name] = secret
 	}
-}
-
-func (clusterRequest *ClusterLoggingRequest) GetLogCollectorServiceAccountTokenSecret() (*corev1.Secret, error) {
-	colTokenName := clusterRequest.ResourceNames.ServiceAccountTokenSecret
-	s := &corev1.Secret{}
-	log.V(9).Info("Fetching Secret", "Name", colTokenName)
-	if err := clusterRequest.Get(colTokenName, s); err != nil {
-		log.V(3).Error(err, "Could not find ServiceAccount token secret", "Name", colTokenName)
-		return nil, errors.New("Could not retrieve ServiceAccount token")
-	}
-
-	if _, ok := s.Data[constants.TokenKey]; !ok {
-		log.V(9).Info("did not find token in secret", "Name", s.Name)
-		return nil, errors.New(colTokenName + " secret is missing token")
-	}
-
-	return s, nil
 }

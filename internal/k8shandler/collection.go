@@ -66,11 +66,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	// Set the output secrets if any
 	clusterRequest.SetOutputSecrets()
-	tokenSecret, err := clusterRequest.GetLogCollectorServiceAccountTokenSecret()
-	if err == nil {
-		saTokenSecretName := clusterRequest.ResourceNames.ServiceAccountTokenSecret
-		clusterRequest.OutputSecrets[saTokenSecretName] = tokenSecret
-	}
 
 	if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 		log.V(9).Error(err, "clusterRequest.generateCollectorConfig")

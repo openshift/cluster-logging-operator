@@ -123,7 +123,7 @@ build-functional-e2e-tests:
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
-docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc
+docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc docs/reference/operator/secrets.adoc
 .PHONY: docs
 
 docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
@@ -133,6 +133,10 @@ docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
 .PHONY: docs/reference/datamodels/viaq/v1.adoc
+
+docs/reference/operator/secrets.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/operator/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
+.PHONY: docs/reference/datamodels/logging/v1.adoc
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
@@ -174,7 +178,7 @@ spotless: clean
 
 .PHONY: image
 image: .target/image
-.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version files bundle .bingo apis controllers internal -type f) Dockerfile  go.mod go.sum
+.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version bundle .bingo apis controllers internal -type f) Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 

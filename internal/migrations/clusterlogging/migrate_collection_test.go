@@ -1,4 +1,4 @@
-package migrations
+package clusterlogging
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -50,18 +50,23 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 	Context("when migrating forwarder and collection.logs to collection", func() {
 		It("should return clusterlogging as-is when collection is not defined", func() {
 			spec := ClusterLoggingSpec{}
-			Expect(MigrateCollectionSpec(spec)).To(Equal(ClusterLoggingSpec{}))
+			migrated, conditions := MigrateCollectionSpec(spec)
+			Expect(migrated).To(Equal(ClusterLoggingSpec{}))
+			Expect(conditions).To(BeEmpty())
 		})
 
 		It("should return clusterlogging as-is when collection defined with empty value", func() {
 			spec := ClusterLoggingSpec{}
 			spec.Collection = &CollectionSpec{}
-			Expect(MigrateCollectionSpec(spec)).To(Equal(ClusterLoggingSpec{Collection: &CollectionSpec{}}))
+			migrated, conditions := MigrateCollectionSpec(spec)
+			Expect(migrated).To(Equal(ClusterLoggingSpec{Collection: &CollectionSpec{}}))
+			Expect(conditions).To(BeEmpty())
 		})
 
 		Context("when new collection fields are not set", func() {
 			It("should move deprecated fields", func() {
-				Expect(MigrateCollectionSpec(cl)).To(Equal(ClusterLoggingSpec{
+				spec, conditions := MigrateCollectionSpec(cl)
+				Expect(spec).To(Equal(ClusterLoggingSpec{
 					Collection: &CollectionSpec{
 						Type: LogCollectionTypeFluentd,
 						CollectorSpec: CollectorSpec{
@@ -72,6 +77,7 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 						Fluentd: fluentTuning,
 					},
 				}))
+				Expect(conditions).To(Not(BeEmpty()))
 			})
 		})
 
@@ -94,7 +100,8 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 				}
 				cl.Collection.NodeSelector = map[string]string{"ignorme": "yes"}
 
-				Expect(MigrateCollectionSpec(cl)).To(Equal(ClusterLoggingSpec{
+				spec, conditions := MigrateCollectionSpec(cl)
+				Expect(spec).To(Equal(ClusterLoggingSpec{
 					Collection: &CollectionSpec{
 						Type: LogCollectionTypeFluentd,
 						CollectorSpec: CollectorSpec{
@@ -105,6 +112,7 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 						Fluentd: fluentTuning,
 					},
 				}))
+				Expect(conditions).To(Not(BeEmpty()))
 			})
 
 		})

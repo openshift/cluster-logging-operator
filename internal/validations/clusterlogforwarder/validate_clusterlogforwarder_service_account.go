@@ -59,7 +59,7 @@ func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1
 		if !apierrors.IsNotFound(err) {
 			return nil, err
 		}
-		return nil, errors.NewValidationError("service account: %s not found", fmt.Sprintf("%q/%q", namespace, name))
+		return nil, errors.NewValidationError("service account not found: %s/%s", namespace, name)
 	}
 	return proto, nil
 }

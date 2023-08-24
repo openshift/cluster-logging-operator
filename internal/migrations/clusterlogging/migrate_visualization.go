@@ -1,4 +1,4 @@
-package migrations
+package clusterlogging
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 
 // MigrateVisualizationSpec initialize spec.visualization with ocp-console plugin,
 // if spec.LogStore was defined as 'lokistack' and the spec.visualization not defined
-func MigrateVisualizationSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggingSpec {
+func MigrateVisualizationSpec(spec logging.ClusterLoggingSpec) (logging.ClusterLoggingSpec, []logging.Condition) {
 	log.V(3).Info("Migrating visualizationSpec for reconciliation call", "spec", spec)
 	if spec.Visualization == nil && spec.LogStore != nil && spec.LogStore.Type == logging.LogStoreTypeLokiStack {
 		log.V(3).Info(fmt.Sprintf("Migrating: visualisation spec not set but LogStore is %s, going to set %s as default visualisation spec", spec.LogStore.Type, logging.VisualizationTypeOCPConsole))
@@ -19,5 +19,5 @@ func MigrateVisualizationSpec(spec logging.ClusterLoggingSpec) logging.ClusterLo
 	}
 
 	log.V(3).Info("Migrated visualizationSpec for reconciliation", "spec", spec)
-	return spec
+	return spec, nil
 }

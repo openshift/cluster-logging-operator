@@ -117,7 +117,7 @@ func (clusterRequest *ClusterLoggingRequest) Delete(object client.Object) error 
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status corev1.ConditionStatus) error {
-	instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
+	instance, err, _ := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 	if err != nil {
 		return err
 	}

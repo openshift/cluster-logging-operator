@@ -9,7 +9,7 @@ import (
 )
 
 func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) error {
-	instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
+	instance, err, _ := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 	if err != nil {
 		return kverrors.Wrap(err, "Error getting ClusterLogging for appending finalizer.")
 	}
@@ -30,7 +30,7 @@ func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) 
 }
 
 func RemoveFinalizer(k8sClient client.Client, namespace, name, identifier string) error {
-	instance, err := loader.FetchClusterLogging(k8sClient, namespace, name, true)
+	instance, err, _ := loader.FetchClusterLogging(k8sClient, namespace, name, true)
 	if err != nil {
 		return kverrors.Wrap(err, "Error getting ClusterLogging for removing finalizer.")
 	}

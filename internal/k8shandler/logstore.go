@@ -17,7 +17,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 	switch clusterRequest.Cluster.Spec.LogStore.Type {
 	case logging.LogStoreTypeElasticsearch:
 		fetchClusterLogging := func() (*logging.ClusterLogging, error) {
-			instance, err := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
+			instance, err, _ := loader.FetchClusterLogging(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, true)
 			return &instance, err
 		}
 		return eslogstore.Reconcile(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret, utils.AsOwner(clusterRequest.Cluster), fetchClusterLogging)

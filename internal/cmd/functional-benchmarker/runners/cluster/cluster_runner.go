@@ -54,7 +54,12 @@ func (r *ClusterRunner) Pod() string {
 
 func (r *ClusterRunner) Deploy() {
 	testclient := client.NewNamespaceClient()
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity, logging.LogCollectionType(r.CollectorImpl))
+	cleanup := func() {
+		if r.DoCleanup {
+			testclient.Close()
+		}
+	}
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, cleanup, r.Verbosity, logging.LogCollectionType(r.CollectorImpl))
 	r.framework.Conf = r.CollectorConfig
 
 	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).
@@ -89,9 +94,10 @@ func (r *ClusterRunner) Deploy() {
 			for i := 0; i < r.TotalLogStressors; i++ {
 				name := fmt.Sprintf("loader-%d", i)
 				args := []string{
-					"generate",
-					fmt.Sprintf("--source=%s", r.PayloadSource),
-					fmt.Sprintf("--log-lines-rate=%d", r.LinesPerSecond),
+					"--command=generate",
+					"--use-random-hostname",
+					fmt.Sprintf("--log-type=%s", r.PayloadSource),
+					fmt.Sprintf("--logs-per-second=%d", r.LinesPerSecond),
 				}
 				if r.PayloadSource == "synthetic" {
 					args = append(args, fmt.Sprintf("--synthetic-payload-size=%d", r.MsgSize))
@@ -192,11 +198,13 @@ func ReadAndParseFile(filePath string) (stats.PerfLogs, error) {
 }
 
 func (r *ClusterRunner) FetchApplicationLogs() error {
+	log.V(3).Info("Fetching Application Logs ...")
 	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(logging.OutputTypeHttp).
 		WithCmd("ls", "/tmp").Run()
 	if err != nil {
 		return err
 	}
+	log.V(3).Info("Received Application logs", "files", out)
 	files := []string{}
 	for _, file := range strings.Split(out, "\n") {
 		if strings.HasPrefix(file, "loader-") {
@@ -216,7 +224,9 @@ func (r *ClusterRunner) FetchApplicationLogs() error {
 }
 
 func (r *ClusterRunner) Cleanup() {
-	r.framework.Cleanup()
+	if r.Options.DoCleanup {
+		r.framework.Cleanup()
+	}
 }
 
 func (r *ClusterRunner) SampleCollector() *stats.Sample {

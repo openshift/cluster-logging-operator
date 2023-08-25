@@ -31,6 +31,10 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 			if strings.ToLower(value) == "true" {
 				options[helpers.EnableDebugOutput] = "true"
 			}
+		case constants.OpenTelemetry:
+			if strings.ToLower(value) == constants.Enabled {
+				options[helpers.EnableOtel] = "true"
+			}
 		}
 	}
 }

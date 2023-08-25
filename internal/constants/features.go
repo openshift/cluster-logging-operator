@@ -8,4 +8,7 @@ const (
 	UseOldRemoteSyslogPlugin = "clusterlogging.openshift.io/useoldremotesyslogplugin"
 
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
+
+	// OpenTelemetry is the annotation to enable OpenTelemetry output
+	OpenTelemetry = "logging.openshift.io/opentelemetry"
 )

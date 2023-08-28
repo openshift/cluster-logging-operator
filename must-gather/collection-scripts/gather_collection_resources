@@ -12,11 +12,8 @@ fi
 
 NAMESPACE=${2:-openshift-logging}
 
-
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 collector_folder="$CLO_COLLECTION_PATH/collector"
-
-log "BEGIN gather_collection_resources..."
 
 check_collector_connectivity() {
   local pod=$1
@@ -49,9 +46,15 @@ check_collector_persistence() {
   fi
 }
 
-log "if the collector 'fluentd' or 'collector' is missing thats OK"
-log "this must gather is trying to cover all cases for name migration"
-for collector in "fluentd" "collector"; do
+log "BEGIN gather_collection_resources for namespace: $NAMESPACE..."
+log "- Searching for collectors based on ds label 'component=collector"
+
+# find daemonsets
+ds_names="$(oc get ds -n $NAMESPACE -lcomponent=collector -o custom-columns=:.metadata.name)"
+
+# get name of collector from ds name
+for collector in ${ds_names[@]}; do
+  # get yaml to check for fluentd
   yaml="$(oc -n $NAMESPACE get ds/$collector --ignore-not-found -o yaml)"
   if [ "$yaml" == "" ] ; then
     continue
@@ -59,16 +62,18 @@ for collector in "fluentd" "collector"; do
 
   is_fluent=$(echo $yaml|grep fluent)
 
-  log "Gathering data for collection component: $collector"
+  log "- Gathering data for component: $collector"
   mkdir -p $collector_folder
 
-  log "-- Checking Collector health: $collector"
-  pods="$(oc -n $NAMESPACE get pods -l component=collector -o jsonpath='{.items[*].metadata.name}')"
+  # gathering collector pods
+  pods="$(oc -n $NAMESPACE get pods -l component=collector -l app.kubernetes.io/instance=$collector -o jsonpath='{.items[*].metadata.name}')"
   for pod in $pods
   do
-      log "---- Collector pod: $pod"
+      log "--- Describe collector pod: $pod"
       oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe --cache-dir=${KUBECACHEDIR} 2>&1
+      # fluent health checks
       if [ "$is_fluent" != "" ] ; then
+        log "- Checking health of component: $pod"
         check_collector_connectivity $pod $collector
         check_collector_persistence $pod $collector
         oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- ls -l /var/lib/fluentd/default  > $collector_folder/$pod.es-buffers.txt

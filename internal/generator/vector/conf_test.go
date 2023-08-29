@@ -98,6 +98,7 @@ expire_metrics_secs = 60
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
@@ -532,6 +533,7 @@ expire_metrics_secs = 60
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
@@ -1145,6 +1147,7 @@ expire_metrics_secs = 60
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
@@ -1842,6 +1845,7 @@ expire_metrics_secs = 60
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	perfLogPattern = regexp.MustCompile(`.*epoc_in\":(?P<epoc_in>[0-9\.]*).*epoc_out\":(?P<epoc_out>[0-9\.]*).*message\":\"(?P<message>.*(?P<stream>functional\.0\.[0-9A-Z]*) - (?P<seqid>\d{10}) -.*?\").*?`)
+	perfLogPattern = regexp.MustCompile(`.*epoc_in\":(?P<epoc_in>[0-9\.]*).*epoc_out\":(?P<epoc_out>[0-9\.]*).*message\":\"(?P<message>.*(?P<stream>functional((\.0)?\.[0-9A-Z]*)?) - (?P<seqid>\d{10}) -.*?\").*?`)
 )
 
 type PerfLog struct {

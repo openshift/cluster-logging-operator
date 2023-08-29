@@ -80,7 +80,7 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	}
 	statistics := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 
-	go func() { fetchContainerLogs(runner, artifactDir) }()
+	fetchContainerLogs(runner, artifactDir)
 
 	return metrics, statistics, runner.Config(), nil
 }

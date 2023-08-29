@@ -2,12 +2,12 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
@@ -39,7 +39,7 @@ func OutputFromPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Opt
 func AddThrottleForSink(spec *logging.OutputSpec, inputs []string) []generator.Element {
 	el := []generator.Element{}
 
-	el = append(el, elements.Throttle{
+	el = append(el, normalize.Throttle{
 		ComponentID: fmt.Sprintf(UserDefinedSinkThrottle, spec.Name),
 		Inputs:      helpers.MakeInputs(inputs...),
 		Threshold:   spec.Limit.MaxRecordsPerSecond,

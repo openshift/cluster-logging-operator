@@ -75,7 +75,7 @@ func AddThrottle(spec *logging.InputSpec) []generator.Element {
 		threshold = spec.Application.GroupLimit.MaxRecordsPerSecond
 	}
 
-	el = append(el, Throttle{
+	el = append(el, normalize.Throttle{
 		ComponentID: fmt.Sprintf(UserDefinedSourceThrottle, spec.Name),
 		Inputs:      helpers.MakeInputs([]string{input}...),
 		Threshold:   threshold,

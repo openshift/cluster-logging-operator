@@ -205,18 +205,10 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
+			if strings.HasPrefix(o.Name, logging.OutputNameDefault) {
+				tlsConf.CAFilePath = `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`
+			}
 			return []Element{tlsConf}
-		}
-
-	} else if secret != nil {
-		// Set CA from logcollector ServiceAccount for internal Loki
-		tlsConf := security.TLSConf{
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
-		}
-		tlsConf.SetTLSProfileFromOptions(op)
-		return []Element{
-			tlsConf,
 		}
 	}
 	return []Element{}

@@ -81,14 +81,16 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(strings.Contains(lines[2], "Present days")).To(BeTrue())
 		})
 	})
-	Context("when label keys are defined that include slashes. Ref LOG-4095", func() {
+	Context("when label keys are defined that include slashes and dashes. Ref(LOG-4095, LOG-4460)", func() {
 		const myValue = "foobarvalue"
 		BeforeEach(func() {
 			f.Labels["app.kubernetes.io/name"] = myValue
+			f.Labels["prefix-cloud_com_platform-stage"] = "dev"
 			f.Forwarder.Spec.Outputs[0].Loki.LabelKeys = []string{
 				"kubernetes.namespace_name",
 				"kubernetes.pod_name",
 				"kubernetes.labels.app.kubernetes.io/name",
+				"kubernetes.labels.prefix-cloud_com_platform-stage",
 			}
 			Expect(f.Deploy()).To(BeNil())
 		})

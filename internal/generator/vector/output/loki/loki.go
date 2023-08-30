@@ -160,8 +160,8 @@ func lokiLabelKeys(l *logging.Loki) []string {
 func lokiLabels(lo *logging.Loki) []Label {
 	ls := []Label{}
 	for _, k := range lokiLabelKeys(lo) {
-		name := strings.ReplaceAll(k, ".", "_")
-		name = strings.ReplaceAll(name, "/", "_")
+		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
+		name := r.Replace(k)
 		l := Label{
 			Name:  name,
 			Value: formatLokiLabelValue(k),
@@ -180,8 +180,9 @@ func lokiLabels(lo *logging.Loki) []Label {
 func formatLokiLabelValue(value string) string {
 	if strings.HasPrefix(value, "kubernetes.labels.") || strings.HasPrefix(value, "kubernetes.namespace_labels.") {
 		parts := strings.SplitAfterN(value, "labels.", 2)
-		key := strings.ReplaceAll(parts[1], "/", "_")
-		key = strings.ReplaceAll(key, ".", "_")
+		r := strings.NewReplacer("/", "_", ".", "_")
+		key := r.Replace(parts[1])
+		key = fmt.Sprintf(`\"%s\"`, key)
 		value = fmt.Sprintf("%s%s", parts[0], key)
 	}
 	return fmt.Sprintf("{{%s}}", value)

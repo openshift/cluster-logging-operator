@@ -34,13 +34,13 @@ const (
 )
 
 var (
-	DefaultLokiOuputNames sets.String
+	DefaultLokiOutputNames sets.String
 )
 
 func init() {
-	DefaultLokiOuputNames = *sets.NewString()
+	DefaultLokiOutputNames = *sets.NewString()
 	for _, input := range loggingv1.ReservedInputNames.List() {
-		DefaultLokiOuputNames.Insert(FormatOutputNameFromInput(input))
+		DefaultLokiOutputNames.Insert(FormatOutputNameFromInput(input))
 	}
 }
 

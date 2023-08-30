@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -205,6 +206,9 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
+			if "" == tlsConf.CAFilePath && lokistack.DefaultLokiOutputNames.Has(o.Name) {
+				tlsConf.CAFilePath = `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`
+			}
 			return []Element{tlsConf}
 		}
 

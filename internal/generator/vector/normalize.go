@@ -119,6 +119,13 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 		el = append(el, NormalizeOpenshiftAuditLogs(RawOpenshiftAuditLogs, OpenshiftAuditLogs)...)
 		el = append(el, NormalizeOVNAuditLogs(RawOvnAuditLogs, OvnAuditLogs)...)
 	}
+
+	for _, input := range spec.Inputs {
+		if input.Source != nil && input.Source.HTTP != nil && input.Source.HTTP.LogType == `audit` {
+			el = append(el, NormalizeK8sAuditLogs(input.Source.HTTP.Name+`_items`, input.Source.HTTP.Name+`_normalized`)...)
+		}
+	}
+
 	return el
 }
 

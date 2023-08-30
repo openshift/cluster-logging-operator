@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -141,7 +142,11 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 }
 
 func (f *CollectorFunctionalFramework) ReadFileFrom(outputName, filePath string) (result string, err error) {
-	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+	return f.ReadFileFromWithRetryInterval(outputName, filePath, defaultRetryInterval)
+}
+
+func (f *CollectorFunctionalFramework) ReadFileFromWithRetryInterval(outputName, filePath string, retryInterval time.Duration) (result string, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), retryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		result, err = f.RunCommand(strings.ToLower(outputName), "cat", filePath)
 		if result != "" && err == nil {
 			return true, nil

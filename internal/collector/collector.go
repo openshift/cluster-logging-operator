@@ -1,18 +1,25 @@
 package collector
 
 import (
+	"path"
+
 	"github.com/openshift/cluster-logging-operator/internal/auth"
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"path"
+	"k8s.io/client-go/tools/record"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
-	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -41,6 +48,7 @@ const (
 	logKubeapiserver                = "varlogkubeapiserver"
 	logKubeapiserverValue           = "/var/log/kube-apiserver"
 	metricsVolumePath               = "/etc/collector/metrics"
+	httpInputVolumePath             = "/etc/collector/"
 	tmpVolumeName                   = "tmp"
 	tmpPath                         = "/tmp"
 )
@@ -113,13 +121,13 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 	return factory
 }
 
-func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
+func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string) *apps.DaemonSet {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, httpInputs)
 	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -141,11 +149,17 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 	}
+	for _, httpInput := range httpInputs {
+		podSpec.Volumes = append(podSpec.Volumes,
+			v1.Volume{Name: httpInput, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: httpInput}}},
+		)
+	}
+
 	podSpec.Tolerations = append(podSpec.Tolerations, f.Tolerations()...)
 
 	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
-	collector := f.NewCollectorContainer(secretNames, clusterID)
+	collector := f.NewCollectorContainer(secretNames, clusterID, httpInputs)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
@@ -162,7 +176,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) *v1.Container {
+func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, httpInputs []string) *v1.Container {
 
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
@@ -196,11 +210,32 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
+	for _, httpInput := range httpInputs {
+		collector.VolumeMounts = append(collector.VolumeMounts,
+			v1.VolumeMount{Name: httpInput, ReadOnly: true, MountPath: httpInputVolumePath + httpInput},
+		)
+	}
+
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	AddSecretVolumeMounts(&collector, secretNames)
 
 	AddSecurityContextTo(&collector)
 	return &collector
+}
+
+func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient client.Client, namespace, name, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+	if f.CollectorType != logging.LogCollectionTypeVector {
+		return nil
+	}
+
+	for _, input := range f.ForwarderSpec.Inputs {
+		if input.Source != nil && input.Source.HTTP != nil {
+			if err := network.ReconcileInputService(er, k8sClient, namespace, input.Source.HTTP.Name, selectorComponent, selectorComponent, input.Source.HTTP.Name, input.Source.HTTP.Port, owner, visitors); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // AddSecretVolumeMounts to the collector container

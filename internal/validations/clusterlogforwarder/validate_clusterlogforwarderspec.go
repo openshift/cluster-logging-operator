@@ -176,8 +176,8 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		case len(status.Inputs[input.Name]) > 0:
 			badInput("duplicate name: %q", input.Name)
 		// Check if inputspec has either application, infrastructure, or audit specs
-		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil:
-			badInput("inputspec must define one or more of application, infrastructure, or audit")
+		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Source == nil:
+			badInput("inputspec must define application, infrastructure, audit or source")
 		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
 			badInput("inputspec must define only one of container or group limit")
 		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:

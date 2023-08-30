@@ -6,16 +6,17 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/auth"
-	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/network"
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -87,7 +88,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
+	if err := factory.ReconcileInputServices(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
+		log.Error(err, "collector.ReconcileInputServices")
+		return err
+	}
+
 	if err := metrics.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceOwner); err != nil {
+
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
 	}
@@ -101,7 +108,15 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		log.Error(err, "collector.ReconcileTrustedCABundleConfigMap")
 		return err
 	}
-	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner); err != nil {
+
+	var httpInputs []string
+	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
+		if input.Source != nil && input.Source.HTTP != nil {
+			httpInputs = append(httpInputs, input.Source.HTTP.Name)
+		}
+	}
+
+	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner, httpInputs); err != nil {
 		log.Error(err, "collector.ReconcileDaemonset")
 		return err
 	}
@@ -123,6 +138,10 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector() (err error) {
 				return nil
 			}
 			return err
+		}
+
+		if err = clusterRequest.RemoveInputServices(); err != nil {
+			return
 		}
 
 		if err = clusterRequest.RemoveService(commonName); err != nil {
@@ -177,5 +196,20 @@ func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() erro
 		log.V(1).Info("Successfully added pod security labels", "labels", ns.Labels)
 	}
 
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) RemoveInputServices() error {
+	if clusterRequest.Cluster.Spec.Collection.Type != logging.LogCollectionTypeVector {
+		return nil
+	}
+
+	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
+		if input.Source != nil && input.Source.HTTP != nil {
+			if err := clusterRequest.RemoveInputService(input.Source.HTTP.Name); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

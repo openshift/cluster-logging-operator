@@ -153,6 +153,22 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 		}
 	}
 
+	for _, input := range spec.Inputs {
+		if input.Source != nil && input.Source.HTTP != nil && input.Source.HTTP.LogType == `audit` {
+			el = append(el,
+				Remap{
+					Desc:        `Set log_type to "audit"`,
+					ComponentID: input.Source.HTTP.Name + `_input`,
+					Inputs:      helpers.MakeInputs(input.Source.HTTP.Name + `_normalized`),
+					VRL: strings.Join(helpers.TrimSpaces([]string{
+						AddLogTypeAudit,
+						FixHostname,
+						normalize.FixTimestampField,
+					}), "\n"),
+				})
+		}
+	}
+
 	return el
 }
 

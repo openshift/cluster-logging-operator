@@ -238,15 +238,19 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 		return inputName
 	}
 
+	isHttpInputType := func(input loggingv1.InputSpec, logType string) bool {
+		return input.Source != nil && input.Source.HTTP != nil && input.Source.HTTP.LogType == logType
+	}
+
 	for _, input := range spec.Inputs {
 		if input.Name == inputName {
-			if input.Application != nil {
+			if input.Application != nil || isHttpInputType(input, applicationLogs) {
 				return loggingv1.InputNameApplication
 			}
-			if input.Infrastructure != nil {
+			if input.Infrastructure != nil || isHttpInputType(input, infrastructureLogs) {
 				return loggingv1.InputNameInfrastructure
 			}
-			if input.Audit != nil {
+			if input.Audit != nil || isHttpInputType(input, auditLogs) {
 				return loggingv1.InputNameAudit
 			}
 		}

@@ -118,6 +118,9 @@ type InputSpec struct {
 	// +optional
 	// +docgen:ignore
 	Audit *Audit `json:"audit,omitempty"`
+
+	// Source to receive logs from non-cluster sources.
+	Source *SourceSpec `json:"source,omitempty"`
 }
 
 // NOTE: We currently only support matchLabels so define a LabelSelector type with

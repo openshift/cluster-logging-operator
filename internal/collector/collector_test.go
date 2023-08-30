@@ -40,7 +40,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			Visit:         fluentd.CollectorVisitor,
 			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 		}
-		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 		collector = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -73,7 +73,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					Name:      "custom-clf-metrics",
 					ReadOnly:  true,
 					MountPath: metricsVolumePath}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector = podSpec.Containers[0]
 				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
 			})
@@ -123,7 +123,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 						},
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -147,7 +147,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 						},
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
@@ -190,7 +190,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector = podSpec.Containers[0]
 
 				verifyEnvVar(collector, "http_proxy", httpproxy)
@@ -222,7 +222,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil))
+				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 
 				collector = podSpec.Containers[0]
 				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
@@ -355,7 +355,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector := podSpec.Containers[0]
 
 				// LOG-4084 fluentd no longer setting env vars
@@ -387,7 +387,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector := podSpec.Containers[0]
 
 				// LOG-4084 fluentd no longer setting env vars
@@ -422,7 +422,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector := podSpec.Containers[0]
 
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
@@ -457,7 +457,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil))
+				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), []string{})
 				collector := podSpec.Containers[0]
 
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{

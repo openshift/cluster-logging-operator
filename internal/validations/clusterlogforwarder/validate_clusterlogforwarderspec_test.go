@@ -94,14 +94,14 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "duplicate name: \"my-app-logs\""))
 		})
 
-		It("should fail when inputspec doesn't define one of application, infrastructure, or audit", func() {
+		It("should fail when inputspec doesn't define one of application, infrastructure, audit or source", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: "my-app-logs"},
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus)
-			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define application, infrastructure, audit or source"))
 		})
 
 		It("should remove all inputs if even one inputspec is invalid", func() {
@@ -114,7 +114,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 			verifyInputs(forwarderSpec, clfStatus)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
-			Expect(clfStatus.Inputs["invalid-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["invalid-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define application, infrastructure, audit or source"))
 		})
 
 		It("should validate correctly with one valid input spec", func() {
@@ -977,7 +977,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp. not to mutate original spec outputs")
 
-			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define application, infrastructure, audit or source"))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
 			conds := clfStatus.Pipelines["custom-pipeline"]

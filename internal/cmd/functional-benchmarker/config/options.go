@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:latest"
+	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:0.2"
 	imageVector      = "quay.io/openshift-logging/vector:5.8"
 	imageFluentd     = "quay.io/openshift-logging/fluentd:5.8"
 )

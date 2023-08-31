@@ -247,7 +247,7 @@ codec = "json"
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_labels_app = "{{kubernetes.labels.app}}"
+kubernetes_labels_app = "{{kubernetes.labels.\"app\"}}"
 
 # Basic Auth Config
 [sinks.loki_receiver.auth]

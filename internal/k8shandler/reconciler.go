@@ -2,12 +2,10 @@ package k8shandler
 
 import (
 	"fmt"
-
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
@@ -25,24 +23,7 @@ import (
 
 func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) (err error) {
 	log.V(3).Info("Reconciling", "ClusterLogging", cl, "ClusterLogForwarder", forwarder)
-	clusterLoggingRequest := ClusterLoggingRequest{
-		Cluster:        cl,
-		Client:         requestClient,
-		Reader:         reader,
-		EventRecorder:  r,
-		Forwarder:      forwarder,
-		ClusterVersion: clusterVersion,
-		ClusterID:      clusterID,
-		ResourceNames:  resourceNames,
-	}
-
-	// Owner is always the forwarder unless its a "virtual" resource (e.g. legacy CLF)
-	// which means CL is not virtual and should have a UID
-	if forwarder.UID != "" {
-		clusterLoggingRequest.ResourceOwner = utils.AsOwner(forwarder)
-	} else {
-		clusterLoggingRequest.ResourceOwner = utils.AsOwner(cl)
-	}
+	clusterLoggingRequest := NewClusterLoggingRequest(cl, forwarder, requestClient, reader, r, clusterVersion, clusterID, resourceNames)
 
 	telemetry.CancelMetrics()
 	defer telemetry.UpdateMetrics()

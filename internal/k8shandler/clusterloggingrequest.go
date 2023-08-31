@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -39,6 +40,26 @@ type ClusterLoggingRequest struct {
 
 	// Owner of collector resources
 	ResourceOwner metav1.OwnerReference
+}
+
+func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) ClusterLoggingRequest {
+	request := ClusterLoggingRequest{
+		Cluster:        cl,
+		Client:         requestClient,
+		Reader:         reader,
+		EventRecorder:  r,
+		Forwarder:      forwarder,
+		ClusterVersion: clusterVersion,
+		ClusterID:      clusterID,
+		ResourceNames:  resourceNames,
+		ResourceOwner:  utils.AsOwner(forwarder),
+	}
+
+	// Owner is always the ClusterLogging instance for legacy ClusterLogging
+	if cl.Namespace == constants.OpenshiftNS && cl.Name == constants.SingletonName {
+		request.ResourceOwner = utils.AsOwner(cl)
+	}
+	return request
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

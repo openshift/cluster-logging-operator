@@ -1088,6 +1088,12 @@
               "interval": "",
               "legendFormat": "{{exported_namespace}}/{{podname}}/{{containername}}",
               "refId": "A"
+            },
+            {
+              "expr": "topk(10, round(rate(vector_component_received_event_bytes_total{component_type = \"kubernetes_logs\"}[5m])))",
+              "interval": "",
+              "legendFormat": "{{pod_namespace}}/{{pod_name}}/{{container_name}}",
+              "refId": "B"
             }
           ],
           "thresholds": [],
@@ -1124,13 +1130,62 @@
           }
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "${datasource}",
-          "fill": 1,
           "id": 8,
+          "type": "table",
+          "title": "Top collected containers in last 24 hours",
+          "datasource": "${datasource}",
+          "pluginVersion": "8.5.0",
+          "links": [],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto",
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "expr": "topk(10, sum by (container_name, pod_name, pod_namespace) (label_replace(label_replace(label_replace(increase(log_collected_bytes_total[24h]), \"container_name\", \"$1\",\"containername\", \"(.*)\"),\"pod_name\", \"$1\",\"podname\", \"(.*)\"), \"pod_namespace\", \"$1\",\"exported_namespace\", \"(.*)\") or increase(vector_component_received_event_bytes_total{component_type=\"kubernetes_logs\"}[24h]))) / 1024 / 1024",
+              "format": "table",
+              "instant": true,
+              "refId": "A",
+              "step": 20
+            }
+          ],
+          "timeFrom": 0,
+          "timeShift": 0,
+          "options": {
+            "showHeader": true,
+            "footer": {
+              "show": false,
+              "reducer": [
+                "sum"
+              ],
+              "fields": ""
+            },
+            "frameIndex": 1
+          },
+          "thresholds": [],
           "legend": {
             "avg": false,
             "current": false,
@@ -1140,9 +1195,13 @@
             "total": false,
             "values": false
           },
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "fill": 1,
           "lines": true,
           "linewidth": 1,
-          "links": [],
           "percentage": false,
           "pointradius": 5,
           "points": false,
@@ -1153,12 +1212,6 @@
           "stack": false,
           "steppedLine": false,
           "styles": [
-            {
-              "alias": "Time",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "hidden"
-            },
             {
               "alias": "total(Mb)",
               "colorMode": 0,
@@ -1182,7 +1235,7 @@
               "link": true,
               "linkTooltip": "Drill down to pods",
               "linkUrl": "",
-              "pattern": "exported_namespace",
+              "pattern": "pod_namespace",
               "thresholds": [],
               "type": "string",
               "unit": "short"
@@ -1196,7 +1249,7 @@
               "link": true,
               "linkTooltip": "Drill down to pods",
               "linkUrl": "",
-              "pattern": "podname",
+              "pattern": "pod_name",
               "thresholds": [],
               "type": "number",
               "unit": "short"
@@ -1208,43 +1261,20 @@
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "decimals": 0,
               "link": true,
-              "linkTooltip": "Drill down to pods",
+              "linkTooltip": "Drill down to container",
               "linkUrl": "",
-              "pattern": "containername",
+              "pattern": "container_name",
               "thresholds": [],
               "type": "string",
               "unit": "short"
             }
           ],
-          "targets": [
-            {
-              "expr": "topk(10, sum(increase(log_collected_bytes_total[24h])) by (containername,  podname, exported_namespace))  / 1024 / 1024",
-              "format": "table",
-              "instant": true,
-              "intervalFactor": 2,
-              "legendFormat": "",
-              "refId": "A",
-              "step": 1
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": 0,
-          "timeShift": 0,
-          "title": "Top collected containers in last 24 hours",
           "tooltip": {
             "shared": false,
             "sort": 0,
             "value_type": "individual"
           },
           "transform": "table",
-          "type": "table",
-          "xaxis": {
-            "buckets": 0,
-            "mode": "time",
-            "name": 0,
-            "show": true,
-            "values": []
-          },
           "yaxes": [
             {
               "format": "short",

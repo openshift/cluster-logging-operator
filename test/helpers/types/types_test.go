@@ -3,10 +3,10 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	"strings"
-	"testing"
-
-	_ "github.com/onsi/ginkgo" // Accept ginkgo command line options
 )
 
 const (
@@ -286,149 +286,109 @@ const (
   "kubernetes": {}
 }
    `
+	EventRouterLogExample = `
+{
+  "old_event": {
+    "metadata": {
+      "name": "xitobPsw",
+      "namespace": "h0ggSBIJ",
+      "creationTimestamp": null
+    },
+    "involvedObject": {
+      "kind": "Pod",
+      "namespace": "h0ggSBIJ",
+      "name": "ocvo8g9E",
+      "uid": "wPOzYezqdCXTlqNS"
+    },
+    "reason": "old_reason",
+    "message": "old_message",
+    "source": {},
+    "firstTimestamp": null,
+    "lastTimestamp": null,
+    "count": 696335306,
+    "type": "Warning",
+    "eventTime": null,
+    "reportingComponent": "",
+    "reportingInstance": ""
+  },
+  "@timestamp": null,
+  "message": "message",
+  "kubernetes": {
+    "container_name": "eventrouter",
+    "namespace_name": "test-qntgcafv",
+    "pod_name": "eventrouter-123",
+    "namespace_id": "3f6fa13d-f7d8-4e3a-b7f8-48af18fa0547",
+    "namespace_labels": {
+      "kubernetes_io_metadata_name": "test-qntgcafv",
+      "pod-security_kubernetes_io_enforce": "privileged",
+      "security_openshift_io_scc_podSecurityLabelSync": "false",
+      "test-client": "true"
+    },
+    "event": {
+      "metadata": {
+        "name": "FYxtz0tx",
+        "namespace": "pYXkiu4S"
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "pYXkiu4S",
+        "name": "6rpOY9wv",
+        "uid": "i0Rvr3i9055dVxkW"
+      },
+      "reason": "reason",
+      "source": {},
+      "firstTimestamp": "2023-08-30T21:20:51Z",
+      "lastTimestamp": "2023-08-30T21:20:51Z",
+      "count": 1393877601,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": "",
+      "verb": "ADDED"
+    }
+  },
+  "level": "unknown",
+  "hostname": "functional-test-node",
+  "pipeline_metadata": {
+    "collector": {
+      "original_raw_message": "{\"verb\":\"ADDED\",\"event\":{\"metadata\":{\"name\":\"FYxtz0tx\",\"namespace\":\"pYXkiu4S\",\"creationTimestamp\":null},\"involvedObject\":{\"kind\":\"Pod\",\"namespace\":\"pYXkiu4S\",\"name\":\"6rpOY9wv\",\"uid\":\"i0Rvr3i9055dVxkW\"},\"reason\":\"reason\",\"message\":\"message\",\"source\":{},\"firstTimestamp\":\"2023-08-30T21:20:51Z\",\"lastTimestamp\":\"2023-08-30T21:20:51Z\",\"count\":1393877601,\"type\":\"Normal\",\"eventTime\":null,\"reportingComponent\":\"\",\"reportingInstance\":\"\"}}",
+      "ipaddr4": "10.129.2.53",
+      "inputname": "fluent-plugin-systemd",
+      "name": "fluentd",
+      "received_at": "2023-08-30T21:20:57.410468+00:00",
+      "version": "1.14.6 1.6.0"
+    }
+  },
+  "openshift": {
+    "sequence": 1,
+    "cluster_id": "functional"
+  },
+  "viaq_msg_id": "YjdjZGE1YTItZTEzZi00ZmQ2LTlkZDUtZGZiN2YyMDA0ZGY4",
+  "log_type": "application"
+}
+`
 )
 
-func join(log ...string) string {
-	return "[" + strings.Join(log, ",") + "]"
-}
-
-func TestDecodeApplicationLogs(t *testing.T) {
-	var logs []ApplicationLog
-	in := join(ApplicationContainerLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-func TestDecodeInfraContainerLogs(t *testing.T) {
-	var logs []InfraContainerLog
-	in := join(InfraContainerLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-func TestDecodeJournalLogs(t *testing.T) {
-	var logs []JournalLog
-	in := join(JournalLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-// decode Infra Container and Journal logs together
-func TestDecodeInfraLogs(t *testing.T) {
-	var logs []InfraLog
-	in := join(InfraContainerLogStr, JournalLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-	if len(logs) != 2 {
-		t.Fail()
-	}
-}
-
-func TestDecodeLinuxAuditLogs(t *testing.T) {
-	var logs []LinuxAuditLog
-	in := join(LinuxAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-// Decode Ovn Audit logs
-func TestDecodeOvnAuditLogs(t *testing.T) {
-	var logs []OVNAuditLog
-	in := join(OVNAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-func TestDecodeK8sAuditLogs(t *testing.T) {
-	var logs []K8sAuditLog
-	in := join(K8sAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-func TestDecodeOpenshiftAuditLogs(t *testing.T) {
-	var logs []OpenshiftAuditLog
-	in := join(OpenshiftAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-}
-
-// decode Linux, K8s, Openshift Audit logs together
-func TestDecodeAuditLogs(t *testing.T) {
-	var logs []AuditLog
-	in := join(
-		LinuxAuditLogStr,
-		K8sAuditLogStr,
-		OpenshiftAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-	if len(logs) != 3 {
-		t.Fail()
-	}
-}
-
-func TestDecodeAllLogs(t *testing.T) {
-	var logs []AllLog
-	in := join(
-		ApplicationContainerLogStr,
-		JournalLogStr,
-		InfraContainerLogStr,
-		LinuxAuditLogStr,
-		K8sAuditLogStr,
-		OpenshiftAuditLogStr)
-	dec := json.NewDecoder(strings.NewReader(in))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&logs)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		t.Fail()
-	}
-	if len(logs) != 6 {
-		t.Fail()
-	}
-}
+var _ = Describe("[test][helpers][types]", func() {
+	DescribeTable("when deserializing helper test types of normalized VIAQ logs should decode ", func(kind interface{}, examples ...string) {
+		in := "[" + strings.Join(examples, ",") + "]"
+		dec := json.NewDecoder(strings.NewReader(in))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&kind); err != nil {
+			fmt.Printf("%#v", err)
+			Expect(err).NotTo(HaveOccurred())
+		}
+		Expect(kind).To(HaveLen(len(examples)), "Expected the number of decoded entries to be the same as the number of examples")
+	},
+		Entry("application logs", []ApplicationLog{}, ApplicationContainerLogStr),
+		Entry("infrastructure container logs", []InfraContainerLog{}, InfraContainerLogStr),
+		Entry("journal logs", []JournalLog{}, JournalLogStr),
+		Entry("infra container and journal logs as infra logs", []InfraLog{}, InfraContainerLogStr, JournalLogStr),
+		Entry("linux auditd logs", []LinuxAuditLog{}, LinuxAuditLogStr),
+		Entry("OVN audit logs", []OVNAuditLog{}, OVNAuditLogStr),
+		Entry("kubernetes audit logs", []K8sAuditLog{}, K8sAuditLogStr),
+		Entry("eventrouter logs", []EventRouterLog{}, EventRouterLogExample),
+		Entry("all audit logs together", []AuditLog{}, LinuxAuditLogStr, K8sAuditLogStr, OpenshiftAuditLogStr),
+		Entry("all logs together", []AllLog{}, ApplicationContainerLogStr, JournalLogStr, InfraContainerLogStr, LinuxAuditLogStr, K8sAuditLogStr, OpenshiftAuditLogStr),
+	)
+})

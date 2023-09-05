@@ -16,7 +16,7 @@ var (
 			ReceivedAt: time.Time{},
 		},
 	}
-	templateForAnyKubernetes = types.Kubernetes{
+	TemplateForAnyKubernetes = types.Kubernetes{
 		ContainerName:    "*",
 		ContainerID:      "**optional**",
 		PodName:          "*",
@@ -70,7 +70,7 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 		Docker: types.Docker{
 			ContainerID: "**optional**",
 		},
-		Kubernetes: templateForAnyKubernetes,
+		Kubernetes: TemplateForAnyKubernetes,
 	}
 }
 

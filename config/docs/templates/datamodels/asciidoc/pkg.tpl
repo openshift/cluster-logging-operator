@@ -9,7 +9,7 @@
 
 = Package {{ packageDisplayName . }}
 
-    {{- range (sortedTypes (visibleTypes .Types )) -}}
+    {{ range (sortedTypes (visibleTypes .Types )) -}}
         {{- if isObjectRoot . -}}
 
         == {{ (typeDisplayName .) }}

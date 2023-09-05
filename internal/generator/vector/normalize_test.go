@@ -57,6 +57,28 @@ source = '''
       .level = "emergency"
     }
   }
+  pod_name = string!(.kubernetes.pod_name)
+  if starts_with(pod_name, "event-router-") {
+    parsed, err = parse_json(.message)
+    if err != null {
+      log("Unable to process EventRouter log: " + err, level: "info")
+    } else {
+      ., err = merge(.,parsed)
+      if err == null && exists(.event) && is_object(.event) {
+          if exists(.verb) {
+            .event.verb = .verb
+            del(.verb)
+          }
+          .kubernetes.event = del(.event)
+          .message = del(.kubernetes.event.message)
+          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+          del(.kubernetes.event.metadata.creationTimestamp)
+		  . = compact(., nullish: true)
+      } else {
+        log("Unable to merge EventRouter log message into record: " + err, level: "info")
+      }
+    }
+  }
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
@@ -102,6 +124,28 @@ source = '''
       .level = "alert"
     } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
       .level = "emergency"
+    }
+  }
+  pod_name = string!(.kubernetes.pod_name)
+  if starts_with(pod_name, "event-router-") {
+    parsed, err = parse_json(.message)
+    if err != null {
+      log("Unable to process EventRouter log: " + err, level: "info")
+    } else {
+      ., err = merge(.,parsed)
+      if err == null && exists(.event) && is_object(.event) {
+          if exists(.verb) {
+            .event.verb = .verb
+            del(.verb)
+          }
+          .kubernetes.event = del(.event)
+          .message = del(.kubernetes.event.message)
+          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+          del(.kubernetes.event.metadata.creationTimestamp)
+		  . = compact(., nullish: true)
+      } else {
+        log("Unable to merge EventRouter log message into record: " + err, level: "info")
+      }
     }
   }
   del(.source_type)

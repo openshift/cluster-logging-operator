@@ -34,7 +34,31 @@ if !exists(.level) {
   }
 }
 `
-	RemoveSourceType   = `del(.source_type)`
+	RemoveSourceType     = `del(.source_type)`
+	HandleEventRouterLog = `
+pod_name = string!(.kubernetes.pod_name)
+if starts_with(pod_name, "event-router-") {
+  parsed, err = parse_json(.message)
+  if err != null {
+    log("Unable to process EventRouter log: " + err, level: "info")
+  } else {
+    ., err = merge(.,parsed)
+    if err == null && exists(.event) && is_object(.event) {
+        if exists(.verb) {
+          .event.verb = .verb
+          del(.verb)
+        }
+        .kubernetes.event = del(.event)
+        .message = del(.kubernetes.event.message)
+        set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+        del(.kubernetes.event.metadata.creationTimestamp)
+		. = compact(., nullish: true)
+    } else {
+      log("Unable to merge EventRouter log message into record: " + err, level: "info")
+    }
+  }
+}
+`
 	RemoveStream       = `del(.stream)`
 	RemovePodIPs       = `del(.kubernetes.pod_ips)`
 	RemoveNodeLabels   = `del(.kubernetes.node_labels)`
@@ -106,6 +130,7 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				FixLogLevel,
+				HandleEventRouterLog,
 				RemoveSourceType,
 				RemoveStream,
 				RemovePodIPs,

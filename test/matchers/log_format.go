@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"regexp"
 	"strings"
@@ -102,7 +103,8 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	templateValueString := fmt.Sprintf("%v", templateValue)
 	valueString := fmt.Sprintf("%v", value)
 
-	if reflect.TypeOf(templateValue).Name() == "OptionalInt" {
+	templateType := reflect.TypeOf(templateValue)
+	if templateType.Name() == "OptionalInt" {
 		expValue := templateValue.(testtypes.OptionalInt)
 		actValue := value.(testtypes.OptionalInt)
 		log.V(3).Info("CompareLogLogic: OptionalInt for", "name", name, "value", valueString, "exp", expValue, "act", actValue)
@@ -137,10 +139,22 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		log.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
 		return true
 	}
-	if reflect.TypeOf(templateValue).Name() == "Time" {
+	if templateType.Name() == "Time" {
 
-		templateTime := templateValue.(time.Time)
-		valueTime := value.(time.Time)
+		var templateTime time.Time
+		var valueTime time.Time
+		switch templateType.PkgPath() {
+		case "time":
+			templateTime = templateValue.(time.Time)
+			valueTime = value.(time.Time)
+		case "k8s.io/apimachinery/pkg/apis/meta/v1":
+			templateTime = templateValue.(metav1.Time).Time
+			valueTime = value.(metav1.Time).Time
+		default:
+			log.V(0).Info("Unable to compare unsupported Time type", "pkg", templateType.PkgPath())
+			return false
+		}
+
 		if templateTime.UTC() == valueTime.UTC() {
 			return true
 		}

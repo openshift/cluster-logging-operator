@@ -26,3 +26,9 @@ type ApiEvent struct {
 	types.ViaQCommon `json:",inline,omitempty"`
 	eventv1.Event    `json:",inline,omitempty"`
 }
+
+// The data model for event logs collected from the EventRouter.
+//
+// +kubebuilder:object:root=true
+// +docgen:displayname=Viaq Data Model for EventRouter
+type EventRouterLog types.EventRouterLog

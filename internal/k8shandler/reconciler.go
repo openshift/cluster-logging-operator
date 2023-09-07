@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
@@ -13,7 +14,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,16 +79,6 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	log.V(3).Info("forwarder not found and logStore not found so removing collector")
 	if err := clusterRequest.removeCollector(); err != nil {
 		log.Error(err, "Error removing collector")
-		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-	}
-
-	if updateError := clusterRequest.UpdateCondition(
-		logging.CollectorDeadEnd,
-		"Collectors are defined but there is no defined LogStore or LogForward destinations",
-		"No defined logstore or logforward destination",
-		corev1.ConditionTrue,
-	); updateError != nil {
-		log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 	}
 }

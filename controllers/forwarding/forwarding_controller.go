@@ -2,14 +2,14 @@ package forwarding
 
 import (
 	"context"
-	"fmt"
+	"strings"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"strings"
-	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
@@ -98,6 +98,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		if validationerrors.IsValidationError(err) {
 			condition := logging.NewCondition(ValidationCondition, corev1.ConditionTrue, ValidationFailureReason, "%v", err)
 			instance.Status.Conditions.SetCondition(condition)
+			instance.Status.Conditions.SetCondition(logging.CondNotReady(ValidationFailureReason, ""))
 			r.Recorder.Event(&instance, "Warning", string(logging.ReasonInvalid), condition.Message)
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 			return r.updateStatus(&instance)
@@ -118,10 +119,8 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
-		logging.SetCondition(&instance.Status.Conditions, logging.CollectorDeadEnd, corev1.ConditionTrue, logging.ReasonInvalid, "error reconciling clusterlogforwarder instance: %v", reconcileErr)
 	} else {
 		if instance.Status.Conditions.IsTrueFor(logging.ConditionReady) {
-			logging.SetCondition(&instance.Status.Conditions, logging.CollectorDeadEnd, corev1.ConditionFalse, "", "")
 			// This returns False if SetCondition updates the condition instead of setting it.
 			// For condReady, it will always be updating the status.
 			if !instance.Status.Conditions.SetCondition(logging.CondReady) {
@@ -155,7 +154,7 @@ func (r *ReconcileForwarder) fetchOrStubClusterLogging(request ctrl.Request) (*l
 				},
 			}
 		} else {
-			return nil, fmt.Errorf("ClusterLogging (%s/%s) to support ClusterLogForwarder of same namespace and name not found", request.NamespacedName.Namespace, request.NamespacedName.Name)
+			return &logging.ClusterLogging{}, err
 		}
 	}
 	return &cl, nil

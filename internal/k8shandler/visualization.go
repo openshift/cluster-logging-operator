@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -31,16 +32,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error
 		errs = append(errs, clusterRequest.createOrUpdateKibana())
 	}
 
-	var consoleSpec *logging.OCPConsoleSpec
-	if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
-		consoleSpec = spec.Visualization.OCPConsole
-		errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion, consoleSpec))
-	}
+	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster, clusterRequest.Cluster, clusterRequest.ClusterVersion))
 	return utilerrors.NewAggregate(errs)
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) {
-
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
 		return clusterRequest.removeKibana()
 	}
@@ -96,7 +92,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
-	var kb = &es.Kibana{
+	kb := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
 			APIVersion: es.GroupVersion.String(),
@@ -108,7 +104,6 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 			Namespace: clusterRequest.Cluster.Namespace,
 			Name:      constants.KibanaName,
 		}, kb)
-
 	if err != nil {
 		return nil, err
 	}

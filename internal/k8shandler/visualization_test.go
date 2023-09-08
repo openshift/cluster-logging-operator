@@ -34,7 +34,7 @@ func TestRemoveKibanaCR(t *testing.T) {
 		},
 	}
 
-	var clr = &ClusterLoggingRequest{
+	clr := &ClusterLoggingRequest{
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "openshift-logging",
@@ -86,6 +86,44 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
+		cl.Spec.LogStore = nil // Spec no longer wants console
+		require.NoError(t, cr.CreateOrUpdateVisualization())
+		err := c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp)
+		assert.True(t, errors.IsNotFound(err), "expected NotFound got: %v", err)
+	})
+}
+
+func TestConsolePluginIsCreatedAndDeleted_WithoutLokiStack(t *testing.T) {
+	c := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+	cl := runtime.NewClusterLogging()
+	cl.Annotations = map[string]string{
+		constants.AnnotationOCPConsoleMigrationTarget: "some-loki-stack",
+	}
+	cr := &ClusterLoggingRequest{
+		Cluster:        cl,
+		Client:         c,
+		ClusterVersion: "4.10.0",
+	}
+
+	cl.Spec = logging.ClusterLoggingSpec{
+		Visualization: &logging.VisualizationSpec{
+			Type: logging.VisualizationTypeOCPConsole,
+		},
+	}
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", []string{}), nil)
+	cp := &consolev1alpha1.ConsolePlugin{}
+
+	t.Run("create", func(t *testing.T) {
+		require.NoError(t, cr.CreateOrUpdateVisualization())
+
+		require.NoError(t, c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp))
+		require.Contains(t, cp.Labels, constants.LabelK8sCreatedBy)
+		assert.Equal(t, r.CreatedBy(), cp.Labels[constants.LabelK8sCreatedBy])
+		assert.Equal(t, r.LokiService, cp.Spec.Proxy[0].Service.Name)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		cl.Annotations = nil
 		cl.Spec.LogStore = nil // Spec no longer wants console
 		require.NoError(t, cr.CreateOrUpdateVisualization())
 		err := c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp)

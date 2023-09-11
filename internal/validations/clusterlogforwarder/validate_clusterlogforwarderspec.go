@@ -175,13 +175,19 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("input name %q is reserved", input.Name)
 		case len(status.Inputs[input.Name]) > 0:
 			badInput("duplicate name: %q", input.Name)
-		// Check if inputspec has either application, infrastructure, or audit specs
-		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Source == nil:
-			badInput("inputspec must define application, infrastructure, audit or source")
+		// Check if inputspec has application, infrastructure, audit or receiver specs
+		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Receiver == nil:
+			badInput("inputspec must define one or more of application, infrastructure, audit or receiver")
 		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
 			badInput("inputspec must define only one of container or group limit")
 		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
 			badInput("inputspec cannot have a negative limit threshold")
+		case input.Receiver != nil && input.Receiver.HTTP == nil:
+			badInput("ReceiverSpec must define an HTTP receiver")
+		case input.Receiver != nil && input.Receiver.HTTP != nil && (input.Receiver.HTTP.Port <= 0 || input.Receiver.HTTP.Port > 65535):
+			badInput("invalid port specified for HTTP receiver")
+		case input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format != loggingv1.FormatK8SAudit:
+			badInput("invalid format specified for HTTP receiver")
 		default:
 			status.Inputs.Set(input.Name, condReady)
 		}

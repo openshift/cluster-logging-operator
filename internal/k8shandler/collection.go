@@ -111,8 +111,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	var httpInputs []string
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if input.Source != nil && input.Source.HTTP != nil {
-			httpInputs = append(httpInputs, input.Source.HTTP.Name)
+		if input.Receiver != nil && input.Receiver.HTTP != nil {
+			httpInputs = append(httpInputs, input.Name)
 		}
 	}
 
@@ -205,8 +205,8 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices() error {
 	}
 
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if input.Source != nil && input.Source.HTTP != nil {
-			if err := clusterRequest.RemoveInputService(input.Source.HTTP.Name); err != nil {
+		if input.Receiver != nil && input.Receiver.HTTP != nil {
+			if err := clusterRequest.RemoveInputService(input.Name); err != nil {
 				return err
 			}
 		}

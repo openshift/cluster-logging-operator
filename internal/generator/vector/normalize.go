@@ -121,8 +121,8 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 	}
 
 	for _, input := range spec.Inputs {
-		if input.Source != nil && input.Source.HTTP != nil && input.Source.HTTP.LogType == `audit` {
-			el = append(el, NormalizeK8sAuditLogs(input.Source.HTTP.Name+`_items`, input.Source.HTTP.Name+`_normalized`)...)
+		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatK8SAudit {
+			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
 		}
 	}
 

@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	authentication "k8s.io/api/authentication/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
@@ -67,17 +66,16 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 	BeforeEach(func() {
 		Expect(testfw.LogCollectionType).To(Equal(logging.LogCollectionTypeVector))
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		framework.VisitConfig = func(conf string) string {
+			return strings.Replace(conf, "enabled = true", "enabled = false", 1) // turn off TLS for testing
+		}
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInputWithVisitor(httpInputName,
 				func(spec *logging.InputSpec) {
-					spec.Source = &logging.SourceSpec{
-						HTTP: &logging.HTTPSource{
-							Name: `http-source-spec-name`,
-							Port: v1.ServicePort{
-								Port: servicePortNum,
-							},
-							Format:  logging.FormatK8S,
-							LogType: `audit`,
+					spec.Receiver = &logging.ReceiverSpec{
+						HTTP: &logging.HTTPReceiver{
+							Port:   servicePortNum,
+							Format: logging.FormatK8SAudit,
 						},
 					}
 				}).ToHttpOutput()

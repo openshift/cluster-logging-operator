@@ -130,12 +130,11 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 
 	el := []generator.Element{}
 	for _, input := range spec.Inputs {
-		if input.Source != nil && input.Source.HTTP != nil {
-			el = append(el, HttpSource{
-				ID:            input.Source.HTTP.Name,
-				Port:          input.Source.HTTP.Port.Port,
-				Format:        input.Source.HTTP.Format,
-				LogType:       input.Source.HTTP.LogType,
+		if input.Receiver != nil && input.Receiver.HTTP != nil {
+			el = append(el, HttpReceiver{
+				ID:            input.Name,
+				Port:          input.Receiver.HTTP.Port,
+				Format:        input.Receiver.HTTP.Format,
 				TlsMinVersion: minTlsVersion,
 				CipherSuites:  cipherSuites,
 			})
@@ -144,20 +143,19 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 	return el
 }
 
-type HttpSource struct {
+type HttpReceiver struct {
 	ID            string
 	Port          int32
 	Format        string
-	LogType       string
 	TlsMinVersion string
 	CipherSuites  string
 }
 
-func (HttpSource) Name() string {
-	return "httpSource"
+func (HttpReceiver) Name() string {
+	return "httpReceiver"
 }
 
-func (i HttpSource) Template() string {
+func (i HttpReceiver) Template() string {
 	return `
 {{define "` + i.Name() + `" -}}
 [sources.{{.ID}}]
@@ -166,7 +164,7 @@ address = "0.0.0.0:{{.Port}}"
 decoding.codec = "json"
 
 [sources.{{.ID}}.tls]
-enabled = false
+enabled = true
 key_file = "/etc/collector/{{.ID}}/tls.key"
 crt_file = "/etc/collector/{{.ID}}/tls.crt"
 {{- if ne .TlsMinVersion "" }}

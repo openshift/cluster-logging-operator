@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	rand2 "github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	"math/rand"
 	"strings"
 	"time"
+
+	rand2 "github.com/openshift/cluster-logging-operator/test/helpers/rand"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	v1 "k8s.io/api/core/v1"

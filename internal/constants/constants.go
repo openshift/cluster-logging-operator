@@ -133,6 +133,7 @@ const (
 	ClusterLoggingAvailable = "isClusterLoggingAvailable"
 
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
+	OTELSchema             = "opentelemetry"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

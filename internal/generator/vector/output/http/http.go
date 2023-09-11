@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize/schema/otel"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -120,8 +121,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		}
 	}
 	return MergeElements(
+		Schema(o, outputName, component, inputs, op),
 		[]Element{
-			Normalize(component, inputs),
 			normalize.DedotLabels(dedottedID, []string{component}),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
@@ -131,6 +132,19 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		BasicAuth(o, secret),
 		BearerTokenAuth(o, secret),
 	)
+}
+
+func Schema(o logging.OutputSpec, outputName, component string, inputs []string, op Options) []Element {
+	if op.Has(constants.AnnotationEnableSchema) && o.Http != nil && o.Http.Schema == constants.OTELSchema {
+		schemaID := otel.ID(outputName, "otel")
+		return []Element{
+			otel.Transform(schemaID, inputs),
+			Normalize(component, []string{schemaID}),
+		}
+	}
+	return []Element{
+		Normalize(component, inputs),
+	}
 }
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {

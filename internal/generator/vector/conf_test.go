@@ -3,8 +3,9 @@ package vector
 import (
 	_ "embed"
 	"fmt"
-	configv1 "github.com/openshift/api/config/v1"
 	"strings"
+
+	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -37,6 +38,9 @@ var ExpectedEsPipelineWSpacesToml string
 
 //go:embed conf_test/complex_custom_data_dir.toml
 var ExpectedComplexCustomDataDirToml string
+
+//go:embed conf_test/complex_otel.toml
+var ExpectedComplexOTELToml string
 
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
@@ -282,6 +286,62 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedEsPipelineWSpacesToml,
+		}),
+		Entry("with complex spec & AnnotationSchemaEnabled = 'enabled' & o.HTTP.schema = 'opentelemetry'", testhelpers.ConfGenerateTest{
+			Options: generator.Options{
+				constants.AnnotationEnableSchema: "true",
+			},
+			CLSpec: logging.CollectionSpec{},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"mytestapp",
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit},
+						OutputRefs: []string{"http-receiver"},
+						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Http: &logging.Http{
+								Headers: map[string]string{
+									"h2": "v2",
+									"h1": "v1",
+								},
+								Method: "POST",
+								Schema: constants.OTELSchema,
+							},
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"username": []byte("username"),
+						"password": []byte("password"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedComplexOTELToml,
 		}),
 	)
 

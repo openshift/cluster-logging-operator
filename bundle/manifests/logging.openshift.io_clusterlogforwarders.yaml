@@ -123,16 +123,32 @@ spec:
                             format:
                               description: Format is the format of incoming log data.
                               enum:
-                              - k8s_audit
+                              - kubeAPIAudit
                               type: string
-                            port:
-                              description: Port that this receiver will listen on.
-                                Used to create a Service for this port.
-                              format: int32
-                              type: integer
+                            receiverPort:
+                              description: ReceiverPort specifies parameters for the
+                                Service fronting the HTTPReceiver
+                              properties:
+                                name:
+                                  description: Name of the service to create for this
+                                    HTTPReceiver If not specified, defaults to the
+                                    name of the containing ClusterLogForwarder input
+                                  type: string
+                                port:
+                                  description: Port the Service will listen on.
+                                  format: int32
+                                  type: integer
+                                targetPort:
+                                  description: Port the Receiver will listen on. If
+                                    not specified, defaults to the value of Port
+                                  format: int32
+                                  type: integer
+                              required:
+                              - port
+                              type: object
                           required:
                           - format
-                          - port
+                          - receiverPort
                           type: object
                       type: object
                   required:
@@ -277,6 +293,15 @@ spec:
                           - OPTIONS
                           - TRACE
                           - PATCH
+                          type: string
+                        schema:
+                          description: "Schema enables configuration of the way log
+                            records are normalized. \n Supported models: viaq(default),
+                            opentelemetry \n Logs are converted to the Open Telemetry
+                            specification according to schema value"
+                          enum:
+                          - opentelemetry
+                          - viaq
                           type: string
                         timeout:
                           description: Timeout specifies the Http request timeout

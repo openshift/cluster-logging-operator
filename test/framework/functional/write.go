@@ -1,14 +1,22 @@
 package functional
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/onsi/ginkgo"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/url"
+	"github.com/openshift/cluster-logging-operator/test"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 )
 
 func (f *CollectorFunctionalFramework) WriteMessagesToNamespace(msg, namespace string, numOfLogs int) error {
@@ -158,4 +166,90 @@ func (f *CollectorFunctionalFramework) WriteMessagesWithNotUTF8SymbolsToLog() er
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
 	log.V(3).Info("WriteMessagesWithNotUTF8SymbolsToLog", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
+}
+
+func (f *CollectorFunctionalFramework) WriteAsJsonToHttpInput(inputName string, v any) error {
+	buf, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return f.WriteToHttpInputWithPortForwarder(inputName, buf)
+}
+
+func (f *CollectorFunctionalFramework) WriteToHttpInput(inputName, buf string) error {
+	for _, input := range f.Forwarder.Spec.Inputs {
+		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Name == inputName {
+			_, err := f.RunCommand(constants.CollectorName, "curl", "-ksv", fmt.Sprintf("http://localhost:%d", input.Receiver.HTTP.Port), "-d", string(buf))
+			return err
+		}
+	}
+	return fmt.Errorf("WriteToHttpInput: no HTTP input named %s", inputName)
+}
+
+func (f *CollectorFunctionalFramework) WriteToHttpInputWithPortForwarder(inputName string, buf []byte) error {
+	for _, input := range f.Forwarder.Spec.Inputs {
+		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Name == inputName {
+			pf, err := f.setupPortForwarder(input.Receiver.HTTP.Port)
+			if err != nil {
+				return err
+			}
+			defer close(pf.stopCh)
+			url := fmt.Sprintf("http://localhost:%d", pf.localPort)
+			resp, err := http.Post(url, "application/json", bytes.NewReader(buf))
+			if err == nil {
+				err = test.HTTPError(resp)
+			}
+			if err != nil {
+				return fmt.Errorf("WriteToHttpInputPF: POST %q: %w", url, err)
+			}
+			resp.Body.Close()
+			return nil
+		}
+	}
+	return fmt.Errorf("WriteToHttpInput: no HTTP input named %s", inputName)
+}
+
+type PortForwarder struct {
+	localPort       uint16
+	stopCh, readyCh chan struct{}
+}
+
+func (f *CollectorFunctionalFramework) setupPortForwarder(podPort int32) (*PortForwarder, error) {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.Pod.Namespace, f.Pod.Name)
+	hostIP := strings.TrimPrefix(f.Test.Client.Host(), `https://`)
+
+	transport, upgrader, err := spdy.RoundTripperFor(f.Test.Client.Cfg())
+	if err != nil {
+		return nil, err
+	}
+
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url.URL{Scheme: "https", Path: path, Host: hostIP})
+
+	pf := &PortForwarder{
+		stopCh:  make(chan struct{}, 1),
+		readyCh: make(chan struct{}),
+	}
+
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("0:%d", podPort)}, pf.stopCh, pf.readyCh, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		err = fw.ForwardPorts()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	<-pf.readyCh
+
+	forwardedPorts, err := fw.GetPorts()
+	if err != nil {
+		return nil, err
+	}
+	if n := len(forwardedPorts); n != 1 {
+		return nil, fmt.Errorf("setupPortForwarder: expected one forwarded port, got %d", n)
+	}
+	pf.localPort = forwardedPorts[0].Local
+	return pf, nil
 }

@@ -94,14 +94,49 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "duplicate name: \"my-app-logs\""))
 		})
 
-		It("should fail when inputspec doesn't define one of application, infrastructure, or audit", func() {
+		It("should fail when inputspec doesn't define one of application, infrastructure, audit or source", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: "my-app-logs"},
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus)
-			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
+		})
+
+		It("should fail validation for invalid HTTP receiver specs", func() {
+
+			f := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string) {
+				const input_name = `http-receiver-negative-port`
+				forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+					Inputs: []loggingv1.InputSpec{
+						{
+							Name:     input_name,
+							Receiver: receiverSpec,
+						},
+					},
+				}
+				verifyInputs(forwarderSpec, clfStatus)
+				Expect(clfStatus.Inputs[input_name]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
+			}
+
+			g := func(port int32, format string, expectedErrMsg string) {
+				f(
+					&loggingv1.ReceiverSpec{
+						HTTP: &loggingv1.HTTPReceiver{
+							Port:   port,
+							Format: format,
+						},
+					},
+					expectedErrMsg,
+				)
+			}
+
+			for _, port := range []int32{-1, 0, 80_000} {
+				g(port, loggingv1.FormatK8SAudit, `invalid port specified for HTTP receiver`)
+			}
+			g(8080, `foobar`, `invalid format specified for HTTP receiver`)
+			f(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`)
 		})
 
 		It("should remove all inputs if even one inputspec is invalid", func() {
@@ -114,7 +149,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 			verifyInputs(forwarderSpec, clfStatus)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
-			Expect(clfStatus.Inputs["invalid-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["invalid-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
 		})
 
 		It("should validate correctly with one valid input spec", func() {
@@ -977,7 +1012,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp. not to mutate original spec outputs")
 
-			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, or audit"))
+			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
 			conds := clfStatus.Pipelines["custom-pipeline"]

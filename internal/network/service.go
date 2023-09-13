@@ -37,3 +37,25 @@ func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespac
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.Service(er, k8sClient, desired)
 }
+
+func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, namespace, name, component, instance, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+	desired := factory.NewService(
+		name,
+		namespace,
+		component,
+		instance,
+		[]v1.ServicePort{
+			{
+				Port: portNum,
+			},
+		},
+		visitors,
+	)
+
+	desired.Annotations = map[string]string{
+		constants.AnnotationServingCertSecretName: certSecretName,
+	}
+
+	utils.AddOwnerRefToObject(desired, owner)
+	return reconcile.Service(er, k8sClient, desired)
+}

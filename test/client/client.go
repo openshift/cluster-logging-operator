@@ -253,6 +253,9 @@ func (c *Client) Host() string { return c.cfg.Host }
 // ControllerRuntimeClient returns the underlying controller runtime Client
 func (c *Client) ControllerRuntimeClient() crclient.Client { return c.c }
 
+// Cfg returns the the client's rest.Config
+func (c *Client) Cfg() *rest.Config { return c.cfg }
+
 var singleton struct {
 	c    *Client
 	err  error

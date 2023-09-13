@@ -113,6 +113,28 @@ spec:
                     name:
                       description: Name used to refer to the input of a `pipeline`.
                       type: string
+                    receiver:
+                      description: Receiver to receive logs from non-cluster sources.
+                      properties:
+                        http:
+                          description: HTTPReceiver receives encoded logs as a HTTP
+                            endpoint.
+                          properties:
+                            format:
+                              description: Format is the format of incoming log data.
+                              enum:
+                              - k8s_audit
+                              type: string
+                            port:
+                              description: Port that this receiver will listen on.
+                                Used to create a Service for this port.
+                              format: int32
+                              type: integer
+                          required:
+                          - format
+                          - port
+                          type: object
+                      type: object
                   required:
                   - name
                   type: object

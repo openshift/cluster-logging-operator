@@ -17,22 +17,26 @@ const (
 
 func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	el := []generator.Element{}
-	userDefined := spec.InputMap()
+	userDefinedInputs := spec.InputMap()
 	for i, p := range spec.Pipelines {
 		p.Name = helpers.FormatComponentID(p.Name) + "_user_defined"
 		spec.Pipelines[i].Name = p.Name
 		inputs := []string{}
 		for _, inputName := range p.InputRefs {
-			input, isUserDefined := userDefined[inputName]
-			switch {
-			case isUserDefined && input.HasPolicy():
-				if input.GetMaxRecordsPerSecond() > 0 {
+			input, isUserDefined := userDefinedInputs[inputName]
+			if isUserDefined {
+				if input.HasPolicy() && input.GetMaxRecordsPerSecond() > 0 {
 					// if threshold is zero, then don't add to pipeline
 					inputs = append(inputs, fmt.Sprintf(UserDefinedSourceThrottle, input.Name))
+				} else {
+					if input.Application != nil {
+						inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
+					}
+					if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatK8SAudit {
+						inputs = append(inputs, input.Name+`_input`)
+					}
 				}
-			case isUserDefined:
-				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
-			default:
+			} else {
 				inputs = append(inputs, inputName)
 			}
 		}

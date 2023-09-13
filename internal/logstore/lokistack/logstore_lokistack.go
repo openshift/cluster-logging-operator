@@ -238,6 +238,10 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 		return inputName
 	}
 
+	isHttpReceiverWithFormat := func(input loggingv1.InputSpec, format string) bool {
+		return input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == format
+	}
+
 	for _, input := range spec.Inputs {
 		if input.Name == inputName {
 			if input.Application != nil {
@@ -246,7 +250,7 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 			if input.Infrastructure != nil {
 				return loggingv1.InputNameInfrastructure
 			}
-			if input.Audit != nil {
+			if input.Audit != nil || isHttpReceiverWithFormat(input, loggingv1.FormatK8SAudit) {
 				return loggingv1.InputNameAudit
 			}
 		}

@@ -10,19 +10,35 @@ type ReceiverSpec struct {
 }
 
 const (
-	FormatK8SAudit = "k8s_audit" // Log events in k8s list format, e.g. API audit log events.
+	FormatKubeAPIAudit = "kubeAPIAudit" // Log events in k8s list format, e.g. API audit log events.
 )
 
-// HTTPReceiver receives encoded logs as a HTTP endpoint.
-type HTTPReceiver struct {
-	// Port that this receiver will listen on.
-	// Used to create a Service for this port.
+// ReceiverPort specifies parameters for the Service fronting the HTTPReceiver
+type ReceiverPort struct {
+	// Name of the service to create for this HTTPReceiver
+	// If not specified, defaults to the name of the containing ClusterLogForwarder input
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Port the Service will listen on.
 	//
 	// +required
 	Port int32 `json:"port"`
+
+	// Port the Receiver will listen on.
+	// If not specified, defaults to the value of Port
+	// +optional
+	TargetPort int32 `json:"targetPort,omitempty"`
+}
+
+// HTTPReceiver receives encoded logs as a HTTP endpoint.
+type HTTPReceiver struct {
+	// ReceiverPort specifies parameters for the Service fronting the HTTPReceiver
+	// +required
+	ReceiverPort ReceiverPort `json:"receiverPort"`
 	// Format is the format of incoming log data.
 	//
-	// +kubebuilder:validation:Enum:=k8s_audit
+	// +kubebuilder:validation:Enum:=kubeAPIAudit
 	// +required
 	Format string `json:"format"`
 }

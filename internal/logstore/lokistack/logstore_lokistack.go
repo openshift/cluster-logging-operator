@@ -250,7 +250,7 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 			if input.Infrastructure != nil {
 				return loggingv1.InputNameInfrastructure
 			}
-			if input.Audit != nil || isHttpReceiverWithFormat(input, loggingv1.FormatK8SAudit) {
+			if input.Audit != nil || isHttpReceiverWithFormat(input, loggingv1.FormatKubeAPIAudit) {
 				return loggingv1.InputNameAudit
 			}
 		}

@@ -154,7 +154,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 	}
 
 	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatK8SAudit {
+		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
 			el = append(el,
 				Remap{
 					Desc:        `Set log_type to "audit"`,

@@ -6,7 +6,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_COLLECTION_PATH="${1:-/must-gather}"
 LOGGING_NS="${2:-openshift-logging}"
 LOGFILE_NAME="${3:-gather-debug.log}"
-LOGFILE_PATH="${LOGFILE_PATH}" # must-gather/gather-debug.log
+LOGFILE_PATH="${BASE_COLLECTION_PATH}/${LOGFILE_NAME}" # must-gather/gather-debug.log
 
 mkdir -p "${BASE_COLLECTION_PATH}"
 cd $BASE_COLLECTION_PATH

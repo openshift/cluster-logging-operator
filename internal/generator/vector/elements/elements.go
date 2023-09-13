@@ -23,8 +23,10 @@ func (r Route) Template() string {
 [transforms.{{.ComponentID}}]
 type = "route"
 inputs = {{.Inputs}}
-{{- range $route_name, $route_expr := .Routes}}
-route.{{$route_name}} = {{$route_expr}}
+{{- $values := .Routes -}}
+{{- $keys := getSortedKeyFromMap .Routes -}}
+{{ range $route_name := $keys}}
+route.{{$route_name}} = {{index $values $route_name}}
 {{- end}}
 {{end}}
 `

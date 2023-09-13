@@ -10,7 +10,7 @@ import (
 
 // AreSame compares for equality and return true equal otherwise false
 func AreSame(current *monitoringv1.ServiceMonitor, desired *monitoringv1.ServiceMonitor) bool {
-	log.V(3).Info("Comparing Services current to desired", "current", current, "desired", desired)
+	log.V(3).Info("Comparing ServiceMonitor current to desired", "current", current, "desired", desired)
 
 	if !utils.AreMapsSame(current.ObjectMeta.Annotations, desired.ObjectMeta.Annotations) {
 		log.V(3).Info("ServiceMonitor  annotation change", "current name", current.Name)
@@ -46,27 +46,28 @@ func AreSame(current *monitoringv1.ServiceMonitor, desired *monitoringv1.Service
 	}
 
 	if len(current.Spec.PodTargetLabels) != len(desired.Spec.PodTargetLabels) {
-		log.V(3).Info("Service Selector PodTargetLabels change", "current name", current.Name)
+		log.V(3).Info("Service Monitor PodTargetLabels change", "current name", current.Name)
 		return false
 	}
 
 	for i, targetLabel := range current.Spec.PodTargetLabels {
 		t := desired.Spec.PodTargetLabels[i]
 		if targetLabel != t {
-			log.V(3).Info("Service Selector PodTargetLabels change", "current name", current.Name)
+			log.V(3).Info("Service Monitor PodTargetLabels change", "current name", current.Name)
 			return false
 		}
 	}
 
 	if len(current.Spec.Endpoints) != len(desired.Spec.Endpoints) {
-		log.V(3).Info("Service Selector Endpoints change", "current name", current.Name)
+		log.V(3).Info("Service Monitor Endpoints amount change", "current name", current.Name)
 		return false
 	}
 
 	for i, endpoint := range current.Spec.Endpoints {
 		e := desired.Spec.Endpoints[i]
 		if !reflect.DeepEqual(endpoint, e) {
-			log.V(3).Info("Service Selector Endpoints change", "current name", current.Name)
+			log.V(3).Info("Service Monitor Endpoint change", "current name", current.Name, "endpoint path",
+				endpoint.Path)
 			return false
 		}
 	}

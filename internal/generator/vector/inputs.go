@@ -138,6 +138,11 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 
 	userDefinedAppRouteMap := UserDefinedAppRouting(spec, o)
 	if len(userDefinedAppRouteMap) != 0 {
+		var keys []string
+		for key := range userDefinedAppRouteMap {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
 		el = append(el, Route{
 			ComponentID: RouteApplicationLogs,
 			Inputs:      helpers.MakeInputs(logging.InputNameApplication),
@@ -145,7 +150,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 		})
 
 		userDefined := spec.InputMap()
-		for inRef := range userDefinedAppRouteMap {
+		for _, inRef := range keys {
 			if input, ok := userDefined[inRef]; ok && input.HasPolicy() && input.GetMaxRecordsPerSecond() > 0 {
 				// Vector Throttle component cannot have zero threshold
 				el = append(el, AddThrottle(input)...)

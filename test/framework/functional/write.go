@@ -179,7 +179,7 @@ func (f *CollectorFunctionalFramework) WriteAsJsonToHttpInput(inputName string, 
 func (f *CollectorFunctionalFramework) WriteToHttpInput(inputName, buf string) error {
 	for _, input := range f.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Name == inputName {
-			_, err := f.RunCommand(constants.CollectorName, "curl", "-ksv", fmt.Sprintf("http://localhost:%d", input.Receiver.HTTP.Port), "-d", string(buf))
+			_, err := f.RunCommand(constants.CollectorName, "curl", "-ksv", fmt.Sprintf("http://localhost:%d", input.Receiver.HTTP.ReceiverPort.Port), "-d", string(buf))
 			return err
 		}
 	}
@@ -189,7 +189,7 @@ func (f *CollectorFunctionalFramework) WriteToHttpInput(inputName, buf string) e
 func (f *CollectorFunctionalFramework) WriteToHttpInputWithPortForwarder(inputName string, buf []byte) error {
 	for _, input := range f.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Name == inputName {
-			pf, err := f.setupPortForwarder(input.Receiver.HTTP.Port)
+			pf, err := f.setupPortForwarder(input.Receiver.HTTP.ReceiverPort.Port)
 			if err != nil {
 				return err
 			}

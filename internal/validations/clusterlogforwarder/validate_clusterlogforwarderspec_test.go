@@ -106,7 +106,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 		It("should fail validation for invalid HTTP receiver specs", func() {
 
-			f := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string) {
+			checkReceiver := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string) {
 				const input_name = `http-receiver-negative-port`
 				forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 					Inputs: []loggingv1.InputSpec{
@@ -120,11 +120,14 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Expect(clfStatus.Inputs[input_name]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
 			}
 
-			g := func(port int32, format string, expectedErrMsg string) {
-				f(
+			checkPorts := func(port int32, targetPort int32, format string, expectedErrMsg string) {
+				checkReceiver(
 					&loggingv1.ReceiverSpec{
 						HTTP: &loggingv1.HTTPReceiver{
-							Port:   port,
+							ReceiverPort: loggingv1.ReceiverPort{
+								Port:       port,
+								TargetPort: targetPort,
+							},
 							Format: format,
 						},
 					},
@@ -133,10 +136,13 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			for _, port := range []int32{-1, 0, 80_000} {
-				g(port, loggingv1.FormatK8SAudit, `invalid port specified for HTTP receiver`)
+				checkPorts(port, 0, loggingv1.FormatKubeAPIAudit, `invalid port specified for HTTP receiver`)
 			}
-			g(8080, `foobar`, `invalid format specified for HTTP receiver`)
-			f(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`)
+			for _, targetPort := range []int32{-1, 80_000} {
+				checkPorts(8080, targetPort, loggingv1.FormatKubeAPIAudit, `invalid targetPort specified for HTTP receiver`)
+			}
+			checkPorts(8080, 0, `no_such_format`, `invalid format specified for HTTP receiver`)
+			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`)
 		})
 
 		It("should remove all inputs if even one inputspec is invalid", func() {

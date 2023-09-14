@@ -170,7 +170,7 @@ source = '''
     }
   }
   pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "event-router-") {
+  if starts_with(pod_name, "eventrouter-") {
     parsed, err = parse_json(.message)
     if err != null {
       log("Unable to process EventRouter log: " + err, level: "info")
@@ -627,7 +627,7 @@ source = '''
     }
   }
   pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "event-router-") {
+  if starts_with(pod_name, "eventrouter-") {
     parsed, err = parse_json(.message)
     if err != null {
       log("Unable to process EventRouter log: " + err, level: "info")
@@ -1263,7 +1263,7 @@ source = '''
     }
   }
   pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "event-router-") {
+  if starts_with(pod_name, "eventrouter-") {
     parsed, err = parse_json(.message)
     if err != null {
       log("Unable to process EventRouter log: " + err, level: "info")
@@ -1983,7 +1983,7 @@ source = '''
     }
   }
   pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "event-router-") {
+  if starts_with(pod_name, "eventrouter-") {
     parsed, err = parse_json(.message)
     if err != null {
       log("Unable to process EventRouter log: " + err, level: "info")

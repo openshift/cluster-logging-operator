@@ -100,7 +100,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 				return framework.WriteMessagesToApplicationLog(msg, 1)
 			}
 			framework.VisitConfig = func(conf string) string {
-				return strings.Replace(conf, `pod_name, "event-router-"`, `pod_name, "functional"`, 1)
+				return strings.Replace(conf, `pod_name, "eventrouter-"`, `pod_name, "functional"`, 1)
 			}
 		}
 		Expect(framework.Deploy()).To(BeNil())

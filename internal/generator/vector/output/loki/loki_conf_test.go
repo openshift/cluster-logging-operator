@@ -1,6 +1,7 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"sort"
 	"strings"
 	"testing"
@@ -772,7 +773,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
+						Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
 						URL:  "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
 					},
 				},
@@ -785,16 +786,16 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 				},
 			},
 			ExpectedConf: `
-[transforms.loki_receiver_remap]
+[transforms.default_loki_apps_remap]
 type = "remap"
 inputs = ["application"]
 source = '''
   del(.tag)
 '''
 
-[transforms.loki_receiver_dedot]
+[transforms.default_loki_apps_dedot]
 type = "lua"
-inputs = ["loki_receiver_remap"]
+inputs = ["default_loki_apps_remap"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -840,27 +841,28 @@ source = '''
     end
 '''
 
-[sinks.loki_receiver]
+[sinks.default_loki_apps]
 type = "loki"
-inputs = ["loki_receiver_dedot"]
+inputs = ["default_loki_apps_dedot"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
 
-[sinks.loki_receiver.encoding]
+[sinks.default_loki_apps.encoding]
 codec = "json"
 
-[sinks.loki_receiver.labels]
+[sinks.default_loki_apps.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
-[sinks.loki_receiver.tls]
+[sinks.default_loki_apps.tls]
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+
 # Bearer Auth Config
-[sinks.loki_receiver.auth]
+[sinks.default_loki_apps.auth]
 strategy = "bearer"
 token = "token-for-internal-loki"
 `,

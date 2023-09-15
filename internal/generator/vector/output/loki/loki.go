@@ -203,13 +203,7 @@ func Tenant(l *logging.Loki) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
-		}
-
-	} else if secret != nil {
+	if isDefaultOutput(o.Name) {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		tlsConf := security.TLSConf{
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
@@ -220,7 +214,19 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 			tlsConf,
 		}
 	}
+	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
+
+		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+			tlsConf.NeedsEnabled = false
+			return []Element{tlsConf}
+		}
+	}
+
 	return []Element{}
+}
+
+func isDefaultOutput(name string) bool {
+	return strings.HasPrefix(name, "default-")
 }
 
 func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {

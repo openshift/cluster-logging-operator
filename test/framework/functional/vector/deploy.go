@@ -1,6 +1,8 @@
 package vector
 
 import (
+	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"regexp"
 	"strings"
 
@@ -13,7 +15,7 @@ import (
 )
 
 const entrypointScript = `#!/bin/bash
-mkdir -p /var/lib/vector
+mkdir -p %s
 
 /usr/bin/vector
 `
@@ -26,13 +28,13 @@ func (c *VectorCollector) String() string {
 	return constants.VectorName
 }
 
-func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
+func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYaml string) error {
 	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add("vector.toml", config).
 		Add("clfyaml", clfYaml).
-		Add("run.sh", entrypointScript)
+		Add("run.sh", fmt.Sprintf(entrypointScript, vector.GetDataPath(c.NS.Name, clfName)))
 	if err := c.Create(configmap); err != nil {
 		return err
 	}

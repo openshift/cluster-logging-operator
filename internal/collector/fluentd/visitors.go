@@ -21,7 +21,7 @@ var (
 	DefaultCpuRequest = resource.MustParse("100m")
 )
 
-func CollectorVisitor(collectorContainer *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames) {
+func CollectorVisitor(collectorContainer *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace string) {
 
 	collectorContainer.Env = append(collectorContainer.Env,
 		v1.EnvVar{

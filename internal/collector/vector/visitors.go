@@ -8,12 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	vectorConfigPath = "/etc/vector"
-	vectorDataPath   = "/var/lib/vector"
-)
-
-func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodSpec, resNames *factory.ForwarderResourceNames) {
+func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodSpec, resNames *factory.ForwarderResourceNames, namespace string) {
 	collectorContainer.Env = append(collectorContainer.Env,
 		corev1.EnvVar{Name: "VECTOR_LOG", Value: "WARN"},
 		corev1.EnvVar{
@@ -25,13 +20,29 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 			},
 		},
 	)
+
+	dataPath := GetDataPath(namespace, resNames.ForwarderName)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		corev1.VolumeMount{Name: common.ConfigVolumeName, ReadOnly: true, MountPath: vectorConfigPath},
-		corev1.VolumeMount{Name: common.DataDir, ReadOnly: false, MountPath: vectorDataPath},
+		corev1.VolumeMount{Name: common.DataDir, ReadOnly: false, MountPath: dataPath},
+		corev1.VolumeMount{Name: common.EntrypointVolumeName, ReadOnly: true, MountPath: entrypointValue, SubPath: RunVectorFile},
 	)
+
+	collectorContainer.Command = []string{"sh"}
+	collectorContainer.Args = []string{entrypointValue}
+
 	podSpec.Volumes = append(podSpec.Volumes,
-		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: resNames.ConfigMap, Optional: utils.GetPtr(true)}}},
-		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: vectorDataPath}}},
+		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{
+			SecretName: resNames.ConfigMap,
+			Items:      []corev1.KeyToPath{{Key: ConfigFile, Path: ConfigFile}},
+			Optional:   utils.GetPtr(true),
+		}}},
+		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: dataPath}}},
+		corev1.Volume{Name: common.EntrypointVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{
+			SecretName: resNames.ConfigMap,
+			Items:      []corev1.KeyToPath{{Key: RunVectorFile, Path: RunVectorFile}},
+			Optional:   utils.GetPtr(true),
+		}}},
 	)
 }
 

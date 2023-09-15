@@ -1,9 +1,11 @@
 package collector
 
 import (
+	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -30,11 +32,13 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 		utils.AddOwnerRefToObject(collectorConfigMap, owner)
 		return reconcile.Configmap(k8sClient, reader, collectorConfigMap)
 	} else if f.CollectorType == logging.LogCollectionTypeVector {
+
 		secret := runtime.NewSecret(
 			namespace,
 			f.ResourceNames.ConfigMap,
 			map[string][]byte{
-				"vector.toml": []byte(collectorConfig),
+				vector.ConfigFile:    []byte(collectorConfig),
+				vector.RunVectorFile: []byte(fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName))),
 			},
 			f.CommonLabelInitializer)
 

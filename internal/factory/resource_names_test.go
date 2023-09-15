@@ -25,6 +25,7 @@ var _ = Describe("Collector Resource Name Generator", func() {
 			ServiceAccountTokenSecret:        constants.LogCollectorToken,
 			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.OpenshiftNS, constants.CollectorName),
 			ConfigMap:                        constants.CollectorConfigSecretName,
+			ForwarderName:                    constants.SingletonName,
 		}
 
 		clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, clfName)
@@ -45,6 +46,7 @@ var _ = Describe("Collector Resource Name Generator", func() {
 			ServiceAccountTokenSecret:        clfName + "-token",
 			MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", constants.OpenshiftNS, clfName),
 			ConfigMap:                        clfName + "-config",
+			ForwarderName:                    clfName,
 		}
 
 		clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, clfName)

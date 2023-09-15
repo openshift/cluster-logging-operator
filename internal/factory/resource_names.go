@@ -16,6 +16,7 @@ type ForwarderResourceNames struct {
 	ServiceAccount                   string
 	InternalLogStoreSecret           string
 	ServiceAccountTokenSecret        string
+	ForwarderName                    string
 }
 
 func (f *ForwarderResourceNames) DaemonSetName() string {
@@ -34,6 +35,7 @@ func GenerateResourceNames(clf logging.ClusterLogForwarder) *ForwarderResourceNa
 		SecretMetrics:                    resBaseName + "-metrics",
 		ConfigMap:                        resBaseName + "-config",
 		MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", clf.Namespace, resBaseName),
+		ForwarderName:                    clf.Name,
 	}
 
 	if clf.Namespace == constants.OpenshiftNS && clf.Name == constants.SingletonName {
@@ -47,6 +49,5 @@ func GenerateResourceNames(clf logging.ClusterLogForwarder) *ForwarderResourceNa
 		forwarderResNames.InternalLogStoreSecret = clf.Spec.ServiceAccountName + "-default"
 		forwarderResNames.ServiceAccountTokenSecret = clf.Spec.ServiceAccountName + "-token"
 	}
-
 	return forwarderResNames
 }

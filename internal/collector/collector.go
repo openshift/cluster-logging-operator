@@ -53,7 +53,7 @@ const (
 	tmpPath                         = "/tmp"
 )
 
-type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames)
+type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace string)
 type CommonLabelVisitor func(o runtime.Object)
 type PodLabelVisitor func(o runtime.Object)
 
@@ -122,12 +122,12 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, httpInputs)
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, httpInputs, namespace)
 	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string, namespace string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -163,7 +163,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
-	f.Visit(collector, podSpec, f.ResourceNames)
+	f.Visit(collector, podSpec, f.ResourceNames, namespace)
 
 	addWebIdentityForCloudwatch(collector, podSpec, forwarderSpec, f.Secrets, f.CollectorType)
 

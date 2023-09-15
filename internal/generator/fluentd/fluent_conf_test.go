@@ -207,7 +207,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, op))
+		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 
@@ -286,7 +286,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, op))
+		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsConf))
@@ -366,7 +366,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, op))
+		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsNSConf))
@@ -389,14 +389,14 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		c := generator.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, op))
+		c := generator.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedExcludeConf))
 	})
 
 	It("should produce well formed fluent.conf", func() {
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, op))
+		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedWellFormedConf))
@@ -479,7 +479,7 @@ var _ = Describe("Generating fluentd config", func() {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
 			g := generator.MakeGenerator()
-			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, op)
+			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, constants.SingletonName, op)
 			gotFluentdConf, err := g.GenerateConf(generator.MergeSections(s)...)
 			Expect(err).To(Succeed())
 			Expect(gotFluentdConf).To(EqualTrimLines(wantFluentdConf))

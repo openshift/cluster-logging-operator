@@ -43,7 +43,7 @@ var TestAPIAdapterConfigVisitor = func(conf string) string {
 }
 
 type CollectorFramework interface {
-	DeployConfigMapForConfig(name, config, clfYaml string) error
+	DeployConfigMapForConfig(name, config, clfName, clfYaml string) error
 	BuildCollectorContainer(*runtime.ContainerBuilder, string) *runtime.ContainerBuilder
 	IsStarted(string) bool
 	Image() string
@@ -204,7 +204,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		f.Conf = f.VisitConfig(f.Conf)
 	}
 
-	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, string(clfYaml)); err != nil {
+	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, f.Forwarder.Name, string(clfYaml)); err != nil {
 		return err
 	}
 

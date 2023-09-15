@@ -3,9 +3,8 @@ package vector
 import (
 	_ "embed"
 	"fmt"
-	"strings"
-
 	configv1 "github.com/openshift/api/config/v1"
+	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -36,6 +35,9 @@ var ExpectedComplexEsV6Toml string
 //go:embed conf_test/es_pipeline_w_spaces.toml
 var ExpectedEsPipelineWSpacesToml string
 
+//go:embed conf_test/complex_custom_data_dir.toml
+var ExpectedComplexCustomDataDirToml string
+
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
@@ -44,7 +46,18 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			if testcase.Options == nil {
 				testcase.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 			}
-			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, testcase.Options))
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, testcase.Options))
+			conf, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))
+		}
+
+		namedForwarder = func(testcase testhelpers.ConfGenerateTest) {
+			g := generator.MakeGenerator()
+			if testcase.Options == nil {
+				testcase.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
+			}
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, "my-forwarder", testcase.Options))
 			conf, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))
@@ -269,6 +282,64 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedEsPipelineWSpacesToml,
+		}),
+	)
+
+	DescribeTable("Generate full vector.toml with custom data dir", namedForwarder,
+		Entry("with complex spec custom data dir", testhelpers.ConfGenerateTest{
+			Options: generator.Options{
+				generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						ChunkLimitSize: "8m",
+						TotalLimitSize: "800000000",
+						OverflowAction: "throw_exception",
+					},
+				},
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"mytestapp",
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit},
+						OutputRefs: []string{"kafka-receiver"},
+						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedComplexCustomDataDirToml,
 		}),
 	)
 

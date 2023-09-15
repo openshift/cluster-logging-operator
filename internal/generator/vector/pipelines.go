@@ -66,6 +66,7 @@ if .log_type == "application" {
 `
 			vrls = append(vrls, parse)
 		}
+
 		vrl := SrcPassThrough
 		if len(vrls) != 0 {
 			vrl = strings.Join(helpers.TrimSpaces(vrls), "\n\n")

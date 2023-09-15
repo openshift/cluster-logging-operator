@@ -31,6 +31,11 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 			if strings.ToLower(value) == "true" {
 				options[helpers.EnableDebugOutput] = "true"
 			}
+
+		case constants.AnnotationEnableSchema:
+			if strings.ToLower(value) == constants.Enabled {
+				options[constants.AnnotationEnableSchema] = "true"
+			}
 		}
 	}
 }

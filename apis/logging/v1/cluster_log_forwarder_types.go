@@ -45,6 +45,11 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Outputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderOutputs"}
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
+	// Filters are applied to log records passing through a pipeline.
+	// There are different types of filter that can select and modify log records in different ways.
+	// See [FilterTypeSpec] for a list of filter types.
+	Filters []FilterSpec `json:"filters,omitempty"`
+
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
 	//
 	// +required
@@ -84,6 +89,10 @@ type ClusterLogForwarderStatus struct {
 	// Outputs maps output name to condition of the output.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:outputConditions"}
 	Outputs NamedConditions `json:"outputs,omitempty"`
+
+	// Filters maps filter name to condition of the filter.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Filter Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:filterConditions"}
+	Filters NamedConditions `json:"filters,omitempty"`
 
 	// Pipelines maps pipeline name to condition of the pipeline.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:pipelineConditions"}
@@ -280,6 +289,24 @@ type OutputSecretSpec struct {
 	Name string `json:"name"`
 }
 
+// Filter defines a filter for log messages.
+// See [FilterTypeSpec] for a list of filter types.
+type FilterSpec struct {
+	// Name used to refer to the filter from a `pipeline`.
+	//
+	// +kubebuilder:validation:minLength:=1
+	// +required
+	Name string `json:"name"`
+
+	// Type of filter.
+	//
+	// +kubebuilder:validation:Enum:=kubeAPIAudit
+	// +required
+	Type string `json:"type"`
+
+	FilterTypeSpec `json:",inline"`
+}
+
 // PipelinesSpec link a set of inputs to a set of outputs.
 type PipelineSpec struct {
 	// OutputRefs lists the names (`output.name`) of outputs from this pipeline.
@@ -303,6 +330,13 @@ type PipelineSpec struct {
 	//
 	// +required
 	InputRefs []string `json:"inputRefs"`
+
+	// Filters lists the names of filters to be applied to records going through this pipeline.
+	//
+	// Each filter is applied in order.
+	// If a filter drops a records, subsequent filters are not applied.
+	// +optional
+	FilterRefs []string `json:"filterRefs,omitempty"`
 
 	// Labels applied to log records passing through this pipeline.
 	// These labels appear in the `openshift.labels` map in the log record.

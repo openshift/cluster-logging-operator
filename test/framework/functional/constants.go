@@ -1,8 +1,9 @@
 package functional
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"time"
+
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
 const (
@@ -14,6 +15,13 @@ const (
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"
 	FunctionalNodeName = "functional-test-node"
+
+	ApplicationLogDir    = "/var/log/pods"
+	AuditLogDir          = "/var/log/audit"
+	OvnAuditLogDir       = "/var/log/ovn"
+	OauthAuditLogDir     = "/var/log/oauth-apiserver"
+	OpenshiftAuditLogDir = "/var/log/openshift-apiserver"
+	K8sAuditLogDir       = "/var/log/kube-apiserver"
 )
 
 var (
@@ -21,12 +29,12 @@ var (
 	defaultRetryInterval time.Duration
 
 	fluentdLogPath = map[string]string{
-		applicationLog:    "/var/log/pods",
-		auditLog:          "/var/log/audit",
-		ovnAuditLog:       "/var/log/ovn",
-		oauthAuditLog:     "/var/log/oauth-apiserver",
-		OpenshiftAuditLog: "/var/log/openshift-apiserver",
-		k8sAuditLog:       "/var/log/kube-apiserver",
+		applicationLog:    ApplicationLogDir,
+		auditLog:          AuditLogDir,
+		ovnAuditLog:       OvnAuditLogDir,
+		oauthAuditLog:     OauthAuditLogDir,
+		OpenshiftAuditLog: OpenshiftAuditLogDir,
+		k8sAuditLog:       K8sAuditLogDir,
 	}
 	outputLogFile = map[string]map[string]string{
 		logging.OutputTypeHttp: {

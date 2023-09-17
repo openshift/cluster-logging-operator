@@ -27,6 +27,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 					{
 						InputRefs:  []string{InputNameAudit},
 						OutputRefs: []string{"X", "Z"},
+						FilterRefs: []string{"F", "G"},
 					},
 				},
 			},
@@ -65,7 +66,10 @@ var _ = Describe("ClusterLogForwarder", func() {
       outputRefs:
       - "Y"
       - Z
-    - inputRefs:
+    - filterRefs:
+      - F
+      - G
+      inputRefs:
       - audit
       outputRefs:
       - X
@@ -116,6 +120,10 @@ var _ = Describe("ClusterLogForwarder", func() {
           ],
           "inputRefs": [
             "audit"
+          ],
+          "filterRefs": [
+            "F",
+            "G"
           ]
         }
       ]

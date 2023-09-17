@@ -1,9 +1,10 @@
 package v1
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"reflect"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 // Reserved input names.
@@ -29,17 +30,28 @@ const FirstESVersionWithoutType = 8
 // IsReservedOutputName returns true if s is a reserved output name.
 func IsReservedOutputName(s string) bool { return s == OutputNameDefault }
 
-// IsOutputTypeName returns true if s capitalized is a field name in OutputTypeSpec
-func IsOutputTypeName(s string) bool {
-	_, ok := reflect.TypeOf(OutputTypeSpec{}).FieldByName(strings.Title(s)) //nolint:staticcheck
-	return ok
+// typeHasField tests if a struct type has the named JSON field.
+func typeHasField(t reflect.Type, name string) bool {
+	for i := 0; i < t.NumField(); i++ {
+		tag := strings.Split(t.Field(i).Tag.Get("json"), ",")[0]
+		if name == tag {
+			return true
+		}
+	}
+	return false
 }
+
+// IsOutputTypeName returns true if capitalized is a known output type name
+func IsOutputTypeName(s string) bool { return typeHasField(reflect.TypeOf(OutputTypeSpec{}), s) }
+
+// IsFilterTypeName returns true if capitalized is a known filter type name
+func IsFilterTypeName(s string) bool { return typeHasField(reflect.TypeOf(FilterTypeSpec{}), s) }
 
 // Get all subordinate condition messages for condition of type "Ready" and False
 // A 'true' Ready condition with a message means some error with pipeline but it is still valid
 func (status ClusterLogForwarderStatus) GetReadyConditionMessages() []string {
 	var messages = []string{}
-	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs, status.Filters} {
 		for _, conds := range nc {
 			currCond := conds.GetCondition(ConditionReady)
 			if !conds.IsTrueFor(ConditionReady) {
@@ -55,7 +67,7 @@ func (status ClusterLogForwarderStatus) GetReadyConditionMessages() []string {
 
 // IsReady returns true if all of the subordinate conditions are ready.
 func (status ClusterLogForwarderStatus) IsReady() bool {
-	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs, status.Filters} {
 		for _, conds := range nc {
 			if !conds.IsTrueFor(ConditionReady) {
 				return false
@@ -128,6 +140,15 @@ func (spec *ClusterLogForwarderSpec) InputMap() map[string]*InputSpec {
 	m := map[string]*InputSpec{}
 	for i := range spec.Inputs {
 		m[spec.Inputs[i].Name] = &spec.Inputs[i]
+	}
+	return m
+}
+
+// FilterMap returns a map of filter names to FilterSpec.
+func (spec *ClusterLogForwarderSpec) FilterMap() map[string]*FilterSpec {
+	m := map[string]*FilterSpec{}
+	for i := range spec.Filters {
+		m[spec.Filters[i].Name] = &spec.Filters[i]
 	}
 	return m
 }

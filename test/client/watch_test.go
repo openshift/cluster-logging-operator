@@ -58,6 +58,16 @@ var _ = Describe("Watch", func() {
 		Expect(pod.Status.Phase).To(Equal(corev1.PodSucceeded))
 	})
 
+	It("can get pod logs", func() {
+		pod := runtime.NewPod(t.NS.Name, "run", corev1.Container{
+			Name: "testpod", Image: "quay.io/quay/busybox", Args: []string{"echo", "hello world"},
+		})
+		pod.Spec.RestartPolicy = corev1.RestartPolicyNever
+		ExpectOK(t.Create(pod))
+		ExpectOK(t.WaitFor(pod, PodSucceeded), test.YAMLString(pod))
+		Expect(t.ContainerLogs(pod.Namespace, pod.Name, "")).To(Equal("hello world\n"))
+	})
+
 	It("returns when a pod fails", func() {
 		pod := runtime.NewPod(t.NS.Name, "run", corev1.Container{
 			Name: "testpod", Image: "quay.io/quay/busybox", Args: []string{"false"},

@@ -3,18 +3,20 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
-	testrt "github.com/openshift/cluster-logging-operator/internal/runtime"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
+	testrt "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -256,6 +258,33 @@ func (c *Client) ControllerRuntimeClient() crclient.Client { return c.c }
 // Cfg returns the the client's rest.Config
 func (c *Client) Cfg() *rest.Config { return c.cfg }
 
+// ContainerLogStream returns the log stream for a container.
+// Empty containerName means default container.
+func (c *Client) ContainerLogStream(namespace, podName, containerName string, follow bool) (io.ReadCloser, error) {
+	clientset, err := kubernetes.NewForConfig(c.cfg) // Need to use the go-client for logs
+	if err != nil {
+		return nil, err
+	}
+	return clientset.CoreV1().Pods(namespace).GetLogs(podName,
+		&corev1.PodLogOptions{Container: containerName, Follow: follow}).Stream(c.ctx)
+}
+
+// ContainerLogs returns the pod logs, or an error string if there is a problem reading them.
+// Empty containerName means default container.
+func (c *Client) ContainerLogs(namespace, podName, containerName string) string {
+	r, err := c.ContainerLogStream(namespace, podName, containerName, false)
+	if err != nil {
+		return err.Error()
+	}
+	defer r.Close()
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
+}
+
+// Singleton
 var singleton struct {
 	c    *Client
 	err  error

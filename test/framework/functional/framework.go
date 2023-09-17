@@ -140,7 +140,7 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 			if err != nil {
 				log.Error(err, "Unable to retrieve logs", "container", container.Name)
 			}
-			fmt.Println(logs)
+			fmt.Fprintln(test.Writer(), logs)
 		}
 	}
 	f.closeClient()

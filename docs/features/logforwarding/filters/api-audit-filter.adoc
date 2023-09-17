@@ -1,0 +1,119 @@
+= API Audit Filter
+
+Each call to the Kube or OpenShift API server generates an audit event containing  the request, response and details of who made the call.
+These events are important for security audits, but can contain more information than is normally needed.
+This can make the volume of data unmanageable for many applications.
+
+The API Audit filter allows you to remove unwanted events and reduce event size to create a manageable audit trail.
+
+== Using the API Audit Filter
+
+Audit policy is explained, with examples, in https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-policy[Auditing Kubernetes].
+
+The ClusterLogForwarder audit filter also has some features that are extensions to the standard policy, see
+link:../../../../apis/logging/v1/filter_api_audit_types.go[the API documentation].
+
+Here is an example of a ClusterLogForwarder configuration using the example policy from
+https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-policy[Auditing Kubernetes].
+Note this example is _not_ a recommended audit policy, it is only intended to show the range of audit policy rules.
+
+[source,yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  pipelines:
+    - inputRefs: [application, infrastructure, audit]
+      filterRefs: [my-policy]
+      outputRefs: [default]
+  filters:
+    - name: my-policy
+      type: kubeAPIAudit
+      kubeAPIAudit:
+        # Don't generate audit events for all requests in RequestReceived stage.
+        omitStages:
+          - "RequestReceived"
+
+        rules:
+          # Log pod changes at RequestResponse level
+          - level: RequestResponse
+            resources:
+            - group: ""
+              resources: ["pods"]
+
+          # Log "pods/log", "pods/status" at Metadata level
+          - level: Metadata
+            resources:
+            - group: ""
+              resources: ["pods/log", "pods/status"]
+
+          # Don't log requests to a configmap called "controller-leader"
+          - level: None
+            resources:
+            - group: ""
+              resources: ["configmaps"]
+              resourceNames: ["controller-leader"]
+
+          # Don't log watch requests by the "system:kube-proxy" on endpoints or services
+          - level: None
+            users: ["system:kube-proxy"]
+            verbs: ["watch"]
+            resources:
+            - group: "" # core API group
+              resources: ["endpoints", "services"]
+
+          # Don't log authenticated requests to certain non-resource URL paths.
+          - level: None
+            userGroups: ["system:authenticated"]
+            nonResourceURLs:
+            - "/api*" # Wildcard matching.
+            - "/version"
+
+          # Log the request body of configmap changes in kube-system.
+          - level: Request
+            resources:
+            - group: "" # core API group
+              resources: ["configmaps"]
+            # This rule only applies to resources in the "kube-system" namespace.
+            # The empty string "" can be used to select non-namespaced resources.
+            namespaces: ["kube-system"]
+
+          # Log configmap and secret changes in all other namespaces at the Metadata level.
+          - level: Metadata
+            resources:
+            - group: "" # core API group
+              resources: ["secrets", "configmaps"]
+
+          # Log all other resources in core and extensions at the Request level.
+          - level: Request
+            resources:
+            - group: "" # core API group
+            - group: "extensions" # Version of group should NOT be included.
+
+          # A catch-all rule to log all other requests at the Metadata level.
+          - level: Metadata
+ ----
+
+
+== Differences from OCP audit log policy
+
+The OCP (Openshift Container Platform) provides a resource to configure the audit log policy of its API servers.
+This resource is different to the ClusterLogForwarder filter, and less flexible.
+For more details see https://docs.openshift.com/container-platform/latest/security/audit-log-policy-config.html
+
+The OCP policy only allows control of events by `group`
+It does not allow you to distinguish events by `verb`, which is important to separate more importnat "update" events from less important "read only" events.
+
+The ClusterLogForwarder filter provides control by verb, user, group, namespace, resource and more.
+
+The OCP policy changes what events the API server _emits_, there can only be one such policy per cluster.
+Changing the policy may require permissions that are not available to the customer admin of a managed cluster.
+
+The ClusterLogForwarder filter changes what the log collector _forwards_.
+You can create multiple filters to send different summaries of the same audit stream to different places.
+For example, you could send a detailed stream to the local cluster log store, and a less detailed stream at a remote site.
+Changing the filter requires normal admin access to the ClusterLogForwarder.
+

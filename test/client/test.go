@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/onsi/ginkgo"
 	"github.com/openshift/cluster-logging-operator/test"
 	corev1 "k8s.io/api/core/v1"
 
@@ -22,13 +21,13 @@ type Test struct {
 
 // Close removes the test namespace unless called from a failed test.
 func (t *Test) Close() {
-	if g, ok := test.GinkgoCurrentTest(); ok && !g.Failed {
-		_ = t.Remove(t.NS)
-	} else {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		fmt.Printf("\n\n============\n")
 		fmt.Printf("Not removing functional test namespace since test failed. Run \"oc delete ns %s\" to delete namespace manually\n", t.NS.Name)
 		fmt.Printf("To delete all lingering functional test namespaces, run \"oc delete ns -ltest-client=true\"\n")
 		fmt.Printf("============\n\n")
+	} else {
+		_ = t.Remove(t.NS)
 	}
 }
 
@@ -45,9 +44,7 @@ func NewTest(testOptions ...TestOption) *Test {
 	if !TestOptions(testOptions).Include(DryRunTestOption) {
 		test.Must(t.Create(t.NS))
 	}
-	if _, ok := test.GinkgoCurrentTest(); ok {
-		fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
-	}
+	fmt.Fprintf(test.Writer(), "test namespace: %v\n", t.NS.Name)
 	return t
 }
 

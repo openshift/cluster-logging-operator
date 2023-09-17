@@ -122,8 +122,8 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 			Expect(err).To(BeNil(), "Expected no errors writing to HTTP input")
 			raw, err := framework.ReadFileFromWithRetryInterval("http", functional.ApplicationLogFile, time.Second)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			lines := strings.Split(raw, "\n")
-			Expect(len(lines)).To(Equal(len(logArray.Items)))
+			lines := strings.Split(strings.TrimSpace(raw), "\n")
+			Expect(len(lines)).To(Equal(len(logArray.Items)), "--- raw lines:\n%v\n...", raw)
 			for _, line := range lines {
 				var logs []auditv1.Event
 				err = types.ParseLogsFrom(utils.ToJsonLogs([]string{line}), &logs, false)

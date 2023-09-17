@@ -23,6 +23,7 @@ Open an issue in this repository
 * link:features/logforwarding/outputs/google-cloud-forwarding.adoc[Forward logs to Google Cloud Logging]
 * link:features/logforwarding/outputs/splunk-forwarding.adoc[Forward logs to Splunk]
 * link:features/logforwarding/outputs/send-logs-to-fluentd-http.adoc[Send logs to Fluentd over Http]
+* link:features/logforwarding/filters/api-audit-filter.adoc[Filter API audit logs using a policiy]
 
 == Relevant links
 

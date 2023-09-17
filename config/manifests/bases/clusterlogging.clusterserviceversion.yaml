@@ -71,6 +71,11 @@ spec:
         path: conditions
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:forwarderConditions
+      - description: Filters maps filter name to condition of the filter.
+        displayName: Filter Conditions
+        path: filters
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:filterConditions
       - description: Inputs maps input name to condition of the input.
         displayName: Input Conditions
         path: inputs

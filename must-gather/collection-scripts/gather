@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo -e "..... must-gather script started .....\n"
+echo -e "..... Cluster Logging must-gather script started .....\n"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_COLLECTION_PATH="${1:-/must-gather}"
@@ -32,10 +32,13 @@ for multi in ${namespaces[@]}; do
     if [ "$multi" != $LOGGING_NS ] ; then
       # add to the list of namespaces
       cluster_resources+=(ns/$multi)
-      echo "Adding namespace $multi to cluster_resources list"
+      echo "Adding namespace '$multi' to cluster_resources list"
 
       # get collector resources from the namespace
-      ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" $multi >> "${LOGFILE_PATH}" 2>&1
+      ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" "$multi" >> "${LOGFILE_PATH}" 2>&1
+
+      # gather other logging related resources
+      ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$multi" >> "${LOGFILE_PATH}" 2>&1
     fi
 done
 

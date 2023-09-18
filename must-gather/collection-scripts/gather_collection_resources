@@ -13,7 +13,8 @@ fi
 NAMESPACE=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
-collector_folder="$CLO_COLLECTION_PATH/collector"
+# Adding namespace folders to allow for multi-logging
+collector_folder="$CLO_COLLECTION_PATH/collectors/$NAMESPACE"
 
 check_collector_connectivity() {
   local pod=$1
@@ -46,10 +47,10 @@ check_collector_persistence() {
   fi
 }
 
-log "BEGIN gather_collection_resources for namespace: $NAMESPACE..."
-log "- Searching for collectors based on ds label 'component=collector"
+log "BEGIN <gather_collection_resources> for namespace: $NAMESPACE ..."
 
 # find daemonsets
+log "- Searching for collectors"
 ds_names="$(oc get ds -n $NAMESPACE -lcomponent=collector -o custom-columns=:.metadata.name)"
 
 # get name of collector from ds name
@@ -62,7 +63,7 @@ for collector in ${ds_names[@]}; do
 
   is_fluent=$(echo $yaml|grep fluent)
 
-  log "- Gathering data for component: $collector"
+  log "- Gathering data for collector: $collector"
   mkdir -p $collector_folder
 
   # gathering collector pods
@@ -84,4 +85,4 @@ for collector in ${ds_names[@]}; do
       fi
   done
 done
-log "END gather_collection_resources..."
+log "END <gather_collection_resources> for namespace: $NAMESPACE ..."

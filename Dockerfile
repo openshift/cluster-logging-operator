@@ -22,7 +22,7 @@ RUN make build
 
 FROM quay.io/openshift/origin-cli:4.13 AS origincli
 
-FROM registry.redhat.io/ubi9/ubi:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV APP_DIR=/opt/apt-root/src
 ENV SRC_DIR=./
@@ -34,9 +34,9 @@ RUN INSTALL_PKGS=" \
       file \
       xz \
       " && \
-    yum install -y $INSTALL_PKGS && \
+    microdnf install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
-    yum clean all && \
+    microdnf clean all && \
     mkdir /tmp/ocp-clo && \
     chmod og+w /tmp/ocp-clo
 

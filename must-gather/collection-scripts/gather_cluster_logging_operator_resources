@@ -6,7 +6,7 @@ source ${SCRIPT_DIR}/common
 BASE_COLLECTION_PATH=$1
 NAMESPACE=${2:-openshift-logging}
 
-log "BEGIN gather_cluster_logging_operator_resources ..."
+log "BEGIN <gather_cluster_logging_operator_resources> from namespace: $NAMESPACE ..."
 
 # Use PWD as base path if no argument is passed
 if [ "${BASE_COLLECTION_PATH}" = "" ]; then
@@ -14,48 +14,60 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
 fi
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
-clo_folder="$CLO_COLLECTION_PATH/clo"
+# Adding namespace folders to allow for multi-logging
+clo_folder="$CLO_COLLECTION_PATH/clo/$NAMESPACE"
 
-log "Gathering data for cluster-logging-operator"
+log "Creating namespace directory: $clo_folder"
 mkdir -p "$clo_folder"
 
-pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath='{.items[*].metadata.name}')
-for pod in $pods
-do
-    get_env $pod $clo_folder $NAMESPACE "Dockerfile-*operator*"
-done
+# We only need these from the openshift-logging namespace
+if [ $NAMESPACE == "openshift-logging" ]; then
+  log "Gathering data for 'cluster-logging-operator' from namespace: $NAMESPACE"
 
-oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml --cache-dir=${KUBECACHEDIR} > $clo_folder/deployment
+  pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath='{.items[*].metadata.name}')
+  for pod in $pods
+  do
+      get_env $pod $clo_folder $NAMESPACE "Dockerfile-*operator*"
+  done
 
-for csv in $(oc -n $NAMESPACE get csv -o name) ; do
-  mkdir -p "$(dirname ${clo_folder}/$csv)"
-  oc -n $NAMESPACE get "${csv}" -o yaml --cache-dir=${KUBECACHEDIR} > ${clo_folder}/"${csv}.yaml"
-done
+  oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml --cache-dir=${KUBECACHEDIR} > $clo_folder/deployment
 
+  for csv in $(oc -n $NAMESPACE get csv -o name) ; do
+    mkdir -p "$(dirname ${clo_folder}/$csv)"
+    oc -n $NAMESPACE get "${csv}" -o yaml --cache-dir=${KUBECACHEDIR} > ${clo_folder}/"${csv}.yaml"
+  done
+fi
 
+log "Gathering data for 'clusterlogging' and 'clusterlogforwarder' from namespace: $NAMESPACE"
 for r in "clusterlogging" "clusterlogforwarder" ; do
   data="$(oc -n $NAMESPACE get $r --ignore-not-found -o yaml)"
   if [ "$data" != "" ] ; then
-    echo "${data}" > "${clo_folder}/"$r"_instance.yaml"
+    name="$(oc -n $NAMESPACE get $r --ignore-not-found -o custom-columns=:.metadata.name)"
+    echo $data > "${clo_folder}/${r}_${name}.yaml"
   fi
 done
 
+log "Gathering 'secrets' from logging namespace: $NAMESPACE"
 oc -n $NAMESPACE get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1
 
-data=$(oc -n $NAMESPACE get secret collector-config -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
+log "Gathering 'vector.toml' from logging namespace: $NAMESPACE"
+data=$(oc -n $NAMESPACE get secret ${name}-config -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
 if [ "$data" != "" ] ; then
   echo $data | base64 -d > ${clo_folder}/vector.toml 2>&1
 fi
 
+log "Gathering 'deployments' and 'daemonsets' and 'version' from logging namespace: $NAMESPACE"
 csv_name="$(oc -n $NAMESPACE get csv -o name | grep -E 'cluster(-?)logging')"
 oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt --cache-dir=${KUBECACHEDIR} 2>&1
 oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt --cache-dir=${KUBECACHEDIR} 2>&1
 oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"/must-gather\n"}{.spec.version}' --cache-dir=${KUBECACHEDIR} > "${clo_folder}/version"
 
+log "Checking for legacy es and fluentd resources"
 for r in "secret/elasticsearch" "configmap/collector" ; do
   result="$(oc -n $NAMESPACE get $r --ignore-not-found)"
   if [ "$result" != "" ] ; then
+    log "Gathering legacy resource '$r'"
     oc -n $NAMESPACE extract $r --to=${clo_folder} --cache-dir=${KUBECACHEDIR}
   fi
 done
-log "END gather_cluster_logging_operator_resources ..."
+log "END <gather_cluster_logging_operator_resources> from namespace: $NAMESPACE ..."

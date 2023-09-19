@@ -80,27 +80,6 @@ source = '''
 `
 }
 
-type DetectExceptions struct {
-	ComponentID string
-	Inputs      string
-}
-
-func (d DetectExceptions) Name() string {
-	return "detectExceptions"
-}
-
-func (d DetectExceptions) Template() string {
-	return `{{define "detectExceptions" -}}
-[transforms.{{.ComponentID}}]
-type = "detect_exceptions"
-inputs = {{.Inputs}}
-languages = ["All"]
-group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.container_name", "kubernetes.pod_id"]
-expire_after_ms = 2000
-multiline_flush_interval_ms = 1000
-{{end}}`
-}
-
 func Debug(id string, inputs string) generator.Element {
 	return generator.ConfLiteral{
 		Desc:         "Sending records to stdout for debug purposes",
@@ -117,34 +96,4 @@ encoding.codec = "json"
 {{end}}
 `,
 	}
-}
-
-type Throttle struct {
-	ComponentID string
-	Desc        string
-	Inputs      string
-	Threshold   int64
-	KeyField    string
-}
-
-func (t Throttle) Name() string {
-	return "throttleTemplate"
-}
-
-func (t Throttle) Template() string {
-	return `
-{{define "throttleTemplate" -}}
-{{- if .Desc}}
-# {{.Desc}}
-{{- end}}
-[transforms.{{.ComponentID}}]
-type = "throttle"
-inputs = {{.Inputs}}
-window_secs = 1
-threshold = {{.Threshold}}
-{{- if .KeyField}}
-key_field = {{ .KeyField }}
-{{- end}}
-{{end}}
-`
 }

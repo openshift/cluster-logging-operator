@@ -3,6 +3,7 @@ package vector
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -42,7 +43,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 		}
 
 		if p.DetectMultilineErrors {
-			d := DetectExceptions{
+			d := normalize.DetectExceptions{
 				ComponentID: fmt.Sprintf("detect_exceptions_%s", p.Name),
 				Inputs:      helpers.MakeInputs(inputs...),
 			}

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"bytes"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -64,6 +65,14 @@ func (g Generator) generate(es []Element) (string, error) {
 		"indent": indent,
 		"comma_separated": func(arr []string) string {
 			return strings.Join(arr, ", ")
+		},
+		"getSortedKeyFromMap": func(arg map[string]string) []string {
+			var keys []string
+			for key := range arg {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			return keys
 		},
 	}
 	f["optional"] = f["kv"]

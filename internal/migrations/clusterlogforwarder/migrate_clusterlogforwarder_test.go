@@ -1,4 +1,4 @@
-package migrations
+package clusterlogforwarder
 
 import (
 	"fmt"
@@ -38,8 +38,8 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 				},
 			}
 
-			out_spec, _ := MigrateClusterLogForwarderSpec("test-ns", "test-clf", in_spec, nil, map[string]bool{}, constants.CollectorName, constants.LogCollectorToken)
-			for i, pipeline := range out_spec.Pipelines {
+			out, _, _ := MigrateClusterLogForwarderSpec("test-ns", "test-clf", in_spec, nil, map[string]bool{}, constants.CollectorName, constants.LogCollectorToken)
+			for i, pipeline := range out.Pipelines {
 				Expect(pipeline.Name).To(Equal(fmt.Sprintf("pipeline_%v", i)))
 			}
 		})
@@ -85,14 +85,14 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 		})
 
 		It("should not add service account name if forwarder not named `instance` and not in `openshift-logging` namespace", func() {
-			forwarderSpec, extras := MigrateClusterLogForwarderSpec("test-ns", "test-clf", spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+			forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec("test-ns", "test-clf", spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 			Expect(forwarderSpec).To(Equal(spec))
 			Expect(extras).To(Equal(map[string]bool{}))
 		})
 
 		It("should not add the default OutputSpec when it is not referenced by a pipeline", func() {
 			// This is equal to returning (spec, nil) and will only pass if 2nd param is nil
-			forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+			forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 			spec.ServiceAccountName = constants.CollectorServiceAccountName
 			Expect(forwarderSpec).To(Equal(spec))
 			Expect(extras).To(Equal(map[string]bool{}))
@@ -100,7 +100,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 
 		It("should add the default OutputSpec when default logstore exists and spec is empty ", func() {
 			logstore = &logging.LogStoreSpec{Type: logging.OutputTypeElasticsearch}
-			forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+			forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 			Expect(forwarderSpec).To(Equal(
 				logging.ClusterLogForwarderSpec{
 					Pipelines: []logging.PipelineSpec{
@@ -125,7 +125,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 				},
 			}
 
-			spec, extras = MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+			spec, extras, _ = MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, logging.ClusterLogForwarderSpec{}, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 
 			Expect(spec).To(Equal(
 				logging.ClusterLogForwarderSpec{
@@ -181,7 +181,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 				},
 			}
 
-			spec, extras = MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+			spec, extras, _ = MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 
 			Expect(spec).To(Equal(
 				logging.ClusterLogForwarderSpec{
@@ -228,7 +228,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 				})
 
 				It("should add the default OutputSpec", func() {
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})
@@ -242,7 +242,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs[1].Elasticsearch = &logging.Elasticsearch{ElasticsearchStructuredSpec: *spec.OutputDefaults.Elasticsearch}
 					exp.OutputDefaults = spec.OutputDefaults
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and OutputDefault %v", pipelines, spec.OutputDefaults))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
@@ -270,7 +270,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 					exp.ServiceAccountName = constants.CollectorServiceAccountName
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})
@@ -286,7 +286,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}, constants.CollectorName))
 					exp.ServiceAccountName = constants.CollectorServiceAccountName
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and ElasticsearchSpec %v", pipelines, esSpec))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})
@@ -313,7 +313,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 				})
 
 				It("should add the default OutputSpec", func() {
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})
@@ -326,7 +326,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs[1].Elasticsearch = &logging.Elasticsearch{ElasticsearchStructuredSpec: *spec.OutputDefaults.Elasticsearch}
 					exp.OutputDefaults = spec.OutputDefaults
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and OutputDefault %v", pipelines, spec.OutputDefaults))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
@@ -354,7 +354,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs = append(outputs, NewDefaultOutput(nil, constants.CollectorName))
 					exp.ServiceAccountName = constants.CollectorServiceAccountName
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v", pipelines))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})
@@ -370,7 +370,7 @@ var _ = Describe("MigrateClusterLogForwarderSpec", func() {
 					exp.Outputs = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}, constants.CollectorName))
 					exp.ServiceAccountName = constants.CollectorServiceAccountName
 
-					forwarderSpec, extras := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
+					forwarderSpec, extras, _ := MigrateClusterLogForwarderSpec(constants.OpenshiftNS, constants.SingletonName, spec, logstore, extras, constants.CollectorName, constants.LogCollectorToken)
 					Expect(forwarderSpec).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and ElasticsearchSpec %v", pipelines, esSpec))
 					Expect(extras).To(Equal(map[string]bool{constants.MigrateDefaultOutput: true}))
 				})

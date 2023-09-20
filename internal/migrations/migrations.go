@@ -2,12 +2,13 @@ package migrations
 
 import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogging"
 )
 
 func MigrateClusterLogging(spec loggingv1.ClusterLoggingSpec) (loggingv1.ClusterLoggingSpec, []loggingv1.Condition) {
 	status := []loggingv1.Condition{}
-	for _, migrate := range migrations {
+	for _, migrate := range clMigrations {
 		migratedSpec, migrationStatus := migrate(spec)
 		status = append(status, migrationStatus...)
 		spec = migratedSpec
@@ -17,7 +18,23 @@ func MigrateClusterLogging(spec loggingv1.ClusterLoggingSpec) (loggingv1.Cluster
 
 // migrations are the set of rules for migrating a ClusterLogging that modify the spec
 // for reconciliation and provides warning or informational messages to be added as status
-var migrations = []func(cl loggingv1.ClusterLoggingSpec) (loggingv1.ClusterLoggingSpec, []loggingv1.Condition){
+var clMigrations = []func(cl loggingv1.ClusterLoggingSpec) (loggingv1.ClusterLoggingSpec, []loggingv1.Condition){
 	clusterlogging.MigrateCollectionSpec,
 	clusterlogging.MigrateVisualizationSpec,
+}
+
+func MigrateClusterLogForwarder(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition) {
+	conditions := []loggingv1.Condition{}
+	for _, migrate := range clfMigrations {
+		var migrationConditions []loggingv1.Condition
+		spec, extras, migrationConditions = migrate(namespace, name, spec, logStore, extras, logstoreSecretName, saTokenSecret)
+		conditions = append(conditions, migrationConditions...)
+	}
+	return spec, extras, conditions
+}
+
+// migrations are the set of rules for migrating a ClusterLogForwarder that modify the spec
+var clfMigrations = []func(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition){
+	clusterlogforwarder.MigrateClusterLogForwarderSpec,
+	clusterlogforwarder.DropUnreferencedOutputs,
 }

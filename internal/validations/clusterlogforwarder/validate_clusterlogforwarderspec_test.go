@@ -2,19 +2,17 @@ package clusterlogforwarder
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
-	"github.com/onsi/gomega/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 
@@ -29,29 +27,6 @@ import (
 const (
 	otherTargetName = "someothername"
 )
-
-// Match condition by type, status and reason if reason != "".
-// Also match messageRegex if it is not empty.
-func matchCondition(t loggingv1.ConditionType, s bool, r loggingv1.ConditionReason, messageRegex string) types.GomegaMatcher {
-	var status corev1.ConditionStatus
-	if s {
-		status = corev1.ConditionTrue
-	} else {
-		status = corev1.ConditionFalse
-	}
-	fields := Fields{"Type": Equal(t), "Status": Equal(status)}
-	if r != "" {
-		fields["Reason"] = Equal(r)
-	}
-	if messageRegex != "" {
-		fields["Message"] = MatchRegexp(messageRegex)
-	}
-	return MatchFields(IgnoreExtras, fields)
-}
-
-func HaveCondition(t loggingv1.ConditionType, s bool, r loggingv1.ConditionReason, messageRegex string) types.GomegaMatcher {
-	return ContainElement(matchCondition(t, s, r, messageRegex))
-}
 
 var _ = Describe("Validate clusterlogforwarderspec", func() {
 	var clfStatus *loggingv1.ClusterLogForwarderStatus
@@ -321,6 +296,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{OutputRefs: []string{output.Name, otherOutput.Name}},
+				},
 				Outputs: []loggingv1.OutputSpec{
 					output,
 					otherOutput,
@@ -331,6 +309,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		DescribeTable("googlecloudlogging output validation",
 			func(gcl *loggingv1.GoogleCloudLogging, expectedPass bool) {
 				forwarderSpec = &loggingv1.ClusterLogForwarderSpec{
+					Pipelines: []loggingv1.PipelineSpec{{OutputRefs: []string{"X"}}},
 					Outputs: []loggingv1.OutputSpec{
 						{
 							Name: "X",
@@ -376,8 +355,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		// Ref: https://issues.redhat.com/browse/LOG-3228
 		It("should validate the default output as any other without adding a new one", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{{OutputRefs: []string{"default"}}},
 				Outputs: []loggingv1.OutputSpec{
-					migrations.NewDefaultOutput(nil, constants.CollectorName),
+					clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 				},
 			}
 
@@ -389,6 +369,13 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Outputs[loggingv1.OutputNameDefault]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp. the number of outputs to remain unchanged")
 		})
+
+		It("should be invalid if output is not referenced in a pipeline", func() {
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{otherOutput.Name}}}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs[output.Name]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "not referenced"))
+		})
+
 		It("should be invalid if outputs do not have unique names", func() {
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name: "myOutput",
@@ -473,6 +460,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 		It("should allow specific outputs that do not require URL", func() {
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{"aCloudwatch"}}}
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
 					Name: "aCloudwatch",
@@ -509,6 +497,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 		It("should be valid if output has a positive limit threshold", func() {
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{"custom-output"}}}
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
 				Name: "custom-output",
 				Type: "elasticsearch",
@@ -562,6 +551,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						},
 						Secret: &loggingv1.OutputSecretSpec{Name: secret.Name},
 					}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
 					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
 				})
 
@@ -644,6 +634,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						URL:    "https://somewhere",
 						Secret: &loggingv1.OutputSecretSpec{Name: secret.Name},
 					}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
 					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
 				})
 				It("should fail outputs with secrets that have missing tls.key", func() {
@@ -706,6 +697,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			)
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{"aName"}}}
 			forwarderSpec.Outputs = append(forwarderSpec.Outputs,
 				loggingv1.OutputSpec{
 					Name:   "aName",
@@ -766,7 +758,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Outputs: []loggingv1.OutputSpec{
 					output,
 					otherOutput,
-					migrations.NewDefaultOutput(nil, constants.CollectorName),
+					clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 				},
 				Pipelines: []loggingv1.PipelineSpec{
 					{
@@ -955,7 +947,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				invalidCW,
-				migrations.NewDefaultOutput(nil, constants.CollectorName),
+				clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			extras[constants.MigrateDefaultOutput] = true
@@ -992,7 +984,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil, constants.CollectorName),
+				clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{
@@ -1034,7 +1026,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil, constants.CollectorName),
+				clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{
@@ -1076,7 +1068,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
-				migrations.NewDefaultOutput(nil, constants.CollectorName),
+				clusterlogforwarder.NewDefaultOutput(nil, constants.CollectorName),
 			}
 
 			forwarderSpec.Inputs = []loggingv1.InputSpec{

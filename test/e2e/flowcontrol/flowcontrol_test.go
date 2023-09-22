@@ -93,8 +93,8 @@ var _ = Describe("[E2E] FlowControl", func() {
 				Name: "custom-app-0",
 				Application: &loggingv1.Application{
 					Namespaces: []string{stressorNS},
-					GroupLimit: &loggingv1.LimitSpec{
-						MaxRecordsPerSecond: 100,
+					ContainerLimit: &loggingv1.LimitSpec{
+						MaxRecordsPerSecond: 50,
 					}, // 10 files and 100 group limit, so 10 lines per file,
 				},
 			},
@@ -103,7 +103,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 				Application: &loggingv1.Application{
 					Namespaces: []string{stressorNS},
 					ContainerLimit: &loggingv1.LimitSpec{
-						MaxRecordsPerSecond: 100,
+						MaxRecordsPerSecond: 50,
 					}, // 10 files and 100 group limit, so 10 lines per file,
 				},
 			},
@@ -156,7 +156,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 		time.Sleep(30 * time.Second)
 
 		promQuery = fmt.Sprintf(VectorCompSentEvents, "group-policy-at-application")
-		ExpectMetricsWithinRange(GetCollectorMetrics(promQuery), 0, 102)
+		ExpectMetricsWithinRange(GetCollectorMetrics(promQuery), 0, 0)
 
 		promQuery = fmt.Sprintf(SumMetric, VectorCompSentEvents)
 		promQuery = fmt.Sprintf(promQuery, "container-policy-at-application") // Max number of logs allowed per second is 10 * 100 lines/sec
@@ -171,7 +171,11 @@ var _ = Describe("[E2E] FlowControl", func() {
 			{
 				Name: "custom-app-2",
 				Application: &loggingv1.Application{
-					GroupLimit: &loggingv1.LimitSpec{
+					//LOG-4362
+					//GroupLimit: &loggingv1.LimitSpec{
+					//	MaxRecordsPerSecond: 200,
+					//},
+					ContainerLimit: &loggingv1.LimitSpec{
 						MaxRecordsPerSecond: 200,
 					},
 				},

@@ -164,10 +164,12 @@ type Application struct {
 
 	// Group limit applied to the aggregated log
 	// flow to this input. The total log flow from this input
-	// cannot exceed the limit.
+	// cannot exceed the limit. Unsupported
 	//
 	// +optional
-	GroupLimit *LimitSpec `json:"groupLimit,omitempty"`
+	// +docgen:ignore
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
+	GroupLimit *LimitSpec `json:"-"` //`json:"groupLimit,omitempty"`
 
 	// Container limit applied to each container selected
 	// by this input. No container selected by this input can

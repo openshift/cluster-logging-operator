@@ -1400,7 +1400,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "100 - max by(plugin_id)(fluentd_output_status_buffer_available_space_ratio)",
+              "expr": "100 - min by(plugin_id)(fluentd_output_status_buffer_available_space_ratio)",
               "refId": "A"
             }
           ],
@@ -1408,7 +1408,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "FluentD Buffer Availability",
+          "title": "FluentD Buffer Usage",
           "tooltip": {
             "shared": true,
             "sort": 0,

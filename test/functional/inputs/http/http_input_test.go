@@ -67,7 +67,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 		Expect(testfw.LogCollectionType).To(Equal(logging.LogCollectionTypeVector))
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
 		framework.VisitConfig = func(conf string) string {
-			return strings.Replace(conf, "enabled = true", "enabled = false", 1) // turn off TLS for testing
+			return strings.Replace(conf, "enabled = true", "enabled = false", 2) // turn off TLS for testing
 		}
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInputWithVisitor(httpInputName,

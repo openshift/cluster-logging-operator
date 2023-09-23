@@ -273,10 +273,11 @@ test-functional-vector: test-functional-benchmarker-vector
 		./test/functional/outputs/cloudwatch/... \
 		./test/functional/outputs/loki/... \
 		./test/functional/outputs/http/... \
-		./test/functional/normalization \
 		./test/functional/outputs/syslog/... \
+		./test/functional/normalization \
 		./test/functional/flowcontrol/... \
 		./test/functional/inputs/http/... \
+		./test/functional/misc/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator

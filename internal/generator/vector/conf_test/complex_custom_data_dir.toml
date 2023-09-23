@@ -1,6 +1,8 @@
 expire_metrics_secs = 60
 data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 
+[api]
+enabled = true
 
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]

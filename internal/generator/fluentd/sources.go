@@ -101,7 +101,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 }
 
 func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/pods/*/*/*.log")
+	return fmt.Sprintf("%q", "/var/log/pods/*/*/*.log,/var/log/pods/*/*/*.log*")
 }
 
 func ExcludeContainerPaths(namespace string) string {

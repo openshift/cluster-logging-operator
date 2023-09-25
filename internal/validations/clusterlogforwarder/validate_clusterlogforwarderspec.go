@@ -33,7 +33,7 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 		return errors.NewValidationError("ClusterLogForwarder disabled"), status
 	}
 
-	verifyInputs(&clf.Spec, status)
+	verifyInputs(&clf.Spec, status, extras)
 	if !status.Inputs.IsAllReady() {
 		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
 	}
@@ -155,7 +155,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 }
 
 // verifyInputs and set status.Inputs conditions
-func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus) {
+func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) {
 	// Collect input conditions
 	status.Inputs = loggingv1.NamedConditions{}
 
@@ -190,6 +190,8 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("inputspec must define only one of container or group limit")
 		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
 			badInput("inputspec cannot have a negative limit threshold")
+		case input.Receiver != nil && !extras[constants.VectorName]:
+			badInput("ReceiverSpecs are only supported for the vector log collector")
 		case input.Receiver != nil && input.Receiver.HTTP == nil:
 			badInput("ReceiverSpec must define an HTTP receiver")
 		case isHTTPReceiver(input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:

@@ -62,13 +62,15 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 
 	Context("input specs", func() {
 
+		extras := map[string]bool{}
+
 		It("should fail if input does not have a name", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: ""},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["input_0_"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "input must have a name"))
 		})
 
@@ -78,7 +80,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{Name: loggingv1.InputNameApplication},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs[loggingv1.InputNameApplication]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "input name \"application\" is reserved"))
 		})
 		It("should fail if inputspec names are not unique", func() {
@@ -90,7 +92,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Application: &loggingv1.Application{}},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "duplicate name: \"my-app-logs\""))
 		})
 
@@ -100,13 +102,13 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{Name: "my-app-logs"},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
 		})
 
 		It("should fail validation for invalid HTTP receiver specs", func() {
 
-			checkReceiver := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string) {
+			checkReceiver := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string, extras map[string]bool) {
 				const input_name = `http-receiver-negative-port`
 				forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 					Inputs: []loggingv1.InputSpec{
@@ -116,7 +118,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						},
 					},
 				}
-				verifyInputs(forwarderSpec, clfStatus)
+				verifyInputs(forwarderSpec, clfStatus, extras)
 				Expect(clfStatus.Inputs[input_name]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
 			}
 
@@ -132,6 +134,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						},
 					},
 					expectedErrMsg,
+					map[string]bool{constants.VectorName: true},
 				)
 			}
 
@@ -142,7 +145,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				checkPorts(8080, targetPort, loggingv1.FormatKubeAPIAudit, `invalid targetPort specified for HTTP receiver`)
 			}
 			checkPorts(8080, 0, `no_such_format`, `invalid format specified for HTTP receiver`)
-			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`)
+			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`, map[string]bool{constants.VectorName: true})
+			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})
 		})
 
 		It("should remove all inputs if even one inputspec is invalid", func() {
@@ -153,7 +157,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{Name: "invalid-input"},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["invalid-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
 		})
@@ -165,7 +169,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Application: &loggingv1.Application{}},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
@@ -180,7 +184,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Audit: &loggingv1.Audit{}},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(forwarderSpec.Inputs).To(HaveLen(3))
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
@@ -196,7 +200,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Audit:          &loggingv1.Audit{}},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(forwarderSpec.Inputs).To(HaveLen(1))
 			Expect(clfStatus.Inputs["all-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
@@ -214,7 +218,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["all-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["app-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
@@ -235,7 +239,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["custom-app"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define only one of container or group limit"))
 		})
 		It("should be valid if input has a positive limit threshold", func() {
@@ -259,7 +263,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["custom-app-container-limit"]).To((HaveCondition("Ready", true, "", "")))
 			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", true, "", ""))
 		})
@@ -284,7 +288,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					},
 				},
 			}
-			verifyInputs(forwarderSpec, clfStatus)
+			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs["custom-app-container-limit"]).To((HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold")))
 			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold"))
 		})

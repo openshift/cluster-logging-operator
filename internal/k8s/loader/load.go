@@ -63,6 +63,7 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, i
 	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret, saTokenSecret)
 
 	extras[constants.ClusterLoggingAvailable] = (fetchClusterLogging().Name != "")
+	extras[constants.VectorName] = (fetchClusterLogging().Spec.Collection.Type == logging.LogCollectionTypeVector)
 	if err, status = clusterlogforwarder.Validate(forwarder, k8sClient, extras); err != nil {
 		return forwarder, err, status
 	}

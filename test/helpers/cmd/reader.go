@@ -25,10 +25,10 @@ var (
 type Reader struct {
 	cmd    *exec.Cmd
 	r      *bufio.Reader
-	stderr stderrBuffer
+	stderr bytes.Buffer
 }
 
-// NewReader starts an exec.Cmd and returns a CmdReader for its stdout.
+// NewReader starts an exec.Cmd and returns a Reader for its stdout.
 func NewReader(cmd *exec.Cmd) (*Reader, error) {
 	p, err := cmd.StdoutPipe()
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *Reader) Close() error {
 	_ = r.cmd.Process.Kill()
 	err := r.cmd.Wait()
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(r.stderr.b.String()))
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(r.stderr.String()))
 	}
 	return nil
 }
@@ -123,19 +123,4 @@ func (r *Reader) readErr(err error) error {
 		}
 	}
 	return err
-}
-
-const stderrLimit = 1024
-
-type stderrBuffer struct{ b bytes.Buffer }
-
-func (b *stderrBuffer) Write(data []byte) (int, error) {
-	max := stderrLimit - b.b.Len()
-	if max < 0 {
-		max = 0
-	}
-	if len(data) > max {
-		data = data[:max]
-	}
-	return b.b.Write(data)
 }

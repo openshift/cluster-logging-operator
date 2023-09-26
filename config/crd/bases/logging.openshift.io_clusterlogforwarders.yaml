@@ -47,6 +47,206 @@ spec:
           spec:
             description: Specification of the desired behavior of ClusterLogForwarder
             properties:
+              filters:
+                description: Filters are applied to log records passing through a
+                  pipeline. There are different types of filter that can select and
+                  modify log records in different ways. See [FilterTypeSpec] for a
+                  list of filter types.
+                items:
+                  description: Filter defines a filter for log messages. See [FilterTypeSpec]
+                    for a list of filter types.
+                  properties:
+                    kubeAPIAudit:
+                      description: "KubeAPIAudit filter Kube API server audit logs,
+                        as described in [Kubernetes Auditing]. \n # Policy Filtering
+                        \n Policy event rules are the same format as the [Kube Audit
+                        Policy] with some minor extensions. The extensions are described
+                        here, see the [Kube Audit Policy] for the standard rule behavior.
+                        Rules are checked in order, checking stops at the first matching
+                        rule. \n An audit policy event contains meta-data describing
+                        who made the request. It can also include the full body of
+                        the API request, and the response that was sent. The `level`
+                        of an audit rule determines how much data is included in the
+                        event: \n - None: the event is dropped. - Metadata: Only the
+                        audit metadata is included, request and response bodies are
+                        removed. - Request: Audit metadata and the request body are
+                        included, the response body is removed. - RequestResponse:
+                        All data is included: metadata, request body and response
+                        body. Note the response body can be very large. For example
+                        the a command like `oc list -A pods` generates a response
+                        body containing the YAML description of every pod in the cluster.
+                        \n # Extensions \n The following features are extensions to
+                        the standard [Kube Audit Policy] \n ## Wildcards \n Names
+                        of users, groups, namespaces, and resources can have a leading
+                        or trailing '*' character. For example namespace 'openshift-*'
+                        matches 'openshift-apiserver' or 'openshift-authentication.
+                        Resource '*/status' matches 'Pod/status' or 'Deployment/status'
+                        \n ## Default Rules \n Events that do not match any rule in
+                        the policy are filtered as follows: - User events (ie. non-system
+                        and non-serviceaccount) are forwarded - Read-only system events
+                        (get/list/watch etc) are dropped - Service account write events
+                        that occur within the same namespace as the service account
+                        are dropped - All other events are forwarded, subject to any
+                        configured [rate limits][#rate-lmiting] \n If you want to
+                        disable these defaults, end your rules list with rule that
+                        has only a `level` field. An empty rule matches any event,
+                        and prevents the defaults from taking effect. \n ## Omit Response
+                        Codes \n You can drop events based on the HTTP status code
+                        in the response. See the OmitResponseCodes field. \n [Kube
+                        Audit Policy]: https://kubernetes.io/docs/reference/config-api/apiserver-audit.v1/#audit-k8s-io-v1-Policy
+                        [Kubernetes Auditing]: https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/"
+                      properties:
+                        omitResponseCodes:
+                          description: OmitResponseCodes is a list of HTTP status
+                            code for which no events are created. If this field is
+                            missing or null, the default value used is [404, 409,
+                            422, 429] (NotFound, Conflict, UnprocessableEntity, TooManyRequests)
+                            If it is the empty list [], then no status codes are omitted.
+                            Otherwise this field should be a list of integer status
+                            codes to omit.
+                          items:
+                            type: integer
+                          type: array
+                        omitStages:
+                          description: OmitStages is a list of stages for which no
+                            events are created. Note that this can also be specified
+                            per rule in which case the union of both are omitted.
+                          items:
+                            description: Stage defines the stages in request handling
+                              that audit events may be generated.
+                            type: string
+                          type: array
+                        rules:
+                          description: "Rules specify the audit Level a request should
+                            be recorded at. A request may match multiple rules, in
+                            which case the FIRST matching rule is used. PolicyRules
+                            are strictly ordered. \n If Rules is empty or missing
+                            default rules apply, see [KubeAPIAudit]"
+                          items:
+                            description: PolicyRule maps requests based off metadata
+                              to an audit Level. Requests must match the rules of
+                              every field (an intersection of rules).
+                            properties:
+                              level:
+                                description: The Level that requests matching this
+                                  rule are recorded at.
+                                type: string
+                              namespaces:
+                                description: Namespaces that this rule matches. The
+                                  empty string "" matches non-namespaced resources.
+                                  An empty list implies every namespace.
+                                items:
+                                  type: string
+                                type: array
+                              nonResourceURLs:
+                                description: 'NonResourceURLs is a set of URL paths
+                                  that should be audited. *s are allowed, but only
+                                  as the full, final step in the path. Examples: "/metrics"
+                                  - Log requests for apiserver metrics "/healthz*"
+                                  - Log all health checks'
+                                items:
+                                  type: string
+                                type: array
+                              omitManagedFields:
+                                description: OmitManagedFields indicates whether to
+                                  omit the managed fields of the request and response
+                                  bodies from being written to the API audit log.
+                                  - a value of 'true' will drop the managed fields
+                                  from the API audit log - a value of 'false' indicates
+                                  that the managed fileds should be included in the
+                                  API audit log Note that the value, if specified,
+                                  in this rule will override the global default If
+                                  a value is not specified then the global default
+                                  specified in Policy.OmitManagedFields will stand.
+                                type: boolean
+                              omitStages:
+                                description: OmitStages is a list of stages for which
+                                  no events are created. Note that this can also be
+                                  specified policy wide in which case the union of
+                                  both are omitted. An empty list means no restrictions
+                                  will apply.
+                                items:
+                                  description: Stage defines the stages in request
+                                    handling that audit events may be generated.
+                                  type: string
+                                type: array
+                              resources:
+                                description: Resources that this rule matches. An
+                                  empty list implies all kinds in all API groups.
+                                items:
+                                  description: GroupResources represents resource
+                                    kinds in an API group.
+                                  properties:
+                                    group:
+                                      description: Group is the name of the API group
+                                        that contains the resources. The empty string
+                                        represents the core API group.
+                                      type: string
+                                    resourceNames:
+                                      description: ResourceNames is a list of resource
+                                        instance names that the policy matches. Using
+                                        this field requires Resources to be specified.
+                                        An empty list implies that every instance
+                                        of the resource is matched.
+                                      items:
+                                        type: string
+                                      type: array
+                                    resources:
+                                      description: "Resources is a list of resources
+                                        this rule applies to. \n For example: 'pods'
+                                        matches pods. 'pods/log' matches the log subresource
+                                        of pods. '*' matches all resources and their
+                                        subresources. 'pods/*' matches all subresources
+                                        of pods. '*/scale' matches all scale subresources.
+                                        \n If wildcard is present, the validation
+                                        rule will ensure resources do not overlap
+                                        with each other. \n An empty list implies
+                                        all resources and subresources in this API
+                                        groups apply."
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                type: array
+                              userGroups:
+                                description: The user groups this rule applies to.
+                                  A user is considered matching if it is a member
+                                  of any of the UserGroups. An empty list implies
+                                  every user group.
+                                items:
+                                  type: string
+                                type: array
+                              users:
+                                description: The users (by authenticated user name)
+                                  this rule applies to. An empty list implies every
+                                  user.
+                                items:
+                                  type: string
+                                type: array
+                              verbs:
+                                description: The verbs that match this rule. An empty
+                                  list implies every verb.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - level
+                            type: object
+                          type: array
+                      type: object
+                    name:
+                      description: Name used to refer to the filter from a `pipeline`.
+                      type: string
+                    type:
+                      description: Type of filter.
+                      enum:
+                      - kubeAPIAudit
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
               inputs:
                 description: "Inputs are named filters for log messages to be forwarded.
                   \n There are three built-in inputs named `application`, `infrastructure`
@@ -632,6 +832,14 @@ spec:
                       description: DetectMultilineErrors enables multiline error detection
                         of container logs
                       type: boolean
+                    filterRefs:
+                      description: "Filters lists the names of filters to be applied
+                        to records going through this pipeline. \n Each filter is
+                        applied in order. If a filter drops a records, subsequent
+                        filters are not applied."
+                      items:
+                        type: string
+                      type: array
                     inputRefs:
                       description: "InputRefs lists the names (`input.name`) of inputs
                         to this pipeline. \n The following built-in input names are
@@ -721,6 +929,50 @@ spec:
                   - type
                   type: object
                 type: array
+              filters:
+                additionalProperties:
+                  description: Conditions is a set of Condition instances.
+                  items:
+                    description: "Condition represents an observation of an object's
+                      state. Conditions are an extension mechanism intended to be
+                      used when the details of an observation are not a priori known
+                      or would not apply to all instances of a given Kind. \n Conditions
+                      should be added to explicitly convey properties that users and
+                      components care about rather than requiring those properties
+                      to be inferred from other observations. Once defined, the meaning
+                      of a Condition can not be changed arbitrarily - it becomes part
+                      of the API, and has the same backwards- and forwards-compatibility
+                      concerns of any other part of the API."
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        type: string
+                      reason:
+                        description: ConditionReason is intended to be a one-word,
+                          CamelCase representation of the category of cause of the
+                          current status. It is intended to be used in concise output,
+                          such as one-line kubectl get output, and in summarizing
+                          occurrences of causes.
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        description: "ConditionType is the type of the condition and
+                          is typically a CamelCased word or short phrase. \n Condition
+                          types should indicate state in the \"abnormal-true\" polarity.
+                          For example, if the condition indicates when a policy is
+                          invalid, the \"is valid\" case is probably the norm, so
+                          the condition should be called \"Invalid\"."
+                        type: string
+                    required:
+                    - status
+                    - type
+                    type: object
+                  type: array
+                description: Filters maps filter name to condition of the filter.
+                type: object
               inputs:
                 additionalProperties:
                   description: Conditions is a set of Condition instances.

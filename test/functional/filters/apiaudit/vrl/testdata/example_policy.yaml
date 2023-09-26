@@ -1,0 +1,306 @@
+
+# Example audit log policy.
+rules:
+# 1. drop leases, tokenreviews, subjectaccessreviews, user self-lookup (~500k/day)
+- level: None
+  resources:
+  - group: coordination.k8s.io
+    resources: ['leases']
+  - group: authentication.k8s.io
+    resources: ['tokenreviews']
+  - group: oauth.openshift.io
+    resources: ['tokenreviews']
+  - group: user.openshift.io
+    resourceNames: ['~']
+    resources: ['users']
+  - group: authorization.k8s.io
+    resources:
+    - subjectaccessreviews
+    - selfsubjectaccessreviews
+# 2. drop node & control plane read events (~750k/day)
+- level: None
+  users:
+  - system:admin
+  - system:apiserver
+  - system:kube-apiserver
+  - system:kube-scheduler
+  - system:kube-controller-manager
+  verbs:
+  - get
+  - head
+  - list
+  - watch
+  - patch
+  - update
+# 3. drop control plane configmap leases leader updates (~50k/day)
+- level: None
+  users:
+  - system:kube-scheduler
+  - system:kube-controller-manager
+  namespaces:
+  - openshift-kube-*
+  - kube-system
+  resources:
+  - resources: ['configmaps']
+  verbs: ['update']
+# 4. drop common non-resource read requests (~15k/day)
+- level: None
+  nonResourceURLs:
+  - /
+  - /api*
+  - /healthz*
+  - /livez*
+  - /openapi/v2*
+  - /readyz*
+  - /version
+  - /.well-known*
+  verbs: ['get','head','options']
+# 5. forward system:admin activity
+- level: None
+  users: ['system:admin']
+# 6. drop backplane cronjob events before rule 7 (TODO: move these cronjobs somewhere else)
+- level: None
+  users:
+  - system:serviceaccount:openshift-backplane-srep:osd-delete-ownerrefs-serviceaccounts
+  - system:serviceaccount:openshift-backplane:osd-delete-backplane-serviceaccounts
+# 7. forward backplane activity
+- level: RequestResponse
+  userGroups: ['system:serviceaccounts:openshift-backplane-*']
+# 8. drop openshift-* and kube-* serviceaccount read events (~5M/day)
+- level: None
+  userGroups:
+  - system:serviceaccounts:openshift-*
+  - system:serviceaccounts:kube-*
+  verbs:
+  - get
+  - list
+  - watch
+# 9. drop events from marketplace, pruning and build tests (~80k/day)
+- level: None
+  namespaces:
+  - openshift-build-test
+  - openshift-build-test-*
+  - openshift-marketplace
+  - openshift-sre-pruning
+# 10. drop control plane cronjob activity within -openshift
+- level: None
+  users:
+  - system:apiserver
+  - system:node:*
+  - system:kube-controller-manager
+  - system:kube-scheduler
+  - system:serviceaccount:kube-system:*
+  resources:
+  - resources:
+    - endpoints
+    - pods/binding
+    - serviceaccounts/token
+  - group: discovery.k8s.io
+    resources: ['endpointslices']
+  verbs: ['create','update']
+# 11. forward resources we wish to monitor
+- level: Request
+  resources:
+  - resources: ['pods']
+  - group: compliance.openshift.io
+    resources: ['compliancecheckresults']
+  - group: secscan.quay.redhat.com
+    resources: ['imagemanifestvulns']
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+  - deletecollection
+# 12. drop resource status updates (~100k/day)
+- level: None
+  resources:
+  - resources: ['*/status']
+  - group: apps
+    resources: ['*/status']
+  - group: batch
+    resources: ['*/status']
+  - group: autoscaling
+    resources: ['*/status']
+  - group: velero.io
+    resources: ['*/status']
+  - group: operators.coreos.com
+    resources: ['*/status']
+  - group: quota.openshift.io
+    resources: ['clusterresourcequotas/status']
+  - group: managed.openshift.io
+    resources: ['subjectpermissions/status']
+  - group: apiserver.openshift.io
+    resources: ['apirequestcounts/*']
+  - group: controlplane.operator.openshift.io
+    resources: ['podnetworkconnectivitychecks/status']
+  verbs:
+  - create
+  - update
+  - patch
+# 13. drop olm updates (~50k/day)
+- level: None
+  users: ['system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount']
+  resources:
+  - resources: ['namespaces']
+  - group: apps
+    resources: ['deployments']
+  - group: rbac.authorization.k8s.io
+    resources: ['clusterroles']
+  - group: operators.coreos.com
+    resources:
+    - operatorgroups
+    - clusterserviceversions
+  verbs:
+  - update
+  - patch
+# 14. drop update secret from cmo & prom within openshift-* namespaces (~3k/day)
+- level: None
+  users:
+  - system:serviceaccount:openshift-monitoring:cluster-monitoring-operator
+  - system:serviceaccount:openshift-monitoring:prometheus-operator
+  namespaces: ['openshift-*']
+  resources:
+  - resources: ['secrets']
+  verbs: ['update']
+# 15. drop update route from console-operator (~10k/day)
+- level: None
+  users: ['system:serviceaccount:openshift-console-operator:console-operator']
+  namespaces: ['openshift-console']
+  resources:
+  - group: route.openshift.io
+    resourceNames: ['console','downloads']
+    resources: ['routes','routes/status']
+  verbs: ['update','patch']
+# 16. drop clusterrole aggregation updates (~5k/day)
+- level: None
+  users: ['system:serviceaccount:kube-system:clusterrole-aggregation-controller']
+  resources:
+  - group: rbac.authorization.k8s.io
+    resources: ['clusterroles']
+  verbs: ['update','patch']
+# 17. drop console route updates from cvo (~50k/day)
+- level: None
+  userGroups:
+  - system:serviceaccounts:openshift-cluster-version
+  - system:serviceaccount:openshift-console-operator
+  - system:serviceaccounts:openshift-console
+  resources:
+  - group: route.openshift.io
+    resources: ['routes']
+  verbs: ['update','patch']
+# 18. drop routine image pruner activity
+- level: None
+  users: ['system:serviceaccount:openshift-image-registry:pruner']
+  resources:
+  - group: image.openshift.io
+  verbs: ['delete']
+# 19. drop opeshift ns templates & imagestream and imagestreamimports
+- level: None
+  userGroups:
+  - system:serviceaccounts:openshift-cluster-samples-operator
+  - system:serviceaccounts:openshift-cluster-version
+  - system:serviceaccounts:openshift-infra
+  namespaces: ['openshift']
+  resources:
+  - resources: ['templates']
+    group: template.openshift.io
+  - group: image.openshift.io
+    resources:
+    - imagestreams
+    - imagestreamimports
+  verbs: ['create','update']
+#
+# field redactions
+redactions:
+# tokens in request objects
+- group: authentication.k8s.io
+  resources:
+  - tokenreviews
+  fields:
+    spec:
+      token: replace
+# tokens in response objects
+- resources:
+  - serviceaccounts
+  fields:
+    status:
+      token: replace
+# tokens in object names
+- group: oauth.openshift.io
+  resources:
+  - oauthaccesstokens
+  - useroauthaccesstokens
+  fields:
+    metadata:
+      name: replace
+# tokens in annotations
+- fields:
+    metadata:
+      annotations:
+        openshift.io/token-secret.value: replace
+# remove certs from certificate signing requests
+- group: certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  - certificatesigningrequests/status
+  fields:
+    spec:
+      request: replace
+    status:
+      certificate: replace
+# remove injected cabundles from webhook
+- group: admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  - mutatingwebhookconfigurations
+  fields:
+    webhooks:
+      clientConfig:
+        caBundle: remove
+# remove certs and ca-bundles from configmaps
+- resources:
+  - configmaps
+  - apiservices
+  fields:
+    spec:
+      caBundle: replace
+    data:
+      ca.crt: replace
+      ca-bundle.crt: replace
+      service-ca.crt: replace
+      client-ca: replace
+      client-ca-file: replace
+      requestheader-client-ca-file: replace
+# remove machineconfig file source data, including bootstrap token
+- group: machineconfiguration.openshift.io
+  resources:
+  - machineconfigs
+  - controllerconfigs
+  fields:
+    spec:
+      rootCAData: replace
+      config:
+        passwd: replace
+        storage:
+          files:
+            contents:
+              source: replace
+      kubeAPIServerServingCAData: replace
+# remove certain fields from metadata and status
+- fields:
+    metadata:
+      annotations:
+        control-plane.alpha.kubernetes.io/leader: remove
+        kubectl.kubernetes.io/last-applied-configuration: remove
+      generation: remove
+      uid: remove
+      selfLink: remove
+      managedFields: remove
+      resourceVersion: remove
+      creationTimestamp: remove
+    status:
+      conditions: remove
+      components: remove
+      relatedObjects: remove
+      lastSyncTimestamp: remove

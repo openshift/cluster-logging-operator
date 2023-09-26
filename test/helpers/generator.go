@@ -38,6 +38,6 @@ func TestGenerateConfAndFormatWith(gf GenerateFunc, format func(string) string) 
 		e := gf(testcase.CLSpec, testcase.Secrets, testcase.CLFSpec, testcase.Options)
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
-		Expect(format(conf)).To(EqualTrimLines(format(testcase.ExpectedConf)))
+		Expect(format(testcase.ExpectedConf)).To(EqualTrimLines(format(conf)))
 	}
 }

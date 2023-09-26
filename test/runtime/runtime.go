@@ -2,25 +2,16 @@
 package runtime
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"os/exec"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 // Exec returns an `oc exec` Cmd to run cmd on o.
 func Exec(o runtime.Object, cmd string, args ...string) *exec.Cmd {
-	m := runtime.Meta(o)
-	ocCmd := append([]string{
-		"exec",
-		"-i",
-		"-n", m.GetNamespace(),
-		runtime.GroupVersionKind(o).Kind + "/" + m.GetName(),
-		"--",
-		cmd,
-	}, args...)
-
-	return exec.Command("oc", ocCmd...)
+	return ExecContainer(o, "", cmd, args...)
 }
 
 func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, error) {
@@ -31,16 +22,18 @@ func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, er
 // ExecContainer returns an `oc exec` Cmd to run cmd on o.
 func ExecContainer(o runtime.Object, container, cmd string, args ...string) *exec.Cmd {
 	m := runtime.Meta(o)
-	ocCmd := append([]string{
+	ocCmd := []string{
 		"exec",
-		"-c",
-		strings.ToLower(container),
 		"-i",
 		"-n", m.GetNamespace(),
-		runtime.GroupVersionKind(o).Kind + "/" + m.GetName(),
+	}
+	if container != "" {
+		ocCmd = append(ocCmd, "-c", strings.ToLower(container))
+	}
+	ocCmd = append(ocCmd,
+		runtime.GroupVersionKind(o).Kind+"/"+m.GetName(),
 		"--",
-		cmd,
-	}, args...)
-
+		cmd)
+	ocCmd = append(ocCmd, args...)
 	return exec.Command("oc", ocCmd...)
 }

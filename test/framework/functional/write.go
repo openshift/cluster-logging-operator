@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 )
@@ -252,4 +255,21 @@ func (f *CollectorFunctionalFramework) setupPortForwarder(podPort int32) (*PortF
 	}
 	pf.localPort = forwardedPorts[0].Local
 	return pf, nil
+}
+
+// LogWriter returns an io.WriteCloser that appends to a log file on the collector Pod.
+// Call Close() when finished to terminate the writer process.
+func (f *CollectorFunctionalFramework) LogWriter(filename string) (io.WriteCloser, error) {
+	dir := filepath.Dir(filename)
+	return cmd.NewWriter(runtime.ExecContainer(f.Pod, constants.CollectorName, "sh", "-c", fmt.Sprintf("mkdir -p %v && cat > %v", dir, filename)))
+}
+
+// WriteLog writes bytes to a log file on the collector Pod.
+func (f *CollectorFunctionalFramework) WriteLog(filename string, data []byte) error {
+	w, err := f.LogWriter(filename)
+	if err == nil {
+		defer w.Close()
+		_, err = w.Write(data)
+	}
+	return err
 }

@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -39,15 +37,5 @@ var _ = Describe("Reader", func() {
 		ExpectOK(err)
 		_, err = r.ReadLine()
 		Expect(err).To(MatchError("EOF: exit status 1: this is bad"))
-	})
-
-	It("truncates long stderr", func() {
-		long := strings.Repeat("X", 4096)
-		cmd := fmt.Sprintf("echo %v 1>&2; false", long)
-		r, err := NewReader(exec.Command("bash", "-c", cmd))
-		ExpectOK(err)
-		_, err = r.ReadLine()
-		short := strings.Repeat("X", stderrLimit)
-		Expect(err.Error()).To(MatchRegexp(fmt.Sprintf(" %v$", short)))
 	})
 })

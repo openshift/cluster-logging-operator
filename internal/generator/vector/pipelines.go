@@ -6,9 +6,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"strings"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -66,6 +68,17 @@ if .log_type == "application" {
 }
 `
 			vrls = append(vrls, parse)
+		}
+
+		filters := spec.FilterMap()
+		for _, filterName := range p.FilterRefs {
+			if f, ok := filters[filterName]; ok {
+				if vrl, err := filter.RemapVRL(f); err != nil {
+					log.Error(err, "bad filter", "filter", filterName)
+				} else {
+					vrls = append(vrls, vrl)
+				}
+			}
 		}
 
 		vrl := SrcPassThrough

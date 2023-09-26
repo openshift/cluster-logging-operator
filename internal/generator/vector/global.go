@@ -31,9 +31,12 @@ func (g GlobalOptions) Template() string {
 	return `
 {{define "` + g.Name() + `" -}}
 expire_metrics_secs = {{.ExpireMetricsSecs}}
-{{ if .DataDir}} 
+{{ if .DataDir}}
 data_dir = "{{.DataDir}}"
 {{end}}
+
+[api]
+enabled = true
 {{end}}
 `
 }

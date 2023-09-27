@@ -1,6 +1,6 @@
 // Package apiaudit 'compiles' a Kube-API server audit policy into a Vector tranform that implements the policy.
 //
-// This is a re-implementation of https://gitlab.cee.redhat.com:service/splunk-audit-exporter.git in Vector Remap Language.
+// This is a re-implementation of splunk-audit-exporter in Vector Remap Language.
 //
 // The following features are not (yet) implemented:
 //   - Redactions (TODO)

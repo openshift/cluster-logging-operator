@@ -1,4 +1,4 @@
-// Tests ported from https://gitlab.cee.redhat.com:service/splunk-audit-exporter.git
+// Tests ported from splunk-audit-exporter
 
 package apiaudit
 

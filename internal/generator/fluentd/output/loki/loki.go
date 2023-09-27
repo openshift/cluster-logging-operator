@@ -125,6 +125,15 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
+	// Set CA from logcollector ServiceAccount for internal Loki
+	if isDefaultOutput(o.Name) {
+		conf = append(conf, CAFile{
+			CAFilePath: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt",
+		}, BearerTokenFile{
+			BearerTokenFilePath: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		})
+		return conf
+	}
 	if o.Secret != nil {
 		if security.HasUsernamePassword(secret) {
 			up := UserNamePass{
@@ -161,6 +170,10 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		})
 	}
 	return conf
+}
+
+func isDefaultOutput(name string) bool {
+	return strings.HasPrefix(name, "default-")
 }
 
 func lokiLabelKeys(l *logging.Loki) []string {

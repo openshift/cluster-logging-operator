@@ -13,7 +13,7 @@ import (
 
 var _ = Describe("splunk-exporter compatibility", func() {
 
-	It("generates the same output as git@gitlab.cee.redhat.com:service/splunk-audit-exporter.git", func() {
+	It("generates the same output as splunk-audit-exporter", func() {
 		// Note: test data was generated as follows:
 		//	cd testdata; audit-exporter --follow=false --input audit_in.log  --policy example_policy.yaml  > audit_out_exporter.log
 

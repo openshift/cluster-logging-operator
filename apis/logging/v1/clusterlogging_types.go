@@ -86,8 +86,9 @@ type ClusterLoggingStatus struct {
 
 	// Deprecated.
 	// +optional
+	// +nullable
 	// +deprecated
-	Collection CollectionStatus `json:"collection"`
+	Collection CollectionStatus `json:"collection,omitempty"`
 
 	// +optional
 	Curation CurationStatus `json:"curation"`
@@ -598,7 +599,6 @@ type FluentdCollectorStatus struct {
 	// +optional
 	Nodes map[string]string `json:"nodes,omitempty"`
 	// +optional
-	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Fluentd status",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podStatuses"}
 	Pods PodStateMap `json:"pods,omitempty"`
 	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`

@@ -241,11 +241,6 @@ spec:
         path: visualization.tolerations
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
-      statusDescriptors:
-      - displayName: Fluentd status
-        path: collection.logs.fluentdStatus.pods
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:podStatuses
       version: v1
   description: |-
     # Red Hat OpenShift Logging

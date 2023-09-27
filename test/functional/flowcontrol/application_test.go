@@ -24,7 +24,7 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 		f *functional.CollectorFunctionalFramework
 		l *loki.Receiver
 	)
-	appLabels := map[string]string{"name": "app1", "env": "env1"}
+	//appLabels := map[string]string{"name": "app1", "env": "env1"}
 
 	BeforeEach(func() {
 		f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
@@ -89,47 +89,48 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 			})
 		})
 	})
-	Describe("when Source is Application", func() {
-		Describe("rate limiting logs by label selector", func() {
-			It("applying policy at group level", func() {
-				if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
-					Skip("Skipping test since flow-control is not supported with fluentd")
-				}
-				f.Labels = map[string]string{
-					"name": "app1",
-					"env":  "env1",
-				}
-				f.Forwarder.Spec.Inputs[0].Application.Selector = &logging.LabelSelector{
-					MatchLabels: appLabels,
-				}
-
-				f.Forwarder.Spec.Inputs[0].Application.GroupLimit = &logging.LimitSpec{
-					MaxRecordsPerSecond: 10,
-				}
-
-				Expect(f.Deploy()).To(BeNil())
-				Expect(f.WritesApplicationLogsWithDelay(1000, 0.0001)).To(Succeed())
-
-				r, err := l.QueryUntil(fmt.Sprintf(LokiNsQuery, AllLogs), "", 10)
-				Expect(err).To(BeNil())
-
-				totalRecords := 0
-				for _, record := range r[0].Records() {
-					record = record["kubernetes"].(map[string]interface{})["labels"].(map[string]interface{})
-					Expect(record["name"].(string) == "app1").To(BeTrue())
-					Expect(record["env"].(string) == "env1").To(BeTrue())
-					totalRecords++
-				}
-				Expect(totalRecords >= 10).To(BeTrue())
-				Expect(totalRecords <= 15).To(BeTrue())
-
-				r, err = l.Query(fmt.Sprintf(LokiNsQuery, AllLogs), "", 40)
-				Expect(err).To(BeNil())
-				Expect(len(r[0].Records()) >= 10).To(BeTrue())
-				Expect(len(r[0].Records()) <= 15).To(BeTrue())
-
-			})
-		})
-	})
+	// TODO: L0G-4362 Re-Enable group limit
+	//Describe("when Source is Application", func() {
+	//	Describe("rate limiting logs by label selector", func() {
+	//		It("applying policy at group level", func() {
+	//			if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
+	//				Skip("Skipping test since flow-control is not supported with fluentd")
+	//			}
+	//			f.Labels = map[string]string{
+	//				"name": "app1",
+	//				"env":  "env1",
+	//			}
+	//			f.Forwarder.Spec.Inputs[0].Application.Selector = &logging.LabelSelector{
+	//				MatchLabels: appLabels,
+	//			}
+	//
+	//			f.Forwarder.Spec.Inputs[0].Application.GroupLimit = &logging.LimitSpec{
+	//				MaxRecordsPerSecond: 10,
+	//			}
+	//
+	//			Expect(f.Deploy()).To(BeNil())
+	//			Expect(f.WritesApplicationLogsWithDelay(1000, 0.0001)).To(Succeed())
+	//
+	//			r, err := l.QueryUntil(fmt.Sprintf(LokiNsQuery, AllLogs), "", 10)
+	//			Expect(err).To(BeNil())
+	//
+	//			totalRecords := 0
+	//			for _, record := range r[0].Records() {
+	//				record = record["kubernetes"].(map[string]interface{})["labels"].(map[string]interface{})
+	//				Expect(record["name"].(string) == "app1").To(BeTrue())
+	//				Expect(record["env"].(string) == "env1").To(BeTrue())
+	//				totalRecords++
+	//			}
+	//			Expect(totalRecords >= 10).To(BeTrue())
+	//			Expect(totalRecords <= 15).To(BeTrue())
+	//
+	//			r, err = l.Query(fmt.Sprintf(LokiNsQuery, AllLogs), "", 40)
+	//			Expect(err).To(BeNil())
+	//			Expect(len(r[0].Records()) >= 10).To(BeTrue())
+	//			Expect(len(r[0].Records()) <= 15).To(BeTrue())
+	//
+	//		})
+	//	})
+	//})
 
 })

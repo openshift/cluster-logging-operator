@@ -212,6 +212,11 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 }
 
 func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) {
+	outputRefs := sets.NewString()
+	for _, p := range spec.Pipelines {
+		outputRefs.Insert(p.OutputRefs...)
+	}
+
 	status.Outputs = loggingv1.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
 	for i, output := range spec.Outputs {
@@ -252,6 +257,8 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 					output.Name))
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
 			status.Outputs.Set(output.Name, CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
+		case !outputRefs.Has(output.Name):
+			status.Outputs.Set(output.Name, CondInvalid("output %q: Output not referenced by any pipeline", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
 		}

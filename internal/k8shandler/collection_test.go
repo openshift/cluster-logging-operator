@@ -2,13 +2,13 @@ package k8shandler
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -147,7 +147,7 @@ var _ = Describe("Reconciling", func() {
 					ResourceOwner: utils.AsOwner(cluster),
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
+				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -215,7 +215,7 @@ var _ = Describe("Reconciling", func() {
 					ResourceOwner: utils.AsOwner(cluster),
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
+				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
@@ -257,7 +257,7 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     &loggingv1.ClusterLogForwarder{},
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
+				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 		})
@@ -318,7 +318,7 @@ var _ = Describe("Reconciling", func() {
 					ResourceOwner: utils.AsOwner(fwder),
 				}
 				extras[constants.MigrateDefaultOutput] = true
-				spec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
+				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 			It("should have appropriately named resources", func() {

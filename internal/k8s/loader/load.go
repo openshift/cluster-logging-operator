@@ -60,7 +60,9 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, i
 	saTokenSecret := factory.GenerateResourceNames(forwarder).ServiceAccountTokenSecret
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
-	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret, saTokenSecret)
+	var migrationMessages []logging.Condition
+	forwarder.Spec, extras, migrationMessages = migrations.MigrateClusterLogForwarder(namespace, name, forwarder.Spec, fetchClusterLogging().Spec.LogStore, extras, internalLogStoreSecret, saTokenSecret)
+	setMigrationStatusConditions(&forwarder.Status, migrationMessages)
 
 	extras[constants.ClusterLoggingAvailable] = (fetchClusterLogging().Name != "")
 	extras[constants.VectorName] = (fetchClusterLogging().Spec.Collection.Type == logging.LogCollectionTypeVector)
@@ -69,4 +71,10 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, i
 	}
 
 	return forwarder, nil, status
+}
+
+func setMigrationStatusConditions(status *logging.ClusterLogForwarderStatus, conditions []logging.Condition) {
+	for _, cond := range conditions {
+		status.Conditions.SetCondition(cond)
+	}
 }

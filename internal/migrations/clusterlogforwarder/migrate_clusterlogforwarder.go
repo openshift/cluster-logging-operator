@@ -1,4 +1,4 @@
-package migrations
+package clusterlogforwarder
 
 import (
 	"fmt"
@@ -9,13 +9,13 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 )
 
-func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition) {
 	spec, extras = migrateDefaultOutput(spec, logStore, extras, logstoreSecretName, saTokenSecret)
 	if namespace == constants.OpenshiftNS && name == constants.SingletonName {
 		spec.ServiceAccountName = constants.CollectorServiceAccountName
 	}
 	spec = migratePipelines(spec)
-	return spec, extras
+	return spec, extras, nil
 }
 
 func migratePipelines(spec loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterLogForwarderSpec {

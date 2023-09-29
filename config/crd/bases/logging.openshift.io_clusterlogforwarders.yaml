@@ -781,6 +781,15 @@ spec:
                               type: string
                           type: object
                       type: object
+                    tuning:
+                      additionalProperties:
+                        type: string
+                      description: Tuning are output specific config parameters applicable
+                        to vector collector implementations.  This field is unsupported
+                        for fluentd. These are for advanced users who understand the
+                        implications and should be used with caution
+                      nullable: true
+                      type: object
                     type:
                       description: Type of output plugin.
                       enum:

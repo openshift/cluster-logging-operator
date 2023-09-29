@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
@@ -102,6 +103,9 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			case logging.OutputTypeSyslog:
 				outputs = generator.MergeElements(outputs, syslog.Conf(o, inputs, secret, op))
 			}
+		}
+		if !o.Tuning.IsEmpty() {
+			outputs = generator.MergeElements(outputs, output.BufferConf(o, op))
 		}
 	}
 

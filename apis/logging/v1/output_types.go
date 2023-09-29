@@ -37,6 +37,13 @@ type OutputTypeSpec struct {
 	Splunk *Splunk `json:"splunk,omitempty"`
 	// +optional
 	Http *Http `json:"http,omitempty"`
+
+	// Tuning are output specific config parameters applicable to vector
+	// collector implementations.  This field is unsupported for fluentd.
+	// These are for advanced users who understand the implications and should be used with caution
+	// +optional
+	// +nullable
+	Tuning OutputTuningSpec `json:"tuning,omitempty"`
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`

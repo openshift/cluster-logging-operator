@@ -22,7 +22,7 @@ var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", fu
 		framework.Cleanup()
 	})
 
-	DescribeTable("should send logs to the forward.Output logstore", func(sources ...string) {
+	DescribeTable("should send logs to the forward.Output logstore", func(pipelineName string, sources ...string) {
 		var option client.TestOption
 		if slices.Contains(sources, logging.InputNameInfrastructure) {
 			option = client.UseInfraNamespaceTestOption
@@ -44,8 +44,13 @@ var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", fu
 		}
 
 		builder := functional.NewClusterLogForwarderBuilder(framework.Forwarder)
+
 		for _, source := range sources {
-			builder.FromInput(source).Named("test-" + source).ToElasticSearchOutput()
+			if pipelineName != "" {
+				builder.FromInput(source).Named(pipelineName).ToElasticSearchOutput()
+			} else {
+				builder.FromInput(source).Named("test-" + source).ToElasticSearchOutput()
+			}
 		}
 
 		Expect(framework.Deploy()).To(BeNil())
@@ -63,5 +68,8 @@ var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", fu
 	},
 		Entry("when configured with audit and application sources", logging.InputNameAudit, logging.InputNameApplication),
 		Entry("when configured with audit and infrastructure sources", logging.InputNameAudit, logging.InputNameInfrastructure),
+		Entry("when configured with audit and application sources and Pipeline name conflict with Output name (see LOG-4383)",
+			logging.OutputTypeElasticsearch, logging.InputNameAudit, logging.InputNameApplication),
 	)
+
 })

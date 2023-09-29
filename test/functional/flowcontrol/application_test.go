@@ -69,7 +69,7 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 					Skip("Skipping test since flow-control is not supported with fluentd")
 				}
 
-				f.Forwarder.Spec.Inputs[0].Application.ContainerLimit = &logging.LimitSpec{
+				f.Forwarder.Spec.Inputs[0].Application.PodLimit = &logging.LimitSpec{
 					MaxRecordsPerSecond: 10,
 				}
 

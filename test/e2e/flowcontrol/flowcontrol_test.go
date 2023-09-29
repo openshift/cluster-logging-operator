@@ -93,7 +93,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 				Name: "custom-app-0",
 				Application: &loggingv1.Application{
 					Namespaces: []string{stressorNS},
-					ContainerLimit: &loggingv1.LimitSpec{
+					PodLimit: &loggingv1.LimitSpec{
 						MaxRecordsPerSecond: 50,
 					}, // 10 files and 100 group limit, so 10 lines per file,
 				},
@@ -102,7 +102,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 				Name: "custom-app-1",
 				Application: &loggingv1.Application{
 					Namespaces: []string{stressorNS},
-					ContainerLimit: &loggingv1.LimitSpec{
+					PodLimit: &loggingv1.LimitSpec{
 						MaxRecordsPerSecond: 50,
 					}, // 10 files and 100 group limit, so 10 lines per file,
 				},
@@ -175,7 +175,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 					//GroupLimit: &loggingv1.LimitSpec{
 					//	MaxRecordsPerSecond: 200,
 					//},
-					ContainerLimit: &loggingv1.LimitSpec{
+					PodLimit: &loggingv1.LimitSpec{
 						MaxRecordsPerSecond: 200,
 					},
 				},

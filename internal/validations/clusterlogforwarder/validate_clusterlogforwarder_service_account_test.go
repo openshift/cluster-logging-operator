@@ -150,6 +150,42 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			}
 			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Not(Succeed()))
 		})
+
+		It("should pass validation if service account can collect audit logs and there is an HTTP receiver", func() {
+			k8sAuditClient := &mockAuditSARClient{
+				fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+			}
+
+			const httpInputName = `http-receiver`
+			customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: clfServiceAccount.Name,
+
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: httpInputName,
+						Receiver: &loggingv1.ReceiverSpec{
+							HTTP: &loggingv1.HTTPReceiver{
+								ReceiverPort: loggingv1.ReceiverPort{
+									Port:       8080,
+									TargetPort: 8080,
+								},
+								Format: loggingv1.FormatKubeAPIAudit,
+							},
+						},
+					},
+				},
+
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							httpInputName,
+						},
+					},
+				},
+			}
+			Expect(ValidateServiceAccount(customClf, k8sAuditClient, extras)).To(Succeed())
+		})
 	})
 
 	It("should not validate clusterlogforwarder named 'instance' in the namespace 'openshift-logging'", func() {
@@ -192,6 +228,22 @@ func (c *mockSARClient) Create(ctx context.Context, obj client.Object, opts ...c
 	}
 	inputName := sar.Spec.ResourceAttributes.Name
 	if inputName == loggingv1.InputNameApplication || inputName == loggingv1.InputNameInfrastructure {
+		sar.Status.Allowed = true
+	}
+	return nil
+}
+
+type mockAuditSARClient struct {
+	client.Client
+}
+
+func (c *mockAuditSARClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+	sar, ok := obj.(*authorizationapi.SubjectAccessReview)
+	if !ok {
+		return fmt.Errorf("unexpected object type: %T", obj)
+	}
+	inputName := sar.Spec.ResourceAttributes.Name
+	if inputName == loggingv1.InputNameAudit {
 		sar.Status.Allowed = true
 	}
 	return nil

@@ -88,7 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err := factory.ReconcileInputServices(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
+	if err := factory.ReconcileInputServices(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, utils.AsOwner(clusterRequest.Forwarder), factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileInputServices")
 		return err
 	}

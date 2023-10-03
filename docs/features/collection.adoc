@@ -112,6 +112,17 @@ logstash 7.10.1|✓|
 - retrytimeout
 
 |======
+.Vector Tuning
+[options="header"]
+|======
+|Feature|Desc.
+|Application Input Flow Control
+| Specify the max rate of incoming logs for a defined application input
+|Output Flow Control
+| Specify the max rate of logs sent to a given output.  Excess logs are dropped
+
+
+|======
 
 === Metrics and Alerting
 .Metrics and Alerting

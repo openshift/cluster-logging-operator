@@ -447,7 +447,7 @@ source = '''
 									"podname": "very-important",
 								},
 							},
-							ContainerLimit: &logging.LimitSpec{
+							PodLimit: &logging.LimitSpec{
 								MaxRecordsPerSecond: 100,
 							},
 						},

@@ -191,7 +191,7 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		// Check if inputspec has application, infrastructure, audit or receiver specs
 		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Receiver == nil:
 			badInput("inputspec must define one or more of application, infrastructure, audit or receiver")
-		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
+		case input.HasPolicy() && input.Application.PodLimit != nil && input.Application.GroupLimit != nil:
 			badInput("inputspec must define only one of container or group limit")
 		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
 			badInput("inputspec cannot have a negative limit threshold")

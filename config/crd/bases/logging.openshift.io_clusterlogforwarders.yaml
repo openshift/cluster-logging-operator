@@ -259,17 +259,6 @@ spec:
                       description: Application, if present, enables named set of `application`
                         logs that can specify a set of match criteria
                       properties:
-                        containerLimit:
-                          description: Container limit applied to each container selected
-                            by this input. No container selected by this input can
-                            exceed this limit.
-                          properties:
-                            maxRecordsPerSecond:
-                              description: MaxRecordsPerSecond is the maximum number
-                                of log records allowed per input/output in a pipeline
-                              format: int64
-                              type: integer
-                          type: object
                         namespaces:
                           description: Namespaces from which to collect application
                             logs. Only messages from these namespaces are collected.
@@ -277,6 +266,16 @@ spec:
                           items:
                             type: string
                           type: array
+                        podLimit:
+                          description: PodLimit applied to each pod selected by this
+                            input. No pod selected by this input can exceed this limit.
+                          properties:
+                            maxRecordsPerSecond:
+                              description: MaxRecordsPerSecond is the maximum number
+                                of log records allowed per input/output in a pipeline
+                              format: int64
+                              type: integer
+                          type: object
                         selector:
                           description: Selector for logs from pods with matching labels.
                             Only messages from pods with these labels are collected.

@@ -171,7 +171,7 @@ func (input *InputSpec) Types() sets.String {
 // HasPolicy returns whether the input spec has flow control policies defined in it.
 func (input *InputSpec) HasPolicy() bool {
 	if input.Application != nil &&
-		(input.Application.ContainerLimit != nil ||
+		(input.Application.PodLimit != nil ||
 			input.Application.GroupLimit != nil) {
 		return true
 	}
@@ -179,8 +179,8 @@ func (input *InputSpec) HasPolicy() bool {
 }
 
 func (input *InputSpec) GetMaxRecordsPerSecond() int64 {
-	if input.Application.ContainerLimit != nil {
-		return input.Application.ContainerLimit.MaxRecordsPerSecond
+	if input.Application.PodLimit != nil {
+		return input.Application.PodLimit.MaxRecordsPerSecond
 	} else {
 		return input.Application.GroupLimit.MaxRecordsPerSecond
 	}

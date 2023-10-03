@@ -68,8 +68,8 @@ func AddThrottle(spec *logging.InputSpec) []generator.Element {
 	el := []generator.Element{}
 	input := fmt.Sprintf(UserDefinedInput, spec.Name)
 
-	if spec.Application.ContainerLimit != nil {
-		threshold = spec.Application.ContainerLimit.MaxRecordsPerSecond
+	if spec.Application.PodLimit != nil {
+		threshold = spec.Application.PodLimit.MaxRecordsPerSecond
 		throttle_key = perContainerLimitKeyField
 	} else {
 		threshold = spec.Application.GroupLimit.MaxRecordsPerSecond

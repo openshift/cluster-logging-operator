@@ -12,9 +12,15 @@ const (
 	InputNameApplication    = "application"    // Non-infrastructure container logs.
 	InputNameInfrastructure = "infrastructure" // Infrastructure containers and system logs.
 	InputNameAudit          = "audit"          // System audit logs.
+
+	// InputNameContainer are any container logs on a node
+	InputNameContainer = "container"
+
+	// InputNameNode are node journal logs
+	InputNameNode = "node"
 )
 
-var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit)
+var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit, InputNameContainer, InputNameNode)
 
 func IsInputTypeName(s string) bool { return ReservedInputNames.Has(s) }
 

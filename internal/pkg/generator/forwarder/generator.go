@@ -3,6 +3,7 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,6 +55,8 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
 		}
+		defaultOutput := clusterlogforwarder.NewDefaultOutput(nil, "elasticsearch")
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, defaultOutput)
 	}
 
 	// Added because this generator is used for tests and the tests assume a correct

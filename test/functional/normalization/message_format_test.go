@@ -26,6 +26,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 			ToElasticSearchOutput().
 			FromInput(logging.InputNameAudit).
 			ToElasticSearchOutput()
+		framework.Forwarder.Spec.Pipelines[0].FilterRefs = []string{"viaq"}
 		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {

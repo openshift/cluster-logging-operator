@@ -25,7 +25,7 @@ func main() {
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
-	debugOutput := flag.Bool("debug-output", false, "Generate config normally, but replace output plugins with @stdout plugin, so that records can be printed in collector logs.")
+	debugOutput := flag.Bool("debug-output", false, "Elements config normally, but replace output plugins with @stdout plugin, so that records can be printed in collector logs.")
 	colltype := flag.String("collector", "fluentd", "collector type: fluentd or vector")
 	secretsFlag := flag.String("secrets", "", "colon delimited list of secrets in the form of name=key1,key1")
 	help := flag.Bool("help", false, "This message")
@@ -45,16 +45,16 @@ func main() {
 	var reader func() ([]byte, error)
 	switch *yamlFile {
 	case "-":
-		log.Info("Reading from stdin")
+		log.V(2).Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return io.ReadAll(stdin)
 		}
 	case "":
-		log.Info("received empty yamlfile")
+		log.V(2).Info("received empty yamlfile")
 		reader = func() ([]byte, error) { return []byte{}, nil }
 	default:
-		log.Info("reading log forwarder from yaml file", "filename", *yamlFile)
+		log.V(2).Info("reading log forwarder from yaml file", "filename", *yamlFile)
 		reader = func() ([]byte, error) { return os.ReadFile(*yamlFile) }
 	}
 
@@ -65,7 +65,7 @@ func main() {
 	}
 
 	clfYaml := string(content)
-	log.Info("Finished reading yaml", "content", clfYaml)
+	log.V(2).Info("Finished reading yaml", "content", clfYaml)
 	clf, err := forwarder.UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
 		log.Error(err, "Error UnMarshalling CLF", "file", yamlFile)

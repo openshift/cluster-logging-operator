@@ -8,7 +8,7 @@ import (
 )
 
 type CollectorFunctionalFrameworkBuilder struct {
-	builder     *ClusterLogForwarderBuilder
+	Builder     *ClusterLogForwarderBuilder
 	Framework   *CollectorFunctionalFramework
 	podVisitors []runtime.PodBuilderVisitor
 }
@@ -22,7 +22,7 @@ func NewCollectorFunctionalFrameworkUsingCollectorBuilder(logCollectorType loggi
 	framework := NewCollectorFunctionalFrameworkUsingCollector(logCollectorType, testOptions...)
 
 	return &CollectorFunctionalFrameworkBuilder{
-		builder:     NewClusterLogForwarderBuilder(framework.Forwarder),
+		Builder:     NewClusterLogForwarderBuilder(framework.Forwarder),
 		Framework:   framework,
 		podVisitors: []runtime.PodBuilderVisitor{},
 	}
@@ -31,7 +31,7 @@ func NewCollectorFunctionalFrameworkUsingCollectorBuilder(logCollectorType loggi
 func (b *CollectorFunctionalFrameworkBuilder) FromInput(inputName string) *FrameworkPipelineBuilder {
 	return &FrameworkPipelineBuilder{
 		frameworkBuilder: b,
-		pipelineBuilder:  b.builder.FromInput(inputName),
+		pipelineBuilder:  b.Builder.FromInput(inputName),
 	}
 }
 

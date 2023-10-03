@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"time"
 
@@ -68,6 +69,7 @@ var _ = Describe(fmt.Sprintf("[Functional][Outputs][ElasticSearch] %s Logforward
 	})
 
 	DescribeTable("should be compatible with version", func(version functional.ElasticsearchVersion) {
+		os.Setenv("NEXT_GENERATOR", "TRUE")
 		var secret *core.Secret
 		if version > functional.ElasticsearchVersion7 {
 			secret = runtime.NewSecret("", "mysecret", map[string][]byte{
@@ -79,8 +81,9 @@ var _ = Describe(fmt.Sprintf("[Functional][Outputs][ElasticSearch] %s Logforward
 
 		builder := functional.NewCollectorFunctionalFrameworkUsingCollectorBuilder(testfw.LogCollectionType)
 		defer builder.Framework.Cleanup()
-		builder.FromInput(logging.InputNameApplication).
+		builder.FromInput(logging.InputNameContainer).
 			ToElasticSearchOutput(version, secret)
+		builder.Builder.Forwarder.Spec.Pipelines[0].FilterRefs = []string{"viaq"}
 		Expect(builder.Deploy()).To(BeNil())
 
 		framework = builder.Framework

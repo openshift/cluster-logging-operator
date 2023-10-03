@@ -3,13 +3,15 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector"
+	"os"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -45,6 +47,9 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	default:
 		log.Error(errors.New("Unsupported collector implementation"), "type", collectorType)
 		return nil
+	}
+	if exists := os.Getenv("NEXT_GENERATOR"); exists != "" {
+		g.conf = next.Conf
 	}
 	return g
 }

@@ -43,6 +43,7 @@ pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
 `,
 		}),
 		Entry("Only Infrastructure", helpers.ConfGenerateTest{
@@ -71,6 +72,7 @@ pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -147,6 +149,7 @@ pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
 
 [sources.raw_journal_logs]
 type = "journald"

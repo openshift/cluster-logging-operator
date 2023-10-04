@@ -26,7 +26,8 @@ metadata:
   namespace: openshift-logging
 spec:
   pipelines:
-    - inputRefs: [application, infrastructure, audit]
+    - name: my-pipeline
+      inputRefs: [application, infrastructure, audit]
       filterRefs: [my-policy]
       outputRefs: [default]
   filters:

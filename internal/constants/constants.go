@@ -59,6 +59,8 @@ const (
 	AWSRoleSessionEnvVarKey      = "AWS_ROLE_SESSION_NAME"
 	AWSWebIdentityTokenEnvVarKey = "AWS_WEB_IDENTITY_TOKEN_FILE" //nolint:gosec
 
+	SplunkHECTokenKey = `hecToken`
+
 	TokenKey          = "token"
 	LogCollectorToken = "logcollector-token"
 

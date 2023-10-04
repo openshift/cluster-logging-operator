@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -43,7 +44,12 @@ var _ = Describe("[internal][validations] ClusterLogForwarder", func() {
 	Context("#validateJsonParsingToElasticsearch", func() {
 
 		It("should fail validation when the pipeline includes Elasticsearch and structuredTypeKey or structuredTypeName is missing", func() {
-			Expect(validateJsonParsingToElasticsearch(*clf, k8sClient, extras)).To(Not(Succeed()))
+			err, status := validateJsonParsingToElasticsearch(*clf, k8sClient, extras)
+			Expect(err).To(Not(BeNil()))
+			Expect(status).To(Not(BeNil()))
+			Expect(len(status.Conditions)).To(Equal(1))
+			Expect(status.Conditions[0].Status).To(Equal(corev1.ConditionFalse))
+			Expect(status.Conditions[0].Reason).To(Equal(v1.ReasonInvalid))
 		})
 		It("should pass validation when the pipeline includes Elasticsearch and structuredTypeName is spec'd", func() {
 			es.StructuredTypeName = "foo"

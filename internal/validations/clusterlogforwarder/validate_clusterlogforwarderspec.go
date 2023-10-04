@@ -369,14 +369,18 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 	if err != nil {
 		return fail(CondMissing("secret %q not found", output.Secret.Name))
 	}
-	verifySecret := verifySecretKeysForTLS
-	if output.Type == loggingv1.OutputTypeCloudwatch {
-		verifySecret = verifySecretKeysForCloudwatch
+
+	switch output.Type {
+	case loggingv1.OutputTypeCloudwatch:
+		if !verifySecretKeysForCloudwatch(output, conds, secret) {
+			return false
+		}
+	case loggingv1.OutputTypeSplunk:
+		if !verifySecretKeysForSplunk(output, conds, secret) {
+			return false
+		}
 	}
-	if !verifySecret(output, conds, secret) {
-		return false
-	}
-	return true
+	return verifySecretKeysForTLS(output, conds, secret)
 }
 
 func getOutputSecret(namespace string, clfClient client.Client, secretName string) (*corev1.Secret, error) {
@@ -394,6 +398,7 @@ func verifySecretKeysForTLS(output *loggingv1.OutputSpec, conds loggingv1.NamedC
 		conds.Set(output.Name, c)
 		return false
 	}
+
 	// Make sure we have secrets for a valid TLS configuration.
 	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
 	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
@@ -413,7 +418,6 @@ func verifySecretKeysForTLS(output *loggingv1.OutputSpec, conds loggingv1.NamedC
 }
 
 func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1.NamedConditions, secret *corev1.Secret) bool {
-	log.V(3).Info("V")
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
@@ -434,6 +438,19 @@ func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1
 		return fail(CondMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
 	}
 	return true
+}
+
+func verifySecretKeysForSplunk(output *loggingv1.OutputSpec, conds loggingv1.NamedConditions, secret *corev1.Secret) bool {
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
+
+	if len(secret.Data[constants.SplunkHECTokenKey]) > 0 {
+		return true
+	} else {
+		return fail(CondMissing("A non-empty " + constants.SplunkHECTokenKey + " entry is required"))
+	}
 }
 
 func readClusterName(clfClient client.Client) (string, error) {

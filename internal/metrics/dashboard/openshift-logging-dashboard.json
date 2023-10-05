@@ -64,7 +64,7 @@
           },
           "targets": [
             {
-              "expr": "sum by(job, namespace, app_kubernetes_io_name) (sum_over_time(vector_processed_bytes_total{component_kind=\"source\"}[24h]))",
+              "expr": "sum by(job, namespace, app_kubernetes_io_name) (increase(vector_processed_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[24h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -74,7 +74,7 @@
               "refId": "A"
             },
             {
-              "expr": "sum by(job, namespace, app_kubernetes_io_name)(sum_over_time(log_collected_bytes_total[24h]))",
+              "expr": "sum by(job, namespace, app_kubernetes_io_name)(increase(log_collected_bytes_total[24h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -84,7 +84,7 @@
               "refId": "B"
             }
           ],
-          "title": "Total log bytes collected last 24h",
+          "title": "Log bytes collected (24h avg)",
           "type": "graph",
           "span": 6,
           "timeFrom": null,
@@ -100,7 +100,7 @@
               "logBase": 1,
               "min": null,
               "max": null,
-              "format": "short"
+              "format": "bytes"
             },
             {
               "label": null,
@@ -183,13 +183,13 @@
             {
               "datasource": "${datasource}",
               "editorMode": "builder",
-              "expr": "sum by (app_kubernetes_io_name, job, namespace) (sum_over_time(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[24h]))",
+              "expr": "sum by (app_kubernetes_io_name, job, namespace) (increase(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[24h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "range": true,
               "refId": "A"
             },
             {
-              "expr": "sum by(app_kubernetes_io_name, job, namespace) (sum_over_time(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[24h]))",
+              "expr": "sum by(app_kubernetes_io_name, job, namespace) (increase(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[24h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -199,7 +199,7 @@
               "refId": "B"
             }
           ],
-          "title": "Total log bytes sent last 24h",
+          "title": "Log bytes sent (24h avg)",
           "type": "graph",
           "span": 6,
           "timeFrom": null,
@@ -215,7 +215,7 @@
               "logBase": 1,
               "min": null,
               "max": null,
-              "format": "short"
+              "format": "bytes"
             },
             {
               "label": null,
@@ -317,7 +317,7 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (irate(vector_processed_bytes_total{component_kind=\"source\"}[24h]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(vector_processed_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -327,14 +327,14 @@
               "refId": "A"
             },
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (irate(log_collected_bytes_total[24h]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(log_collected_bytes_total[5m]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
               "refId": "B"
             }
           ],
-          "title": "Rate log bytes collected last 24h",
+          "title": "Log collection rate (5m avg)",
           "type": "graph",
           "span": 6,
           "renderer": "flot",
@@ -345,7 +345,7 @@
               "logBase": 1,
               "min": null,
               "max": null,
-              "format": "bytes",
+              "format": "Bps",
               "$$hashKey": "object:332"
             },
             {
@@ -452,7 +452,7 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by (app_kubernetes_io_name, namespace, job) (irate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[24h]))",
+              "expr": "sum by (app_kubernetes_io_name, namespace, job) (rate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -462,14 +462,14 @@
               "refId": "A"
             },
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (irate(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[24h]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[5m]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
               "refId": "B"
             }
           ],
-          "title": "Rate log bytes sent last 24h",
+          "title": "Log send rate (5m avg)",
           "type": "graph",
           "span": 6,
           "renderer": "flot",
@@ -480,7 +480,7 @@
               "logBase": 1,
               "min": null,
               "max": null,
-              "format": "bytes",
+              "format": "Bps",
               "$$hashKey": "object:332"
             },
             {
@@ -587,7 +587,7 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (sum_over_time(vector_component_errors_total[1h]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (increase(vector_component_errors_total[1h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -597,7 +597,7 @@
               "refId": "A"
             },
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (sum_over_time(fluentd_output_status_num_errors[1h]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (increase(fluentd_output_status_num_errors[1h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,

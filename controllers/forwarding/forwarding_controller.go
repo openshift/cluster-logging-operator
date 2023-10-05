@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,10 +46,6 @@ func condNotReady(r status.ConditionReason, format string, args ...interface{}) 
 	return logging.NewCondition(logging.ConditionReady, corev1.ConditionFalse, r, format, args...)
 }
 
-func condInvalid(format string, args ...interface{}) status.Condition {
-	return condNotReady(logging.ReasonInvalid, format, args...)
-}
-
 // Reconcile reads that state of the cluster for a ClusterLogForwarder object and makes changes based on the state read
 // and what is in the Logging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -77,11 +72,6 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 
 	if !k8shandler.IsManaged(r.Client, r.Recorder, r.ClusterID) {
 		return ctrl.Result{}, nil
-	}
-
-	if err := clusterlogforwarder.Validate(*instance); err != nil {
-		instance.Status.Conditions.SetCondition(condInvalid("validation failed: %v", err))
-		return r.updateStatus(instance)
 	}
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")

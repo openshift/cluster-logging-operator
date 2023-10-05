@@ -278,17 +278,7 @@ test-functional-vector: test-functional-benchmarker-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=vector -race \
-		./test/functional/filters/... \
-		./test/functional/outputs/elasticsearch/... \
-		./test/functional/outputs/kafka/... \
-		./test/functional/outputs/cloudwatch/... \
-		./test/functional/outputs/loki/... \
-		./test/functional/outputs/http/... \
-		./test/functional/outputs/syslog/... \
-		./test/functional/normalization \
-		./test/functional/flowcontrol/... \
-		./test/functional/inputs/http/... \
-		./test/functional/misc/... \
+		./test/functional/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator

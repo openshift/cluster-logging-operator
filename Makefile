@@ -359,11 +359,11 @@ deploy-bundle: bundle bundle.Dockerfile
 	podman push --tls-verify=false ${BUNDLE_TAG}
 	@echo "To run the bundle without this Makefile:"
 	@echo "    oc create ns $(NAMESPACE)"
-	@echo "    run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG)"
+	@echo "    $(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG)"
 	@touch $@
 
 .PHONY: clean-bundle
-clean-bundle:
+clean-bundle: $(OPERATOR_SDK)
 	$(OPERATOR_SDK) cleanup --delete-all cluster-logging
 
 WATCH_EVENTS=oc get events -A --watch-only& trap "kill %%" EXIT;

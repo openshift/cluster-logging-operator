@@ -1,12 +1,27 @@
 package vector
 
+import (
+	"golang.org/x/sys/unix"
+)
+
 const (
 	InternalMetricsSourceName = "internal_metrics"
 	PrometheusOutputSinkName  = "prometheus_output"
-	PrometheusExporterAddress = "[::]:24231"
 
 	AddNodenameToMetricTransformName = "add_nodename_to_metric"
 )
+
+var PrometheusExporterAddress string
+
+func init() {
+	if fd, err := unix.Socket(unix.AF_INET6, unix.SOCK_STREAM, unix.IPPROTO_IP); err != nil {
+		PrometheusExporterAddress = `0.0.0.0`
+	} else {
+		unix.Close(fd)
+		PrometheusExporterAddress = `[::]`
+	}
+	PrometheusExporterAddress += `:24231`
+}
 
 type InternalMetrics struct {
 	ID                string

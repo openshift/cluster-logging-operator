@@ -171,8 +171,8 @@ type Application struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	GroupLimit *LimitSpec `json:"-"` //`json:"groupLimit,omitempty"`
 
-	// Container limit applied to each container selected
-	// by this input. No container selected by this input can
+	// Container limit applied to each container of the pod(s) selected
+	// by this input. No container of pods selected by this input can
 	// exceed this limit.
 	//
 	// +optional

@@ -94,7 +94,7 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |======================
 |Property|Type|Description
 
-|containerLimit|object|  *(optional)* Container limit applied to each container selected
+|containerLimit|object|  *(optional)* Container limit applied to each container of the pod(s) selected
 |namespaces|array|  *(optional)* Namespaces from which to collect application logs.
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================

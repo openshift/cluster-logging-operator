@@ -259,9 +259,9 @@ spec:
                         logs that can specify a set of match criteria
                       properties:
                         containerLimit:
-                          description: Container limit applied to each container selected
-                            by this input. No container selected by this input can
-                            exceed this limit.
+                          description: Container limit applied to each container of
+                            the pod(s) selected by this input. No container of pods
+                            selected by this input can exceed this limit.
                           properties:
                             maxRecordsPerSecond:
                               description: MaxRecordsPerSecond is the maximum number

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
@@ -82,7 +83,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 		ComponentID:  strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
-		DefaultToken: security.GetFromSecret(secret, "hecToken"),
+		DefaultToken: security.GetFromSecret(secret, constants.SplunkHECTokenKey),
 	}
 }
 

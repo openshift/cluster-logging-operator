@@ -15,9 +15,7 @@ const (
 	FixLogLevel = `
 if !exists(.level) {
   .level = "default"
-  if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
-    .level = "info"
-  } else if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+  if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
     .level = "warn"
   } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
     .level = "error"
@@ -31,7 +29,9 @@ if !exists(.level) {
     .level = "alert"
   } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
     .level = "emergency"
-  }
+  } else if match!(.message, r'(?i)\b(?:info)\b|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+    .level = "info"
+	}
 }
 `
 	RemoveSourceType     = `del(.source_type)`

@@ -3,6 +3,7 @@ package clusterlogforwarder
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
+	v1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -1118,6 +1119,65 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			_, clfStatus := ValidateInputsOutputsPipelines(*clfInstance, client, extras)
 			Expect(YAMLString(clfStatus)).To(EqualLines("{}"))
 		})
+	})
+
+	Context("filter specs", func() {
+
+		client := fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
+			constants.OpenshiftNS, constants.CollectorSecretName, nil,
+		)).Build()
+		extras := map[string]bool{}
+
+		It("should pass with filter", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Filters: []loggingv1.FilterSpec{
+					{
+						Name: "my-policy",
+						Type: "kubeAPIAudit",
+						FilterTypeSpec: loggingv1.FilterTypeSpec{
+							KubeAPIAudit: &loggingv1.KubeAPIAudit{
+								Rules: []v1.PolicyRule{{
+									Level: "RequestResponse",
+									Resources: []v1.GroupResources{
+										{
+											Group:     "",
+											Resources: []string{"pods"},
+										},
+									},
+								}},
+								OmitStages: []v1.Stage{v1.StageRequestReceived},
+							},
+						},
+					},
+				},
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: "my-output",
+						Type: loggingv1.OutputTypeElasticsearch,
+						URL:  "https://es.svc.infra.cluster:9999",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Elasticsearch: &loggingv1.Elasticsearch{},
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						FilterRefs: []string{"my-policy"},
+						InputRefs:  []string{"application", "infrastructure", "audit"},
+						OutputRefs: []string{"my-output"},
+						Name:       "test",
+					},
+				},
+			}
+			clf := loggingv1.ClusterLogForwarder{}
+			clf.Spec = *forwarderSpec
+			clf.Name = constants.SingletonName
+			clf.Namespace = constants.OpenshiftNS
+
+			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
+			Expect(clfStatus.Pipelines["test"]).To(HaveCondition("Ready", true, "", ""))
+		})
+
 	})
 })
 

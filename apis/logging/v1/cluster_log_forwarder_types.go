@@ -171,12 +171,12 @@ type Application struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	GroupLimit *LimitSpec `json:"-"` //`json:"groupLimit,omitempty"`
 
-	// PodLimit applied to each pod selected
-	// by this input. No pod selected by this input can
+	// Container limit applied to each container selected
+	// by this input. No container selected by this input can
 	// exceed this limit.
 	//
 	// +optional
-	PodLimit *LimitSpec `json:"podLimit,omitempty"`
+	ContainerLimit *LimitSpec `json:"containerLimit,omitempty"`
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.

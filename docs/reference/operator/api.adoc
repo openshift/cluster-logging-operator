@@ -94,18 +94,12 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |======================
 |Property|Type|Description
 
+|containerLimit|object|  *(optional)* Container limit applied to each container selected
 |namespaces|array|  *(optional)* Namespaces from which to collect application logs.
-|podLimit|object|  *(optional)* PodLimit applied to each pod selected
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================
 
-=== .spec.inputs[].application.namespaces[]
-===== Description
-
-=====  Type
-* array
-
-=== .spec.inputs[].application.podLimit
+=== .spec.inputs[].application.containerLimit
 ===== Description
 
 =====  Type
@@ -117,6 +111,12 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
+
+=== .spec.inputs[].application.namespaces[]
+===== Description
+
+=====  Type
+* array
 
 === .spec.inputs[].application.selector
 ===== Description

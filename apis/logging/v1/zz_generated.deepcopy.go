@@ -32,8 +32,8 @@ func (in *Application) DeepCopyInto(out *Application) {
 		*out = new(LimitSpec)
 		**out = **in
 	}
-	if in.PodLimit != nil {
-		in, out := &in.PodLimit, &out.PodLimit
+	if in.ContainerLimit != nil {
+		in, out := &in.ContainerLimit, &out.ContainerLimit
 		*out = new(LimitSpec)
 		**out = **in
 	}

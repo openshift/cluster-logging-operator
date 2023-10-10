@@ -38,11 +38,11 @@ func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespac
 	return reconcile.Service(er, k8sClient, desired)
 }
 
-func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, namespace, name, component, instance, certSecretName string, port int32, targetPort int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, namespace, name, instance, certSecretName string, port int32, targetPort int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
 		name,
 		namespace,
-		component,
+		constants.CollectorName,
 		instance,
 		[]v1.ServicePort{
 			{

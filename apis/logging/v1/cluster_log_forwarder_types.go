@@ -264,9 +264,10 @@ type OutputSpec struct {
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`
 
-	// Limit applied to the aggregated log
-	// flow to this output. The total log flow from this output
-	// cannot exceed the limit.
+	// Limit of the aggregated logs to this output from any given
+	// collector deployment. The total log flow from an individual collector
+	// deployment to this output cannot exceed the limit.  Generally, one
+	// collector is deployed per node
 	//
 	// +optional
 	Limit *LimitSpec `json:"limit,omitempty"`

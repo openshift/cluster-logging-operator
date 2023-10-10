@@ -240,7 +240,7 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
-|limit|object|  *(optional)* Limit applied to the aggregated log
+|limit|object|  *(optional)* Limit of the aggregated logs to this output from any given
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.

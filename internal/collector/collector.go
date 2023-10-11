@@ -223,7 +223,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 	return &collector
 }
 
-func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient client.Client, namespace, name, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient client.Client, namespace, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	if f.CollectorType != logging.LogCollectionTypeVector {
 		return nil
 	}
@@ -238,7 +238,7 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 			if targetPort == 0 {
 				targetPort = input.Receiver.HTTP.ReceiverPort.Port
 			}
-			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, selectorComponent, input.Name, input.Receiver.HTTP.ReceiverPort.Port, targetPort, owner, visitors); err != nil {
+			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, input.Name, input.Receiver.HTTP.ReceiverPort.Port, targetPort, owner, visitors); err != nil {
 				return err
 			}
 		}

@@ -77,7 +77,7 @@ func verifyRefs(what, forwarderName string, status loggingv1.ClusterLogForwarder
 			} else {
 				bad.Insert(ref)
 			}
-		} else {
+		} else if what == "outputs" {
 			// Check if custom CLF is forwarding to default store
 			if forwarderName != constants.SingletonName && ref == loggingv1.OutputNameDefault {
 				msg = append(msg, "custom ClusterLogForwarders cannot forward to the `default` log store")
@@ -116,7 +116,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 	}
 	// Known filter names
 	filters := *sets.NewString()
-	for k := range spec.InputMap() {
+	for k := range spec.FilterMap() {
 		filters.Insert(k)
 	}
 	for i, pipeline := range spec.Pipelines {

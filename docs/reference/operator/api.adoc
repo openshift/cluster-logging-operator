@@ -94,18 +94,12 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |======================
 |Property|Type|Description
 
+|containerLimit|object|  *(optional)* Container limit applied to each container of the pod(s) selected
 |namespaces|array|  *(optional)* Namespaces from which to collect application logs.
-|podLimit|object|  *(optional)* PodLimit applied to each pod selected
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================
 
-=== .spec.inputs[].application.namespaces[]
-===== Description
-
-=====  Type
-* array
-
-=== .spec.inputs[].application.podLimit
+=== .spec.inputs[].application.containerLimit
 ===== Description
 
 =====  Type
@@ -117,6 +111,12 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
+
+=== .spec.inputs[].application.namespaces[]
+===== Description
+
+=====  Type
+* array
 
 === .spec.inputs[].application.selector
 ===== Description
@@ -240,7 +240,7 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
-|limit|object|  *(optional)* Limit applied to the aggregated log
+|limit|object|  *(optional)* Limit of the aggregated logs to this output from any given
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.

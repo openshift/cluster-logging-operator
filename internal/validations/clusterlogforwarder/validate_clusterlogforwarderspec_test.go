@@ -205,7 +205,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{
 						Name: "custom-app",
 						Application: &loggingv1.Application{
-							PodLimit: &loggingv1.LimitSpec{
+							ContainerLimit: &loggingv1.LimitSpec{
 								MaxRecordsPerSecond: 100,
 							},
 							GroupLimit: &loggingv1.LimitSpec{
@@ -224,7 +224,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{
 						Name: "custom-app-container-limit",
 						Application: &loggingv1.Application{
-							PodLimit: &loggingv1.LimitSpec{
+							ContainerLimit: &loggingv1.LimitSpec{
 								MaxRecordsPerSecond: 100,
 							},
 						},
@@ -249,7 +249,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{
 						Name: "custom-app-container-limit",
 						Application: &loggingv1.Application{
-							PodLimit: &loggingv1.LimitSpec{
+							ContainerLimit: &loggingv1.LimitSpec{
 								MaxRecordsPerSecond: -100,
 							},
 						},

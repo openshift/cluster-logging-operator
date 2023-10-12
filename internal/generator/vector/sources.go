@@ -8,6 +8,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
@@ -137,7 +138,8 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 			}
 			el = append(el, HttpReceiver{
 				ID:            input.Name,
-				Port:          listenPort,
+				ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
+				ListenPort:    listenPort,
 				Format:        input.Receiver.HTTP.Format,
 				TlsMinVersion: minTlsVersion,
 				CipherSuites:  cipherSuites,
@@ -149,7 +151,8 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 
 type HttpReceiver struct {
 	ID            string
-	Port          int32
+	ListenAddress string
+	ListenPort    int32
 	Format        string
 	TlsMinVersion string
 	CipherSuites  string
@@ -164,7 +167,7 @@ func (i HttpReceiver) Template() string {
 {{define "` + i.Name() + `" -}}
 [sources.{{.ID}}]
 type = "http_server"
-address = "0.0.0.0:{{.Port}}"
+address = "{{.ListenAddress}}:{{.ListenPort}}"
 decoding.codec = "json"
 
 [sources.{{.ID}}.tls]

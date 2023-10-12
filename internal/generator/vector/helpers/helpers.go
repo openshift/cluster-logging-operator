@@ -3,9 +3,16 @@ package helpers
 import (
 	"fmt"
 	"strings"
+	"sync"
+
+	"golang.org/x/sys/unix"
 )
 
-var Replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+var (
+	Replacer         = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+	listenAllAddress string
+	listenAllOnce    sync.Once
+)
 
 func MakeInputs(in ...string) string {
 	out := make([]string, len(in))
@@ -29,4 +36,19 @@ func TrimSpaces(in []string) []string {
 
 func FormatComponentID(name string) string {
 	return strings.ToLower(Replacer.Replace(name))
+}
+
+func ListenOnAllLocalInterfacesAddress() string {
+	f := func() {
+		listenAllAddress = func() string {
+			if fd, err := unix.Socket(unix.AF_INET6, unix.SOCK_STREAM, unix.IPPROTO_IP); err != nil {
+				return `0.0.0.0`
+			} else {
+				unix.Close(fd)
+				return `[::]`
+			}
+		}()
+	}
+	listenAllOnce.Do(f)
+	return listenAllAddress
 }

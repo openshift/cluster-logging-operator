@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -116,7 +117,7 @@ func PrometheusOutput(id string, inputs []string, minTlsVersion string, cipherSu
 	return PrometheusExporter{
 		ID:            id,
 		Inputs:        helpers.MakeInputs(inputs...),
-		Address:       PrometheusExporterAddress,
+		Address:       helpers.ListenOnAllLocalInterfacesAddress() + `:` + PrometheusExporterListenPort,
 		TlsMinVersion: minTlsVersion,
 		CipherSuites:  cipherSuites,
 	}

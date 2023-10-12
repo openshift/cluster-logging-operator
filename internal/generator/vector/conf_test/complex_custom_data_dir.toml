@@ -382,6 +382,9 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
+[sinks.kafka_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.kafka_receiver.tls]
 enabled = true
 min_tls_version = "VersionTLS12"

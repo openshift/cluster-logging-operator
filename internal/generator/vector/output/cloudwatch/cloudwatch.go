@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"regexp"
 	"strings"
 
@@ -61,7 +62,6 @@ group_name = "{{"{{ group_name }}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
 {{- end}}
@@ -69,29 +69,33 @@ healthcheck.enabled = false
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	outputName := helpers.FormatComponentID(o.Name)
-	componentID := fmt.Sprintf("%s_%s", outputName, "normalize_group_and_streams")
-	dedottedID := normalize.ID(outputName, "dedot")
+	id := helpers.FormatComponentID(o.Name)
+	componentID := fmt.Sprintf("%s_%s", id, "normalize_group_and_streams")
+	dedottedID := normalize.ID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
-			Debug(outputName, helpers.MakeInputs([]string{componentID}...)),
+			Debug(id, helpers.MakeInputs([]string{componentID}...)),
 		}
 	}
+	request := output.NewRequest(id)
+	request.Concurrency.Value = 2
 	return MergeElements(
 		[]Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			OutputConf(o, []string{dedottedID}, secret, op, o.Cloudwatch.Region),
+			OutputConf(id, o, []string{dedottedID}, secret, op, o.Cloudwatch.Region),
+			output.NewBuffer(id),
+			request,
 		},
 		TLSConf(o, secret, op),
 	)
 }
 
-func OutputConf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) Element {
+func OutputConf(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) Element {
 	return CloudWatch{
 		Desc:           "Cloudwatch Logs",
-		ComponentID:    helpers.FormatComponentID(o.Name),
+		ComponentID:    id,
 		Inputs:         helpers.MakeInputs(inputs...),
 		Region:         region,
 		SecurityConfig: SecurityConfig(secret),

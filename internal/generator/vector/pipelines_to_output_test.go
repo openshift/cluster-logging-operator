@@ -111,6 +111,12 @@ healthcheck.enabled = false
 [sinks.loki.encoding]
 codec = "json"
 
+[sinks.loki.buffer]
+when_full = "drop_newest"
+
+[sinks.loki.request]
+retry_attempts = 17
+
 [sinks.loki.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -238,6 +244,12 @@ healthcheck.enabled = false
 
 [sinks.loki.encoding]
 codec = "json"
+
+[sinks.loki.buffer]
+when_full = "drop_newest"
+
+[sinks.loki.request]
+retry_attempts = 17
 
 [sinks.loki.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"

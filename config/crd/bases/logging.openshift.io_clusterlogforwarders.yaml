@@ -496,7 +496,7 @@ spec:
                         timeout:
                           description: Timeout specifies the Http request timeout
                             in seconds. If not set, 10secs is used.
-                          type: string
+                          type: integer
                       type: object
                     kafka:
                       description: 'Kafka provides optional extra properties for `type:

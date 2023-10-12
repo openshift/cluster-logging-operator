@@ -73,15 +73,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			Options: generator.Options{
 				generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
 			},
-			CLSpec: logging.CollectionSpec{
-				Fluentd: &logging.FluentdForwarderSpec{
-					Buffer: &logging.FluentdBufferSpec{
-						ChunkLimitSize: "8m",
-						TotalLimitSize: "800000000",
-						OverflowAction: "throw_exception",
-					},
-				},
-			},
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{

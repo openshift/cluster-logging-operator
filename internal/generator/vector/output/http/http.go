@@ -2,13 +2,13 @@ package http
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -111,9 +111,9 @@ func Normalize(componentID string, inputs []string) Element {
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	outputName := helpers.FormatComponentID(o.Name)
+	id := helpers.FormatComponentID(o.Name)
 	component := strings.ToLower(vectorhelpers.Replacer.Replace(fmt.Sprintf("%s_%s", o.Name, NormalizeHttp)))
-	dedottedID := normalize.ID(outputName, "dedot")
+	dedottedID := normalize.ID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Normalize(component, inputs),
@@ -121,11 +121,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		}
 	}
 	return MergeElements(
-		Schema(o, outputName, component, inputs, op),
+		Schema(o, id, component, inputs, op),
 		[]Element{
 			normalize.DedotLabels(dedottedID, []string{component}),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
+			output.NewBuffer(id),
 			Request(o),
 		},
 		TLSConf(o, secret, op),
@@ -181,25 +182,17 @@ func Method(h *logging.Http) string {
 	return "post"
 }
 
-func Request(o logging.OutputSpec) Element {
-	var timeout string
-	if o.Http == nil || o.Http.Timeout == "" {
-		timeout = fmt.Sprintf("%d", DefaultHttpTimeoutSecs)
-	} else {
+func Request(o logging.OutputSpec) *output.Request {
+	timeout := DefaultHttpTimeoutSecs
+	if o.Http != nil && o.Http.Timeout != 0 {
 		timeout = o.Http.Timeout
 	}
-	return HttpRequest{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-		Timeout:     timeout,
-		Headers:     Headers(o),
+	req := output.NewRequest(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)))
+	req.TimeoutSecs.Value = timeout
+	if o.Http != nil && len(o.Http.Headers) != 0 {
+		req.SetHeaders(o.Http.Headers)
 	}
-}
-
-func Headers(o logging.OutputSpec) Element {
-	if o.Http == nil || len(o.Http.Headers) == 0 {
-		return Nil
-	}
-	return KV("headers", utils.ToHeaderStr(o.Http.Headers, "%q=%q"))
+	return req
 }
 
 func Encoding(o logging.OutputSpec) Element {

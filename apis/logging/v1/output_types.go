@@ -286,7 +286,7 @@ type Http struct {
 
 	// Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
 	// +optional
-	Timeout string `json:"timeout,omitempty"`
+	Timeout int `json:"timeout,omitempty"`
 
 	// Method specifies the Http method to be used for sending logs. If not set, 'POST' is used.
 	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH

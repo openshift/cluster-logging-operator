@@ -13,6 +13,9 @@ func (kv KeyVal) Name() string {
 }
 
 func (kv KeyVal) Template() string {
+	if kv.Val == "" {
+		return `{{define "` + kv.Name() + `" -}}{{end -}}`
+	}
 	return `{{define "` + kv.Name() + `" -}}
 {{.Key}} = {{.Val}}
 {{end -}}`

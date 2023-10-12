@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -107,20 +108,22 @@ func (l LokiLabels) Template() string {
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := vectorhelpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	outputName := helpers.FormatComponentID(o.Name)
-	componentID := fmt.Sprintf("%s_%s", outputName, "remap")
-	dedottedID := normalize.ID(outputName, "dedot")
+	componentID := fmt.Sprintf("%s_%s", id, "remap")
+	dedottedID := normalize.ID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
 			Output(o, []string{dedottedID}),
 			Encoding(o),
+			output.NewBuffer(id),
+			output.NewRequest(id),
 			Labels(o),
 		},
 		TLSConf(o, secret, op),

@@ -109,10 +109,16 @@ credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-crede
 log_id = "vector-1"
 severity_key = "level"
 
-
 [sinks.gcl_1.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+
+[sinks.gcl_1.buffer]
+when_full = "drop_newest"
+
+[sinks.gcl_1.request]
+retry_attempts = 17
+
 `,
 		}),
 		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
@@ -207,10 +213,15 @@ credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-crede
 log_id = "vector-1"
 severity_key = "level"
 
-
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+
+[sinks.gcl_tls.buffer]
+when_full = "drop_newest"
+
+[sinks.gcl_tls.request]
+retry_attempts = 17
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"
@@ -310,11 +321,16 @@ billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-credentials.json"
 log_id = "vector-1"
 severity_key = "level"
-
-
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+
+[sinks.gcl_tls.buffer]
+when_full = "drop_newest"
+
+[sinks.gcl_tls.request]
+retry_attempts = 17
+
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"

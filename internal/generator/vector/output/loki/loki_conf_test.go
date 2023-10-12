@@ -141,6 +141,12 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
+
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -245,6 +251,12 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
+
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -348,6 +360,12 @@ tenant_id = "{{foo.bar.baz}}"
 [sinks.loki_receiver.encoding]
 codec = "json"
 
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
+
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -448,6 +466,12 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
+
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
@@ -551,6 +575,12 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
+
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -642,6 +672,12 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
+
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
@@ -743,6 +779,13 @@ out_of_order_action = "accept"
 healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
+
+[sinks.loki_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.loki_receiver.request]
+retry_attempts = 17
+
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -850,6 +893,12 @@ healthcheck.enabled = false
 
 [sinks.default_loki_apps.encoding]
 codec = "json"
+
+[sinks.default_loki_apps.buffer]
+when_full = "drop_newest"
+
+[sinks.default_loki_apps.request]
+retry_attempts = 17
 
 [sinks.default_loki_apps.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"

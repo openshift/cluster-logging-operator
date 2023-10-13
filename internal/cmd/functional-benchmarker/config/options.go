@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:latest"
+	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:0.2"
 	ContainerLogDir  = "/var/log/pods"
 )
 

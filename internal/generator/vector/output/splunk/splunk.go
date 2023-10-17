@@ -27,6 +27,7 @@ type Splunk struct {
 	Inputs       string
 	Endpoint     string
 	DefaultToken string
+	Index        string
 }
 
 func (s Splunk) Name() string {
@@ -42,6 +43,9 @@ endpoint = "{{.Endpoint}}"
 compression = "none"
 default_token = "{{.DefaultToken}}"
 timestamp_key = "@timestamp"
+{{if .Index -}}
+index = "{{.Index}}"
+{{end -}} 
 {{end}}`
 }
 
@@ -82,12 +86,16 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 }
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
-	return Splunk{
+	splunk := Splunk{
 		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
 		DefaultToken: security.GetFromSecret(secret, constants.SplunkHECTokenKey),
 	}
+	if o.Splunk != nil && strings.TrimSpace(o.Splunk.Index) != "" {
+		splunk.Index = o.Splunk.Index
+	}
+	return splunk
 }
 
 func Encoding(o logging.OutputSpec) Element {

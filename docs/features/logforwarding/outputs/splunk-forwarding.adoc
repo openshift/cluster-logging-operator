@@ -57,3 +57,42 @@ spec:
         - splunk-receiver
 ----
 +
+
+. To customize the index where you send events to in Splunk, you  need to configure it in your log forwarding configuration (If not specified, the default index defined within Splunk is used.):
++
+----
+ oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: splunk-receiver
+      type: splunk
+      splunk:
+       index: "my_index"
+      secret:
+        name: splunk-secret
+      url: 'http://example-splunk-hec-service:8088'
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - splunk-receiver
+----
+
+NOTE:  _Index_ parameter supports https://vector.dev/docs/reference/configuration/template-syntax/[Vector's template syntax], which enables you to use dynamic per-event values.
+For example, you can use Kubernetes Namespace in index names:
+[source,yaml]
+----
+index: "{{.kubernetes.namespace_name}}_index"
+----

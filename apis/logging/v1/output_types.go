@@ -276,6 +276,12 @@ type Splunk struct {
 	// Should be a valid JSON object
 	// +optional
 	Fields []string `json:"fields,omitempty"`
+
+	// https://vector.dev/docs/reference/configuration/sinks/splunk_hec_logs/#index
+	// The name of the index to send events to.
+	// If not specified, the default index defined within Splunk is used.
+	// +optional
+	Index string `json:"index,omitempty"`
 }
 
 // Http provided configuration for sending json encoded logs to a generic http endpoint.

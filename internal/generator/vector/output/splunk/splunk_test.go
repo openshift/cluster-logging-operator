@@ -83,6 +83,25 @@ when_full = "drop_newest"
 [sinks.splunk_hec.request]
 retry_attempts = 17
 `
+		splunkSinkCustomIndex = splunkDedot + `
+[sinks.splunk_hec]
+type = "splunk_hec_logs"
+inputs = ["splunk_hec_dedot"]
+endpoint = "https://splunk-web:8088/endpoint"
+compression = "none"
+default_token = ""
+timestamp_key = "@timestamp"
+index = "thanos{{.supervillain}}"
+[sinks.splunk_hec.encoding]
+codec = "json"
+
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+
+[sinks.splunk_hec.request]
+retry_attempts = 17
+`
+
 		splunkSinkTls = splunkDedot + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
@@ -187,6 +206,17 @@ key_pass = "junk"
 			},
 		}
 
+		outputCustomIndex = loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeSplunk,
+			Name: "splunk_hec",
+			URL:  "https://splunk-web:8088/endpoint",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Splunk: &loggingv1.Splunk{
+					Index: "thanos{{.supervillain}}",
+				},
+			},
+		}
+
 		outputWithPassphrase = loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeSplunk,
 			Name: "splunk_hec",
@@ -273,6 +303,13 @@ key_pass = "junk"
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSink))
+		})
+
+		It("should provide a valid config with custom index", func() {
+			element := Conf(outputCustomIndex, []string{"pipelineName"}, nil, nil)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(splunkSinkCustomIndex))
 		})
 
 		It("should provide a valid config with passphrase", func() {

@@ -132,14 +132,10 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 	el := []generator.Element{}
 	for _, input := range spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			listenPort := input.Receiver.HTTP.ReceiverPort.TargetPort
-			if listenPort == 0 {
-				listenPort = input.Receiver.HTTP.ReceiverPort.Port
-			}
 			el = append(el, HttpReceiver{
 				ID:            input.Name,
 				ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-				ListenPort:    listenPort,
+				ListenPort:    input.Receiver.HTTP.GetPort(),
 				Format:        input.Receiver.HTTP.Format,
 				TlsMinVersion: minTlsVersion,
 				CipherSuites:  cipherSuites,

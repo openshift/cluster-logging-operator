@@ -315,30 +315,14 @@ spec:
                               enum:
                               - kubeAPIAudit
                               type: string
-                            receiverPort:
-                              description: ReceiverPort specifies parameters for the
-                                Service fronting the HTTPReceiver
-                              properties:
-                                name:
-                                  description: Name of the service to create for this
-                                    HTTPReceiver If not specified, defaults to the
-                                    name of the containing ClusterLogForwarder input
-                                  type: string
-                                port:
-                                  description: Port the Service will listen on.
-                                  format: int32
-                                  type: integer
-                                targetPort:
-                                  description: Port the Receiver will listen on. If
-                                    not specified, defaults to the value of Port
-                                  format: int32
-                                  type: integer
-                              required:
-                              - port
-                              type: object
+                            port:
+                              default: 8443
+                              description: Port the Service and the HTTP listener
+                                listen on.
+                              format: int32
+                              type: integer
                           required:
                           - format
-                          - receiverPort
                           type: object
                       type: object
                   required:

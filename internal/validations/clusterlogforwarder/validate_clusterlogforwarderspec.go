@@ -70,19 +70,26 @@ func verifyRefs(what, forwarderName string, status loggingv1.ClusterLogForwarder
 
 	msg := []string{}
 	for _, ref := range refs {
-		if what == "inputs" {
+		switch what {
+		case "inputs":
 			if loggingv1.ReservedInputNames.Has(ref) ||
 				(allowed.Has(ref) && status.Inputs[ref].IsTrueFor(loggingv1.ConditionReady)) {
 				good.Insert(ref)
 			} else {
 				bad.Insert(ref)
 			}
-		} else if what == "outputs" {
+		case "outputs":
 			// Check if custom CLF is forwarding to default store
 			if forwarderName != constants.SingletonName && ref == loggingv1.OutputNameDefault {
 				msg = append(msg, "custom ClusterLogForwarders cannot forward to the `default` log store")
 				bad.Insert(ref)
 			} else if allowed.Has(ref) && status.Outputs[ref].IsTrueFor(loggingv1.ConditionReady) {
+				good.Insert(ref)
+			} else {
+				bad.Insert(ref)
+			}
+		case "filters":
+			if allowed.Has(ref) {
 				good.Insert(ref)
 			} else {
 				bad.Insert(ref)

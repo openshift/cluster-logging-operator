@@ -74,9 +74,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 				func(spec *logging.InputSpec) {
 					spec.Receiver = &logging.ReceiverSpec{
 						HTTP: &logging.HTTPReceiver{
-							ReceiverPort: logging.ReceiverPort{
-								Port: servicePortNum,
-							},
+							Port:   servicePortNum,
 							Format: logging.FormatKubeAPIAudit,
 						},
 					}

@@ -2,9 +2,10 @@ package clusterlogforwarder
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	v1 "k8s.io/apiserver/pkg/apis/audit/v1"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -85,27 +86,24 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		It("should fail validation for invalid HTTP receiver specs", func() {
 
 			checkReceiver := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string, extras map[string]bool) {
-				const input_name = `http-receiver-negative-port`
+				const inputName = `http-receiver`
 				forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 					Inputs: []loggingv1.InputSpec{
 						{
-							Name:     input_name,
+							Name:     inputName,
 							Receiver: receiverSpec,
 						},
 					},
 				}
 				verifyInputs(forwarderSpec, clfStatus, extras)
-				Expect(clfStatus.Inputs[input_name]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
+				Expect(clfStatus.Inputs[inputName]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
 			}
 
-			checkPorts := func(port int32, targetPort int32, format string, expectedErrMsg string) {
+			checkPorts := func(port int32, format string, expectedErrMsg string) {
 				checkReceiver(
 					&loggingv1.ReceiverSpec{
 						HTTP: &loggingv1.HTTPReceiver{
-							ReceiverPort: loggingv1.ReceiverPort{
-								Port:       port,
-								TargetPort: targetPort,
-							},
+							Port:   port,
 							Format: format,
 						},
 					},
@@ -114,13 +112,10 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				)
 			}
 
-			for _, port := range []int32{-1, 0, 80_000} {
-				checkPorts(port, 0, loggingv1.FormatKubeAPIAudit, `invalid port specified for HTTP receiver`)
+			for _, port := range []int32{-1, 53, 80_000} {
+				checkPorts(port, loggingv1.FormatKubeAPIAudit, `invalid port specified for HTTP receiver`)
 			}
-			for _, targetPort := range []int32{-1, 80_000} {
-				checkPorts(8080, targetPort, loggingv1.FormatKubeAPIAudit, `invalid targetPort specified for HTTP receiver`)
-			}
-			checkPorts(8080, 0, `no_such_format`, `invalid format specified for HTTP receiver`)
+			checkPorts(8080, `no_such_format`, `invalid format specified for HTTP receiver`)
 			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an HTTP receiver`, map[string]bool{constants.VectorName: true})
 			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})
 		})

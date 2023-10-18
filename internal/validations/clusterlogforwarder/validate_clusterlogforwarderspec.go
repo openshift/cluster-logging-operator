@@ -174,8 +174,8 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			status.Inputs.Set(input.Name, CondInvalid(format, args...))
 		}
 
-		isInvalidPort := func(port int32) bool {
-			return port < 1 || port > 65535
+		validPort := func(port int32) bool {
+			return port == 0 || (port > 1023 && port < 65536)
 		}
 		isHTTPReceiver := func(input loggingv1.InputSpec) bool {
 			return input.Receiver != nil && input.Receiver.HTTP != nil
@@ -201,10 +201,8 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("ReceiverSpec must define an HTTP receiver")
 		case isHTTPReceiver(input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
 			badInput("invalid format specified for HTTP receiver")
-		case isHTTPReceiver(input) && isInvalidPort(input.Receiver.HTTP.ReceiverPort.Port):
+		case isHTTPReceiver(input) && !validPort(input.Receiver.HTTP.Port):
 			badInput("invalid port specified for HTTP receiver")
-		case isHTTPReceiver(input) && input.Receiver.HTTP.ReceiverPort.TargetPort != 0 && isInvalidPort(input.Receiver.HTTP.ReceiverPort.TargetPort):
-			badInput("invalid targetPort specified for HTTP receiver")
 		default:
 			status.Inputs.Set(input.Name, condReady)
 		}

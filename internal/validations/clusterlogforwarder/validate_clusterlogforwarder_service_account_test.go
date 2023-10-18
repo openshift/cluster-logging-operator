@@ -165,10 +165,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 						Name: httpInputName,
 						Receiver: &loggingv1.ReceiverSpec{
 							HTTP: &loggingv1.HTTPReceiver{
-								ReceiverPort: loggingv1.ReceiverPort{
-									Port:       8080,
-									TargetPort: 8080,
-								},
+								Port:   8080,
 								Format: loggingv1.FormatKubeAPIAudit,
 							},
 						},

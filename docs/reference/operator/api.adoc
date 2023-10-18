@@ -169,24 +169,7 @@ HTTPReceiver receives encoded logs as a HTTP endpoint.
 |Property|Type|Description
 
 |format|string|  Format is the format of incoming log data.
-|receiverPort|object|  ReceiverPort specifies parameters for the Service fronting the HTTPReceiver
-|======================
-
-=== .spec.inputs[].receiver.http.receiverPort
-===== Description
-
-ReceiverPort specifies parameters for the Service fronting the HTTPReceiver
-
-=====  Type
-* object
-
-[options="header"]
-|======================
-|Property|Type|Description
-
-|name|string|  *(optional)* Name of the service to create for this HTTPReceiver
-|port|int|  Port the Service will listen on.
-|targetPort|int|  *(optional)* Port the Receiver will listen on.
+|port|int|  *(optional)* Port the Service and the HTTP listener listen on.
 |======================
 
 === .spec.outputDefaults

@@ -1,0 +1,45 @@
+{
+  "@timestamp": "2023-10-18T17:32:47.415928452Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": ""
+  },
+  "apiVersion": "audit.k8s.io/v1",
+  "auditID": "0aa7d5c9-1afd-4fc4-920c-e5d9e0b7befa",
+  "hostname": "ip-10-0-187-180.us-east-2.compute.internal",
+  "k8s_audit_level": "Metadata",
+  "kind": "Event",
+  "level": "default",
+  "log_type": "audit",
+  "objectRef": {
+    "apiGroup": "flowcontrol.apiserver.k8s.io",
+    "apiVersion": "v1beta3",
+    "resource": "flowschemas"
+  },
+  "openshift": {
+    "cluster_id": "d24a392b-dd87-4eb8-a1a9-7384423567e3"
+  },
+  "requestReceivedTimestamp": "2023-10-18T17:24:14.412707Z",
+  "requestURI": "/apis/flowcontrol.apiserver.k8s.io/v1beta3/flowschemas?allowWatchBookmarks=true&resourceVersion=75731&timeout=8m33s&timeoutSeconds=513&watch=true",
+  "responseStatus": {
+    "code": 200,
+    "metadata": {}
+  },
+  "sourceIPs": [
+    "::1"
+  ],
+  "source_type": "file",
+  "stage": "ResponseComplete",
+  "stageTimestamp": "2023-10-18T17:32:47.413483Z",
+  "tag": ".k8s-audit.log",
+  "user": {
+    "groups": [
+      "system:masters"
+    ],
+    "uid": "f6ee5941-6b5e-445f-be82-9676e322d34f",
+    "username": "system:apiserver"
+  },
+  "userAgent": "kube-apiserver/v1.26.6+73ac561 (linux/amd64) kubernetes/cbbd0bd",
+  "verb": "watch"
+}
+

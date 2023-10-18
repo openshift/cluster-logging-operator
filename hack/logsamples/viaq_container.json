@@ -1,0 +1,48 @@
+{
+  "@timestamp": "2023-10-17T20:35:14.908544681Z",
+  "hostname": "ip-10-0-1-167.ec2.internal",
+  "kubernetes": {
+    "annotations": {
+      "k8s.ovn.org/pod-networks": "{\"default\":{\"ip_addresses\":[\"10.129.0.25/23\"],\"mac_address\":\"0a:58:0a:81:00:19\",\"gateway_ips\":[\"10.129.0.1\"],\"ip_address\":\"10.129.0.25/23\",\"gateway_ip\":\"10.129.0.1\"}}",
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"ovn-kubernetes\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.129.0.25\"\n    ],\n    \"mac\": \"0a:58:0a:81:00:19\",\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "kubectl.kubernetes.io/default-container": "prometheus",
+      "openshift.io/scc": "nonroot-v2",
+      "seccomp.security.alpha.kubernetes.io/pod": "runtime/default"
+    },
+    "container_id": "cri-o://336049f821f287d7f68df6af7ad151bfca5714422e6de4d0d5bf1ae903801f88",
+    "container_image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:17098c17ed2a22ae18f350d8f8e6e86256ccebcde8a116bd8d8c3feb10c6f6d5",
+    "container_name": "kube-rbac-proxy-federate",
+    "labels": {
+      "app.kubernetes.io/component": "prometheus",
+      "app.kubernetes.io/instance": "user-workload",
+      "app.kubernetes.io/managed-by": "prometheus-operator",
+      "app.kubernetes.io/name": "prometheus",
+      "app.kubernetes.io/part-of": "openshift-monitoring",
+      "app.kubernetes.io/version": "2.42.0",
+      "controller-revision-hash": "prometheus-user-workload-5c6c5557cb",
+      "operator.prometheus.io/name": "user-workload",
+      "operator.prometheus.io/shard": "0",
+      "prometheus": "user-workload",
+      "statefulset.kubernetes.io/pod-name": "prometheus-user-workload-1"
+    },
+    "namespace_id": "3828f0f2-2ffd-4c20-b20d-49c88ffefe6c",
+    "namespace_labels": {
+      "kubernetes.io/metadata.name": "openshift-user-workload-monitoring",
+      "name": "openshift-user-workload-monitoring",
+      "network.openshift.io/policy-group": "monitoring",
+      "olm.operatorgroup.uid/36214fb1-52fb-4184-afc4-af9ca757e48e": "",
+      "openshift.io/cluster-monitoring": "true"
+    },
+    "namespace_name": "openshift-user-workload-monitoring",
+    "pod_id": "c0101997-b135-4b94-bae2-e23706881c6c",
+    "pod_ip": "10.129.0.25",
+    "pod_name": "prometheus-user-workload-1",
+    "pod_owner": "StatefulSet/prometheus-user-workload"
+  },
+  "level": "info",
+  "log_type": "application",
+  "message": "I1017 20:35:14.908511       1 log.go:198] http: TLS handshake error from 10.128.0.24:46206: write tcp 10.129.0.25:9092->10.128.0.24:46206: write: connection reset by peer",
+  "openshift": {
+    "cluster_id": "4732cbd5-56e8-4e0d-b52f-998f089afe3e"
+  }
+}

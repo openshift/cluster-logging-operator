@@ -18,6 +18,7 @@ component configurations and upgrades by changing the `managementState` from `Ma
   spec:
     managementState: "Managed"
 ```
+See the [unmanaged](unmanaged.adoc) documentation for additional information.
 
 ## Component Images
 The image for each subcomponent are overwriteable by modifying the appropriate

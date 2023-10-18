@@ -1,0 +1,46 @@
+= Management State
+
+There are times when it may be necessary for administrators to intervene and take over management of some aspects of
+the logging stack.  This requires setting logging into an "Unmanaged" state. The operator will no longer reconcile or
+revert changes to resources (e.g. secrets, configmaps, daemonsets) that it owns.  This allows configurations and deployments
+to be altered and managed by the administrator.
+
+Potential reasons for needing to go Unmanaged:
+
+* Working around a known bug by implementing solutions as advised
+* Hacking configuration for testing custom images
+* Feature request investigation
+
+NOTE: Logging components in an unmanaged state are not supported unless an exception is in place.  This means a
+  formal exception or a documented workaround associated with a known issue.  Operating in an unmanaged state is intended
+  to be temporary and should be reverted once the respective issue is resolved.
+
+NOTE: An unmanaged deployment will not receive updates until the `ClusterLogging` custom resource is placed back into a managed state.
+```
+  spec:
+    managementState: "Managed"
+```
+
+== Unmanaged Collector
+
+* Set or edit the `ClusterLogging` resource to managementState of Unmanaged:
+```
+oc patch clusterlogging/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
+```
+
+* Extract the collector configuration (vector implementation):
+```
+oc extract secret/$NAME-config
+```
+
+* Edit the configuration(vector.toml) as needed
+
+* Update the configuration
+```
+oc set data secret/$NAME-config --from-file=vector.toml=vector.toml
+```
+
+* Restart the collector pods
+```
+oc delete pods -lcomponent=collector
+```

@@ -1,0 +1,39 @@
+{
+  "@timestamp": "2023-10-17T20:46:29.048949Z",
+  "SYSLOG_TIMESTAMP": "Oct 17 20:46:29 ",
+  "_RUNTIME_SCOPE": "system",
+  "_SYSTEMD_INVOCATION_ID": "7c6f11847b8548d4b1bf7dc417a97819",
+  "hostname": "ip-10-0-1-188",
+  "level": "notice",
+  "log_type": "infrastructure",
+  "message": "ovs|00523|connmgr|INFO|br-ex<->unix#1741: 2 flow_mods in the last 0 s (2 adds)",
+  "openshift": {
+    "cluster_id": "4732cbd5-56e8-4e0d-b52f-998f089afe3e"
+  },
+  "systemd": {
+    "t": {
+      "BOOT_ID": "29593136644144e589aca8731639cf50",
+      "CAP_EFFECTIVE": "7c00",
+      "CMDLINE": "ovs-vswitchd unix:/var/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --user openvswitch:hugetlbfs --no-chdir --log-file=/var/log/openvswitch/ovs-vswitchd.log --pidfile=/var/run/openvswitch/ovs-vswitchd.pid --detach",
+      "COMM": "ovs-vswitchd",
+      "EXE": "/usr/sbin/ovs-vswitchd",
+      "GID": "801",
+      "MACHINE_ID": "ec2d58c8c3a3845b9e4a58eedb517276",
+      "PID": "1092",
+      "SELINUX_CONTEXT": "system_u:system_r:openvswitch_t:s0",
+      "SYSTEMD_CGROUP": "/system.slice/ovs-vswitchd.service",
+      "SYSTEMD_INVOCATION_ID": "7c6f11847b8548d4b1bf7dc417a97819",
+      "SYSTEMD_SLICE": "system.slice",
+      "SYSTEMD_UNIT": "ovs-vswitchd.service",
+      "TRANSPORT": "syslog",
+      "UID": "800"
+    },
+    "u": {
+      "SYSLOG_FACILITY": "3",
+      "SYSLOG_IDENTIFIER": "ovs-vswitchd"
+    }
+  },
+  "tag": ".journal.system",
+  "time": "2023-10-17T20:46:29+00:00"
+}
+

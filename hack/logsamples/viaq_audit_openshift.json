@@ -1,0 +1,45 @@
+{
+  "@timestamp": "2023-10-18T17:34:31.892301560Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": ""
+  },
+  "apiVersion": "audit.k8s.io/v1",
+  "auditID": "b38f72ea-4552-4cb4-8b63-7328d95b1a04",
+  "hostname": "ip-10-0-187-180.us-east-2.compute.internal",
+  "kind": "Event",
+  "level": "default",
+  "log_type": "audit",
+  "objectRef": {
+    "apiGroup": "oauth.openshift.io",
+    "apiVersion": "v1",
+    "name": "sha256~7okfJ3RYY4qZlKVCeTtF-gDhFBSkc30QAMvhdzkgLTg",
+    "resource": "oauthaccesstokens"
+  },
+  "openshift": {
+    "cluster_id": "d24a392b-dd87-4eb8-a1a9-7384423567e3"
+  },
+  "openshift_audit_level": "Metadata",
+  "requestReceivedTimestamp": "2023-10-18T17:34:31.808985Z",
+  "requestURI": "/apis/oauth.openshift.io/v1/oauthaccesstokens/sha256~7okfJ3RYY4qZlKVCeTtF-gDhFBSkc30QAMvhdzkgLTg",
+  "responseStatus": {
+    "code": 200,
+    "metadata": {}
+  },
+  "sourceIPs": [
+    "::1"
+  ],
+  "source_type": "file",
+  "stage": "ResponseComplete",
+  "stageTimestamp": "2023-10-18T17:34:31.810741Z",
+  "tag": ".openshift-audit.log",
+  "user": {
+    "groups": [
+      "system:masters"
+    ],
+    "uid": "21b51f75-8dcb-4572-b44c-3b0805f87c89",
+    "username": "system:apiserver"
+  },
+  "userAgent": "Go-http-client/2.0",
+  "verb": "get"
+}

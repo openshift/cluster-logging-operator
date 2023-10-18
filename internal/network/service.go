@@ -60,6 +60,8 @@ func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, nam
 		constants.AnnotationServingCertSecretName: certSecretName,
 	}
 
+	desired.Labels[constants.LabelComponent] = constants.LabelHTTPInputService
+
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.Service(er, k8sClient, desired)
 }

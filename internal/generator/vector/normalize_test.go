@@ -298,7 +298,6 @@ source = '''
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .k8s_audit_level = .level
-  .level = "default"
 '''
 
 [transforms.openshift_audit_logs]
@@ -310,7 +309,6 @@ source = '''
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .openshift_audit_level = .level
-  .level = "default"
 '''
 
 [transforms.ovn_audit_logs]

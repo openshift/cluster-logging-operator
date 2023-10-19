@@ -31,6 +31,11 @@ var _ = Describe("[Functional][Collection] Namespace filtering", func() {
 			ToFluentForwardOutput()
 		Expect(instance.Deploy()).To(BeNil())
 	})
+
+	AfterEach(func() {
+		instance.Cleanup()
+	})
+
 	It("should send logs from one namespace only", func() {
 
 		msg := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), "my message")

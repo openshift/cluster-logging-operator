@@ -2,6 +2,7 @@
 package http
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -14,14 +15,93 @@ import (
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	authentication "k8s.io/api/authentication/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
 const (
 	httpInputName  = `http-source`
 	servicePortNum = 8080
+
+	// eventsString is a sample from the API-server webhook.
+	// It does not include the 'apiVersion' and 'kind' fields in each event.
+	// Use this exact serialization for testing to ensure compatibility with the real API server.
+	// For more see: https://issues.redhat.com/browse/LOG-4681
+	eventsString = `{
+  "apiVersion": "audit.k8s.io/v1",
+  "items": [
+    {
+      "annotations": {
+        "authorization.k8s.io/decision": "allow",
+        "authorization.k8s.io/reason": ""
+      },
+      "auditID": "0c8bc986-b74c-4392-8756-7bdbaf3cc63e",
+      "level": "Metadata",
+      "objectRef": {
+        "apiGroup": "user.openshift.io",
+        "apiVersion": "v1",
+        "resource": "groups"
+      },
+      "requestReceivedTimestamp": "2023-10-18T09:26:15.332127Z",
+      "requestURI": "/apis/user.openshift.io/v1/groups?allowWatchBookmarks=true&resourceVersion=205534&timeout=5m15s&timeoutSeconds=315&watch=true",
+      "responseStatus": {
+        "code": 200,
+        "metadata": {}
+      },
+      "sourceIPs": [
+        "::1"
+      ],
+      "stage": "ResponseComplete",
+      "stageTimestamp": "2023-10-18T09:31:30.332784Z",
+      "user": {
+        "groups": [
+          "system:masters"
+        ],
+        "uid": "e71d8fb7-531f-4b8d-bdba-65abb9c0849b",
+        "username": "system:apiserver"
+      },
+      "userAgent": "oauth-apiserver/v0.0.0 (linux/amd64) kubernetes/$Format",
+      "verb": "watch"
+    },
+    {
+      "annotations": {
+        "authorization.k8s.io/decision": "allow",
+        "authorization.k8s.io/reason": ""
+      },
+      "auditID": "3803e946-cbd2-4fe7-b8c0-57dba6a849d9",
+      "level": "Metadata",
+      "objectRef": {
+        "apiGroup": "user.openshift.io",
+        "apiVersion": "v1",
+        "resource": "groups"
+      },
+      "requestReceivedTimestamp": "2023-10-18T09:31:30.333236Z",
+      "requestURI": "/apis/user.openshift.io/v1/groups?allowWatchBookmarks=true&resourceVersion=207810&timeout=8m15s&timeoutSeconds=495&watch=true",
+      "responseStatus": {
+        "code": 200,
+        "metadata": {}
+      },
+      "sourceIPs": [
+        "::1"
+      ],
+      "stage": "ResponseStarted",
+      "stageTimestamp": "2023-10-18T09:31:30.333626Z",
+      "user": {
+        "groups": [
+          "system:masters"
+        ],
+        "uid": "e71d8fb7-531f-4b8d-bdba-65abb9c0849b",
+        "username": "system:apiserver"
+      },
+      "userAgent": "oauth-apiserver/v0.0.0 (linux/amd64) kubernetes/$Format",
+      "verb": "watch"
+    }
+  ],
+  "kind": "EventList",
+  "metadata": {},
+  "path": "/",
+  "source_type": "http_server",
+  "timestamp": "2023-10-18T09:31:53.359093622Z"
+}`
 )
 
 var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
@@ -31,39 +111,14 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 		Skip("skip for non-vector")
 	}
 
-	tsF := func(tsStr string) time.Time { ts, _ := time.Parse(time.RFC3339Nano, tsStr); return ts }
-
 	var (
 		framework *functional.CollectorFunctionalFramework
-
-		auditRecord = auditv1.Event{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       `Event`,
-				APIVersion: `audit.k8s.io/v1`,
-			},
-			Level:      `default`,
-			AuditID:    `16dcc977-a39e-467b-af44-921416b7800b`,
-			Stage:      `RequestReceived`,
-			RequestURI: `/apis/rbac.authorization.k8s.io/v1/clusterrolebindings?limit=500\u0026resourceVersion=0`,
-			Verb:       `create`,
-			User: authentication.UserInfo{
-				Username: "foobar",
-				Groups:   []string{"system:masters", "system:authenticated"},
-			},
-			SourceIPs: []string{"::1", "127.0.0.1"},
-			UserAgent: "kube-apiserver/v1.27.3 (linux/amd64) kubernetes/25b4e43",
-			ObjectRef: &auditv1.ObjectReference{
-				Resource:   "clusterrolebindings",
-				APIGroup:   "rbac.authorization.k8s.io",
-				APIVersion: "v1",
-			},
-			StageTimestamp:           metav1.NewMicroTime(tsF(`2022-08-17T20:27:20.570375Z`)),
-			RequestReceivedTimestamp: metav1.NewMicroTime(tsF(`2023-08-24T21:37:38.842649Z`)),
-			Annotations:              map[string]string{"foo": "bar"},
-		}
+		events    auditv1.EventList
 	)
+	eventsBytes := []byte(strings.Replace(eventsString, "\n", "", -1))
 
 	BeforeEach(func() {
+		Expect(json.Unmarshal(eventsBytes, &events)).To(Succeed())
 		Expect(testfw.LogCollectionType).To(Equal(logging.LogCollectionTypeVector))
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
 		framework.VisitConfig = func(conf string) string {
@@ -92,7 +147,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
 				}),
 			).To(BeNil())
-			err := framework.WriteAsJsonToHttpInput(httpInputName, auditRecord)
+			err := framework.WriteAsJsonToHttpInput(httpInputName, events.Items[0])
 			Expect(err).To(BeNil(), "Expected no errors writing to HTTP input")
 			raw, err := framework.ReadFileFromWithRetryInterval("http", functional.ApplicationLogFile, time.Second)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -100,7 +155,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 			err = types.ParseLogsFrom(utils.ToJsonLogs([]string{raw}), &logs, false)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			outputTestLog := logs[0]
-			Expect(outputTestLog).To(FitLogFormatTemplate(auditRecord))
+			Expect(outputTestLog).To(FitLogFormatTemplate(events.Items[0]), "raw string: %q", raw)
 		})
 	})
 
@@ -112,22 +167,49 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 				}),
 			).To(BeNil())
 
-			var logArray = auditv1.EventList{
-				Items: []auditv1.Event{auditRecord, auditRecord},
-			}
-
-			err := framework.WriteAsJsonToHttpInput(httpInputName, logArray)
+			err := framework.WriteToHttpInputWithPortForwarder(httpInputName, eventsBytes)
 			Expect(err).To(BeNil(), "Expected no errors writing to HTTP input")
 			raw, err := framework.ReadFileFromWithRetryInterval("http", functional.ApplicationLogFile, time.Second)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			lines := strings.Split(strings.TrimSpace(raw), "\n")
-			Expect(len(lines)).To(Equal(len(logArray.Items)), "--- raw lines:\n%v\n...", raw)
-			for _, line := range lines {
+			Expect(len(lines)).To(Equal(len(events.Items)), "--- raw lines:\n%v\n...", raw)
+			for i, line := range lines {
 				var logs []auditv1.Event
 				err = types.ParseLogsFrom(utils.ToJsonLogs([]string{line}), &logs, false)
 				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-				Expect(logs[0]).To(FitLogFormatTemplate(auditRecord))
+				Expect(logs[0]).To(FitLogFormatTemplate(events.Items[i]))
 			}
+		})
+
+		It("should apply an audit filter", func() {
+			Expect(events.Items[0].Stage).To(Not(Equal(events.Items[1].Stage)))
+			filterName := "auditFilter"
+			framework.Forwarder.Spec.Filters = []logging.FilterSpec{{
+				Name: filterName,
+				Type: logging.FilterKubeAPIAudit,
+				FilterTypeSpec: logging.FilterTypeSpec{KubeAPIAudit: &logging.KubeAPIAudit{
+					OmitStages: []auditv1.Stage{events.Items[0].Stage},
+					Rules:      []auditv1.PolicyRule{{Level: auditv1.LevelMetadata}}, // Skip default rules.
+				}},
+			}}
+			framework.Forwarder.Spec.Pipelines[0].FilterRefs = []string{filterName}
+
+			Expect(framework.DeployWithVisitor(
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				}),
+			).To(BeNil())
+
+			err := framework.WriteToHttpInputWithPortForwarder(httpInputName, eventsBytes)
+			Expect(err).To(BeNil(), "Expected no errors writing to HTTP input")
+			raw, err := framework.ReadFileFromWithRetryInterval("http", functional.ApplicationLogFile, time.Second)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			lines := strings.Split(strings.TrimSpace(raw), "\n")
+			Expect(lines).To(HaveLen(1))
+			var logs []auditv1.Event
+			err = types.ParseLogsFrom(utils.ToJsonLogs(lines), &logs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs[0]).To(FitLogFormatTemplate(events.Items[1]))
 		})
 	})
 })

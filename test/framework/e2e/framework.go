@@ -120,7 +120,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, opts)
 	})
-	return client.NewTest().Client.WaitFor(pod, client.PodRunning)
+	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace string, labels map[string]string) error {

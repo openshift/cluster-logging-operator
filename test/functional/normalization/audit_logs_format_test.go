@@ -164,7 +164,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Kind:             "Event",
 						Hostname:         framework.Pod.Spec.NodeName,
 						LogType:          "audit",
-						Level:            "default",
+						Level:            "Metadata",
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
@@ -186,7 +186,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				outputTestLog := logs[0]
 				Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 				results := strings.Join(raw, " ")
-				Expect(results).To(MatchRegexp("kind.*Event.*level.*default.*k8s_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
+				Expect(results).To(MatchRegexp("kind.*Event.*level.*Metadata.*k8s_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 
 			})
 			It("should parse openshift audit log format correctly", func() {
@@ -200,7 +200,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Kind:             "Event",
 						Hostname:         framework.Pod.Spec.NodeName,
 						LogType:          "audit",
-						Level:            "default",
+						Level:            "Metadata",
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
@@ -223,7 +223,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				for _, outputTestLog := range logs {
 					Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 					results := strings.Join(raw, " ")
-					Expect(results).To(MatchRegexp("kind.*Event.*level.*default.*openshift_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
+					Expect(results).To(MatchRegexp("kind.*Event.*level.*Metadata.*openshift_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 				}
 			})
 			It("should parse linux audit log format correctly", func() {

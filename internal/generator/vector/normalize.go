@@ -174,7 +174,6 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 				AddK8sAuditTag,
 				ParseAndFlatten,
 				FixK8sAuditLevel,
-				AddDefaultLogLevel,
 			}), "\n"),
 		},
 	}
@@ -190,7 +189,6 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 				AddOpenAuditTag,
 				ParseAndFlatten,
 				FixOpenshiftAuditLevel,
-				AddDefaultLogLevel,
 			}), "\n"),
 		},
 	}

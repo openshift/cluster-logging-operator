@@ -12,5 +12,15 @@ type Filter interface {
 	Elements(inputs []string, pipeline logging.PipelineSpec, spec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element
 
 	// TranformsName is the name of the transform in the config that is used as input to other sections
-	TranformsName(pipeline logging.PipelineSpec) string
+	TranformsNames(pipeline logging.PipelineSpec) []string
+}
+
+func MakeID(names ...string) string {
+	id := "filter"
+	for _, n := range names {
+		if n != "" {
+			id = id + "_" + n
+		}
+	}
+	return id
 }

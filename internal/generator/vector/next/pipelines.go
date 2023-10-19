@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/filters/passthrough"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/registry"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/source"
 )
 
 func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
@@ -30,16 +31,16 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 			} else {
 				switch inputName {
 				case logging.InputNameApplication:
-					inputs = append(inputs, fmt.Sprintf("raw_%s_logs", logging.InputNameContainer))
+					inputs = append(inputs, source.MakeID(logging.InputNameContainer))
 				case logging.InputNameAudit:
-					for _, a := range []string{common.RawK8sAuditLogs, common.RawHostAuditLogs, common.RawOpenshiftAuditLogs, common.RawOvnAuditLogs} {
-						inputs = append(inputs, a)
+					for _, a := range source.AuditLogTypes {
+						inputs = append(inputs, source.MakeID(a))
 					}
 				case logging.InputNameInfrastructure:
-					inputs = append(inputs, fmt.Sprintf("raw_%s_logs", logging.InputNameNode))
-					inputs = append(inputs, fmt.Sprintf("raw_%s_logs", logging.InputNameContainer))
+					inputs = append(inputs, source.MakeID(logging.InputNameNode))
+					inputs = append(inputs, source.MakeID(logging.InputNameContainer))
 				default:
-					inputs = append(inputs, fmt.Sprintf("raw_%s_logs", inputName))
+					inputs = append(inputs, source.MakeID(inputName))
 				}
 			}
 		}
@@ -53,7 +54,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 					fElements := f.Elements(inputs, p, *spec, op)
 					log.V(4).Info("filter Elements", "elements", fElements)
 					el = append(el, fElements...)
-					inputs = []string{f.TranformsName(p)}
+					inputs = f.TranformsNames(p)
 				} else {
 					log.V(4).Info("Filter is unknown", "name", filterName)
 				}

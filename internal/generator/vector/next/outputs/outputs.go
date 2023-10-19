@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	rhes "github.com/openshift/cluster-logging-operator/internal/generator/vector/next/outputs/elasticsearch/rhinternal"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/registry"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
@@ -28,7 +29,9 @@ func SinkInputsFromPipelinesOrFilters(spec *logging.ClusterLogForwarderSpec, op 
 			if len(p.FilterRefs) > 0 {
 				last := p.FilterRefs[len(p.FilterRefs)-1]
 				if f := registry.LookupProto(last, filterSpecs); f != nil {
-					r.Insert(o, f.TranformsName(p))
+					for _, n := range f.TranformsNames(p) {
+						r.Insert(o, n)
+					}
 				}
 			} else {
 				r.Insert(o, p.Name)
@@ -103,4 +106,8 @@ func New(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfs
 		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites))
 	return outputs
+}
+
+func MakeID(spec logging.OutputSpec) string {
+	return fmt.Sprintf("output_%s", vectorhelpers.FormatComponentID(spec.Name))
 }

@@ -114,10 +114,10 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 		el = append(el, JournalLogs("drop_journal_logs", "journal_logs")...)
 	}
 	if types.Has(logging.InputNameAudit) {
-		el = append(el, NormalizeHostAuditLogs(RawHostAuditLogs, HostAuditLogs)...)
-		el = append(el, NormalizeK8sAuditLogs(RawK8sAuditLogs, K8sAuditLogs)...)
-		el = append(el, NormalizeOpenshiftAuditLogs(RawOpenshiftAuditLogs, OpenshiftAuditLogs)...)
-		el = append(el, NormalizeOVNAuditLogs(RawOvnAuditLogs, OvnAuditLogs)...)
+		el = append(el, NormalizeHostAuditLogs(HostAuditLogs, RawHostAuditLogs)...)
+		el = append(el, NormalizeK8sAuditLogs(K8sAuditLogs, RawK8sAuditLogs)...)
+		el = append(el, NormalizeOpenshiftAuditLogs(OpenshiftAuditLogs, RawOpenshiftAuditLogs)...)
+		el = append(el, NormalizeOVNAuditLogs(OvnAuditLogs, RawOvnAuditLogs)...)
 	}
 
 	for _, input := range spec.Inputs {
@@ -149,11 +149,11 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 	}
 }
 
-func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
+func NormalizeHostAuditLogs(id string, inputs ...string) []generator.Element {
 	return []generator.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs...),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddHostAuditTag,
@@ -164,11 +164,11 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
 	}
 }
 
-func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
+func NormalizeK8sAuditLogs(id string, inputs ...string) []generator.Element {
 	return []generator.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs...),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddK8sAuditTag,
@@ -180,11 +180,11 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 	}
 }
 
-func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
+func NormalizeOpenshiftAuditLogs(id string, inputs ...string) []generator.Element {
 	return []generator.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs...),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddOpenAuditTag,
@@ -196,11 +196,11 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 	}
 }
 
-func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
+func NormalizeOVNAuditLogs(id string, inputs ...string) []generator.Element {
 	return []generator.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs...),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddOvnAuditTag,

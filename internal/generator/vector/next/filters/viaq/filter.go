@@ -1,56 +1,92 @@
 package viaq
 
 import (
-	"fmt"
-	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	common "github.com/openshift/cluster-logging-operator/internal/generator/vector"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/filters"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/next/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"strings"
 )
 
 const (
 	Name = "viaq"
-
-	RenameMeta = `
-.kubernetes.labels = del(.kubernetes.pod_labels)
-.kubernetes.namespace_id = del(.kubernetes.namespace_uid)
-.kubernetes.namespace_name = del(.kubernetes.pod_namespace)
-.kubernetes.annotations = del(.kubernetes.pod_annotations)
-.kubernetes.pod_id = del(.kubernetes.pod_uid)
-.hostname = del(.kubernetes.pod_node_name)
-`
 )
 
-type Filter struct{}
+type Filter struct {
+	names []string
+}
 
 func New(spec *logging.FilterSpec) filters.Filter {
 	return &Filter{}
 }
 
-func (f *Filter) Elements(inputs []string, pipeline logging.PipelineSpec, spec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-	types := logTypesFor(pipeline, spec.InputMap())
-	log.V(4).Info("init viaq filter", "pipeline", pipeline, "types", types)
-	var el []generator.Element
-	if types.Has(logging.InputNameContainer) || types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
-		el = append(el, NormalizeContainerLogs(f.TranformsName(pipeline), inputs...)...)
-	}
+//// IDs returns a set of ids produced by this component for a given pipeline
+//func (f *Filter) IDs(spec logging.ClusterLogForwarderSpec, pipelineName string) []string {
+//	inputs := spec.InputMap()
+//}
 
-	// TODO - How to distinguish between container and journal logs which have different normalization
-	//if types.Has(logging.InputNameNode) || types.Has(logging.InputNameInfrastructure) {
-	//	el = append(el, normalize.JournalLogs(helpers.MakeInputs(inputs...), "")...)
-	//}
+func (f *Filter) Elements(inputs []string, pipeline logging.PipelineSpec, spec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+
+	var el []generator.Element
+	if elInputs, found := hasInputsForLogTypes(inputs, source.ContainerLogTypes...); found {
+		el = append(el, NormalizeContainerLogs(filters.MakeID(pipeline.Name, Name), elInputs...)...)
+	}
+	if elInputs, found := hasInputsForLogTypes(inputs, source.JournalLogTypes...); found {
+		el = append(el, JournalLogs(helpers.MakeInputs(elInputs...), filters.MakeID(pipeline.Name, Name, logging.InputNameNode))...)
+	}
+	if elInputs, found := hasInputsForLogTypes(inputs, source.AuditLogTypes...); found {
+		el = append(el, common.NormalizeHostAuditLogs(makeID(pipeline, source.AuditHost), limitAuditInputsTo(elInputs, source.AuditHost)...)...)
+		el = append(el, common.NormalizeK8sAuditLogs(makeID(pipeline, source.AuditKubernetes), limitAuditInputsTo(elInputs, source.AuditKubernetes)...)...)
+		el = append(el, common.NormalizeOpenshiftAuditLogs(makeID(pipeline, source.AuditOpenShift), limitAuditInputsTo(elInputs, source.AuditOpenShift)...)...)
+		el = append(el, common.NormalizeOVNAuditLogs(makeID(pipeline, source.AuditOVN), limitAuditInputsTo(elInputs, source.AuditOVN)...)...)
+	}
 
 	return el
 }
 
-func (f *Filter) TranformsName(pipeline logging.PipelineSpec) string {
-	return fmt.Sprintf("%s_logs_%s", pipeline.Name, Name)
+func hasInputsForLogTypes(inputs []string, logType ...string) ([]string, bool) {
+	result := sets.NewString()
+	for _, lt := range logType {
+		for _, i := range inputs {
+			if strings.HasSuffix(i, lt) {
+				result.Insert(i)
+			}
+		}
+	}
+	return result.List(), result.Len() > 0
+}
+
+func limitAuditInputsTo(inputs []string, auditType string) []string {
+	result := sets.NewString()
+	for _, i := range inputs {
+		if strings.HasSuffix(i, auditType) {
+			result.Insert(i)
+		}
+	}
+	if result.Len() == 0 {
+		return inputs
+	}
+	return result.List()
+}
+
+func makeID(p logging.PipelineSpec, part string) string {
+	return filters.MakeID(p.Name, part)
+}
+
+func (f *Filter) TranformsNames(pipeline logging.PipelineSpec) []string {
+	//types := logTypesFor(pipeline, spec.InputMap())
+	//log.V(4).Info("init viaq filter", "pipeline", pipeline, "types", types)
+	return []string{
+		filters.MakeID(pipeline.Name, Name),
+		filters.MakeID(pipeline.Name, Name, logging.InputNameNode),
+		filters.MakeID(pipeline.Name, Name, source.AuditHost),
+		filters.MakeID(pipeline.Name, Name, source.AuditKubernetes),
+		filters.MakeID(pipeline.Name, Name, source.AuditOpenShift),
+		filters.MakeID(pipeline.Name, Name, source.AuditOVN),
+	}
 }
 
 func logTypesFor(pipeline logging.PipelineSpec, inputs map[string]*logging.InputSpec) sets.String {
@@ -75,36 +111,3 @@ func logTypesFor(pipeline logging.PipelineSpec, inputs map[string]*logging.Input
 
 	return *types
 }
-
-func NormalizeContainerLogs(id string, inputs ...string) []generator.Element {
-	return []generator.Element{
-		elements.Remap{
-			ComponentID: id,
-			Inputs:      helpers.MakeInputs(inputs...),
-			VRL: strings.Join(helpers.TrimSpaces([]string{
-				RenameMeta,
-				normalize.ClusterID,
-				common.FixLogLevel,
-				common.HandleEventRouterLog,
-				common.RemoveSourceType,
-				common.RemoveStream,
-				common.RemovePodIPs,
-				common.RemoveNodeLabels,
-				common.RemoveTimestampEnd,
-				normalize.FixTimestampField,
-				SetLogType,
-			}), "\n"),
-		},
-	}
-}
-
-var (
-	SetLogType = fmt.Sprintf(`
-namespace_name = string!(.kubernetes.namespace_name)
-if match_any(namespace_name, [r'^(default|kube|openshift)$',r'^(kube|openshift)-.*']) {
-  %s
-} else {
-  %s
-}
-`, common.AddLogTypeInfra, common.AddLogTypeApp)
-)

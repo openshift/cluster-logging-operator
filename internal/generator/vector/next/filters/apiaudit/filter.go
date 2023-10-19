@@ -1,7 +1,6 @@
 package apiaudit
 
 import (
-	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -29,7 +28,7 @@ func (f *Filter) Elements(inputs []string, pipeline logging.PipelineSpec, spec l
 	if vrl, err := filter.RemapVRL(f.FilterSpec); err == nil {
 		return []generator.Element{
 			elements.Remap{
-				ComponentID: f.TranformsName(pipeline),
+				ComponentID: filters.MakeID(pipeline.Name, Name),
 				Inputs:      helpers.MakeInputs(inputs...),
 				VRL:         vrl,
 			},
@@ -40,6 +39,6 @@ func (f *Filter) Elements(inputs []string, pipeline logging.PipelineSpec, spec l
 	return nil
 }
 
-func (f *Filter) TranformsName(pipeline logging.PipelineSpec) string {
-	return fmt.Sprintf("%s_%s", pipeline.Name, Name)
+func (f *Filter) TranformsNames(pipeline logging.PipelineSpec) []string {
+	return []string{filters.MakeID(pipeline.Name, Name)}
 }

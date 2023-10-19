@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
@@ -59,18 +60,20 @@ codec = {{.Codec}}
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := vectorhelpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	outputName := vectorhelpers.FormatComponentID(o.Name)
-	dedottedID := normalize.ID(outputName, "dedot")
+	dedottedID := normalize.ID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
+			output.NewBuffer(id),
+			output.NewRequest(id),
 		},
 		TLSConf(o, secret, op),
 	)

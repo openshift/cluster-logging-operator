@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"net/url"
 	"strings"
 
@@ -47,20 +48,21 @@ topic = {{.Topic}}
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := vectorhelpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 
-	outputName := vectorhelpers.FormatComponentID(o.Name)
-	dedottedID := normalize.ID(outputName, "dedot")
+	dedottedID := normalize.ID(id, "dedot")
 	brokers, genTlsConf := Brokers(o)
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			Output(o, []string{dedottedID}, secret, op, brokers),
 			Encoding(o, op),
+			output.NewBuffer(id),
 		},
 		TLSConf(o, secret, op, genTlsConf),
 		SASLConf(o, secret),

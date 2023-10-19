@@ -76,6 +76,10 @@ default_token = "` + hecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+[sinks.splunk_hec.request]
+retry_attempts = 17
 `
 		splunkSinkTls = splunkDedot + `
 [sinks.splunk_hec]
@@ -87,6 +91,10 @@ default_token = "` + hecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+[sinks.splunk_hec.request]
+retry_attempts = 17
 [sinks.splunk_hec.tls]
 key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
@@ -102,6 +110,10 @@ default_token = "` + hecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+[sinks.splunk_hec.request]
+retry_attempts = 17
 [sinks.splunk_hec.tls]
 verify_certificate = false
 verify_hostname = false
@@ -119,6 +131,10 @@ default_token = ""
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+[sinks.splunk_hec.request]
+retry_attempts = 17
 [sinks.splunk_hec.tls]
 verify_certificate = false
 verify_hostname = false
@@ -134,7 +150,10 @@ timestamp_key = "@timestamp"
 
 [sinks.splunk_hec.encoding]
 codec = "json"
-
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+[sinks.splunk_hec.request]
+retry_attempts = 17
 [sinks.splunk_hec.tls]
 key_pass = "junk"
 `

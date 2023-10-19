@@ -43,15 +43,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				constants.PreviewTLSSecurityProfile: "",
 				generator.ClusterTLSProfileSpec:     tls.GetClusterTLSProfileSpec(nil),
 			},
-			CLSpec: logging.CollectionSpec{
-				Fluentd: &logging.FluentdForwarderSpec{
-					Buffer: &logging.FluentdBufferSpec{
-						ChunkLimitSize: "8m",
-						TotalLimitSize: "800000000",
-						OverflowAction: "throw_exception",
-					},
-				},
-			},
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -472,6 +463,9 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+
+[sinks.kafka_receiver.buffer]
+when_full = "drop_newest"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -971,9 +965,15 @@ endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
@@ -1083,9 +1083,15 @@ endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_2.buffer]
+when_full = "drop_newest"
+
+[sinks.es_2.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_2.tls]
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
@@ -1607,9 +1613,15 @@ endpoints = ["https://elasticsearch:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.default.buffer]
+when_full = "drop_newest"
+
+[sinks.default.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.default.tls]
 key_file = "/var/run/ocp-collector/secrets/collector/tls.key"
@@ -1724,9 +1736,15 @@ endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_1.tls]
 min_tls_version = "VersionTLS12"
@@ -1842,9 +1860,15 @@ endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v8"
+
+[sinks.es_2.buffer]
+when_full = "drop_newest"
+
+[sinks.es_2.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_2.tls]
 min_tls_version = "VersionTLS12"
@@ -2329,9 +2353,15 @@ endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"

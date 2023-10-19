@@ -104,8 +104,15 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+`
+
+	cwBufferAndRequest = `
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 `
 	cwSinkRole = `
 # Cloudwatch Logs
@@ -118,7 +125,6 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
 `
 	cwSinkKeyIdTLS = `
@@ -133,8 +139,12 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -154,8 +164,12 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -173,8 +187,12 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -195,8 +213,12 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -215,8 +237,12 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -237,8 +263,12 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -257,8 +287,12 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
-request.concurrency = 2
 healthcheck.enabled = false
+[sinks.cw.buffer]
+when_full = "drop_newest"
+[sinks.cw.request]
+retry_attempts = 17
+concurrency = 2
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -349,6 +383,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
+` + cwBufferAndRequest + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)
@@ -383,6 +418,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
+` + cwBufferAndRequest + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)
@@ -417,6 +453,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
+` + cwBufferAndRequest + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)
@@ -458,6 +495,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
+` + cwBufferAndRequest + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)
@@ -494,9 +532,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + dedotted + `
 
 ` + cwSinkKeyId + `
-endpoint = "` + endpoint + `"
+endpoint = "` + endpoint + `"` + `
 tls.verify_certificate = false
-`
+` + cwBufferAndRequest
 			element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
@@ -682,6 +720,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 ` + dedotted + `
 
 ` + cwSinkRole + `
+` + cwBufferAndRequest + `
+
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)
@@ -800,6 +840,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 ` + dedotted + `
 
 ` + cwSinkRole + `
+` + cwBufferAndRequest + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
 				results, err := g.GenerateConf(element...)

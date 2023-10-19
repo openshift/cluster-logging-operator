@@ -5,6 +5,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"os"
 )
 
 const (
@@ -28,6 +29,14 @@ type PipelineBuilder struct {
 type InputSpecVisitor func(spec *logging.InputSpec)
 type OutputSpecVisitor func(spec *logging.OutputSpec)
 type PipelineSpecVisitor func(spec *logging.PipelineSpec)
+
+func enableViaqFilter(spec *logging.PipelineSpec) {
+	if next := os.Getenv("NEXT_GENERATOR"); next != "" {
+		if !sets.NewString(spec.FilterRefs...).Has("viaq") {
+			spec.FilterRefs = append([]string{"viaq"}, spec.FilterRefs...)
+		}
+	}
+}
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
@@ -230,13 +239,15 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 	}
 	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, pipelineName, clf.Spec.Pipelines)
 	if !added {
-		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
+		pipeline := &logging.PipelineSpec{
 			Name:                  pipelineName,
 			InputRefs:             []string{p.inputName},
 			OutputRefs:            []string{output.Name},
 			DetectMultilineErrors: p.enableMultilineErrorDetection,
 			Parse:                 p.jsonParsing,
-		})
+		}
+		enableViaqFilter(pipeline)
+		clf.Spec.Pipelines = append(clf.Spec.Pipelines, *pipeline)
 	}
 	return p.clfb
 }

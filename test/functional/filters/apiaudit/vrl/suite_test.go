@@ -136,9 +136,8 @@ func readPolicy(path string) *loggingv1.KubeAPIAudit {
 	return policy
 }
 
+// fillEvent fills event defaults for filter tests.
 func fillEvent(in *Event) {
-	in.GetObjectKind().SetGroupVersionKind(runtime.GroupVersionKind(in))
-	// Force input event to be full RequestResponse
 	if in.Level == "" {
 		in.Level = LevelRequestResponse
 	}
@@ -148,5 +147,11 @@ func fillEvent(in *Event) {
 	}
 	if in.ResponseObject == nil {
 		in.ResponseObject = obj
+	}
+	if in.AuditID == "" {
+		in.AuditID = "0000"
+	}
+	if in.Verb == "" {
+		in.Verb = "create"
 	}
 }

@@ -1,5 +1,5 @@
 {{- /*Generate VRL policy from audit.Policy, see Go comment on var policyVRLTemplate.*/ -}}
-if is_object(.) && .kind == "Event" && .apiVersion == "audit.k8s.io/v1" {
+if is_string(.auditID) && is_string(.verb) {
   res = if is_null(.objectRef.resource) { "" } else { string!(.objectRef.resource) }
   sub = if is_null(.objectRef.subresource) { "" } else { string!(.objectRef.subresource) }
   namespace = if is_null(.objectRef.namespace) { "" } else { string!(.objectRef.namespace) }

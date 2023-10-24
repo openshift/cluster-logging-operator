@@ -296,6 +296,9 @@ spec:
                     audit:
                       description: Audit, if present, enables `audit` logs.
                       type: object
+                    external:
+                      description: External, if present, enables `external` logs.
+                      type: object
                     infrastructure:
                       description: Infrastructure, if present, enables `infrastructure`
                         logs.
@@ -323,6 +326,16 @@ spec:
                               type: integer
                           required:
                           - format
+                          type: object
+                        syslog:
+                          description: SyslogReceiver receives logs from rsyslog
+                          properties:
+                            port:
+                              default: 10514
+                              description: Port the Service and the HTTP listener
+                                listen on.
+                              format: int32
+                              type: integer
                           type: object
                       type: object
                   required:

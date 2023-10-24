@@ -51,7 +51,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["input_0_"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "input must have a name"))
 		})
 
-		It("should fail if input name is one of the reserved names: application, infrastructure, audit", func() {
+		It("should fail if input name is one of the reserved names: application, infrastructure, audit, external", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: loggingv1.InputNameApplication},
@@ -73,7 +73,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "duplicate name: \"my-app-logs\""))
 		})
 
-		It("should fail when inputspec doesn't define one of application, infrastructure, audit or source", func() {
+		It("should fail when inputspec doesn't define one of application, infrastructure, audit, external or receiver", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: "my-app-logs"},
@@ -120,6 +120,41 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})
 		})
 
+		It("should fail validation for invalid Syslog receiver specs", func() {
+
+			checkReceiver := func(receiverSpec *loggingv1.ReceiverSpec, expectedErrMsg string, extras map[string]bool) {
+				const inputName = `syslog-receiver`
+				forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+					Inputs: []loggingv1.InputSpec{
+						{
+							Name:     inputName,
+							Receiver: receiverSpec,
+						},
+					},
+				}
+				verifyInputs(forwarderSpec, clfStatus, extras)
+				Expect(clfStatus.Inputs[inputName]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, expectedErrMsg))
+			}
+
+			checkPorts := func(port int32, expectedErrMsg string) {
+				checkReceiver(
+					&loggingv1.ReceiverSpec{
+						Syslog: &loggingv1.SyslogReceiver{
+							Port: port,
+						},
+					},
+					expectedErrMsg,
+					map[string]bool{constants.VectorName: true},
+				)
+			}
+
+			for _, port := range []int32{-1, 53, 80_000} {
+				checkPorts(port, `invalid port specified for Syslog receiver`)
+			}
+			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpec must define an Syslog receiver`, map[string]bool{constants.VectorName: true})
+			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})
+		})
+
 		It("should remove all inputs if even one inputspec is invalid", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
@@ -153,6 +188,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Infrastructure: &loggingv1.Infrastructure{}},
 					{Name: "my-audit-logs",
 						Audit: &loggingv1.Audit{}},
+					{Name: "my-external-logs",
+						External: &loggingv1.External{}},
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus, extras)
@@ -160,6 +197,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-audit-logs"]).To(HaveCondition("Ready", true, "", ""))
+			Expect(clfStatus.Inputs["my-external-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
 		It("should validate correctly when input spec defines all three input source specs", func() {
@@ -168,7 +206,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{Name: "all-logs",
 						Application:    &loggingv1.Application{},
 						Infrastructure: &loggingv1.Infrastructure{},
-						Audit:          &loggingv1.Audit{}},
+						Audit:          &loggingv1.Audit{},
+						External:       &loggingv1.External{}},
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus, extras)
@@ -182,7 +221,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					{Name: "all-logs",
 						Application:    &loggingv1.Application{},
 						Infrastructure: &loggingv1.Infrastructure{},
-						Audit:          &loggingv1.Audit{}},
+						Audit:          &loggingv1.Audit{},
+						External:       &loggingv1.External{}},
 					{Name: "app-infra-logs",
 						Application:    &loggingv1.Application{},
 						Infrastructure: &loggingv1.Infrastructure{},

@@ -128,6 +128,12 @@ type InputSpec struct {
 	// +docgen:ignore
 	Audit *Audit `json:"audit,omitempty"`
 
+	// External, if present, enables `external` logs.
+	//
+	// +optional
+	// +docgen:ignore
+	External *External `json:"external,omitempty"`
+
 	// Receiver to receive logs from non-cluster sources.
 	Receiver *ReceiverSpec `json:"receiver,omitempty"`
 }
@@ -186,6 +192,10 @@ type Infrastructure struct{}
 // Audit enables audit logs. Filtering may be added in future.
 // +docgen:ignore
 type Audit struct{}
+
+// External enables external logs. Filtering may be added in future.
+// +docgen:ignore
+type External struct{}
 
 // Output defines a destination for log messages.
 type OutputSpec struct {

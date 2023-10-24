@@ -6,7 +6,8 @@ package v1
 //
 // The fields of this struct define the set of known Receiver types.
 type ReceiverSpec struct {
-	HTTP *HTTPReceiver `json:"http,omitempty"`
+	HTTP   *HTTPReceiver   `json:"http,omitempty"`
+	Syslog *SyslogReceiver `json:"syslog,omitempty"`
 }
 
 const (
@@ -25,4 +26,12 @@ type HTTPReceiver struct {
 	// +kubebuilder:validation:Enum:=kubeAPIAudit
 	// +required
 	Format string `json:"format"`
+}
+
+// SyslogReceiver receives logs from rsyslog
+type SyslogReceiver struct {
+	// Port the Service and the HTTP listener listen on.
+	// +kubebuilder:default:=10514
+	// +optional
+	Port int32 `json:"port"`
 }

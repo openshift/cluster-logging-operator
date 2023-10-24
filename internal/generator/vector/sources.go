@@ -131,15 +131,25 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 
 	el := []generator.Element{}
 	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			el = append(el, HttpReceiver{
-				ID:            input.Name,
-				ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-				ListenPort:    input.Receiver.HTTP.GetPort(),
-				Format:        input.Receiver.HTTP.Format,
-				TlsMinVersion: minTlsVersion,
-				CipherSuites:  cipherSuites,
-			})
+		if input.Receiver != nil {
+			if input.Receiver.HTTP != nil {
+				el = append(el, HttpReceiver{
+					ID:            input.Name,
+					ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
+					ListenPort:    input.Receiver.HTTP.GetPort(),
+					Format:        input.Receiver.HTTP.Format,
+					TlsMinVersion: minTlsVersion,
+					CipherSuites:  cipherSuites,
+				})
+			}
+			if input.Receiver.Syslog != nil {
+				el = append(el, SyslogReceiver{
+					ID:            input.Name,
+					ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
+					ListenPort:    input.Receiver.HTTP.GetPort(),
+					Format:        input.Receiver.HTTP.Format,
+				})
+			}
 		}
 	}
 	return el
@@ -176,6 +186,46 @@ min_tls_version = "{{ .TlsMinVersion }}"
 {{- if ne .CipherSuites "" }}
 ciphersuites = "{{ .CipherSuites }}"
 {{- end }}
+
+[transforms.{{.ID}}_split]
+type = "remap"
+inputs = ["{{.ID}}"]
+source = '''
+  if exists(.items) && is_array(.items) {. = unnest!(.items)} else {.}
+'''
+
+[transforms.{{.ID}}_items]
+type = "remap"
+inputs = ["{{.ID}}_split"]
+source = '''
+  if exists(.items) {. = .items} else {.}
+'''
+{{end}}
+`
+}
+
+type SyslogReceiver struct {
+	ID            string
+	ListenAddress string
+	ListenPort    int32
+	Format        string
+}
+
+func (SyslogReceiver) Name() string {
+	return "syslogReceiver"
+}
+
+func (i SyslogReceiver) Template() string {
+	return `
+{{define "` + i.Name() + `" -}}
+[sources.{{.ID}}]
+type = "syslog"
+address = "{{.ListenAddress}}:{{.ListenPort}}"
+
+[sources.{{.ID}}.tls]
+enabled = false
+key_file = "/etc/collector/{{.ID}}/tls.key"
+crt_file = "/etc/collector/{{.ID}}/tls.crt"
 
 [transforms.{{.ID}}_split]
 type = "remap"

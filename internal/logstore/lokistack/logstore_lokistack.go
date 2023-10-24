@@ -24,13 +24,15 @@ const (
 	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
 	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
 
-	lokiStackAppViewClusterRoleName   = "cluster-logging-application-view"
-	lokiStackInfraViewClusterRoleName = "cluster-logging-infrastructure-view"
-	lokiStackAuditViewClusterRoleName = "cluster-logging-audit-view"
+	lokiStackAppViewClusterRoleName      = "cluster-logging-application-view"
+	lokiStackInfraViewClusterRoleName    = "cluster-logging-infrastructure-view"
+	lokiStackAuditViewClusterRoleName    = "cluster-logging-audit-view"
+	lokiStackExternalViewClusterRoleName = "cluster-logging-external-view"
 
 	applicationLogs    = "application"
 	infrastructureLogs = "infrastructure"
 	auditLogs          = "audit"
+	externalLogs       = "external"
 )
 
 var (
@@ -74,6 +76,10 @@ func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.T
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
 	}
 
+	if err := reconcile.ClusterRole(k8sClient, lokiStackExternalViewClusterRoleName, newLokiStackViewClusterRole(lokiStackExternalViewClusterRoleName, externalLogs)); err != nil {
+		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading external logs.")
+	}
+
 	return nil
 }
 
@@ -87,6 +93,10 @@ func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) err
 	}
 
 	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAuditViewClusterRoleName); err != nil {
+		return err
+	}
+
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackExternalViewClusterRoleName); err != nil {
 		return err
 	}
 
@@ -116,6 +126,7 @@ func newLokiStackWriterClusterRole() *rbacv1.ClusterRole {
 				"application",
 				"audit",
 				"infrastructure",
+				"external",
 			},
 			ResourceNames: []string{
 				"logs",
@@ -252,6 +263,9 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 			}
 			if input.Audit != nil || isHttpReceiverWithFormat(input, loggingv1.FormatKubeAPIAudit) {
 				return loggingv1.InputNameAudit
+			}
+			if input.External != nil {
+				return loggingv1.InputNameExternal
 			}
 		}
 	}

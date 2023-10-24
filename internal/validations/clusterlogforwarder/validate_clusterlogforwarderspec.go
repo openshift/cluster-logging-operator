@@ -180,6 +180,9 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		isHTTPReceiver := func(input loggingv1.InputSpec) bool {
 			return input.Receiver != nil && input.Receiver.HTTP != nil
 		}
+		isSyslogReceiver := func(input loggingv1.InputSpec) bool {
+			return input.Receiver != nil && input.Receiver.Syslog != nil
+		}
 
 		switch {
 		case input.Name == "":
@@ -197,12 +200,14 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("inputspec cannot have a negative limit threshold")
 		case input.Receiver != nil && !extras[constants.VectorName]:
 			badInput("ReceiverSpecs are only supported for the vector log collector")
-		case input.Receiver != nil && input.Receiver.HTTP == nil:
-			badInput("ReceiverSpec must define an HTTP receiver")
+		case input.Receiver != nil && input.Receiver.HTTP == nil && input.Receiver.Syslog == nil:
+			badInput("ReceiverSpec must define either HTTP or Syslog receiver")
 		case isHTTPReceiver(input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
 			badInput("invalid format specified for HTTP receiver")
 		case isHTTPReceiver(input) && !validPort(input.Receiver.HTTP.Port):
 			badInput("invalid port specified for HTTP receiver")
+		case isSyslogReceiver(input) && !validPort(input.Receiver.Syslog.Port):
+			badInput("invalid port specified for Syslog receiver")
 		default:
 			status.Inputs.Set(input.Name, condReady)
 		}

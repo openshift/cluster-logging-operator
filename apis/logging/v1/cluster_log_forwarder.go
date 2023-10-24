@@ -13,6 +13,7 @@ const (
 	InputNameApplication    = "application"    // Non-infrastructure container logs.
 	InputNameInfrastructure = "infrastructure" // Infrastructure containers and system logs.
 	InputNameAudit          = "audit"          // System audit logs.
+	InputNameExternal       = "external"       // External logs coming from outside the cluster
 )
 
 var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit)
@@ -198,6 +199,14 @@ func (output *OutputSpec) GetMaxRecordsPerSecond() int64 {
 
 func (receiver HTTPReceiver) GetPort() (ret int32) {
 	ret = constants.HTTPReceiverPort
+	if receiver.Port != 0 {
+		ret = receiver.Port
+	}
+	return
+}
+
+func (receiver SyslogReceiver) GetPort() (ret int32) {
+	ret = constants.SyslogReceiverPort
 	if receiver.Port != 0 {
 		ret = receiver.Port
 	}

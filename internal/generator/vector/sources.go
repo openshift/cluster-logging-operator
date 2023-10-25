@@ -30,7 +30,7 @@ const (
 func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, namespace, op),
-		HttpSources(spec, op),
+		ReceiverSources(spec, op),
 		MetricsSources(InternalMetricsSourceName),
 	)
 }
@@ -121,7 +121,7 @@ func ExcludeContainerPaths(namespace string) string {
 	))
 }
 
-func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func ReceiverSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[generator.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -132,6 +132,7 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 	el := []generator.Element{}
 	for _, input := range spec.Inputs {
 		if input.Receiver != nil {
+			fmt.Printf("Parsing the receivers: %v\n", input.Receiver)
 			if input.Receiver.HTTP != nil {
 				el = append(el, HttpReceiver{
 					ID:            input.Name,
@@ -143,11 +144,11 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 				})
 			}
 			if input.Receiver.Syslog != nil {
+				fmt.Printf("Its syslog!\n")
 				el = append(el, SyslogReceiver{
 					ID:            input.Name,
 					ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-					ListenPort:    input.Receiver.HTTP.GetPort(),
-					Format:        input.Receiver.HTTP.Format,
+					ListenPort:    input.Receiver.Syslog.GetPort(),
 				})
 			}
 		}
@@ -221,6 +222,7 @@ func (i SyslogReceiver) Template() string {
 [sources.{{.ID}}]
 type = "syslog"
 address = "{{.ListenAddress}}:{{.ListenPort}}"
+mode = "tcp"
 
 [sources.{{.ID}}.tls]
 enabled = false

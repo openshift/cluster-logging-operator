@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -16,7 +17,7 @@ const (
 	InputNameExternal       = "external"       // External logs coming from outside the cluster
 )
 
-var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit)
+var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit, InputNameExternal)
 
 func IsInputTypeName(s string) bool { return ReservedInputNames.Has(s) }
 
@@ -140,7 +141,9 @@ func (spec *ClusterLogForwarderSpec) HasDefaultOutput() bool {
 // InputMap returns a map of input names to InputSpec.
 func (spec *ClusterLogForwarderSpec) InputMap() map[string]*InputSpec {
 	m := map[string]*InputSpec{}
+	fmt.Printf("Filling inputSpec: %v\n", &spec.Inputs)
 	for i := range spec.Inputs {
+		fmt.Printf("Input Receiver: %v\n", &spec.Inputs[i].Receiver.Syslog)
 		m[spec.Inputs[i].Name] = &spec.Inputs[i]
 	}
 	return m
@@ -166,6 +169,9 @@ func (input *InputSpec) Types() sets.String {
 	}
 	if input.Audit != nil {
 		result.Insert(InputNameAudit)
+	}
+	if input.External != nil {
+		result.Insert(InputNameExternal)
 	}
 	return *result
 }

@@ -253,6 +253,10 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 		return input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == format
 	}
 
+	isSyslogReceiver := func(input loggingv1.InputSpec) bool {
+		return input.Receiver != nil && input.Receiver.Syslog != nil
+	}
+
 	for _, input := range spec.Inputs {
 		if input.Name == inputName {
 			if input.Application != nil {
@@ -264,7 +268,7 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 			if input.Audit != nil || isHttpReceiverWithFormat(input, loggingv1.FormatKubeAPIAudit) {
 				return loggingv1.InputNameAudit
 			}
-			if input.External != nil {
+			if input.External != nil || isSyslogReceiver(input) {
 				return loggingv1.InputNameExternal
 			}
 		}
@@ -284,7 +288,6 @@ func lokiStackURL(logStore *loggingv1.LogStoreSpec, namespace, tenant string) st
 		log.V(3).Info("url tenant must be one of our reserved input names", "tenant", tenant)
 		return ""
 	}
-
 	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, namespace, tenant)
 }
 

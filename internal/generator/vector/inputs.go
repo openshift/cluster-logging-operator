@@ -43,6 +43,7 @@ var (
 	AddLogTypeApp   = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
 	AddLogTypeInfra = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
 	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
+	AddLogTypeExternal = fmt.Sprintf(".log_type = %q", logging.InputNameExternal)
 
 	UserDefinedInput          = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
 	UserDefinedSourceThrottle = fmt.Sprintf("%s_%%s", SourceTransformThrottle)
@@ -135,6 +136,14 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				}), "\n"),
 			})
 	}
+	if types.Has(logging.InputNameExternal) {
+		el = append(el, Remap{
+			Desc:        `Set log_type to "external"`,
+			ComponentID: logging.InputNameExternal,
+			Inputs:      helpers.MakeInputs("syslog_log"),
+			VRL:         AddLogTypeExternal,
+		})
+	}
 
 	userDefinedAppRouteMap := UserDefinedAppRouting(spec, o)
 	if len(userDefinedAppRouteMap) != 0 {
@@ -167,6 +176,19 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 					Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
 					VRL: strings.Join(helpers.TrimSpaces([]string{
 						AddLogTypeAudit,
+						FixHostname,
+						normalize.FixTimestampField,
+					}), "\n"),
+				})
+		}
+		if input.Receiver != nil && input.Receiver.Syslog != nil {
+			el = append(el,
+				Remap{
+					Desc:        `Set log_type to "external"`,
+					ComponentID: input.Name + `_input`,
+					Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
+					VRL: strings.Join(helpers.TrimSpaces([]string{
+						AddLogTypeExternal,
 						FixHostname,
 						normalize.FixTimestampField,
 					}), "\n"),

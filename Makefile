@@ -144,7 +144,6 @@ RUN_CMD?=go run
 
 .PHONY: run
 run:
-	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	LOG_LEVEL=$(LOG_LEVEL) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \

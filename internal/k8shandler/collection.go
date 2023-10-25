@@ -110,9 +110,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	}
 
 	var httpInputs []string
+	var syslogInputs []string 
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			httpInputs = append(httpInputs, input.Name)
+		}
+		if input.Receiver != nil && input.Receiver.Syslog != nil {
+			syslogInputs = append(syslogInputs, input.Name)
 		}
 	}
 

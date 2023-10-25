@@ -119,6 +119,9 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			inputTypes.Insert(loggingv1.InputNameAudit)
 		}
+		if input.Receiver != nil && input.Receiver.Syslog != nil {
+			inputTypes.Insert(loggingv1.InputNameExternal)
+		}
 	}
 
 	return *inputTypes

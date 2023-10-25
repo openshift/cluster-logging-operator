@@ -107,6 +107,7 @@ func InputsToPipeline(spec *logging.ClusterLogForwarderSpec, op Options) []Eleme
 		AppToPipeline1(spec, op),
 		InfraToPipeline(spec, op),
 		AuditToPipeline(spec, op),
+		ExternalToPipeline(spec, op),
 	)
 }
 
@@ -336,6 +337,12 @@ func AuditToPipeline(spec *logging.ClusterLogForwarderSpec, op Options) []Elemen
 func InfraToPipeline(spec *logging.ClusterLogForwarderSpec, op Options) []Element {
 	return []Element{
 		SourceTypeToPipeline(logging.InputNameInfrastructure, spec, op),
+	}
+}
+
+func ExternalToPipeline(spec *logging.ClusterLogForwarderSpec, op Options) []Element {
+	return []Element{
+		SourceTypeToPipeline(logging.InputNameExternal, spec, op),
 	}
 }
 

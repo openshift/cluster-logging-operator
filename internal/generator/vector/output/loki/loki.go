@@ -114,13 +114,14 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+
 	componentID := fmt.Sprintf("%s_%s", id, "remap")
 	dedottedID := normalize.ID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			Output(o, []string{dedottedID}),
+			Output(o, []string{componentID}),
 			Encoding(o),
 			output.NewBuffer(id),
 			output.NewRequest(id),

@@ -310,6 +310,8 @@ func FormatOutputNameFromInput(inputName string) string {
 		return loggingv1.OutputNameDefault + "-loki-infra"
 	case loggingv1.InputNameAudit:
 		return loggingv1.OutputNameDefault + "-loki-audit"
+	case loggingv1.InputNameExternal:
+		return loggingv1.OutputNameDefault + "-loki-external"
 	}
 
 	return loggingv1.OutputNameDefault + "-" + inputName

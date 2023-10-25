@@ -125,7 +125,7 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
 		}
 		if input.Receiver != nil && input.Receiver.Syslog != nil {
-			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
+			el = append(el, NormalizeSyslogLogs(input.Name+`_items`, input.Name+`_normalized`)...)
 		}
 	}
 
@@ -188,10 +188,7 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
-				ClusterID,
-				AddOpenAuditTag,
-				ParseAndFlatten,
-				FixOpenshiftAuditLevel,
+				".",
 			}), "\n"),
 		},
 	}
@@ -207,6 +204,17 @@ func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
 				AddOvnAuditTag,
 				FixLogLevel,
 			}), "\n"),
+		},
+	}
+}
+
+func NormalizeSyslogLogs(inLabel, outLabel string) []generator.Element {
+	return []generator.Element{
+		Remap{
+			ComponentID: outLabel,
+			Inputs:      helpers.MakeInputs(inLabel),
+			VRL: ".\n",
+			//VRL: strings.Join(helpers.TrimSpaces([]string{"."}), "\n"),
 		},
 	}
 }

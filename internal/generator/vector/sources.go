@@ -25,6 +25,9 @@ const (
 
 	RawOvnAuditLogs = "raw_ovn_audit_logs"
 	OvnAuditLogs    = "ovn_audit_logs"
+
+	RawSyslogLogs = "raw_syslog_logs"
+	SyslogLogs    = "syslog_logs"
 )
 
 func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
@@ -132,7 +135,6 @@ func ReceiverSources(spec *logging.ClusterLogForwarderSpec, op generator.Options
 	el := []generator.Element{}
 	for _, input := range spec.Inputs {
 		if input.Receiver != nil {
-			fmt.Printf("Parsing the receivers: %v\n", input.Receiver)
 			if input.Receiver.HTTP != nil {
 				el = append(el, HttpReceiver{
 					ID:            input.Name,
@@ -144,7 +146,6 @@ func ReceiverSources(spec *logging.ClusterLogForwarderSpec, op generator.Options
 				})
 			}
 			if input.Receiver.Syslog != nil {
-				fmt.Printf("Its syslog!\n")
 				el = append(el, SyslogReceiver{
 					ID:            input.Name,
 					ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),

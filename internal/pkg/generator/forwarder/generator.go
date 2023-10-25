@@ -59,13 +59,14 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	// Added because this generator is used for tests and the tests assume a correct
 	// CLF spec.
 	// Originally, this generator normalized the forwarder spec only which dropped
-	// input specs with names that were reserved (application, audit, infrastructure).
+	// input specs with names that were reserved (application, audit, infrastructure, external).
 	// With the change in validation, CLFs are rejected outright with input specs name equal to reserved names.
 	sanitizedInputSpec := []logging.InputSpec{}
 	for _, inputSpec := range forwarder.Spec.Inputs {
 		if inputSpec.Name != logging.InputNameApplication &&
 			inputSpec.Name != logging.InputNameAudit &&
-			inputSpec.Name != logging.InputNameInfrastructure {
+			inputSpec.Name != logging.InputNameInfrastructure &&
+			inputSpec.Name != logging.InputNameExternal {
 			sanitizedInputSpec = append(sanitizedInputSpec, inputSpec)
 		}
 	}

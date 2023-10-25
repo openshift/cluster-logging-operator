@@ -8,4 +8,5 @@ const (
 	InfraTags                     = InfraContainerTags + " " + JournalTags
 	InfraTagsForMultilineEx       = InfraTags + " var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**"
 	AuditTags                     = "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+	ExternalTags                  = ""
 )

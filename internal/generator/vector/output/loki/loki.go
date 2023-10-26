@@ -114,14 +114,28 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-
 	componentID := fmt.Sprintf("%s_%s", id, "remap")
+	if strings.Contains(id, strings.ReplaceAll(fmt.Sprintf("%v", op["syslog"]), "-", "_")) {
+		return MergeElements(
+			[]Element{
+				CleanupFields(componentID, inputs),
+				Output(o, []string{componentID}),
+				Encoding(o),
+				output.NewBuffer(id),
+				output.NewRequest(id),
+				LabelsExternal(o),
+			},
+			TLSConf(o, secret, op),
+			BasicAuth(o, secret),
+			BearerTokenAuth(o, secret),
+		)
+	}
 	dedottedID := normalize.ID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			Output(o, []string{componentID}),
+			Output(o, []string{dedottedID}),
 			Encoding(o),
 			output.NewBuffer(id),
 			output.NewRequest(id),
@@ -196,6 +210,18 @@ func Labels(o logging.OutputSpec) Element {
 	return LokiLabels{
 		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		Labels:      lokiLabels(o.Loki),
+	}
+}
+
+func LabelsExternal(o logging.OutputSpec) Element {
+	return LokiLabels{
+		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		Labels:      []Label{
+			{
+				Name: logType,
+				Value: "{{log_type}}",
+			},
+		},
 	}
 }
 

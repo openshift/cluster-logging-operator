@@ -109,18 +109,16 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	var httpInputs []string
-	var syslogInputs []string 
+	var receiverInputs []string
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			httpInputs = append(httpInputs, input.Name)
-		}
-		if input.Receiver != nil && input.Receiver.Syslog != nil {
-			syslogInputs = append(syslogInputs, input.Name)
+		if input.Receiver != nil {
+			if input.Receiver.HTTP != nil || input.Receiver.Syslog != nil {
+				receiverInputs = append(receiverInputs, input.Name)
+			}
 		}
 	}
 
-	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner, httpInputs); err != nil {
+	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner, receiverInputs); err != nil {
 		log.Error(err, "collector.ReconcileDaemonset")
 		return err
 	}

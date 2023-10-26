@@ -48,7 +48,7 @@ const (
 	logKubeapiserver                = "varlogkubeapiserver"
 	logKubeapiserverValue           = "/var/log/kube-apiserver"
 	metricsVolumePath               = "/etc/collector/metrics"
-	httpInputVolumePath             = "/etc/collector/"
+	receiverInputVolumePath         = "/etc/collector/"
 	tmpVolumeName                   = "tmp"
 	tmpPath                         = "/tmp"
 )
@@ -121,13 +121,13 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 	return factory
 }
 
-func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, httpInputs, namespace)
+func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.DaemonSet {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, receiverInputs, namespace)
 	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, httpInputs []string, namespace string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string, namespace string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -149,9 +149,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 	}
-	for _, httpInput := range httpInputs {
+	for _, receiverInput := range receiverInputs {
 		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{Name: httpInput, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: httpInput}}},
+			v1.Volume{Name: receiverInput, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: receiverInput}}},
 		)
 	}
 
@@ -159,7 +159,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
-	collector := f.NewCollectorContainer(secretNames, clusterID, httpInputs)
+	collector := f.NewCollectorContainer(secretNames, clusterID, receiverInputs)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
@@ -176,7 +176,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, httpInputs []string) *v1.Container {
+func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, receiverInputs []string) *v1.Container {
 
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
@@ -210,9 +210,9 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
-	for _, httpInput := range httpInputs {
+	for _, receiverInput := range receiverInputs {
 		collector.VolumeMounts = append(collector.VolumeMounts,
-			v1.VolumeMount{Name: httpInput, ReadOnly: true, MountPath: httpInputVolumePath + httpInput},
+			v1.VolumeMount{Name: receiverInput, ReadOnly: true, MountPath: receiverInputVolumePath + receiverInput},
 		)
 	}
 
@@ -230,17 +230,15 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 
 	for _, input := range f.ForwarderSpec.Inputs {
 		if input.Receiver != nil {
+			var listenPort int32
 			if input.Receiver.HTTP != nil {
-				listenPort := input.Receiver.HTTP.GetPort()
-				if err := network.ReconcileInputService(er, k8sClient, namespace, input.Name, selectorComponent, input.Name, listenPort, listenPort, owner, visitors); err != nil {
-					return err
-				}
+				listenPort = input.Receiver.HTTP.GetPort()
 			}
 			if input.Receiver.Syslog != nil {
-				listenPort := input.Receiver.Syslog.GetPort()
-				if err := network.ReconcileInputService(er, k8sClient, namespace, input.Name, selectorComponent, input.Name, listenPort, listenPort, owner, visitors); err != nil {
-					return err
-				}
+				listenPort = input.Receiver.Syslog.GetPort()
+			}
+			if err := network.ReconcileInputService(er, k8sClient, namespace, input.Name, selectorComponent, input.Name, listenPort, listenPort, owner, visitors); err != nil {
+				return err
 			}
 		}
 	}

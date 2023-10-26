@@ -16,11 +16,11 @@ import (
 )
 
 // ReconcileDaemonset reconciles a daemonset specifically for the collector defined by the factory
-func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference, httpInputs []string) error {
+func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference, receiverInputs []string) error {
 	trustedCABundle, trustHash := GetTrustedCABundle(k8sClient, namespace, f.ResourceNames.CaTrustBundle)
 	f.TrustedCAHash = trustHash
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
-	desired := f.NewDaemonSet(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), httpInputs)
+	desired := f.NewDaemonSet(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), receiverInputs)
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.DaemonSet(er, k8sClient, desired)
 }

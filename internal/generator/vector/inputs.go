@@ -168,31 +168,33 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 	}
 
 	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
-			el = append(el,
-				Remap{
-					Desc:        `Set log_type to "audit"`,
-					ComponentID: input.Name + `_input`,
-					Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
-					VRL: strings.Join(helpers.TrimSpaces([]string{
-						AddLogTypeAudit,
-						FixHostname,
-						normalize.FixTimestampField,
-					}), "\n"),
-				})
-		}
-		if input.Receiver != nil && input.Receiver.Syslog != nil {
-			el = append(el,
-				Remap{
-					Desc:        `Set log_type to "external"`,
-					ComponentID: input.Name + `_input`,
-					Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
-					VRL: strings.Join(helpers.TrimSpaces([]string{
-						AddLogTypeExternal,
-						FixHostname,
-						normalize.FixTimestampField,
-					}), "\n"),
-				})
+		if input.Receiver != nil {
+			if input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
+				el = append(el,
+					Remap{
+						Desc:        `Set log_type to "audit"`,
+						ComponentID: input.Name + `_input`,
+						Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
+						VRL: strings.Join(helpers.TrimSpaces([]string{
+							AddLogTypeAudit,
+							FixHostname,
+							normalize.FixTimestampField,
+						}), "\n"),
+					})
+			}
+			if input.Receiver.Syslog != nil {
+				el = append(el,
+					Remap{
+						Desc:        `Set log_type to "external"`,
+						ComponentID: input.Name + `_input`,
+						Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
+						VRL: strings.Join(helpers.TrimSpaces([]string{
+							AddLogTypeExternal,
+							FixHostname,
+							normalize.FixTimestampField,
+						}), "\n"),
+					})
+			}
 		}
 	}
 

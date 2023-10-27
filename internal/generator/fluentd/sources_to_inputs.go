@@ -59,22 +59,6 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			TemplateStr:  DiscardMatched,
 		})
 	}
-	if types.Has(logging.InputNameExternal) {
-		el = append(el, elements.Match{
-			Desc:      "Include External logs",
-			MatchTags: source.ExternalTags,
-			MatchElement: elements.Relabel{
-				OutLabel: helpers.SourceTypeLabelName(logging.InputNameExternal),
-			},
-		})
-	} else {
-		el = append(el, generator.ConfLiteral{
-			Desc:         "Discard External logs",
-			Pattern:      source.ExternalTags,
-			TemplateName: "discardMatched",
-			TemplateStr:  DiscardMatched,
-		})
-	}
 	el = append(el, generator.ConfLiteral{
 		Desc:         "Send any remaining unmatched tags to stdout",
 		TemplateName: "toStdout",

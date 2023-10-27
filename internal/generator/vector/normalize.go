@@ -188,7 +188,10 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
-				".",
+				ClusterID,
+				AddOpenAuditTag,
+				ParseAndFlatten,
+				FixOpenshiftAuditLevel,
 			}), "\n"),
 		},
 	}
@@ -214,7 +217,6 @@ func NormalizeSyslogLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: ".\n",
-			//VRL: strings.Join(helpers.TrimSpaces([]string{"."}), "\n"),
 		},
 	}
 }

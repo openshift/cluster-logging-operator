@@ -30,7 +30,7 @@ type HTTPReceiver struct {
 
 // SyslogReceiver receives logs from rsyslog
 type SyslogReceiver struct {
-	// Port the Service and the HTTP listener listen on.
+	// Port the Service and the Syslog listener listen on.
 	// +kubebuilder:default:=10514
 	// +optional
 	Port int32 `json:"port"`

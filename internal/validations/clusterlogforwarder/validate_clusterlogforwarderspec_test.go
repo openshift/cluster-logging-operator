@@ -193,14 +193,14 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus, extras)
-			Expect(forwarderSpec.Inputs).To(HaveLen(3))
+			Expect(forwarderSpec.Inputs).To(HaveLen(4))
 			Expect(clfStatus.Inputs["my-app-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-audit-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["my-external-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
-		It("should validate correctly when input spec defines all three input source specs", func() {
+		It("should validate correctly when input spec defines all four input source specs", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{
 					{Name: "all-logs",

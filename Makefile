@@ -34,6 +34,7 @@ IMAGE_LOGGING_CONSOLE_PLUGIN=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PLU
 export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
 BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
 LOGGING_VERSION=$(shell echo "$(VERSION)" | grep -o '^[0-9]\+\.[0-9]\+')
+ES_LOGGING_VERSION?=5.8
 
 else
 # Set variables from environment or hard-coded default
@@ -43,13 +44,13 @@ export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
-export LOGGING_VERSION?=5.8
+export LOGGING_VERSION?=5.9
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.8.0
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:5.8.0
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.9.0
+IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:5.9.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)
 endif # ifdef OVERLAY
@@ -321,7 +322,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.12-v4.16"
+OPENSHIFT_VERSIONS?="v4.13-v4.17"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=$(or $(filename $(OVERLAY)),stable)
@@ -381,7 +382,7 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image

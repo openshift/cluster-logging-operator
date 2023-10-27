@@ -22,7 +22,7 @@ func Transform(id string, inputs []string) Element {
 # Tech preview, OTEL for application logs only
 if .log_type == "application" {
 	# Convert @timestamp to nano and delete @timestamp
-	.timeUnixNano = to_unix_timestamp(to_timestamp!(del(.@timestamp)))
+	.timeUnixNano = to_unix_timestamp!(del(.@timestamp), unit:"nanoseconds")
 
 	.severityText = del(.level)
 

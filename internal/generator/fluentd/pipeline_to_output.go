@@ -90,14 +90,23 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 		case 0:
 			// should not happen
 		case 1:
+			oname := p.OutputRefs[0]
+			if p.Name == p.OutputRefs[0] {
+				oname = "OUTPUT_" + oname
+			}
 			po.SubElements = append(po.SubElements,
 				Match{
 					MatchTags: "**",
 					MatchElement: Relabel{
-						OutLabel: helpers.LabelName(p.OutputRefs[0]),
+						OutLabel: helpers.LabelName(oname),
 					},
 				})
 		default:
+			for i, o := range p.OutputRefs {
+				if o == p.Name {
+					p.OutputRefs[i] = "OUTPUT_" + o
+				}
+			}
 			po.SubElements = append(po.SubElements,
 				Match{
 					MatchTags: "**",

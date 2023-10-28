@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/syslog"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op Options) []Element {
@@ -27,6 +28,12 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		clspec.Fluentd.Buffer != nil {
 		bufspec = clspec.Fluentd.Buffer
 	}
+
+	pipelines := sets.NewString()
+	for _, pipeline := range clfspec.Pipelines {
+		pipelines.Insert(pipeline.Name)
+	}
+
 	for _, o := range clfspec.Outputs {
 		var secret *corev1.Secret
 		if s, ok := secrets[o.Name]; ok {
@@ -44,6 +51,10 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outMinTlsVersion, outCiphers := op.TLSProfileInfo(o, ":")
 			op[MinTLSVersion] = outMinTlsVersion
 			op[Ciphers] = outCiphers
+		}
+
+		if pipelines.Has(o.Name) {
+			o.Name = "OUTPUT_" + o.Name
 		}
 		switch o.Type {
 		case logging.OutputTypeElasticsearch:

@@ -67,9 +67,6 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	updateInfofromCL(&clusterLoggingRequest)
 	forwarder, extras := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
-		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
-			return nil, err
-		}
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 
@@ -207,8 +204,22 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		return nil
 	}
 
+	forwarder.Spec = clusterLoggingRequest.ForwarderSpec
+	err, status := clusterlogforwarder.Validate(*forwarder, requestClient, nil)
+	if err != nil {
+		if status != nil {
+			// Rejected if clf condition is not ready
+			// Do not create or update the collection
+			if status.Conditions.IsFalseFor(logging.ConditionReady) {
+				clusterLoggingRequest.ForwarderRequest.Status = *status
+				telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+			}
+		}
+		return err
+	}
+
 	// Verify clf inputs, outputs, pipelines AFTER migration
-	status := clusterlogforwarder.ValidateInputsOutputsPipelines(
+	status = clusterlogforwarder.ValidateInputsOutputsPipelines(
 		clusterLoggingRequest.Cluster,
 		clusterLoggingRequest.Client,
 		clusterLoggingRequest.ForwarderRequest,

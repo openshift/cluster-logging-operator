@@ -243,9 +243,13 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 func AddSecretVolumeMounts(collector *v1.Container, secretNames []string) {
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	for _, name := range secretNames {
-		path := path.Join(constants.CollectorSecretsDir, name)
+		path := OutputSecretPath(name)
 		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
 	}
+}
+
+func OutputSecretPath(secretName string) string {
+	return path.Join(constants.CollectorSecretsDir, secretName)
 }
 
 // AddSecretVolumes adds secret volumes to the pod spec for the unique set of pipeline secrets and returns the list of

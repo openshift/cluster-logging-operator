@@ -1,7 +1,7 @@
 package elasticsearch
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
 type UserNamePass security.UserNamePass

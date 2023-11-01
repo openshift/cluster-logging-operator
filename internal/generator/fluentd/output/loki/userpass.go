@@ -1,7 +1,7 @@
 package loki
 
 import (
-	security2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	security2 "github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
 type UserNamePass security2.UserNamePass

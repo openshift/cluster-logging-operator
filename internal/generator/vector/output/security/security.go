@@ -2,12 +2,12 @@ package security
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"net/url"
 	"path/filepath"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 

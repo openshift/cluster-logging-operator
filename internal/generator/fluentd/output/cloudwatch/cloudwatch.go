@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"path"
 	"regexp"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	corev1 "k8s.io/api/core/v1"

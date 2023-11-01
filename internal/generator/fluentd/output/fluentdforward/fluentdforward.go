@@ -1,6 +1,7 @@
 package fluentdforward
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -10,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	corev1 "k8s.io/api/core/v1"

@@ -14,7 +14,7 @@ import (
 
 const (
 	timestamp           = "2023-08-28T12:59:28.573159188+00:00"
-	timestampNano int64 = 1693227568
+	timestampNano int64 = 1693227568573159188
 )
 
 var _ = Describe("[Functional][Normalization][Schema] OTEL", func() {

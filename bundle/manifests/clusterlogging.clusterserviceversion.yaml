@@ -118,10 +118,10 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2023-10-12T13:12:40Z"
+    createdAt: "2023-10-30T13:13:37Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
-    olm.skipRange: '>=5.6.0-0 <5.8.0'
+    olm.skipRange: '>=5.7.0-0 <5.9.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
@@ -136,7 +136,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v5.8.0
+  name: clusterlogging.v5.9.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
@@ -525,11 +525,11 @@ spec:
                 - name: RELATED_IMAGE_VECTOR
                   value: quay.io/openshift-logging/vector:latest
                 - name: RELATED_IMAGE_FLUENTD
-                  value: quay.io/openshift-logging/fluentd:5.8.0
+                  value: quay.io/openshift-logging/fluentd:5.9.0
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:latest
                 - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-                  value: quay.io/openshift-logging/logging-view-plugin:5.8
+                  value: quay.io/openshift-logging/logging-view-plugin:5.9
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
@@ -649,10 +649,10 @@ spec:
   relatedImages:
   - image: quay.io/openshift-logging/vector:latest
     name: vector
-  - image: quay.io/openshift-logging/fluentd:5.8.0
+  - image: quay.io/openshift-logging/fluentd:5.9.0
     name: fluentd
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
-  - image: quay.io/openshift-logging/logging-view-plugin:5.8
+  - image: quay.io/openshift-logging/logging-view-plugin:5.9
     name: logging-console-plugin
-  version: 5.8.0
+  version: 5.9.0

@@ -43,13 +43,13 @@ export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
-export LOGGING_VERSION?=5.8
+export LOGGING_VERSION?=5.9
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.8.0
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:5.8.0
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.9.0
+IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:5.9.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)
 endif # ifdef OVERLAY

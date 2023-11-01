@@ -1,0 +1,29 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  filters:
+  - kubeAPIAudit:
+      omitStages:
+      - RequestReceived
+      rules:
+      - level: RequestResponse
+        resources:
+        - group: ""
+          resources:
+          - pods
+    name: my-policy
+    type: kubeAPIAudit
+  pipelines:
+  - filterRefs:
+    - my-policy
+    inputRefs:
+    - application
+    - infrastructure
+    - audit
+    name: test
+    outputRefs:
+    - default
+    

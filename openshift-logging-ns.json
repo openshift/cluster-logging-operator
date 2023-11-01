@@ -1,0 +1,69 @@
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "annotations": {
+            "openshift.io/node-selector": "",
+            "openshift.io/sa.scc.mcs": "s0:c26,c15",
+            "openshift.io/sa.scc.supplemental-groups": "1000680000/10000",
+            "openshift.io/sa.scc.uid-range": "1000680000/10000"
+        },
+        "creationTimestamp": "2023-03-08T13:29:00Z",
+        "deletionTimestamp": "2023-03-08T14:40:57Z",
+        "labels": {
+            "kubernetes.io/metadata.name": "openshift-logging",
+            "olm.operatorgroup.uid/08a44fc1-57c9-4888-8760-ece3bb78469d": "",
+            "openshift.io/cluster-monitoring": "true",
+            "pod-security.kubernetes.io/audit": "privileged",
+            "pod-security.kubernetes.io/enforce": "privileged",
+            "pod-security.kubernetes.io/warn": "privileged",
+            "security.openshift.io/scc.podSecurityLabelSync": "false"
+        },
+        "name": "openshift-logging",
+        "resourceVersion": "116058",
+        "uid": "7238fcc3-079d-4f69-8092-23f4e0c3002f"
+    },
+    "spec": {
+        "finalizers": []
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2023-03-08T14:41:22Z",
+                "message": "All resources successfully discovered",
+                "reason": "ResourcesDiscovered",
+                "status": "False",
+                "type": "NamespaceDeletionDiscoveryFailure"
+            },
+            {
+                "lastTransitionTime": "2023-03-08T14:41:22Z",
+                "message": "All legacy kube types successfully parsed",
+                "reason": "ParsedGroupVersions",
+                "status": "False",
+                "type": "NamespaceDeletionGroupVersionParsingFailure"
+            },
+            {
+                "lastTransitionTime": "2023-03-08T14:41:48Z",
+                "message": "All content successfully deleted, may be waiting on finalization",
+                "reason": "ContentDeleted",
+                "status": "False",
+                "type": "NamespaceDeletionContentFailure"
+            },
+            {
+                "lastTransitionTime": "2023-03-08T14:41:22Z",
+                "message": "Some resources are remaining: clusterloggings.logging.openshift.io has 1 resource instances",
+                "reason": "SomeResourcesRemain",
+                "status": "True",
+                "type": "NamespaceContentRemaining"
+            },
+            {
+                "lastTransitionTime": "2023-03-08T14:41:22Z",
+                "message": "Some content in the namespace has finalizers remaining: logging.openshift.io/lokistack-rbac in 1 resource instances",
+                "reason": "SomeFinalizersRemain",
+                "status": "True",
+                "type": "NamespaceFinalizersRemaining"
+            }
+        ],
+        "phase": "Terminating"
+    }
+}

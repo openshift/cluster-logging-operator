@@ -1,0 +1,23 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  inputs:
+  - application:
+      groupLimit:
+        maxRecordsPerSecond: 20
+      selector:
+        matchLabels:
+          run: centos-logtest
+          test: centos-logtest
+    name: limited-rates
+  pipelines:
+  - inputRefs:
+    - limited-rates
+    - infrastructure
+    - audit
+    name: to-default
+    outputRefs:
+    - default

@@ -1,0 +1,27 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  inputs:
+  - application:
+      containerLimit:
+        maxRecordsPerSecond: 20
+      namespaces:
+      - test-1
+    name: limited-rates-1
+  - application:
+      containerLimit:
+        maxRecordsPerSecond: 20
+      namespaces:
+      - test-2
+    name: limited-rates-2
+  pipelines:
+  - inputRefs:
+    - limited-rates-1
+    - limited-rates-2
+    - infrastructure
+    name: to-default
+    outputRefs:
+    - default 

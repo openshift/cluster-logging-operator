@@ -1,0 +1,19 @@
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: instance4
+  namespace: openshift-logging
+spec:
+  serviceAccountName: my-service-account
+  outputs:
+  - name: elasticsearch 
+    type: elasticsearch
+    url: "https://elasticsearch:9200"
+    secret:
+        name: collector
+  pipelines:
+   - name: app-logs
+     inputRefs:
+      - application
+     outputRefs:
+      - elasticsearch

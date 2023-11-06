@@ -123,7 +123,8 @@ const (
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"
 	// Commonly-used label names.
-	LabelApp = "app"
+	LabelApp       = "app"
+	LabelComponent = "component"
 
 	EventReasonReconcilingLoggingCR = "ReconcilingLoggingCR"
 	EventReasonCreateObject         = "CreateObject"
@@ -137,7 +138,8 @@ const (
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 	OTELSchema             = "opentelemetry"
 
-	HTTPReceiverPort = 8443
+	HTTPReceiverPort      = 8443
+	LabelHTTPInputService = "http-input-service"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

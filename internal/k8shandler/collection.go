@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/auth"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -109,14 +110,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	var httpInputs []string
-	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			httpInputs = append(httpInputs, input.Name)
-		}
-	}
-
-	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner, httpInputs); err != nil {
+	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner); err != nil {
 		log.Error(err, "collector.ReconcileDaemonset")
 		return err
 	}
@@ -140,7 +134,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector() (err error) {
 			return err
 		}
 
-		if err = clusterRequest.RemoveInputServices(); err != nil {
+		if err = clusterRequest.RemoveInputServices([]metav1.OwnerReference{utils.AsOwner(clusterRequest.Forwarder)}, true); err != nil {
 			return
 		}
 
@@ -199,17 +193,33 @@ func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() erro
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) RemoveInputServices() error {
+func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []metav1.OwnerReference, removeAllServices bool) error {
 	if clusterRequest.Cluster.Spec.Collection.Type != logging.LogCollectionTypeVector {
 		return nil
 	}
 
+	// Get list of HTTP input services by label/ namespace
+	httpServices, err := clusterRequest.GetServiceList(constants.LabelComponent, constants.LabelHTTPInputService, clusterRequest.Forwarder.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// Collect defined http inputs
+	httpInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			if err := clusterRequest.RemoveInputService(input.Name); err != nil {
+			httpInputs.Insert(input.Name)
+		}
+	}
+
+	// Remove services only if owned by current CLF and isn't defined
+	for _, service := range httpServices.Items {
+		if utils.HasSameOwner(service.OwnerReferences, currOwner) && (!httpInputs.Has(service.Name) || removeAllServices) {
+			if err := clusterRequest.RemoveInputService(service.Name); err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }

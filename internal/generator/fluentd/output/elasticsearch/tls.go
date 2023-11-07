@@ -1,6 +1,8 @@
 package elasticsearch
 
-import "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+)
 
 type EsTLS struct {
 	security.TLS

@@ -1,7 +1,7 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
 type CAFile security.CAFile

@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -9,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"

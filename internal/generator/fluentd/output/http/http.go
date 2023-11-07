@@ -1,13 +1,13 @@
 package http
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"

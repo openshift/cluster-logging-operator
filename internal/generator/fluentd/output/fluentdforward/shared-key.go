@@ -1,7 +1,7 @@
 package fluentdforward
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
 type SharedKey security.SharedKey

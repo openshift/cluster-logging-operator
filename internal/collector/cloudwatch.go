@@ -4,7 +4,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	v1 "k8s.io/api/core/v1"
 	"path"

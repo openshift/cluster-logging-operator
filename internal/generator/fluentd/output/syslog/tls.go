@@ -2,8 +2,7 @@ package syslog
 
 import (
 	"fmt"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
 type TLS security.TLS

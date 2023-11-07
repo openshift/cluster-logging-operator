@@ -137,7 +137,9 @@ const (
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 	OTELSchema             = "opentelemetry"
 
-	HTTPReceiverPort = 8443
+	HTTPReceiverPort        = 8443
+	CollectorDeploymentKind = "collector-deployment-kind"
+	DeploymentType          = "deployment"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

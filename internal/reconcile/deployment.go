@@ -16,25 +16,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// DaemonSet reconciles a DaemonSet to the desired spec returning an error
+// Deployment reconciles a Deployment to the desired spec returning an error
 // if there is an issue creating or updating to the desired state
-func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.DaemonSet) error {
+func Deployment(er record.EventRecorder, k8Client client.Client, desired *apps.Deployment) error {
 	reason := constants.EventReasonGetObject
 	updateReason := ""
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		current := &apps.DaemonSet{}
+		current := &apps.Deployment{}
 		key := client.ObjectKeyFromObject(desired)
 		if err := k8Client.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				reason = constants.EventReasonCreateObject
 				return k8Client.Create(context.TODO(), desired)
 			}
-			return fmt.Errorf("failed to get %v DaemonSet: %w", key, err)
+			return fmt.Errorf("failed to get %v Deployment: %w", key, err)
 		}
 		same := false
 
 		if same, updateReason = pod.AreSame(&current.Spec.Template.Spec, &desired.Spec.Template.Spec, current.Name); same && util.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) {
-			log.V(3).Info("DaemonSets are the same skipping update", "daemonsetName", current.Name)
+			log.V(3).Info("Deployments are the same skipping update", "deploymentName", current.Name)
 			return nil
 		}
 		reason = constants.EventReasonUpdateObject
@@ -45,7 +45,7 @@ func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.Da
 	})
 
 	eventType := v1.EventTypeNormal
-	msg := fmt.Sprintf("%s DaemonSet %s/%s", reason, desired.Namespace, desired.Name)
+	msg := fmt.Sprintf("%s Deployment %s/%s", reason, desired.Namespace, desired.Name)
 	if updateReason != "" {
 		msg = fmt.Sprintf("%s because of change in %s.", msg, updateReason)
 	}

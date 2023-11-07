@@ -6,14 +6,23 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+		legacyCLF := logging.ClusterLogForwarder{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
+			},
+		}
 		return generator.MergeElements(
-			Inputs(&clfspec, op),
+			Inputs(&clfspec, factory.GenerateResourceNames(legacyCLF), op),
 			Pipelines(&clfspec, op),
 		)
 	}

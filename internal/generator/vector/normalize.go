@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -103,7 +104,7 @@ var (
 	AddOvnAuditTag  = fmt.Sprintf(".tag = %q", OvnAuditLogTag)
 )
 
-func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, op generator.Options) []generator.Element {
 	types := generator.GatherSources(spec, op)
 	var el []generator.Element = make([]generator.Element, 0)
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
@@ -122,7 +123,8 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 
 	for _, input := range spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
-			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
+			inputName := resNames.GenerateInputServiceName(input.Name)
+			el = append(el, NormalizeK8sAuditLogs(inputName+`_items`, inputName+`_normalized`)...)
 		}
 	}
 

@@ -17,4 +17,9 @@ const (
 	// without switching the default `logStore` to LokiStack. The value should be the
 	// LokiStack resource name representing the target store for the migration.
 	AnnotationOCPConsoleMigrationTarget = "logging.openshift.io/force-enable-ocp-console-target"
+
+	// AnnotationEnableCollectorAsDeployment is to enable deploying the collector as a deployment
+	// instead of a daemonset to support the HCP use case of using the collector for collecting
+	// audit logs via a webhook.
+	AnnotationEnableCollectorAsDeployment = "logging.openshift.io/enable-collector-as-deployment"
 )

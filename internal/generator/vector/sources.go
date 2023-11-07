@@ -7,6 +7,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
@@ -27,10 +28,10 @@ const (
 	OvnAuditLogs    = "ovn_audit_logs"
 )
 
-func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
+func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, resName *factory.ForwarderResourceNames, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, namespace, op),
-		HttpSources(spec, op),
+		HttpSources(spec, resName, op),
 		MetricsSources(InternalMetricsSourceName),
 	)
 }
@@ -121,7 +122,7 @@ func ExcludeContainerPaths(namespace string) string {
 	))
 }
 
-func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func HttpSources(spec *logging.ClusterLogForwarderSpec, resName *factory.ForwarderResourceNames, op generator.Options) []generator.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[generator.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -133,7 +134,7 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []
 	for _, input := range spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			el = append(el, HttpReceiver{
-				ID:            input.Name,
+				ID:            resName.GenerateInputServiceName(input.Name),
 				ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 				ListenPort:    input.Receiver.HTTP.GetPort(),
 				Format:        input.Receiver.HTTP.Format,

@@ -60,3 +60,10 @@ func NewDaemonSet(namespace, name string, visitors ...func(o runtime.Object)) *a
 	Initialize(ds, namespace, name, visitors...)
 	return ds
 }
+
+// NewDeployment returns a deployment
+func NewDeployment(namespace, name string, visitors ...func(o runtime.Object)) *appsv1.Deployment {
+	dpl := &appsv1.Deployment{}
+	Initialize(dpl, namespace, name, visitors...)
+	return dpl
+}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -19,6 +20,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //go:embed conf_test/fluent.conf
@@ -26,22 +28,31 @@ var ExpectedFluentConf string
 
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase testhelpers.ConfGenerateTest) {
-		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
-		conf, err := g.GenerateConf(e...)
-		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n\n", "\n", -1), "\n"),
-			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n\n", "\n", -1), "\n"))
-		if diff != "" {
-			b, _ := json.MarshalIndent(e, "", " ")
-			fmt.Printf("elements:\n%s\n", string(b))
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
+	var (
+		legacyCLF = logging.ClusterLogForwarder{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
+			},
 		}
-		Expect(diff).To(Equal(""))
-	}
+		f = func(testcase testhelpers.ConfGenerateTest) {
+
+			g := generator.MakeGenerator()
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, factory.GenerateResourceNames(legacyCLF), generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
+			conf, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			diff := cmp.Diff(
+				strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n\n", "\n", -1), "\n"),
+				strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n\n", "\n", -1), "\n"))
+			if diff != "" {
+				b, _ := json.MarshalIndent(e, "", " ")
+				fmt.Printf("elements:\n%s\n", string(b))
+				fmt.Println(conf)
+				fmt.Printf("diff: %s", diff)
+			}
+			Expect(diff).To(Equal(""))
+		}
+	)
 	DescribeTable("Generate full fluent.conf", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			CLSpec: logging.CollectionSpec{

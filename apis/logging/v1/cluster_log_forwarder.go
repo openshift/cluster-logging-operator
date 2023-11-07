@@ -13,6 +13,7 @@ const (
 	InputNameApplication    = "application"    // Non-infrastructure container logs.
 	InputNameInfrastructure = "infrastructure" // Infrastructure containers and system logs.
 	InputNameAudit          = "audit"          // System audit logs.
+	InputNameReceiver       = "receiver"       // Receiver to receive logs from non-cluster sources.
 )
 
 var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit)

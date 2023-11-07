@@ -1,4 +1,4 @@
-package daemonsets_test
+package pod_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Daemonset Comparator Suite")
+	RunSpecs(t, "Pod Comparator Suite")
 }

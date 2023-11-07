@@ -2,9 +2,11 @@ package k8shandler
 
 import (
 	"context"
+	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -40,6 +42,9 @@ type ClusterLoggingRequest struct {
 
 	// Owner of collector resources
 	ResourceOwner metav1.OwnerReference
+
+	// Determine the collector deployment strategy: Daemonset or Deployment
+	isDaemonset bool
 }
 
 func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) ClusterLoggingRequest {
@@ -53,12 +58,23 @@ func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.Clu
 		ClusterID:      clusterID,
 		ResourceNames:  resourceNames,
 		ResourceOwner:  utils.AsOwner(forwarder),
+		isDaemonset:    true,
 	}
 
 	// Owner is always the ClusterLogging instance for legacy ClusterLogging
 	if cl.Namespace == constants.OpenshiftNS && cl.Name == constants.SingletonName {
 		request.ResourceOwner = utils.AsOwner(cl)
 	}
+
+	// Collector is not a daemonset if the only input source is an HTTP receiver
+	// Enabled through an annotation
+	if _, ok := request.Forwarder.Annotations[constants.AnnotationEnableCollectorAsDeployment]; ok {
+		inputs := generator.GatherSources(&forwarder.Spec, generator.NoOptions)
+		if inputs.Len() == 1 && inputs.Has(logging.InputNameReceiver) {
+			request.isDaemonset = false
+		}
+	}
+
 	return request
 }
 

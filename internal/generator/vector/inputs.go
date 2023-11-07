@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -86,7 +87,7 @@ func AddThrottle(spec *logging.InputSpec) []generator.Element {
 }
 
 // Inputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
-func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
+func Inputs(spec *logging.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, o Options) []Element {
 	el := []Element{}
 
 	types := GatherSources(spec, o)
@@ -164,7 +165,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				Remap{
 					Desc:        `Set log_type to "audit"`,
 					ComponentID: input.Name + `_input`,
-					Inputs:      helpers.MakeInputs(input.Name + `_normalized`),
+					Inputs:      helpers.MakeInputs(resNames.GenerateInputServiceName(input.Name) + `_normalized`),
 					VRL: strings.Join(helpers.TrimSpaces([]string{
 						AddLogTypeAudit,
 						FixHostname,

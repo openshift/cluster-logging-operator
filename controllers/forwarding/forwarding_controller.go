@@ -28,7 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -182,7 +184,7 @@ func (r *ReconcileForwarder) SetupWithManager(mgr ctrl.Manager) error {
 	return controllerBuilder.
 		For(&logging.ClusterLogForwarder{}).
 		Owns(&corev1.ConfigMap{}).
-		Owns(&appsv1.DaemonSet{}).
+		Owns(&appsv1.DaemonSet{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&appsv1.Deployment{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).

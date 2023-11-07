@@ -64,6 +64,10 @@ func HasBearerTokenFileKey(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.BearerTokenFileKey)
 }
 
+func HasAWSWebIdentityTokenFilePath(secret *corev1.Secret) bool {
+	return HasKeys(secret, constants.AWSWebIdentityTokenFilePath)
+}
+
 func HasAwsRoleArnKey(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.AWSWebIdentityRoleKey)
 }

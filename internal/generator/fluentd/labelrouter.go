@@ -1,11 +1,11 @@
 package fluentd
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type LabelRouter struct {
-	Routes []generator.Element
+	Routes []framework.Element
 }
 
 func (lr LabelRouter) Name() string {
@@ -20,7 +20,7 @@ func (lr LabelRouter) Template() string {
 }
 
 type Route struct {
-	RoutePipeline generator.Element
+	RoutePipeline framework.Element
 }
 
 func (r Route) Name() string {
@@ -37,7 +37,7 @@ func (r Route) Template() string {
 
 type RoutePipeline struct {
 	Pipeline  string
-	RouteData generator.Element
+	RouteData framework.Element
 }
 
 func (p RoutePipeline) Name() string {
@@ -55,8 +55,8 @@ func (p RoutePipeline) Template() string {
 
 type RouteData struct {
 	// Labels is an array of "<key>:<value>" strings
-	Labels     generator.Element
-	Namespaces generator.Element
+	Labels     framework.Element
+	Namespaces framework.Element
 }
 
 func (rd RouteData) Name() string {

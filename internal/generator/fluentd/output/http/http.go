@@ -1,10 +1,12 @@
 package http
 
 import (
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
@@ -13,8 +15,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 )
 

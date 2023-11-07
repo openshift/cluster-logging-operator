@@ -2,9 +2,9 @@ package kafka_test
 
 import (
 	"errors"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
 
 	. "github.com/onsi/ginkgo"
@@ -18,10 +18,10 @@ import (
 var _ = Describe("Generating external kafka server output store config block", func() {
 	var (
 		outputs []v1.OutputSpec
-		g       generator.Generator
+		g       framework.Generator
 	)
 	BeforeEach(func() {
-		g = generator.MakeGenerator()
+		g = framework.MakeGenerator()
 	})
 
 	Context("for a single kafka default output target", func() {

@@ -1,12 +1,11 @@
 package elasticsearch
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -17,10 +16,10 @@ import (
 
 var _ = Describe("Generate Vector config", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		e := []generator.Element{}
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
+		e := []framework.Element{}
 		for _, o := range clfspec.Outputs {
-			e = generator.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
+			e = framework.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
 		}
 		return e
 	}
@@ -320,7 +319,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -743,7 +742,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -887,7 +886,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1028,7 +1027,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1175,7 +1174,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1325,7 +1324,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1456,7 +1455,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1591,7 +1590,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1726,7 +1725,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
@@ -1861,7 +1860,7 @@ timeout_secs = 2147483648
 					},
 				},
 			},
-			Secrets: security.NoSecrets,
+			Secrets: common.NoSecrets,
 			ExpectedConf: `
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]

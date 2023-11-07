@@ -1,10 +1,10 @@
 package http
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
-type BasicAuthConf generator.ConfLiteral
+type BasicAuthConf framework.ConfLiteral
 
 func (t BasicAuthConf) Name() string {
 	return "httpBasicAuthConf"

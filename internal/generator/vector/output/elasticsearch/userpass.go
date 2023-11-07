@@ -1,10 +1,10 @@
 package elasticsearch
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
-type UserNamePass security.UserNamePass
+type UserNamePass common.UserNamePass
 
 func (up UserNamePass) Name() string {
 	return "elasticsearchUsernamePasswordTemplate"

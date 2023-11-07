@@ -2,12 +2,12 @@ package source
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strconv"
 )
 
 type ContainerLogs struct {
-	generator.OutLabel
+	framework.OutLabel
 	Desc         string
 	Paths        string
 	ExcludePaths string

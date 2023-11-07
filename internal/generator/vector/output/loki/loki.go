@@ -2,7 +2,8 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -10,11 +11,9 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -122,8 +121,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			normalize.DedotLabels(dedottedID, []string{componentID}),
 			Output(o, []string{dedottedID}),
 			Encoding(o),
-			output.NewBuffer(id),
-			output.NewRequest(id),
+			common.NewBuffer(id),
+			common.NewRequest(id),
 			Labels(o),
 		},
 		TLSConf(o, secret, op),
@@ -208,7 +207,7 @@ func Tenant(l *logging.Loki) Element {
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if isDefaultOutput(o.Name) {
 		// Set CA from logcollector ServiceAccount for internal Loki
-		tlsConf := security.TLSConf{
+		tlsConf := common.TLSConf{
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
 		}
@@ -219,7 +218,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	}
 	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
@@ -241,11 +240,11 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			Desc:        "Basic Auth Config",
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		})
-		if security.HasUsernamePassword(secret) {
+		if common.HasUsernamePassword(secret) {
 			hasBasicAuth = true
 			up := UserNamePass{
-				Username: security.GetFromSecret(secret, constants.ClientUsername),
-				Password: security.GetFromSecret(secret, constants.ClientPassword),
+				Username: common.GetFromSecret(secret, constants.ClientUsername),
+				Password: common.GetFromSecret(secret, constants.ClientPassword),
 			}
 			conf = append(conf, up)
 		}
@@ -262,12 +261,12 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if secret != nil {
 		// Inject token from secret, either provided by user using a custom secret
 		// or from the default logcollector service account.
-		if security.HasBearerTokenFileKey(secret) {
+		if common.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
 				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 			}, BearerToken{
-				Token: security.GetFromSecret(secret, constants.BearerTokenFileKey),
+				Token: common.GetFromSecret(secret, constants.BearerTokenFileKey),
 			})
 		}
 	}

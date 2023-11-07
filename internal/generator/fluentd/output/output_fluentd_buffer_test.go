@@ -3,9 +3,9 @@ package output_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/fluentdforward"
@@ -42,7 +42,7 @@ var _ = Describe("Generating fluentd config", func() {
 		outputs []loggingv1.OutputSpec
 		//defaultForwarderSpec *loggingv1.ForwarderSpec
 		customForwarderSpec *loggingv1.ForwarderSpec
-		g                   generator.Generator
+		g                   framework.Generator
 	)
 
 	BeforeEach(func() {
@@ -65,7 +65,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 	Context("for empty forwarder buffer spec", func() {
 		JustBeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 			customForwarderSpec = &loggingv1.ForwarderSpec{
 				Fluentd: &loggingv1.FluentdForwarderSpec{
@@ -235,7 +235,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 	Context("for output elasticsearch", func() {
 		JustBeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 			outputs = []loggingv1.OutputSpec{
 				{
@@ -549,7 +549,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 	Context("for output fluentdForward", func() {
 		JustBeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 			outputs = []loggingv1.OutputSpec{
 				{
@@ -663,7 +663,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 	Context("for output syslog", func() {
 		JustBeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 			outputs = []loggingv1.OutputSpec{
 				{
@@ -807,7 +807,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for output kafka", func() {
 		JustBeforeEach(func() {
 
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 			outputs = []loggingv1.OutputSpec{
 				{

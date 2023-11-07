@@ -1,7 +1,7 @@
 package source
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 const HostAuditLogTemplate = `
@@ -14,7 +14,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 {{end}}`
 
-type HostAuditLog = generator.ConfLiteral
+type HostAuditLog = framework.ConfLiteral
 
 const OpenshiftAuditLogTemplate = `
 {{define "inputSourceOpenShiftAuditTemplate" -}}
@@ -27,7 +27,7 @@ glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 
-type OpenshiftAuditLog = generator.ConfLiteral
+type OpenshiftAuditLog = framework.ConfLiteral
 
 const K8sAuditLogTemplate = `
 {{define "inputSourceK8sAuditTemplate" -}}
@@ -40,7 +40,7 @@ glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 
-type OVNAuditLog = generator.ConfLiteral
+type OVNAuditLog = framework.ConfLiteral
 
 const OVNAuditLogTemplate = `
 {{define "inputSourceOVNAuditTemplate" -}}
@@ -53,4 +53,4 @@ glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 
-type K8sAuditLog = generator.ConfLiteral
+type K8sAuditLog = framework.ConfLiteral

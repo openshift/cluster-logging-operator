@@ -1,6 +1,7 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"sort"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -50,7 +50,7 @@ var _ = Describe("Generate vector config", func() {
 	defaultTLS := "VersionTLS12"
 	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
@@ -711,9 +711,9 @@ verify_hostname = false
 					},
 				},
 			},
-			Options: generator.Options{
-				generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+			Options: framework.Options{
+				framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+				framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
 			ExpectedConf: `
 [transforms.loki_receiver_remap]
@@ -807,8 +807,8 @@ token = "token-for-custom-loki"
 
 var _ = Describe("Generate vector config for in cluster loki", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		return Conf(clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], generator.NoOptions)
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
+		return Conf(clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], framework.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
 		Entry("with default logcollector bearer token", helpers.ConfGenerateTest{

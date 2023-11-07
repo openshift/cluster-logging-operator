@@ -2,9 +2,9 @@ package fluentd
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 func Concat(spec *logging.ClusterLogForwarderSpec, o Options) []Element {

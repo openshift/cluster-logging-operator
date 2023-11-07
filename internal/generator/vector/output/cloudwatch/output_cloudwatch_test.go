@@ -1,6 +1,7 @@
 package cloudwatch
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -328,10 +328,10 @@ ca_file = "/var/run/ocp-collector/secrets/vector-tls-credentials/ca-bundle.crt"
 
 var _ = Describe("Generating vector config for cloudwatch output", func() {
 	var (
-		g  generator.Generator
-		op = generator.Options{
-			generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-			generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+		g  framework.Generator
+		op = framework.Options{
+			framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+			framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 		}
 		secrets      map[string]*corev1.Secret
 		groupPrefix  = "all-logs"
@@ -375,7 +375,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 	Context("with a group prefix", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 
 		})
 
@@ -487,7 +487,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 	Context("without specifying a prefix", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 
 		Context("grouped by log type without prefix", func() {
@@ -669,10 +669,10 @@ endpoint = "` + endpoint + `"` + cwBufferAndRequest
 
 var _ = Describe("Generating vector config for cloudwatch sts", func() {
 	var (
-		g  generator.Generator
-		op = generator.Options{
-			generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-			generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+		g  framework.Generator
+		op = framework.Options{
+			framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+			framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 		}
 
 		groupPrefix  = "all-logs"
@@ -713,7 +713,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 	Context("with a role_arn key", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 		Context("grouped by log type", func() {
 			BeforeEach(func() {

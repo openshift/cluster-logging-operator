@@ -3,6 +3,7 @@ package loki
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 )

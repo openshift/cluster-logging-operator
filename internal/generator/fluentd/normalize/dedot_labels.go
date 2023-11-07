@@ -1,8 +1,8 @@
 package normalize
 
 import (
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 func DedotLabels() Element {

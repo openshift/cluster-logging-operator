@@ -2,9 +2,9 @@ package otel
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )

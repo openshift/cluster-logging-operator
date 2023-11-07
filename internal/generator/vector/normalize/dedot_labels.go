@@ -2,8 +2,7 @@ package normalize
 
 import (
 	"fmt"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 

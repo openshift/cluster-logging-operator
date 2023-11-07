@@ -1,12 +1,12 @@
 package syslog
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -305,7 +305,7 @@ key_pass = "mysecretpassword"
 `
 	)
 
-	var g generator.Generator
+	var g framework.Generator
 
 	var secrets = map[string]*corev1.Secret{
 		"syslog-tls": {
@@ -320,7 +320,7 @@ key_pass = "mysecretpassword"
 
 	Context("syslog config", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 
 		It("LOG-3948: should pass URL scheme to vector for validation", func() {

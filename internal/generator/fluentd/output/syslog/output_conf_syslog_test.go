@@ -1,9 +1,8 @@
 package syslog
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,16 +15,16 @@ var _ = Describe("Generating external syslog server output store config blocks",
 
 	var (
 		outputs []logging.OutputSpec
-		g       generator.Generator
-		op      generator.Options
+		g       framework.Generator
+		op      framework.Options
 		secret  *corev1.Secret
 	)
 	Context("based on old syslog plugin", func() {
 
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
-			op = generator.Options{
-				generator.UseOldRemoteSyslogPlugin: "",
+			g = framework.MakeGenerator()
+			op = framework.Options{
+				framework.UseOldRemoteSyslogPlugin: "",
 			}
 		})
 
@@ -150,7 +149,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 
 	Context("based on new syslog plugin", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 			secret = nil
 		})
 		tcpConf := `

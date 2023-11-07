@@ -2,11 +2,11 @@ package elements
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 )
 
 type FluentConfig struct {

@@ -4,7 +4,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/elasticsearch"
@@ -13,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/syslog"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
 )

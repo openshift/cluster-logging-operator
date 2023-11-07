@@ -1,6 +1,7 @@
 package gcl
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	tls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
@@ -19,10 +19,10 @@ var _ = Describe("Generate Vector config", func() {
 	inputPipeline := []string{"application"}
 	defaultTLS := "VersionTLS12"
 	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		e := []generator.Element{}
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
+		e := []framework.Element{}
 		for _, o := range clfspec.Outputs {
-			e = generator.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
+			e = framework.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
 		}
 		return e
 	}
@@ -152,9 +152,9 @@ retry_attempts = 17
 					},
 				},
 			},
-			Options: generator.Options{
-				generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+			Options: framework.Options{
+				framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+				framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
 			ExpectedConf: `
 [transforms.gcl_tls_dedot]
@@ -261,9 +261,9 @@ ca_file = "/var/run/ocp-collector/secrets/junk/ca-bundle.crt"
 					},
 				},
 			},
-			Options: generator.Options{
-				generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+			Options: framework.Options{
+				framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+				framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
 			ExpectedConf: `
 [transforms.gcl_tls_dedot]

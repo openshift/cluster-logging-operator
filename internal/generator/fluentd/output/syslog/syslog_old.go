@@ -2,10 +2,10 @@ package syslog
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	corev1 "k8s.io/api/core/v1"
 )

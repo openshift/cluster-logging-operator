@@ -1,21 +1,21 @@
 package fluentd
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 )
 
 var _ = Describe("Generating pipeline to output labels", func() {
 	var (
-		g generator.Generator
+		g framework.Generator
 	)
 	BeforeEach(func() {
-		g = generator.MakeGenerator()
+		g = framework.MakeGenerator()
 	})
 
 	It("should generate no labels for a single pipeline", func() {

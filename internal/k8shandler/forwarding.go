@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -11,13 +12,11 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-
 	corev1 "k8s.io/api/core/v1"
 )
 
 // EvaluateAnnotationsForEnabledCapabilities populates generator options with capabilities enabled by the ClusterLogForwarder
-func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForwarder, options generator.Options) {
+func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForwarder, options framework.Options) {
 	if forwarder == nil {
 		return
 	}
@@ -42,9 +41,9 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
-	op := generator.Options{}
+	op := framework.Options{}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
-	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
+	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 
 	g := forwardergenerator.New(clusterRequest.Cluster.Spec.Collection.Type)

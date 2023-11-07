@@ -1,12 +1,12 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type Copy struct {
 	DeepCopy bool
-	Stores   []generator.Element
+	Stores   []framework.Element
 }
 
 func (c Copy) Name() string {
@@ -23,8 +23,8 @@ copy_mode deep
 {{end}}`
 }
 
-func CopyToLabels(labels []string) []generator.Element {
-	s := []generator.Element{}
+func CopyToLabels(labels []string) []framework.Element {
+	s := []framework.Element{}
 	for _, l := range labels {
 		s = append(s, Store{
 			Element: Relabel{

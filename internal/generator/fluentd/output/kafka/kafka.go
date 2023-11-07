@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"net/url"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"

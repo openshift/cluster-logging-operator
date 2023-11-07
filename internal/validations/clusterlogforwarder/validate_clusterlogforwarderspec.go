@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -11,7 +12,6 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -431,8 +431,8 @@ func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1
 	// Ensure we have secrets for valid cloudwatch config
 	hasKeyID := len(secret.Data[constants.AWSAccessKeyID]) > 0
 	hasSecretKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
-	hasRoleArnKey := security.HasAwsRoleArnKey(secret)
-	hasCredentialsKey := security.HasAwsCredentialsKey(secret)
+	hasRoleArnKey := common.HasAwsRoleArnKey(secret)
+	hasCredentialsKey := common.HasAwsCredentialsKey(secret)
 	hasValidRoleArn := len(cloudwatch.ParseRoleArn(secret)) > 0
 	switch {
 	case hasValidRoleArn: // Sts secret format is the first check

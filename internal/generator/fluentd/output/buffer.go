@@ -2,9 +2,9 @@ package output
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 )
 

@@ -1,8 +1,10 @@
 package http
 
-import "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
+import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+)
 
-type BearerToken security.BearerToken
+type BearerToken common.BearerToken
 
 func (bt BearerToken) Name() string {
 	return "httpBearerTokenTemplate"

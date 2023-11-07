@@ -2,14 +2,14 @@ package fluentd
 
 import (
 	_ "embed"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"gopkg.in/yaml.v2"
@@ -38,8 +38,8 @@ var ExpectedValidForwardersConf string
 var _ = Describe("Generating fluentd config", func() {
 	var (
 		forwarder  *logging.ClusterLogForwarderSpec
-		g          generator.Generator
-		op         generator.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
+		g          framework.Generator
+		op         framework.Options = framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		secret     corev1.Secret
 		secretData = map[string][]byte{
 			"tls.key":       []byte("test-key"),
@@ -75,8 +75,8 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 
 	BeforeEach(func() {
-		g = generator.MakeGenerator()
-		op = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
+		g = framework.MakeGenerator()
+		op = framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		forwarder = &logging.ClusterLogForwarderSpec{
 			Outputs: []logging.OutputSpec{
 				{
@@ -207,7 +207,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 
@@ -286,7 +286,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsConf))
@@ -366,7 +366,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsNSConf))
@@ -389,21 +389,21 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		c := generator.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedExcludeConf))
 	})
 
 	It("should produce well formed fluent.conf", func() {
-		c := generator.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedWellFormedConf))
 	})
 
 	It("should generate sources for reserved inputs used as names or types", func() {
-		sources := generator.GatherSources(&logging.ClusterLogForwarderSpec{
+		sources := utils.GatherSources(&logging.ClusterLogForwarderSpec{
 			Inputs: []logging.InputSpec{{Name: "in", Application: &logging.Application{}}},
 			Pipelines: []logging.PipelineSpec{
 				{
@@ -415,7 +415,7 @@ var _ = Describe("Generating fluentd config", func() {
 					OutputRefs: []string{"default"},
 				},
 			},
-		}, generator.NoOptions)
+		}, framework.NoOptions)
 		Expect(sources.List()).To(ContainElements("application", "audit"))
 	})
 
@@ -478,9 +478,9 @@ var _ = Describe("Generating fluentd config", func() {
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
-			g := generator.MakeGenerator()
+			g := framework.MakeGenerator()
 			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, constants.SingletonName, op)
-			gotFluentdConf, err := g.GenerateConf(generator.MergeSections(s)...)
+			gotFluentdConf, err := g.GenerateConf(framework.MergeSections(s)...)
 			Expect(err).To(Succeed())
 			Expect(gotFluentdConf).To(EqualTrimLines(wantFluentdConf))
 		},

@@ -2,15 +2,16 @@ package fluentd
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 )
 
-func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
-	var el []generator.Element = make([]generator.Element, 0)
-	types := generator.GatherSources(spec, o)
+func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o framework.Options) []framework.Element {
+	var el []framework.Element = make([]framework.Element, 0)
+	types := utils.GatherSources(spec, o)
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el, elements.Match{
 			Desc:      "Include Infrastructure logs",
@@ -20,7 +21,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			},
 		})
 	} else {
-		el = append(el, generator.ConfLiteral{
+		el = append(el, framework.ConfLiteral{
 			Desc:         "Discard Infrastructure logs",
 			Pattern:      source.InfraTags,
 			TemplateName: "discardMatched",
@@ -36,7 +37,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			},
 		})
 	} else {
-		el = append(el, generator.ConfLiteral{
+		el = append(el, framework.ConfLiteral{
 			Desc:         "Discard Application logs",
 			Pattern:      source.ApplicationTags,
 			TemplateName: "discardMatched",
@@ -52,14 +53,14 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			},
 		})
 	} else {
-		el = append(el, generator.ConfLiteral{
+		el = append(el, framework.ConfLiteral{
 			Desc:         "Discard Audit logs",
 			Pattern:      source.AuditTags,
 			TemplateName: "discardMatched",
 			TemplateStr:  DiscardMatched,
 		})
 	}
-	el = append(el, generator.ConfLiteral{
+	el = append(el, framework.ConfLiteral{
 		Desc:         "Send any remaining unmatched tags to stdout",
 		TemplateName: "toStdout",
 		Pattern:      "**",

@@ -1,7 +1,7 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type Route struct {
@@ -82,8 +82,8 @@ source = '''
 `
 }
 
-func Debug(id string, inputs string) generator.Element {
-	return generator.ConfLiteral{
+func Debug(id string, inputs string) framework.Element {
+	return framework.ConfLiteral{
 		Desc:         "Sending records to stdout for debug purposes",
 		ComponentID:  id,
 		InLabel:      inputs,

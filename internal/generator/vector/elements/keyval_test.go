@@ -1,12 +1,13 @@
-package elements
+package elements_test
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 )
 
 type FluentConfig struct {

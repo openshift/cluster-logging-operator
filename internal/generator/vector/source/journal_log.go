@@ -1,7 +1,7 @@
 package source
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 const JournalLogTemplate = `
@@ -11,4 +11,4 @@ type = "journald"
 journal_directory = "/var/log/journal"
 {{end}}`
 
-type JournalLog = generator.ConfLiteral
+type JournalLog = framework.ConfLiteral

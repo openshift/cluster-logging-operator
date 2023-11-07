@@ -1,12 +1,12 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type FromLabel struct {
-	generator.InLabel
-	SubElements []generator.Element
+	framework.InLabel
+	SubElements []framework.Element
 	Desc        string
 }
 
@@ -25,7 +25,7 @@ func (f FromLabel) Template() string {
 {{end}}`
 }
 
-func (f FromLabel) Elements() []generator.Element {
+func (f FromLabel) Elements() []framework.Element {
 	return f.SubElements
 }
 

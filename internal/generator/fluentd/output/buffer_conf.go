@@ -1,7 +1,7 @@
 package output
 
 import (
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type BufferConf struct {

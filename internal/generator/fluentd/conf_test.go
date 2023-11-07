@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -17,7 +18,6 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,8 +27,8 @@ var ExpectedFluentConf string
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
-		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
+		g := framework.MakeGenerator()
+		e := framework.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(

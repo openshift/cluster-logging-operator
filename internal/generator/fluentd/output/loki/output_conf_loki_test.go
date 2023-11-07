@@ -2,9 +2,8 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -57,7 +56,7 @@ func TestLokiOutput(t *testing.T) {
 	var (
 		config  lokiConfig
 		secrets map[string]*corev1.Secret
-		g       generator.Generator
+		g       framework.Generator
 	)
 
 	// testCase runs before/after logic around testFunc
@@ -111,7 +110,7 @@ func TestLokiOutput(t *testing.T) {
 					}}}
 
 			var err error
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 			require.NoError(t, err)
 			testFunc(t)
 		})
@@ -123,7 +122,7 @@ func TestLokiOutput(t *testing.T) {
 			Name: "loki-receiver",
 			URL:  "https://logs-us-west1.grafana.net",
 		}}
-		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], framework.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		config.content = `url https://logs-us-west1.grafana.net
@@ -139,7 +138,7 @@ bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
 			URL:    "https://logs-us-west1.grafana.net",
 			Secret: &v1.OutputSecretSpec{Name: "a-secret-ref"},
 		}}
-		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], framework.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		config.content = `url https://logs-us-west1.grafana.net
@@ -160,7 +159,7 @@ bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
 				LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
 			}},
 		}}
-		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], framework.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		config.content = `url https://logs-us-west1.grafana.net
@@ -194,7 +193,7 @@ bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
 ca_cert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
 bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token
 `
-		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], framework.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results))
@@ -207,7 +206,7 @@ bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token
 			URL:    "https://logs-us-west1.grafana.net",
 			Secret: &v1.OutputSecretSpec{Name: "a-secret-ref"},
 		}}
-		es := Conf(nil, secrets["loki-receiver-token"], outputs[0], generator.NoOptions)
+		es := Conf(nil, secrets["loki-receiver-token"], outputs[0], framework.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		config.content = `url https://logs-us-west1.grafana.net

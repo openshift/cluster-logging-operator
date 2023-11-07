@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"path"
 	"testing"
 
@@ -12,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -20,7 +20,7 @@ import (
 
 var _ = Describe("Generating fluentd config", func() {
 	var (
-		g      generator.Generator
+		g      framework.Generator
 		output = loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeCloudwatch,
 			Name: "my-cloudwatch",
@@ -46,7 +46,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 	Context("for cloudwatch output ", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 
 		Context("grouped by log type", func() {
@@ -329,7 +329,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 var _ = Describe("Generating fluentd config for sts", func() {
 	var (
-		g      generator.Generator
+		g      framework.Generator
 		output = loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeCloudwatch,
 			Name: "my-cloudwatch",
@@ -357,7 +357,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
 
 	Context("for cloudwatch sts output ", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 
 		Context("grouped by log type", func() {

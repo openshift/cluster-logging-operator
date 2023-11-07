@@ -45,7 +45,7 @@ ruby <<EOF
 		isIPV6 |= ipaddr.ipv6?
 	  end
 	end
-	return "[::]" if isIPV6
+	return "::" if isIPV6
 	return "0.0.0.0" if isIPV4
 	return "invalid-ip"
   end

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -682,4 +684,18 @@ func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string
 	}
 
 	return nil, err
+}
+
+// CLF depends on CL, so sync the creator goroutines
+func RecreateClClfAsync(g *errgroup.Group, c *client.Test, cl *logging.ClusterLogging, clf *logging.ClusterLogForwarder) {
+	ch := make(chan struct{}, 1)
+	g.Go(func() error {
+		defer func() { ch <- struct{}{} }()
+		return c.Recreate(cl)
+	})
+	g.Go(func() error {
+		defer func() { close(ch) }()
+		<-ch
+		return c.Recreate(clf)
+	})
 }

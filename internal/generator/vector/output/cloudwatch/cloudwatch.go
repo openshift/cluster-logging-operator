@@ -2,18 +2,17 @@ package cloudwatch
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"regexp"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -78,14 +77,14 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(id, helpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	request := output.NewRequest(id)
+	request := common.NewRequest(id)
 	request.Concurrency.Value = 2
 	return MergeElements(
 		[]Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
 			OutputConf(id, o, []string{dedottedID}, secret, op, o.Cloudwatch.Region),
-			output.NewBuffer(id),
+			common.NewBuffer(id),
 			request,
 		},
 		TLSConf(o, secret, op),
@@ -105,21 +104,21 @@ func OutputConf(id string, o logging.OutputSpec, inputs []string, secret *corev1
 
 func SecurityConfig(secret *corev1.Secret) Element {
 	// First check for credentials or role_arn key, indicating a sts-enabled authentication
-	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
+	if common.HasAwsRoleArnKey(secret) || common.HasAwsCredentialsKey(secret) {
 		return AWSKey{
 			KeyRoleArn: ParseRoleArn(secret),
 		}
 	}
 	// Otherwise use ID and Secret
 	return AWSKey{
-		KeyID:     strings.TrimSpace(security.GetFromSecret(secret, constants.AWSAccessKeyID)),
-		KeySecret: strings.TrimSpace(security.GetFromSecret(secret, constants.AWSSecretAccessKey)),
+		KeyID:     strings.TrimSpace(common.GetFromSecret(secret, constants.AWSAccessKeyID)),
+		KeySecret: strings.TrimSpace(common.GetFromSecret(secret, constants.AWSSecretAccessKey)),
 	}
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
@@ -198,9 +197,9 @@ func LogGroupNameField(o logging.OutputSpec) string {
 
 // ParseRoleArn search for matching valid arn within the 'credentials' or 'role_arn' key
 func ParseRoleArn(secret *corev1.Secret) string {
-	roleArnString := security.GetFromSecret(secret, constants.AWSCredentialsKey)
+	roleArnString := common.GetFromSecret(secret, constants.AWSCredentialsKey)
 	if roleArnString == "" {
-		roleArnString = security.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
+		roleArnString = common.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
 	}
 
 	if roleArnString != "" {

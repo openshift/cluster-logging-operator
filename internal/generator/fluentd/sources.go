@@ -3,30 +3,31 @@ package fluentd
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
-func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, namespace string, o generator.Options) []generator.Element {
+func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, namespace string, o framework.Options) []framework.Element {
 	var tunings *logging.FluentdInFileSpec
 	if clspec != nil && clspec.Fluentd != nil && clspec.Fluentd.InFile != nil {
 		tunings = clspec.Fluentd.InFile
 	}
-	return generator.MergeElements(
+	return framework.MergeElements(
 		MetricSources(spec, o),
 		LogSources(spec, tunings, namespace, o),
 	)
 }
 
-func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
-	tlsProfileSpec := o[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
-	return []generator.Element{
+func MetricSources(spec *logging.ClusterLogForwarderSpec, o framework.Options) []framework.Element {
+	tlsProfileSpec := o[framework.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
+	return []framework.Element{
 		PrometheusMonitor{
 			TlsMinVersion: helpers.TLSMinVersion(tls.MinTLSVersion(tlsProfileSpec)),
 			CipherSuites:  helpers.TLSCiphers(tls.TLSCiphers(tlsProfileSpec)),
@@ -34,21 +35,21 @@ func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) [
 	}
 }
 
-func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdInFileSpec, namespace string, o generator.Options) []generator.Element {
-	var el []generator.Element = make([]generator.Element, 0)
-	types := generator.GatherSources(spec, o)
+func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdInFileSpec, namespace string, o framework.Options) []framework.Element {
+	var el []framework.Element = make([]framework.Element, 0)
+	types := utils.GatherSources(spec, o)
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
-			source2.JournalLog{
+			source.JournalLog{
 				Desc:         "Logs from linux journal",
 				OutLabel:     "INGRESS",
 				TemplateName: "inputSourceJournalTemplate",
-				TemplateStr:  source2.JournalLogTemplate,
+				TemplateStr:  source.JournalLogTemplate,
 			})
 	}
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
-			source2.ContainerLogs{
+			source.ContainerLogs{
 				Desc:         "Logs from containers (including openshift containers)",
 				Paths:        ContainerLogPaths(),
 				ExcludePaths: ExcludeContainerPaths(namespace),
@@ -59,39 +60,39 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 	}
 	if types.Has(logging.InputNameAudit) {
 		el = append(el,
-			source2.AuditLog{
-				AuditLogLiteral: source2.AuditLogLiteral{
+			source.AuditLog{
+				AuditLogLiteral: source.AuditLogLiteral{
 					Desc:         "linux audit logs",
 					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceHostAuditTemplate",
-					TemplateStr:  source2.HostAuditLogTemplate,
+					TemplateStr:  source.HostAuditLogTemplate,
 				},
 				Tunings: tunings,
 			},
-			source2.AuditLog{
-				AuditLogLiteral: source2.AuditLogLiteral{
+			source.AuditLog{
+				AuditLogLiteral: source.AuditLogLiteral{
 					Desc:         "k8s audit logs",
 					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceK8sAuditTemplate",
-					TemplateStr:  source2.K8sAuditLogTemplate,
+					TemplateStr:  source.K8sAuditLogTemplate,
 				},
 				Tunings: tunings,
 			},
-			source2.AuditLog{
-				AuditLogLiteral: source2.AuditLogLiteral{
+			source.AuditLog{
+				AuditLogLiteral: source.AuditLogLiteral{
 					Desc:         "Openshift audit logs",
 					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceOpenShiftAuditTemplate",
-					TemplateStr:  source2.OpenshiftAuditLogTemplate,
+					TemplateStr:  source.OpenshiftAuditLogTemplate,
 				},
 				Tunings: tunings,
 			},
-			source2.AuditLog{
-				AuditLogLiteral: source2.AuditLogLiteral{
+			source.AuditLog{
+				AuditLogLiteral: source.AuditLogLiteral{
 					Desc:         "Openshift Virtual Network (OVN) audit logs",
 					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceOVNAuditTemplate",
-					TemplateStr:  source2.OVNAuditLogTemplate,
+					TemplateStr:  source.OVNAuditLogTemplate,
 				},
 				Tunings: tunings,
 			},

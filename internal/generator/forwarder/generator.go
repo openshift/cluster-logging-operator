@@ -3,13 +3,13 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/conf"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,8 +27,8 @@ var (
 )
 
 type ConfigGenerator struct {
-	g      generator.Generator
-	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op generator.Options) []generator.Section
+	g      framework.Generator
+	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op framework.Options) []framework.Section
 	format func(conf string) string
 }
 
@@ -41,7 +41,7 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 		g.format = helpers.FormatFluentConf
 		g.conf = fluentd.Conf
 	case logging.LogCollectionTypeVector:
-		g.conf = vector.Conf
+		g.conf = conf.Conf
 	default:
 		log.Error(errors.New("Unsupported collector implementation"), "type", collectorType)
 		return nil
@@ -49,8 +49,8 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	return g
 }
 
-func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op generator.Options) (string, error) {
+func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op framework.Options) (string, error) {
 	sections := cg.conf(clspec, secrets, clfspec, namespace, forwarderName, op)
-	conf, err := cg.g.GenerateConf(generator.MergeSections(sections)...)
+	conf, err := cg.g.GenerateConf(framework.MergeSections(sections)...)
 	return cg.format(conf), err
 }

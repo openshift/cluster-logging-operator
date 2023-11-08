@@ -2,13 +2,13 @@ package fluentd
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	corev1 "k8s.io/api/core/v1"
 )
 
 //nolint:govet // using declarative style
-func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, name string, op generator.Options) []generator.Section {
-	return []generator.Section{
+func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, name string, op framework.Options) []framework.Section {
+	return []framework.Section{
 		{
 			Header(op),
 			`Generated fluentd conf Header`,
@@ -44,7 +44,7 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 	}
 }
 
-func Header(op generator.Options) []generator.Element {
+func Header(op framework.Options) []framework.Element {
 	const Header = `
 {{define "header" -}}
 ## CLO GENERATED CONFIGURATION ###
@@ -56,8 +56,8 @@ func Header(op generator.Options) []generator.Element {
 </system>
 {{end}}
 `
-	return []generator.Element{
-		generator.ConfLiteral{
+	return []framework.Element{
+		framework.ConfLiteral{
 			TemplateName: "header",
 			TemplateStr:  Header,
 		},

@@ -1,11 +1,11 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type Store struct {
-	Element generator.Element
+	Element framework.Element
 }
 
 func (s Store) Name() string {

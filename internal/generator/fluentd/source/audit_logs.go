@@ -2,11 +2,11 @@ package source
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strconv"
 )
 
-type AuditLogLiteral = generator.ConfLiteral
+type AuditLogLiteral = framework.ConfLiteral
 type AuditLog struct {
 	AuditLogLiteral
 	Tunings *logging.FluentdInFileSpec

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -10,14 +11,13 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Generate vector config", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for Http output", helpers.TestGenerateConfWith(f),
@@ -601,7 +601,7 @@ token = "token-for-custom-http"
 					},
 				},
 			},
-			Options: generator.Options{constants.AnnotationEnableSchema: "true"},
+			Options: framework.Options{constants.AnnotationEnableSchema: "true"},
 			ExpectedConf: `
 # Normalize log records to OTEL schema
 [transforms.http_receiver_otel]
@@ -745,7 +745,7 @@ password = "password"
 					},
 				},
 			},
-			Options: generator.Options{constants.AnnotationEnableSchema: "true"},
+			Options: framework.Options{constants.AnnotationEnableSchema: "true"},
 			ExpectedConf: `
 [transforms.http_receiver_normalize_http]
 type = "remap"

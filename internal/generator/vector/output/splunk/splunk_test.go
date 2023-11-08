@@ -1,12 +1,12 @@
 package splunk
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -173,7 +173,7 @@ key_pass = "junk"
 	)
 
 	var (
-		g generator.Generator
+		g framework.Generator
 
 		output = loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeSplunk,
@@ -265,7 +265,7 @@ key_pass = "junk"
 
 	Context("splunk config", func() {
 		BeforeEach(func() {
-			g = generator.MakeGenerator()
+			g = framework.MakeGenerator()
 		})
 
 		It("should provide a valid config", func() {

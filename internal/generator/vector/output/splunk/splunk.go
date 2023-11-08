@@ -2,16 +2,14 @@ package splunk
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -74,8 +72,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			normalize.DedotLabels(dedottedID, inputs),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
-			output.NewBuffer(id),
-			output.NewRequest(id),
+			common.NewBuffer(id),
+			common.NewRequest(id),
 		},
 		TLSConf(o, secret, op),
 	)
@@ -86,7 +84,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
-		DefaultToken: security.GetFromSecret(secret, constants.SplunkHECTokenKey),
+		DefaultToken: common.GetFromSecret(secret, constants.SplunkHECTokenKey),
 	}
 }
 
@@ -98,7 +96,7 @@ func Encoding(o logging.OutputSpec) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+	if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 		tlsConf.NeedsEnabled = false
 		return []Element{tlsConf}
 	}

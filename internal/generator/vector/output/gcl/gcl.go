@@ -3,16 +3,14 @@ package gcl
 import (
 	"fmt"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -79,15 +77,15 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		LogDestination:  LogDestination(g),
 		LogID:           g.LogID,
 		SeverityKey:     SeverityKey(g),
-		CredentialsPath: security.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
+		CredentialsPath: common.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
 	}
 	setInput(&gcl, []string{dedottedID})
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			gcl,
-			output.NewBuffer(id),
-			output.NewRequest(id),
+			common.NewBuffer(id),
+			common.NewRequest(id),
 		},
 		TLSConf(o, secret, op),
 	)
@@ -95,7 +93,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}

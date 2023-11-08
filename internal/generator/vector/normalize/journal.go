@@ -1,7 +1,7 @@
 package normalize
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"strings"
@@ -91,8 +91,8 @@ if exists(.UNIT) { .systemd.u.UNIT = del(.UNIT) }
 `
 )
 
-func JournalLogs(inLabel, outLabel string) []generator.Element {
-	return []generator.Element{
+func JournalLogs(inLabel, outLabel string) []framework.Element {
+	return []framework.Element{
 		Remap{
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
@@ -112,8 +112,8 @@ func JournalLogs(inLabel, outLabel string) []generator.Element {
 	}
 }
 
-func DropJournalDebugLogs(inLabel, outLabel string) []generator.Element {
-	return []generator.Element{
+func DropJournalDebugLogs(inLabel, outLabel string) []framework.Element {
+	return []framework.Element{
 		Filter{
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),

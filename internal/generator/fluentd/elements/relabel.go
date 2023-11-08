@@ -1,11 +1,11 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type Relabel struct {
-	generator.OutLabel
+	framework.OutLabel
 }
 
 func (r Relabel) Name() string {

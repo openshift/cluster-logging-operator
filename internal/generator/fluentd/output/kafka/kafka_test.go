@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"testing"
 
@@ -11,12 +12,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Generate fluentd config", func() {
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		var bufspec *logging.FluentdBufferSpec = nil
 		if clspec.Fluentd != nil &&
 			clspec.Fluentd.Buffer != nil {

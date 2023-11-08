@@ -1,11 +1,11 @@
 package source
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type KubernetesLogs struct {
-	generator.ComponentID
+	framework.ComponentID
 	Desc         string
 	ExcludePaths string
 }

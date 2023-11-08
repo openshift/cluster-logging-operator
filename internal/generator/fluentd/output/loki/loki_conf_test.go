@@ -1,6 +1,7 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"sort"
 	"testing"
@@ -12,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -43,21 +43,21 @@ var _ = Describe("outputLabelConf", func() {
 	})
 	Context("#setTLSProfileFromOptions", func() {
 		var (
-			op           generator.Options
+			op           framework.Options
 			lokiTemplate Loki
 		)
 		BeforeEach(func() {
 			lokiTemplate = Loki{}
-			op = generator.Options{}
+			op = framework.Options{}
 		})
 		It("should set the ciphers", func() {
 			ciphers := "abc,123"
-			op[generator.Ciphers] = ciphers
+			op[framework.Ciphers] = ciphers
 			lokiTemplate.setTLSProfileFromOptions(op)
 			Expect(lokiTemplate.CipherSuites).To(Equal(ciphers))
 		})
 		DescribeTable("should convert the TLS min_version", func(version, exp string) {
-			op[generator.MinTLSVersion] = version
+			op[framework.MinTLSVersion] = version
 			lokiTemplate.setTLSProfileFromOptions(op)
 			Expect(lokiTemplate.TLSMinVersion).To(Equal(exp))
 		},
@@ -72,7 +72,7 @@ var _ = Describe("outputLabelConf", func() {
 var _ = Describe("[internal][generator][fluentd][output][loki] #Conf", func() {
 	defaultTLS := "VersionTLS12"
 	defaultCiphers := "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		var bufspec *logging.FluentdBufferSpec = nil
 		if clspec.Fluentd != nil &&
 			clspec.Fluentd.Buffer != nil {
@@ -99,9 +99,9 @@ var _ = Describe("[internal][generator][fluentd][output][loki] #Conf", func() {
 					},
 				},
 			},
-			Options: generator.Options{
-				generator.MinTLSVersion: defaultTLS,
-				generator.Ciphers:       defaultCiphers,
+			Options: framework.Options{
+				framework.MinTLSVersion: defaultTLS,
+				framework.Ciphers:       defaultCiphers,
 			},
 			ExpectedConf: `
 <label @LOKI_RECEIVER>

@@ -2,19 +2,18 @@ package http
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize/schema/otel"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -126,7 +125,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			normalize.DedotLabels(dedottedID, []string{component}),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
-			output.NewBuffer(id),
+			common.NewBuffer(id),
 			Request(o),
 		},
 		TLSConf(o, secret, op),
@@ -182,12 +181,12 @@ func Method(h *logging.Http) string {
 	return "post"
 }
 
-func Request(o logging.OutputSpec) *output.Request {
+func Request(o logging.OutputSpec) *common.Request {
 	timeout := DefaultHttpTimeoutSecs
 	if o.Http != nil && o.Http.Timeout != 0 {
 		timeout = o.Http.Timeout
 	}
-	req := output.NewRequest(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)))
+	req := common.NewRequest(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)))
 	req.TimeoutSecs.Value = timeout
 	if o.Http != nil && len(o.Http.Headers) != 0 {
 		req.SetHeaders(o.Http.Headers)
@@ -204,7 +203,7 @@ func Encoding(o logging.OutputSpec) Element {
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
@@ -221,11 +220,11 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			Desc:        "Basic Auth Config",
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		})
-		if security.HasUsernamePassword(secret) {
+		if common.HasUsernamePassword(secret) {
 			hasBasicAuth = true
 			up := UserNamePass{
-				Username: security.GetFromSecret(secret, constants.ClientUsername),
-				Password: security.GetFromSecret(secret, constants.ClientPassword),
+				Username: common.GetFromSecret(secret, constants.ClientUsername),
+				Password: common.GetFromSecret(secret, constants.ClientPassword),
 			}
 			conf = append(conf, up)
 		}
@@ -242,12 +241,12 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if secret != nil {
 		// Inject token from secret, either provided by user using a custom secret
 		// or from the default logcollector service account.
-		if security.HasBearerTokenFileKey(secret) {
+		if common.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
 				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 			}, BearerToken{
-				Token: security.GetFromSecret(secret, constants.BearerTokenFileKey),
+				Token: common.GetFromSecret(secret, constants.BearerTokenFileKey),
 			})
 		}
 	}

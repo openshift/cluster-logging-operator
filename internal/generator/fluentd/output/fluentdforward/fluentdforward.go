@@ -2,11 +2,11 @@ package fluentdforward
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
@@ -25,8 +25,8 @@ type FluentdForward struct {
 	StoreID        string
 	Host           string
 	Port           string
-	BufferConfig   []generator.Element
-	SecurityConfig []generator.Element
+	BufferConfig   []framework.Element
+	SecurityConfig []framework.Element
 }
 
 func (ff FluentdForward) Name() string {
@@ -53,11 +53,11 @@ keepalive_timeout 30s
 `
 }
 
-func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op generator.Options) []generator.Element {
-	return []generator.Element{
+func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op framework.Options) []framework.Element {
+	return []framework.Element{
 		elements.FromLabel{
 			InLabel: helpers.LabelName(o.Name),
-			SubElements: []generator.Element{
+			SubElements: []framework.Element{
 				normalize.DedotLabels(),
 				Output(bufspec, secret, o, op),
 			},
@@ -65,7 +65,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 	}
 }
 
-func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op generator.Options) generator.Element {
+func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op framework.Options) framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
@@ -88,12 +88,12 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	}
 }
 
-func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []generator.Element {
+func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []framework.Element {
 	// URL is parasable, checked at input sanitization
 	u, _ := url.Parse(o.URL)
-	conf := []generator.Element{}
+	conf := []framework.Element{}
 	if url.IsTLSScheme(u.Scheme) {
-		conf = []generator.Element{
+		conf = []framework.Element{
 			TLS{
 				InsecureMode: o.TLS != nil && o.TLS.InsecureSkipVerify,
 			},

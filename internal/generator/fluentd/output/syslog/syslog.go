@@ -3,13 +3,12 @@ package syslog
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"regexp"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
@@ -87,7 +86,7 @@ keep_alive_intvl 7200
 }
 
 func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
-	if _, ok := op[generator.UseOldRemoteSyslogPlugin]; ok {
+	if _, ok := op[UseOldRemoteSyslogPlugin]; ok {
 		return ConfOld(bufspec, secret, o, op)
 	}
 	var addLogSource Element = nil

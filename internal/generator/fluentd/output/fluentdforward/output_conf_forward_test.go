@@ -3,8 +3,8 @@ package fluentdforward_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/fluentdforward"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	corev1 "k8s.io/api/core/v1"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -15,10 +15,10 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 
 	var (
 		outputs []logging.OutputSpec
-		g       generator.Generator
+		g       framework.Generator
 	)
 	BeforeEach(func() {
-		g = generator.MakeGenerator()
+		g = framework.MakeGenerator()
 	})
 
 	Context("for a secure endpoint", func() {

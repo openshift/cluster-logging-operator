@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +15,7 @@ import (
 var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 
 	It("should do nothing if the forwarder is nil", func() {
-		options := generator.Options{}
+		options := framework.Options{}
 		EvaluateAnnotationsForEnabledCapabilities(nil, options)
 		Expect(options).To(BeEmpty(), "Exp no entries added to the options")
 	})
@@ -23,7 +23,7 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		if len(pairs)%2 != 0 {
 			Fail("Annotations must be passed as pairs to the test table")
 		}
-		options := generator.Options{}
+		options := framework.Options{}
 		forwarder := &logging.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{},

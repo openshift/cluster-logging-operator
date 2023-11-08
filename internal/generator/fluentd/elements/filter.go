@@ -1,13 +1,13 @@
 package elements
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
 type Filter struct {
 	Desc      string
 	MatchTags string
-	Element   generator.Element
+	Element   framework.Element
 }
 
 func (f Filter) Name() string {

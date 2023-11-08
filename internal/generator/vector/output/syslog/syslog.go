@@ -2,17 +2,17 @@ package syslog
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"net/url"
 	"regexp"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -134,7 +134,7 @@ func Encoding(o logging.OutputSpec) Element {
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			return []Element{tlsConf}
 		}
 	}

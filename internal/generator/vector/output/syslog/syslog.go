@@ -11,6 +11,7 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -86,6 +87,7 @@ severity = "{{.Severity}}"
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := vectorhelpers.FormatComponentID(o.Name)
+	dedottedID := normalize.ID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -94,7 +96,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	u, _ := url.Parse(o.URL)
 	return MergeElements(
 		[]Element{
-			Output(o, inputs, secret, op, u.Scheme, u.Host),
+			normalize.DedotLabels(dedottedID, inputs),
+			Output(o, []string{dedottedID}, secret, op, u.Scheme, u.Host),
 			Encoding(o),
 		},
 		TLSConf(o, secret, op),

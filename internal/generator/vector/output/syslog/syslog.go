@@ -85,9 +85,10 @@ severity = "{{.Severity}}"
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := vectorhelpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	u, _ := url.Parse(o.URL)

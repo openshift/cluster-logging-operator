@@ -116,7 +116,11 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.http_receiver.request]
+retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
@@ -221,7 +225,11 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.http_receiver.request]
+retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
@@ -239,7 +247,7 @@ token = "token-for-custom-http"
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"k1": "v1",
 								"k2": "v2",
@@ -323,7 +331,11 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.http_receiver.request]
+retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -341,7 +353,7 @@ token = "token-for-custom-http"
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"k1": "v1",
 								"k2": "v2",
@@ -421,11 +433,14 @@ type = "http"
 inputs = ["http_receiver_dedot"]
 uri = "https://my-logstore.com"
 method = "post"
-
 [sinks.http_receiver.encoding]
 codec = "json"
 
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.http_receiver.request]
+retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -443,7 +458,7 @@ token = "token-for-custom-http"
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"k1": "v1",
 								"k2": "v2",
@@ -533,7 +548,11 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
 [sinks.http_receiver.request]
+retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 

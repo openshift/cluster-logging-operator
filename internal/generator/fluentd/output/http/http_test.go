@@ -98,7 +98,7 @@ var _ = Describe("Generate fluentd config", func() {
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com/logs/app-logs",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"k1": "v1",
 								"k2": "v2",
@@ -170,7 +170,7 @@ var _ = Describe("Generate fluentd config", func() {
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com/logs/app-logs",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"k1": "v1",
 								"k2": "v2",
@@ -253,7 +253,7 @@ var _ = Describe("Generate fluentd config", func() {
 						Name: "http-receiver",
 						URL:  "https://my-logstore.com/logs/app-logs",
 						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
-							Timeout: "50",
+							Timeout: 50,
 							Headers: map[string]string{
 								"Content-Type": "application/json",
 								"k1":           "v1",

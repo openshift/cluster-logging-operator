@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -37,7 +38,6 @@ endpoints = ["{{.Endpoint}}"]
 bulk.index = "{{ "{{ write_index }}" }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 {{- if ne .Version 0 }}
 api_version = "v{{ .Version }}"
@@ -218,19 +218,23 @@ func ID(id1, id2 string) string {
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputs := []Element{}
-	outputName := helpers.FormatComponentID(o.Name)
+	id := helpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			SetESIndex(ID(outputName, "add_es_index"), inputs, o, op),
-			FlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
-			Debug(outputName, helpers.MakeInputs([]string{ID(outputName, "dedot_and_flatten")}...)),
+			SetESIndex(ID(id, "add_es_index"), inputs, o, op),
+			FlattenLabels(ID(id, "dedot_and_flatten"), []string{ID(id, "add_es_index")}),
+			Debug(id, helpers.MakeInputs([]string{ID(id, "dedot_and_flatten")}...)),
 		}
 	}
+	request := output.NewRequest(id)
+	request.TimeoutSecs.Value = 2147483648
 	outputs = MergeElements(outputs,
 		[]Element{
-			SetESIndex(ID(outputName, "add_es_index"), inputs, o, op),
-			FlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
-			Output(o, []string{ID(outputName, "dedot_and_flatten")}, secret, op),
+			SetESIndex(ID(id, "add_es_index"), inputs, o, op),
+			FlattenLabels(ID(id, "dedot_and_flatten"), []string{ID(id, "add_es_index")}),
+			Output(o, []string{ID(id, "dedot_and_flatten")}, secret, op),
+			output.NewBuffer(id),
+			request,
 		},
 		TLSConf(o, secret, op),
 		BasicAuth(o, secret),

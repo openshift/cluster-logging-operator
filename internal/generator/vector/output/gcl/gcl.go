@@ -2,6 +2,7 @@ package gcl
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
@@ -62,19 +63,19 @@ node_name = "{{"{{hostname}}"}}"
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := vectorhelpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	if o.GoogleCloudLogging == nil {
 		return []Element{}
 	}
 	g := o.GoogleCloudLogging
-	outputName := helpers.FormatComponentID(o.Name)
-	dedottedID := normalize.ID(outputName, "dedot")
+	dedottedID := normalize.ID(id, "dedot")
 	gcl := GoogleCloudLogging{
-		ComponentID:     helpers.FormatComponentID(o.Name),
+		ComponentID:     id,
 		Inputs:          helpers.MakeInputs(inputs...),
 		LogDestination:  LogDestination(g),
 		LogID:           g.LogID,
@@ -83,7 +84,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	}
 	setInput(&gcl, []string{dedottedID})
 	return MergeElements(
-		[]Element{normalize.DedotLabels(dedottedID, inputs), gcl},
+		[]Element{
+			normalize.DedotLabels(dedottedID, inputs),
+			gcl,
+			output.NewBuffer(id),
+			output.NewRequest(id),
+		},
 		TLSConf(o, secret, op),
 	)
 }

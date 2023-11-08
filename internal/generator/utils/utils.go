@@ -7,6 +7,9 @@ import (
 )
 
 func ToHeaderStr(h map[string]string, formatStr string) string {
+	if len(h) == 0 {
+		return ""
+	}
 	sortedKeys := make([]string, len(h))
 	i := 0
 	for k := range h {

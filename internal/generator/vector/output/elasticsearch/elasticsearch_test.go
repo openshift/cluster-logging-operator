@@ -150,9 +150,14 @@ endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 # Basic Auth Config
 [sinks.es_1.auth]
@@ -287,9 +292,14 @@ endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
@@ -413,9 +423,14 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", helpers.ConfGenerateTest{
@@ -576,9 +591,14 @@ endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
@@ -688,9 +708,14 @@ endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_2.buffer]
+when_full = "drop_newest"
+[sinks.es_2.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 
 [sinks.es_2.tls]
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
@@ -832,9 +857,14 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with StructuredTypeName", helpers.ConfGenerateTest{
@@ -967,9 +997,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with both StructuredTypeKey and StructuredTypeName", helpers.ConfGenerateTest{
@@ -1108,9 +1142,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with StructuredTypeKey, StructuredTypeName, container annotations enabled", helpers.ConfGenerateTest{
@@ -1262,9 +1300,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("without an Elasticsearch version", helpers.ConfGenerateTest{
@@ -1383,9 +1425,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with an Elasticsearch version less than our default", helpers.ConfGenerateTest{
@@ -1513,9 +1559,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v5"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with our default Elasticsearch version", helpers.ConfGenerateTest{
@@ -1643,9 +1693,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v6"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with Elasticsearch version 7", helpers.ConfGenerateTest{
@@ -1773,9 +1827,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v7"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 		Entry("with an Elasticsearch version greater than latest version", helpers.ConfGenerateTest{
@@ -1903,9 +1961,13 @@ endpoints = ["http://es.svc.infra.cluster:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
-request.timeout_secs = 2147483648
 id_key = "_id"
 api_version = "v9"
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
 `,
 		}),
 	)

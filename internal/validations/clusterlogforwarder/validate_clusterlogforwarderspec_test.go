@@ -1123,12 +1123,19 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		)).Build()
 		extras := map[string]bool{}
 
+		const (
+			pipelineName = "test"
+			outputName   = "my-output"
+			filterName   = "my-policy"
+			esURL        = "https://es.svc.infra.cluster:9999"
+		)
+
 		It("should pass with filter", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Filters: []loggingv1.FilterSpec{
 					{
-						Name: "my-policy",
-						Type: "kubeAPIAudit",
+						Name: filterName,
+						Type: loggingv1.FormatKubeAPIAudit,
 						FilterTypeSpec: loggingv1.FilterTypeSpec{
 							KubeAPIAudit: &loggingv1.KubeAPIAudit{
 								Rules: []v1.PolicyRule{{
@@ -1147,9 +1154,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 				Outputs: []loggingv1.OutputSpec{
 					{
-						Name: "my-output",
+						Name: outputName,
 						Type: loggingv1.OutputTypeElasticsearch,
-						URL:  "https://es.svc.infra.cluster:9999",
+						URL:  esURL,
 						OutputTypeSpec: loggingv1.OutputTypeSpec{
 							Elasticsearch: &loggingv1.Elasticsearch{},
 						},
@@ -1157,10 +1164,10 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 				Pipelines: []loggingv1.PipelineSpec{
 					{
-						FilterRefs: []string{"my-policy"},
-						InputRefs:  []string{"application", "infrastructure", "audit"},
-						OutputRefs: []string{"my-output"},
-						Name:       "test",
+						FilterRefs: []string{filterName},
+						InputRefs:  []string{loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure, loggingv1.InputNameAudit},
+						OutputRefs: []string{outputName},
+						Name:       pipelineName,
 					},
 				},
 			}
@@ -1170,7 +1177,37 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			clf.Namespace = constants.OpenshiftNS
 
 			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
-			Expect(clfStatus.Pipelines["test"]).To(HaveCondition("Ready", true, "", ""))
+			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
+		})
+
+		It("should fail with undefined filter in pipeline", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: outputName,
+						Type: loggingv1.OutputTypeElasticsearch,
+						URL:  esURL,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Elasticsearch: &loggingv1.Elasticsearch{},
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						FilterRefs: []string{"does-not-exist"},
+						InputRefs:  []string{loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure, loggingv1.InputNameAudit},
+						OutputRefs: []string{outputName},
+						Name:       pipelineName,
+					},
+				},
+			}
+			clf := loggingv1.ClusterLogForwarder{}
+			clf.Spec = *forwarderSpec
+			clf.Name = constants.SingletonName
+			clf.Namespace = constants.OpenshiftNS
+
+			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
+			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid: unrecognized filters*"))
 		})
 
 	})

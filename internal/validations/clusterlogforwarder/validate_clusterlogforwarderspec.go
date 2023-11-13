@@ -183,10 +183,10 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		}
 
 		validPort := func(port int32) bool {
-			return port == 0 || (port > 1023 && port < 65536)
+			return port > 1023 && port < 65536
 		}
-		isHTTPReceiver := func(input loggingv1.InputSpec) bool {
-			return input.Receiver != nil && input.Receiver.HTTP != nil
+		isAReceiver := func(input loggingv1.InputSpec) bool {
+			return input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil
 		}
 
 		switch {
@@ -205,12 +205,24 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("inputspec cannot have a negative limit threshold")
 		case input.Receiver != nil && !extras[constants.VectorName]:
 			badInput("ReceiverSpecs are only supported for the vector log collector")
-		case input.Receiver != nil && input.Receiver.HTTP == nil:
-			badInput("ReceiverSpec must define an HTTP receiver")
-		case isHTTPReceiver(input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
-			badInput("invalid format specified for HTTP receiver")
-		case isHTTPReceiver(input) && !validPort(input.Receiver.HTTP.Port):
+		case input.Receiver != nil && input.Receiver.ReceiverTypeSpec == nil:
+			badInput("invalid ReceiverTypeSpec specified for receiver")
+		case input.Receiver != nil && input.Receiver.Type != loggingv1.ReceiverTypeHttp && input.Receiver.Type != loggingv1.ReceiverTypeSyslog:
+			badInput("invalid Type specified for receiver")
+		case input.Receiver != nil && input.Receiver.Type == loggingv1.ReceiverTypeHttp && input.Receiver.Syslog != nil:
+			badInput("mismatched Type specified for receiver, specified HTTP and have Syslog")
+		case input.Receiver != nil && input.Receiver.Type == loggingv1.ReceiverTypeSyslog && input.Receiver.HTTP != nil:
+			badInput("mismatched Type specified for receiver, specified Syslog and have HTTP")
+		case isAReceiver(input) && input.Receiver.HTTP == nil && input.Receiver.Syslog == nil:
+			badInput("ReceiverSpec must define either HTTP or Syslog receiver")
+		case loggingv1.IsHttpReceiver(&input) && !validPort(input.Receiver.HTTP.Port):
 			badInput("invalid port specified for HTTP receiver")
+		case loggingv1.IsSyslogReceiver(&input) && !validPort(input.Receiver.Syslog.Port):
+			badInput("invalid port specified for Syslog receiver")
+		case loggingv1.IsHttpReceiver(&input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
+			badInput("invalid format specified for HTTP receiver")
+		case loggingv1.IsSyslogReceiver(&input) && input.Receiver.Syslog.Protocol != "tcp" && input.Receiver.Syslog.Protocol != "udp":
+			badInput("invalid protocol specified for Syslog receiver")
 		default:
 			status.Inputs.Set(input.Name, condReady)
 		}

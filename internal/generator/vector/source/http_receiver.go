@@ -59,8 +59,8 @@ decoding.codec = "json"
 
 [sources.{{.ID}}.tls]
 enabled = true
-key_file = "/etc/collector/{{.ID}}/tls.key"
-crt_file = "/etc/collector/{{.ID}}/tls.crt"
+key_file = "/etc/collector/receiver/{{.ID}}/tls.key"
+crt_file = "/etc/collector/receiver/{{.ID}}/tls.crt"
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

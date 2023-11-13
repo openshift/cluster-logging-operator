@@ -18,12 +18,15 @@ const (
 
 	RawOvnAuditLogs = "raw_ovn_audit_logs"
 	OvnAuditLogs    = "ovn_audit_logs"
+
+	SyslogLogs = "syslog_logs"
 )
 
 func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op framework.Options) []framework.Element {
 	return framework.MergeElements(
 		LogSources(spec, namespace, op),
 		HttpSources(spec, op),
+		SyslogSources(spec, op),
 		MetricsSources(InternalMetricsSourceName),
 	)
 }

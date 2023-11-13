@@ -128,9 +128,12 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 			FromInputWithVisitor(httpInputName,
 				func(spec *logging.InputSpec) {
 					spec.Receiver = &logging.ReceiverSpec{
-						HTTP: &logging.HTTPReceiver{
-							Port:   servicePortNum,
-							Format: logging.FormatKubeAPIAudit,
+						Type: logging.ReceiverTypeHttp,
+						ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+							HTTP: &logging.HTTPReceiver{
+								Port:   servicePortNum,
+								Format: logging.FormatKubeAPIAudit,
+							},
 						},
 					}
 				}).ToHttpOutput()

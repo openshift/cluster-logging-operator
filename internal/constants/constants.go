@@ -138,8 +138,8 @@ const (
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 	OTELSchema             = "opentelemetry"
 
-	HTTPReceiverPort      = 8443
-	LabelHTTPInputService = "http-input-service"
+	LabelHTTPInputService   = "http-input-service"
+	LabelSyslogInputService = "syslog-input-service"
 
 	Korrel8rName      = "korrel8r"
 	Korrel8rNamespace = "korrel8r"

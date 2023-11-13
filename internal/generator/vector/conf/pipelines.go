@@ -36,7 +36,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op framework.Options) []fr
 					if input.Application != nil {
 						inputs = append(inputs, fmt.Sprintf(vinput.UserDefinedInput, inputName))
 					}
-					if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
+					if logging.IsAuditHttpReceiver(input) || logging.IsSyslogReceiver(input) {
 						inputs = append(inputs, input.Name+`_input`)
 					}
 				}

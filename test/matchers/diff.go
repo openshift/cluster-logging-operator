@@ -39,7 +39,7 @@ type lineMatcher struct {
 }
 
 func (m *lineMatcher) Match(actual interface{}) (success bool, err error) {
-	m.diff = cmp.Diff(m.normalize(actual.(string)), m.normalize(m.expected.(string)))
+	m.diff = cmp.Diff(normalize(actual.(string), m.trim), normalize(m.expected.(string), m.trim))
 	return m.diff == "", nil
 }
 
@@ -51,10 +51,10 @@ func (m *lineMatcher) NegatedFailureMessage(actual interface{}) (message string)
 	return ("Expected differences but none found.")
 }
 
-func (m *lineMatcher) normalize(in string) []string {
+func normalize(in string, trim bool) []string {
 	out := []string{}
 	for _, line := range strings.Split(in, "\n") {
-		if m.trim {
+		if trim {
 			line = strings.TrimSpace(line)
 		}
 		if line != "" {

@@ -44,8 +44,8 @@ func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.
 		return err, nil
 	}
 	// If SA present, validate permissions based off spec'd CLF inputs
-	clfInputs := gatherPipelineInputs(clf)
-	if err = validateServiceAccountPermissions(k8sClient, clfInputs, serviceAccount, clf.Namespace, clf.Name); err != nil {
+	clfInputs, hasReceiverInputs := gatherPipelineInputs(clf)
+	if err = validateServiceAccountPermissions(k8sClient, clfInputs, hasReceiverInputs, serviceAccount, clf.Namespace, clf.Name); err != nil {
 		return err, nil
 	}
 	return nil, nil
@@ -67,7 +67,10 @@ func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1
 // ValidateServiceAccountPermissions validates a service account for permissions to collect
 // inputs specified by the CLF.
 // ie. collect-application-logs, collect-audit-logs, collect-infrastructure-logs
-func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, serviceAccount *corev1.ServiceAccount, clfNamespace, name string) error {
+func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, hasReceiverInputs bool, serviceAccount *corev1.ServiceAccount, clfNamespace, name string) error {
+	if inputs.Len() == 0 && hasReceiverInputs {
+		return nil
+	}
 	if inputs.Len() == 0 {
 		err := errors.NewValidationError("There is an error in the input permission validation; no inputs were found to evaluate")
 		log.Error(err, "Error while evaluating ClusterLogForwarder permissions", "namespace", clfNamespace, "name", name)
@@ -98,7 +101,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 	return nil
 }
 
-func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
+func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool) {
 	inputRefs := sets.NewString()
 	inputTypes := sets.NewString()
 
@@ -112,16 +115,17 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) sets.String {
 		}
 	}
 
+	noOfReceivers := 0
 	for _, input := range clf.Spec.Inputs {
 		if inputRefs.Has(input.Name) && input.Application != nil {
 			inputTypes.Insert(loggingv1.InputNameApplication)
 		}
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			inputTypes.Insert(loggingv1.InputNameAudit)
+			noOfReceivers += 1
 		}
 	}
 
-	return *inputTypes
+	return *inputTypes, noOfReceivers > 0
 }
 
 func createSubjectAccessReview(user, namespace, verb, resource, name, resourceAPIGroup string) *authorizationapi.SubjectAccessReview {

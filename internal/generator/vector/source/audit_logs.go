@@ -54,3 +54,39 @@ glob_minimum_cooldown_ms = 15000
 `
 
 type K8sAuditLog = framework.ConfLiteral
+
+func NewHostAuditLog(id string) HostAuditLog {
+	return HostAuditLog{
+		ComponentID:  id,
+		Desc:         "Logs from host audit",
+		TemplateName: "inputSourceHostAuditTemplate",
+		TemplateStr:  HostAuditLogTemplate,
+	}
+}
+
+func NewK8sAuditLog(id string) K8sAuditLog {
+	return K8sAuditLog{
+		ComponentID:  id,
+		Desc:         "Logs from kubernetes audit",
+		TemplateName: "inputSourceK8sAuditTemplate",
+		TemplateStr:  K8sAuditLogTemplate,
+	}
+}
+
+func NewOpenshiftAuditLog(id string) OpenshiftAuditLog {
+	return OpenshiftAuditLog{
+		ComponentID:  id,
+		Desc:         "Logs from openshift audit",
+		TemplateName: "inputSourceOpenShiftAuditTemplate",
+		TemplateStr:  OpenshiftAuditLogTemplate,
+	}
+}
+
+func NewOVNAuditLog(id string) OVNAuditLog {
+	return OVNAuditLog{
+		ComponentID:  id,
+		Desc:         "Logs from ovn audit",
+		TemplateName: "inputSourceOVNAuditTemplate",
+		TemplateStr:  OVNAuditLogTemplate,
+	}
+}

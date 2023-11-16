@@ -9,6 +9,5 @@ VECTOR_DATA_DIR=%s
 echo "Creating the directory used for persisting Vector state $VECTOR_DATA_DIR"
 mkdir -p $VECTOR_DATA_DIR
 echo "Starting Vector process..."
-exec "/usr/bin/vector"
-
+exec /usr/bin/vector -c /etc/vector/vector.toml
 `

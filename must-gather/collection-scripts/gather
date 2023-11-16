@@ -49,6 +49,7 @@ cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
 cluster_resources+=(clusterversion)
 cluster_resources+=(machineconfigpool)
+cluster_resources+=(customresourcedefinitions)
 
 log "-BEGIN inspecting CRs..." >> "${LOGFILE_PATH}"
 for cr in "${cluster_resources[@]}" ; do
@@ -67,7 +68,6 @@ resources+=(serviceaccounts)
 resources+=(events)
 # clusterlogging is only in the openshift-logging namespace, but it should not impact a lot to run the inspect in the other namespaces
 resources+=(clusterlogging)
-# with multi log forwarder, the clusterlogforwarder can be in custom namespaces, and they are not collected here
 resources+=(clusterlogforwarder)
 
 log "BEGIN inspecting namespaces ..." >> "${LOGFILE_PATH}"

@@ -26,10 +26,12 @@ const (
 	InputContainerLogs = "container_logs"
 	InputJournalLogs   = "journal_logs"
 
-	RouteApplicationLogs    = "route_application_logs"
-	SourceTransformThrottle = "source_throttle"
+	RouteApplicationLogs = "route_application_logs"
 
 	SrcPassThrough = "."
+
+	UserDefinedSourceThrottle = `source_throttle_%s`
+	perContainerLimitKeyField = `"{{ file }}"`
 )
 
 var (
@@ -45,9 +47,7 @@ var (
 	AddLogTypeInfra = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
 	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 
-	UserDefinedInput          = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
-	UserDefinedSourceThrottle = fmt.Sprintf("%s_%%s", SourceTransformThrottle)
-	perContainerLimitKeyField = `"{{ file }}"`
+	UserDefinedInput = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
 
 	MatchNS = func(ns string) string {
 		return helpers.Eq(K8sNamespaceName, ns)
@@ -76,12 +76,12 @@ func AddThrottle(spec *logging.InputSpec) []Element {
 		threshold = spec.Application.GroupLimit.MaxRecordsPerSecond
 	}
 
-	el = append(el, normalize.Throttle{
-		ComponentID: fmt.Sprintf(UserDefinedSourceThrottle, spec.Name),
-		Inputs:      helpers.MakeInputs([]string{input}...),
-		Threshold:   threshold,
-		KeyField:    throttle_key,
-	})
+	el = append(el, normalize.NewThrottle(
+		fmt.Sprintf(UserDefinedSourceThrottle, spec.Name),
+		[]string{input},
+		threshold,
+		throttle_key,
+	)...)
 
 	return el
 }

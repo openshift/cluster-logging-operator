@@ -65,6 +65,10 @@ resources+=(rolebindings)
 resources+=(configmaps)
 resources+=(serviceaccounts)
 resources+=(events)
+# clusterlogging is only in the openshift-logging namespace, but it should not impact a lot to run the inspect in the other namespaces
+resources+=(clusterlogging)
+# with multi log forwarder, the clusterlogforwarder can be in custom namespaces, and they are not collected here
+resources+=(clusterlogforwarder)
 
 log "BEGIN inspecting namespaces ..." >> "${LOGFILE_PATH}"
 
@@ -121,7 +125,7 @@ if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   if [ "$found" != "" ] ; then
     KUBECACHEDIR=${BASE_COLLECTION_PATH}/cache-dir ${SCRIPT_DIR}/gather_visualization_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1
   fi
-  log "BEGIN gathering CLO resources ..." >> "${LOGFILE_PATH}"
+  log "END gathering logstorage resources ..." >> "${LOGFILE_PATH}"
 else
   log "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${LOGFILE_PATH}" 2>&1
 fi

@@ -38,16 +38,12 @@ if [ $NAMESPACE == "openshift-logging" ]; then
   done
 fi
 
-log "Gathering data for 'clusterlogging' and 'clusterlogforwarder' from namespace: $NAMESPACE"
-for r in "clusterlogging" "clusterlogforwarder" ; do
-  names="$(oc -n $NAMESPACE get $r --ignore-not-found -o jsonpath='{.items[*].metadata.name}' | sort -u)"
-  for name in ${names[@]}; do
-    data="$(oc -n $NAMESPACE get $r ${name} --ignore-not-found -o yaml)"
-    if [ "$data" != "" ] ; then
-      echo $data > "${clo_folder}/${r}_${name}.yaml"
-    fi
-  done
-done
+log "Gathering data for 'clusterlogging' and 'clusterlogforwarder' from ${BASE_COLLECTION_PATH}/namespaces/openshift-logging/logging.openshift.io/"
+# As they are already in "namespaces/openshift-logging/logging.openshift.io/" and can be seen with `omc`, maybe not needed to add them here
+cp ${BASE_COLLECTION_PATH}/namespaces/openshift-logging/logging.openshift.io/clusterloggings/instance.yaml ${clo_folder}/clusterlogging_instance.yaml
+# for multi log forwarder feature (for now, only the `clusterlogforwarder` in `openshift-logging` is collected by the `gather` script
+mkdir -p "${clo_folder}/clf"
+cp ${BASE_COLLECTION_PATH}/namespaces/openshift-logging/logging.openshift.io/clusterlogforwarders/*.yaml ${clo_folder}/clf/
 
 log "Gathering 'secrets' from logging namespace: $NAMESPACE"
 oc -n $NAMESPACE get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1

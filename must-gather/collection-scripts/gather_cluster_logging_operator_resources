@@ -44,7 +44,7 @@ for r in "clusterlogging" "clusterlogforwarder" ; do
   for name in ${names[@]}; do
     data="$(oc -n $NAMESPACE get $r ${name} --ignore-not-found -o yaml)"
     if [ "$data" != "" ] ; then
-      echo $data > "${clo_folder}/${r}_${name}.yaml"
+      echo "${data}" > "${clo_folder}/${r}_${name}.yaml"
     fi
   done
 done

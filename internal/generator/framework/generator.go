@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"sort"
 	"strings"
 	"text/template"
@@ -85,6 +86,7 @@ func (g Generator) generate(es []Element) (string, error) {
 		t = template.Must(t.Parse(e.Template()))
 		err := t.ExecuteTemplate(b, e.Name(), e)
 		if err != nil {
+			log.V(0).Error(err, "Error in conf generation")
 			return "error in conf generation", err
 		}
 		if i < len(es)-1 {

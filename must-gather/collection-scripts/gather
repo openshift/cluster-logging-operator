@@ -30,6 +30,8 @@ cluster_resources+=(nodes)
 cluster_resources+=(clusterroles)
 cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
+cluster_resources+=(clusterversion)
+cluster_resources+=(machineconfigpool)
 
 log "BEGIN inspecting CRs..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 for cr in "${cluster_resources[@]}" ; do

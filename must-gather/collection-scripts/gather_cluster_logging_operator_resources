@@ -38,17 +38,6 @@ if [ $NAMESPACE == "openshift-logging" ]; then
   done
 fi
 
-log "Gathering data for 'clusterlogging' and 'clusterlogforwarder' from namespace: $NAMESPACE"
-for r in "clusterlogging" "clusterlogforwarder" ; do
-  names="$(oc -n $NAMESPACE get $r --ignore-not-found -o jsonpath='{.items[*].metadata.name}' | sort -u)"
-  for name in ${names[@]}; do
-    data="$(oc -n $NAMESPACE get $r ${name} --ignore-not-found -o yaml)"
-    if [ "$data" != "" ] ; then
-      echo $data > "${clo_folder}/${r}_${name}.yaml"
-    fi
-  done
-done
-
 log "Gathering 'secrets' from logging namespace: $NAMESPACE"
 oc -n $NAMESPACE get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1
 

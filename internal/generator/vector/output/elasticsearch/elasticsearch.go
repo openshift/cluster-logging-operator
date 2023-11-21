@@ -211,27 +211,30 @@ source = '''
 	}
 }
 
-func ID(id1, id2 string) string {
-	return fmt.Sprintf("%s_%s", id1, id2)
+func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	id := helpers.FormatComponentID(o.Name)
+	return New(id, o, inputs, secret, op)
 }
 
-func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputs := []Element{}
-	id := helpers.FormatComponentID(o.Name)
+
+	esIndexID := helpers.MakeID(id, "add_es_index")
+	dedotID := helpers.MakeID(id, "dedot_and_flatten")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			SetESIndex(ID(id, "add_es_index"), inputs, o, op),
-			FlattenLabels(ID(id, "dedot_and_flatten"), []string{ID(id, "add_es_index")}),
-			Debug(id, helpers.MakeInputs([]string{ID(id, "dedot_and_flatten")}...)),
+			SetESIndex(esIndexID, inputs, o, op),
+			FlattenLabels(dedotID, []string{esIndexID}),
+			Debug(id, helpers.MakeInputs([]string{dedotID}...)),
 		}
 	}
 	request := common.NewRequest(id)
 	request.TimeoutSecs.Value = 2147483648
 	outputs = MergeElements(outputs,
 		[]Element{
-			SetESIndex(ID(id, "add_es_index"), inputs, o, op),
-			FlattenLabels(ID(id, "dedot_and_flatten"), []string{ID(id, "add_es_index")}),
-			Output(o, []string{ID(id, "dedot_and_flatten")}, secret, op),
+			SetESIndex(esIndexID, inputs, o, op),
+			FlattenLabels(dedotID, []string{esIndexID}),
+			Output(id, o, []string{dedotID}, secret, op),
 			common.NewBuffer(id),
 			request,
 		},
@@ -242,9 +245,9 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	return outputs
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	es := Elasticsearch{
-		ComponentID: helpers.FormatComponentID(o.Name),
+		ComponentID: id,
 		Endpoint:    o.URL,
 		Inputs:      helpers.MakeInputs(inputs...),
 	}

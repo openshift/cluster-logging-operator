@@ -2,12 +2,10 @@ package splunk
 
 import (
 	"fmt"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"strings"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -61,17 +59,21 @@ codec = {{.Codec}}
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := vectorhelpers.FormatComponentID(o.Name)
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	dedottedID := normalize.ID(id, "dedot")
+	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(o, []string{dedottedID}, secret, op),
-			Encoding(o),
+			Output(id, o, []string{dedottedID}, secret, op),
+			Encoding(id, o),
 			common.NewBuffer(id),
 			common.NewRequest(id),
 		},
@@ -79,18 +81,18 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	return Splunk{
-		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
+		ComponentID:  id,
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
 		DefaultToken: common.GetFromSecret(secret, constants.SplunkHECTokenKey),
 	}
 }
 
-func Encoding(o logging.OutputSpec) Element {
+func Encoding(id string, o logging.OutputSpec) Element {
 	return SplunkEncoding{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: id,
 		Codec:       splunkEncodingJson,
 	}
 }

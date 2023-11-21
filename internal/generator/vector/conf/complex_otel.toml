@@ -361,7 +361,7 @@ if .log_type == "application" {
 }
 '''
 
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["http_receiver_otel"]
 source = '''
@@ -370,7 +370,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"

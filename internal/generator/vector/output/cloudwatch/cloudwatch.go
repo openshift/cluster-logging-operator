@@ -69,8 +69,12 @@ healthcheck.enabled = false
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := helpers.FormatComponentID(o.Name)
-	componentID := fmt.Sprintf("%s_%s", id, "normalize_group_and_streams")
-	dedottedID := normalize.ID(id, "dedot")
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	componentID := helpers.MakeID(id, "normalize_group_and_streams")
+	dedottedID := helpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),

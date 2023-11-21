@@ -1,14 +1,9 @@
 package normalize
 
 import (
-	"fmt"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
-
-func ID(id1, id2 string) string {
-	return fmt.Sprintf("%s_%s", id1, id2)
-}
 
 // Dedotting namespace labels
 // Replaces '.' and '/' with '_'

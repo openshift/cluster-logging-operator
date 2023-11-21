@@ -47,14 +47,18 @@ topic = {{.Topic}}
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	id := vectorhelpers.FormatComponentID(o.Name)
+	id := vectorhelpers.MakeID(o.Name)
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 
-	dedottedID := normalize.ID(id, "dedot")
+	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	brokers, genTlsConf := Brokers(o)
 	return MergeElements(
 		[]Element{

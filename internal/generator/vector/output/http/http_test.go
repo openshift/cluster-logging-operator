@@ -1,57 +1,50 @@
 package http
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
-
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Generate vector config", func() {
-	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
-	}
-	DescribeTable("for Http output", helpers.TestGenerateConfWith(f),
-		Entry("", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
+	DescribeTable("for Http output", func(output logging.OutputSpec, secret *corev1.Secret, op framework.Options, exp string) {
+		conf := Conf(output, []string{"application"}, secret, op) //, includeNS, excludes)
+		Expect(exp).To(EqualConfigFrom(conf))
+	},
+		Entry("",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Http: &logging.Http{
+						Headers: map[string]string{
+							"h2": "v2",
+							"h1": "v1",
 						},
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Http: &logging.Http{
-								Headers: map[string]string{
-									"h2": "v2",
-									"h1": "v1",
-								},
-								Method: "POST",
-							},
-						},
+						Method: "POST",
 					},
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"username": []byte("username"),
+					"password": []byte("password"),
 				},
 			},
-			ExpectedConf: `
+			framework.NoOptions,
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -130,37 +123,32 @@ strategy = "basic"
 user = "username"
 password = "password"
 `,
-		}),
-		Entry("with custom bearer token", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
+		),
+		Entry("with custom bearer token",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Http: &logging.Http{
+						Headers: map[string]string{
+							"h2": "v2",
+							"h1": "v1",
 						},
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Http: &logging.Http{
-								Headers: map[string]string{
-									"h2": "v2",
-									"h1": "v1",
-								},
-								Method: "POST",
-							},
-						},
+						Method: "POST",
 					},
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"token": []byte("token-for-custom-http"),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"token": []byte("token-for-custom-http"),
 				},
 			},
-			ExpectedConf: `
+			framework.NoOptions,
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -238,35 +226,30 @@ headers = {"h1"="v1","h2"="v2"}
 strategy = "bearer"
 token = "token-for-custom-http"
 `,
-		}),
-		Entry("with Http config", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
-							Timeout: 50,
-							Headers: map[string]string{
-								"k1": "v1",
-								"k2": "v2",
-							},
-						}},
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
-						},
+		),
+		Entry("with Http config",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
+					Timeout: 50,
+					Headers: map[string]string{
+						"k1": "v1",
+						"k2": "v2",
 					},
+				}},
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"token": []byte("token-for-custom-http"),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"token": []byte("token-for-custom-http"),
 				},
 			},
-			ExpectedConf: `
+			framework.NoOptions,
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -344,35 +327,30 @@ headers = {"k1"="v1","k2"="v2"}
 strategy = "bearer"
 token = "token-for-custom-http"
 `,
-		}),
-		Entry("with Http config", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
-							Timeout: 50,
-							Headers: map[string]string{
-								"k1": "v1",
-								"k2": "v2",
-							},
-						}},
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
-						},
+		),
+		Entry("with Http config",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
+					Timeout: 50,
+					Headers: map[string]string{
+						"k1": "v1",
+						"k2": "v2",
 					},
+				}},
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"token": []byte("token-for-custom-http"),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"token": []byte("token-for-custom-http"),
 				},
 			},
-			ExpectedConf: `
+			framework.NoOptions,
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -450,41 +428,36 @@ headers = {"k1"="v1","k2"="v2"}
 strategy = "bearer"
 token = "token-for-custom-http"
 `,
-		}),
-		Entry("with TLS config", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
-							Timeout: 50,
-							Headers: map[string]string{
-								"k1": "v1",
-								"k2": "v2",
-							},
-						}},
-						TLS: &logging.OutputTLSSpec{
-							InsecureSkipVerify: true,
-						},
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
-						},
+		),
+		Entry("with TLS config",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
+					Timeout: 50,
+					Headers: map[string]string{
+						"k1": "v1",
+						"k2": "v2",
 					},
+				}},
+				TLS: &logging.OutputTLSSpec{
+					InsecureSkipVerify: true,
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"token":         []byte("token-for-custom-http"),
-						"tls.crt":       []byte("-- crt-- "),
-						"tls.key":       []byte("-- key-- "),
-						"ca-bundle.crt": []byte("-- ca-bundle -- "),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"token":         []byte("token-for-custom-http"),
+					"tls.crt":       []byte("-- crt-- "),
+					"tls.key":       []byte("-- key-- "),
+					"ca-bundle.crt": []byte("-- ca-bundle -- "),
 				},
 			},
-			ExpectedConf: `
+			framework.NoOptions,
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -569,40 +542,34 @@ ca_file = "/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt"
 strategy = "bearer"
 token = "token-for-custom-http"
 `,
-		}),
-		Entry("with AnnotationEnableSchema = 'enabled' & o.HTTP.schema = 'opentelemetry'", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
+		),
+		Entry("with AnnotationEnableSchema = 'enabled' & o.HTTP.schema = 'opentelemetry'",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Http: &logging.Http{
+						Headers: map[string]string{
+							"h2": "v2",
+							"h1": "v1",
 						},
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Http: &logging.Http{
-								Headers: map[string]string{
-									"h2": "v2",
-									"h1": "v1",
-								},
-								Method: "POST",
-								Schema: constants.OTELSchema,
-							},
-						},
+						Method: "POST",
+						Schema: constants.OTELSchema,
 					},
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"username": []byte("username"),
+					"password": []byte("password"),
 				},
 			},
-			Options: framework.Options{constants.AnnotationEnableSchema: "true"},
-			ExpectedConf: `
+			framework.Options{constants.AnnotationEnableSchema: "true"},
+			`
 # Normalize log records to OTEL schema
 [transforms.http_receiver_otel]
 type = "remap"
@@ -722,31 +689,25 @@ strategy = "basic"
 user = "username"
 password = "password"
 `,
-		}),
-		Entry("with AnnotationEnableSchema = 'enabled' & no HTTP spec", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeHttp,
-						Name: "http-receiver",
-						URL:  "https://my-logstore.com",
-						Secret: &logging.OutputSecretSpec{
-							Name: "http-receiver",
-						},
-						OutputTypeSpec: logging.OutputTypeSpec{},
-					},
+		),
+		Entry("with AnnotationEnableSchema = 'enabled' & no HTTP spec",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				Secret: &logging.OutputSecretSpec{
+					Name: "http-receiver",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{},
+			},
+			&corev1.Secret{
+				Data: map[string][]byte{
+					"username": []byte("username"),
+					"password": []byte("password"),
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"http-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
-				},
-			},
-			Options: framework.Options{constants.AnnotationEnableSchema: "true"},
-			ExpectedConf: `
+			framework.Options{constants.AnnotationEnableSchema: "true"},
+			`
 [transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
@@ -824,7 +785,7 @@ strategy = "basic"
 user = "username"
 password = "password"
 `,
-		}),
+		),
 	)
 })
 

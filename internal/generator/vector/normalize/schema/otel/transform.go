@@ -1,17 +1,12 @@
 package otel
 
 import (
-	"fmt"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
-
-func ID(id1, id2 string) string {
-	return fmt.Sprintf("%s_%s", id1, id2)
-}
 
 func Transform(id string, inputs []string) Element {
 	return Remap{

@@ -60,6 +60,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 func (clusterRequest *ClusterLoggingRequest) SetOutputSecrets() {
 	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.Forwarder.Spec.Outputs))
+
 	for _, output := range clusterRequest.Forwarder.Spec.Outputs {
 		output := output // Don't bind range variable.
 		if output.Secret == nil {
@@ -68,5 +69,13 @@ func (clusterRequest *ClusterLoggingRequest) SetOutputSecrets() {
 		// Should be able to get secret because output has been validated
 		secret, _ := clusterRequest.GetSecret(output.Secret.Name)
 		clusterRequest.OutputSecrets[output.Name] = secret
+	}
+
+	// Use logcollector SA token/ca.crt for the legacy case
+	if clusterRequest.Forwarder.Spec.ServiceAccountName == constants.CollectorServiceAccountName {
+		tokenSecret, err := clusterRequest.GetSecret(constants.LogCollectorToken)
+		if err == nil {
+			clusterRequest.OutputSecrets[constants.LogCollectorToken] = tokenSecret
+		}
 	}
 }

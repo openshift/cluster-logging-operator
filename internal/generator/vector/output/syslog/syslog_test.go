@@ -14,9 +14,57 @@ import (
 var _ = Describe("vector syslog clf output", func() {
 	const (
 		xyzDefaults = `
+[transforms.syslog_xyz_dedot]
+type = "lua"
+inputs = ["pipelineName"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		emit(event)
+	end
+
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "[./]", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+'''
+
 [transforms.syslog_xyz_json]
 type = "remap"
-inputs = ["pipelineName"]
+inputs = ["syslog_xyz_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
@@ -34,9 +82,57 @@ facility = "user"
 severity = "informational"
 `
 		tcpDefaults = `
+[transforms.syslog_tcp_dedot]
+type = "lua"
+inputs = ["pipelineName"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		emit(event)
+	end
+
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "[./]", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+'''
+
 [transforms.syslog_tcp_json]
 type = "remap"
-inputs = ["pipelineName"]
+inputs = ["syslog_tcp_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
@@ -54,9 +150,57 @@ facility = "user"
 severity = "informational"
 `
 		udpEverySetting = `
+[transforms.syslog_udp_dedot]
+type = "lua"
+inputs = ["pipelineName"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		emit(event)
+	end
+
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "[./]", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+'''
+
 [transforms.syslog_udp_json]
 type = "remap"
-inputs = ["pipelineName"]
+inputs = ["syslog_udp_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
@@ -80,9 +224,57 @@ add_log_source = true
 `
 
 		tlsWithLogRecordReferences = `
+[transforms.syslog_tls_dedot]
+type = "lua"
+inputs = ["pipelineName"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		emit(event)
+	end
+
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "[./]", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+'''
+
 [transforms.syslog_tls_json]
 type = "remap"
-inputs = ["pipelineName"]
+inputs = ["syslog_tls_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''

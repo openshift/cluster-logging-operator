@@ -28,12 +28,13 @@ func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op framewo
 	)
 }
 
+// LogSources generates configuration of the sources to collect excluding the logs where the collector is deployed
 func LogSources(spec *logging.ClusterLogForwarderSpec, namespace string, op framework.Options) []framework.Element {
 	var el []framework.Element = make([]framework.Element, 0)
 	types := helpers2.GatherSources(spec, op)
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
-			NewKubernetesLogs("raw_container_logs", namespace),
+			NewKubernetesLogsForOpenShiftLogging("raw_container_logs"),
 		)
 	}
 	if types.Has(logging.InputNameInfrastructure) {

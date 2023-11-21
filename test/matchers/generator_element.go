@@ -30,9 +30,9 @@ func (m *GeneratorElementMatcher) Match(actual interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	nactual := normalize(actual.(string), true)
-	nexpected := normalize(conf, true)
-	m.diff = cmp.Diff(strings.Join(nactual, "\n"), strings.Join(nexpected, "\n"))
+	nactual := strings.Join(normalize(actual.(string), true), `\n`)
+	nexpected := strings.Join(normalize(conf, true), `\n`)
+	m.diff = cmp.Diff(nexpected, nactual)
 	return m.diff == "", nil
 }
 

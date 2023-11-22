@@ -2,21 +2,20 @@ package conf
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	corev1 "k8s.io/api/core/v1"
 )
 

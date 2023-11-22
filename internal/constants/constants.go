@@ -132,8 +132,12 @@ const (
 	EventReasonRemoveObject         = "RemoveObject"
 	EventReasonUpdateObject         = "UpdateObject"
 
-	MigrateDefaultOutput    = "default-replaced"
-	ClusterLoggingAvailable = "isClusterLoggingAvailable"
+	MigrateInputPrefix         = "migrateInput"
+	MigrateInputApplication    = "migrateInputapplication"
+	MigrateInputInfrastructure = "migrateInputinfrastructure"
+	MigrateInputAudit          = "migrateInputaudit"
+	MigrateDefaultOutput       = "default-replaced"
+	ClusterLoggingAvailable    = "isClusterLoggingAvailable"
 
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 	OTELSchema             = "opentelemetry"

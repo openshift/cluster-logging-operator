@@ -91,11 +91,11 @@ if exists(.UNIT) { .systemd.u.UNIT = del(.UNIT) }
 `
 )
 
-func JournalLogs(inLabel, outLabel string) []framework.Element {
+func JournalLogs(inputs, id string) []framework.Element {
 	return []framework.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddJournalLogTag,
@@ -112,11 +112,11 @@ func JournalLogs(inLabel, outLabel string) []framework.Element {
 	}
 }
 
-func DropJournalDebugLogs(inLabel, outLabel string) []framework.Element {
+func DropJournalDebugLogs(inputs, id string) []framework.Element {
 	return []framework.Element{
 		Filter{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs),
 			Condition:   `.PRIORITY != \"7\" && .PRIORITY != 7`,
 		},
 	}

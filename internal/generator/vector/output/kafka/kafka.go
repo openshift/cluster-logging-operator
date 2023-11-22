@@ -63,22 +63,22 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(o, []string{dedottedID}, secret, op, brokers),
-			Encoding(o, op),
+			Output(id, o, []string{dedottedID}, secret, op, brokers),
+			Encoding(id, op),
 			common.NewBuffer(id),
 		},
-		TLSConf(o, secret, op, genTlsConf),
-		SASLConf(o, secret),
+		TLSConf(id, o, secret, op, genTlsConf),
+		SASLConf(id, o, secret),
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, brokers string) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, brokers string) Element {
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
 	return Kafka{
 		Desc:             "Kafka config",
-		ComponentID:      vectorhelpers.FormatComponentID(o.Name),
+		ComponentID:      id,
 		Inputs:           vectorhelpers.MakeInputs(inputs...),
 		Topic:            fmt.Sprintf("%q", Topics(o)),
 		BootstrapServers: fmt.Sprintf("%q", brokers),
@@ -132,9 +132,9 @@ func Topics(o logging.OutputSpec) string {
 	return defaultKafkaTopic
 }
 
-func Encoding(o logging.OutputSpec, op Options) Element {
+func Encoding(id string, op Options) Element {
 	return ConfLiteral{
-		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
+		ComponentID:  id,
 		TemplateName: "kafkaEncoding",
 		TemplateStr: `
 {{define "kafkaEncoding" -}}
@@ -146,15 +146,15 @@ timestamp_format = "rfc3339"
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
+func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
 	if o.Secret != nil {
 		conf := []Element{}
 
-		if tlsConf := common.GenerateTLSConf(o, secret, op, genTLSConf); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, genTLSConf); tlsConf != nil {
 			// KafkaInsecure (InsecureTLS)
 			if o.TLS != nil && o.TLS.InsecureSkipVerify {
 				conf = append(conf, InsecureTLS{
-					ComponentID: vectorhelpers.FormatComponentID(o.Name),
+					ComponentID: id,
 				})
 			}
 
@@ -167,7 +167,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf
 	return []Element{}
 }
 
-func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func SASLConf(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 	// Try the preferred and deprecated names.
 	_, ok := common.TryKeys(secret, constants.SASLEnable, constants.DeprecatedSaslOverSSL)
@@ -175,7 +175,7 @@ func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if common.HasUsernamePassword(secret) {
 			sasl := SASL{
 				Desc:        "SASL Config",
-				ComponentID: vectorhelpers.FormatComponentID(o.Name),
+				ComponentID: id,
 				Username:    common.GetFromSecret(secret, constants.ClientUsername),
 				Password:    common.GetFromSecret(secret, constants.ClientPassword),
 				Mechanism:   SASLMechanismPlain,

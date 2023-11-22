@@ -72,6 +72,7 @@ func NewKubernetesLogs(id, includes, excludes string) KubernetesLogs {
 }
 
 const (
+	crioPodPathFmt       = `"/var/log/pods/%s"`
 	crioNamespacePathFmt = `"/var/log/pods/%s/*/*.log"`
 	crioContainerPathFmt = `"/var/log/pods/*/%s/*.log"`
 	crioPathExtFmt       = `"/var/log/pods/*/*/*.%s"`
@@ -110,7 +111,51 @@ func ContainerPathGlobFrom(namespaces, containers []string, extensions ...string
 	return joinContainerPathsForVector(paths)
 }
 
+type ContainerPathGlobBuilder struct {
+	paths []string
+}
+
+func NewContainerPathGlobBuilder() *ContainerPathGlobBuilder {
+	return &ContainerPathGlobBuilder{}
+}
+
+// AddOther takes an argument and joins it with the well known container path
+func (b *ContainerPathGlobBuilder) AddOther(other ...string) *ContainerPathGlobBuilder {
+	for _, n := range other {
+		b.paths = append(b.paths, fmt.Sprintf(crioPodPathFmt, collapseWildcards(n)))
+	}
+	return b
+}
+func (b *ContainerPathGlobBuilder) AddNamespaces(namespaces ...string) *ContainerPathGlobBuilder {
+	for _, n := range namespaces {
+		b.paths = append(b.paths, fmt.Sprintf(crioNamespacePathFmt, normalizeNamespace(n)))
+	}
+	return b
+}
+func (b *ContainerPathGlobBuilder) AddContainers(containers ...string) *ContainerPathGlobBuilder {
+	for _, c := range containers {
+		b.paths = append(b.paths, fmt.Sprintf(crioContainerPathFmt, collapseWildcards(c)))
+	}
+	return b
+}
+func (b *ContainerPathGlobBuilder) AddExtensions(extensions ...string) *ContainerPathGlobBuilder {
+	for _, e := range extensions {
+		b.paths = append(b.paths, fmt.Sprintf(crioPathExtFmt, collapseWildcards(e)))
+	}
+	return b
+}
+func (b *ContainerPathGlobBuilder) Build() string {
+	paths := joinContainerPathsForVector(b.paths)
+	if paths == "" {
+		return ""
+	}
+	return paths
+}
+
 func joinContainerPathsForVector(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
 	return fmt.Sprintf("[%s]", strings.Join(paths, ", "))
 }
 

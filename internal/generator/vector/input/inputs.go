@@ -61,13 +61,16 @@ var (
 )
 
 func AddThrottle(spec *logging.InputSpec) []Element {
+	id := fmt.Sprintf(UserDefinedSourceThrottle, spec.Name)
+	input := fmt.Sprintf(UserDefinedInput, spec.Name)
+	return AddThrottleToInput(id, input, *spec)
+}
+
+func AddThrottleToInput(id, input string, spec logging.InputSpec) []Element {
 	var (
 		threshold    int64
 		throttle_key string
 	)
-
-	el := []Element{}
-	input := fmt.Sprintf(UserDefinedInput, spec.Name)
 
 	if spec.Application.ContainerLimit != nil {
 		threshold = spec.Application.ContainerLimit.MaxRecordsPerSecond
@@ -76,14 +79,12 @@ func AddThrottle(spec *logging.InputSpec) []Element {
 		threshold = spec.Application.GroupLimit.MaxRecordsPerSecond
 	}
 
-	el = append(el, normalize.NewThrottle(
-		fmt.Sprintf(UserDefinedSourceThrottle, spec.Name),
+	return normalize.NewThrottle(
+		id,
 		[]string{input},
 		threshold,
 		throttle_key,
-	)...)
-
-	return el
+	)
 }
 
 // Inputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api

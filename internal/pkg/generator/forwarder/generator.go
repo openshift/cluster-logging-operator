@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,25 +57,11 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		}
 	}
 
-	// Added because this generator is used for tests and the tests assume a correct
-	// CLF spec.
-	// Originally, this generator normalized the forwarder spec only which dropped
-	// input specs with names that were reserved (application, audit, infrastructure).
-	// With the change in validation, CLFs are rejected outright with input specs name equal to reserved names.
-	sanitizedInputSpec := []logging.InputSpec{}
-	for _, inputSpec := range forwarder.Spec.Inputs {
-		if inputSpec.Name != logging.InputNameApplication &&
-			inputSpec.Name != logging.InputNameAudit &&
-			inputSpec.Name != logging.InputNameInfrastructure {
-			sanitizedInputSpec = append(sanitizedInputSpec, inputSpec)
-		}
-	}
-
-	forwarder.Spec.Inputs = sanitizedInputSpec
-
+	mSpec, extras, condition := migrations.MigrateClusterLogForwarder(forwarder.Namespace, forwarder.Name, forwarder.Spec, clRequest.Cluster.Spec.LogStore, map[string]bool{}, "", "")
+	log.V(0).Info("Migrated ClusterLogForwarder", "spec", mSpec, "extras", extras, "condition", condition)
 	// Set the output secrets if any
 	clRequest.SetOutputSecrets()
-
+	forwarder.Spec = mSpec
 	tunings := &logging.FluentdForwarderSpec{}
 	clspec := logging.CollectionSpec{
 		Fluentd: tunings,

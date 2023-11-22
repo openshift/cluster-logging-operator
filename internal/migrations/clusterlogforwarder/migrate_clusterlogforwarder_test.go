@@ -2,7 +2,6 @@ package clusterlogforwarder
 
 import (
 	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -10,7 +9,6 @@ import (
 )
 
 var _ = Describe("MigrateClusterLogForwarderSpec", func() {
-
 	Describe("migratePipelines", func() {
 		It("should generate pipeline_%i names for anonymouns pipelines", func() {
 			in_spec := logging.ClusterLogForwarderSpec{

@@ -193,7 +193,9 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		case input.Name == "":
 			badInput("input must have a name")
 		case loggingv1.ReservedInputNames.Has(input.Name):
-			badInput("input name %q is reserved", input.Name)
+			if !extras[fmt.Sprintf("%s%s", constants.MigrateInputPrefix, input.Name)] {
+				badInput("input name %q is reserved", input.Name)
+			}
 		case len(status.Inputs[input.Name]) > 0:
 			badInput("duplicate name: %q", input.Name)
 		// Check if inputspec has application, infrastructure, audit or receiver specs

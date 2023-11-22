@@ -10,44 +10,45 @@ import (
 )
 
 type GeneratorElementMatcher struct {
-	expected interface{}
-	diff     string
-	err      error
+	actual interface{}
+	diff   string
+	err    error
 }
 
-func EqualConfigFrom(expected interface{}) types.GomegaMatcher {
+func EqualConfigFrom(actual interface{}) types.GomegaMatcher {
 	return &GeneratorElementMatcher{
-		expected: expected,
+		actual: actual,
 	}
 }
 
-func (m *GeneratorElementMatcher) Match(actual interface{}) (bool, error) {
-	if actType := reflect.TypeOf(actual); actType.Kind() != reflect.String {
-		return false, fmt.Errorf("The 'actual' type is expected to be a string but is: %s", actType.Name())
+func (m *GeneratorElementMatcher) Match(expected interface{}) (bool, error) {
+	if expected := reflect.TypeOf(expected); expected.Kind() != reflect.String {
+		return false, fmt.Errorf("The 'actual' type is expected to be a string but is: %s", expected.Name())
 	}
-	conf, err := generateConf(m.expected)
+	conf, err := generateConf(m.actual)
 	m.err = err
 	if err != nil {
 		return false, err
 	}
-	nactual := strings.Join(normalize(actual.(string), true), `\n`)
-	nexpected := strings.Join(normalize(conf, true), `\n`)
+	m.actual = conf
+	nactual := strings.Join(normalize(conf, true), "\n")
+	nexpected := strings.Join(normalize(expected.(string), true), "\n")
 	m.diff = cmp.Diff(nexpected, nactual)
 	return m.diff == "", nil
 }
 
-func (m *GeneratorElementMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *GeneratorElementMatcher) FailureMessage(expected interface{}) (message string) {
 	if m.err != nil {
 		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
 	}
-	return fmt.Sprintf("Expected element to produce a config from 'elements' but got this diff: %s", m.diff)
+	return fmt.Sprintf("Expected element to produce a config from 'elements'\nactual:\n\n%s\n\ndiff: %s\n", m.actual, m.diff)
 }
 
-func (m *GeneratorElementMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *GeneratorElementMatcher) NegatedFailureMessage(expected interface{}) (message string) {
 	if m.err != nil {
 		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
 	}
-	return fmt.Sprintf("Expected element to not produce config from 'elements' but got this diff: %s", m.diff)
+	return fmt.Sprintf("Expected element to not produce a config from 'elements'\nactual:\n\n%s\n\ndiff: %s\n", m.actual, m.diff)
 }
 
 func generateConf(expected interface{}) (string, error) {

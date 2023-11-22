@@ -60,6 +60,16 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			verifyInputs(forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Inputs[loggingv1.InputNameApplication]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "input name \"application\" is reserved"))
 		})
+		It("should succeed if input name is one of the reserved names: application, infrastructure, audit and was migrated", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{Name: loggingv1.InputNameApplication},
+				},
+			}
+			extras := map[string]bool{constants.MigrateInputApplication: true}
+			verifyInputs(forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Inputs[loggingv1.InputNameApplication]).ToNot(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "input name \"application\" is reserved"))
+		})
 		It("should fail if inputspec names are not unique", func() {
 			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
 				Inputs: []loggingv1.InputSpec{

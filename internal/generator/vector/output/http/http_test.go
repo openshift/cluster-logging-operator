@@ -52,7 +52,7 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -61,7 +61,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -161,7 +161,7 @@ password = "password"
 				},
 			},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -170,7 +170,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -267,7 +267,7 @@ token = "token-for-custom-http"
 				},
 			},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -276,7 +276,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -373,7 +373,7 @@ token = "token-for-custom-http"
 				},
 			},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -382,7 +382,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -485,7 +485,7 @@ token = "token-for-custom-http"
 				},
 			},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -494,7 +494,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -644,7 +644,7 @@ if .log_type == "application" {
 }
 '''
 
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["http_receiver_otel"]
 source = '''
@@ -653,7 +653,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -747,7 +747,7 @@ password = "password"
 			},
 			Options: framework.Options{constants.AnnotationEnableSchema: "true"},
 			ExpectedConf: `
-[transforms.http_receiver_normalize_http]
+[transforms.http_receiver_normalize]
 type = "remap"
 inputs = ["application"]
 source = '''
@@ -756,7 +756,7 @@ source = '''
 
 [transforms.http_receiver_dedot]
 type = "lua"
-inputs = ["http_receiver_normalize_http"]
+inputs = ["http_receiver_normalize"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"

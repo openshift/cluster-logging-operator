@@ -17,11 +17,10 @@ import (
 )
 
 const (
-	SyslogComponentType = `syslog`
-	TCP                 = `tcp`
-	TLS                 = `tls`
-	RFC3164             = `rfc3164`
-	RFC5424             = `rfc5424`
+	TCP     = `tcp`
+	TLS     = `tls`
+	RFC3164 = `rfc3164`
+	RFC5424 = `rfc5424`
 )
 
 type Syslog struct {
@@ -87,13 +86,17 @@ severity = "{{.Severity}}"
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := vectorhelpers.FormatComponentID(o.Name)
-	dedottedID := normalize.ID(id, "dedot")
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	u, _ := url.Parse(o.URL)
+	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),

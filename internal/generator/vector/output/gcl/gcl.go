@@ -60,7 +60,11 @@ node_name = "{{"{{hostname}}"}}"
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	id := vectorhelpers.FormatComponentID(o.Name)
+	id := helpers.FormatComponentID(o.Name)
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -70,7 +74,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		return []Element{}
 	}
 	g := o.GoogleCloudLogging
-	dedottedID := normalize.ID(id, "dedot")
+	dedottedID := helpers.MakeID(id, "dedot")
 	gcl := GoogleCloudLogging{
 		ComponentID:     id,
 		Inputs:          helpers.MakeInputs(inputs...),

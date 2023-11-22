@@ -111,18 +111,22 @@ func Normalize(componentID string, inputs []string) Element {
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := helpers.FormatComponentID(o.Name)
-	component := strings.ToLower(vectorhelpers.Replacer.Replace(fmt.Sprintf("%s_%s", o.Name, NormalizeHttp)))
-	dedottedID := normalize.ID(id, "dedot")
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	normalizeID := vectorhelpers.MakeID(id, "normalize")
+	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Normalize(component, inputs),
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), component),
+			Normalize(normalizeID, inputs),
+			Debug(helpers.MakeID(id, "debug"), normalizeID),
 		}
 	}
 	return MergeElements(
-		Schema(o, id, component, inputs, op),
+		Schema(o, id, normalizeID, inputs, op),
 		[]Element{
-			normalize.DedotLabels(dedottedID, []string{component}),
+			normalize.DedotLabels(dedottedID, []string{normalizeID}),
 			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
 			common.NewBuffer(id),

@@ -105,21 +105,24 @@ func (l LokiLabels) Template() string {
 {{end}}
 `
 }
-
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := vectorhelpers.FormatComponentID(o.Name)
+	return New(id, o, inputs, secret, op)
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	componentID := fmt.Sprintf("%s_%s", id, "remap")
-	dedottedID := normalize.ID(id, "dedot")
+	componentID := vectorhelpers.MakeID(id, "remap")
+	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			Output(o, []string{dedottedID}),
+			Output(id, o, []string{dedottedID}),
 			Encoding(o),
 			common.NewBuffer(id),
 			common.NewRequest(id),
@@ -131,9 +134,9 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string) Element {
+func Output(id string, o logging.OutputSpec, inputs []string) Element {
 	return Loki{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.URL,
 		TenantID:    Tenant(o.Loki),

@@ -18,10 +18,7 @@ import (
 )
 
 const (
-	DefaultHttpMaxBytes    = 100 * 1024 // 100 KB
 	DefaultHttpTimeoutSecs = 10
-
-	NormalizeHttp = "normalize_http"
 )
 
 var (
@@ -100,15 +97,14 @@ timeout_secs = {{.Timeout}}
 {{end}}`
 }
 
-func Normalize(componentID string, inputs []string) Element {
+func Normalize(id string, inputs []string) Element {
 	removeFile := `del(.file)`
 	return Remap{
-		ComponentID: componentID,
+		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
 		VRL:         removeFile,
 	}
 }
-
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	id := helpers.FormatComponentID(o.Name)
 	return New(id, o, inputs, secret, op)
@@ -123,8 +119,16 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			Debug(helpers.MakeID(id, "debug"), normalizeID),
 		}
 	}
+	var els []Element
+	if op.Has(constants.AnnotationEnableSchema) && o.Http != nil && o.Http.Schema == constants.OTELSchema {
+		schemaID := vectorhelpers.MakeID(id, "otel")
+		els = append(els, otel.Transform(schemaID, inputs))
+		inputs = []string{schemaID}
+	}
+	els = append(els, Normalize(normalizeID, inputs))
 	return MergeElements(
-		Schema(o, id, normalizeID, inputs, op),
+
+		els,
 		[]Element{
 			normalize.DedotLabels(dedottedID, []string{normalizeID}),
 			Output(o, []string{dedottedID}, secret, op),
@@ -136,19 +140,6 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		BasicAuth(o, secret),
 		BearerTokenAuth(o, secret),
 	)
-}
-
-func Schema(o logging.OutputSpec, outputName, component string, inputs []string, op Options) []Element {
-	if op.Has(constants.AnnotationEnableSchema) && o.Http != nil && o.Http.Schema == constants.OTELSchema {
-		schemaID := otel.ID(outputName, "otel")
-		return []Element{
-			otel.Transform(schemaID, inputs),
-			Normalize(component, []string{schemaID}),
-		}
-	}
-	return []Element{
-		Normalize(component, inputs),
-	}
 }
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {

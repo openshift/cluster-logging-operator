@@ -158,7 +158,8 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 		// Partially valid pipelines invalidate CLF
 		if msgs := append(msgIn, append(msgOut, msgFilter...)...); len(msgs) > 0 { // Something wrong
 			msg := strings.Join(msgs, ", ")
-			status.Pipelines.Set(pipeline.Name, CondInvalid("invalid: %v", msg))
+			con := loggingv1.NewCondition(loggingv1.ValidationCondition, corev1.ConditionTrue, loggingv1.ValidationFailureReason, "invalid: %v", msg)
+			status.Pipelines.Set(pipeline.Name, con)
 			continue
 		} else {
 			status.Pipelines.Set(pipeline.Name, condReady) // Ready

@@ -45,6 +45,8 @@ const (
 	// Degraded=Unknown means the operator is in transition.
 	//
 	ConditionDegraded status.ConditionType = "Degraded"
+
+	ValidationCondition status.ConditionType = "Validation"
 )
 
 const (
@@ -56,6 +58,8 @@ const (
 	ReasonUnused status.ConditionReason = "Unused"
 	// Connecting object is unready because a connection is in progress.
 	ReasonConnecting status.ConditionReason = "Connecting"
+
+	ValidationFailureReason status.ConditionReason = "ValidationFailure"
 )
 
 // SetCondition returns true if the condition changed or is new.

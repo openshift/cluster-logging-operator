@@ -1,9 +1,12 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -39,4 +42,14 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputService(serviceName stri
 	}
 
 	return nil
+}
+
+// GetServiceList returns a list of services based on a key/value label
+func (clusterRequest *ClusterLoggingRequest) GetServiceList(key, val, namespace string) (*core.ServiceList, error) {
+	labelSelector, _ := labels.Parse(fmt.Sprintf("%s=%s", key, val))
+	httpServices := core.ServiceList{}
+	if err := clusterRequest.Client.List(context.TODO(), &httpServices, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace}); err != nil {
+		return nil, fmt.Errorf("failure listing services with label: %s,  %v", fmt.Sprintf("%s=%s", key, val), err)
+	}
+	return &httpServices, nil
 }

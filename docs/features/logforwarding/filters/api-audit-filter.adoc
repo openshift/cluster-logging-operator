@@ -96,7 +96,7 @@ spec:
 
           # A catch-all rule to log all other requests at the Metadata level.
           - level: Metadata
- ----
+----
 
 
 == Differences from OCP audit log policy

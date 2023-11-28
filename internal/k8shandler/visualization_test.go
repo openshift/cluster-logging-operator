@@ -62,6 +62,8 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 		ClusterVersion: "4.10.0",
 	}
 	cl := cr.Cluster
+	// Enable korrel8r preview
+	cl.Annotations = map[string]string{constants.AnnotationPreviewKorrel8rConsole: constants.Enabled}
 
 	cl.Spec = logging.ClusterLoggingSpec{
 		LogStore: &logging.LogStoreSpec{
@@ -73,7 +75,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 			Kibana: &logging.KibanaSpec{},
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", []string{}), nil)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {
@@ -83,6 +85,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 		require.Contains(t, cp.Labels, constants.LabelK8sCreatedBy)
 		assert.Equal(t, r.CreatedBy(), cp.Labels[constants.LabelK8sCreatedBy])
 		assert.Equal(t, r.LokiService, cp.Spec.Proxy[0].Service.Name)
+		assert.Equal(t, r.Korrel8rName, cp.Spec.Proxy[1].Service.Name)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -110,7 +113,7 @@ func TestConsolePluginIsCreatedAndDeleted_WithoutLokiStack(t *testing.T) {
 			Type: logging.VisualizationTypeOCPConsole,
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", []string{}), nil)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {
@@ -119,11 +122,53 @@ func TestConsolePluginIsCreatedAndDeleted_WithoutLokiStack(t *testing.T) {
 		require.NoError(t, c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp))
 		require.Contains(t, cp.Labels, constants.LabelK8sCreatedBy)
 		assert.Equal(t, r.CreatedBy(), cp.Labels[constants.LabelK8sCreatedBy])
+		assert.Len(t, cp.Spec.Proxy, 1)
 		assert.Equal(t, r.LokiService, cp.Spec.Proxy[0].Service.Name)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		cl.Annotations = nil
+		cl.Spec.LogStore = nil // Spec no longer wants console
+		require.NoError(t, cr.CreateOrUpdateVisualization())
+		err := c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp)
+		assert.True(t, errors.IsNotFound(err), "expected NotFound got: %v", err)
+	})
+}
+
+func TestConsolePluginIsCreatedAndDeleted_WithoutKorrel8rPreview(t *testing.T) {
+	c := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+	cr := &ClusterLoggingRequest{
+		Cluster:        runtime.NewClusterLogging(),
+		Client:         c,
+		ClusterVersion: "4.10.0",
+	}
+	cl := cr.Cluster
+	// Don't enable korrel8r preview
+
+	cl.Spec = logging.ClusterLoggingSpec{
+		LogStore: &logging.LogStoreSpec{
+			Type:      logging.LogStoreTypeLokiStack,
+			LokiStack: logging.LokiStackStoreSpec{Name: "some-loki-stack"},
+		},
+		Visualization: &logging.VisualizationSpec{
+			Type:   logging.VisualizationTypeOCPConsole,
+			Kibana: &logging.KibanaSpec{},
+		},
+	}
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
+	cp := &consolev1alpha1.ConsolePlugin{}
+
+	t.Run("create", func(t *testing.T) {
+		require.NoError(t, cr.CreateOrUpdateVisualization())
+
+		require.NoError(t, c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp))
+		require.Contains(t, cp.Labels, constants.LabelK8sCreatedBy)
+		assert.Equal(t, r.CreatedBy(), cp.Labels[constants.LabelK8sCreatedBy])
+		assert.Len(t, cp.Spec.Proxy, 1)
+		assert.Equal(t, r.LokiService, cp.Spec.Proxy[0].Service.Name)
+	})
+
+	t.Run("delete", func(t *testing.T) {
 		cl.Spec.LogStore = nil // Spec no longer wants console
 		require.NoError(t, cr.CreateOrUpdateVisualization())
 		err := c.Get(context.Background(), client.ObjectKey{Name: r.Name}, cp)

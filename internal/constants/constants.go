@@ -140,6 +140,9 @@ const (
 
 	HTTPReceiverPort      = 8443
 	LabelHTTPInputService = "http-input-service"
+
+	Korrel8rName      = "korrel8r"
+	Korrel8rNamespace = "korrel8r"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

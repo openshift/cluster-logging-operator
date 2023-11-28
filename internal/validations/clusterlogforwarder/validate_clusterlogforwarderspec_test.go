@@ -791,7 +791,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
-			Expect(clfStatus.Pipelines["aPipeline"]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid:*"))
+			Expect(clfStatus.Pipelines["aPipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `unrecognized outputs: \[someotherendpoint\], no valid outputs`))
 		})
 
 		It("should fail all pipelines if even one pipeline does not have a unique name", func() {
@@ -827,7 +827,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			}
 			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, `inputs:.*\[foo]`))
+			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `inputs:.*\[foo]`))
 		})
 
 		It("should fail all pipelines if pipelines have no outputRefs", func() {
@@ -839,7 +839,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				})
 			verifyPipelines(constants.SingletonName, &forwarderSpec, clfStatus)
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "no valid outputs"))
+			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "no valid outputs"))
 		})
 
 		// Degraded here means partially valid, which will not be supported
@@ -854,7 +854,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
 			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid: unrecognized outputs*"))
+			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid: unrecognized outputs: \[aMissingOutput\]`))
 		})
 
 		It("should invalidate all pipelines if any input ref is not ready", func() {
@@ -868,7 +868,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
 			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid:*"))
+			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid: unrecognized inputs: \[app-input\]`))
 		})
 
 		It("should fail if clusterlogforwarder not named instance forwarding to the default logstore", func() {
@@ -882,7 +882,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines in clfStatus object")
 			Expect(clfStatus.Pipelines).To(HaveKey("someDefinedPipeline"))
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid: custom ClusterLogForwarders cannot forward to the `default` log store*"))
+			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid: custom ClusterLogForwarders cannot forward to the `default` log store, unrecognized outputs: .?default.?"))
 		})
 	})
 
@@ -972,8 +972,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Outputs["my-cloudwatch"]).To(HaveCondition("Ready", false, "MissingResource", "secret \"inval-secret\" not found"))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
-			conds := clfStatus.Pipelines["custom-pipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid*"))
+			Expect(clfStatus.Pipelines["custom-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid*"))
 			Expect(clfStatus.Conditions).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid clf spec; one or more errors present: *"))
 		})
 
@@ -1013,8 +1012,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
-			conds := clfStatus.Pipelines["custom-pipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid*"))
+			Expect(clfStatus.Pipelines["custom-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid*"))
 			Expect(clfStatus.Conditions).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid clf spec; one or more errors present: *"))
 		})
 
@@ -1055,8 +1053,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["app-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
-			conds := clfStatus.Pipelines["custom-pipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid*"))
+			Expect(clfStatus.Pipelines["custom-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid*"))
 			Expect(clfStatus.Conditions).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid clf spec; one or more errors present: *"))
 		})
 
@@ -1096,10 +1093,8 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines).To(HaveLen(2), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("inval-pipeline"))
 			Expect(clfStatus.Pipelines).To(HaveKey("valid-pipeline"))
-			conds := clfStatus.Pipelines["inval-pipeline"]
-			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid*"))
-			conds2 := clfStatus.Pipelines["valid-pipeline"]
-			Expect(conds2).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid*"))
+			Expect(clfStatus.Pipelines["inval-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid: unrecognized inputs: \[missingInRef\]`))
+			Expect(clfStatus.Pipelines["valid-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid: unrecognized outputs*"))
 			Expect(clfStatus.Conditions).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid clf spec; one or more errors present: *"))
 		})
 
@@ -1207,7 +1202,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			clf.Namespace = constants.OpenshiftNS
 
 			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
-			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "invalid: unrecognized filters*"))
+			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid: unrecognized filters*"))
 		})
 
 	})

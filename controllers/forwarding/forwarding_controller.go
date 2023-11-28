@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/internal/status"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -43,9 +42,6 @@ var (
 	periodicRequeue = ctrl.Result{
 		RequeueAfter: time.Minute * 5,
 	}
-
-	ValidationCondition     status.ConditionType   = "Validation"
-	ValidationFailureReason status.ConditionReason = "ValidationFailure"
 )
 
 // ReconcileForwarder reconciles a ClusterLogForwarder object
@@ -98,9 +94,9 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 			}
 		}
 		if validationerrors.IsValidationError(err) {
-			condition := logging.NewCondition(ValidationCondition, corev1.ConditionTrue, ValidationFailureReason, "%v", err)
+			condition := logging.NewCondition(logging.ValidationCondition, corev1.ConditionTrue, logging.ValidationFailureReason, "%v", err)
 			instance.Status.Conditions.SetCondition(condition)
-			instance.Status.Conditions.SetCondition(logging.CondNotReady(ValidationFailureReason, ""))
+			instance.Status.Conditions.SetCondition(logging.CondNotReady(logging.ValidationFailureReason, ""))
 			r.Recorder.Event(&instance, "Warning", string(logging.ReasonInvalid), condition.Message)
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 			return r.updateStatus(&instance)

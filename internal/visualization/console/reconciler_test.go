@@ -33,6 +33,8 @@ func assertConfig(t *testing.T, r *Reconciler) {
 		assert.Equal(t, r.Namespace(), cp.Spec.Service.Namespace)
 		assert.Equal(t, r.LokiService, cp.Spec.Proxy[0].Service.Name)
 		assert.Equal(t, r.LokiPort, cp.Spec.Proxy[0].Service.Port)
+		assert.Equal(t, r.Korrel8rName, cp.Spec.Proxy[1].Service.Name)
+		assert.Equal(t, r.Korrel8rPort, cp.Spec.Proxy[1].Service.Port)
 		assert.Equal(t, r.CreatedBy(), cp.Labels[constants.LabelK8sCreatedBy])
 	}
 
@@ -73,7 +75,7 @@ func assertNotFound(t *testing.T, r *Reconciler) {
 
 func TestVerifyResources(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "someservice", []string{}), nil)
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "someservice", "korrel8rSvc", "korrel8rNS", []string{}), nil)
 	assert.NoError(t, r.Reconcile(ctx))
 	assert.NoError(t, r.each(func(m mutable) error {
 		kind := m.o.GetObjectKind().GroupVersionKind().String()
@@ -92,16 +94,28 @@ func TestVerifyResources(t *testing.T) {
 					BasePath:  "/",
 					Port:      r.pluginBackendPort(),
 				}, cp.Spec.Service)
-				assert.Equal(t, []consolev1alpha1.ConsolePluginProxy{{
-					Type:      "Service",
-					Alias:     "backend",
-					Authorize: true,
-					Service: consolev1alpha1.ConsolePluginProxyServiceConfig{
-						Name:      "someservice",
-						Namespace: "openshift-logging",
-						Port:      8080,
+				assert.Equal(t, []consolev1alpha1.ConsolePluginProxy{
+					{
+						Type:      "Service",
+						Alias:     "backend",
+						Authorize: true,
+						Service: consolev1alpha1.ConsolePluginProxyServiceConfig{
+							Name:      "someservice",
+							Namespace: "openshift-logging",
+							Port:      8080,
+						},
 					},
-				}}, cp.Spec.Proxy)
+					{
+						Type:      "Service",
+						Alias:     "korrel8rSvc",
+						Authorize: false,
+						Service: consolev1alpha1.ConsolePluginProxyServiceConfig{
+							Name:      "korrel8rSvc",
+							Namespace: "korrel8rNS",
+							Port:      8443,
+						},
+					},
+				}, cp.Spec.Proxy)
 
 			} else {
 				assert.Equal(t, "openshift-logging", m.o.GetNamespace())
@@ -113,14 +127,14 @@ func TestVerifyResources(t *testing.T) {
 
 func TestReconcileCreatesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}), nil)
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", "myKorrel8r", "myKorrel8rNS", []string{}), nil)
 	require.NoError(t, r.Reconcile(ctx))
 	assertConfig(t, r)
 }
 
 func TestReconcileUpdatesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}), nil)
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", "myKorrel8r", "myKorrel8rNS", []string{}), nil)
 	require.NoError(t, r.Reconcile(ctx)) // Create objects
 	assertConfig(t, r)
 
@@ -134,10 +148,62 @@ func TestReconcileUpdatesObjects(t *testing.T) {
 
 func TestReconcilerDeletesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}), nil)
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", "myKorrel8r", "myKorrel8rNS", []string{}), nil)
 	require.NoError(t, r.Reconcile(ctx)) // Create objects
 	assertConfig(t, r)
 
 	require.NoError(t, r.Delete(ctx))
 	assertNotFound(t, r)
+}
+
+func TestPreviewKorrel8rFeatureGate(t *testing.T) {
+	c := fakeClient()
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "someservice", "korrel8rSvc", "korrel8rNS", []string{}), nil)
+	assert.NoError(t, r.Reconcile(ctx))
+	assert.NoError(t, r.each(func(m mutable) error {
+		kind := m.o.GetObjectKind().GroupVersionKind().String()
+		t.Run("verify resource values "+kind, func(t *testing.T) {
+			name := m.o.GetName()
+			assert.Equal(t, "logging-view-plugin", name)
+			assert.Equal(t, name, m.o.GetLabels()[constants.LabelApp])
+			assert.Equal(t, name, m.o.GetLabels()[constants.LabelK8sName])
+			assert.Equal(t, r.CreatedBy(), m.o.GetLabels()[constants.LabelK8sCreatedBy])
+			if m.o.GetObjectKind().GroupVersionKind().Kind == "ConsolePlugin" {
+				assert.Empty(t, m.o.GetNamespace())
+				cp := &r.consolePlugin
+				assert.Equal(t, consolev1alpha1.ConsolePluginService{
+					Name:      name,
+					Namespace: r.Namespace(),
+					BasePath:  "/",
+					Port:      r.pluginBackendPort(),
+				}, cp.Spec.Service)
+				assert.Equal(t, []consolev1alpha1.ConsolePluginProxy{
+					{
+						Type:      "Service",
+						Alias:     "backend",
+						Authorize: true,
+						Service: consolev1alpha1.ConsolePluginProxyServiceConfig{
+							Name:      "someservice",
+							Namespace: "openshift-logging",
+							Port:      8080,
+						},
+					},
+					{
+						Type:      "Service",
+						Alias:     "korrel8rSvc",
+						Authorize: false,
+						Service: consolev1alpha1.ConsolePluginProxyServiceConfig{
+							Name:      "korrel8rSvc",
+							Namespace: "korrel8rNS",
+							Port:      8443,
+						},
+					},
+				}, cp.Spec.Proxy)
+
+			} else {
+				assert.Equal(t, "openshift-logging", m.o.GetNamespace())
+			}
+		})
+		return nil
+	}))
 }

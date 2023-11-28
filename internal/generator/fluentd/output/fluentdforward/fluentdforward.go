@@ -1,8 +1,8 @@
 package fluentdforward
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"

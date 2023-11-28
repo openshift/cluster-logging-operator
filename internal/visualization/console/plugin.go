@@ -7,19 +7,19 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcilePlugin reconciles the console plugin to expose log querying of storage
 func ReconcilePlugin(k8sClient client.Client, cl *logging.ClusterLogging, owner client.Object, clusterVersion string) error {
 	lokiService := lokiServiceName(cl)
-
+	korrel8rNN := korrel8rNamespacedName(cl)
 	var consoleSpec *logging.OCPConsoleSpec
 	if cl != nil && cl.Spec.Visualization != nil {
 		consoleSpec = cl.Spec.Visualization.OCPConsole
 	}
-
-	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, FeaturesForOCP(clusterVersion)), consoleSpec)
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, korrel8rNN.Name, korrel8rNN.Namespace, FeaturesForOCP(clusterVersion)), consoleSpec)
 	if lokiService != "" {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())
@@ -43,4 +43,11 @@ func lokiServiceName(cl *logging.ClusterLogging) string {
 	}
 
 	return ""
+}
+
+func korrel8rNamespacedName(cl *logging.ClusterLogging) types.NamespacedName {
+	if cl.Annotations[constants.AnnotationPreviewKorrel8rConsole] == constants.Enabled {
+		return types.NamespacedName{Namespace: constants.Korrel8rNamespace, Name: constants.Korrel8rName}
+	}
+	return types.NamespacedName{}
 }

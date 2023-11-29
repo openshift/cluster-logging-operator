@@ -2,8 +2,8 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"regexp"
 	"strings"
 

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/clusterinfo"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -116,13 +117,11 @@ func main() {
 		}
 	}()
 
-	clusterVersion, err := getClusterVersion(mgr.GetAPIReader())
+	info, err := clusterinfo.Get(context.Background(), mgr.GetAPIReader(), getOpenshiftNS())
 	if err != nil {
 		log.Error(err, "unable to retrieve the clusterID")
 		os.Exit(1)
 	}
-	clusterID := string(clusterVersion.Spec.ClusterID)
-
 	migrateManifestResources(mgr.GetClient())
 
 	log.Info("Registering Components.")
@@ -132,8 +131,8 @@ func main() {
 		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("clusterlogging-controller"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
-		ClusterID:      clusterID,
+		ClusterVersion: info.Version,
+		ClusterID:      info.ID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
 		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
@@ -144,8 +143,8 @@ func main() {
 		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("clusterlogforwarder"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
-		ClusterID:      clusterID,
+		ClusterVersion: info.Version,
+		ClusterID:      info.ID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
 		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
@@ -157,8 +156,8 @@ func main() {
 		Client:         mgr.GetClient(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("logfilemetricexporter"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
-		ClusterID:      clusterID,
+		ClusterVersion: info.Version,
+		ClusterID:      info.ID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
 		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, UnHealthyStatus)
@@ -230,16 +229,6 @@ func getCLOVersion() (string, error) {
 		return "", fmt.Errorf("%s must be set", CLOVersionEnvVar)
 	}
 	return cloversion, nil
-}
-
-// getClusterVersion retrieves the ID of the cluster
-func getClusterVersion(k8client client.Reader) (*configv1.ClusterVersion, error) {
-	clusterVersion := &configv1.ClusterVersion{}
-	key := client.ObjectKey{Name: "version"}
-	if err := k8client.Get(context.TODO(), key, clusterVersion); err != nil {
-		return nil, err
-	}
-	return clusterVersion, nil
 }
 
 func initLoggingResources(k8sClient client.Client, reader client.Reader) error {

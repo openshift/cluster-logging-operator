@@ -17,4 +17,8 @@ const (
 	// without switching the default `logStore` to LokiStack. The value should be the
 	// LokiStack resource name representing the target store for the migration.
 	AnnotationOCPConsoleMigrationTarget = "logging.openshift.io/force-enable-ocp-console-target"
+
+	// AnnotationPreviewKorrel8rConsole enables preview features in the console that use Korrel8r.
+	// Korrel8r must also be installed and running in the cluster for these features to work.
+	AnnotationPreviewKorrel8rConsole = "logging.openshift.io/preview-korrel8r-console"
 )

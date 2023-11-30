@@ -164,9 +164,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 					{
 						Name: httpInputName,
 						Receiver: &loggingv1.ReceiverSpec{
-							HTTP: &loggingv1.HTTPReceiver{
-								Port:   8080,
-								Format: loggingv1.FormatKubeAPIAudit,
+							Type: loggingv1.ReceiverTypeHttp,
+							ReceiverTypeSpec: &loggingv1.ReceiverTypeSpec{
+								HTTP: &loggingv1.HTTPReceiver{
+									Port:   8080,
+									Format: loggingv1.FormatKubeAPIAudit,
+								},
 							},
 						},
 					},
@@ -182,6 +185,38 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				},
 			}
 			Expect(ValidateServiceAccount(customClf, k8sAuditClient, extras)).To(Succeed())
+		})
+
+		It("should pass validation if service account can collect external logs and there is a Syslog receiver", func() {
+			const syslogInputName = `syslog-receiver`
+			customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+				ServiceAccountName: clfServiceAccount.Name,
+
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: syslogInputName,
+						Receiver: &loggingv1.ReceiverSpec{
+							Type: loggingv1.ReceiverTypeSyslog,
+							ReceiverTypeSpec: &loggingv1.ReceiverTypeSpec{
+								Syslog: &loggingv1.SyslogReceiver{
+									Port:     10514,
+									Protocol: "tcp",
+								},
+							},
+						},
+					},
+				},
+
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							syslogInputName,
+						},
+					},
+				},
+			}
+			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed())
 		})
 	})
 

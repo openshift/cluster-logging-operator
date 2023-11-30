@@ -207,7 +207,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	// Collect defined http inputs
 	httpInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
+		if logging.IsHttpReceiver(&input) {
 			httpInputs.Insert(input.Name)
 		}
 	}
@@ -215,6 +215,29 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	// Remove services only if owned by current CLF and isn't defined
 	for _, service := range httpServices.Items {
 		if utils.HasSameOwner(service.OwnerReferences, currOwner) && (!httpInputs.Has(service.Name) || removeAllServices) {
+			if err := clusterRequest.RemoveInputService(service.Name); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Get list of Syslog input services by label/ namespace
+	syslogServices, err := clusterRequest.GetServiceList(constants.LabelComponent, constants.LabelSyslogInputService, clusterRequest.Forwarder.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// Collect defined syslog inputs
+	syslogInputs := sets.NewString()
+	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
+		if logging.IsSyslogReceiver(&input) {
+			syslogInputs.Insert(input.Name)
+		}
+	}
+
+	// Remove services only if owned by current CLF and isn't defined
+	for _, service := range syslogServices.Items {
+		if utils.HasSameOwner(service.OwnerReferences, currOwner) && (!syslogInputs.Has(service.Name) || removeAllServices) {
 			if err := clusterRequest.RemoveInputService(service.Name); err != nil {
 				return err
 			}

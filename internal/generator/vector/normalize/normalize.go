@@ -122,8 +122,12 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op framework.Options) 
 	}
 
 	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
+		if logging.IsAuditHttpReceiver(&input) {
 			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
+		}
+		if logging.IsSyslogReceiver(&input) {
+			el = append(el, DropJournalDebugLogs(input.Name, "drop_syslog_logs")...)
+			el = append(el, JournalLogs("drop_syslog_logs", "syslog_logs")...)
 		}
 	}
 

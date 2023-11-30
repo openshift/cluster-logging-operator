@@ -316,13 +316,43 @@ spec:
                               type: string
                             port:
                               default: 8443
-                              description: Port the Service and the HTTP listener
-                                listen on.
+                              description: Port the Receiver listens on. It must be
+                                a value between 1024 and 65535
                               format: int32
+                              maximum: 65535
+                              minimum: 1024
                               type: integer
                           required:
                           - format
                           type: object
+                        syslog:
+                          description: SyslogReceiver receives logs from rsyslog
+                          properties:
+                            port:
+                              default: 10514
+                              description: Port the Receiver listens on. It must be
+                                a value between 1024 and 65535
+                              format: int32
+                              maximum: 65535
+                              minimum: 1024
+                              type: integer
+                            protocol:
+                              default: tcp
+                              description: 'The protocol of the connection the Receiver
+                                will listen on: tcp or upd'
+                              enum:
+                              - tcp
+                              - udp
+                              type: string
+                          type: object
+                        type:
+                          description: Type of Receiver plugin.
+                          enum:
+                          - http
+                          - syslog
+                          type: string
+                      required:
+                      - type
                       type: object
                   required:
                   - name

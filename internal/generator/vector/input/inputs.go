@@ -160,7 +160,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 	}
 
 	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == logging.FormatKubeAPIAudit {
+		if logging.IsAuditHttpReceiver(&input) {
 			el = append(el,
 				Remap{
 					Desc:        `Set log_type to "audit"`,
@@ -171,6 +171,16 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 						normalize.FixHostname,
 						normalize.FixTimestampField,
 					}), "\n"),
+				})
+		}
+		if logging.IsSyslogReceiver(&input) {
+			el = append(el,
+				Remap{
+					Desc:        `Set log_type to "infrastructure"`,
+					ComponentID: `syslog_input`,
+					// Feeding the raw, untransformed openstack logs works well
+					Inputs: helpers.MakeInputs(`syslog_logs`),
+					VRL:    AddLogTypeInfra,
 				})
 		}
 	}

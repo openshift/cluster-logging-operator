@@ -36,6 +36,27 @@ var _ = Describe("inputs", func() {
 		},
 			"viaq_application_with_throttle.toml",
 		),
+		Entry("with an application that specs specific namespaces", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Namespaces: []string{"test-ns1", "test-ns2"},
+			},
+		},
+			"viaq_application_with_includes.toml",
+		),
+		Entry("with an application that specs specific match labels", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Selector: &logging.LabelSelector{
+					MatchLabels: map[string]string{
+						"key1": "value1",
+						"key2": "value2",
+					},
+				},
+			},
+		},
+			"viaq_application_with_matchLabels.toml",
+		),
 		Entry("with an infrastructure input should generate a VIAQ container and journal source", logging.InputSpec{
 			Name:           logging.InputNameInfrastructure,
 			Infrastructure: &logging.Infrastructure{},

@@ -1,0 +1,45 @@
+[transforms.pipeline_mypipeline_my_audit_0]
+type = "remap"
+inputs = ["input_audit_in_viaq_logtype"]
+source = '''
+	if is_string(.auditID) && is_string(.verb) {
+		res = if is_null(.objectRef.resource) { "" } else { string!(.objectRef.resource) }
+		sub = if is_null(.objectRef.subresource) { "" } else { string!(.objectRef.subresource) }
+		namespace = if is_null(.objectRef.namespace) { "" } else { string!(.objectRef.namespace) }
+		username = if is_null(.user.username) { "" } else { string!(.user.username) }
+		if sub != "" { res = res + "/" + sub }
+		if includes([404,409,422,429], .responseStatus.code) { # Omit by response code.
+			.level = "None"
+		} else if (username != "" && match(username, r'^(.*apiserver)$') && true) {
+			.level = "RequestResponse"
+		} else if (includes(["get"], .verb) && true) {
+			.level = "None"
+		} else if (true) {
+			.level = "Metadata"
+		} else {
+			# No rule matched, apply default rules for system events.
+			if match(username, r'^$|^system:.*') { # System events
+				readonly = r'get|list|watch|head|options'
+				if match(string!(.verb), readonly) {
+		.level = "None" # Drop read-only system events.
+				} else if ((int(.responseStatus.code) < 300 ?? true) && starts_with(username, "system:serviceaccount:"+namespace)) {
+		.level = "None" # Drop write events by service account for same namespace as resource or for non-namespaced resource.
+				}
+				if .level == "RequestResponse" {
+		.level = "Request" # Downgrade RequestResponse system events.
+				}
+			}
+		}
+		# Update the event
+		if .level == "None" {
+			abort
+		} else {
+			if .level == "Metadata" {
+				del(.responseObject)
+				del(.requestObject)
+			} else if .level == "Request" {
+				del(.responseObject)
+			}
+		}
+	}
+'''

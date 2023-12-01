@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"testing"
 
@@ -19,7 +20,7 @@ var _ = Describe("Generate Vector config", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		e := []framework.Element{}
 		for _, o := range clfspec.Outputs {
-			e = framework.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
+			e = framework.MergeElements(e, New(vectorhelpers.FormatComponentID(o.Name), o, inputPipeline, secrets[o.Name], op))
 		}
 		return e
 	}

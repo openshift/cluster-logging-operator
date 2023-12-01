@@ -211,11 +211,6 @@ source = '''
 	}
 }
 
-func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	id := helpers.FormatComponentID(o.Name)
-	return New(id, o, inputs, secret, op)
-}
-
 func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputs := []Element{}
 

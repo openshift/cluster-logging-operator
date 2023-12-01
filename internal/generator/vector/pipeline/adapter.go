@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	openshiftfilter "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"os"
@@ -31,7 +30,7 @@ func (o *Pipeline) Elements() []framework.Element {
 	return elements
 }
 
-func NewPipeline(index int, p logging.PipelineSpec, inputs map[string]*input.Input, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec) *Pipeline {
+func NewPipeline(index int, p logging.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec) *Pipeline {
 	pipeline := &Pipeline{
 		PipelineSpec: p,
 		index:        index,
@@ -120,10 +119,10 @@ func (p *Pipeline) initFilter(index int, filterRef string) {
 // PipelineFilter is an adapter between CLF pipeline filter instance and config generation
 type PipelineFilter struct {
 	ids  []string
-	Next []helpers.Component
+	Next []helpers.InputComponent
 	vrl  string
 
-	//transformFactory is a function that takes inputs and returns a transform
+	//transformFactory is a function that takes input IDs and returns a transform
 	transformFactory func(string) framework.Element
 }
 
@@ -134,7 +133,7 @@ func (pf *PipelineFilter) InputIDs() []string {
 	return pf.ids
 }
 
-func (pf *PipelineFilter) AddInputFrom(n helpers.Component) {
+func (pf *PipelineFilter) AddInputFrom(n helpers.InputComponent) {
 	pf.Next = append(pf.Next, n)
 }
 

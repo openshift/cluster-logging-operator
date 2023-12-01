@@ -3,6 +3,7 @@ package kafka
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -16,7 +17,7 @@ import (
 
 var _ = Describe("Generate vector config", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return Conf(clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
+		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for kafka output", helpers.TestGenerateConfWith(f),
 		Entry("with plaintext sasl, to single topic", helpers.ConfGenerateTest{

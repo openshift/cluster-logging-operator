@@ -1,4 +1,4 @@
-package output
+package pipeline_test
 
 import (
 	"embed"
@@ -15,5 +15,5 @@ var (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "[internal][generator][vector][outputs]")
+	RunSpecs(t, "[internal][generator][vector][pipeline] Suite")
 }

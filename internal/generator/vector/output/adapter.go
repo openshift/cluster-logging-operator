@@ -30,6 +30,10 @@ func (o *Output) Elements() []generator.Element {
 
 // AddInputFrom adds an input to an output regardless if the "input"
 // originates directly from a log source or pipeline filter
-func (o *Output) AddInputFrom(n nhelpers.Component) {
+func (o *Output) AddInputFrom(n nhelpers.InputComponent) {
 	o.inputIDs = append(o.inputIDs, n.InputIDs()...)
+}
+
+func (o Output) Inputs() []string {
+	return o.inputIDs
 }

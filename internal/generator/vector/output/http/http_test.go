@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -16,7 +17,7 @@ import (
 
 var _ = Describe("Generate vector config", func() {
 	DescribeTable("for Http output", func(output logging.OutputSpec, secret *corev1.Secret, op framework.Options, exp string) {
-		conf := Conf(output, []string{"application"}, secret, op) //, includeNS, excludes)
+		conf := New(helpers.FormatComponentID(output.Name), output, []string{"application"}, secret, op) //, includeNS, excludes)
 		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("",

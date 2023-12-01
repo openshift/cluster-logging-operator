@@ -112,12 +112,17 @@ func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) (
 // the tomlContent to VIAQ api
 func NewViaqContainerSource(spec logging.InputSpec, namespace, includes, excludes string) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
+	var selector *logging.LabelSelector
+	if spec.Application != nil {
+		selector = spec.Application.Selector
+	}
 	el := []framework.Element{
 		source.KubernetesLogs{
-			ComponentID:  base,
-			Desc:         "Logs from containers (including openshift containers)",
-			IncludePaths: includes,
-			ExcludePaths: excludes,
+			ComponentID:        base,
+			Desc:               "Logs from containers (including openshift containers)",
+			IncludePaths:       includes,
+			ExcludePaths:       excludes,
+			ExtraLabelSelector: source.LabelSelectorFrom(selector),
 		},
 	}
 	inputID := base

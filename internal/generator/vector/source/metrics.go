@@ -1,5 +1,7 @@
 package source
 
+import "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+
 const (
 	InternalMetricsSourceName = "internal_metrics"
 )
@@ -13,8 +15,6 @@ func (InternalMetrics) Name() string {
 	return "internalMetricsTemplate"
 }
 
-// #namespace = "collector"
-// #scrape_interval_secs = {{.ScrapeIntervalSec}}
 func (i InternalMetrics) Template() string {
 	return `
 {{define "` + i.Name() + `" -}}
@@ -22,4 +22,13 @@ func (i InternalMetrics) Template() string {
 type = "internal_metrics"
 {{end}}
 `
+}
+
+func MetricsSources(id string) []framework.Element {
+	return []framework.Element{
+		InternalMetrics{
+			ID:                id,
+			ScrapeIntervalSec: 2,
+		},
+	}
 }

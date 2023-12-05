@@ -36,5 +36,6 @@ func MigrateClusterLogForwarder(namespace, name string, spec loggingv1.ClusterLo
 // migrations are the set of rules for migrating a ClusterLogForwarder that modify the spec
 var clfMigrations = []func(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition){
 	clusterlogforwarder.MigrateClusterLogForwarderSpec,
+	clusterlogforwarder.MigrateInputs,
 	clusterlogforwarder.DropUnreferencedOutputs,
 }

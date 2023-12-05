@@ -46,9 +46,9 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func NewTLSConf(o logging.OutputSpec, op framework.Options) TLSConf {
+func NewTLSConf(id string, o logging.OutputSpec, op framework.Options) TLSConf {
 	conf := TLSConf{
-		ComponentID:        helpers.FormatComponentID(o.Name),
+		ComponentID:        id,
 		NeedsEnabled:       true,
 		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 	}
@@ -204,6 +204,9 @@ func GetFromSecret(secret *corev1.Secret, name string) string {
 }
 
 func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op framework.Options, genTLSConf bool) *TLSConf {
+	return GenerateTLSConfWithID(helpers.FormatComponentID(o.Name), o, secret, op, genTLSConf)
+}
+func GenerateTLSConfWithID(id string, o logging.OutputSpec, secret *corev1.Secret, op framework.Options, genTLSConf bool) *TLSConf {
 	if !genTLSConf {
 		if o.URL == "" {
 			genTLSConf = true
@@ -212,7 +215,7 @@ func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op framework.O
 		}
 	}
 	if genTLSConf {
-		tlsConf := NewTLSConf(o, op)
+		tlsConf := NewTLSConf(id, o, op)
 		if addTLSSettings(o, secret, &tlsConf) {
 			return &tlsConf
 		}

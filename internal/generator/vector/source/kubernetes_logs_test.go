@@ -46,4 +46,12 @@ var _ = Describe("source", func() {
 			Expect(ContainerPathGlobFrom([]string{}, []string{})).To(BeEmpty())
 		})
 	})
+	Describe("#joinContainerPathsForVector", func() {
+		It("should return an empty string when there are no paths", func() {
+			Expect(joinContainerPathsForVector([]string{})).To(BeEmpty())
+		})
+		It("should join the paths when paths exist", func() {
+			Expect(joinContainerPathsForVector([]string{"a", "b"})).To(Equal(`[a, b]`))
+		})
+	})
 })

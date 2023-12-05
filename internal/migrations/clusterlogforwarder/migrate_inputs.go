@@ -1,0 +1,38 @@
+package clusterlogforwarder
+
+import (
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+)
+
+func MigrateInputs(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition) {
+	inputs := map[string]loggingv1.InputSpec{}
+	for _, p := range spec.Pipelines {
+		for _, i := range p.InputRefs {
+			switch i {
+			case loggingv1.InputNameApplication:
+				inputs[loggingv1.InputNameApplication] = loggingv1.InputSpec{
+					Name:        loggingv1.InputNameApplication,
+					Application: &loggingv1.Application{},
+				}
+				extras[constants.MigrateInputApplication] = true
+			case loggingv1.InputNameInfrastructure:
+				inputs[loggingv1.InputNameInfrastructure] = loggingv1.InputSpec{
+					Name:           loggingv1.InputNameInfrastructure,
+					Infrastructure: &loggingv1.Infrastructure{},
+				}
+				extras[constants.MigrateInputInfrastructure] = true
+			case loggingv1.InputNameAudit:
+				inputs[loggingv1.InputNameAudit] = loggingv1.InputSpec{
+					Name:  loggingv1.InputNameAudit,
+					Audit: &loggingv1.Audit{},
+				}
+				extras[constants.MigrateInputAudit] = true
+			}
+		}
+	}
+	for _, i := range inputs {
+		spec.Inputs = append(spec.Inputs, i)
+	}
+	return spec, extras, nil
+}

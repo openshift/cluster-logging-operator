@@ -77,7 +77,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			common.NewBuffer(id),
 			common.NewRequest(id),
 		},
-		TLSConf(o, secret, op),
+		TLSConf(id, o, secret, op),
 	)
 }
 
@@ -97,8 +97,8 @@ func Encoding(id string, o logging.OutputSpec) Element {
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+	if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
 		tlsConf.NeedsEnabled = false
 		return []Element{tlsConf}
 	}

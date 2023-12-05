@@ -221,6 +221,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 
 	esIndexID := helpers.MakeID(id, "add_es_index")
 	dedotID := helpers.MakeID(id, "dedot_and_flatten")
+
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			SetESIndex(esIndexID, inputs, o, op),
@@ -238,8 +239,8 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			common.NewBuffer(id),
 			request,
 		},
-		TLSConf(o, secret, op),
-		BasicAuth(o, secret),
+		TLSConf(id, o, secret, op),
+		BasicAuth(id, o, secret),
 	)
 
 	return outputs
@@ -260,9 +261,9 @@ func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Sec
 	return es
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
@@ -270,14 +271,14 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	return []Element{}
 }
 
-func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 
 	if o.Secret != nil {
 		hasBasicAuth := false
 		conf = append(conf, BasicAuthConf{
 			Desc:        "Basic Auth Config",
-			ComponentID: helpers.FormatComponentID(o.Name),
+			ComponentID: id,
 		})
 		if common.HasUsernamePassword(secret) {
 			hasBasicAuth = true

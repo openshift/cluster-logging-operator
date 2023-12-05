@@ -134,11 +134,11 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op framework.Options) 
 	return el
 }
 
-func NormalizeContainerLogs(inLabel, outLabel string) []framework.Element {
+func NormalizeContainerLogs(inputs, id string) []framework.Element {
 	return []framework.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				FixLogLevel,
@@ -169,11 +169,11 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []framework.Element {
 	}
 }
 
-func NormalizeK8sAuditLogs(inLabel, outLabel string) []framework.Element {
+func NormalizeK8sAuditLogs(inputs, id string) []framework.Element {
 	return []framework.Element{
 		Remap{
-			ComponentID: outLabel,
-			Inputs:      helpers.MakeInputs(inLabel),
+			ComponentID: id,
+			Inputs:      helpers.MakeInputs(inputs),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				ClusterID,
 				AddK8sAuditTag,

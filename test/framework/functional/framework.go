@@ -3,6 +3,7 @@ package functional
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	"net"
 	"os"
 	"strconv"
@@ -187,6 +188,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
+	f.Forwarder.Spec, _, _ = clusterlogforwarder.MigrateClusterLogForwarderSpec(f.Namespace, f.Name, f.Forwarder.Spec, nil, map[string]bool{}, "", "")
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()

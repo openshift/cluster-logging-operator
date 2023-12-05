@@ -100,29 +100,29 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(o, []string{dedottedID}, secret, op, u.Scheme, u.Host),
-			Encoding(o),
+			Output(id, o, []string{dedottedID}, secret, op, u.Scheme, u.Host),
+			Encoding(id, o),
 		},
-		TLSConf(o, secret, op),
+		TLSConf(id, o, secret, op),
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) Element {
 	var mode = strings.ToLower(urlScheme)
 	if urlScheme == TLS {
 		mode = TCP
 	}
 	return Syslog{
-		ComponentID: vectorhelpers.FormatComponentID(o.Name),
+		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Address:     host,
 		Mode:        mode,
 	}
 }
 
-func Encoding(o logging.OutputSpec) Element {
+func Encoding(id string, o logging.OutputSpec) Element {
 	return SyslogEncoding{
-		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
+		ComponentID:  id,
 		RFC:          RFC(o.Syslog),
 		Facility:     Facility(o.Syslog),
 		Severity:     Severity(o.Syslog),
@@ -135,9 +135,9 @@ func Encoding(o logging.OutputSpec) Element {
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
 			return []Element{tlsConf}
 		}
 	}

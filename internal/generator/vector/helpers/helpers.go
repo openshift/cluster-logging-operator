@@ -34,11 +34,6 @@ func TrimSpaces(in []string) []string {
 	return o
 }
 
-// MakeID given a list of components
-func MakeID(parts ...string) string {
-	return FormatComponentID(strings.Join(parts, "_"))
-}
-
 func FormatComponentID(name string) string {
 	return strings.ToLower(Replacer.Replace(name))
 }

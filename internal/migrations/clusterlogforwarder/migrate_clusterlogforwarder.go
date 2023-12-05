@@ -2,7 +2,6 @@ package clusterlogforwarder
 
 import (
 	"fmt"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -17,7 +16,6 @@ func MigrateClusterLogForwarderSpec(namespace, name string, spec loggingv1.Clust
 	spec = migratePipelines(spec)
 	return spec, extras, nil
 }
-
 func migratePipelines(spec loggingv1.ClusterLogForwarderSpec) loggingv1.ClusterLogForwarderSpec {
 	// Do not allow anonymous pipelines
 	for i := range spec.Pipelines {

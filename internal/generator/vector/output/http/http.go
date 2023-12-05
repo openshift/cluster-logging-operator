@@ -2,18 +2,16 @@ package http
 
 import (
 	"fmt"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"strings"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize/schema/otel"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -131,20 +129,20 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		els,
 		[]Element{
 			normalize.DedotLabels(dedottedID, []string{normalizeID}),
-			Output(o, []string{dedottedID}, secret, op),
-			Encoding(o),
+			Output(id, o, []string{dedottedID}, secret, op),
+			Encoding(id),
 			common.NewBuffer(id),
-			Request(o),
+			Request(id, o),
 		},
-		TLSConf(o, secret, op),
-		BasicAuth(o, secret),
-		BearerTokenAuth(o, secret),
+		TLSConf(id, o, secret, op),
+		BasicAuth(id, o, secret),
+		BearerTokenAuth(id, o, secret),
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	return Http{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		URI:         o.URL,
 		Method:      Method(o.Http),
@@ -176,12 +174,12 @@ func Method(h *logging.Http) string {
 	return "post"
 }
 
-func Request(o logging.OutputSpec) *common.Request {
+func Request(id string, o logging.OutputSpec) *common.Request {
 	timeout := DefaultHttpTimeoutSecs
 	if o.Http != nil && o.Http.Timeout != 0 {
 		timeout = o.Http.Timeout
 	}
-	req := common.NewRequest(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)))
+	req := common.NewRequest(id)
 	req.TimeoutSecs.Value = timeout
 	if o.Http != nil && len(o.Http.Headers) != 0 {
 		req.SetHeaders(o.Http.Headers)
@@ -189,16 +187,16 @@ func Request(o logging.OutputSpec) *common.Request {
 	return req
 }
 
-func Encoding(o logging.OutputSpec) Element {
+func Encoding(id string) Element {
 	return HttpEncoding{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: id,
 		Codec:       httpEncodingJson,
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
-		if tlsConf := common.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
@@ -206,14 +204,14 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	return []Element{}
 }
 
-func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 
 	if o.Secret != nil {
 		hasBasicAuth := false
 		conf = append(conf, BasicAuthConf{
 			Desc:        "Basic Auth Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: id,
 		})
 		if common.HasUsernamePassword(secret) {
 			hasBasicAuth = true
@@ -231,7 +229,7 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	return conf
 }
 
-func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func BearerTokenAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 	if secret != nil {
 		// Inject token from secret, either provided by user using a custom secret
@@ -239,7 +237,7 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if common.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
-				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+				ComponentID: id,
 			}, BearerToken{
 				Token: common.GetFromSecret(secret, constants.BearerTokenFileKey),
 			})

@@ -3,6 +3,7 @@ package clusterlogging
 import (
 	"context"
 
+	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -114,8 +115,9 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	clusterVersion, clusterID := r.GetClusterVersionID(ctx, request.Namespace)
 	resourceNames := factory.GenerateResourceNames(clf)
-	if err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames); err != nil {
+	if err = k8shandler.Reconcile(&instance, &clf, r.Client, r.Reader, r.Recorder, clusterVersion, clusterID, resourceNames); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 		instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("error reconciling clusterlogging instance: %v", err))
@@ -186,4 +188,14 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 			}))
 
 	return controllerBuilder.Complete(r)
+}
+
+func (r *ReconcileClusterLogging) GetClusterVersionID(ctx context.Context, namespace string) (version, id string) {
+	// If reconciling in a hosted control plane namespace, use the guest cluster version/id
+	// provided by the hostedcontrolplane resource.
+	if info := hostedcontrolplane.GetVersionID(ctx, r.Client, namespace); info != nil {
+		return info.Version, info.ID
+	}
+	// Otherwise use the cluster-ID established at start-up.
+	return r.ClusterVersion, r.ClusterID
 }

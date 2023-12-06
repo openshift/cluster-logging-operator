@@ -99,7 +99,8 @@ type ClusterLogForwarderStatus struct {
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 
-// InputSpec defines a selector of log messages.
+// InputSpec defines a selector of log messages for a given log type. The input is rejected
+// if more than one of the following subfields are defined: application, infrastructure, audit, and receiver.
 type InputSpec struct {
 	// Name used to refer to the input of a `pipeline`.
 	//
@@ -119,73 +120,17 @@ type InputSpec struct {
 	// Infrastructure, if present, enables `infrastructure` logs.
 	//
 	// +optional
-	// +docgen:ignore
 	Infrastructure *Infrastructure `json:"infrastructure,omitempty"`
 
 	// Audit, if present, enables `audit` logs.
 	//
 	// +optional
-	// +docgen:ignore
 	Audit *Audit `json:"audit,omitempty"`
 
 	// Receiver to receive logs from non-cluster sources.
+	// +optional
 	Receiver *ReceiverSpec `json:"receiver,omitempty"`
 }
-
-// NOTE: We currently only support matchLabels so define a LabelSelector type with
-// only matchLabels. When matchExpressions is implemented (LOG-1126), replace this with:
-// k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector
-
-// A label selector is a label query over a set of resources.
-type LabelSelector struct {
-	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
-	// map is equivalent to an element of matchExpressions, whose key field is "key", the
-	// operator is "In", and the values array contains only "value". The requirements are ANDed.
-	// +optional
-	MatchLabels map[string]string `json:"matchLabels,omitempty" protobuf:"bytes,1,rep,name=matchLabels"`
-}
-
-// Application log selector.
-// All conditions in the selector must be satisfied (logical AND) to select logs.
-type Application struct {
-	// Namespaces from which to collect application logs.
-	// Only messages from these namespaces are collected.
-	// If absent or empty, logs are collected from all namespaces.
-	//
-	// +optional
-	Namespaces []string `json:"namespaces,omitempty"`
-
-	// Selector for logs from pods with matching labels.
-	// Only messages from pods with these labels are collected.
-	// If absent or empty, logs are collected regardless of labels.
-	//
-	// +optional
-	Selector *LabelSelector `json:"selector,omitempty"`
-
-	// Group limit applied to the aggregated log
-	// flow to this input. The total log flow from this input
-	// cannot exceed the limit. Unsupported
-	//
-	// +optional
-	// +docgen:ignore
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
-	GroupLimit *LimitSpec `json:"-"` //`json:"groupLimit,omitempty"`
-
-	// Container limit applied to each container of the pod(s) selected
-	// by this input. No container of pods selected by this input can
-	// exceed this limit.
-	//
-	// +optional
-	ContainerLimit *LimitSpec `json:"containerLimit,omitempty"`
-}
-
-// Infrastructure enables infrastructure logs. Filtering may be added in future.
-// +docgen:ignore
-type Infrastructure struct{}
-
-// Audit enables audit logs. Filtering may be added in future.
-// +docgen:ignore
-type Audit struct{}
 
 // Output defines a destination for log messages.
 type OutputSpec struct {

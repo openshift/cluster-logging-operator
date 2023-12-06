@@ -173,5 +173,6 @@ func LabelSelectorFrom(selector *logging.LabelSelector) string {
 	for i, k := range matchLabels {
 		matchLabels[i] = fmt.Sprintf("%s=%s", k, selector.MatchLabels[k])
 	}
+	sort.Strings(matchLabels)
 	return strings.Join(matchLabels, ",")
 }

@@ -67,7 +67,8 @@ See [FilterTypeSpec] for a list of filter types.
 === .spec.inputs[]
 ===== Description
 
-InputSpec defines a selector of log messages.
+InputSpec defines a selector of log messages for a given log type. The input is rejected
+if more than one of the following subfields are defined: application, infrastructure, audit, and receiver.
 
 =====  Type
 * array
@@ -77,8 +78,10 @@ InputSpec defines a selector of log messages.
 |Property|Type|Description
 
 |application|object|  *(optional)* Application, if present, enables named set of `application` logs that
+|audit|object|  *(optional)* Audit, if present, enables `audit` logs.
+|infrastructure|object|  *(optional)* Infrastructure, if present, enables `infrastructure` logs.
 |name|string|  Name used to refer to the input of a `pipeline`.
-|receiver|object|  Receiver to receive logs from non-cluster sources.
+|receiver|object|  *(optional)* Receiver to receive logs from non-cluster sources.
 |======================
 
 === .spec.inputs[].application
@@ -95,6 +98,8 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |Property|Type|Description
 
 |containerLimit|object|  *(optional)* Container limit applied to each container of the pod(s) selected
+|containers|object|  *(optional)* Containers is the spec of containers to include and exclude when collecting logs.
+|excludeNamespaces|array|  *(optional)* ExcludeNamespaces is the set of namespaces to ignore when collecting logs.
 |namespaces|array|  *(optional)* Namespaces from which to collect application logs.
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================
@@ -112,6 +117,40 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
+=== .spec.inputs[].application.containers
+===== Description
+
+InclusionSpec defines a set of similar resources for inclusion or exclusion
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|exclude|array|  *(optional)* Exclude resources.  May supports glob patterns
+|include|array|  *(optional)* Include resources.  May supports glob patterns
+|======================
+
+=== .spec.inputs[].application.containers.exclude[]
+===== Description
+
+=====  Type
+* array
+
+=== .spec.inputs[].application.containers.include[]
+===== Description
+
+=====  Type
+* array
+
+=== .spec.inputs[].application.excludeNamespaces[]
+===== Description
+
+=====  Type
+* array
+
 === .spec.inputs[].application.namespaces[]
 ===== Description
 
@@ -121,7 +160,7 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 === .spec.inputs[].application.selector
 ===== Description
 
-A label selector is a label query over a set of resources.
+LabelSelector is a label query over a set of resources.
 
 =====  Type
 * object
@@ -130,14 +169,81 @@ A label selector is a label query over a set of resources.
 |======================
 |Property|Type|Description
 
+|matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
 |matchLabels|object|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
 |======================
+
+=== .spec.inputs[].application.selector.matchExpressions[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  key is the label key that the selector applies to.
+|operator|string|  operator represents a key&#39;s relationship to a set of values.
+|values|array|  *(optional)* values is an array of string values. If the operator is In or NotIn,
+|======================
+
+=== .spec.inputs[].application.selector.matchExpressions[].values[]
+===== Description
+
+=====  Type
+* array
 
 === .spec.inputs[].application.selector.matchLabels
 ===== Description
 
 =====  Type
 * object
+
+=== .spec.inputs[].audit
+===== Description
+
+Audit enables audit logs. Filtering may be added in future.
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sources|array|  *(optional)* Sources defines the list of audit sources to collect.
+|======================
+
+=== .spec.inputs[].audit.sources[]
+===== Description
+
+=====  Type
+* array
+
+=== .spec.inputs[].infrastructure
+===== Description
+
+Infrastructure enables infrastructure logs. Filtering may be added in future.
+Sources of these logs:
+* container workloads deployed to namespaces: default, kube*, openshift*
+* journald logs from cluster nodes
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sources|array|  *(optional)* Sources defines the list of infrastructure sources to collect.
+|======================
+
+=== .spec.inputs[].infrastructure.sources[]
+===== Description
+
+=====  Type
+* array
 
 === .spec.inputs[].receiver
 ===== Description
@@ -153,23 +259,7 @@ The fields of this struct define the set of known Receiver types.
 |======================
 |Property|Type|Description
 
-|http|object|  
-|======================
-
-=== .spec.inputs[].receiver.http
-===== Description
-
-HTTPReceiver receives encoded logs as a HTTP endpoint.
-
-=====  Type
-* object
-
-[options="header"]
-|======================
-|Property|Type|Description
-
-|format|string|  Format is the format of incoming log data.
-|port|int|  *(optional)* Port the Service and the HTTP listener listen on.
+|type|string|  Type of Receiver plugin.
 |======================
 
 === .spec.outputDefaults

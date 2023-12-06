@@ -252,7 +252,10 @@ spec:
                   and `audit`. You don't need to define inputs here if those are sufficient
                   for your needs. See `inputRefs` for more."
                 items:
-                  description: InputSpec defines a selector of log messages.
+                  description: 'InputSpec defines a selector of log messages for a
+                    given log type. The input is rejected if more than one of the
+                    following subfields are defined: application, infrastructure,
+                    audit, and receiver.'
                   properties:
                     application:
                       description: Application, if present, enables named set of `application`
@@ -261,7 +264,8 @@ spec:
                         containerLimit:
                           description: Container limit applied to each container of
                             the pod(s) selected by this input. No container of pods
-                            selected by this input can exceed this limit.
+                            on selected by this input can exceed this limit.  This
+                            limit is applied per collector deployment.
                           properties:
                             maxRecordsPerSecond:
                               description: MaxRecordsPerSecond is the maximum number
@@ -269,10 +273,36 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                        containers:
+                          description: Containers is the spec of containers to include
+                            and exclude when collecting logs. This effectively is
+                            an 'AND' with the other fields of this input definition.
+                            The subfields of containers supports globs
+                          properties:
+                            exclude:
+                              description: Exclude resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                            include:
+                              description: Include resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        excludeNamespaces:
+                          description: ExcludeNamespaces is the set of namespaces
+                            to ignore when collecting logs. This field supports globs
+                            (e.g. mynam*space, *myanmespace).  ExcludeNamespaces takes
+                            precedence over Namespaces
+                          items:
+                            type: string
+                          type: array
                         namespaces:
                           description: Namespaces from which to collect application
                             logs. Only messages from these namespaces are collected.
                             If absent or empty, logs are collected from all namespaces.
+                            This field supports globs (e.g. mynam*space, *myanmespace)
                           items:
                             type: string
                           type: array
@@ -281,6 +311,38 @@ spec:
                             Only messages from pods with these labels are collected.
                             If absent or empty, logs are collected regardless of labels.
                           properties:
+                            matchExpressions:
+                              description: matchExpressions is a list of label selector
+                                requirements. The requirements are ANDed.
+                              items:
+                                description: A label selector requirement is a selector
+                                  that contains values, a key, and an operator that
+                                  relates the key and values.
+                                properties:
+                                  key:
+                                    description: key is the label key that the selector
+                                      applies to.
+                                    type: string
+                                  operator:
+                                    description: operator represents a key's relationship
+                                      to a set of values. Valid operators are In,
+                                      NotIn, Exists and DoesNotExist.
+                                    type: string
+                                  values:
+                                    description: values is an array of string values.
+                                      If the operator is In or NotIn, the values array
+                                      must be non-empty. If the operator is Exists
+                                      or DoesNotExist, the values array must be empty.
+                                      This array is replaced during a strategic merge
+                                      patch.
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
                             matchLabels:
                               additionalProperties:
                                 type: string
@@ -291,13 +353,32 @@ spec:
                                 contains only "value". The requirements are ANDed.
                               type: object
                           type: object
+                          x-kubernetes-map-type: atomic
                       type: object
                     audit:
                       description: Audit, if present, enables `audit` logs.
+                      properties:
+                        sources:
+                          description: 'Sources defines the list of audit sources
+                            to collect. This field is optional and its exclusion results
+                            in the collection of all audit sources. Valid sources
+                            are: kubeAPI, openshiftAPI, auditd, ovn'
+                          items:
+                            type: string
+                          type: array
                       type: object
                     infrastructure:
                       description: Infrastructure, if present, enables `infrastructure`
                         logs.
+                      properties:
+                        sources:
+                          description: 'Sources defines the list of infrastructure
+                            sources to collect. This field is optional and omission
+                            results in the collection of all infrastructure sources.
+                            Valid sources are: node, container'
+                          items:
+                            type: string
+                          type: array
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.

@@ -106,10 +106,14 @@ func OutputConf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o log
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) Element {
 	// First check for credentials or role_arn key, indicating a sts-enabled authentication
 	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
+		tokenPath := fmt.Sprintf("'%s'", path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath))
+		if security.HasAWSWebIdentityTokenFilePath(secret) {
+			tokenPath = security.SecretPath(secret.Name, constants.AWSWebIdentityTokenFilePath)
+		}
 		return AWSKey{
 			KeyRoleArn:          ParseRoleArn(secret),
 			KeyRoleSessionName:  constants.AWSRoleSessionName,
-			KeyWebIdentityToken: path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath),
+			KeyWebIdentityToken: tokenPath,
 		}
 	}
 	// Use ID and Secret

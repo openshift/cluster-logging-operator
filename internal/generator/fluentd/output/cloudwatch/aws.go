@@ -18,7 +18,7 @@ func (a AWSKey) Template() string {
 		return `{{define "` + a.Name() + `" -}}
 <web_identity_credentials>
   role_arn "{{ .KeyRoleArn }}"
-  web_identity_token_file "{{ .KeyWebIdentityToken }}"
+  web_identity_token_file {{ .KeyWebIdentityToken }}
   role_session_name "{{ .KeyRoleSessionName }}"
 </web_identity_credentials>
 {{end}}`

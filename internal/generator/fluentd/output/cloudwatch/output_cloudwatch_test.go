@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path"
 	"testing"
 
@@ -413,7 +414,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     concurrency 2
     <web_identity_credentials>
 	  role_arn "` + roleArn + `"
-	  web_identity_token_file "` + webIdentityTokenFile + `"
+	  web_identity_token_file '` + webIdentityTokenFile + `'
 	  role_session_name "` + roleSessionName + `"
     </web_identity_credentials>    
     include_time_key true
@@ -489,7 +490,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     concurrency 2
     <web_identity_credentials>
 	  role_arn "` + roleArn + `"
-	  web_identity_token_file "` + webIdentityTokenFile + `"
+	  web_identity_token_file '` + webIdentityTokenFile + `'
 	  role_session_name "` + roleSessionName + `"
     </web_identity_credentials>    
     include_time_key true
@@ -501,6 +502,88 @@ var _ = Describe("Generating fluentd config for sts", func() {
 </label>
 `
 				es := Conf(nil, secrets[output.Secret.Name], output, nil)
+				results, err := g.GenerateConf(es...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(expConf))
+			})
+		})
+		Context("with token defined in the secret", func() {
+			var (
+				tokensecrets = map[string]*corev1.Secret{}
+			)
+			BeforeEach(func() {
+				tokensecrets = map[string]*corev1.Secret{
+					"my-secret": &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-secret"},
+						Data: map[string][]byte{
+							"role_arn": []byte(roleArn),
+							"token":    []byte("abc"),
+						},
+					},
+				}
+			})
+			It("should provide a valid configuration for sts", func() {
+				expConf := `
+<label @MY_CLOUDWATCH>
+  <filter ` + source.InfraTagsForMultilineEx + `>
+     @type record_modifier
+    <record>
+      cw_group_name infrastructure
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
+    @type record_modifier
+    <record>
+      cw_group_name application
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+  
+  <filter ` + source.AuditTags + `>
+    @type record_modifier
+    <record>
+      cw_group_name audit
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+  
+  <match **>
+    @type cloudwatch_logs
+    auto_create_stream true
+    region anumber1
+    log_group_name_key cw_group_name
+    log_stream_name_key cw_stream_name
+    remove_log_stream_name_key true
+    remove_log_group_name_key true
+    concurrency 2
+    <web_identity_credentials>
+	  role_arn "` + roleArn + `"
+	  web_identity_token_file '/var/run/ocp-collector/secrets/my-secret/token'` + `
+	  role_session_name "` + roleSessionName + `"
+    </web_identity_credentials>    
+    include_time_key true
+    log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
+  </match>
+</label>
+`
+				es := Conf(nil, tokensecrets[output.Secret.Name], output, nil)
 				results, err := g.GenerateConf(es...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -559,7 +642,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     concurrency 2
     <web_identity_credentials>
 	  role_arn "` + roleArn + `"
-	  web_identity_token_file "` + webIdentityTokenFile + `"
+	  web_identity_token_file '` + webIdentityTokenFile + `'
 	  role_session_name "` + roleSessionName + `"
     </web_identity_credentials>      
     include_time_key true
@@ -632,7 +715,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     concurrency 2
     <web_identity_credentials>
 	  role_arn "` + roleArn + `"
-	  web_identity_token_file "` + webIdentityTokenFile + `"
+	  web_identity_token_file '` + webIdentityTokenFile + `'
 	  role_session_name "` + roleSessionName + `"
     </web_identity_credentials>     
     include_time_key true

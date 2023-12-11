@@ -2,8 +2,9 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
@@ -206,6 +207,7 @@ func Tenant(l *logging.Loki) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+	conf := []Element{}
 	if isDefaultOutput(o.Name) {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		tlsConf := security.TLSConf{
@@ -213,19 +215,26 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
 		}
 		tlsConf.SetTLSProfileFromOptions(op)
-		return []Element{
-			tlsConf,
-		}
+		return append(conf, tlsConf)
 	}
+
 	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 
 		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
 			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
+			conf = append(conf, tlsConf)
 		}
+	} else if secret != nil {
+		// Use secret of logcollector service account as backup
+		tlsConf := security.TLSConf{
+			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
+		}
+		tlsConf.SetTLSProfileFromOptions(op)
+		conf = append(conf, tlsConf)
 	}
 
-	return []Element{}
+	return conf
 }
 
 func isDefaultOutput(name string) bool {

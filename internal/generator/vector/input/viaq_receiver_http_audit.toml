@@ -5,8 +5,8 @@ decoding.codec = "json"
 
 [sources.input_myreceiver.tls]
 enabled = true
-key_file = "/etc/collector/receiver/input_myreceiver/tls.key"
-crt_file = "/etc/collector/receiver/input_myreceiver/tls.crt"
+key_file = "/etc/collector/receiver/myreceiver/tls.key"
+crt_file = "/etc/collector/receiver/myreceiver/tls.crt"
 
 [transforms.input_myreceiver_split]
 type = "remap"

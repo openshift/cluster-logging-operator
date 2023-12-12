@@ -3,6 +3,11 @@ type = "syslog"
 address = "[::]:12345"
 mode = "tcp"
 
+[sources.input_myreceiver.tls]
+enabled = true
+key_file = "/etc/collector/receiver/myreceiver/tls.key"
+crt_file = "/etc/collector/receiver/myreceiver/tls.crt"
+
 [transforms.input_myreceiver_drop_debug]
 type = "filter"
 inputs = ["input_myreceiver"]

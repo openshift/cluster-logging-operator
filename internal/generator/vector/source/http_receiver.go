@@ -1,15 +1,16 @@
 package source
 
 import (
+	"strings"
+
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
-	"strings"
 )
 
-func NewHttpSource(id string, input logging.InputSpec, op framework.Options) framework.Element {
+func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.Options) framework.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[framework.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[framework.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -18,7 +19,7 @@ func NewHttpSource(id string, input logging.InputSpec, op framework.Options) fra
 	}
 	return HttpReceiver{
 		ID:            id,
-		InputName:     input.Name,
+		InputName:     inputName,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 		ListenPort:    input.Receiver.HTTP.Port,
 		Format:        input.Receiver.HTTP.Format,

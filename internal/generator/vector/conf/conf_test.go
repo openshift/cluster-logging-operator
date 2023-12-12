@@ -3,7 +3,9 @@ package conf
 import (
 	_ "embed"
 	"fmt"
+
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -33,6 +35,9 @@ var ExpectedComplexEsV6Toml string
 //go:embed complex_otel.toml
 var ExpectedComplexOTELToml string
 
+//go:embed complex_http_receiver.toml
+var ExpectedComplexHTTPReceiverTOML string
+
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
@@ -40,7 +45,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			if testcase.Options == nil {
 				testcase.Options = framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 			}
-			Expect(testcase.ExpectedConf).To(EqualConfigFrom(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, "my-forwarder", testcase.Options)))
+
+			Expect(testcase.ExpectedConf).To(EqualConfigFrom(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, "my-forwarder", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, testcase.Options)))
 		}
 	)
 
@@ -317,6 +323,74 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedComplexOTELToml,
+		}),
+
+		Entry("with complex spec && http audit receiver as input source", testhelpers.ConfGenerateTest{
+			Options: framework.Options{
+				framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+					{
+						Name:           logging.InputNameInfrastructure,
+						Infrastructure: &logging.Infrastructure{},
+					},
+					{
+						Name:  logging.InputNameAudit,
+						Audit: &logging.Audit{},
+					},
+					{
+						Name: "myreceiver",
+						Receiver: &logging.ReceiverSpec{
+							Type: logging.OutputTypeHttp,
+							ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+								HTTP: &logging.HTTPReceiver{
+									Port:   7777,
+									Format: logging.FormatKubeAPIAudit,
+								},
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"mytestapp",
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit,
+							"myreceiver"},
+						OutputRefs: []string{"kafka-receiver"},
+						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedComplexHTTPReceiverTOML,
 		}),
 	)
 

@@ -3,6 +3,10 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -10,9 +14,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
@@ -24,6 +25,8 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
+	case helpers.ComponentTypeCollectorDeployment:
+		return tc.waitForDeployment(constants.OpenshiftNS, constants.CollectorName, defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }

@@ -2,13 +2,16 @@ package input
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("inputs", func() {
@@ -17,7 +20,13 @@ var _ = Describe("inputs", func() {
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
-		conf, _ := NewViaQ(input, constants.OpenshiftNS, framework.NoOptions)
+		clf := logging.ClusterLogForwarder{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
+			},
+		}
+		conf, _ := NewViaQ(input, constants.OpenshiftNS, factory.GenerateResourceNames(clf), framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with an application input should generate a VIAQ container source", logging.InputSpec{

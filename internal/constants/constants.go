@@ -98,6 +98,8 @@ const (
 	CollectorMonitorJobLabel    = "monitor-collector"
 	CollectorServiceAccountName = "logcollector"
 	CollectorTrustedCAName      = "collector-trusted-ca-bundle"
+	CollectorDeploymentKind     = "collector-deployment-kind"
+	DeploymentType              = "deployment"
 
 	FluentdImageEnvVar            = "RELATED_IMAGE_FLUENTD"
 	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"

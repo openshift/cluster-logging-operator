@@ -42,3 +42,35 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 	}
 	return l
 }
+
+// NewCURLLogGenerator creates a pod that will cURL `count` lines to an endpoint, waiting for
+// `delay` between each line.  Lines are of the form "<timestamp> [n] `message`"
+// where n is the number of lines output so far. Once done printing the pod will
+// be idle but will not exit until deleted.
+// If count <= 0, print lines until killed.
+func NewCURLLogGenerator(namespace, name, endpoint string, count int, delay time.Duration, message string) *corev1.Pod {
+	condition := "true"
+	if count > 0 {
+		condition = fmt.Sprintf("[ $i -lt %v ]", count)
+	}
+	cmd := fmt.Sprintf(`sleep 15; i=0; while %v; do timestamp=$(date); message="{\"log_message\": \"[$i]: %s\", \"log_type\": \"audit\", \"@timestamp\": \"$timestamp\"}"; curl -ksv -X POST -H "Content-Type: application/json" -d "$message" %s; i=$((i+1)); sleep %f; done; sleep infinity`, condition, message, endpoint, delay.Seconds())
+	l := runtime.NewPod(namespace, name, corev1.Container{
+		Name:    name,
+		Image:   "quay.io/curl/curl",
+		Command: []string{"sh", "-c", cmd},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetPtr(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
+	})
+	l.Spec.RestartPolicy = corev1.RestartPolicyNever
+	l.Spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: utils.GetPtr(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
+	return l
+}

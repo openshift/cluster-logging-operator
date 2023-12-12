@@ -105,6 +105,11 @@ func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 	return namespace, tc.DeployLogGeneratorWithNamespaceName(namespace, "log-generator")
 }
 
+func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, error) {
+	namespace := tc.CreateTestNamespace()
+	return namespace, tc.DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint)
+}
+
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string) error {
 	pod := runtime.NewLogGenerator(namespace, name, 1000, 0, "My life is my message")
 	clolog.Info("Checking SA for LogGenerator", "Deployment name", pod.Name, "namespace", namespace)
@@ -196,6 +201,24 @@ def set_vals():
 
 	}
 	return "", "", err
+}
+
+func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint string) error {
+	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
+		return err
+	}
+	pod := runtime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 1000, 0, "My life is my message")
+	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
+	opts := metav1.CreateOptions{}
+	pod, err := tc.KubeClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, opts)
+	if err != nil {
+		return err
+	}
+	tc.AddCleanup(func() error {
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, opts)
+	})
+	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
 func (tc *E2ETestFramework) CreateTestNamespace() string {

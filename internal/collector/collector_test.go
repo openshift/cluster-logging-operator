@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Factory#NewPodSpec", func() {
+var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 	var (
 		podSpec   v1.PodSpec
 		collector v1.Container
@@ -39,6 +39,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			ImageName:     constants.FluentdName,
 			Visit:         fluentd.CollectorVisitor,
 			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+			isDaemonset:   true,
 		}
 		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
@@ -230,8 +231,230 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				verifyProxyVolumesAndVolumeMounts(collector, podSpec, "custom-clf-trustbundle")
 			})
 		})
+
+		Context("and mounting volumes", func() {
+			It("should mount host path volumes", func() {
+				Expect(podSpec.Volumes).To(HaveLen(15))
+				Expect(podSpec.Volumes).To(ContainElement(v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}}))
+			})
+		})
 	})
 
+})
+
+var _ = Describe("Factory#Deployment#NewPodSpec", func() {
+	var (
+		podSpec   v1.PodSpec
+		collector v1.Container
+
+		factory *Factory
+	)
+	BeforeEach(func() {
+		factory = &Factory{
+			CollectorType: logging.LogCollectionTypeFluentd,
+			ImageName:     constants.FluentdName,
+			Visit:         fluentd.CollectorVisitor,
+			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+			isDaemonset:   false,
+		}
+		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+		collector = podSpec.Containers[0]
+	})
+	Describe("when creating of the collector container", func() {
+
+		It("should provide the pod IP as an environment var", func() {
+			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "POD_IP",
+				ValueFrom: &v1.EnvVarSource{
+					FieldRef: &v1.ObjectFieldSelector{
+						APIVersion: "v1", FieldPath: "status.podIP"}}}))
+		})
+		It("should not set security context", func() {
+			Expect(collector.SecurityContext).ToNot(Equal(&v1.SecurityContext{
+				Capabilities: &v1.Capabilities{
+					Drop: auth.RequiredDropCapabilities,
+				},
+				SELinuxOptions: &v1.SELinuxOptions{
+					Type: "spc_t",
+				},
+				ReadOnlyRootFilesystem:   utils.GetPtr(true),
+				AllowPrivilegeEscalation: utils.GetPtr(false),
+				SeccompProfile: &v1.SeccompProfile{
+					Type: v1.SeccompProfileTypeRuntimeDefault,
+				},
+			}))
+		})
+		Context("with custom ClusterLogForwarder name", func() {
+			It("should have volumemount with custom name", func() {
+				factory.ResourceNames = coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf"))
+				expectedContainerVolume := v1.VolumeMount{
+					Name:      "custom-clf-metrics",
+					ReadOnly:  true,
+					MountPath: metricsVolumePath}
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				collector = podSpec.Containers[0]
+				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
+			})
+		})
+	})
+
+	Describe("when creating the podSpec", func() {
+		var verifyProxyVolumesAndVolumeMounts = func(container v1.Container, podSpec v1.PodSpec, trustedca string) {
+			found := false
+			for _, elem := range container.VolumeMounts {
+				if elem.Name == trustedca {
+					found = true
+					Expect(elem.MountPath).To(Equal(constants.TrustedCABundleMountDir), "VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
+					break
+				}
+			}
+			if !found {
+				Fail(fmt.Sprintf("Trusted ca-bundle VolumeMount %s not found for collector", trustedca))
+			}
+
+			for _, elem := range podSpec.Volumes {
+				if elem.Name == trustedca {
+					Expect(elem.VolumeSource.ConfigMap).To(Not(BeNil()), "Exp. the podSpec to have a mounted configmap for the trusted ca-bundle")
+					Expect(elem.VolumeSource.ConfigMap.LocalObjectReference.Name).To(Equal(trustedca), "Volume %s: ConfigMap.LocalObjectReference.Name expected %s, actual %s", trustedca, elem.VolumeSource.ConfigMap.LocalObjectReference.Name, trustedca)
+					return
+				}
+			}
+			Fail(fmt.Sprintf("Volume %s not found for collector", trustedca))
+		}
+
+		Context("and evaluating tolerations", func() {
+			It("should add only defaults when none are defined", func() {
+				Expect(podSpec.Tolerations).To(Equal(constants.DefaultTolerations()))
+			})
+
+			It("should add the default and additional ones that are defined", func() {
+				providedToleration := v1.Toleration{
+					Key:      "test",
+					Operator: v1.TolerationOpExists,
+					Effect:   v1.TaintEffectNoSchedule,
+				}
+				factory.CollectorSpec = logging.CollectionSpec{
+					Type: "fluentd",
+					CollectorSpec: logging.CollectorSpec{
+						Tolerations: []v1.Toleration{
+							providedToleration,
+						},
+					},
+				}
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				expTolerations := append(constants.DefaultTolerations(), providedToleration)
+				Expect(podSpec.Tolerations).To(Equal(expTolerations))
+			})
+
+		})
+
+		Context("and evaluating the node selector", func() {
+			It("should add only defaults when none are defined", func() {
+				Expect(podSpec.NodeSelector).To(Equal(utils.DefaultNodeSelector))
+			})
+			It("should add the selector when defined", func() {
+				expSelector := map[string]string{
+					"foo":             "bar",
+					utils.OsNodeLabel: utils.LinuxValue,
+				}
+				factory.CollectorSpec = logging.CollectionSpec{
+					Type: "fluentd",
+					CollectorSpec: logging.CollectorSpec{
+						NodeSelector: map[string]string{
+							"foo": "bar",
+						},
+					},
+				}
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				Expect(podSpec.NodeSelector).To(Equal(expSelector))
+			})
+
+		})
+
+		Context("and the proxy config exists", func() {
+
+			var verifyEnvVar = func(container v1.Container, name, value string) {
+				for _, elem := range container.Env {
+					if elem.Name == name {
+						Expect(elem.Value).To(Equal(value), "Exp. collector to have env var %s: %s:", name, value)
+						return
+					}
+				}
+				Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
+			}
+
+			It("should add the proxy variables to the collector", func() {
+				_httpProxy := os.Getenv("http_proxy")
+				_httpsProxy := os.Getenv("https_proxy")
+				_noProxy := os.Getenv("no_proxy")
+				cleanup := func() {
+					_ = os.Setenv("http_proxy", _httpProxy)
+					_ = os.Setenv("https_proxy", _httpsProxy)
+					_ = os.Setenv("no_proxy", _noProxy)
+				}
+				defer cleanup()
+
+				httpproxy := "http://proxy-user@test.example.com/3128/"
+				noproxy := ".cluster.local,localhost"
+				_ = os.Setenv("http_proxy", httpproxy)
+				_ = os.Setenv("https_proxy", httpproxy)
+				_ = os.Setenv("no_proxy", noproxy)
+				caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
+				podSpec = *factory.NewPodSpec(&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "openshift-logging",
+						Name:      constants.CollectorTrustedCAName,
+					},
+					Data: map[string]string{
+						constants.TrustedCABundleKey: caBundle,
+					},
+				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				collector = podSpec.Containers[0]
+
+				verifyEnvVar(collector, "http_proxy", httpproxy)
+				verifyEnvVar(collector, "https_proxy", httpproxy)
+				verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
+				verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
+			})
+		})
+
+		Context("and using custom named ClusterLogForwarder", func() {
+
+			It("should have custom named podSpec resources based on CLF name", func() {
+				clf := *runtime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf")
+				clf.Spec.ServiceAccountName = "custom-clf"
+				factory.ResourceNames = coreFactory.GenerateResourceNames(clf)
+				expectedPodSpecMetricsVol := v1.Volume{
+					Name: "custom-clf-metrics",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "custom-clf-metrics",
+						}}}
+
+				caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
+				podSpec = *factory.NewPodSpec(&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "openshift-logging",
+						Name:      factory.ResourceNames.CaTrustBundle,
+					},
+					Data: map[string]string{
+						constants.TrustedCABundleKey: caBundle,
+					},
+				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+
+				collector = podSpec.Containers[0]
+				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
+				Expect(podSpec.ServiceAccountName).To(Equal("custom-clf"))
+				verifyProxyVolumesAndVolumeMounts(collector, podSpec, "custom-clf-trustbundle")
+			})
+		})
+
+		Context("and mounting volumes", func() {
+			It("should not mount host path volumes", func() {
+				Expect(podSpec.Volumes).To(HaveLen(6))
+				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}}))
+			})
+		})
+	})
 })
 
 var _ = Describe("Factory#CollectorResourceRequirements", func() {

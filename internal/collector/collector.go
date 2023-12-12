@@ -70,6 +70,7 @@ type Factory struct {
 	CommonLabelInitializer CommonLabelVisitor
 	PodLabelVisitor        PodLabelVisitor
 	ResourceNames          *factory.ForwarderResourceNames
+	isDaemonset            bool
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -97,7 +98,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string, resNames *factory.ForwarderResourceNames) *Factory {
+func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string, resNames *factory.ForwarderResourceNames, isDaemonset bool) *Factory {
 	factory := &Factory{
 		ClusterID:     clusterID,
 		ConfigHash:    confHash,
@@ -112,6 +113,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		},
 		ResourceNames:   resNames,
 		PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
+		isDaemonset:     isDaemonset,
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
@@ -127,6 +129,12 @@ func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.Confi
 	return ds
 }
 
+func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.Deployment {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, receiverInputs, namespace)
+	dpl := factory.NewDeployment(namespace, name, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	return dpl
+}
+
 func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string, namespace string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
@@ -134,28 +142,32 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
 		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
-		Tolerations:                   constants.DefaultTolerations(),
+		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Volumes: []v1.Volume{
-			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
-			{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
-			{Name: logJournal, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logJournalValue}}},
-			{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
-			{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
-			{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
-			{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
-			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
-			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
 			{Name: f.ResourceNames.SecretMetrics, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 	}
+
+	if f.isDaemonset {
+		podSpec.Volumes = append(podSpec.Volumes,
+			v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
+			v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
+			v1.Volume{Name: logJournal, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logJournalValue}}},
+			v1.Volume{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
+			v1.Volume{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
+			v1.Volume{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
+			v1.Volume{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
+			v1.Volume{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
+			v1.Volume{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
+		)
+	}
+
 	for _, receiverInput := range receiverInputs {
 		podSpec.Volumes = append(podSpec.Volumes,
 			v1.Volume{Name: receiverInput, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: receiverInput}}},
 		)
 	}
-
-	podSpec.Tolerations = append(podSpec.Tolerations, f.Tolerations()...)
 
 	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
@@ -198,18 +210,25 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
 
 	collector.VolumeMounts = []v1.VolumeMount{
-		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
-		{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
-		{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
-		{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
-		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
-		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
-		{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
-		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
-		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
 		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
+
+	if f.isDaemonset {
+		collector.VolumeMounts = append(collector.VolumeMounts,
+			v1.VolumeMount{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+			v1.VolumeMount{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+			v1.VolumeMount{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+			v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
+			v1.VolumeMount{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
+			v1.VolumeMount{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+			v1.VolumeMount{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+			v1.VolumeMount{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+			v1.VolumeMount{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+		)
+		AddSecurityContextTo(&collector)
+	}
+
 	for _, receiverInput := range receiverInputs {
 		collector.VolumeMounts = append(collector.VolumeMounts,
 			v1.VolumeMount{Name: receiverInput, ReadOnly: true, MountPath: path.Join(receiverInputVolumePath, receiverInput)},
@@ -219,7 +238,6 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	AddSecretVolumeMounts(&collector, secretNames)
 
-	AddSecurityContextTo(&collector)
 	return &collector
 }
 
@@ -230,6 +248,7 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 
 	for _, input := range f.ForwarderSpec.Inputs {
 		var listenPort int32
+		serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
 		if input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil {
 			if logging.IsHttpReceiver(&input) {
 				listenPort = input.Receiver.HTTP.Port
@@ -237,7 +256,7 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 			if logging.IsSyslogReceiver(&input) {
 				listenPort = input.Receiver.Syslog.Port
 			}
-			if err := network.ReconcileInputService(er, k8sClient, namespace, input.Name, selectorComponent, input.Name, listenPort, listenPort, input.Receiver.Type, owner, visitors); err != nil {
+			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
 				return err
 			}
 		}

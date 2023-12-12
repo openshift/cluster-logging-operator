@@ -1,8 +1,9 @@
 package k8shandler
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
@@ -46,7 +47,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 	g := forwardergenerator.New(clusterRequest.Cluster.Spec.Collection.Type)
-	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, op)
+	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.Forwarder.Spec, clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.ResourceNames, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

@@ -60,6 +60,143 @@ var _ = Describe("ClusterLoggingRequest", func() {
 				Expect(cr.ResourceOwner).To(Equal(utils.AsOwner(forwarder)))
 			})
 		})
+
+		Context("when reconciling ClusterLogForwarder defining an HTTP receiver", func() {
+			var (
+				receiverName = "http-audit"
+			)
+			BeforeEach(func() {
+				cl.SetNamespace("test-namespace")
+				forwarder.SetNamespace("test-namespace")
+				forwarder.Spec = logging.ClusterLogForwarderSpec{
+					Inputs: []logging.InputSpec{
+						{
+							Name: receiverName,
+							Receiver: &logging.ReceiverSpec{
+								Type: logging.OutputTypeHttp,
+								ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+									HTTP: &logging.HTTPReceiver{
+										Format: logging.FormatKubeAPIAudit,
+										Port:   8080,
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			Context("when an HTTP receiver is the only inputRef", func() {
+				BeforeEach(func() {
+					forwarder.Spec.Pipelines = []logging.PipelineSpec{
+						{
+							Name:       "http-audit",
+							InputRefs:  []string{receiverName},
+							OutputRefs: []string{logging.OutputNameDefault},
+						},
+					}
+				})
+				Context("in one pipeline", func() {
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is not defined in CLF", func() {
+						cl.SetUID("")
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+
+					It("should be a deployment if AnnotationEnableCollectorAsDeployment is defined in the CLF's annotations", func() {
+						forwarder.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(false))
+					})
+				})
+				Context("in multiple pipelines", func() {
+					BeforeEach(func() {
+						forwarder.Spec.Pipelines = append(forwarder.Spec.Pipelines, logging.PipelineSpec{
+							Name:       "http-audit-2",
+							InputRefs:  []string{receiverName},
+							OutputRefs: []string{logging.OutputNameDefault},
+						})
+					})
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is not defined in CLF", func() {
+						cl.SetUID("")
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+
+					It("should be a deployment if AnnotationEnableCollectorAsDeployment is defined in the CLF's annotations", func() {
+						forwarder.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(false))
+					})
+				})
+				Context("in one pipeline but another pipeline references a reserved input name only", func() {
+					BeforeEach(func() {
+						forwarder.Spec.Pipelines = append(forwarder.Spec.Pipelines, logging.PipelineSpec{
+							Name:       "app-logs",
+							InputRefs:  []string{logging.InputNameApplication},
+							OutputRefs: []string{logging.OutputNameDefault},
+						})
+					})
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is not defined in CLF", func() {
+						cl.SetUID("")
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is defined in the CLF's annotations", func() {
+						forwarder.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+				})
+			})
+
+			Context("when an HTTP receiver is not the only inputRef", func() {
+				BeforeEach(func() {
+					forwarder.Spec.Pipelines = []logging.PipelineSpec{
+						{
+							Name:       "http-audit-app",
+							InputRefs:  []string{receiverName, logging.InputNameApplication},
+							OutputRefs: []string{logging.OutputNameDefault},
+						},
+					}
+				})
+				Context("in one pipeline", func() {
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is not defined in CLF", func() {
+						cl.SetUID("")
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is defined in the CLF's annotations", func() {
+						forwarder.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+				})
+				Context("in multiple pipelines", func() {
+					BeforeEach(func() {
+						forwarder.Spec.Pipelines = append(forwarder.Spec.Pipelines, logging.PipelineSpec{
+							Name:       "http-audit-app-2",
+							InputRefs:  []string{receiverName, logging.InputNameApplication},
+							OutputRefs: []string{logging.OutputNameDefault},
+						})
+					})
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is not defined in CLF", func() {
+						cl.SetUID("")
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+
+					It("should not be a deployment if AnnotationEnableCollectorAsDeployment is defined in the CLF's annotations", func() {
+						forwarder.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
+						cr := NewClusterLoggingRequest(cl, forwarder, nil, nil, nil, "", "", nil)
+						Expect(cr.isDaemonset).To(Equal(true))
+					})
+				})
+			})
+
+		})
 	})
 
 	Describe("#IncludesManagedStorage", func() {

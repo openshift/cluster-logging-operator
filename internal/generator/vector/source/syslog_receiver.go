@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
-func NewSyslogSource(id string, input logging.InputSpec, op framework.Options) framework.Element {
+func NewSyslogSource(id, inputName string, input logging.InputSpec, op framework.Options) framework.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[framework.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[framework.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -19,7 +19,7 @@ func NewSyslogSource(id string, input logging.InputSpec, op framework.Options) f
 	}
 	return SyslogReceiver{
 		ID:            id,
-		InputName:     input.Name,
+		InputName:     inputName,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 		ListenPort:    input.Receiver.Syslog.Port,
 		TlsMinVersion: minTlsVersion,

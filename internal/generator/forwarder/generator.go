@@ -3,6 +3,8 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/conf"
 
@@ -28,7 +30,7 @@ var (
 
 type ConfigGenerator struct {
 	g      framework.Generator
-	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op framework.Options) []framework.Section
+	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) []framework.Section
 	format func(conf string) string
 }
 
@@ -49,8 +51,8 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	return g
 }
 
-func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op framework.Options) (string, error) {
-	sections := cg.conf(clspec, secrets, clfspec, namespace, forwarderName, op)
+func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) (string, error) {
+	sections := cg.conf(clspec, secrets, clfspec, namespace, forwarderName, resNames, op)
 	conf, err := cg.g.GenerateConf(framework.MergeSections(sections)...)
 	return cg.format(conf), err
 }

@@ -82,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return
 	}
 
-	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames)
+	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames, clusterRequest.isDaemonset)
 
 	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
@@ -110,27 +110,40 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner); err != nil {
-		log.Error(err, "collector.ReconcileDaemonset")
-		return err
+	if !clusterRequest.isDaemonset {
+		if err := factory.ReconcileDeployment(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, utils.AsOwner(clusterRequest.Forwarder)); err != nil {
+			log.Error(err, "collector.ReconcileDeployment")
+			return err
+		}
+	} else {
+		if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner); err != nil {
+			log.Error(err, "collector.ReconcileDaemonset")
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeCollector() (err error) {
-	commonName := clusterRequest.ResourceNames.CommonName
+	commonName := clusterRequest.ResourceNames.DaemonSetName()
 	log.V(3).Info("Removing collector", "name", commonName)
 	if clusterRequest.isManaged() {
 
-		// https://issues.redhat.com/browse/LOG-3233  Assume if the DS doesn't exist
-		// everything is removed
-		ds := runtime.NewDaemonSet(clusterRequest.Forwarder.Namespace, commonName)
-		key := client.ObjectKeyFromObject(ds)
-		if err := clusterRequest.Client.Get(context.TODO(), key, ds); err != nil {
-			if errors.IsNotFound(err) {
-				return nil
+		if clusterRequest.isDaemonset {
+			// https://issues.redhat.com/browse/LOG-3233  Assume if the DS doesn't exist
+			// everything is removed
+			ds := runtime.NewDaemonSet(clusterRequest.Forwarder.Namespace, commonName)
+			key := client.ObjectKeyFromObject(ds)
+			if err := clusterRequest.Client.Get(context.TODO(), key, ds); err != nil {
+				if errors.IsNotFound(err) {
+					return nil
+				}
+				return err
 			}
+		}
+
+		if err := collector.RemoveDeployment(clusterRequest.Client, clusterRequest.Forwarder.Namespace, commonName); err != nil {
 			return err
 		}
 
@@ -208,7 +221,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	httpInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
 		if logging.IsHttpReceiver(&input) {
-			httpInputs.Insert(input.Name)
+			httpInputs.Insert(clusterRequest.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}
 
@@ -231,7 +244,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	syslogInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
 		if logging.IsSyslogReceiver(&input) {
-			syslogInputs.Insert(input.Name)
+			syslogInputs.Insert(clusterRequest.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}
 

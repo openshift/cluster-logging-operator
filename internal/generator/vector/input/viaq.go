@@ -2,15 +2,17 @@ package input
 
 import (
 	"fmt"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	"strings"
 )
 
 const (
@@ -39,7 +41,7 @@ var (
 
 // NewViaQ creates an input adapter to generate config for ViaQ sources to collect logs excluding the
 // collector container logs from the namespace where the collector is deployed
-func NewViaQ(input logging.InputSpec, collectorNS string, op framework.Options) ([]framework.Element, []string) {
+func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
 	switch {
@@ -105,7 +107,7 @@ func NewViaQ(input logging.InputSpec, collectorNS string, op framework.Options) 
 				ids = append(ids, cids...)
 			}
 		} else if input.Receiver != nil {
-			els, ids = NewViaqReceiverSource(input, op)
+			els, ids = NewViaqReceiverSource(input, resNames, op)
 		}
 	}
 	els, ids = addLogType(input, els, ids)
@@ -125,6 +127,7 @@ func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) (
 
 	if logType != "" {
 		id := helpers.MakeInputID(spec.Name, "viaq", "logtype")
+
 		remap := elements.Remap{
 			Desc:        `Set log_type`,
 			ComponentID: id,

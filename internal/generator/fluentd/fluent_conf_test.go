@@ -2,11 +2,13 @@ package fluentd
 
 import (
 	_ "embed"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
@@ -72,6 +74,8 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
+
+		resNames = &factory.ForwarderResourceNames{CommonName: constants.CollectorName}
 	)
 
 	BeforeEach(func() {
@@ -207,7 +211,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, resNames, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 
@@ -286,7 +290,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, resNames, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsConf))
@@ -366,7 +370,7 @@ var _ = Describe("Generating fluentd config", func() {
 				Data: secretData,
 			},
 		}
-		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, resNames, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedPodLabelsNSConf))
@@ -389,14 +393,14 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		c := framework.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, nil, forwarder, constants.OpenshiftNS, constants.SingletonName, resNames, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedExcludeConf))
 	})
 
 	It("should produce well formed fluent.conf", func() {
-		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, op))
+		c := framework.MergeSections(Conf(nil, secrets, forwarder, constants.OpenshiftNS, constants.SingletonName, resNames, op))
 		results, err := g.GenerateConf(c...)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(ExpectedWellFormedConf))
@@ -479,7 +483,7 @@ var _ = Describe("Generating fluentd config", func() {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
 			g := framework.MakeGenerator()
-			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, constants.SingletonName, op)
+			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, constants.SingletonName, resNames, op)
 			gotFluentdConf, err := g.GenerateConf(framework.MergeSections(s)...)
 			Expect(err).To(Succeed())
 			Expect(gotFluentdConf).To(EqualTrimLines(wantFluentdConf))

@@ -23,6 +23,9 @@ func GatherSources(forwarder *logging.ClusterLogForwarderSpec, op framework.Opti
 			if spec.Audit != nil {
 				types.Insert(logging.InputNameAudit)
 			}
+			if spec.Receiver != nil {
+				types.Insert(logging.InputNameReceiver)
+			}
 		}
 	}
 	return *types

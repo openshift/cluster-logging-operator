@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ReconcileDaemonset reconciles a daemonset specifically for the collector defined by the factory
-func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference) error {
+// ReconcileDeployment reconciles a deployment specifically for the collector defined by the factory
+func (f *Factory) ReconcileDeployment(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference) error {
 	trustedCABundle, trustHash := GetTrustedCABundle(k8sClient, namespace, f.ResourceNames.CaTrustBundle)
 	f.TrustedCAHash = trustHash
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
@@ -29,16 +29,16 @@ func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.C
 		}
 	}
 
-	desired := f.NewDaemonSet(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), receiverInputs)
+	desired := f.NewDeployment(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), receiverInputs)
 	utils.AddOwnerRefToObject(desired, owner)
-	return reconcile.DaemonSet(er, k8sClient, desired)
+	return reconcile.Deployment(er, k8sClient, desired)
 }
 
-func Remove(k8sClient client.Client, namespace, name string) (err error) {
-	log.V(3).Info("Removing collector", "namespace", namespace, "name", name)
-	ds := runtime.NewDaemonSet(namespace, name)
+func RemoveDeployment(k8sClient client.Client, namespace, name string) (err error) {
+	log.V(3).Info("Removing collector deployment", "namespace", namespace, "name", name)
+	ds := runtime.NewDeployment(namespace, name)
 	if err = k8sClient.Delete(context.TODO(), ds); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting daemonset %s/%s: %v", namespace, name, err)
+		return fmt.Errorf("failure deleting deployment %s/%s: %v", namespace, name, err)
 	}
 	return nil
 }

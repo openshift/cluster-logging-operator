@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
@@ -61,6 +62,17 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 	if !forwarder.Status.IsReady() {
 		removeCollectorAndUpdate(clusterLoggingRequest)
 		return nil
+	}
+
+	// Remove existing collector deployment/daemonset
+	if clusterLoggingRequest.isDaemonset {
+		if err := collector.RemoveDeployment(clusterLoggingRequest.Client, forwarder.Namespace, clusterLoggingRequest.ResourceNames.DaemonSetName()); err != nil {
+			return err
+		}
+	} else {
+		if err := collector.Remove(clusterLoggingRequest.Client, forwarder.Namespace, clusterLoggingRequest.ResourceNames.DaemonSetName()); err != nil {
+			return err
+		}
 	}
 
 	// Reconcile Collection

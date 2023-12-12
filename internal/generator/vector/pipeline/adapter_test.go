@@ -2,9 +2,13 @@ package pipeline_test
 
 import (
 	"fmt"
+	"sort"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
@@ -12,7 +16,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
-	"sort"
 )
 
 type FakeInputAdapter struct {
@@ -42,7 +45,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 				InputRefs:  []string{"audit-in"},
 				FilterRefs: []string{"my-audit"},
 			}, map[string]helpers.InputComponent{
-				"audit-in": input.NewInput(logging.InputSpec{Name: "audit-in", Application: &logging.Application{}}, "", nil),
+				"audit-in": input.NewInput(logging.InputSpec{Name: "audit-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
 				map[string]*filter.InternalFilterSpec{
 					"my-audit": {

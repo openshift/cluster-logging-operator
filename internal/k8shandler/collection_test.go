@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
@@ -145,13 +146,14 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName),
 					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 					ResourceOwner: utils.AsOwner(cluster),
+					isDaemonset:   true,
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
 
-			It("should use the injected custom CA bundle for the collector", func() {
+			It("should use the injected custom CA bundle for the collector as daemonset", func() {
 				// Reconcile w/o custom CA bundle
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
@@ -172,6 +174,30 @@ var _ = Describe("Reconciling", func() {
 				Expect(collector.CalcTrustedCAHashValue(injectedCABundle)).To(Equal(bundleVar.Value))
 				Expect(ds.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
+			})
+
+			It("should use the injected custom CA bundle for the collector as deployment", func() {
+				clusterRequest.isDaemonset = false
+				// Reconcile w/o custom CA bundle
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+
+				// Inject custom CA bundle into collector config map
+				injectedCABundle := fluentdCABundle.DeepCopy()
+				injectedCABundle.Data[constants.TrustedCABundleKey] = customCABundle
+				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
+
+				// Reconcile with injected custom CA bundle
+				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
+
+				key := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
+				dpl := &appsv1.Deployment{}
+				Expect(client.Get(context.TODO(), key, dpl)).Should(Succeed())
+
+				bundleVar, found := utils.GetEnvVar(common.TrustedCABundleHashName, dpl.Spec.Template.Spec.Containers[0].Env)
+				Expect(found).To(BeTrue(), "Exp. the trusted bundle CA hash to be added to the collector container")
+				Expect(collector.CalcTrustedCAHashValue(injectedCABundle)).To(Equal(bundleVar.Value))
+				Expect(dpl.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
+				Expect(dpl.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
 			})
 		})
 		Context("when cluster proxy is not present", func() {
@@ -213,6 +239,7 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     runtime.NewClusterLogForwarder(constants.OpenshiftNS, "bar"),
 					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 					ResourceOwner: utils.AsOwner(cluster),
+					isDaemonset:   true,
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
@@ -220,7 +247,7 @@ var _ = Describe("Reconciling", func() {
 			})
 
 			//https://issues.redhat.com/browse/LOG-1859
-			It("should continue to reconcile without error", func() {
+			It("should continue to reconcile without error as daemonset", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
@@ -237,6 +264,25 @@ var _ = Describe("Reconciling", func() {
 				Expect(bundleVar.Value).To(BeEmpty())
 				Expect(ds.Spec.Template.Spec.Volumes).To(Not(ContainElement(trustedCABundleVolume)))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
+			})
+
+			It("should continue to reconcile without error as deployment", func() {
+				clusterRequest.isDaemonset = false
+				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
+				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
+				fluentdCaBundle := &corev1.ConfigMap{}
+				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
+				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
+
+				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
+				dpl := &appsv1.Deployment{}
+				Expect(client.Get(context.TODO(), key, dpl)).Should(Succeed())
+
+				bundleVar, found := utils.GetEnvVar(common.TrustedCABundleHashName, dpl.Spec.Template.Spec.Containers[0].Env)
+				Expect(found).To(BeTrue(), "Exp. the trusted bundle CA hash to be added to the collector container")
+				Expect(bundleVar.Value).To(BeEmpty())
+				Expect(dpl.Spec.Template.Spec.Volumes).To(Not(ContainElement(trustedCABundleVolume)))
+				Expect(dpl.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
 			})
 		})
 
@@ -316,12 +362,13 @@ var _ = Describe("Reconciling", func() {
 					Forwarder:     fwder,
 					ResourceNames: factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, customCLFName)),
 					ResourceOwner: utils.AsOwner(fwder),
+					isDaemonset:   true,
 				}
 				extras[constants.MigrateDefaultOutput] = true
 				spec, extras, _ = migrations.MigrateClusterLogForwarder(clusterRequest.Forwarder.Namespace, clusterRequest.Forwarder.Name, clusterRequest.Forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras, clusterRequest.ResourceNames.InternalLogStoreSecret, clusterRequest.ResourceNames.ServiceAccountTokenSecret)
 				clusterRequest.Forwarder.Spec = spec
 			})
-			It("should have appropriately named resources", func() {
+			It("should have appropriately named resources with daemonset", func() {
 				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
@@ -329,6 +376,15 @@ var _ = Describe("Reconciling", func() {
 				ds := &appsv1.DaemonSet{}
 				Expect(getObject(customCLFName, ds)).Should(Succeed())
 
+			})
+
+			It("should have appropriately named resources with deployment", func() {
+				clusterRequest.isDaemonset = false
+				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+
+				ds := &appsv1.Deployment{}
+				Expect(getObject(customCLFName, ds)).Should(Succeed())
 			})
 		})
 	})

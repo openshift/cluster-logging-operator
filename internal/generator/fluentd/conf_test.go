@@ -4,8 +4,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -26,22 +28,26 @@ var ExpectedFluentConf string
 
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase testhelpers.ConfGenerateTest) {
-		g := framework.MakeGenerator()
-		e := framework.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
-		conf, err := g.GenerateConf(e...)
-		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n\n", "\n", -1), "\n"),
-			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n\n", "\n", -1), "\n"))
-		if diff != "" {
-			b, _ := json.MarshalIndent(e, "", " ")
-			fmt.Printf("elements:\n%s\n", string(b))
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
+	var (
+		f = func(testcase testhelpers.ConfGenerateTest) {
+
+			g := framework.MakeGenerator()
+			e := framework.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
+			conf, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			diff := cmp.Diff(
+				strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n\n", "\n", -1), "\n"),
+				strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n\n", "\n", -1), "\n"))
+			if diff != "" {
+				b, _ := json.MarshalIndent(e, "", " ")
+				fmt.Printf("elements:\n%s\n", string(b))
+				fmt.Println(conf)
+				fmt.Printf("diff: %s", diff)
+			}
+			Expect(diff).To(Equal(""))
 		}
-		Expect(diff).To(Equal(""))
-	}
+	)
+
 	DescribeTable("Generate full fluent.conf", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			CLSpec: logging.CollectionSpec{

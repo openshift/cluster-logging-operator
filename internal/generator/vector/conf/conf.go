@@ -1,7 +1,10 @@
 package conf
 
 import (
+	"sort"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -11,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	corev1 "k8s.io/api/core/v1"
-	"sort"
 )
 
 // Design of next generation conf generation:
@@ -54,13 +56,13 @@ import (
 */
 
 //nolint:govet // using declarative style
-func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op framework.Options) []framework.Section {
+func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) []framework.Section {
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*input.Input{}
 	inputCompMap := map[string]helpers.InputComponent{}
 	for _, i := range clfspec.Inputs {
-		a := input.NewInput(i, namespace, op)
+		a := input.NewInput(i, namespace, resNames, op)
 		inputMap[i.Name] = a
 		inputCompMap[i.Name] = a
 	}

@@ -14,11 +14,12 @@ import (
 type LogComponentType string
 
 const (
-	ComponentTypeStore            LogComponentType = "LogStore"
-	ComponentTypeVisualization    LogComponentType = "Visualization"
-	ComponentTypeCollector        LogComponentType = "collector"
-	ComponentTypeCollectorFluentd LogComponentType = "collector-fluentd"
-	ComponentTypeCollectorVector  LogComponentType = "collector-vector"
+	ComponentTypeStore               LogComponentType = "LogStore"
+	ComponentTypeVisualization       LogComponentType = "Visualization"
+	ComponentTypeCollector           LogComponentType = "collector"
+	ComponentTypeCollectorFluentd    LogComponentType = "collector-fluentd"
+	ComponentTypeCollectorVector     LogComponentType = "collector-vector"
+	ComponentTypeCollectorDeployment LogComponentType = "collector-deployment"
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {

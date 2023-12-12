@@ -2,6 +2,7 @@ package input
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 )
 
@@ -11,8 +12,8 @@ type Input struct {
 	elements []framework.Element
 }
 
-func NewInput(spec logging.InputSpec, collectorNS string, op framework.Options) *Input {
-	elements, ids := NewViaQ(spec, collectorNS, op)
+func NewInput(spec logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) *Input {
+	elements, ids := NewViaQ(spec, collectorNS, resNames, op)
 	return &Input{
 		ids:      ids,
 		elements: elements,

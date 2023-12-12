@@ -1,4 +1,4 @@
-package daemonsets_test
+package deployments_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Daemonsets Comparator Suite")
+	RunSpecs(t, "Deployments Comparator Suite")
 }

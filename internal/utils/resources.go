@@ -1,12 +1,7 @@
 package utils
 
 import (
-	"errors"
-	"reflect"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
-	apps "k8s.io/api/apps/v1"
-	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -42,37 +37,14 @@ func AreResourcesSame(current, desired *v1.ResourceRequirements) bool {
 	return true
 }
 
-func AreResourcesDifferent(current, desired interface{}) bool {
+func AreResourcesDifferent(current, desired *v1.PodSpec) bool {
 
-	var currentContainers []v1.Container
-	var desiredContainers []v1.Container
-
-	currentType := reflect.TypeOf(current)
-	desiredType := reflect.TypeOf(desired)
-
-	if currentType != desiredType {
-		log.Error(errors.New("Attempting to compare resources for different types"), "",
-			"current", currentType, "desired", desiredType)
+	if current == nil || desired == nil {
 		return false
 	}
 
-	switch currentType {
-	case reflect.TypeOf(&apps.Deployment{}):
-		currentContainers = current.(*apps.Deployment).Spec.Template.Spec.Containers
-		desiredContainers = desired.(*apps.Deployment).Spec.Template.Spec.Containers
-
-	case reflect.TypeOf(&apps.DaemonSet{}):
-		currentContainers = current.(*apps.DaemonSet).Spec.Template.Spec.Containers
-		desiredContainers = desired.(*apps.DaemonSet).Spec.Template.Spec.Containers
-
-	case reflect.TypeOf(&batch.CronJob{}):
-		currentContainers = current.(*batch.CronJob).Spec.JobTemplate.Spec.Template.Spec.Containers
-		desiredContainers = desired.(*batch.CronJob).Spec.JobTemplate.Spec.Template.Spec.Containers
-
-	default:
-		log.Info("Attempting to check resources for unmatched type", "current", currentType)
-		return false
-	}
+	currentContainers := current.Containers
+	desiredContainers := desired.Containers
 
 	changed := false
 

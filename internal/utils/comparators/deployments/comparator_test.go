@@ -1,4 +1,4 @@
-package daemonsets_test
+package deployments_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,17 +7,17 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/deployments"
 )
 
-var _ = Describe("daemonset#AreSame", func() {
+var _ = Describe("deployments#AreSame", func() {
 
 	var (
-		current, desired *apps.DaemonSet
+		current, desired *apps.Deployment
 	)
 
 	BeforeEach(func() {
-		current = &apps.DaemonSet{
+		current = &apps.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
 					"foo": "bar",
@@ -29,7 +29,7 @@ var _ = Describe("daemonset#AreSame", func() {
 					},
 				},
 			},
-			Spec: apps.DaemonSetSpec{
+			Spec: apps.DeploymentSpec{
 				Template: v1.PodTemplateSpec{
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
@@ -45,17 +45,17 @@ var _ = Describe("daemonset#AreSame", func() {
 		desired = current.DeepCopy()
 
 	})
-	Context("when evaluating daemonSetSpec", func() {
+	Context("when evaluating deploymentSpec", func() {
 
 		It("should recognize the specs are different", func() {
 			container := v1.Container{}
 			desired.Spec.Template.Spec.Containers = append(desired.Spec.Template.Spec.Containers, container)
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeFalse())
 		})
 
 		It("should recognize the specs are same", func() {
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeTrue())
 		})
 	})
@@ -64,12 +64,12 @@ var _ = Describe("daemonset#AreSame", func() {
 
 		It("should recognize the labels are different", func() {
 			desired.Labels = map[string]string{"foo": "baz"}
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeFalse())
 		})
 
 		It("should recognize labels are same", func() {
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeTrue())
 		})
 	})
@@ -83,12 +83,12 @@ var _ = Describe("daemonset#AreSame", func() {
 					Name: "Baz",
 				},
 			}
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeFalse())
 		})
 
 		It("should recognize ownerRefs are same", func() {
-			ok, _ := daemonsets.AreSame(current, desired)
+			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeTrue())
 		})
 	})

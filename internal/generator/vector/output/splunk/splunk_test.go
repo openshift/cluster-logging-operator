@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -269,35 +270,35 @@ key_pass = "junk"
 		})
 
 		It("should provide a valid config", func() {
-			element := Conf(output, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), output, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSink))
 		})
 
 		It("should provide a valid config with passphrase", func() {
-			element := Conf(outputWithPassphrase, []string{"pipelineName"}, secrets[outputWithPassphrase.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithPassphrase, []string{"pipelineName"}, secrets[outputWithPassphrase.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkPassphrase))
 		})
 
 		It("should provide a valid config with TLS", func() {
-			element := Conf(outputWithTls, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTls, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTls))
 		})
 
 		It("should provide a valid config with tls.insecureSkipVerify=true", func() {
-			element := Conf(outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerify))
 		})
 
 		It("should provide a valid config with tls.insecureSkipVerify=true without secret", func() {
-			element := Conf(outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerifyNoCert))

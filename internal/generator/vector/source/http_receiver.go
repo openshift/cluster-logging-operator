@@ -9,16 +9,6 @@ import (
 	"strings"
 )
 
-func HttpSources(spec *logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-	el := []framework.Element{}
-	for _, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			el = append(el, NewHttpSource(input.Name, input, op))
-		}
-	}
-	return el
-}
-
 func NewHttpSource(id string, input logging.InputSpec, op framework.Options) framework.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[framework.ClusterTLSProfileSpec]; ok {

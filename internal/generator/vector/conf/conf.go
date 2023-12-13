@@ -4,6 +4,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
@@ -57,9 +58,11 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*input.Input{}
+	inputCompMap := map[string]helpers.InputComponent{}
 	for _, i := range clfspec.Inputs {
 		a := input.NewInput(i, namespace, op)
 		inputMap[i.Name] = a
+		inputCompMap[i.Name] = a
 	}
 
 	outputMap := map[string]*output.Output{}
@@ -71,7 +74,7 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 	filters := filter.NewInternalFilterMap(clfspec.FilterMap())
 	pipelineMap := map[string]*pipeline.Pipeline{}
 	for i, p := range clfspec.Pipelines {
-		a := pipeline.NewPipeline(i, p, inputMap, outputMap, filters)
+		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters)
 		pipelineMap[p.Name] = a
 	}
 

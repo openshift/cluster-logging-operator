@@ -2,7 +2,7 @@ package source
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"regexp"
 	"strings"
@@ -10,9 +10,10 @@ import (
 
 type KubernetesLogs struct {
 	framework.ComponentID
-	Desc         string
-	IncludePaths string
-	ExcludePaths string
+	Desc               string
+	IncludePaths       string
+	ExcludePaths       string
+	ExtraLabelSelector string
 }
 
 func (kl KubernetesLogs) Name() string {
@@ -33,6 +34,9 @@ include_paths_glob_patterns = {{.IncludePaths}}
 {{- if gt (len .ExcludePaths) 0 }}
 exclude_paths_glob_patterns = {{.ExcludePaths}}
 {{- end}}
+{{- if gt (len .ExtraLabelSelector) 0 }}
+extra_label_selector = "{{.ExtraLabelSelector}}"
+{{- end}}
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -41,24 +45,6 @@ pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_ms = 5000
 {{end}}`
-}
-
-func NewKubernetesLogsForOpenShiftLogging(id string) KubernetesLogs {
-
-	excludes := []string{}
-	for _, comp := range []string{constants.LogfilesmetricexporterName, constants.ElasticsearchName, constants.KibanaName} {
-		comp = fmt.Sprintf(`"/var/log/pods/%s_%s-*/*/*.log"`, constants.OpenshiftNS, comp)
-		excludes = append(excludes, comp)
-	}
-	for _, comp := range []string{"loki*", "gateway", "opa"} {
-		comp = fmt.Sprintf(`"/var/log/pods/%s_*/%s/*.log"`, constants.OpenshiftNS, comp)
-		excludes = append(excludes, comp)
-	}
-	for _, comp := range []string{"gz", "tmp"} {
-		comp = fmt.Sprintf(`"/var/log/pods/*/*/*.%s"`, comp)
-		excludes = append(excludes, comp)
-	}
-	return NewKubernetesLogs(id, "", joinContainerPathsForVector(excludes))
 }
 
 // NewKubernetesLogs element which always excludes temp and gzip files
@@ -170,4 +156,15 @@ var consecutiveWildcards = regexp.MustCompile(`\*+`)
 
 func collapseWildcards(entry string) string {
 	return consecutiveWildcards.ReplaceAllString(entry, "*")
+}
+
+func LabelSelectorFrom(selector *logging.LabelSelector) string {
+	matchLabels := []string{}
+	if selector == nil {
+		return ""
+	}
+	for k, v := range selector.MatchLabels {
+		matchLabels = append(matchLabels, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(matchLabels, ",")
 }

@@ -6,16 +6,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-func SyslogSources(spec *logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-	el := []framework.Element{}
-	for _, input := range spec.Inputs {
-		if logging.IsSyslogReceiver(&input) {
-			el = append(el, NewSyslogSource(input.Name, input, op))
-		}
-	}
-	return el
-}
-
 func NewSyslogSource(id string, input logging.InputSpec, op framework.Options) framework.Element {
 	return SyslogReceiver{
 		ID:            id,

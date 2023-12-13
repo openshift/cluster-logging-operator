@@ -3,11 +3,8 @@ package normalize
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	helpers2 "github.com/openshift/cluster-logging-operator/internal/generator/utils"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"strings"
 
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -103,36 +100,6 @@ var (
 	AddOpenAuditTag = fmt.Sprintf(".tag = %q", OpenAuditLogTag)
 	AddOvnAuditTag  = fmt.Sprintf(".tag = %q", OvnAuditLogTag)
 )
-
-func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-	types := helpers2.GatherSources(spec, op)
-	var el []framework.Element = make([]framework.Element, 0)
-	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
-		el = append(el, NormalizeContainerLogs("raw_container_logs", "container_logs")...)
-	}
-	if types.Has(logging.InputNameInfrastructure) {
-		el = append(el, DropJournalDebugLogs("raw_journal_logs", "drop_journal_logs")...)
-		el = append(el, JournalLogs("drop_journal_logs", "journal_logs")...)
-	}
-	if types.Has(logging.InputNameAudit) {
-		el = append(el, NormalizeHostAuditLogs(source.RawHostAuditLogs, source.HostAuditLogs)...)
-		el = append(el, NormalizeK8sAuditLogs(source.RawK8sAuditLogs, source.K8sAuditLogs)...)
-		el = append(el, NormalizeOpenshiftAuditLogs(source.RawOpenshiftAuditLogs, source.OpenshiftAuditLogs)...)
-		el = append(el, NormalizeOVNAuditLogs(source.RawOvnAuditLogs, source.OvnAuditLogs)...)
-	}
-
-	for _, input := range spec.Inputs {
-		if logging.IsAuditHttpReceiver(&input) {
-			el = append(el, NormalizeK8sAuditLogs(input.Name+`_items`, input.Name+`_normalized`)...)
-		}
-		if logging.IsSyslogReceiver(&input) {
-			el = append(el, DropJournalDebugLogs(input.Name, "drop_syslog_logs")...)
-			el = append(el, JournalLogs("drop_syslog_logs", "syslog_logs")...)
-		}
-	}
-
-	return el
-}
 
 func NormalizeContainerLogs(inputs, id string) []framework.Element {
 	return []framework.Element{

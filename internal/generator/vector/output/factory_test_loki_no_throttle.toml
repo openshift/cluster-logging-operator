@@ -1,0 +1,87 @@
+[transforms.output_default_loki_apps_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
+[transforms.output_default_loki_apps_dedot]
+type = "lua"
+inputs = ["output_default_loki_apps_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
+[sinks.output_default_loki_apps]
+type = "loki"
+inputs = ["output_default_loki_apps_dedot"]
+endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+out_of_order_action = "accept"
+healthcheck.enabled = false
+
+[sinks.output_default_loki_apps.encoding]
+codec = "json"
+
+[sinks.output_default_loki_apps.buffer]
+when_full = "drop_newest"
+
+[sinks.output_default_loki_apps.request]
+retry_attempts = 17
+
+[sinks.output_default_loki_apps.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+[sinks.output_default_loki_apps.tls]
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+
+# Bearer Auth Config
+[sinks.output_default_loki_apps.auth]
+strategy = "bearer"
+token = "token-for-loki"

@@ -2,15 +2,16 @@ package helpers
 
 import "strings"
 
-// Component is a vector sink, transformation, source
-type Component interface {
+// InputComponent is a vector sink, transformation, source that is
+// provided as input to other components
+type InputComponent interface {
 	// InputIDs are the ids of config elemements to use as input to other components
 	InputIDs() []string
 }
 
 // ComponentReceiver is a vector component that receives input from another component (e.g. transform, sink)
 type ComponentReceiver interface {
-	AddInputFrom(n Component)
+	AddInputFrom(n InputComponent)
 }
 
 // MakeID given a list of components

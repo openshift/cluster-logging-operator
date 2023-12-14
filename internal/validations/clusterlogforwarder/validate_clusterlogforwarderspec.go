@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/inputs"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -32,7 +34,7 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 		return errors.NewValidationError("ClusterLogForwarder disabled"), status
 	}
 
-	verifyInputs(&clf.Spec, status, extras)
+	inputs.Verify(clf.Spec.Inputs, status, extras)
 	if !status.Inputs.IsAllReady() {
 		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
 	}
@@ -56,10 +58,10 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 	// All pipelines have to be ready or invalid CLF
 	if len(unready) > 0 {
 		log.V(3).Info("validate clusterlogforwarder. Not all pipelines valid. Invalid CLF", "ForwarderSpec", clf.Spec)
-		status.Conditions.SetCondition(CondInvalid("invalid clf spec; one or more errors present: %v", unready))
+		status.Conditions.SetCondition(conditions.CondInvalid("invalid clf spec; one or more errors present: %v", unready))
 		return errors.NewValidationError("clusterlogforwarder is not ready"), status
 	}
-	status.Conditions.SetCondition(condReady)
+	status.Conditions.SetCondition(conditions.CondReady)
 	return nil, status
 }
 
@@ -131,7 +133,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 		// Don't allow empty names since this no longer mutates the spec
 		if pipeline.Name == "" {
 			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
-			status.Pipelines.Set(pipeline.Name, CondInvalid("pipeline must have a name"))
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("pipeline must have a name"))
 			names.Insert(pipeline.Name)
 			continue
 		}
@@ -139,14 +141,14 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 		if names.Has(pipeline.Name) {
 			original := pipeline.Name
 			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
-			status.Pipelines.Set(pipeline.Name, CondInvalid("duplicate name %q", original))
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("duplicate name %q", original))
 			continue
 		}
 		names.Insert(pipeline.Name)
 
 		// Verify pipeline labels
 		if _, err := json.Marshal(pipeline.Labels); err != nil {
-			status.Pipelines.Set(pipeline.Name, CondInvalid("invalid pipeline labels"))
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("invalid pipeline labels"))
 			continue
 		}
 
@@ -162,71 +164,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 			status.Pipelines.Set(pipeline.Name, con)
 			continue
 		} else {
-			status.Pipelines.Set(pipeline.Name, condReady) // Ready
-		}
-	}
-}
-
-// verifyInputs and set status.Inputs conditions
-func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) {
-	// Collect input conditions
-	status.Inputs = loggingv1.NamedConditions{}
-
-	// Check input names
-	for i, input := range spec.Inputs {
-		i, input := i, input // Don't bind range variables.
-		badInput := func(format string, args ...interface{}) {
-			if input.Name == "" {
-				input.Name = fmt.Sprintf("input_%v_", i)
-			}
-			status.Inputs.Set(input.Name, CondInvalid(format, args...))
-		}
-
-		validPort := func(port int32) bool {
-			return port > 1023 && port < 65536
-		}
-		isAReceiver := func(input loggingv1.InputSpec) bool {
-			return input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil
-		}
-
-		switch {
-		case input.Name == "":
-			badInput("input must have a name")
-		case loggingv1.ReservedInputNames.Has(input.Name):
-			if !extras[fmt.Sprintf("%s%s", constants.MigrateInputPrefix, input.Name)] {
-				badInput("input name %q is reserved", input.Name)
-			}
-		case len(status.Inputs[input.Name]) > 0:
-			badInput("duplicate name: %q", input.Name)
-		// Check if inputspec has application, infrastructure, audit or receiver specs
-		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Receiver == nil:
-			badInput("inputspec must define one or more of application, infrastructure, audit or receiver")
-		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
-			badInput("inputspec must define only one of container or group limit")
-		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
-			badInput("inputspec cannot have a negative limit threshold")
-		case input.Receiver != nil && !extras[constants.VectorName]:
-			badInput("ReceiverSpecs are only supported for the vector log collector")
-		case input.Receiver != nil && input.Receiver.ReceiverTypeSpec == nil:
-			badInput("invalid ReceiverTypeSpec specified for receiver")
-		case input.Receiver != nil && input.Receiver.Type != loggingv1.ReceiverTypeHttp && input.Receiver.Type != loggingv1.ReceiverTypeSyslog:
-			badInput("invalid Type specified for receiver")
-		case input.Receiver != nil && input.Receiver.Type == loggingv1.ReceiverTypeHttp && input.Receiver.Syslog != nil:
-			badInput("mismatched Type specified for receiver, specified HTTP and have Syslog")
-		case input.Receiver != nil && input.Receiver.Type == loggingv1.ReceiverTypeSyslog && input.Receiver.HTTP != nil:
-			badInput("mismatched Type specified for receiver, specified Syslog and have HTTP")
-		case isAReceiver(input) && input.Receiver.HTTP == nil && input.Receiver.Syslog == nil:
-			badInput("ReceiverSpec must define either HTTP or Syslog receiver")
-		case loggingv1.IsHttpReceiver(&input) && !validPort(input.Receiver.HTTP.Port):
-			badInput("invalid port specified for HTTP receiver")
-		case loggingv1.IsSyslogReceiver(&input) && !validPort(input.Receiver.Syslog.Port):
-			badInput("invalid port specified for Syslog receiver")
-		case loggingv1.IsHttpReceiver(&input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
-			badInput("invalid format specified for HTTP receiver")
-		case loggingv1.IsSyslogReceiver(&input) && input.Receiver.Syslog.Protocol != "tcp" && input.Receiver.Syslog.Protocol != "udp":
-			badInput("invalid protocol specified for Syslog receiver")
-		default:
-			status.Inputs.Set(input.Name, condReady)
+			status.Pipelines.Set(pipeline.Name, conditions.CondReady) // Ready
 		}
 	}
 }
@@ -243,7 +181,7 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 		i, output := i, output // Don't bind range variable.
 		badName := func(format string, args ...interface{}) {
 			output.Name = fmt.Sprintf("output_%v_", i)
-			status.Outputs.Set(output.Name, CondInvalid(format, args...))
+			status.Outputs.Set(output.Name, conditions.CondInvalid(format, args...))
 		}
 		log.V(3).Info("Verifying", "outputs", output)
 		switch {
@@ -259,28 +197,28 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			badName("duplicate name: %q", output.Name)
 		case !loggingv1.IsOutputTypeName(output.Type):
 			log.V(3).Info("verifyOutputs failed", "reason", "output type is invalid", "output name", output.Name, "output type", output.Type)
-			status.Outputs.Set(output.Name, CondInvalid("output %q: unknown output type %q", output.Name, output.Type))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !verifyOutputURL(&output, status.Outputs):
 			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !verifyOutputSecret(namespace, clfClient, &output, status.Outputs, extras):
 			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		case output.Type == loggingv1.OutputTypeCloudwatch && output.Cloudwatch == nil:
 			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
-			status.Outputs.Set(output.Name, CondInvalid("output %q: Cloudwatch output requires type spec", output.Name))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Cloudwatch output requires type spec", output.Name))
 		// Check googlecloudlogging specs, must only include one of the following
 		case output.Type == loggingv1.OutputTypeGoogleCloudLogging && output.GoogleCloudLogging != nil && !verifyGoogleCloudLogging(output.GoogleCloudLogging):
 			log.V(3).Info("verifyOutputs failed", "reason",
 				"Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 				"output name", output.Name, "output type", output.Type)
 			status.Outputs.Set(output.Name,
-				CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
+				conditions.CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 					output.Name))
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
-			status.Outputs.Set(output.Name, CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
 		case !outputRefs.Has(output.Name):
-			status.Outputs.Set(output.Name, CondInvalid("output %q: Output not referenced by any pipeline", output.Name))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output not referenced by any pipeline", output.Name))
 		default:
-			status.Outputs.Set(output.Name, condReady)
+			status.Outputs.Set(output.Name, conditions.CondReady)
 		}
 
 		if output.Type == loggingv1.OutputTypeCloudwatch {
@@ -329,7 +267,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 			brokerUrls = append(brokerUrls, output.Kafka.Brokers...)
 		}
 		if len(brokerUrls) == 0 {
-			return fail(CondInvalid("no broker URLs specified"))
+			return fail(conditions.CondInvalid("no broker URLs specified"))
 		}
 		for _, b := range brokerUrls {
 			u, err := url.Parse(b)
@@ -337,7 +275,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 				err = url.CheckAbsolute(u)
 			}
 			if err != nil {
-				return fail(CondInvalid("invalid URL: %v", err))
+				return fail(conditions.CondInvalid("invalid URL: %v", err))
 			}
 		}
 	} else {
@@ -348,7 +286,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 				output.Type == loggingv1.OutputTypeGoogleCloudLogging || output.Type == loggingv1.OutputTypeLoki {
 				return true
 			} else {
-				return fail(CondInvalid("URL is required for output type %v", output.Type))
+				return fail(conditions.CondInvalid("URL is required for output type %v", output.Type))
 			}
 		}
 		u, err := url.Parse(output.URL)
@@ -356,12 +294,12 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 			err = url.CheckAbsolute(u)
 		}
 		if err != nil {
-			return fail(CondInvalid("invalid URL: %v", err))
+			return fail(conditions.CondInvalid("invalid URL: %v", err))
 		}
 		if output.Type == loggingv1.OutputTypeSyslog {
 			scheme := strings.ToLower(u.Scheme)
 			if !(scheme == `tcp` || scheme == `tls` || scheme == `udp`) {
-				return fail(CondInvalid("invalid URL scheme: %v", u.Scheme))
+				return fail(conditions.CondInvalid("invalid URL scheme: %v", u.Scheme))
 			}
 		}
 	}
@@ -377,7 +315,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 		return true
 	}
 	if output.Secret.Name == "" {
-		conds.Set(output.Name, CondInvalid("secret has empty name"))
+		conds.Set(output.Name, conditions.CondInvalid("secret has empty name"))
 		return false
 	}
 	// Only for ES. If default replaced, the "collector" secret will be created later
@@ -387,7 +325,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 	log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)
 	secret, err := getOutputSecret(namespace, clfClient, output.Secret.Name)
 	if err != nil {
-		return fail(CondMissing("secret %q not found", output.Secret.Name))
+		return fail(conditions.CondMissing("secret %q not found", output.Secret.Name))
 	}
 
 	switch output.Type {
@@ -426,13 +364,13 @@ func verifySecretKeysForTLS(output *loggingv1.OutputSpec, conds loggingv1.NamedC
 	havePassword := len(secret.Data[constants.ClientPassword]) > 0
 	switch {
 	case haveCert && !haveKey:
-		return fail(CondMissing("cannot have %v without %v", constants.ClientCertKey, constants.ClientPrivateKey))
+		return fail(conditions.CondMissing("cannot have %v without %v", constants.ClientCertKey, constants.ClientPrivateKey))
 	case !haveCert && haveKey:
-		return fail(CondMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
+		return fail(conditions.CondMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
 	case haveUsername && !havePassword:
-		return fail(CondMissing("cannot have %v without %v", constants.ClientUsername, constants.ClientPassword))
+		return fail(conditions.CondMissing("cannot have %v without %v", constants.ClientUsername, constants.ClientPassword))
 	case !haveUsername && havePassword:
-		return fail(CondMissing("cannot have %v without %v", constants.ClientPassword, constants.ClientUsername))
+		return fail(conditions.CondMissing("cannot have %v without %v", constants.ClientPassword, constants.ClientUsername))
 	}
 	return true
 }
@@ -453,9 +391,9 @@ func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1
 	case hasValidRoleArn: // Sts secret format is the first check
 		return true
 	case hasRoleArnKey && !hasValidRoleArn, hasCredentialsKey && !hasValidRoleArn:
-		return fail(CondMissing("auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"))
+		return fail(conditions.CondMissing("auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"))
 	case !hasKeyID || !hasSecretKey:
-		return fail(CondMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
+		return fail(conditions.CondMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
 	}
 	return true
 }
@@ -469,7 +407,7 @@ func verifySecretKeysForSplunk(output *loggingv1.OutputSpec, conds loggingv1.Nam
 	if len(secret.Data[constants.SplunkHECTokenKey]) > 0 {
 		return true
 	} else {
-		return fail(CondMissing("A non-empty " + constants.SplunkHECTokenKey + " entry is required"))
+		return fail(conditions.CondMissing("A non-empty " + constants.SplunkHECTokenKey + " entry is required"))
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,11 +95,7 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 			return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret)
 		},
 		clusterRequest.removeKibana,
-		func() error {
-			return lokistack.RemoveRbac(clusterRequest.Client, func(identifier string) error {
-				return RemoveFinalizer(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, identifier)
-			})
-		}} {
+	} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		if err := remove(); err != nil && !apierrors.IsNotFound(err) {
 			log.Error(err, "Error removing component")

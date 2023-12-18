@@ -1,11 +1,9 @@
 package k8shandler
 
 import (
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -22,8 +20,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		}
 		return eslogstore.Reconcile(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret, utils.AsOwner(clusterRequest.Cluster), fetchClusterLogging)
 	case logging.LogStoreTypeLokiStack:
-		return lokistack.ReconcileLokiStackLogStore(clusterRequest.Client, clusterRequest.Cluster.DeletionTimestamp, clusterRequest.appendFinalizer)
 	default:
-		return nil
 	}
+
+	return nil
 }

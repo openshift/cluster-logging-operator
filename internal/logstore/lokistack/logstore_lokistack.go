@@ -1,36 +1,23 @@
 package lokistack
 
 import (
+	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sort"
 	"strings"
 
 	"github.com/ViaQ/logerr/v2/kverrors"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/reconcile"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 const (
 	lokiStackFinalizer = "logging.openshift.io/lokistack-rbac"
-
-	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
-	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
-
-	lokiStackAppViewClusterRoleName   = "cluster-logging-application-view"
-	lokiStackInfraViewClusterRoleName = "cluster-logging-infrastructure-view"
-	lokiStackAuditViewClusterRoleName = "cluster-logging-audit-view"
-
-	applicationLogs    = "application"
-	infrastructureLogs = "infrastructure"
-	auditLogs          = "audit"
 )
 
 var (
@@ -44,124 +31,16 @@ func init() {
 	}
 }
 
-func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.Time, appendFinalizer func(identifier string) error) error {
-	if deletionTimestamp != nil {
-		// Skip creation if deleting
-		return nil
-	}
-
-	if err := appendFinalizer(lokiStackFinalizer); err != nil {
-		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
-	}
-
-	if err := reconcile.ClusterRole(k8sClient, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for LokiStack collector.")
-	}
-
-	if err := reconcile.ClusterRoleBinding(k8sClient, lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
-	}
-
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAppViewClusterRoleName, applicationLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
-	}
-
-	if err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackViewClusterRole(lokiStackInfraViewClusterRoleName, infrastructureLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading infrastructure logs.")
-	}
-
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAuditViewClusterRoleName, auditLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
+// CheckFinalizer checks if the finalizer used for tracking the cluster-wide RBAC resources
+// is attached to the provided object and removes it, if present.
+func CheckFinalizer(ctx context.Context, client client.Client, obj client.Object) error {
+	if controllerutil.RemoveFinalizer(obj, lokiStackFinalizer) {
+		if err := client.Update(ctx, obj); err != nil {
+			return kverrors.Wrap(err, "Failed to remove finalizer from ClusterLogging.")
+		}
 	}
 
 	return nil
-}
-
-func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) error {
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAppViewClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackInfraViewClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAuditViewClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := reconcile.DeleteClusterRoleBinding(k8sClient, lokiStackWriterClusterRoleBindingName); err != nil {
-		return err
-	}
-
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackWriterClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := removeFinalizer(lokiStackFinalizer); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func newLokiStackWriterClusterRole() *rbacv1.ClusterRole {
-
-	return runtime.NewClusterRole(lokiStackWriterClusterRoleName,
-		rbacv1.PolicyRule{
-			APIGroups: []string{
-				"loki.grafana.com",
-			},
-			Resources: []string{
-				"application",
-				"audit",
-				"infrastructure",
-			},
-			ResourceNames: []string{
-				"logs",
-			},
-			Verbs: []string{
-				"create",
-			},
-		},
-	)
-}
-
-func newLokiStackWriterClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return runtime.NewClusterRoleBinding(
-		lokiStackWriterClusterRoleBindingName,
-		rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     lokiStackWriterClusterRoleName,
-		}, rbacv1.Subject{
-			Kind:      "ServiceAccount",
-			Name:      "logcollector",
-			Namespace: "openshift-logging",
-		},
-	)
-}
-
-func newLokiStackViewClusterRole(name, logType string) func() *rbacv1.ClusterRole {
-	return func() *rbacv1.ClusterRole {
-		return runtime.NewClusterRole(
-			name,
-			rbacv1.PolicyRule{
-				APIGroups: []string{
-					"loki.grafana.com",
-				},
-				Resources: []string{
-					logType,
-				},
-				ResourceNames: []string{
-					"logs",
-				},
-				Verbs: []string{
-					"get",
-				},
-			},
-		)
-	}
 }
 
 func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool, saTokenSecret string) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {

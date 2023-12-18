@@ -18,6 +18,7 @@ func NewHttpSource(id string, input logging.InputSpec, op framework.Options) fra
 	}
 	return HttpReceiver{
 		ID:            id,
+		InputName:     input.Name,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 		ListenPort:    input.Receiver.HTTP.Port,
 		Format:        input.Receiver.HTTP.Format,
@@ -28,6 +29,7 @@ func NewHttpSource(id string, input logging.InputSpec, op framework.Options) fra
 
 type HttpReceiver struct {
 	ID            string
+	InputName     string
 	ListenAddress string
 	ListenPort    int32
 	Format        string
@@ -49,8 +51,8 @@ decoding.codec = "json"
 
 [sources.{{.ID}}.tls]
 enabled = true
-key_file = "/etc/collector/receiver/{{.ID}}/tls.key"
-crt_file = "/etc/collector/receiver/{{.ID}}/tls.crt"
+key_file = "/etc/collector/receiver/{{.InputName}}/tls.key"
+crt_file = "/etc/collector/receiver/{{.InputName}}/tls.crt"
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

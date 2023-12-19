@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/inputs"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
@@ -212,6 +213,11 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 				"output name", output.Name, "output type", output.Type)
 			status.Outputs.Set(output.Name,
 				conditions.CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
+					output.Name))
+		case output.Type == loggingv1.OutputTypeSplunk && output.Splunk != nil && (output.Splunk.IndexKey != "" && output.Splunk.IndexName != ""):
+			log.V(3).Info("verifyOutputsFailed", "reason", "splunk output allows only one of indexKey or indexName, not both.")
+			status.Outputs.Set(output.Name,
+				conditions.CondInvalid("output %q: Only one of indexKey or indexName can be set, not both.",
 					output.Name))
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
 			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))

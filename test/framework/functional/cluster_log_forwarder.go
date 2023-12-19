@@ -95,6 +95,10 @@ func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeCloudwatch)
 }
 
+func (p *PipelineBuilder) ToSplunkOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSplunk)
+}
+
 func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *logging.OutputSpec)) *ClusterLogForwarderBuilder {
 	kafkaVisitor := func(output *logging.OutputSpec) {
 		output.Type = logging.OutputTypeKafka
@@ -199,6 +203,18 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 						},
 						Method: "POST",
 					},
+				},
+			}
+		case logging.OutputTypeSplunk:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeSplunk,
+				Type: logging.OutputTypeSplunk,
+				URL:  "http://localhost:8088",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Splunk: &logging.Splunk{},
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "splunk-secret",
 				},
 			}
 		default:

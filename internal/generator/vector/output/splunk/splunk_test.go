@@ -1,9 +1,10 @@
 package splunk
 
 import (
+	"testing"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -302,6 +303,132 @@ key_pass = "junk"
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerifyNoCert))
+		})
+
+		Context("with custom index", func() {
+			var (
+				splunkOutputSpec loggingv1.OutputSpec
+				splunkIndexRemap = `
+# Set Splunk Index
+[transforms.splunk_hec_add_splunk_index]
+type = "remap"
+inputs = ["pipelineName"]			
+`
+				splunkWithIndexDedot = `
+
+[transforms.splunk_hec_dedot]
+type = "lua"
+inputs = ["splunk_hec_add_splunk_index"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		emit(event)
+	end
+
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "[./]", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+'''
+
+[sinks.splunk_hec]
+type = "splunk_hec_logs"
+inputs = ["splunk_hec_dedot"]
+endpoint = "https://splunk-web:8088/endpoint"
+compression = "none"
+default_token = "` + hecToken + `"
+index = "{{ write_index }}"
+timestamp_key = "@timestamp"
+[sinks.splunk_hec.encoding]
+codec = "json"
+except_fields = ["write_index"]
+
+[sinks.splunk_hec.buffer]
+when_full = "drop_newest"
+
+[sinks.splunk_hec.request]
+retry_attempts = 17
+`
+
+				splunkSinkIndexKey = `
+source = '''
+val = .kubernetes.namespace_name
+if !is_null(val) {
+	.write_index = val
+} else {
+	.write_index = ""
+}
+'''
+`
+				splunkSinkIndexName = `
+source = '''
+	.write_index = "custom-index"
+'''
+`
+			)
+
+			BeforeEach(func() {
+				splunkOutputSpec = loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeSplunk,
+					Name: "splunk_hec",
+					URL:  "https://splunk-web:8088/endpoint",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Splunk: &loggingv1.Splunk{},
+					},
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: "vector-splunk-secret",
+					},
+				}
+			})
+
+			It("should provide a valid config with indexKey specified", func() {
+				splunkOutputSpec.Splunk.IndexKey = "kubernetes.namespace_name"
+				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+				results, err := g.GenerateConf(element...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexKey + splunkWithIndexDedot))
+			})
+
+			It("should provide a valid config with indexName specified", func() {
+				splunkOutputSpec.Splunk.IndexName = "custom-index"
+				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+				results, err := g.GenerateConf(element...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexName + splunkWithIndexDedot))
+			})
 		})
 	})
 })

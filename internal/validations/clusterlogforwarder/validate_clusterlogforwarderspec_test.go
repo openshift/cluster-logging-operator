@@ -481,6 +481,85 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", clfStatus))
 			Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)), fmt.Sprintf("status: %+v", clfStatus))
 		})
+
+		Context("splunk custom index", func() {
+			var (
+				forwarderSpec    = loggingv1.ClusterLogForwarderSpec{}
+				splunkOutputName = "splunk-index"
+			)
+			BeforeEach(func() {
+				forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{splunkOutputName}}}
+			})
+
+			It("should pass if only IndexKey is spec'd", func() {
+				forwarderSpec.Outputs = []loggingv1.OutputSpec{
+					{
+						Name: splunkOutputName,
+						Type: loggingv1.OutputTypeSplunk,
+						URL:  "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{
+								IndexKey: "kubernetes.namespace_name",
+							},
+						},
+					},
+				}
+				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
+				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", clfStatus))
+			})
+
+			It("should pass if only IndexName is spec'd", func() {
+				forwarderSpec.Outputs = []loggingv1.OutputSpec{
+					{
+						Name: splunkOutputName,
+						Type: loggingv1.OutputTypeSplunk,
+						URL:  "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{
+								IndexName: "custom-index",
+							},
+						},
+					},
+				}
+				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
+				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", clfStatus))
+			})
+
+			It("should pass if IndexKey && IndexName are not spec'd", func() {
+				forwarderSpec.Outputs = []loggingv1.OutputSpec{
+					{
+						Name:           splunkOutputName,
+						Type:           loggingv1.OutputTypeSplunk,
+						URL:            "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{},
+					},
+				}
+				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
+				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", clfStatus))
+			})
+
+			It("should fail if both IndexKey && IndexName is spec'd", func() {
+				forwarderSpec.Outputs = []loggingv1.OutputSpec{
+					{
+						Name: splunkOutputName,
+						Type: loggingv1.OutputTypeSplunk,
+						URL:  "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{
+								IndexKey:  "kubernetes.namespace_name",
+								IndexName: "custom-index",
+							},
+						},
+					},
+				}
+				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
+				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \""+splunkOutputName+"\": Only one of indexKey or indexName can be set, not both."))
+			})
+		})
 	})
 
 	Context("pipelines", func() {

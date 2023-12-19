@@ -3,13 +3,14 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -395,6 +396,10 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 			}
 		case logging.OutputTypeHttp:
 			if err := f.AddFluentdHttpOutput(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeSplunk:
+			if err := f.AddSplunkOutput(b, output); err != nil {
 				return err
 			}
 		}

@@ -2,6 +2,8 @@ package splunk
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
@@ -23,6 +25,7 @@ type Splunk struct {
 	Inputs       string
 	Endpoint     string
 	DefaultToken string
+	Index        Element
 }
 
 func (s Splunk) Name() string {
@@ -37,13 +40,15 @@ inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 compression = "none"
 default_token = "{{.DefaultToken}}"
+{{kv .Index -}}
 timestamp_key = "@timestamp"
 {{end}}`
 }
 
 type SplunkEncoding struct {
-	ComponentID string
-	Codec       string
+	ComponentID  string
+	Codec        string
+	ExceptFields Element
 }
 
 func (se SplunkEncoding) Name() string {
@@ -54,6 +59,7 @@ func (se SplunkEncoding) Template() string {
 	return `{{define "` + se.Name() + `" -}}
 [sinks.{{.ComponentID}}.encoding]
 codec = {{.Codec}}
+{{kv .ExceptFields -}}
 {{end}}`
 }
 
@@ -63,10 +69,20 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+
+	componentID := vectorhelpers.MakeID(id, "add_splunk_index")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
+
+	dedotInputs := inputs
+	indexRemapElement := SetSplunkIndexRemap(o.Splunk, componentID, inputs)
+	if len(indexRemapElement) != 0 {
+		dedotInputs = []string{componentID}
+	}
+
 	return MergeElements(
+		indexRemapElement,
 		[]Element{
-			normalize.DedotLabels(dedottedID, inputs),
+			normalize.DedotLabels(dedottedID, dedotInputs),
 			Output(id, o, []string{dedottedID}, secret, op),
 			Encoding(id, o),
 			common.NewBuffer(id),
@@ -82,13 +98,72 @@ func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Sec
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
 		DefaultToken: common.GetFromSecret(secret, constants.SplunkHECTokenKey),
+		Index:        AddSplunkIndexToSink(o.Splunk),
 	}
+}
+
+func hasCustomIndex(s *logging.Splunk) bool {
+	return s != nil && (s.IndexKey != "" || s.IndexName != "")
+}
+
+func SetSplunkIndexRemap(s *logging.Splunk, componentID string, inputs []string) []Element {
+	var vrl string
+	var index string
+
+	if !hasCustomIndex(s) {
+		return []Element{}
+	}
+
+	switch {
+	// If key is not found, a write index of "" writes to default index defined in Splunk
+	case s.IndexKey != "":
+		vrl = `
+val = .%s
+if !is_null(val) {
+	.write_index = val
+} else {
+	.write_index = ""
+}
+`
+		index = s.IndexKey
+
+	case s.IndexName != "":
+		vrl = `
+.write_index = "%s"
+`
+		index = s.IndexName
+	}
+	return []Element{
+		Remap{
+			Desc:        "Set Splunk Index",
+			ComponentID: componentID,
+			Inputs:      vectorhelpers.MakeInputs(inputs...),
+			VRL:         strings.TrimSpace(fmt.Sprintf(vrl, index)),
+		},
+	}
+}
+
+func AddSplunkIndexToSink(s *logging.Splunk) Element {
+	if !hasCustomIndex(s) {
+		return Nil
+	}
+
+	return KV("index", fmt.Sprintf("%q", "{{ write_index }}"))
+}
+
+func AddSplunkEncodeExceptFields(s *logging.Splunk) Element {
+	if !hasCustomIndex(s) {
+		return Nil
+	}
+
+	return KV("except_fields", "[\"write_index\"]")
 }
 
 func Encoding(id string, o logging.OutputSpec) Element {
 	return SplunkEncoding{
-		ComponentID: id,
-		Codec:       splunkEncodingJson,
+		ComponentID:  id,
+		Codec:        splunkEncodingJson,
+		ExceptFields: AddSplunkEncodeExceptFields(o.Splunk),
 	}
 }
 

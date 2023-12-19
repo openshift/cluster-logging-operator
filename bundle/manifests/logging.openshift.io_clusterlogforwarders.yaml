@@ -699,6 +699,21 @@ spec:
                           items:
                             type: string
                           type: array
+                        indexKey:
+                          description: 'IndexKey is a meta-data key field to use to
+                            send events to. For example: ''IndexKey: kubernetes.namespace_name`
+                            will use the kubernetes namespace as the index. If the
+                            IndexKey is not found, the default index defined within
+                            Splunk is used. Only one of IndexKey or IndexName can
+                            be defined. If IndexKey && IndexName are not specified,
+                            the default index defined within Splunk is used.'
+                          type: string
+                        indexName:
+                          description: IndexName is the name of the index to send
+                            events to. Only one of IndexKey or IndexName can be defined.
+                            If IndexKey && IndexName are not specified, the default
+                            index defined within Splunk is used.
+                          type: string
                       type: object
                     syslog:
                       description: Syslog provides optional extra properties for output

@@ -56,4 +56,71 @@ spec:
       outputRefs:
         - splunk-receiver
 ----
+
+=== Customizing Splunk Index
+
+To customize the index where you send events to in Splunk, you need to configure it in your log forwarding configuration (If not specified, the default index defined within Splunk is used.):
+
+. Specifying `indexKey`:
 +
+----
+oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: splunk-receiver
+      type: splunk
+      splunk:
+       indexKey: "kubernetes.namespace_name"
+      secret:
+        name: splunk-secret
+      url: 'http://example-splunk-hec-service:8088'
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - splunk-receiver
+----
++
+. Specifying `indexName`:
+----
+oc apply -f cluster-log-forwarder.yaml
+----
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: splunk-receiver
+      type: splunk
+      splunk:
+       indexName: "testIndex"
+      secret:
+        name: splunk-secret
+      url: 'http://example-splunk-hec-service:8088'
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - splunk-receiver
+----
+NOTE:  Only one of _indexKey_ or _indexName_ can be used at once, not both at the same time.

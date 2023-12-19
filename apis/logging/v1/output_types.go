@@ -276,6 +276,21 @@ type Splunk struct {
 	// Should be a valid JSON object
 	// +optional
 	Fields []string `json:"fields,omitempty"`
+
+	// IndexKey is a meta-data key field to use to send events to.
+	// For example: 'IndexKey: kubernetes.namespace_name` will use the kubernetes
+	// namespace as the index.
+	// If the IndexKey is not found, the default index defined within Splunk is used.
+	// Only one of IndexKey or IndexName can be defined.
+	// If IndexKey && IndexName are not specified, the default index defined within Splunk is used.
+	// +optional
+	IndexKey string `json:"indexKey,omitempty"`
+
+	// IndexName is the name of the index to send events to.
+	// Only one of IndexKey or IndexName can be defined.
+	// If IndexKey && IndexName are not specified, the default index defined within Splunk is used.
+	// +optional
+	IndexName string `json:"indexName,omitempty"`
 }
 
 // Http provided configuration for sending json encoded logs to a generic http endpoint.

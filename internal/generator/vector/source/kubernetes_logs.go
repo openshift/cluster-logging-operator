@@ -5,6 +5,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -159,12 +160,18 @@ func collapseWildcards(entry string) string {
 }
 
 func LabelSelectorFrom(selector *logging.LabelSelector) string {
-	matchLabels := []string{}
 	if selector == nil {
 		return ""
 	}
-	for k, v := range selector.MatchLabels {
-		matchLabels = append(matchLabels, fmt.Sprintf("%s=%s", k, v))
+
+	matchLabels := make([]string, 0, len(selector.MatchLabels))
+	for k := range selector.MatchLabels {
+		matchLabels = append(matchLabels, k)
+	}
+	sort.Strings(matchLabels)
+
+	for i, k := range matchLabels {
+		matchLabels[i] = fmt.Sprintf("%s=%s", k, selector.MatchLabels[k])
 	}
 	return strings.Join(matchLabels, ",")
 }

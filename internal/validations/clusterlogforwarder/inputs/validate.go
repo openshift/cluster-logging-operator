@@ -4,7 +4,10 @@ import (
 	"fmt"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
+	corev1 "k8s.io/api/core/v1"
+	"strings"
 )
 
 // Verify and set status.Inputs conditions
@@ -39,12 +42,11 @@ func Verify(inputs []loggingv1.InputSpec, status *loggingv1.ClusterLogForwarderS
 		case len(status.Inputs[input.Name]) > 0:
 			badInput("duplicate name: %q", input.Name)
 		// Check if inputspec has application, infrastructure, audit or receiver specs
-		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil && input.Receiver == nil:
-			badInput("inputspec must define one or more of application, infrastructure, audit or receiver")
-		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
-			badInput("inputspec must define only one of container or group limit")
-		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
-			badInput("inputspec cannot have a negative limit threshold")
+		case !hasOneType(input):
+			badInput("inputspec must define one and only one of: application, infrastructure, audit or receiver")
+		case !validApplication(input, status, extras):
+		case !validInfrastructure(input, status, extras):
+		case !validAudit(input, status, extras):
 		case input.Receiver != nil && !extras[constants.VectorName]:
 			badInput("ReceiverSpecs are only supported for the vector log collector")
 		case input.Receiver != nil && input.Receiver.ReceiverTypeSpec == nil:
@@ -69,4 +71,55 @@ func Verify(inputs []loggingv1.InputSpec, status *loggingv1.ClusterLogForwarderS
 			status.Inputs.Set(input.Name, conditions.CondReady)
 		}
 	}
+}
+
+func hasOneType(spec loggingv1.InputSpec) bool {
+	totTypes := 0
+	if spec.Application != nil {
+		totTypes += 1
+	}
+	if spec.Infrastructure != nil {
+		totTypes += 1
+	}
+	if spec.Audit != nil {
+		totTypes += 1
+	}
+	if spec.Receiver != nil {
+		totTypes += 1
+	}
+	return totTypes == 1
+}
+
+var (
+	conditionInfraValidationSourcesFailure = loggingv1.NewCondition(loggingv1.ValidationCondition,
+		corev1.ConditionTrue,
+		loggingv1.ValidationFailureReason,
+		"infrastructure inputs must define at least one valid source: %s", strings.Join(loggingv1.InfrastructureSources.List(), ","))
+	conditionAuditValidationSourcesFailure = loggingv1.NewCondition(loggingv1.ValidationCondition,
+		corev1.ConditionTrue,
+		loggingv1.ValidationFailureReason,
+		"infrastructure inputs must define at least one valid source: %s", strings.Join(loggingv1.AuditSources.List(), ","))
+)
+
+func validInfrastructure(spec loggingv1.InputSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) bool {
+	if spec.Infrastructure != nil {
+		switch {
+		case len(spec.Infrastructure.Sources) == 0:
+			status.Inputs.Set(spec.Name, conditionInfraValidationSourcesFailure)
+		case !sets.NewString(spec.Infrastructure.Sources...).SubsetOf(&loggingv1.InfrastructureSources.Set):
+			status.Inputs.Set(spec.Name, conditionInfraValidationSourcesFailure)
+		}
+	}
+	return len(status.Inputs[spec.Name]) == 0
+}
+func validAudit(spec loggingv1.InputSpec, status *loggingv1.ClusterLogForwarderStatus, extras map[string]bool) bool {
+	if spec.Audit != nil {
+		switch {
+		case len(spec.Audit.Sources) == 0:
+			status.Inputs.Set(spec.Name, conditionAuditValidationSourcesFailure)
+		case !sets.NewString(spec.Audit.Sources...).SubsetOf(&loggingv1.AuditSources.Set):
+			status.Inputs.Set(spec.Name, conditionAuditValidationSourcesFailure)
+		}
+	}
+	return len(status.Inputs[spec.Name]) == 0
 }

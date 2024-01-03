@@ -31,7 +31,10 @@ var _ = Describe("migrateInputs", func() {
 			extras := map[string]bool{}
 			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
 			Expect(result.Inputs).To(HaveLen(1))
-			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{Name: logging.InputNameInfrastructure, Infrastructure: &logging.Infrastructure{}}))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{Name: logging.InputNameInfrastructure,
+				Infrastructure: &logging.Infrastructure{
+					Sources: logging.InfrastructureSources.List(),
+				}}))
 			Expect(extras).To(Equal(map[string]bool{constants.MigrateInputInfrastructure: true}))
 		})
 		It("should stub 'audit' as an input when referenced", func() {
@@ -43,7 +46,10 @@ var _ = Describe("migrateInputs", func() {
 			extras := map[string]bool{}
 			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
 			Expect(result.Inputs).To(HaveLen(1))
-			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{Name: logging.InputNameAudit, Audit: &logging.Audit{}}))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{Name: logging.InputNameAudit,
+				Audit: &logging.Audit{
+					Sources: logging.AuditSources.List(),
+				}}))
 			Expect(extras).To(Equal(map[string]bool{constants.MigrateInputAudit: true}))
 		})
 	})

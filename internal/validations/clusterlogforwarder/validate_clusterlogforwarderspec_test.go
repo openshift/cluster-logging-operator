@@ -780,7 +780,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(forwarderSpec.Inputs).To(HaveLen(1), "Exp. not to mutate original spec inputs")
 			Expect(forwarderSpec.Outputs).To(HaveLen(1), "Exp. not to mutate original spec outputs")
 
-			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one or more of application, infrastructure, audit or receiver"))
+			Expect(clfStatus.Inputs["inval-input"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define one and only one of"))
 			Expect(clfStatus.Pipelines).To(HaveLen(1), "Exp. all defined pipelines to have statuses")
 			Expect(clfStatus.Pipelines).To(HaveKey("custom-pipeline"))
 			Expect(clfStatus.Pipelines["custom-pipeline"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid*"))

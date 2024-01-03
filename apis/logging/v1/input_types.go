@@ -1,6 +1,9 @@
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // LabelSelector is a label query over a set of resources.
 type LabelSelector metav1.LabelSelector
@@ -89,6 +92,8 @@ const (
 	InfrastructureSourceContainer string = "container"
 )
 
+var InfrastructureSources = sets.NewString(InfrastructureSourceNode, InfrastructureSourceContainer)
+
 // Audit enables audit logs. Filtering may be added in future.
 type Audit struct {
 	// Sources defines the list of audit sources to collect.
@@ -113,3 +118,5 @@ const (
 	// AuditSourceOVN are audit logs from an Open Virtual Network service
 	AuditSourceOVN string = "ovn"
 )
+
+var AuditSources = sets.NewString(AuditSourceKube, AuditSourceOpenShift, AuditSourceAuditd, AuditSourceOVN)

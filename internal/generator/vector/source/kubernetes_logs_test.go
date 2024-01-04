@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -53,24 +52,6 @@ var _ = Describe("source", func() {
 		})
 		It("should join the paths when paths exist", func() {
 			Expect(joinContainerPathsForVector([]string{"a", "b"})).To(Equal(`[a, b]`))
-		})
-	})
-
-	Describe("#LabelSelectorFrom", func() {
-		Context("when using matchLabels", func() {
-
-			It("should be empty for a nil selector", func() {
-				Expect(LabelSelectorFrom(nil)).To(BeEmpty())
-			})
-			It("should format a vector selector that exactly matches all the labels defined", func() {
-				selector := &logging.LabelSelector{
-					MatchLabels: map[string]string{
-						"key1": "value1",
-						"key2": "value2",
-					},
-				}
-				Expect(LabelSelectorFrom(selector)).To(Equal(`key1=value1,key2=value2`))
-			})
 		})
 	})
 })

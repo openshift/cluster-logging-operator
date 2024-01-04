@@ -2,10 +2,8 @@ package source
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -157,22 +155,4 @@ var consecutiveWildcards = regexp.MustCompile(`\*+`)
 
 func collapseWildcards(entry string) string {
 	return consecutiveWildcards.ReplaceAllString(entry, "*")
-}
-
-func LabelSelectorFrom(selector *logging.LabelSelector) string {
-	if selector == nil {
-		return ""
-	}
-
-	matchLabels := make([]string, 0, len(selector.MatchLabels))
-	for k := range selector.MatchLabels {
-		matchLabels = append(matchLabels, k)
-	}
-	sort.Strings(matchLabels)
-
-	for i, k := range matchLabels {
-		matchLabels[i] = fmt.Sprintf("%s=%s", k, selector.MatchLabels[k])
-	}
-	sort.Strings(matchLabels)
-	return strings.Join(matchLabels, ",")
 }

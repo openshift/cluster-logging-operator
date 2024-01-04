@@ -2,9 +2,10 @@ package vector
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"regexp"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -17,7 +18,7 @@ import (
 const entrypointScript = `#!/bin/bash
 mkdir -p %s
 
-/usr/bin/vector
+/usr/bin/vector --config-toml /etc/vector/vector.toml
 `
 
 type VectorCollector struct {

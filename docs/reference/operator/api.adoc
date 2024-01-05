@@ -1227,7 +1227,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |Property|Type|Description
 
 |kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
+|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
 |ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
+|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
 |type|string|  The type of Visualization to configure
 |======================
 
@@ -1243,15 +1245,17 @@ This is the struct that will contain information pertinent to Log visualization 
 |======================
 |Property|Type|Description
 
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
+|nodeSelector|object| **(DEPRECATED)** Define which Nodes the Pods are scheduled on.
 |proxy|object|  Specification of the Kibana Proxy component
 |replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
 |resources|object|  *(optional)* The resource requirements for Kibana
-|tolerations|array|  
+|tolerations|array| **(DEPRECATED)** Define the tolerations the Pods will accept
 |======================
 
 === .spec.visualization.kibana.nodeSelector
 ===== Description
+
+**(DEPRECATED)**
 
 =====  Type
 * object
@@ -1358,6 +1362,8 @@ This is the struct that will contain information pertinent to Log visualization 
 === .spec.visualization.kibana.tolerations[]
 ===== Description
 
+**(DEPRECATED)**
+
 =====  Type
 * array
 
@@ -1378,6 +1384,12 @@ This is the struct that will contain information pertinent to Log visualization 
 =====  Type
 * int
 
+=== .spec.visualization.nodeSelector
+===== Description
+
+=====  Type
+* object
+
 === .spec.visualization.ocpConsole
 ===== Description
 
@@ -1391,6 +1403,29 @@ This is the struct that will contain information pertinent to Log visualization 
 |logsLimit|int|  *(optional)* LogsLimit is the max number of entries returned for a query.
 |timeout|string|  *(optional)* Timeout is the max duration before a query timeout
 |======================
+
+=== .spec.visualization.tolerations[]
+===== Description
+
+=====  Type
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+=== .spec.visualization.tolerations[].tolerationSeconds
+===== Description
+
+=====  Type
+* int
 
 === .status
 ===== Description

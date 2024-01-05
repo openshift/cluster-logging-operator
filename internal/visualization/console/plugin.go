@@ -15,11 +15,11 @@ import (
 func ReconcilePlugin(k8sClient client.Client, cl *logging.ClusterLogging, owner client.Object, clusterVersion string) error {
 	lokiService := lokiServiceName(cl)
 	korrel8rNN := korrel8rNamespacedName(cl)
-	var consoleSpec *logging.OCPConsoleSpec
+	var visSpec *logging.VisualizationSpec
 	if cl != nil && cl.Spec.Visualization != nil {
-		consoleSpec = cl.Spec.Visualization.OCPConsole
+		visSpec = cl.Spec.Visualization
 	}
-	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, korrel8rNN.Name, korrel8rNN.Namespace, FeaturesForOCP(clusterVersion)), consoleSpec)
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, korrel8rNN.Name, korrel8rNN.Namespace, FeaturesForOCP(clusterVersion)), visSpec)
 	if lokiService != "" {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())

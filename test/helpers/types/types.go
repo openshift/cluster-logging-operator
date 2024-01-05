@@ -522,6 +522,21 @@ func (l *AllLog) String() string {
 	return test.JSONLine(l)
 }
 
+func ParseJournalLogs[t any](in string) ([]t, error) {
+	logs := []t{}
+	if in == "" {
+		return logs, nil
+	}
+
+	err := json.Unmarshal([]byte(in), &logs)
+	if err != nil {
+		return nil, err
+	}
+
+	return logs, nil
+}
+
+// TODO: replace with generic
 func ParseLogs(in string) (Logs, error) {
 	logs := Logs{}
 	if in == "" {

@@ -15,12 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional/common"
 )
 
-const entrypointScript = `#!/bin/bash
-mkdir -p %s
-
-/usr/bin/vector --config-toml /etc/vector/vector.toml
-`
-
 type VectorCollector struct {
 	*client.Test
 }
@@ -33,9 +27,9 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYam
 	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
-		Add("vector.toml", config).
+		Add(vector.ConfigFile, config).
 		Add("clfyaml", clfYaml).
-		Add("run.sh", fmt.Sprintf(entrypointScript, vector.GetDataPath(c.NS.Name, clfName)))
+		Add("run.sh", fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(c.NS.Name, clfName)))
 	if err := c.Create(configmap); err != nil {
 		return err
 	}

@@ -23,6 +23,7 @@ const (
 	allNamespaces = ""
 )
 
+// ValidateServiceAcccount validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
 func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
 	// Do not need to validate SA if legacy forwarder
 	if clf.Name == constants.SingletonName && clf.Namespace == constants.OpenshiftNS {
@@ -117,9 +118,18 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 
 	noOfReceivers := 0
 	for _, input := range clf.Spec.Inputs {
-		if inputRefs.Has(input.Name) && input.Application != nil {
-			inputTypes.Insert(loggingv1.InputNameApplication)
+
+		if inputRefs.Has(input.Name) {
+			switch {
+			case input.Application != nil:
+				inputTypes.Insert(loggingv1.InputNameApplication)
+			case input.Infrastructure != nil:
+				inputTypes.Insert(loggingv1.InputNameInfrastructure)
+			case input.Audit != nil:
+				inputTypes.Insert(loggingv1.InputNameAudit)
+			}
 		}
+
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			noOfReceivers += 1
 		}

@@ -26,3 +26,10 @@ func (i Input) Elements() []framework.Element {
 func (i Input) InputIDs() []string {
 	return i.ids
 }
+
+// Add is a convenience function to concat elements and ids
+func (i *Input) Add(elements []framework.Element, ids []string) *Input {
+	i.ids = append(i.ids, ids...)
+	i.elements = append(i.elements, elements...)
+	return i
+}

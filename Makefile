@@ -222,7 +222,10 @@ deploy-image: .target/image
 	hack/deploy-image.sh
 
 .PHONY: deploy
-deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
+deploy:  deploy-elasticsearch-operator deploy-cluster-logging-operator
+
+.PHONY: deploy-cluster-logging-operator
+deploy-cluster-logging-operator:  deploy-image deploy-catalog install
 
 .PHONY: install
 install:
@@ -383,7 +386,9 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image

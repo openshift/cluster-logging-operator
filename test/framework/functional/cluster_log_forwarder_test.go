@@ -80,7 +80,6 @@ pipelines:
 						spec.Type = logging.OutputTypeFluentdForward
 						spec.URL = "tcp://0.0.0.0:24225"
 					}, "other")
-
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
 - name: application-logs1
   application:

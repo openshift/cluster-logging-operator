@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"strings"
 )
 
@@ -56,15 +57,50 @@ func NewViaQ(input logging.InputSpec, collectorNS string, op framework.Options) 
 		els, ids = NewAuditSources(input, op)
 	default:
 		if input.Application != nil {
-			includes := source.NewContainerPathGlobBuilder().
-				AddNamespaces(input.Application.Namespaces...).
-				Build()
-			excludes := source.NewContainerPathGlobBuilder().AddExtensions(excludeExtensions...).Build()
+			ib := source.NewContainerPathGlobBuilder().
+				AddNamespaces(input.Application.Namespaces...)
+			eb := source.NewContainerPathGlobBuilder().
+				AddNamespaces(input.Application.ExcludeNamespaces...).
+				AddExtensions(excludeExtensions...)
+			if input.Application.Containers != nil {
+				ib.AddContainers(input.Application.Containers.Include...)
+				eb.AddContainers(input.Application.Containers.Exclude...)
+			}
+			includes := ib.Build()
+			excludes := eb.Build()
 			els, ids = NewViaqContainerSource(input, collectorNS, includes, excludes)
 		} else if input.Infrastructure != nil {
-			//TODO: modify when input api is added
-			if true { //source == "container" {
-				cels, cids := NewViaqContainerSource(input, collectorNS, "", "")
+			sources := sets.NewString(input.Infrastructure.Sources...)
+			if sources.Has(logging.InfrastructureSourceContainer) {
+				infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
+				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, "")
+				els = append(els, cels...)
+				ids = append(ids, cids...)
+			}
+			if sources.Has(logging.InfrastructureSourceNode) {
+				jels, jids := NewViaqJournalSource(input)
+				els = append(els, jels...)
+				ids = append(ids, jids...)
+			}
+		} else if input.Audit != nil {
+			sources := sets.NewString(input.Audit.Sources...)
+			if sources.Has(logging.AuditSourceAuditd) {
+				cels, cids := NewAuditAuditdSource(input, op)
+				els = append(els, cels...)
+				ids = append(ids, cids...)
+			}
+			if sources.Has(logging.AuditSourceKube) {
+				cels, cids := NewK8sAuditSource(input, op)
+				els = append(els, cels...)
+				ids = append(ids, cids...)
+			}
+			if sources.Has(logging.AuditSourceOpenShift) {
+				cels, cids := NewOpenshiftAuditSource(input, op)
+				els = append(els, cels...)
+				ids = append(ids, cids...)
+			}
+			if sources.Has(logging.AuditSourceOVN) {
+				cels, cids := NewOVNAuditSource(input, op)
 				els = append(els, cels...)
 				ids = append(ids, cids...)
 			}

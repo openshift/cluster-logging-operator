@@ -8,12 +8,8 @@ import (
 	"strings"
 	"time"
 
-	rbacv1 "k8s.io/api/rbac/v1"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	apps "k8s.io/api/apps/v1"
@@ -210,66 +206,6 @@ func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }
 
-func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
-	opts := metav1.CreateOptions{}
-	serviceAccount = runtime.NewServiceAccount(constants.OpenshiftNS, "fluent-receiver")
-	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
-		return nil, err
-	}
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Delete(context.TODO(), serviceAccount.Name, opts)
-	})
-	return serviceAccount, nil
-}
-
-func (tc *E2ETestFramework) createRbac(name string) (err error) {
-	opts := metav1.CreateOptions{}
-	saRole := runtime.NewRole(
-		constants.OpenshiftNS,
-		name,
-		runtime.NewPolicyRules(
-			runtime.NewPolicyRule(
-				[]string{"security.openshift.io"},
-				[]string{"securitycontextconstraints"},
-				[]string{"privileged"},
-				[]string{"use"},
-			),
-		)...,
-	)
-	if _, err = tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Create(context.TODO(), saRole, opts); err != nil {
-		return err
-	}
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
-	})
-	subject := runtime.NewSubject(
-		"ServiceAccount",
-		name,
-	)
-	subject.APIGroup = ""
-	roleBinding := runtime.NewRoleBinding(
-		constants.OpenshiftNS,
-		name,
-		rbacv1.RoleRef{
-			Kind:     "Role",
-			Name:     saRole.Name,
-			APIGroup: rbacv1.GroupName,
-		}, runtime.NewSubjects(
-			subject,
-		)...,
-	)
-	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Create(context.TODO(), roleBinding, opts); err != nil {
-		return err
-	}
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
-	})
-	return nil
-}
-
 func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (deployment *apps.Deployment, err error) {
 	if secure {
 		return tc.DeployFluentdReceiverWithConf(rootDir, secure, secureFluentConfTemplate)
@@ -281,7 +217,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(rootDir string, secure
 	logStore := &fluentReceiverLogStore{
 		tc: tc,
 	}
-	serviceAccount, err := tc.createServiceAccount()
+	serviceAccount, err := tc.createServiceAccount(constants.OpenshiftNS, "fluent-receiver")
 	if err != nil {
 		return nil, err
 	}

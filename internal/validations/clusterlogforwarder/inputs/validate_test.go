@@ -282,7 +282,7 @@ var _ = Describe("#Validate", func() {
 						Type: loggingv1.ReceiverTypeSyslog,
 						ReceiverTypeSpec: &loggingv1.ReceiverTypeSpec{
 							Syslog: &loggingv1.SyslogReceiver{
-								Port:     port,
+								Port: port,
 							},
 						},
 					},
@@ -409,5 +409,53 @@ var _ = Describe("#Validate", func() {
 			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "cannot have a negative limit"))
 		})
 	})
-
+	Context("when validating application input types", func() {
+		var (
+			input    loggingv1.InputSpec
+			validate = func() *loggingv1.ClusterLogForwarderStatus {
+				validApplication(input, clfStatus, extras)
+				return clfStatus
+			}
+		)
+		BeforeEach(func() {
+			input = loggingv1.InputSpec{
+				Name: "test",
+				Application: &loggingv1.Application{
+					Containers: &loggingv1.InclusionSpec{},
+				},
+			}
+		})
+		It("should pass when application is nil", func() {
+			input.Application = nil
+			Expect(validate().Inputs).To(BeEmpty())
+		})
+		Context("and its glob fields", func() {
+			It("should fail invalid namespace", func() {
+				input.Application.Namespaces = []string{"$my-namespace123_", "bar"}
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for namespaces.*Must match`))
+			})
+			It("should fail invalid excludesNamespace", func() {
+				input.Application.ExcludeNamespaces = []string{"$my-namespace123_", "bar"}
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for excludeNamespaces.*Must match`))
+			})
+			It("should fail invalid container includes", func() {
+				input.Application.Containers.Include = []string{"$my-namespace123_", "bar"}
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for containers include.*Must match`))
+			})
+			It("should fail invalid container excludes", func() {
+				input.Application.Containers.Exclude = []string{"$my-namespace123_", "bar"}
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for containers exclude.*Must match`))
+			})
+			It("should pass when valid", func() {
+				input.Application = &loggingv1.Application{
+					Namespaces:        []string{"my-namespace123", "bar", "**one*with***stars*"},
+					ExcludeNamespaces: []string{"my-namespace123", "bar", "**one*with***stars*"},
+					Containers: &loggingv1.InclusionSpec{
+						Include: []string{"my-namespace123", "bar", "**one*with***stars*"},
+						Exclude: []string{"my-namespace123", "bar", "**one*with***stars*"},
+					},
+				}
+			})
+		})
+	})
 })

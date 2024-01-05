@@ -1,11 +1,10 @@
 # Logs from containers (including openshift containers)
-[sources.input_my_app_container]
+[sources.input_myinfra_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-include_paths_glob_patterns = ["/var/log/pods/test-ns1_*/*/*.log", "/var/log/pods/test-ns2_*/*/*.log", "/var/log/pods/*/mesh*/*.log"]
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log", "/var/log/pods/kube*_*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -14,9 +13,9 @@ pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_ms = 5000
 
-[transforms.input_my_app_container_viaq]
+[transforms.input_myinfra_container_viaq]
 type = "remap"
-inputs = ["input_my_app_container"]
+inputs = ["input_myinfra_container"]
 source = '''
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
@@ -70,9 +69,9 @@ source = '''
 '''
 
 # Set log_type
-[transforms.input_my_app_viaq_logtype]
+[transforms.input_myinfra_viaq_logtype]
 type = "remap"
-inputs = ["input_my_app_container_viaq"]
+inputs = ["input_myinfra_container_viaq"]
 source = '''
-  .log_type = "application"
+  .log_type = "infrastructure"
 '''

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Store PIDs of all the subprocesses
+pids=()
+
 echo -e "..... Cluster Logging must-gather script started .....\n"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -38,7 +41,8 @@ for multi in ${namespaces[@]}; do
       ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" "$multi" >> "${LOGFILE_PATH}" 2>&1
 
       # gather other logging related resources
-      ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$multi" >> "${LOGFILE_PATH}" 2>&1
+      ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$multi" >> "${LOGFILE_PATH}" 2>&1 &
+      pids+=($!)
     fi
 done
 
@@ -53,7 +57,8 @@ cluster_resources+=(machineconfigpool)
 log "-BEGIN inspecting CRs..." >> "${LOGFILE_PATH}"
 for cr in "${cluster_resources[@]}" ; do
   log "BEGIN inspecting CR ${cr} ..." >> "${LOGFILE_PATH}"
-  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" "${cr}"  >> "${LOGFILE_PATH}" 2>&1
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" "${cr}"  >> "${LOGFILE_PATH}" 2>&1 &
+  pids+=($!)
   log "END inspecting CR ${cr} ..." >> "${LOGFILE_PATH}"
 done
 log "END inspecting CRs..." >> "${LOGFILE_PATH}"
@@ -75,7 +80,8 @@ for namespace in "${cluster_resources[@]}" ; do
     ns=${namespace#ns/}  # remove "ns/" prefix
     for resource in "${resources[@]}" ; do
       log "BEGIN inspecting namespace ${ns}/${resource} ..." >> "${LOGFILE_PATH}"
-      oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "${resource}"  >> "${LOGFILE_PATH}" 2>&1
+      oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "${resource}"  >> "${LOGFILE_PATH}" 2>&1 &
+      pids+=($!)
       log "END inspecting namespace ${ns}/${resource} ..." >> "${LOGFILE_PATH}"
     done
   fi
@@ -88,7 +94,8 @@ log "BEGIN inspecting install resources ..." >> "${LOGFILE_PATH}"
 eo_found="$(oc -n openshift-operators-redhat get deployment elasticsearch-operator --ignore-not-found --no-headers)"
 default_clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
 if [ "$default_clo_found" != "" ] || [ "$eo_found" != "" ] ; then
-    ${SCRIPT_DIR}/gather_install_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1
+    ${SCRIPT_DIR}/gather_install_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1 &
+    pids+=($!)
 else
   log "Skipping install inspection.  No default CLO or EO deployment found in namespace: $LOGGING_NS" >> "${LOGFILE_PATH}" 2>&1
 fi
@@ -96,8 +103,10 @@ log "END inspecting install resources ..." >> "${LOGFILE_PATH}"
 
 if [ "$default_clo_found" != "" ] ; then
   log "BEGIN gathering default CLO resources ..." >> "${LOGFILE_PATH}"
-  ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$LOGGING_NS" >> "${LOGFILE_PATH}" 2>&1
-  ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1
+  ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$LOGGING_NS" >> "${LOGFILE_PATH}" 2>&1 &
+  pids+=($!)
+  ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1 &
+  pids+=($!)
   log "END gathering default CLO resources ..." >> "${LOGFILE_PATH}"
 else
   log "Skipping collection inspection.  No default CLO found" >> "${LOGFILE_PATH}" 2>&1
@@ -109,12 +118,15 @@ if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   # Call per component gather scripts
   if [ "$found_es" != "" ] ; then
     log "BEGIN gathering EO resources ..." >> "${LOGFILE_PATH}"
-    ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1
-    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "elasticsearch" >> "${LOGFILE_PATH}" 2>&1
+    ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1 &
+    pids+=($!)
+    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "elasticsearch" >> "${LOGFILE_PATH}" 2>&1 &
+    pids+=($!)
   fi
 
   if [ "$found_lokistack" != "" ] ; then
-    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" >> "${LOGFILE_PATH}" 2>&1
+    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" >> "${LOGFILE_PATH}" 2>&1 &
+    pids+=($!)
   fi
 
   found="$(oc -n $LOGGING_NS get kibana kibana --ignore-not-found --no-headers)"
@@ -124,6 +136,12 @@ if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   log "BEGIN gathering CLO resources ..." >> "${LOGFILE_PATH}"
 else
   log "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${LOGFILE_PATH}" 2>&1
+fi
+
+# Check if PID array has any values, if so, wait for them to finish
+if [ ${#pids[@]} -ne 0 ]; then
+    echo "Waiting on subprocesses to finish execution."
+    wait "${pids[@]}"
 fi
 
 exit 0

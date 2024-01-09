@@ -200,7 +200,6 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 							ReceiverTypeSpec: &loggingv1.ReceiverTypeSpec{
 								Syslog: &loggingv1.SyslogReceiver{
 									Port:     10514,
-									Protocol: "tcp",
 								},
 							},
 						},

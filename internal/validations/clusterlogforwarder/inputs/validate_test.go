@@ -276,14 +276,13 @@ var _ = Describe("#Validate", func() {
 				)
 			}
 
-			checkPortAndSyslogProtocol := func(port int32, protocol string, expectedErrMsg string) {
+			checkSyslogPort := func(port int32, expectedErrMsg string) {
 				checkReceiver(
 					&loggingv1.ReceiverSpec{
 						Type: loggingv1.ReceiverTypeSyslog,
 						ReceiverTypeSpec: &loggingv1.ReceiverTypeSpec{
 							Syslog: &loggingv1.SyslogReceiver{
 								Port:     port,
-								Protocol: protocol,
 							},
 						},
 					},
@@ -334,11 +333,10 @@ var _ = Describe("#Validate", func() {
 			}
 			checkPortAndHTTPFormat(8080, `no_such_format`, `invalid format specified for HTTP receiver`)
 			for _, port := range []int32{-1, 53, 80_000} {
-				checkPortAndSyslogProtocol(port, "tcp", `invalid port specified for Syslog receiver`)
+				checkSyslogPort(port, `invalid port specified for Syslog receiver`)
 			}
 			checkReceiverMismatchTypeHttp(`mismatched Type specified for receiver, specified HTTP and have Syslog`)
 			checkReceiverMismatchTypeSyslog(`mismatched Type specified for receiver, specified Syslog and have HTTP`)
-			checkPortAndSyslogProtocol(10514, "http", `invalid protocol specified for Syslog receiver`)
 			checkReceiverType("wrong-receiver", `invalid Type specified for receiver`)
 			checkReceiver(&loggingv1.ReceiverSpec{}, `invalid ReceiverTypeSpec specified for receiver`, map[string]bool{constants.VectorName: true})
 			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})

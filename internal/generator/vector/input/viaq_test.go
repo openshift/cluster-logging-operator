@@ -90,7 +90,6 @@ var _ = Describe("inputs", func() {
 				ReceiverTypeSpec: &logging.ReceiverTypeSpec{
 					Syslog: &logging.SyslogReceiver{
 						Port:     12345,
-						Protocol: "tcp",
 					},
 				},
 			},

@@ -54,10 +54,4 @@ type SyslogReceiver struct {
 	// +kubebuilder:validation:Maximum:=65535
 	// +optional
 	Port int32 `json:"port"`
-
-	// The protocol of the connection the Receiver will listen on: tcp or upd
-	// +kubebuilder:validation:Enum=tcp;udp
-	// +kubebuilder:default:=tcp
-	// +optional
-	Protocol string `json:"protocol"`
 }

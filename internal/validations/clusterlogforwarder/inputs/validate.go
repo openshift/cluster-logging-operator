@@ -65,8 +65,6 @@ func Verify(inputs []loggingv1.InputSpec, status *loggingv1.ClusterLogForwarderS
 			badInput("invalid port specified for Syslog receiver")
 		case loggingv1.IsHttpReceiver(&input) && input.Receiver.HTTP.Format != loggingv1.FormatKubeAPIAudit:
 			badInput("invalid format specified for HTTP receiver")
-		case loggingv1.IsSyslogReceiver(&input) && input.Receiver.Syslog.Protocol != "tcp" && input.Receiver.Syslog.Protocol != "udp":
-			badInput("invalid protocol specified for Syslog receiver")
 		default:
 			status.Inputs.Set(input.Name, conditions.CondReady)
 		}

@@ -418,14 +418,6 @@ spec:
                               maximum: 65535
                               minimum: 1024
                               type: integer
-                            protocol:
-                              default: tcp
-                              description: 'The protocol of the connection the Receiver
-                                will listen on: tcp or upd'
-                              enum:
-                              - tcp
-                              - udp
-                              type: string
                           type: object
                         type:
                           description: Type of Receiver plugin.

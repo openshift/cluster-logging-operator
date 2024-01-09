@@ -22,7 +22,6 @@ func NewSyslogSource(id string, input logging.InputSpec, op framework.Options) f
 		InputName:     input.Name,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 		ListenPort:    input.Receiver.Syslog.Port,
-		Protocol:      input.Receiver.Syslog.Protocol,
 		TlsMinVersion: minTlsVersion,
 		CipherSuites:  cipherSuites,
 	}
@@ -33,7 +32,6 @@ type SyslogReceiver struct {
 	InputName     string
 	ListenAddress string
 	ListenPort    int32
-	Protocol      string
 	TlsMinVersion string
 	CipherSuites  string
 }
@@ -48,7 +46,7 @@ func (i SyslogReceiver) Template() string {
 [sources.{{.ID}}]
 type = "syslog"
 address = "{{.ListenAddress}}:{{.ListenPort}}"
-mode = "{{.Protocol}}"
+mode = "tcp"
 
 [sources.{{.ID}}.tls]
 enabled = true

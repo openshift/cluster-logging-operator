@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
@@ -16,8 +17,32 @@ func MigrateVisualizationSpec(spec logging.ClusterLoggingSpec) (logging.ClusterL
 			Type:       logging.VisualizationTypeOCPConsole,
 			OCPConsole: &logging.OCPConsoleSpec{},
 		}
+		// Case when spec.Visualization.Kibana.NodeSelector or Tolerations are defined
+		// Need to move to top level spec.Visualization.NodeSelector/Tolerations
+	} else if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeKibana {
+		spec.Visualization = MigrateKibanaSpec(spec.Visualization)
 	}
 
 	log.V(3).Info("Migrated visualizationSpec for reconciliation", "spec", spec)
 	return spec, nil
+}
+
+func MigrateKibanaSpec(visSpec *logging.VisualizationSpec) *logging.VisualizationSpec {
+	if visSpec.Kibana == nil {
+		log.V(3).Info("kibana visualization specs empty")
+		return visSpec
+	}
+
+	log.V(3).Info("Migrating kibana visualization specs from spec.Visualization.Kibana")
+	// Migrate nodeSelector and Tolerations
+	if visSpec.Kibana.NodeSelector != nil {
+		visSpec.NodeSelector = visSpec.Kibana.NodeSelector
+	}
+
+	if visSpec.Kibana.Tolerations != nil {
+		visSpec.Tolerations = visSpec.Kibana.Tolerations
+	}
+
+	return visSpec
+
 }

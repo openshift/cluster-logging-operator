@@ -106,6 +106,18 @@ type VisualizationSpec struct {
 	// +kubebuilder:validation:Enum=ocp-console;kibana
 	Type VisualizationType `json:"type"`
 
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Visualization Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Define the tolerations the Pods will accept
+	// +nullable
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Visualization Pod Tolerations",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration"}
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+
 	// Specification of the Kibana Visualization component
 	//
 	// +deprecated
@@ -130,10 +142,17 @@ type KibanaSpec struct {
 
 	// Define which Nodes the Pods are scheduled on.
 	//
+	// +deprecated
 	// +nullable
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
+	// Define the tolerations the Pods will accept
+	//
+	// +deprecated
+	// +nullable
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Tolerations",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration"}
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 
 	// Number of instances to deploy for a Kibana deployment
 	// +optional

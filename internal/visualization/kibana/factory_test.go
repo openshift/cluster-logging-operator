@@ -1,6 +1,9 @@
 package kibana_test
 
 import (
+	"reflect"
+	"testing"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -9,8 +12,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
-	"testing"
 )
 
 var (
@@ -372,11 +373,10 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					Visualization: &logging.VisualizationSpec{
-						Kibana: &logging.KibanaSpec{
-							NodeSelector: map[string]string{
-								"test": "test",
-							},
+						NodeSelector: map[string]string{
+							"test": "test",
 						},
+						Kibana: &logging.KibanaSpec{},
 					},
 				},
 			},
@@ -432,14 +432,13 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					Visualization: &logging.VisualizationSpec{
-						Kibana: &logging.KibanaSpec{
-							Tolerations: []v1.Toleration{
-								{
-									Key:   "test",
-									Value: "test",
-								},
+						Tolerations: []v1.Toleration{
+							{
+								Key:   "test",
+								Value: "test",
 							},
 						},
+						Kibana: &logging.KibanaSpec{},
 					},
 				},
 			},
@@ -489,7 +488,7 @@ func TestNewKibanaCR(t *testing.T) {
 		test := test
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
-			got := kibana.New(constants.OpenshiftNS, constants.KibanaName, test.cl.Spec.Visualization.Kibana, test.cl.Spec.LogStore, utils.AsOwner(test.cl))
+			got := kibana.New(constants.OpenshiftNS, constants.KibanaName, test.cl.Spec.Visualization, test.cl.Spec.LogStore, utils.AsOwner(test.cl))
 
 			if got.Spec.ManagementState != test.want.Spec.ManagementState {
 				t.Errorf("ManagementState: got %s, want %s", got.Spec.ManagementState, test.want.Spec.ManagementState)

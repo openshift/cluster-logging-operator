@@ -42,12 +42,12 @@ type Reconciler struct {
 	configMap     corev1.ConfigMap
 	deployment    appv1.Deployment
 	service       corev1.Service
-	consoleSpec   *logging.OCPConsoleSpec
+	visSpec       *logging.VisualizationSpec
 }
 
 // NewReconciler creates a Reconciler using client for config.
-func NewReconciler(c client.Client, cf Config, consoleSpec *logging.OCPConsoleSpec) *Reconciler {
-	r := &Reconciler{Config: cf, c: c, consoleSpec: consoleSpec}
+func NewReconciler(c client.Client, cf Config, visSpec *logging.VisualizationSpec) *Reconciler {
+	r := &Reconciler{Config: cf, c: c, visSpec: visSpec}
 	_ = r.each(func(m mutable) error {
 		if m.o == &r.consolePlugin {
 			runtime.Initialize(m.o, "", r.Name) // Plugin is Cluster scope
@@ -192,8 +192,8 @@ func (r *Reconciler) mutateConsolePlugin() error {
 
 func (r *Reconciler) mutateConfigMap() error {
 	var config string
-	if r.consoleSpec != nil {
-		configYaml, err := yaml.Marshal(r.consoleSpec)
+	if r.visSpec != nil && r.visSpec.OCPConsole != nil {
+		configYaml, err := yaml.Marshal(r.visSpec.OCPConsole)
 		if err != nil {
 			return err
 		}
@@ -231,6 +231,7 @@ func (r *Reconciler) mutateService() error {
 }
 
 func (r *Reconciler) mutateDeployment() error {
+	nodeSelector, tolerations := getPluginNodeSelectorTolerations(r.visSpec)
 	o := &r.deployment
 	o.Spec = appv1.DeploymentSpec{
 		Replicas: utils.GetPtr[int32](1),
@@ -238,6 +239,8 @@ func (r *Reconciler) mutateDeployment() error {
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: r.selector()},
 			Spec: corev1.PodSpec{
+				NodeSelector: nodeSelector,
+				Tolerations:  tolerations,
 				Containers: []corev1.Container{
 					{
 						Name:  r.Name,
@@ -314,4 +317,12 @@ func (r *Reconciler) mutateDeployment() error {
 		},
 	}
 	return r.mutateOwned(o)
+}
+
+func getPluginNodeSelectorTolerations(visSpec *logging.VisualizationSpec) (map[string]string, []corev1.Toleration) {
+	if visSpec == nil {
+		return nil, nil
+	}
+
+	return visSpec.NodeSelector, visSpec.Tolerations
 }

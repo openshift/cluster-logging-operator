@@ -230,6 +230,16 @@ spec:
         path: visualization.kibana.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Define the tolerations the Pods will accept
+        displayName: Kibana Tolerations
+        path: visualization.kibana.tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
+      - description: Define which Nodes the Pods are scheduled on.
+        displayName: Visualization Node Selector
+        path: visualization.nodeSelector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:nodeSelector
       - description: LogsLimit is the max number of entries returned for a query.
         displayName: OCP Console Log Limit
         path: visualization.ocpConsole.logsLimit
@@ -240,6 +250,11 @@ spec:
         path: visualization.ocpConsole.timeout
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout
+      - description: Define the tolerations the Pods will accept
+        displayName: Visualization Pod Tolerations
+        path: visualization.tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
       version: v1
     - description: A Log File Metric Exporter instance. LogFileMetricExporter is the
         Schema for the logFileMetricExporters API

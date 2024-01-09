@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Migrating ClusterLogging instance", func() {
@@ -73,6 +74,50 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 			}))
 		})
 
+		Context("when migrating kibana specs", func() {
+			It("should migrate kibana nodeselectors and tolerations to top level spec.visualization", func() {
+				spec := ClusterLoggingSpec{
+					Visualization: &VisualizationSpec{
+						Type: VisualizationTypeKibana,
+						Kibana: &KibanaSpec{
+							NodeSelector: map[string]string{
+								"test": "test",
+							},
+							Tolerations: []v1.Toleration{
+								{
+									Key:   "test",
+									Value: "test",
+								},
+							},
+						},
+					},
+				}
+				Expect(MigrateVisualizationSpec(spec)).To(Equal(ClusterLoggingSpec{
+					Visualization: &VisualizationSpec{
+						Type: VisualizationTypeKibana,
+						NodeSelector: map[string]string{
+							"test": "test",
+						},
+						Tolerations: []v1.Toleration{
+							{
+								Key:   "test",
+								Value: "test",
+							},
+						},
+						Kibana: &KibanaSpec{
+							NodeSelector: map[string]string{
+								"test": "test",
+							},
+							Tolerations: []v1.Toleration{
+								{
+									Key:   "test",
+									Value: "test",
+								},
+							},
+						},
+					}}))
+			})
+		})
 	})
 
 })

@@ -42,8 +42,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 	}
 
 	cluster := clusterRequest.Cluster
-	kibanaSpec := cluster.Spec.Visualization.Kibana
-	cr := kibana.New(cluster.Namespace, constants.KibanaName, kibanaSpec, cluster.Spec.LogStore, utils.AsOwner(cluster))
+	visSpec := cluster.Spec.Visualization
+	cr := kibana.New(cluster.Namespace, constants.KibanaName, visSpec, cluster.Spec.LogStore, utils.AsOwner(cluster))
 	if err = kibana.Reconcile(clusterRequest.EventRecorder, clusterRequest.Client, cr); err != nil {
 		return
 	}
@@ -57,7 +57,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	cluster := clusterRequest.Cluster
-	cr := kibana.New(cluster.Namespace, constants.KibanaName, &logging.KibanaSpec{}, cluster.Spec.LogStore, utils.AsOwner(cluster))
+	cr := kibana.New(cluster.Namespace, constants.KibanaName, &logging.VisualizationSpec{}, cluster.Spec.LogStore, utils.AsOwner(cluster))
 
 	err = clusterRequest.Client.Delete(context.TODO(), cr)
 	if err != nil && !errors.IsNotFound(err) && !meta.IsNoMatchError(err) {

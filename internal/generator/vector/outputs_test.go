@@ -29,6 +29,9 @@ var _ = Describe("Generating outputs", func() {
 						Type: logging.OutputTypeLoki,
 						Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
 						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						Secret: &logging.OutputSecretSpec{
+							Name: constants.LogCollectorToken,
+						},
 					},
 				},
 			},
@@ -148,6 +151,121 @@ key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
 min_tls_version = "VersionTLS12"
 ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+`,
+		}),
+		Entry("should not use the legacy secret to generate config unless specified by the output secret ", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{Name: "foo", InputRefs: []string{logging.InputNameApplication}, OutputRefs: []string{"http-receiver"}},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				constants.LogCollectorToken: {
+					Data: map[string][]byte{
+						"token": []byte("token-for-loki"),
+					},
+				},
+			},
+			Options: generator.Options{},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["foo"]
+source = '''
+  del(.file)
+'''
+
+[transforms.http_receiver_dedot]
+type = "lua"
+inputs = ["http_receiver_normalize_http"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_dedot"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.http_receiver.request]
+retry_attempts = 17
+timeout_secs = 10
+
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''
+
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["add_nodename_to_metric"]
+address = "[::]:24231"
+default_namespace = "collector"
+
+[sinks.prometheus_output.tls]
+enabled = true
+key_file = "/etc/collector/metrics/tls.key"
+crt_file = "/etc/collector/metrics/tls.crt"
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+
 `,
 		}),
 	)

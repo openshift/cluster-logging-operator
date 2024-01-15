@@ -70,15 +70,11 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	telemetry.SetCLMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetCLMetrics(1) }()
 
-	removeFinalizer := func(identifier string) error {
-		return k8shandler.RemoveFinalizer(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, identifier)
-	}
-
 	// Fetch the ClusterLogging instance
 	instance, err, migrationConditions := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			removeClusterLogging(r.Client, removeFinalizer)
+			removeClusterLogging(r.Client)
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -101,8 +97,12 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}()
 
 	if instance.GetDeletionTimestamp() != nil {
-		removeClusterLogging(r.Client, removeFinalizer)
+		removeClusterLogging(r.Client)
 		return ctrl.Result{}, nil
+	}
+
+	if err := lokistack.CheckFinalizer(ctx, r.Client, &instance); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
@@ -129,9 +129,9 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	return ctrl.Result{}, err
 }
 
-func removeClusterLogging(k8Client client.Client, removeFinalizer func(string) error) {
+func removeClusterLogging(k8Client client.Client) {
 	// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
-	if err := lokistack.RemoveRbac(k8Client, removeFinalizer); err != nil {
+	if err := lokistack.RemoveRbac(k8Client); err != nil {
 		log.Error(err, "Error removing RBAC for accessing LokiStack.")
 	}
 }

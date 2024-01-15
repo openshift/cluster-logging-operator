@@ -109,7 +109,7 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 
 func getSecret(output logging.OutputSpec, secrets map[string]*corev1.Secret) *corev1.Secret {
 	key := output.Name
-	if output.Type == logging.OutputTypeLoki && lokistack.DefaultLokiOuputNames.Has(output.Name) {
+	if output.Type == logging.OutputTypeLoki && lokistack.DefaultLokiOutputNames.Has(output.Name) {
 		key = constants.LogCollectorToken
 	}
 	return secrets[key]

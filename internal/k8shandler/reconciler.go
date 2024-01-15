@@ -97,9 +97,7 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 		},
 		clusterRequest.removeKibana,
 		func() error {
-			return lokistack.RemoveRbac(clusterRequest.Client, func(identifier string) error {
-				return RemoveFinalizer(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name, identifier)
-			})
+			return lokistack.RemoveRbac(clusterRequest.Client)
 		}} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		if err := remove(); err != nil && !apierrors.IsNotFound(err) {

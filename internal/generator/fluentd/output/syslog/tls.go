@@ -5,7 +5,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 )
 
-type TLS security.TLS
+type TLS bool
 
 func (t TLS) Name() string {
 	return "syslogTLSTemplate"

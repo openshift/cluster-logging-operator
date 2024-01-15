@@ -1,11 +1,8 @@
 package elasticsearch
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
-)
-
+type TLS bool
 type EsTLS struct {
-	security.TLS
+	TLS
 	SSLVerify bool
 }
 

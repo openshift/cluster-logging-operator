@@ -112,8 +112,8 @@ spec:
                         included, the response body is removed. - RequestResponse:
                         All data is included: metadata, request body and response
                         body. Note the response body can be very large. For example
-                        the a command like `oc list -A pods` generates a response
-                        body containing the YAML description of every pod in the cluster.
+                        the a command like `oc get -A pods` generates a response body
+                        containing the YAML description of every pod in the cluster.
                         \n # Extensions \n The following features are extensions to
                         the standard [Kube Audit Policy] \n ## Wildcards \n Names
                         of users, groups, namespaces, and resources can have a leading

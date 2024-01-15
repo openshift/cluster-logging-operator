@@ -429,6 +429,79 @@ strategy = "bearer"
 token = "token-for-custom-http"
 `,
 		),
+		Entry("with TLS.InsecureSkipVerify=true when no secret",
+			logging.OutputSpec{
+				Type: logging.OutputTypeHttp,
+				Name: "http-receiver",
+				URL:  "https://my-logstore.com",
+				OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
+					Timeout: 50,
+					Headers: map[string]string{
+						"k1": "v1",
+						"k2": "v2",
+					},
+				}},
+				TLS: &logging.OutputTLSSpec{
+					InsecureSkipVerify: true,
+				},
+			},
+			nil,
+			framework.NoOptions,
+			`
+[transforms.http_receiver_normalize]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[transforms.http_receiver_dedot]
+type = "remap"
+inputs = ["http_receiver_normalize"]
+source = '''
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_dedot"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.http_receiver.request]
+retry_attempts = 17
+timeout_secs = 50
+headers = {"k1"="v1","k2"="v2"}
+
+[sinks.http_receiver.tls]
+verify_certificate = false
+verify_hostname = false
+`,
+		),
 		Entry("with AnnotationEnableSchema = 'enabled' & o.HTTP.schema = 'opentelemetry'",
 			logging.OutputSpec{
 				Type: logging.OutputTypeHttp,

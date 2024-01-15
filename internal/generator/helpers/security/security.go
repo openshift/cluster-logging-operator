@@ -8,8 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type TLS bool
-
 type HostnameVerify bool
 
 type TLSCertKey struct {

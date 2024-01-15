@@ -141,7 +141,7 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	isHttps := url.IsTLSScheme(u.Scheme)
 	isSSLVerify := !(o.TLS != nil && o.TLS.InsecureSkipVerify)
 	esTls := EsTLS{
-		security.TLS(isHttps),
+		TLS(isHttps),
 		isSSLVerify,
 	}
 	conf := append([]Element{}, esTls)

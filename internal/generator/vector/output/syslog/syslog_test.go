@@ -103,6 +103,56 @@ rfc = "rfc5424"
 facility = "user"
 severity = "informational"
 `
+		tlsInsecure = `
+[transforms.syslog_tcp_dedot]
+type = "remap"
+inputs = ["pipelineName"]
+source = '''
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+'''
+
+[transforms.syslog_tcp_json]
+type = "remap"
+inputs = ["syslog_tcp_dedot"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+'''
+
+[sinks.syslog_tcp]
+type = "socket"
+inputs = ["syslog_tcp_json"]
+address = "logserver:514"
+mode = "tcp"
+
+[sinks.syslog_tcp.encoding]
+codec = "syslog"
+rfc = "rfc5424"
+facility = "user"
+severity = "informational"
+
+[sinks.syslog_tcp.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+`
 		udpEverySetting = `
 [transforms.syslog_udp_dedot]
 type = "remap"
@@ -231,6 +281,23 @@ key_pass = "mysecretpassword"
 			g = framework.MakeGenerator()
 		})
 
+		It("LOG-4963: allow tls.insecureSkipVerify=true when no secret is defined", func() {
+			element := Conf(
+				loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeSyslog,
+					Name: "syslog-tcp",
+					URL:  "tls://logserver:514",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Syslog: &loggingv1.Syslog{},
+					},
+					TLS: &loggingv1.OutputTLSSpec{
+						InsecureSkipVerify: true,
+					},
+				}, []string{"pipelineName"}, nil, nil)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(tlsInsecure))
+		})
 		It("LOG-3948: should pass URL scheme to vector for validation", func() {
 			element := Conf(
 				loggingv1.OutputSpec{

@@ -570,6 +570,104 @@ strategy = "bearer"
 token = "token-for-custom-http"
 `,
 		}),
+		Entry("with TLS.InsecureSkipVerify=true when no secret", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						OutputTypeSpec: logging.OutputTypeSpec{Http: &logging.Http{
+							Timeout: 50,
+							Headers: map[string]string{
+								"k1": "v1",
+								"k2": "v2",
+							},
+						}},
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[transforms.http_receiver_dedot]
+type = "lua"
+inputs = ["http_receiver_normalize_http"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_dedot"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.buffer]
+when_full = "drop_newest"
+
+[sinks.http_receiver.request]
+retry_attempts = 17
+timeout_secs = 50
+headers = {"k1"="v1","k2"="v2"}
+
+[sinks.http_receiver.tls]
+verify_certificate = false
+verify_hostname = false
+`,
+		}),
 		Entry("with AnnotationEnableSchema = 'enabled' & o.HTTP.schema = 'opentelemetry'", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{

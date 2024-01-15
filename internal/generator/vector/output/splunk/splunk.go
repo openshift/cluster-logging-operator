@@ -77,7 +77,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			output.NewBuffer(id),
 			output.NewRequest(id),
 		},
-		TLSConf(o, secret, op),
+		security.TLS(o, secret, op),
 	)
 }
 
@@ -95,12 +95,4 @@ func Encoding(o logging.OutputSpec) Element {
 		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		Codec:       splunkEncodingJson,
 	}
-}
-
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
-		tlsConf.NeedsEnabled = false
-		return []Element{tlsConf}
-	}
-	return []Element{}
 }

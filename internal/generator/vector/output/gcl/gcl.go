@@ -91,18 +91,8 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			common.NewBuffer(id),
 			common.NewRequest(id),
 		},
-		TLSConf(id, o, secret, op),
+		common.TLS(id, o, secret, op),
 	)
-}
-
-func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil {
-		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
-		}
-	}
-	return []Element{}
 }
 
 func setInput(gcl *GoogleCloudLogging, inputs []string) Element {

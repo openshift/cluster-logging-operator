@@ -340,6 +340,109 @@ retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
+		Entry("without secret and TLS.insecureSkipVerify=true", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type:   logging.OutputTypeElasticsearch,
+						Name:   "es-1",
+						URL:    "https://es.svc.infra.cluster:9200",
+						Secret: nil,
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: common.NoSecrets,
+			ExpectedConf: `
+# Set Elasticsearch index
+[transforms.es_1_add_es_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  .write_index = index + "-write"
+  ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
+'''
+
+[transforms.es_1_dedot_and_flatten]
+type = "remap"
+inputs = ["es_1_add_es_index"]
+source = '''
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+    .kubernetes.flat_labels = []
+    for_each(object!(.kubernetes.labels)) -> |k,v| {
+    .kubernetes.flat_labels = push(.kubernetes.flat_labels, join!([string(k),"=",string!(v)]))
+    }
+  }
+  if exists(.kubernetes.labels) {
+    exclusions = ["app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"]
+    keep = {}
+    for_each(object!(.kubernetes.labels))->|k,v|{
+      if !includes(exclusions, k) {
+        .kubernetes.labels, err = remove(object!(.kubernetes.labels),[k],true)
+        if err != null {
+          log(err, level: "error")
+        }
+      }
+    }
+  }
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_dedot_and_flatten"]
+endpoints = ["https://es.svc.infra.cluster:9200"]
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
+encoding.except_fields = ["write_index"]
+id_key = "_id"
+api_version = "v6"
+
+[sinks.es_1.buffer]
+when_full = "drop_newest"
+
+[sinks.es_1.request]
+retry_attempts = 17
+timeout_secs = 2147483648
+
+[sinks.es_1.tls]
+verify_certificate = false
+verify_hostname = false
+`,
+		}),
 		Entry("with multiple pipelines for elastic-search", helpers.ConfGenerateTest{
 			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{

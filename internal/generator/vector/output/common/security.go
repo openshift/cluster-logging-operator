@@ -15,8 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type TLS bool
-
 type UserNamePass struct {
 	Username string
 	Password string
@@ -32,6 +30,16 @@ type Passphrase struct {
 
 type BearerToken struct {
 	Token string
+}
+
+func TLS(id string, o logging.OutputSpec, secret *corev1.Secret, op framework.Options) []framework.Element {
+	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
+		if tlsConf := GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
+			tlsConf.NeedsEnabled = false
+			return []framework.Element{tlsConf}
+		}
+	}
+	return []framework.Element{}
 }
 
 type TLSConf struct {
@@ -67,13 +75,13 @@ func (conf *TLSConf) SetTLSProfileFromOptions(op framework.Options) {
 
 func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) bool {
 	addTLS := false
-	if o.Name == logging.OutputNameDefault || HasTLSCertAndKey(secret) {
+	if o.Secret != nil && (o.Name == logging.OutputNameDefault || HasTLSCertAndKey(secret)) {
 		addTLS = true
 		conf.CertPath = SecretPath(o.Secret.Name, constants.ClientCertKey)
 		conf.KeyPath = SecretPath(o.Secret.Name, constants.ClientPrivateKey)
 	}
 
-	if o.Name == logging.OutputNameDefault || HasCABundle(secret) {
+	if o.Secret != nil && (o.Name == logging.OutputNameDefault || HasCABundle(secret)) {
 		addTLS = true
 		conf.CAFilePath = SecretPath(o.Secret.Name, constants.TrustedCABundleKey)
 	}

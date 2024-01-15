@@ -142,7 +142,7 @@ timestamp_format = "rfc3339"
 }
 
 func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
-	if o.Secret != nil {
+	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
 		conf := []Element{}
 
 		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, genTLSConf); tlsConf != nil {

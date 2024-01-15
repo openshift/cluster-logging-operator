@@ -130,7 +130,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			common.NewBuffer(id),
 			Request(id, o),
 		},
-		TLSConf(id, o, secret, op),
+		common.TLS(id, o, secret, op),
 		BasicAuth(id, o, secret),
 		BearerTokenAuth(id, o, secret),
 	)
@@ -188,16 +188,6 @@ func Encoding(id string) Element {
 		ComponentID: id,
 		Codec:       httpEncodingJson,
 	}
-}
-
-func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil {
-		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
-		}
-	}
-	return []Element{}
 }
 
 func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {

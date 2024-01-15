@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	lokiStackFinalizer = "logging.openshift.io/lokistack-rbac"
-
 	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
 	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
 
@@ -34,27 +32,38 @@ const (
 )
 
 var (
-	DefaultLokiOuputNames sets.String
+	DefaultLokiOutputNames sets.String
 )
 
 func init() {
-	DefaultLokiOuputNames = *sets.NewString()
+	DefaultLokiOutputNames = *sets.NewString()
 	for _, input := range loggingv1.ReservedInputNames.List() {
-		DefaultLokiOuputNames.Insert(FormatOutputNameFromInput(input))
+		DefaultLokiOutputNames.Insert(FormatOutputNameFromInput(input))
 	}
 }
 
-func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.Time, appendFinalizer func(identifier string) error) error {
-	if deletionTimestamp != nil {
-		// Skip creation if deleting
-		return nil
+func ReconcileLokiReadRoles(k8sClient client.Client) (modified bool, err error) {
+	appModified, err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAppViewClusterRoleName, applicationLogs))
+	if err != nil {
+		return false, kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	if err := appendFinalizer(lokiStackFinalizer); err != nil {
-		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
+	infraModified, err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackViewClusterRole(lokiStackInfraViewClusterRoleName, infrastructureLogs))
+	if err != nil {
+		return false, kverrors.Wrap(err, "Failed to create or update ClusterRole for reading infrastructure logs.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
+	auditModified, err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAuditViewClusterRoleName, auditLogs))
+	if err != nil {
+		return false, kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
+	}
+
+	modified = appModified || infraModified || auditModified
+	return modified, nil
+}
+
+func ReconcileLokiWriteRbac(k8sClient client.Client) error {
+	if _, err := reconcile.ClusterRole(k8sClient, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for LokiStack collector.")
 	}
 
@@ -62,43 +71,43 @@ func ReconcileLokiStackLogStore(k8sClient client.Client, deletionTimestamp *v1.T
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAppViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAppViewClusterRoleName, applicationLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
+	return nil
+}
+
+func RemoveRbac(k8sClient client.Client) error {
+	if err := RemoveLokiReadRoles(k8sClient); err != nil {
+		return err
 	}
 
-	if err := reconcile.ClusterRole(k8sClient, lokiStackInfraViewClusterRoleName, newLokiStackViewClusterRole(lokiStackInfraViewClusterRoleName, infrastructureLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading infrastructure logs.")
-	}
-
-	if err := reconcile.ClusterRole(k8sClient, lokiStackAuditViewClusterRoleName, newLokiStackViewClusterRole(lokiStackAuditViewClusterRoleName, auditLogs)); err != nil {
-		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading audit logs.")
+	if err := RemoveLokiWriteRbac(k8sClient); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) error {
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAppViewClusterRoleName); err != nil {
+func RemoveLokiReadRoles(k8sClient client.Client) error {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAppViewClusterRoleName); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackInfraViewClusterRoleName); err != nil {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackInfraViewClusterRoleName); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAuditViewClusterRoleName); err != nil {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackAuditViewClusterRoleName); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
-	if err := reconcile.DeleteClusterRoleBinding(k8sClient, lokiStackWriterClusterRoleBindingName); err != nil {
+	return nil
+}
+
+func RemoveLokiWriteRbac(k8sClient client.Client) error {
+	if err := reconcile.DeleteClusterRoleBinding(k8sClient, lokiStackWriterClusterRoleBindingName); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
-	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackWriterClusterRoleName); err != nil {
-		return err
-	}
-
-	if err := removeFinalizer(lokiStackFinalizer); err != nil {
+	if err := reconcile.DeleteClusterRole(k8sClient, lokiStackWriterClusterRoleName); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
@@ -106,7 +115,6 @@ func RemoveRbac(k8sClient client.Client, removeFinalizer func(string) error) err
 }
 
 func newLokiStackWriterClusterRole() *rbacv1.ClusterRole {
-
 	return runtime.NewClusterRole(lokiStackWriterClusterRoleName,
 		rbacv1.PolicyRule{
 			APIGroups: []string{

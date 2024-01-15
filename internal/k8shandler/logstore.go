@@ -22,8 +22,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		}
 		return eslogstore.Reconcile(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret, utils.AsOwner(clusterRequest.Cluster), fetchClusterLogging)
 	case logging.LogStoreTypeLokiStack:
-		return lokistack.ReconcileLokiStackLogStore(clusterRequest.Client, clusterRequest.Cluster.DeletionTimestamp, clusterRequest.appendFinalizer)
+		if clusterRequest.Cluster.DeletionTimestamp == nil {
+			return lokistack.ReconcileLokiWriteRbac(clusterRequest.Client)
+		}
 	default:
-		return nil
 	}
+
+	return nil
 }

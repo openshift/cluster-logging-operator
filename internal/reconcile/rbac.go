@@ -88,7 +88,7 @@ func RoleBinding(er record.EventRecorder, k8Client client.Client, desired *rbacv
 	return retryErr
 }
 
-func ClusterRole(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRole) error {
+func ClusterRole(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRole) (modified bool, err error) {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &rbacv1.ClusterRole{}
 		key := client.ObjectKey{Name: name}
@@ -102,6 +102,7 @@ func ClusterRole(k8sClient client.Client, name string, generator func() *rbacv1.
 				return fmt.Errorf("failed to create ClusterRole: %w", err)
 			}
 
+			modified = true
 			return nil
 		}
 
@@ -113,10 +114,11 @@ func ClusterRole(k8sClient client.Client, name string, generator func() *rbacv1.
 
 		current.Rules = wantRole.Rules
 
+		modified = true
 		return k8sClient.Update(context.TODO(), current)
 	})
 
-	return retryErr
+	return modified, retryErr
 }
 
 func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRoleBinding) error {

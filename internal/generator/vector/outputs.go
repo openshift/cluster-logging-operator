@@ -2,12 +2,13 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
@@ -56,16 +57,9 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 
 	for idx, o := range clfspec.Outputs {
 		var secret *corev1.Secret
-		if s, ok := secrets[o.Name]; ok {
+		if s := getSecret(o, secrets); s != nil {
 			secret = s
 			log.V(9).Info("Using secret configured in output: " + o.Name)
-		} else {
-			secret = secrets[constants.LogCollectorToken]
-			if secret != nil {
-				log.V(9).Info("Using secret configured in " + constants.LogCollectorToken)
-			} else {
-				log.V(9).Info("No Secret found in " + constants.LogCollectorToken)
-			}
 		}
 
 		if o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeElasticsearch {
@@ -111,6 +105,14 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites))
 	return outputs
+}
+
+func getSecret(output logging.OutputSpec, secrets map[string]*corev1.Secret) *corev1.Secret {
+	key := output.Name
+	if output.Type == logging.OutputTypeLoki && lokistack.DefaultLokiOuputNames.Has(output.Name) {
+		key = constants.LogCollectorToken
+	}
+	return secrets[key]
 }
 
 func PrometheusOutput(id string, inputs []string, minTlsVersion string, cipherSuites string) generator.Element {

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	appv1 "k8s.io/api/apps/v1"
@@ -73,6 +74,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin reconciliation")
 		return nil
 	}
+
 	modified := false
 	// Call CreateOrUpdate for each object.
 	err := r.each(func(m mutable) error {
@@ -90,7 +92,14 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 		_ = r.Delete(ctx) // Clear out any partial setup
 		return err
 	}
-	if modified {
+
+	rbacModified, err := lokistack.ReconcileLokiReadRoles(r.c)
+	if err != nil {
+		log.Error(err, "reconciling LokiStack RBAC for console", "plugin", runtime.ID(&r.consolePlugin))
+		return err
+	}
+
+	if modified || rbacModified {
 		log.Info("reconciled console", "plugin", runtime.ID(&r.consolePlugin))
 	}
 	return nil
@@ -111,6 +120,8 @@ func (r *Reconciler) Delete(ctx context.Context) error {
 		}
 		return nil // Don't stop on first error.
 	})
+
+	errs = append(errs, lokistack.RemoveLokiReadRoles(r.c))
 	return utilerrors.NewAggregate(errs)
 }
 

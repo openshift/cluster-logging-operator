@@ -1402,6 +1402,17 @@ func Test_verifyOutputURL(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "With Loki output without URL should fail",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: loggingv1.OutputTypeLoki,
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt // Don't bind range variable.

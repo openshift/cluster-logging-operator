@@ -330,8 +330,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		if output.URL == "" {
 			// Some output types allow a missing URL
 			// TODO (alanconway) move output-specific valiation to the output implementation.
-			if output.Type == loggingv1.OutputTypeCloudwatch ||
-				output.Type == loggingv1.OutputTypeGoogleCloudLogging || output.Type == loggingv1.OutputTypeLoki {
+			if output.Type == loggingv1.OutputTypeCloudwatch || output.Type == loggingv1.OutputTypeGoogleCloudLogging {
 				return true
 			} else {
 				return fail(CondInvalid("URL is required for output type %v", output.Type))

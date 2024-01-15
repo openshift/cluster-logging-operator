@@ -236,7 +236,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			output.NewBuffer(id),
 			request,
 		},
-		TLSConf(o, secret, op),
+		security.TLS(o, secret, op),
 		BasicAuth(o, secret),
 	)
 
@@ -256,16 +256,6 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 		es.Version = logging.DefaultESVersion
 	}
 	return es
-}
-
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
-		}
-	}
-	return []Element{}
 }
 
 func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {

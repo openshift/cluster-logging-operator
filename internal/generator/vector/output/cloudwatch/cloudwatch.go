@@ -88,7 +88,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			output.NewBuffer(id),
 			request,
 		},
-		TLSConf(o, secret, op),
+		security.TLS(o, secret, op),
 	)
 }
 
@@ -115,16 +115,6 @@ func SecurityConfig(secret *corev1.Secret) Element {
 		KeyID:     strings.TrimSpace(security.GetFromSecret(secret, constants.AWSAccessKeyID)),
 		KeySecret: strings.TrimSpace(security.GetFromSecret(secret, constants.AWSSecretAccessKey)),
 	}
-}
-
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil {
-		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			return []Element{tlsConf}
-		}
-	}
-	return []Element{}
 }
 
 func EndpointConfig(o logging.OutputSpec) Element {

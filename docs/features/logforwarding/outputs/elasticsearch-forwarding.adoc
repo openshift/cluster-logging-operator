@@ -1,6 +1,6 @@
-=== Steps to forward to Elasticsearch
+= Forwarding To Elasticsearch
 
-
+== Steps to forward to Elasticsearch
 . Create a ClusterLogging instance with collection `type: vector`:
 +
 ----
@@ -54,3 +54,71 @@ spec:
 +
 <1> Forwarding to an external Elasticsearch of version 8.x or greater requires the `version` field to be specified otherwise this can be omitted. The `version` field is nested under `elasticsearch`.
 <2> For a `https` prefix, specify the name of the secret required by the endpoint for TLS communication. If the certificate is signed by `custom root ca`, it must have key: `ca-bundle.crt`. If you want to enable Mutual Transport Layer Security (mTLS) between collector and elasticsearch, the secret must have keys of: `tls.crt`, `tls.key` that point to the respective certificates that they represent. Otherwise, for `http` and `https` prefixes, you can specify a secret that contains a username and password.
+
+== Custom Index Configuration
+
+https://docs.openshift.com/container-platform/4.12/logging/log_collection_forwarding/cluster-logging-enabling-json-logging.html[Official Cluster Logging Operator Documentation on JSON Parsing]
+
+A custom index can be configured for elasticsearch through by utilizing `JSON` parsing and is supported for logs of type `application`. This is defined through the `structuredTypeKey` and `structuredTypeName` fields in the `ClusterLogForwarder`. 
+
+=== Steps To Configure a Custom Index
+
+. Create a `ClusterLogging` instance with collection `type: vector`:
++
+----
+ oc apply -f cluster-logging.yaml
+----
++
+.cluster-logging.yaml
+[source,yaml]
+----
+kind: ClusterLogging
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  collection:
+    type: vector
+----
+
+. Create a `ClusterLogForwarder` instance to `Elasticsearch`.
+* Specify a `structuredTypeKey` and an alternative `structuredTypeName` of the index to send structured messages to.
+* Add `json: parse` to the pipeline.
++
+----
+ oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: external-es
+      type: elasticsearch
+      elasticsearch: 
+        structuredTypeKey: kubernetes.namespace_name <1>
+        structuredTypeName: myParsedMessages <2>
+      url: 'https://<ES_URL>:9200'
+  pipelines:
+    - name: parsed-app-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - external-es
+      parse: json <3>
+----
++
+<1> The `structuredTypeKey` is the field of the log record used to construct an index name.
+<2> The `structuredTypeName` is a static value used to construct an index name.
+<3> `parse: json` must be added to the pipeline
+
+*Note*: The Elasticsearch index for structured records is formed by prepending "app-" to the key or name and appending "-write".
+
+Application logs that have their messages successfully parsed will be sent to the index defined by the `structuredTypeKey`. If the `structuredTypeKey` is not available in the log record, then the `structuredTypeName` will be used as the index instead.

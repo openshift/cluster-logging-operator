@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/status"
 	. "github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -151,3 +152,336 @@ var _ = Describe("ClusterLogForwarder", func() {
   }`))
 	})
 })
+
+var _ = Describe("ClusterLogForwarderStatus", func() {
+	It("synchronizes ClusterLogForwarderStatus while handling timestamps correctly", func() {
+		original := ClusterLogForwarderStatus{
+			Conditions: status.Conditions{
+				{
+					Type:               "Ready",
+					Status:             "False",
+					Reason:             "name1 is not ready",
+					Message:            "name1 is not ready due to issue",
+					LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				{
+					Type:               "Error",
+					Status:             "True",
+					Reason:             "name1 has an error",
+					Message:            "name1 has an error due to an issue",
+					LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				{
+					Type:               "Foo",
+					Status:             "Foo",
+					Reason:             "Foo reason",
+					Message:            "Foo message",
+					LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+			},
+			Inputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "False",
+						Reason:             "name1 is not ready",
+						Message:            "name1 is not ready due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "False",
+						Reason:             "name1 is not available",
+						Message:            "name1 is not available due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "True",
+						Reason:             "name1 has an error",
+						Message:            "name1 has an error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2a": {
+					{
+						Type:               "Ready",
+						Status:             "False",
+						Reason:             "name2 is not ready",
+						Message:            "name2 is not ready due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "False",
+						Reason:             "name2 is not available",
+						Message:            "name2 is not available due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "True",
+						Reason:             "name2 has an error",
+						Message:            "name2 has an error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2b": {
+					{
+						Type:               "Ready",
+						Status:             "False",
+						Reason:             "name2 is not ready",
+						Message:            "name2 is not ready due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "False",
+						Reason:             "name2 is not available",
+						Message:            "name2 is not available due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "True",
+						Reason:             "name2 has an error",
+						Message:            "name2 has an error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name3": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name3 is ready",
+						Message:            "name3 is ready due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "True",
+						Reason:             "name3 is available",
+						Message:            "name3 is available due to issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Foo2",
+						Status:             "True",
+						Reason:             "Bar2",
+						Message:            "Bar2's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+		}
+
+		syncTarget := ClusterLogForwarderStatus{
+			Conditions: status.Conditions{
+				// We expect Ready to be updated to True and have the current timestamp.
+				{
+					Type:               "Ready",
+					Status:             "True",
+					Reason:             "Operator is ready",
+					Message:            "Operator is ready",
+					LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				// We expect Error to be removed.
+				// We expect Available to show up with the current timestamp.
+				{
+					Type:               "Available",
+					Status:             "True",
+					Reason:             "Operator is available",
+					Message:            "Operator is available",
+					LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				// We expect Foo's LastTransitionTime to remain unchanged.
+				{
+					Type:               "Foo",
+					Status:             "Foo",
+					Reason:             "Foo reason",
+					Message:            "Foo message",
+					LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+			},
+			Inputs: NamedConditions{
+				// Update all values within the names entry, expect all fields to match and time stamps to be recent.
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "True",
+						Reason:             "name1 is available",
+						Message:            "name1 is available with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "False",
+						Reason:             "name1 has no error",
+						Message:            "name1 has no error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				// Drop name 'name2a' and 'name2b'.
+				// Drop 'Ready' and 'Available' types. Keep status of 'Foo' and expect the timestamp to remain stable.
+				// Update Foo2 and expect the timestamp to be new.
+				"name3": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "True",
+						Reason:             "name3 has an error",
+						Message:            "name3 has an error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Foo2",
+						Status:             "False",
+						Reason:             "Bar2",
+						Message:            "Bar2's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				// Add index name4 and expect all timestamps to be recent.
+				"name4": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name4 is ready",
+						Message:            "name4 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "True",
+						Reason:             "name4 is available",
+						Message:            "name4 is available with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+		}
+
+		expected := ClusterLogForwarderStatus{
+			Conditions: status.Conditions{
+				{
+					Type:               "Ready",
+					Status:             "True",
+					Reason:             "Operator is ready",
+					Message:            "Operator is ready",
+					LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+				},
+				{
+					Type:               "Foo",
+					Status:             "Foo",
+					Reason:             "Foo reason",
+					Message:            "Foo message",
+					LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				{
+					Type:               "Available",
+					Status:             "True",
+					Reason:             "Operator is available",
+					Message:            "Operator is available",
+					LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+				},
+			},
+			Inputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "True",
+						Reason:             "name1 is available",
+						Message:            "name1 is available with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "False",
+						Reason:             "name1 has no error",
+						Message:            "name1 has no error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name3": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2021, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+					{
+						Type:               "Foo2",
+						Status:             "False",
+						Reason:             "Bar2",
+						Message:            "Bar2's message",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+					{
+						Type:               "Error",
+						Status:             "True",
+						Reason:             "name3 has an error",
+						Message:            "name3 has an error due to an issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name4": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name4 is ready",
+						Message:            "name4 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+					{
+						Type:               "Available",
+						Status:             "True",
+						Reason:             "name4 is available",
+						Message:            "name4 is available with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+			},
+		}
+
+		original.Synchronize(&syncTarget)
+		Expect(original.Conditions).To(MatchConditions(expected.Conditions))
+		namedConditionEquals(original.Inputs, expected.Inputs)
+	})
+})
+
+// namedConditionEquals verifies if 2 NamedConditions can be considered the same.
+func namedConditionEquals(got, expected NamedConditions) {
+	Expect(len(got)).To(Equal(len(expected)))
+	for name := range got {
+		Expect(expected).To(HaveKey(name))
+		Expect(got[name]).To(MatchConditions(expected[name]))
+	}
+}

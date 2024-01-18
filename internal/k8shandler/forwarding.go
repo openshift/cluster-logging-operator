@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -41,6 +42,9 @@ func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForw
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
+	if clusterRequest.Cluster.Spec.Collection == nil {
+		return "", fmt.Errorf("unable to generate collector config, spec.collection must be set but is empty")
+	}
 
 	op := framework.Options{}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)

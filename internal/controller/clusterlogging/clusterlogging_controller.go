@@ -108,10 +108,18 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		return ctrl.Result{}, nil
 	}
-	clf, err, _ := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false, func() loggingv1.ClusterLogging { return instance })
+	clf, err, cls := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false, func() loggingv1.ClusterLogging { return instance })
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
+	// Make sure that the ClusterForwarder status is updated as well, as we might migrate from an invalid to a valid
+	// configuration or vice versa.
+	clf.Status.Synchronize(cls)
+	defer func() {
+		if err := r.Client.Status().Update(ctx, &clf); err != nil {
+			log.Error(err, "Error while updating status for ClusterLoggingForwarder %s/%s", clf.Namespace, clf.Name)
+		}
+	}()
 
 	clusterVersion, clusterID := r.GetClusterVersionID(ctx, request.Namespace)
 	resourceNames := factory.GenerateResourceNames(clf)

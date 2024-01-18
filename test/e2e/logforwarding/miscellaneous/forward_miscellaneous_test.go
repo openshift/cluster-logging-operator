@@ -46,9 +46,11 @@ var spec = loggingv1.ClusterLogForwarderSpec{
 	},
 }
 
-// TestLogForwardingWithEmptyCollection tests for issue https://github.com/openshift/cluster-logging-operator/issues/2312.
-// It creates a CL with cl.Spec.Collection set to nil. This would trigger a nil pointer exception without a
+// TestLogForwardingWithEmptyCollection tests for issues https://github.com/openshift/cluster-logging-operator/issues/2312
+// and https://github.com/openshift/cluster-logging-operator/issues/2314.
+// It first creates a CL with cl.Spec.Collection set to nil. This would trigger a nil pointer exception without a
 // fix in place.
+// It then updates the CL to a valid status. Without a fix in place, the CLF's status would not update.
 func TestLogForwardingWithEmptyCollection(t *testing.T) {
 	// First, make sure that the Operator can handle a nil cl.Spec.Collection.
 	// https://github.com/openshift/cluster-logging-operator/issues/2312
@@ -69,6 +71,31 @@ func TestLogForwardingWithEmptyCollection(t *testing.T) {
 	// We now expect to see a validation error.
 	require.NoError(t, g.Wait())
 	require.NoError(t, c.WaitFor(clf, client.ClusterLogForwarderValidationFailure))
+	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
+
+	// Now, make sure that the CLF's status updates to Ready when we update the CL resource to a valid status.
+	// https://github.com/openshift/cluster-logging-operator/issues/2314
+	t.Log("TestLogForwardingWithEmptyCollection: Make sure CLF updates when CL transitions to good state")
+	clSpec := &loggingv1.CollectionSpec{
+		Type:          loggingv1.LogCollectionTypeVector,
+		CollectorSpec: loggingv1.CollectorSpec{},
+	}
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err := c.Get(cl); err != nil {
+			return err
+		}
+		cl.Spec.Collection = clSpec
+		return c.Update(cl)
+	})
+	require.NoError(t, retryErr)
+	// WaitFor alone will return too early and return an error. Instead, make use of the K8s retry framework and retry
+	// up to 30 seconds.
+	retryErr = retry.OnError(
+		wait.Backoff{Steps: 10, Duration: 3 * time.Second, Factor: 1.0},
+		func(error) bool { return true },
+		func() error { t.Log("Retrieving CLF status"); return c.WaitFor(clf, client.ClusterLogForwarderReady) },
+	)
+	require.NoError(t, retryErr)
 	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
 }
 

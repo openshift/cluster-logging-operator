@@ -91,6 +91,31 @@ func (nc NamedConditions) IsAllReady() bool {
 	return true
 }
 
+// Synchronize synchronizes the current NamedCondition with a new NamedCondition.
+// This is not the same as simply replacing the NamedCondition: Conditions contain the LastTransitionTime
+// field which is left unmodified by Synchronize for noops. Whereas all updates and additions shall use the current
+// (= now) timestamp. In short, ignore any timestamp in newNamedCondition, and for noops use the timestamp from nc
+// or use time.Now().
+func (nc NamedConditions) Synchronize(newNamedCondition NamedConditions) {
+	for name, newConditions := range newNamedCondition {
+		oldConditions, ok := nc[name]
+		// If map entry doesn't exist, create it.
+		if !ok {
+			oldConditions = status.Conditions{}
+		}
+		// Synchronize oldConditions.Conditions.
+		synchronizeConditions(&oldConditions, &newConditions)
+		// Write back the value, otherwise this would be a noop.
+		nc[name] = oldConditions
+	}
+	// Delete all map entries in old map which do not exist in new map.
+	for name := range nc {
+		if _, ok := newNamedCondition[name]; !ok {
+			delete(nc, name)
+		}
+	}
+}
+
 var CondReady = Condition{Type: ConditionReady, Status: corev1.ConditionTrue}
 
 func CondNotReady(r ConditionReason, format string, args ...interface{}) Condition {

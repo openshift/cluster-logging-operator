@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -77,6 +78,42 @@ func (status ClusterLogForwarderStatus) IsReady() bool {
 		}
 	}
 	return true
+}
+
+// Synchronize synchronizes the current Status with a new Status.
+// This is not the same as simply replacing the Status: Conditions contain the LastTransitionTime
+// field which is left unmodified by Synchronize for noops. Whereas all updates and additions shall use the current
+// (= now) timestamp.
+// In short, ignore any timestamp in newStatus, and for noops use the timestamp from old status or use time.Now() for
+// updates and additions.
+func (status *ClusterLogForwarderStatus) Synchronize(newStatus *ClusterLogForwarderStatus) {
+	// Synchronize status.Conditions.
+	synchronizeConditions(&status.Conditions, &newStatus.Conditions)
+	// Synchronize the named status fields.
+	status.Filters.Synchronize(newStatus.Filters)
+	status.Inputs.Synchronize(newStatus.Inputs)
+	status.Outputs.Synchronize(newStatus.Outputs)
+	status.Pipelines.Synchronize(newStatus.Pipelines)
+}
+
+// synchronizeConditions is a helper used by *ClusterLogForwarderStatus.Synchronize and NamedConditions.Synchronize.
+func synchronizeConditions(oldConditions, newConditions *status.Conditions) {
+	// Set all conditions from newConditions in oldConditions.
+	// SetCondition adds (or updates) the set of conditions, and sets the current timestamp in case of an add or update.
+	// The timestamp won't be updated if the condition exists and does not need an update.
+	for _, cond := range *newConditions {
+		oldConditions.SetCondition(cond)
+	}
+	// Remove any superfluous conditions.
+	var conditionsToRemove []status.ConditionType
+	for _, oldCond := range *oldConditions {
+		if newConditions.GetCondition(oldCond.Type) == nil {
+			conditionsToRemove = append(conditionsToRemove, oldCond.Type)
+		}
+	}
+	for _, ctr := range conditionsToRemove {
+		oldConditions.RemoveCondition(ctr)
+	}
 }
 
 // RouteMap maps input names to connected outputs or vice-versa.

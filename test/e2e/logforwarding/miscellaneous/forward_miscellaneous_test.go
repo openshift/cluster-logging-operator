@@ -1,9 +1,13 @@
 package miscellaneous
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -66,4 +70,57 @@ func TestLogForwardingWithEmptyCollection(t *testing.T) {
 	require.NoError(t, g.Wait())
 	require.NoError(t, c.WaitFor(clf, client.ClusterLogForwarderValidationFailure))
 	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
+}
+
+// TestLogForwardingWithEmptyCollection tests for issue https://github.com/openshift/cluster-logging-operator/issues/2315.
+// Note that this issue can only be reproduced reliably with `make run` and does not seem to happen once the operator
+// is deployed inside a pod - or respectively is more difficult to reproduce.
+// The goal of the test is to make sure that the CLF resource remains stable for a sufficiently long duration - which
+// we establish here as 15 seconds which in testing was enough to detect the issue.
+func TestLogForwardingReconciliation(t *testing.T) {
+	t.Log("TestLogForwardingWithEmptyCollection: Test handling an empty ClusterLogging Spec.Condition")
+	cl := runtime.NewClusterLogging()
+	clf := runtime.NewClusterLogForwarder()
+	clf.Spec = spec
+
+	c := client.ForTest(t)
+	framework := e2e.NewE2ETestFramework()
+	defer framework.Cleanup()
+	framework.AddCleanup(func() error { return c.Delete(cl) })
+	framework.AddCleanup(func() error { return c.Delete(clf) })
+	var g errgroup.Group
+	e2e.RecreateClClfAsync(&g, c, cl, clf)
+
+	// We now expect to see no validation error.
+	require.NoError(t, g.Wait())
+	require.NoError(t, c.WaitFor(clf, client.ClusterLogForwarderReady))
+	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
+
+	// Now, make sure that the CLF resource version remains unchanged. We run the test 5 times with 1 second between
+	// the tests. The test itself lasts 15 seconds.
+	retryErr := retry.OnError(
+		wait.Backoff{Steps: 5, Duration: 1 * time.Second, Factor: 1.0},
+		func(error) bool { return true },
+		func() error {
+			var resourceVersion string
+			t.Log("Retrieving CLF status for the first time")
+			if err := c.Get(clf); err != nil {
+				return err
+			}
+			resourceVersion = clf.ResourceVersion
+			t.Log("Sleeping for some time")
+			time.Sleep(15 * time.Second)
+			t.Log("Retrieving CLF status for the second time")
+			if err := c.Get(clf); err != nil {
+				return err
+			}
+			if resourceVersion != clf.ResourceVersion {
+				t.Log("ResourceVersions do not match, CLF was updated. Retrying ...")
+				return fmt.Errorf("ResourceVersion not stable, it changed from %q to %q",
+					resourceVersion, clf.ResourceVersion)
+			}
+			return nil
+		},
+	)
+	require.NoError(t, retryErr)
 }

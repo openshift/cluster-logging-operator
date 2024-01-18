@@ -83,7 +83,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	// Fetch the ClusterLogForwarder instance
 	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, true, func() logging.ClusterLogging { return *cl })
 	if status != nil {
-		instance.Status = *status
+		instance.Status.Synchronize(status)
 	}
 	if err != nil {
 		log.V(3).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())

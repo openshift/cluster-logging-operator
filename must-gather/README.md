@@ -36,14 +36,14 @@ Example must-gather for cluster-logging output:
 ```
 ├── cluster-logging
 │  ├── clo
-│  │  ├── cluster-logging-operator-74dd5994f-6ttgt
-│  │  ├── clusterlogforwarder_cr
-│  │  ├── cr
-│  │  ├── csv
-│  │  ├── deployment
-│  │  └── logforwarding_cr
-│  ├── collector
-│  │  ├── fluentd-2tr64
+│  │  ├── [nampespace_name]       ## including openshift-logging
+│  │  │  ├── cluster-logging-operator-74dd5994f-6ttgt
+│  │  │  ├── cr
+│  │  │  ├── csv
+│  │  │  └── deployment
+│  ├── collectors
+│  │  ├── [nampespace_name]       ## including openshift-logging
+│  │  ├── collector-2tr64
 │  ├── eo
 │  │  ├── csv
 │  │  ├── deployment
@@ -85,7 +85,7 @@ Example must-gather for cluster-logging output:
 ├── event-filter.html
 ├── gather-debug.log
 └── namespaces
-   ├── openshift-logging
+   ├── [namespace_name]       ## including openshift-logging
    │  ├── apps
    │  │  ├── daemonsets.yaml
    │  │  ├── deployments.yaml
@@ -94,6 +94,11 @@ Example must-gather for cluster-logging output:
    │  ├── batch
    │  │  ├── cronjobs.yaml
    │  │  └── jobs.yaml
+   │  ├── logging.openshift.io/
+   │  │  ├── clusterloggings
+   │  │  │  ├── [instance_name.yaml]
+   │  │  ├── clusterlogforwarders
+   │  │  │  └── [clf_name.yaml]   
    │  ├── core
    │  │  ├── configmaps.yaml
    │  │  ├── endpoints.yaml
@@ -135,28 +140,27 @@ Example must-gather for cluster-logging output:
    │  │  │           ├── previous.insecure.log
    │  │  │           └── previous.log
    │  │  ├── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
-   │  │  ├── elasticsearch-delete-app-1596030300-bpgcx
-   │  │  │  ├── elasticsearch-delete-app-1596030300-bpgcx.yaml
+   │  │  │  └── elasticsearch
+   │  │  │     └── elasticsearch
+   │  │  │        └── logs
+   │  │  │           ├── current.log
+   │  │  │           ├── previous.insecure.log
+   │  │  │           └── previous.log   
+   │  │  ├── elasticsearch-im-app-1596030300-bpgcx
    │  │  │  └── indexmanagement
    │  │  │     └── indexmanagement
    │  │  │        └── logs
    │  │  │           ├── current.log
    │  │  │           ├── previous.insecure.log
    │  │  │           └── previous.log
-   │  │  ├── fluentd-2tr64
-   │  │  │  ├── fluentd
-   │  │  │  │  └── fluentd
+   │  │  ├── colletor-2tr64
+   │  │  │  ├── collector
+   │  │  │  │  └── collector
    │  │  │  │     └── logs
    │  │  │  │        ├── current.log
    │  │  │  │        ├── previous.insecure.log
    │  │  │  │        └── previous.log
-   │  │  │  ├── fluentd-2tr64.yaml
-   │  │  │  └── fluentd-init
-   │  │  │     └── fluentd-init
-   │  │  │        └── logs
-   │  │  │           ├── current.log
-   │  │  │           ├── previous.insecure.log
-   │  │  │           └── previous.log
+   │  │  │  └── collector-2tr64.yaml
    │  │  ├── kibana-9d69668d4-2rkvz
    │  │  │  ├── kibana
    │  │  │  │  └── kibana
@@ -176,3 +180,10 @@ Example must-gather for cluster-logging output:
    └── openshift-operators-redhat
       ├── ...
 ```
+
+### Moved resources
+With the support of [multi log-forwarder feature](https://docs.openshift.com/container-platform/4.14/logging/log_collection_forwarding/log-forwarding.html#log-forwarding-implementations-multi-clf_log-forwarding) in Cluster Logging v5.8, CLO resources have moved from `cluster-logging/clo/` to individual namespaces under `cluster-logging/clo/[namespace_name]`.
+
+The `clusterlogging` and `clusterlogforwarder` resources are no longer collected in `cluster-logging/clo` and have moved to `namespaces/[namespace_name]/logging.openshift.io/`. This directory structure allows tools like [`omc`](https://github.com/gmeghnag/omc/) to work with those resources in a similar way to `oc` commands on a cluster.
+
+The `deployments`, `daemonsets` and `secrets` are also found under `namespaces/[namespace_name]/` and can also be seen using the [`omc`](https://github.com/gmeghnag/omc/) tool.

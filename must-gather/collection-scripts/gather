@@ -53,6 +53,7 @@ cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
 cluster_resources+=(clusterversion)
 cluster_resources+=(machineconfigpool)
+cluster_resources+=(customresourcedefinitions)
 
 log "-BEGIN inspecting CRs..." >> "${LOGFILE_PATH}"
 for cr in "${cluster_resources[@]}" ; do
@@ -70,12 +71,14 @@ resources+=(rolebindings)
 resources+=(configmaps)
 resources+=(serviceaccounts)
 resources+=(events)
+resources+=(clusterlogging)
+resources+=(clusterlogforwarder)
 
 log "BEGIN inspecting namespaces ..." >> "${LOGFILE_PATH}"
 
 for namespace in "${cluster_resources[@]}" ; do
   # grab all our namespaces -- openshift-logging, openshift-operator-lifecycle-manager, openshift-operators-redhat
-  # should also include any mulit-forwarder namespaces found above
+  # should also include any multi-forwarder namespaces found above
   if [[ $namespace == ns/* ]]; then
     ns=${namespace#ns/}  # remove "ns/" prefix
     for resource in "${resources[@]}" ; do
@@ -125,6 +128,7 @@ if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   fi
 
   if [ "$found_lokistack" != "" ] ; then
+    log "BEGIN gathering lokistack resources ..." >> "${LOGFILE_PATH}"
     ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" >> "${LOGFILE_PATH}" 2>&1 &
     pids+=($!)
   fi
@@ -133,9 +137,9 @@ if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   if [ "$found" != "" ] ; then
     KUBECACHEDIR=${BASE_COLLECTION_PATH}/cache-dir ${SCRIPT_DIR}/gather_visualization_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1
   fi
-  log "BEGIN gathering CLO resources ..." >> "${LOGFILE_PATH}"
+  log "END gathering logstorage resources ..." >> "${LOGFILE_PATH}"
 else
-  log "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${LOGFILE_PATH}" 2>&1
+  log "Skipping logstorage inspection.  No deployment found" >> "${LOGFILE_PATH}" 2>&1
 fi
 
 # Check if PID array has any values, if so, wait for them to finish

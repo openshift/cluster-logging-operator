@@ -24,7 +24,7 @@ mkdir -p "$eo_folder"
 pods=$(oc -n $NAMESPACE get pods -l name=elasticsearch-operator -o jsonpath='{.items[*].metadata.name}')
 for pod in $pods
 do
-    get_env $pod $eo_folder $NAMESPACE "Dockerfile-*operator*"
+    get_env $pod $eo_folder $NAMESPACE "Dockerfile-.*operator*"
 done
 
 oc -n $LOGGING_NS --cache-dir=${KUBECACHEDIR} exec -c elasticsearch \

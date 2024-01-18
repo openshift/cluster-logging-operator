@@ -7,9 +7,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	ValidateClusterLoggingDependencyMSG = "is dependent on a ClusterLogging instance with a valid spec.collector configuration"
+)
+
 func ValidateClusterLoggingDependency(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
 	if clf.Name == constants.SingletonName && clf.Namespace == constants.OpenshiftNS && !extras[constants.ClusterLoggingAvailable] {
-		return errors.NewValidationError("ClusterLogForwarder '%s/%s' is dependent on a ClusterLogging instance", constants.OpenshiftNS, constants.SingletonName), nil
+		return errors.NewValidationError("ClusterLogForwarder '%s/%s' %s", constants.OpenshiftNS, constants.SingletonName, ValidateClusterLoggingDependencyMSG), nil
 	}
 	return nil, nil
 }

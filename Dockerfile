@@ -20,16 +20,15 @@ COPY ${APP_DIR}/internal ./internal
 USER 0
 RUN make build
 
-FROM quay.io/openshift/origin-cli:4.13 AS origincli
-
+FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV APP_DIR=/opt/apt-root/src
 ENV SRC_DIR=./
 
-
 RUN INSTALL_PKGS=" \
       openssl \
+      compat-openssl11 \
       rsync \
       file \
       xz \
@@ -42,7 +41,8 @@ RUN INSTALL_PKGS=" \
 
 COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
 
-COPY --from=origincli /usr/bin/oc /usr/bin
+COPY --from=origincli /usr/share/openshift/linux_amd64/oc.rhel9 /usr/bin/oc
+
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 
 USER 1000

@@ -2,6 +2,8 @@ package input
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -34,9 +36,11 @@ var (
 		Build()
 	excludeExtensions = []string{"gz", "tmp"}
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
-	infraExcludes     = source.NewContainerPathGlobBuilder().
-				AddNamespaces(infraNamespaces...).AddExtensions(excludeExtensions...).
-				Build()
+	infraNSRegex      = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
+
+	infraExcludes = source.NewContainerPathGlobBuilder().
+			AddNamespaces(infraNamespaces...).AddExtensions(excludeExtensions...).
+			Build()
 )
 
 // NewViaQ creates an input adapter to generate config for ViaQ sources to collect logs excluding the
@@ -67,8 +71,15 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 				ib.AddNamespaces(input.Application.Namespaces...)
 			} else {
 				ib.AddNamespaces(input.Application.Namespaces...)
-				eb.AddNamespaces(input.Application.ExcludeNamespaces...).
-					AddNamespaces(infraNamespaces...).
+
+				// Prune excluded infra namespaces if includes has any infra namespaces
+				finalExcludeList := append(input.Application.ExcludeNamespaces,
+					pruneInfraNS(input.Application.Namespaces)...)
+
+				// Sort outputs, because we have tests depending on the exact generated configuration
+				sort.Strings(finalExcludeList)
+
+				eb.AddNamespaces(finalExcludeList...).
 					AddExtensions(excludeExtensions...)
 			}
 			if input.Application.Containers != nil {
@@ -181,4 +192,38 @@ func NewViaqContainerSource(spec logging.InputSpec, namespace, includes, exclude
 	el = append(el, normalize.NormalizeContainerLogs(inputID, id)...)
 
 	return el, []string{id}
+}
+
+// pruneInfraNS returns a pruned infra namespace list depending on which infra namespaces were included
+// since the exclusion list includes all infra namespaces by default
+// Example:
+// Include: ["openshift-logging"]
+// Default Exclude: ["default", "openshift*", "kube*"]
+// Final infra namespaces in Exclude: ["default", "kube*"]
+func pruneInfraNS(includes []string) []string {
+	foundInfraNamespaces := make(map[string]string)
+	for _, ns := range includes {
+		matches := infraNSRegex.FindStringSubmatch(ns)
+		if matches != nil {
+			for i, name := range infraNSRegex.SubexpNames() {
+				if i != 0 && matches[i] != "" {
+					foundInfraNamespaces[name] = matches[i]
+				}
+			}
+		}
+	}
+
+	infraNSSet := sets.NewString(infraNamespaces...)
+	// Remove infra namespace depending on the named capture group
+	for k := range foundInfraNamespaces {
+		switch k {
+		case "default":
+			infraNSSet.Remove("default")
+		case "openshift":
+			infraNSSet.Remove("openshift*")
+		case "kube":
+			infraNSSet.Remove("kube*")
+		}
+	}
+	return infraNSSet.List()
 }

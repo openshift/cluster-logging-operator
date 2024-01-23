@@ -79,6 +79,33 @@ var _ = Describe("inputs", func() {
 		},
 			"viaq_application_with_includes_excludes.toml",
 		),
+		Entry("with an application that specs infra namespaces and exclude namespaces", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Namespaces:        []string{"test-ns-foo", "openshift-logging", "kube-apiserver"},
+				ExcludeNamespaces: []string{"test-ns1"},
+			},
+		},
+			"viaq_application_with_infra_includes_excludes.toml",
+		),
+		Entry("with an application that specs infra namespaces and excludes infra namespaces", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Namespaces:        []string{"test-ns-foo", "openshift*", "kube-apiserver"},
+				ExcludeNamespaces: []string{"test-ns1", "openshift-logging"},
+			},
+		},
+			"viaq_application_with_infra_includes_infra_excludes.toml",
+		),
+		Entry("with an application that specs specific infra namespace and excludes infra namespaces", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Namespaces:        []string{"test-ns-foo", "openshift-logging", "kube-apiserver"},
+				ExcludeNamespaces: []string{"test-ns1", "openshift*"},
+			},
+		},
+			"viaq_application_with_specific_infra_includes_infra_excludes.toml",
+		),
 		Entry("with an application that specs specific match labels", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{

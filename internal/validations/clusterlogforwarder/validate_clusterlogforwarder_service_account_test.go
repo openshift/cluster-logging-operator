@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -217,6 +218,146 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			}
 			Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed())
 		})
+
+		Context("when evaluating custom application inputs that spec infrastructure namespaces", func() {
+			const appWithInfraNSInputName = "appWithInfra"
+			var k8sAppClient client.Client
+			BeforeEach(func() {
+				k8sAppClient = &mockAppSARClient{
+					fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+				}
+			})
+
+			Context("when service account only has collect-application-logs permission", func() {
+				DescribeTable("application input with infrastructure namespaces included", func(infraNS []string) {
+					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+						ServiceAccountName: clfServiceAccount.Name,
+						Inputs: []loggingv1.InputSpec{
+							{
+								Name: appWithInfraNSInputName,
+								Application: &loggingv1.Application{
+									Namespaces: infraNS,
+								},
+							},
+						},
+						Pipelines: []loggingv1.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appWithInfraNSInputName,
+								},
+							},
+						},
+					}
+					Expect(ValidateServiceAccount(customClf, k8sAppClient, extras)).ToNot(Succeed(), "should fail validation for infra namespaces")
+				},
+					Entry("with default namespace", []string{"default"}),
+					Entry("with openshift namespace", []string{"openshift"}),
+					Entry("with openshift and wildcard namespace", []string{"openshift*"}),
+					Entry("with openshift-operators-redhat namespace", []string{"openshift-operators-redhat"}),
+					Entry("with kube namespace", []string{"kube"}),
+					Entry("with kube and wildcard namespace", []string{"kube*"}),
+					Entry("with kube-system namespace", []string{"kube-system"}),
+					Entry("with multiple namespaces including an infra namespace", []string{"kube*", "custom-ns"}),
+				)
+
+				It("when including infra namespaces and excluding other namespaces", func() {
+					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+						ServiceAccountName: clfServiceAccount.Name,
+
+						Inputs: []loggingv1.InputSpec{
+							{
+								Name: appWithInfraNSInputName,
+								Application: &loggingv1.Application{
+									Namespaces: []string{
+										"openshift-image-registry",
+										"kube*",
+										"foo",
+									},
+									ExcludeNamespaces: []string{
+										"foobar",
+									},
+								},
+							},
+						},
+						Pipelines: []loggingv1.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appWithInfraNSInputName,
+								},
+							},
+						},
+					}
+					Expect(ValidateServiceAccount(customClf, k8sAppClient, extras)).ToNot(Succeed())
+				})
+			})
+
+			Context("when service account has collect-application-logs & collect-infra-logs permissions", func() {
+				DescribeTable("application input with infrastructure namespaces included", func(infraNS []string) {
+					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+						ServiceAccountName: clfServiceAccount.Name,
+						Inputs: []loggingv1.InputSpec{
+							{
+								Name: appWithInfraNSInputName,
+								Application: &loggingv1.Application{
+									Namespaces: infraNS,
+								},
+							},
+						},
+						Pipelines: []loggingv1.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appWithInfraNSInputName,
+								},
+							},
+						},
+					}
+					Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed(), "should pass validation for infra namespaces")
+				},
+					Entry("with default namespace", []string{"default"}),
+					Entry("with openshift namespace", []string{"openshift"}),
+					Entry("with openshift and wildcard namespace", []string{"openshift*"}),
+					Entry("with openshift-operators-redhat namespace", []string{"openshift-operators-redhat"}),
+					Entry("with kube namespace", []string{"kube"}),
+					Entry("with kube and wildcard namespace", []string{"kube*"}),
+					Entry("with kube-system namespace", []string{"kube-system"}),
+					Entry("with multiple namespaces including an infra namespace", []string{"kube*", "custom-ns"}),
+				)
+
+				It("when including infra namespaces and excluding other namespaces", func() {
+					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+						ServiceAccountName: clfServiceAccount.Name,
+
+						Inputs: []loggingv1.InputSpec{
+							{
+								Name: appWithInfraNSInputName,
+								Application: &loggingv1.Application{
+									Namespaces: []string{
+										"openshift-image-registry",
+										"kube*",
+										"foo",
+									},
+									ExcludeNamespaces: []string{
+										"foobar",
+									},
+								},
+							},
+						},
+						Pipelines: []loggingv1.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appWithInfraNSInputName,
+								},
+							},
+						},
+					}
+					Expect(ValidateServiceAccount(customClf, k8sClient, extras)).To(Succeed())
+				})
+			})
+		})
 	})
 
 	It("should not validate clusterlogforwarder named 'instance' in the namespace 'openshift-logging'", func() {
@@ -275,6 +416,22 @@ func (c *mockAuditSARClient) Create(ctx context.Context, obj client.Object, opts
 	}
 	inputName := sar.Spec.ResourceAttributes.Name
 	if inputName == loggingv1.InputNameAudit {
+		sar.Status.Allowed = true
+	}
+	return nil
+}
+
+type mockAppSARClient struct {
+	client.Client
+}
+
+func (c *mockAppSARClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+	sar, ok := obj.(*authorizationapi.SubjectAccessReview)
+	if !ok {
+		return fmt.Errorf("unexpected object type: %T", obj)
+	}
+	inputName := sar.Spec.ResourceAttributes.Name
+	if inputName == loggingv1.InputNameApplication {
 		sar.Status.Allowed = true
 	}
 	return nil

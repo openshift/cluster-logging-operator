@@ -3,6 +3,7 @@ package clusterlogforwarder
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -22,6 +23,8 @@ const (
 	//allNamesapces is used for determining cluster scoped bindings
 	allNamespaces = ""
 )
+
+var infraNamespaces = regexp.MustCompile(`^default|openshift.*|kube.*$`)
 
 // ValidateServiceAcccount validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
 func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
@@ -123,6 +126,10 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 			switch {
 			case input.Application != nil:
 				inputTypes.Insert(loggingv1.InputNameApplication)
+				// Check if infra namespaces are spec'd
+				if hasInfraNamespaces(input.Application.Namespaces) {
+					inputTypes.Insert(loggingv1.InputNameInfrastructure)
+				}
 			case input.Infrastructure != nil:
 				inputTypes.Insert(loggingv1.InputNameInfrastructure)
 			case input.Audit != nil:
@@ -162,4 +169,17 @@ func createSubjectAccessReview(user, namespace, verb, resource, name, resourceAP
 		}
 	}
 	return sar
+}
+
+func hasInfraNamespaces(appNamespaces []string) bool {
+	if len(appNamespaces) == 0 {
+		return false
+	}
+
+	for _, ns := range appNamespaces {
+		if infraNamespaces.MatchString(ns) {
+			return true
+		}
+	}
+	return false
 }

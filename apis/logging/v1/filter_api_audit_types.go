@@ -18,7 +18,7 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 //   - Metadata: Only the audit metadata is included, request and response bodies are removed.
 //   - Request: Audit metadata and the request body are included, the response body is removed.
 //   - RequestResponse: All data is included: metadata, request body and response body. Note the response body can be very large.
-//     For example the a command like `oc list -A pods` generates a response body containing the YAML description of every pod in the cluster.
+//     For example the a command like `oc get -A pods` generates a response body containing the YAML description of every pod in the cluster.
 //
 // # Extensions
 //

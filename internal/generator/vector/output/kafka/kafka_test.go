@@ -110,6 +110,9 @@ timestamp_format = "rfc3339"
 [sinks.kafka_receiver.buffer]
 when_full = "drop_newest"
 
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
+
 # SASL Config
 [sinks.kafka_receiver.sasl]
 enabled = true
@@ -214,6 +217,9 @@ when_full = "drop_newest"
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 
 # SASL Config
 [sinks.kafka_receiver.sasl]
@@ -321,6 +327,9 @@ enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
+
 # SASL Config
 [sinks.kafka_receiver.sasl]
 enabled = true
@@ -419,6 +428,9 @@ enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("brokers, no URL, with tls key,cert,ca-bundle", helpers.ConfGenerateTest{
@@ -516,6 +528,9 @@ enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("with TLS and InsecureSkipVerify", helpers.ConfGenerateTest{
@@ -606,13 +621,15 @@ timestamp_format = "rfc3339"
 [sinks.kafka_receiver.buffer]
 when_full = "drop_newest"
 
-[sinks.kafka_receiver.librdkafka_options]
-"enable.ssl.certificate.verification" = "false"
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
+
+[sinks.kafka_receiver.librdkafka_options]
+"enable.ssl.certificate.verification" = "false"
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("with TLS Key Pass", helpers.ConfGenerateTest{
@@ -701,6 +718,9 @@ when_full = "drop_newest"
 [sinks.kafka_receiver.tls]
 enabled = true
 key_pass = "junk"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("with basic TLS", helpers.ConfGenerateTest{
@@ -776,6 +796,9 @@ timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
 when_full = "drop_newest"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("with plain TLS - no secret", helpers.ConfGenerateTest{
@@ -851,6 +874,9 @@ timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
 when_full = "drop_newest"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 		Entry("without security", helpers.ConfGenerateTest{
@@ -926,6 +952,9 @@ timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
 when_full = "drop_newest"
+
+[sinks.kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
 `,
 		}),
 	)

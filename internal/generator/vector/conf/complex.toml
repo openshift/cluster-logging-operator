@@ -453,6 +453,9 @@ key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 
+[sinks.output_kafka_receiver.librdkafka_options]
+"ssl.endpoint.identification.algorithm" = "none"
+
 [transforms.add_nodename_to_metric]
 type = "remap"
 inputs = ["internal_metrics"]

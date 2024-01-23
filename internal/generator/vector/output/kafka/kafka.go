@@ -142,24 +142,29 @@ timestamp_format = "rfc3339"
 }
 
 func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
+	insecureSkipVerify := false
+	conf := []Element{}
 	if o.Secret != nil {
-		conf := []Element{}
-
 		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, genTLSConf); tlsConf != nil {
-			// KafkaInsecure (InsecureTLS)
+			// KafkaInsecure (LibrdkafkaOptions)
 			if o.TLS != nil && o.TLS.InsecureSkipVerify {
-				conf = append(conf, InsecureTLS{
-					ComponentID: id,
-				})
+				insecureSkipVerify = true
 			}
-
 			tlsConf.InsecureSkipVerify = false
 			conf = append(conf, tlsConf)
 		}
 		// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
+		conf = append(conf, LibrdkafkaOptions{
+			ComponentID: id,
+			InsecureTLS: insecureSkipVerify,
+		})
 		return conf
 	}
-	return []Element{}
+	conf = append(conf, LibrdkafkaOptions{
+		ComponentID: id,
+		InsecureTLS: insecureSkipVerify,
+	})
+	return conf
 }
 
 func SASLConf(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {

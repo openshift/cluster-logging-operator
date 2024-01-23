@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -21,6 +22,10 @@ type ForwarderResourceNames struct {
 
 func (f *ForwarderResourceNames) DaemonSetName() string {
 	return f.CommonName
+}
+
+func (f *ForwarderResourceNames) GenerateInputServiceName(serviceName string) string {
+	return fmt.Sprintf("%s-%s", f.CommonName, serviceName)
 }
 
 // GenerateResourceNames is a factory for naming of objects based on ClusterLogForwarder namespace and name

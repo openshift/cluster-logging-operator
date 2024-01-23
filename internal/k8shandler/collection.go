@@ -110,7 +110,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return err
 	}
 
-	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceOwner); err != nil {
+	if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames, clusterRequest.ResourceOwner); err != nil {
 		log.Error(err, "collector.ReconcileDaemonset")
 		return err
 	}
@@ -208,7 +208,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	httpInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			httpInputs.Insert(input.Name)
+			httpInputs.Insert(clusterRequest.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}
 

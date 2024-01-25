@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -262,6 +263,10 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
+	}
+
+	if u, _ := url.Parse(output.URL); u != nil && output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
+		return fail(CondInvalid("invalid configuration: provided not secure URL along with TLS configuration"))
 	}
 
 	if output.Type == loggingv1.OutputTypeKafka {

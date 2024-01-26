@@ -267,14 +267,16 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 	})
 
 	Context("output specs", func() {
+		const secretName = "mytestsecret"
 		var (
-			client        client.Client
-			namespace     = constants.OpenshiftNS
-			extras        map[string]bool
-			clfStatus     *loggingv1.ClusterLogForwarderStatus
-			output        loggingv1.OutputSpec
-			otherOutput   loggingv1.OutputSpec
-			forwarderSpec *loggingv1.ClusterLogForwarderSpec
+			client           client.Client
+			namespace        = constants.OpenshiftNS
+			extras           map[string]bool
+			clfStatus        *loggingv1.ClusterLogForwarderStatus
+			output           loggingv1.OutputSpec
+			otherOutput      loggingv1.OutputSpec
+			forwarderSpec    *loggingv1.ClusterLogForwarderSpec
+			cloudWatchSecret *corev1.Secret
 		)
 
 		BeforeEach(func() {
@@ -283,6 +285,11 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			)).Build()
 			clfStatus = &loggingv1.ClusterLogForwarderStatus{}
 			extras = map[string]bool{}
+
+			cloudWatchSecret = runtime.NewSecret(constants.OpenshiftNS, secretName, map[string][]byte{
+				constants.AWSSecretAccessKey: {0, 1, 2},
+				constants.AWSAccessKeyID:     {0, 1, 2},
+			})
 
 			output = loggingv1.OutputSpec{
 				Name: "myOutput",
@@ -449,10 +456,14 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 		It("should fail Cloudwatch output without OutputTypeSpec", func() {
+			client = fake.NewFakeClient(cloudWatchSecret) //nolint
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
 					Name: "cw",
 					Type: loggingv1.OutputTypeCloudwatch,
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: secretName,
+					},
 				},
 			}
 			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
@@ -460,6 +471,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 		It("should allow specific outputs that do not require URL", func() {
+			client = fake.NewFakeClient(cloudWatchSecret) //nolint
 			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{"aCloudwatch"}}}
 			forwarderSpec.Outputs = []loggingv1.OutputSpec{
 				{
@@ -467,6 +479,9 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					Type: loggingv1.OutputTypeCloudwatch,
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
 						Cloudwatch: &loggingv1.Cloudwatch{},
+					},
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: secretName,
 					},
 				},
 			}
@@ -533,7 +548,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						APIVersion: corev1.SchemeGroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "mytestsecret",
+						Name:      secretName,
 						Namespace: constants.OpenshiftNS,
 					},
 					Data: map[string][]byte{},
@@ -561,7 +576,23 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 				})
 
-				It("should fail outputs with secrets that is missing aws_secret_access_id", func() {
+				It("should fail outputs without secrets", func() {
+					client = fake.NewFakeClient(secret) //nolint
+					output = loggingv1.OutputSpec{
+						Name: "aName",
+						Type: loggingv1.OutputTypeCloudwatch,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Cloudwatch: &loggingv1.Cloudwatch{},
+						},
+					}
+					forwarderSpec = &loggingv1.ClusterLogForwarderSpec{}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
+					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret must be provided for cloudwatch output"))
+				})
+
+				It("should fail outputs without secrets that is missing aws_secret_access_id", func() {
 					secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 					client = fake.NewFakeClient(secret) //nolint
 					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
@@ -623,6 +654,68 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
+				})
+			})
+
+			Context("for writing to Splunk", func() {
+				BeforeEach(func() {
+					output = loggingv1.OutputSpec{
+						Name: "aName",
+						Type: loggingv1.OutputTypeSplunk,
+						URL:  "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{},
+						},
+						Secret: &loggingv1.OutputSecretSpec{Name: secret.Name},
+					}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
+					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
+				})
+
+				It("should fail outputs with secrets that is missing hecToken", func() {
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "A non-empty hecToken entry is required"))
+				})
+
+				It("should fail outputs without secrets", func() {
+					client = fake.NewFakeClient(secret) //nolint
+					output = loggingv1.OutputSpec{
+						Name: "aName",
+						URL:  "https://splunk-web:8088/endpoint",
+						Type: loggingv1.OutputTypeSplunk,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{},
+						},
+					}
+					forwarderSpec = &loggingv1.ClusterLogForwarderSpec{}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
+					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret must be provided for splunk output"))
+				})
+
+				It("should fail outputs with secrets that have empty hecToken", func() {
+					secret.Data[constants.SplunkHECTokenKey] = []byte{}
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "A non-empty hecToken entry is required"))
+				})
+
+				It("should pass outputs with secrets that have hecToken", func() {
+					secret.Data[constants.SplunkHECTokenKey] = []byte{0, 1, 2}
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+				})
+
+				It("should fail outputs without URL", func() {
+					forwarderSpec.Outputs[0].URL = ""
+					secret.Data[constants.SplunkHECTokenKey] = []byte{0, 1, 2}
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "URL is required for output type splunk"))
 				})
 			})
 

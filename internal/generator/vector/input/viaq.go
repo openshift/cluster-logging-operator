@@ -59,11 +59,18 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 		els, ids = NewAuditSources(input, op)
 	default:
 		if input.Application != nil {
-			ib := source.NewContainerPathGlobBuilder().
-				AddNamespaces(input.Application.Namespaces...)
-			eb := source.NewContainerPathGlobBuilder().
-				AddNamespaces(input.Application.ExcludeNamespaces...).
-				AddExtensions(excludeExtensions...)
+			ib := source.NewContainerPathGlobBuilder()
+			eb := source.NewContainerPathGlobBuilder()
+
+			// Includes but no excludes, no need to add exclude to config
+			if len(input.Application.Namespaces) > 0 && len(input.Application.ExcludeNamespaces) == 0 {
+				ib.AddNamespaces(input.Application.Namespaces...)
+			} else {
+				ib.AddNamespaces(input.Application.Namespaces...)
+				eb.AddNamespaces(input.Application.ExcludeNamespaces...).
+					AddNamespaces(infraNamespaces...).
+					AddExtensions(excludeExtensions...)
+			}
 			if input.Application.Containers != nil {
 				ib.AddContainers(input.Application.Containers.Include...)
 				eb.AddContainers(input.Application.Containers.Exclude...)

@@ -67,6 +67,18 @@ var _ = Describe("inputs", func() {
 		},
 			"viaq_application_with_excludes.toml",
 		),
+		Entry("with an application that specs specific namespaces and exclude namespaces", logging.InputSpec{
+			Name: "my-app",
+			Application: &logging.Application{
+				Namespaces:        []string{"test-ns-foo", "test-ns-bar"},
+				ExcludeNamespaces: []string{"test-ns1", "test-ns2"},
+				Containers: &logging.InclusionSpec{
+					Exclude: []string{"mesh*"},
+				},
+			},
+		},
+			"viaq_application_with_includes_excludes.toml",
+		),
 		Entry("with an application that specs specific match labels", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{

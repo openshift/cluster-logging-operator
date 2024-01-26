@@ -2,6 +2,7 @@ package input_selection
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -179,7 +180,7 @@ var _ = Describe("[InputSelection]", func() {
 				}},
 			logGeneratorNameFn,
 			func() {
-				Expect(receiver.ListNamespaces()).To(Not(HaveEach(MatchRegexp("^clo-test.*$"))))
+				Expect(receiver.ListNamespaces()).To(HaveLen(0), "exp no logs to be collected")
 			}),
 		Entry("application inputsshould collect from included containers",
 			logging.InputSpec{

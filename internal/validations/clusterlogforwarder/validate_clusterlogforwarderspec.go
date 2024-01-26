@@ -316,9 +316,14 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 		conds.Set(output.Name, c)
 		return false
 	}
+
 	if output.Secret == nil {
+		if output.Type == loggingv1.OutputTypeCloudwatch || output.Type == loggingv1.OutputTypeSplunk {
+			return fail(CondMissing("secret must be provided for %s output", output.Type))
+		}
 		return true
 	}
+
 	if output.Secret.Name == "" {
 		conds.Set(output.Name, conditions.CondInvalid("secret has empty name"))
 		return false

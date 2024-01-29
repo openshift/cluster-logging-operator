@@ -2,6 +2,7 @@ package clusterlogforwarder
 
 import (
 	"fmt"
+	v12 "github.com/openshift/api/config/v1"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
@@ -1361,6 +1362,38 @@ func Test_verifyOutputURL(t *testing.T) {
 				output: &loggingv1.OutputSpec{
 					Name: "test-output",
 					Type: loggingv1.OutputTypeLoki,
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "should fail with not secure URL  and given TLS config: InsecureSkipVerify",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "http://local.svc:514",
+					TLS: &loggingv1.OutputTLSSpec{
+						InsecureSkipVerify: true,
+					},
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "should fail with not secure URL and given TLS config: TLSSecurityProfile",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "http://local.svc:514",
+					TLS: &loggingv1.OutputTLSSpec{
+						TLSSecurityProfile: &v12.TLSSecurityProfile{
+							Type: v12.TLSProfileOldType,
+						},
+					},
 				},
 				conds: loggingv1.NamedConditions{},
 			},

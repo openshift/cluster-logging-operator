@@ -319,7 +319,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 
 	if output.Secret == nil {
 		if output.Type == loggingv1.OutputTypeCloudwatch || output.Type == loggingv1.OutputTypeSplunk {
-			return fail(CondMissing("secret must be provided for %s output", output.Type))
+			return fail(conditions.CondMissing("secret must be provided for %s output", output.Type))
 		}
 		return true
 	}

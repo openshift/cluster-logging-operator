@@ -579,9 +579,15 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			var (
 				forwarderSpec    = loggingv1.ClusterLogForwarderSpec{}
 				splunkOutputName = "splunk-index"
+				splunkSecret     *corev1.Secret
 			)
+
 			BeforeEach(func() {
+				splunkSecret = runtime.NewSecret(constants.OpenshiftNS, "mysecret", map[string][]byte{
+					constants.SplunkHECTokenKey: {'t', 'o', 'k', 'e', 'n'},
+				})
 				forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{splunkOutputName}}}
+				client = fake.NewFakeClient(splunkSecret) //nolint
 			})
 
 			It("should pass if only IndexKey is spec'd", func() {
@@ -595,6 +601,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 								IndexKey: "kubernetes.namespace_name",
 							},
 						},
+						Secret: &loggingv1.OutputSecretSpec{Name: splunkSecret.Name},
 					},
 				}
 				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
@@ -613,6 +620,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 								IndexName: "custom-index",
 							},
 						},
+						Secret: &loggingv1.OutputSecretSpec{Name: splunkSecret.Name},
 					},
 				}
 				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
@@ -627,6 +635,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 						Type:           loggingv1.OutputTypeSplunk,
 						URL:            "https://splunk-web:8088/endpoint",
 						OutputTypeSpec: loggingv1.OutputTypeSpec{},
+						Secret:         &loggingv1.OutputSecretSpec{Name: splunkSecret.Name},
 					},
 				}
 				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
@@ -646,6 +655,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 								IndexName: "custom-index",
 							},
 						},
+						Secret: &loggingv1.OutputSecretSpec{Name: splunkSecret.Name},
 					},
 				}
 				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)

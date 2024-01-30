@@ -44,7 +44,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Wait for splunk to be ready
-		time.Sleep(45 * time.Second)
+		time.Sleep(90 * time.Second)
 
 		// Write app logs
 		timestamp := "2020-11-04T18:13:59.061892+00:00"

@@ -51,7 +51,9 @@ func (r Filter) Template() string {
 [transforms.{{.ComponentID}}]
 type = "filter"
 inputs = {{.Inputs}}
-condition = "{{ .Condition }}"
+condition = '''
+{{ .Condition }}
+'''
 {{end}}
 `
 }

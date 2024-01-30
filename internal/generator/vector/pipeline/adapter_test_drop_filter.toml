@@ -1,0 +1,6 @@
+[transforms.pipeline_mypipeline_my_drop_filter_0]
+type = "filter"
+inputs = ["input_app_in_viaq_logtype","input_infra_in_viaq_logtype"]
+condition = '''
+!((!match(.kubernetes.namespace_name, r'very-important') && match(.level, r'warning|error|critical') ?? false) || (match(.message, r'foobar') && !match(.kubernetes.namespace_labels."test-dashes/slashes", r'true') ?? false))
+'''

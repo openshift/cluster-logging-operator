@@ -56,6 +56,46 @@ spec:
                   description: Filter defines a filter for log messages. See [FilterTypeSpec]
                     for a list of filter types.
                   properties:
+                    drop:
+                      description: A drop filter applies a sequence of tests to a
+                        log record and drops the record if any test passes. Each test
+                        contains a sequence of conditions, all conditions must be
+                        true for the test to pass. A DropTestsSpec contains an array
+                        of tests which contains an array of conditions
+                      items:
+                        properties:
+                          test:
+                            description: DropConditions is an array of DropCondition
+                              which are conditions that are ANDed together
+                            items:
+                              properties:
+                                field:
+                                  description: 'A dot delimited path to a field in
+                                    the log record. It must start with a `.`. The
+                                    path can contain alpha-numeric characters and
+                                    underscores (a-zA-Z0-9_). If segments contain
+                                    characters outside of this range, the segment
+                                    must be quoted. Examples: `.kubernetes.namespace_name`,
+                                    `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                                  type: string
+                                matches:
+                                  description: A regular expression that the field
+                                    will match. If the value of the field defined
+                                    in the DropTest matches the regular expression,
+                                    the log record will be dropped. Must define only
+                                    one of matches OR notMatches
+                                  type: string
+                                notMatches:
+                                  description: A regular expression that the field
+                                    does not match. If the value of the field defined
+                                    in the DropTest does not match the regular expression,
+                                    the log record will be dropped. Must define only
+                                    one of matches or notMatches
+                                  type: string
+                              type: object
+                            type: array
+                        type: object
+                      type: array
                     kubeAPIAudit:
                       description: "KubeAPIAudit filter Kube API server audit logs,
                         as described in [Kubernetes Auditing]. \n # Policy Filtering
@@ -241,6 +281,7 @@ spec:
                       description: Type of filter.
                       enum:
                       - kubeAPIAudit
+                      - drop
                       type: string
                   required:
                   - name

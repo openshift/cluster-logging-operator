@@ -11,7 +11,9 @@ crt_file = "/etc/collector/receiver/collector-myreceiver/tls.crt"
 [transforms.input_myreceiver_drop_debug]
 type = "filter"
 inputs = ["input_myreceiver"]
-condition = ".PRIORITY != \"7\" && .PRIORITY != 7"
+condition = '''
+.PRIORITY != "7" && .PRIORITY != 7
+'''
 
 
 [transforms.input_myreceiver_journal_viaq]

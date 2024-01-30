@@ -1,10 +1,11 @@
 package normalize
 
 import (
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
 )
 
 const (
@@ -117,7 +118,7 @@ func DropJournalDebugLogs(inputs, id string) []framework.Element {
 		Filter{
 			ComponentID: id,
 			Inputs:      helpers.MakeInputs(inputs),
-			Condition:   `.PRIORITY != \"7\" && .PRIORITY != 7`,
+			Condition:   `.PRIORITY != "7" && .PRIORITY != 7`,
 		},
 	}
 }

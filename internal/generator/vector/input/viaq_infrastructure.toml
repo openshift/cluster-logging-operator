@@ -75,7 +75,10 @@ journal_directory = "/var/log/journal"
 [transforms.input_infrastructure_journal_drop]
 type = "filter"
 inputs = ["input_infrastructure_journal"]
-condition = ".PRIORITY != \"7\" && .PRIORITY != 7"
+condition = '''
+.PRIORITY != "7" && .PRIORITY != 7
+'''
+
 
 [transforms.input_infrastructure_journal_viaq]
 type = "remap"

@@ -2,7 +2,9 @@ package filter
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/drop"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -23,7 +25,8 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 		}
 	}()
 	switch filterSpec.Type {
-
+	case loggingv1.FilterDrop:
+		return drop.MakeDropFilter(filterSpec.DropTestsSpec)
 	case loggingv1.FilterKubeAPIAudit:
 		return apiaudit.PolicyToVRL(filterSpec.KubeAPIAudit)
 	case openshift.Labels:

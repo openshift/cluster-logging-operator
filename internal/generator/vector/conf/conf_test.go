@@ -26,6 +26,9 @@ import (
 //go:embed complex.toml
 var ExpectedComplexToml string
 
+//go:embed complex_drop_filter.toml
+var ExpectedComplexDropFilterToml string
+
 //go:embed complex_es_no_ver.toml
 var ExpectedComplexEsNoVerToml string
 
@@ -391,6 +394,103 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedComplexHTTPReceiverTOML,
+		}),
+		Entry("with drop filters", testhelpers.ConfGenerateTest{
+			Options: framework.Options{
+				framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+					{
+						Name:           logging.InputNameInfrastructure,
+						Infrastructure: &logging.Infrastructure{},
+					},
+					{
+						Name:  logging.InputNameAudit,
+						Audit: &logging.Audit{},
+					},
+				},
+				Filters: []logging.FilterSpec{
+					{
+						Name: "drop-test",
+						Type: logging.FilterDrop,
+						FilterTypeSpec: logging.FilterTypeSpec{
+							DropTestsSpec: &[]logging.DropTest{
+								{
+									DropConditions: []logging.DropCondition{
+										{
+											Field:   ".kubernetes.namespace_name",
+											Matches: "busybox",
+										},
+										{
+											Field:      ".level",
+											NotMatches: "d.+",
+										},
+									},
+								},
+								{
+									DropConditions: []logging.DropCondition{
+										{
+											Field:   ".log_type",
+											Matches: "application",
+										},
+									},
+								},
+								{
+									DropConditions: []logging.DropCondition{
+										{
+											Field:   ".kubernetes.container_name",
+											Matches: "error|warning",
+										},
+										{
+											Field:      ".kubernetes.labels.test",
+											NotMatches: "foo",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"mytestapp",
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit},
+						OutputRefs: []string{"kafka-receiver"},
+						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+						FilterRefs: []string{"drop-test"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedComplexDropFilterToml,
 		}),
 	)
 

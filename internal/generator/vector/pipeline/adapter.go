@@ -1,6 +1,9 @@
 package pipeline
 
 import (
+	"os"
+	"strconv"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -10,8 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	"os"
-	"strconv"
 )
 
 // Pipeline is an adapter between logging API and config generation
@@ -121,6 +122,8 @@ type PipelineFilter struct {
 	ids  []string
 	Next []helpers.InputComponent
 	vrl  string
+	// Distinguish between a Remap or Filter element
+	isFilterElement bool
 
 	//transformFactory is a function that takes input IDs and returns a transform
 	transformFactory func(string) framework.Element
@@ -147,6 +150,7 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 			},
 		}
 	}
+
 	if vrl, err := filter.VRLFrom(&spec); err != nil {
 		log.Error(err, "bad filter", "filterRef", filterRef, "spec.type", spec.Type, "spec.Name", spec.Name)
 		return nil
@@ -154,9 +158,13 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 		return &PipelineFilter{
 			ids: ids,
 			vrl: vrl,
+			isFilterElement: func() bool {
+				return spec.Type == logging.FilterDrop
+			}(),
 		}
 	}
 }
+
 func (o *PipelineFilter) Element() framework.Element {
 	inputs := []string{}
 	for _, n := range o.Next {
@@ -164,6 +172,14 @@ func (o *PipelineFilter) Element() framework.Element {
 	}
 	if o.transformFactory != nil {
 		return o.transformFactory(helpers.MakeInputs(inputs...))
+	}
+
+	if o.isFilterElement {
+		return elements.Filter{
+			ComponentID: o.ids[0],
+			Inputs:      helpers.MakeInputs(inputs...),
+			Condition:   o.vrl,
+		}
 	}
 	return elements.Remap{
 		ComponentID: o.ids[0],

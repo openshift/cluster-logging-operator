@@ -7,83 +7,6 @@ enabled = true
 [sources.internal_metrics]
 type = "internal_metrics"
 
-# Logs from containers (including openshift containers)
-[sources.input_application_container]
-type = "kubernetes_logs"
-max_read_bytes = 3145728
-glob_minimum_cooldown_ms = 15000
-auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
-rotate_wait_ms = 5000
-
-[transforms.input_application_container_viaq]
-type = "remap"
-inputs = ["input_application_container"]
-source = '''
-  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-   if !exists(.level) {
-    .level = "default"
-    if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
-      .level = "warn"
-    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
-      .level = "error"
-    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
-      .level = "critical"
-    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
-      .level = "debug"
-    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
-      .level = "notice"
-    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
-      .level = "alert"
-    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
-      .level = "emergency"
-    } else if match!(.message, r'(?i)\b(?:info)\b|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
-      .level = "info"
-    }
-  }
-  pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "eventrouter-") {
-    parsed, err = parse_json(.message)
-    if err != null {
-      log("Unable to process EventRouter log: " + err, level: "info")
-    } else {
-      ., err = merge(.,parsed)
-      if err == null && exists(.event) && is_object(.event) {
-          if exists(.verb) {
-            .event.verb = .verb
-            del(.verb)
-          }
-          .kubernetes.event = del(.event)
-          .message = del(.kubernetes.event.message)
-          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
-          del(.kubernetes.event.metadata.creationTimestamp)
-		  . = compact(., nullish: true)
-      } else {
-        log("Unable to merge EventRouter log message into record: " + err, level: "info")
-      }
-    }
-  }
-  del(.source_type)
-  del(.stream)
-  del(.kubernetes.pod_ips)
-  del(.kubernetes.node_labels)
-  del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
-'''
-# Set log_type
-[transforms.input_application_viaq_logtype]
-type = "remap"
-inputs = ["input_application_container_viaq"]
-source = '''
-  .log_type = "application"
-'''
-
 # Logs from host audit
 [sources.input_audit_host]
 type = "file"
@@ -281,7 +204,6 @@ condition = '''
 .PRIORITY != "7" && .PRIORITY != 7
 '''
 
-
 [transforms.input_infrastructure_journal_viaq]
 type = "remap"
 inputs = ["input_infrastructure_journal_drop"]
@@ -376,31 +298,102 @@ source = '''
   .log_type = "infrastructure"
 '''
 
-# Set Elasticsearch index
-[transforms.output_default_add_es_index]
+# Logs from containers (including openshift containers)
+[sources.input_mytestapp_container]
+type = "kubernetes_logs"
+max_read_bytes = 3145728
+glob_minimum_cooldown_ms = 15000
+auto_partial_merge = true
+include_paths_glob_patterns = ["/var/log/pods/test-ns_*/*/*.log"]
+pod_annotation_fields.pod_labels = "kubernetes.labels"
+pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = "kubernetes.annotations"
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
+namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
+
+[transforms.input_mytestapp_container_viaq]
 type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
+inputs = ["input_mytestapp_container"]
 source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+   if !exists(.level) {
+    .level = "default"
+    if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+      .level = "warn"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
+      .level = "notice"
+    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
+      .level = "alert"
+    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
+      .level = "emergency"
+    } else if match!(.message, r'(?i)\b(?:info)\b|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    }
   }
-  if (.log_type == "infrastructure"){
-    index = "infra"
+  pod_name = string!(.kubernetes.pod_name)
+  if starts_with(pod_name, "eventrouter-") {
+    parsed, err = parse_json(.message)
+    if err != null {
+      log("Unable to process EventRouter log: " + err, level: "info")
+    } else {
+      ., err = merge(.,parsed)
+      if err == null && exists(.event) && is_object(.event) {
+          if exists(.verb) {
+            .event.verb = .verb
+            del(.verb)
+          }
+          .kubernetes.event = del(.event)
+          .message = del(.kubernetes.event.message)
+          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+          del(.kubernetes.event.metadata.creationTimestamp)
+		  . = compact(., nullish: true)
+      } else {
+        log("Unable to merge EventRouter log message into record: " + err, level: "info")
+      }
+    }
   }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
   del(.source_type)
+  del(.stream)
+  del(.kubernetes.pod_ips)
+  del(.kubernetes.node_labels)
+  del(.timestamp_end)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
-[transforms.output_default_dedot_and_flatten]
+# Set log_type
+[transforms.input_mytestapp_viaq_logtype]
+type = "remap"
+inputs = ["input_mytestapp_container_viaq"]
+source = '''
+  .log_type = "application"
+'''
+
+
+[transforms.pipeline_pipeline_openshiftlabels_0]
+type = "remap"
+inputs = ["input_mytestapp_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
+source = '''
+  .openshift.labels = {"key1":"value1","key2":"value2"}
+'''
+
+[transforms.pipeline_pipeline_drop_test_1]
+type = "filter"
+inputs = ["pipeline_pipeline_openshiftlabels_0"]
+condition = '''
+!((match(.kubernetes.namespace_name, r'busybox') && !match(.level, r'd.+') ?? false) || (match(.log_type, r'application') ?? false) || (match(.kubernetes.container_name, r'error|warning') && !match(.kubernetes.labels.test, r'foo') ?? false))
+'''
+
+[transforms.output_kafka_receiver_dedot]
 type = "lua"
-inputs = ["output_default_add_es_index"]
+inputs = ["pipeline_pipeline_drop_test_1"]
 version = "2"
 hooks.init = "init"
 hooks.process = "process"
@@ -419,10 +412,8 @@ source = '''
             emit(event)
             return
         end
-        dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.namespace_labels)
         dedot(event.log.kubernetes.labels)
-        flatten_labels(event)
-        prune_labels(event)
         emit(event)
     end
 
@@ -446,303 +437,29 @@ source = '''
             map[k] = v
         end
     end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end
-
-	function prune_labels(event)
-    local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
-		local keys = {}
-		for k,v in pairs(event.log.kubernetes.labels) do
-			for index, e in pairs(exclusions) do
-				if k == e then
-					keys[k] = v
-				end
-			end
-		end
-		event.log.kubernetes.labels = keys
-	end
 '''
 
-[sinks.output_default]
-type = "elasticsearch"
-inputs = ["output_default_dedot_and_flatten"]
-endpoints = ["https://elasticsearch:9200"]
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
-encoding.except_fields = ["write_index"]
+# Kafka config
+[sinks.output_kafka_receiver]
+type = "kafka"
+inputs = ["output_kafka_receiver_dedot"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "topic"
 
-id_key = "_id"
-api_version = "v6"
+[sinks.output_kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
 
-[sinks.output_default.buffer]
+[sinks.output_kafka_receiver.buffer]
 when_full = "drop_newest"
 
-[sinks.output_default.request]
-retry_attempts = 17
-timeout_secs = 2147483648
-
-[sinks.output_default.tls]
-key_file = "/var/run/ocp-collector/secrets/collector/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/collector/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/collector/ca-bundle.crt"
-
-# Set Elasticsearch index
-[transforms.output_es_1_add_es_index]
-type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
-source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
-  }
-  if (.log_type == "infrastructure"){
-    index = "infra"
-  }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
-  del(.source_type)
-  if .structured != null && .write_index == "app-write" {
-    .message = encode_json(.structured)
-    del(.structured)
-  }
-'''
-
-[transforms.output_es_1_dedot_and_flatten]
-type = "lua"
-inputs = ["output_es_1_add_es_index"]
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
-source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-        dedot(event.log.kubernetes.namespace_labels)
-        dedot(event.log.kubernetes.labels)
-        flatten_labels(event)
-        prune_labels(event)
-        emit(event)
-    end
-
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end
-
-	function prune_labels(event)
-    local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
-		local keys = {}
-		for k,v in pairs(event.log.kubernetes.labels) do
-			for index, e in pairs(exclusions) do
-				if k == e then
-					keys[k] = v
-				end
-			end
-		end
-		event.log.kubernetes.labels = keys
-	end
-'''
-
-[sinks.output_es_1]
-type = "elasticsearch"
-inputs = ["output_es_1_dedot_and_flatten"]
-endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
-encoding.except_fields = ["write_index"]
-id_key = "_id"
-api_version = "v6"
-
-[sinks.output_es_1.buffer]
-when_full = "drop_newest"
-
-[sinks.output_es_1.request]
-retry_attempts = 17
-timeout_secs = 2147483648
-
-[sinks.output_es_1.tls]
+[sinks.output_kafka_receiver.tls]
+enabled = true
 min_tls_version = "VersionTLS12"
 ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
-
-# Set Elasticsearch index
-[transforms.output_es_2_add_es_index]
-type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
-source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
-  }
-  if (.log_type == "infrastructure"){
-    index = "infra"
-  }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
-  del(.source_type)
-  if .structured != null && .write_index == "app-write" {
-    .message = encode_json(.structured)
-    del(.structured)
-  }
-'''
-
-[transforms.output_es_2_dedot_and_flatten]
-type = "lua"
-inputs = ["output_es_2_add_es_index"]
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
-source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-        dedot(event.log.kubernetes.namespace_labels)
-        dedot(event.log.kubernetes.labels)
-        flatten_labels(event)
-        prune_labels(event)
-        emit(event)
-    end
-
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end
-
-	function prune_labels(event)
-    local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
-		local keys = {}
-		for k,v in pairs(event.log.kubernetes.labels) do
-			for index, e in pairs(exclusions) do
-				if k == e then
-					keys[k] = v
-				end
-			end
-		end
-		event.log.kubernetes.labels = keys
-	end
-'''
-
-[sinks.output_es_2]
-type = "elasticsearch"
-inputs = ["output_es_2_dedot_and_flatten"]
-endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
-encoding.except_fields = ["write_index"]
-
-id_key = "_id"
-api_version = "v8"
-
-[sinks.output_es_2.buffer]
-when_full = "drop_newest"
-
-[sinks.output_es_2.request]
-retry_attempts = 17
-timeout_secs = 2147483648
-
-[sinks.output_es_2.tls]
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 
 [transforms.add_nodename_to_metric]
 type = "remap"

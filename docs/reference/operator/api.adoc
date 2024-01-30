@@ -60,6 +60,7 @@ See [FilterTypeSpec] for a list of filter types.
 |Property|Type|Description
 
 |kubeAPIAudit|object|  *(optional)* 
+|drop|object|  *(optional)* A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
 |name|string|  Name used to refer to the filter from a `pipeline`.
 |type|string|  Type of filter.
 |======================

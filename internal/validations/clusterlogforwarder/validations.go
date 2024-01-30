@@ -22,6 +22,7 @@ func Validate(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[st
 var validations = []func(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus){
 	validateName,
 	ValidateClusterLoggingDependency,
+	ValidateFilters,
 	ValidateInputsOutputsPipelines,
 	validateJsonParsingToElasticsearch,
 	validateUrlAccordingToTls,

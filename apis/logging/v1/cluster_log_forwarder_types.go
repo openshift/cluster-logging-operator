@@ -248,7 +248,7 @@ type FilterSpec struct {
 
 	// Type of filter.
 	//
-	// +kubebuilder:validation:Enum:=kubeAPIAudit
+	// +kubebuilder:validation:Enum:=kubeAPIAudit;drop
 	// +required
 	Type string `json:"type"`
 

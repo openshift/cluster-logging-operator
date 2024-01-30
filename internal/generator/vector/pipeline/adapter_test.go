@@ -104,5 +104,55 @@ var _ = Describe("pipeline/adapter.go", func() {
 			sort.Strings(inputs)
 			Expect(inputs).To(Equal([]string{logging.InputNameApplication, logging.InputNameAudit, logging.InputNameInfrastructure}))
 		})
+
+		It("should add drop filter when spec'd for the pipeline", func() {
+			adapter := NewPipeline(0, logging.PipelineSpec{
+				Name:       "mypipeline",
+				InputRefs:  []string{"app-in", "infra-in"},
+				FilterRefs: []string{"my-drop-filter"},
+			}, map[string]helpers.InputComponent{
+				"app-in":   input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				"infra-in": input.NewInput(logging.InputSpec{Name: "infra-in", Infrastructure: &logging.Infrastructure{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+			}, map[string]*output.Output{},
+				map[string]*filter.InternalFilterSpec{
+					"my-drop-filter": {
+						FilterSpec: &logging.FilterSpec{
+							Name: "my-drop-filter",
+							Type: logging.FilterDrop,
+							FilterTypeSpec: logging.FilterTypeSpec{
+								DropTestsSpec: &[]logging.DropTest{
+									{
+										DropConditions: []logging.DropCondition{
+											{
+												Field:      ".kubernetes.namespace_name",
+												NotMatches: "very-important",
+											},
+											{
+												Field:   ".level",
+												Matches: "warning|error|critical",
+											},
+										},
+									},
+									{
+										DropConditions: []logging.DropCondition{
+											{
+												Field:   ".message",
+												Matches: "foobar",
+											},
+											{
+												Field:      `.kubernetes.namespace_labels."test-dashes/slashes"`,
+												NotMatches: "true",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			)
+			Expect(adapter.Filters).To(HaveLen(1), "expected the drop filter to be added to the pipeline")
+			Expect(mustLoad("adapter_test_drop_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
+		})
 	})
 })

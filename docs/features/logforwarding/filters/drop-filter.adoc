@@ -1,0 +1,73 @@
+= Drop Filter
+
+Collecting all logs from a cluster produces a large amount of data, which can be expensive to transport and store. A lot of log data is low-value noise that does not need to be stored.
+
+The drop filter allows for dropping whole log records based on a set of tests and their conditions to reduce the amount of logs flowing into a log store.
+
+== Configuring and Using a Drop Filter
+
+The drop filter extends the filter API by adding `drop`, `test`, `field`, and `matches`/`notMatches` fields. 
+
+1. The `drop` field is an array of `test`.
+2. The `test` field is an array of "conditions" where each "condition" comprises a `field` & `matches` OR `notMatches`.
+
+For a log record to be dropped:
+
+1. All conditions in a test must be true, i.e the test passes.
+2. Any test in the drop filter must pass.
+
+NOTE: If there is an error evaluating a condition (e.g. a missing field), that condition evaluates to false. Evaluation continues as normal.
+
+=== Example:
+
+Below is an example `ClusterLogForwarder` configuration specifying a custom drop filter called `my-drop`.
+
+[source,yaml]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: instance 
+  namespace: openshift-logging 
+spec:
+  filters:
+    - name: my-drop
+      type: drop
+      drop:
+        # 1. drop logs with a namespace of openshift-logging
+        - test:
+          - field: .kubernetes.namespace_name
+            matches: "openshift*"
+        # 2. drop application logs that don't have `busybox-pod-labels` as the pod name
+        - test:
+          - field: .log_type
+            matches: "application"
+          - field: .kubernetes.pod_name
+            notMatches: "busybox-pod-labels"
+        # 3. drop logs with a level of `error` AND with a message that includes the word `error`
+        - test:
+          - field: .message
+            matches: (?i)\berror\b
+          - field: .level
+            matches: error
+        # 4. drop logs whose field defined below matches the regular expression `.+`
+        - test:
+          - field: .kubernetes.labels."foo-bar/baz"
+            matches: .+
+  pipelines:
+   - name: app-drop
+     filterRefs:
+     - my-drop
+     inputRefs: 
+     - application
+     - infrastructure
+     outputRefs:
+     - default
+----
+
+== Relevant Links:
+
+1. link:../../../../apis/logging/v1/filter_types.go[API documentation]
+2. https://github.com/openshift/enhancements/blob/a6a1feb9cceb0b61960bcf00f292cb0d04ee3753/enhancements/cluster-logging/content-filter.md#drop-filters[Enhancement Proposal]
+3. https://issues.redhat.com/browse/LOG-2803[Related JIRA]
+4. https://github.com/openshift/cluster-logging-operator/pull/2339[Related PR]

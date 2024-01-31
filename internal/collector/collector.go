@@ -231,8 +231,7 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 	for _, input := range f.ForwarderSpec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			listenPort := input.Receiver.HTTP.GetPort()
-			serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
-			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, owner, visitors); err != nil {
+			if err := network.ReconcileInputService(er, k8sClient, namespace, input.Name, selectorComponent, input.Name, listenPort, listenPort, owner, visitors); err != nil {
 				return err
 			}
 		}

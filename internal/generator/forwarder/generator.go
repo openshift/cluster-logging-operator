@@ -6,7 +6,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -29,7 +28,7 @@ var (
 
 type ConfigGenerator struct {
 	g      generator.Generator
-	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op generator.Options) []generator.Section
+	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op generator.Options) []generator.Section
 	format func(conf string) string
 }
 
@@ -50,8 +49,8 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	return g
 }
 
-func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op generator.Options) (string, error) {
-	sections := cg.conf(clspec, secrets, clfspec, namespace, forwarderName, resNames, op)
+func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, op generator.Options) (string, error) {
+	sections := cg.conf(clspec, secrets, clfspec, namespace, forwarderName, op)
 	conf, err := cg.g.GenerateConf(generator.MergeSections(sections)...)
 	return cg.format(conf), err
 }

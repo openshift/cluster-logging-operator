@@ -7,7 +7,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
@@ -28,10 +27,10 @@ const (
 	OvnAuditLogs    = "ovn_audit_logs"
 )
 
-func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, resNames *factory.ForwarderResourceNames, op generator.Options) []generator.Element {
+func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, namespace, op),
-		HttpSources(spec, resNames, op),
+		HttpSources(spec, op),
 		MetricsSources(InternalMetricsSourceName),
 	)
 }
@@ -122,7 +121,7 @@ func ExcludeContainerPaths(namespace string) string {
 	))
 }
 
-func HttpSources(spec *logging.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, op generator.Options) []generator.Element {
+func HttpSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[generator.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -135,7 +134,6 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, resNames *factory.Forwar
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
 			el = append(el, HttpReceiver{
 				ID:            input.Name,
-				InputName:     resNames.GenerateInputServiceName(input.Name),
 				ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
 				ListenPort:    input.Receiver.HTTP.GetPort(),
 				Format:        input.Receiver.HTTP.Format,
@@ -149,7 +147,6 @@ func HttpSources(spec *logging.ClusterLogForwarderSpec, resNames *factory.Forwar
 
 type HttpReceiver struct {
 	ID            string
-	InputName     string
 	ListenAddress string
 	ListenPort    int32
 	Format        string
@@ -171,8 +168,8 @@ decoding.codec = "json"
 
 [sources.{{.ID}}.tls]
 enabled = true
-key_file = "/etc/collector/{{.InputName}}/tls.key"
-crt_file = "/etc/collector/{{.InputName}}/tls.crt"
+key_file = "/etc/collector/{{.ID}}/tls.key"
+crt_file = "/etc/collector/{{.ID}}/tls.crt"
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,7 +28,7 @@ var ExpectedFluentConf string
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)), generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
+		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(

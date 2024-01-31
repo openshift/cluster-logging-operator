@@ -8,8 +8,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 
@@ -47,13 +45,12 @@ var ExpectedComplexOTELToml string
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
-		resNames = factory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName))
-		f        = func(testcase testhelpers.ConfGenerateTest) {
+		f = func(testcase testhelpers.ConfGenerateTest) {
 			g := generator.MakeGenerator()
 			if testcase.Options == nil {
 				testcase.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 			}
-			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, resNames, testcase.Options))
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, constants.SingletonName, testcase.Options))
 			conf, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))
@@ -64,7 +61,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			if testcase.Options == nil {
 				testcase.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 			}
-			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, "my-forwarder", resNames, testcase.Options))
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, "my-forwarder", testcase.Options))
 			conf, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))

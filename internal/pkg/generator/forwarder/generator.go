@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -45,7 +44,6 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 			},
 			Spec: logging.ClusterLoggingSpec{},
 		},
-		ResourceNames: factory.GenerateResourceNames(*forwarder),
 	}
 
 	if client != nil {
@@ -89,5 +87,5 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")
 	}
-	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, &forwarder.Spec, clRequest.Cluster.Namespace, forwarder.Name, clRequest.ResourceNames, op)
+	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, &forwarder.Spec, clRequest.Cluster.Namespace, forwarder.Name, op)
 }

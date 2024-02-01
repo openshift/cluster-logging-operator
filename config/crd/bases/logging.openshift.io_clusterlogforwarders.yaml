@@ -1200,6 +1200,1225 @@ spec:
             type: object
         type: object
     served: true
-    storage: true
+    storage: false
+    subresources:
+      status: {}
+  - name: v2beta
+    schema:
+      openAPIV3Schema:
+        description: "ClusterLogForwarder a cluster-scoped resource that forwards
+          logs for the entire cluster. \n Forwards application, infrastructure and
+          audit logs. \n Configure forwarding by specifying a list of pipelines, which
+          forward from a set of named inputs to a set of named outputs. \n For more
+          details see the documentation on the API fields."
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ClusterLogForwarderSpec specifies log forwarding for the
+              entire cluster.
+            properties:
+              filters:
+                description: "Filters are named selection or transformation rules
+                  that can be applied to log records. \n There are different types
+                  of filter that can select and modify log records in different ways.
+                  See [FilterTypeSpec] for a list of filter types."
+                items:
+                  description: Filter defines a filter for log messages. See [FilterTypeSpec]
+                    for a list of filter types.
+                  properties:
+                    kubeAPIAudit:
+                      description: "KubeAPIAudit filter Kube API server audit logs,
+                        as described in [Kubernetes Auditing]. \n # Policy Filtering
+                        \n Policy event rules are the same format as the [Kube Audit
+                        Policy] with some minor extensions. The extensions are described
+                        here, see the [Kube Audit Policy] for the standard rule behavior.
+                        Rules are checked in order, checking stops at the first matching
+                        rule. \n An audit policy event contains meta-data describing
+                        who made the request. It can also include the full body of
+                        the API request, and the response that was sent. The `level`
+                        of an audit rule determines how much data is included in the
+                        event: \n - None: the event is dropped. - Metadata: Only the
+                        audit metadata is included, request and response bodies are
+                        removed. - Request: Audit metadata and the request body are
+                        included, the response body is removed. - RequestResponse:
+                        All data is included: metadata, request body and response
+                        body. Note the response body can be very large. For example
+                        the a command like `oc list -A pods` generates a response
+                        body containing the YAML description of every pod in the cluster.
+                        \n # Extensions \n The following features are extensions to
+                        the standard [Kube Audit Policy] \n ## Wildcards \n Names
+                        of users, groups, namespaces, and resources can have a leading
+                        or trailing '*' character. For example namespace 'openshift-*'
+                        matches 'openshift-apiserver' or 'openshift-authentication.
+                        Resource '*/status' matches 'Pod/status' or 'Deployment/status'
+                        \n ## Default Rules \n Events that do not match any rule in
+                        the policy are filtered as follows: - User events (ie. non-system
+                        and non-serviceaccount) are forwarded - Read-only system events
+                        (get/list/watch etc) are dropped - Service account write events
+                        that occur within the same namespace as the service account
+                        are dropped - All other events are forwarded, subject to any
+                        configured [rate limits][#rate-lmiting] \n If you want to
+                        disable these defaults, end your rules list with rule that
+                        has only a `level` field. An empty rule matches any event,
+                        and prevents the defaults from taking effect. \n ## Omit Response
+                        Codes \n You can drop events based on the HTTP status code
+                        in the response. See the OmitResponseCodes field. \n [Kube
+                        Audit Policy]: https://kubernetes.io/docs/reference/config-api/apiserver-audit.v1/#audit-k8s-io-v1-Policy
+                        [Kubernetes Auditing]: https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/"
+                      properties:
+                        omitResponseCodes:
+                          description: OmitResponseCodes is a list of HTTP status
+                            code for which no events are created. If this field is
+                            missing or null, the default value used is [404, 409,
+                            422, 429] (NotFound, Conflict, UnprocessableEntity, TooManyRequests)
+                            If it is the empty list [], then no status codes are omitted.
+                            Otherwise this field should be a list of integer status
+                            codes to omit.
+                          items:
+                            type: integer
+                          type: array
+                        omitStages:
+                          description: OmitStages is a list of stages for which no
+                            events are created. Note that this can also be specified
+                            per rule in which case the union of both are omitted.
+                          items:
+                            description: Stage defines the stages in request handling
+                              that audit events may be generated.
+                            type: string
+                          type: array
+                        rules:
+                          description: "Rules specify the audit Level a request should
+                            be recorded at. A request may match multiple rules, in
+                            which case the FIRST matching rule is used. PolicyRules
+                            are strictly ordered. \n If Rules is empty or missing
+                            default rules apply, see [KubeAPIAudit]"
+                          items:
+                            description: PolicyRule maps requests based off metadata
+                              to an audit Level. Requests must match the rules of
+                              every field (an intersection of rules).
+                            properties:
+                              level:
+                                description: The Level that requests matching this
+                                  rule are recorded at.
+                                type: string
+                              namespaces:
+                                description: Namespaces that this rule matches. The
+                                  empty string "" matches non-namespaced resources.
+                                  An empty list implies every namespace.
+                                items:
+                                  type: string
+                                type: array
+                              nonResourceURLs:
+                                description: 'NonResourceURLs is a set of URL paths
+                                  that should be audited. *s are allowed, but only
+                                  as the full, final step in the path. Examples: "/metrics"
+                                  - Log requests for apiserver metrics "/healthz*"
+                                  - Log all health checks'
+                                items:
+                                  type: string
+                                type: array
+                              omitManagedFields:
+                                description: OmitManagedFields indicates whether to
+                                  omit the managed fields of the request and response
+                                  bodies from being written to the API audit log.
+                                  - a value of 'true' will drop the managed fields
+                                  from the API audit log - a value of 'false' indicates
+                                  that the managed fileds should be included in the
+                                  API audit log Note that the value, if specified,
+                                  in this rule will override the global default If
+                                  a value is not specified then the global default
+                                  specified in Policy.OmitManagedFields will stand.
+                                type: boolean
+                              omitStages:
+                                description: OmitStages is a list of stages for which
+                                  no events are created. Note that this can also be
+                                  specified policy wide in which case the union of
+                                  both are omitted. An empty list means no restrictions
+                                  will apply.
+                                items:
+                                  description: Stage defines the stages in request
+                                    handling that audit events may be generated.
+                                  type: string
+                                type: array
+                              resources:
+                                description: Resources that this rule matches. An
+                                  empty list implies all kinds in all API groups.
+                                items:
+                                  description: GroupResources represents resource
+                                    kinds in an API group.
+                                  properties:
+                                    group:
+                                      description: Group is the name of the API group
+                                        that contains the resources. The empty string
+                                        represents the core API group.
+                                      type: string
+                                    resourceNames:
+                                      description: ResourceNames is a list of resource
+                                        instance names that the policy matches. Using
+                                        this field requires Resources to be specified.
+                                        An empty list implies that every instance
+                                        of the resource is matched.
+                                      items:
+                                        type: string
+                                      type: array
+                                    resources:
+                                      description: "Resources is a list of resources
+                                        this rule applies to. \n For example: 'pods'
+                                        matches pods. 'pods/log' matches the log subresource
+                                        of pods. '*' matches all resources and their
+                                        subresources. 'pods/*' matches all subresources
+                                        of pods. '*/scale' matches all scale subresources.
+                                        \n If wildcard is present, the validation
+                                        rule will ensure resources do not overlap
+                                        with each other. \n An empty list implies
+                                        all resources and subresources in this API
+                                        groups apply."
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                type: array
+                              userGroups:
+                                description: The user groups this rule applies to.
+                                  A user is considered matching if it is a member
+                                  of any of the UserGroups. An empty list implies
+                                  every user group.
+                                items:
+                                  type: string
+                                type: array
+                              users:
+                                description: The users (by authenticated user name)
+                                  this rule applies to. An empty list implies every
+                                  user.
+                                items:
+                                  type: string
+                                type: array
+                              verbs:
+                                description: The verbs that match this rule. An empty
+                                  list implies every verb.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - level
+                            type: object
+                          type: array
+                      type: object
+                    name:
+                      description: Name used to refer to the filter from a `pipeline`.
+                      type: string
+                    type:
+                      description: Type of filter.
+                      enum:
+                      - kubeAPIAudit
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
+              inputs:
+                description: "Inputs are named filters for log messages to be forwarded.
+                  \n There are three built-in inputs named `application`, `infrastructure`
+                  and `audit`. You don't need to define inputs here if those are sufficient
+                  for your needs. See `inputRefs` for more."
+                items:
+                  description: 'InputSpec defines a selector of log messages for a
+                    given log type. The input is rejected if more than one of the
+                    following subfields are defined: application, infrastructure,
+                    audit, and receiver.'
+                  properties:
+                    application:
+                      description: Application, if present, enables named set of `application`
+                        logs that can specify a set of match criteria
+                      properties:
+                        containers:
+                          description: Containers from which to collect application
+                            logs. If absent or empty, logs are collected from all
+                            containers.
+                          properties:
+                            exclude:
+                              description: Exclude resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                            include:
+                              description: Include resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        namespaces:
+                          description: Namespaces from which to collect application
+                            logs. If absent or empty, logs are collected from all
+                            namespaces.
+                          properties:
+                            exclude:
+                              description: Exclude resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                            include:
+                              description: Include resources.  May supports glob patterns
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                      type: object
+                    audit:
+                      description: Audit, if present, enables `audit` logs.
+                      properties:
+                        sources:
+                          description: 'Sources defines the list of audit sources
+                            to collect. This field is optional and its exclusion results
+                            in the collection of all audit sources. Valid sources
+                            are: kubeAPI, openshiftAPI, auditd, ovn'
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    infrastructure:
+                      description: Infrastructure, if present, enables `infrastructure`
+                        logs.
+                      properties:
+                        sources:
+                          description: 'Sources defines the list of infrastructure
+                            sources to collect. This field is optional and omission
+                            results in the collection of all infrastructure sources.
+                            Valid sources are: node, container'
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    name:
+                      description: Name used to refer to the input of a `pipeline`.
+                      type: string
+                    receiver:
+                      description: Receiver to receive logs from non-cluster sources.
+                      properties:
+                        http:
+                          description: HTTPReceiver receives encoded logs as a HTTP
+                            endpoint.
+                          properties:
+                            format:
+                              description: Format is the format of incoming log data.
+                              enum:
+                              - kubeAPIAudit
+                              type: string
+                            port:
+                              default: 8443
+                              description: Port the Receiver listens on. It must be
+                                a value between 1024 and 65535
+                              format: int32
+                              maximum: 65535
+                              minimum: 1024
+                              type: integer
+                          required:
+                          - format
+                          type: object
+                        syslog:
+                          description: SyslogReceiver receives logs from rsyslog
+                          properties:
+                            port:
+                              default: 10514
+                              description: Port the Receiver listens on. It must be
+                                a value between 1024 and 65535
+                              format: int32
+                              maximum: 65535
+                              minimum: 1024
+                              type: integer
+                          type: object
+                        type:
+                          description: Type of Receiver plugin.
+                          enum:
+                          - http
+                          - syslog
+                          type: string
+                      required:
+                      - type
+                      type: object
+                    tuning:
+                      description: Tuning parameters for the input.
+                      properties:
+                        rateLimitByContainer:
+                          additionalProperties:
+                            type: integer
+                          description: RateLimitByContainer maps container names to
+                            a rate limit in records-per-second for containers with
+                            that name.
+                          type: object
+                        rateLimitByNodePath:
+                          additionalProperties:
+                            type: integer
+                          description: RateLimitByNodePath maps node log file path
+                            names to a rate limit in records-per-second-per node for
+                            node logs from that path.
+                          type: object
+                        rateLimitDefault:
+                          description: RateLimitDefault is a default rate limit for
+                            containers or node paths that are not mentioned in RateLimitByContainer
+                            or RateLimitByNodePath
+                          type: integer
+                      required:
+                      - rateLimitByContainer
+                      - rateLimitByNodePath
+                      - rateLimitDefault
+                      type: object
+                  required:
+                  - name
+                  type: object
+                type: array
+              namespace:
+                description: "Namespace for resources associated with the ClusterLogForwarder.
+                  \n Resources named in this spec (for example the ServiceAccountName)
+                  must be in this namespace. Resources created by the forwarder will
+                  be in this namespace."
+                type: string
+              outputs:
+                description: Outputs are named destinations for log messages.
+                items:
+                  description: Output defines a destination for log messages.
+                  properties:
+                    cloudwatch:
+                      description: "Cloudwatch provides configuration for the output
+                        type `cloudwatch` \n Note: the cloudwatch output recognizes
+                        the following keys in the Secret: \n `aws_secret_access_key`:
+                        AWS secret access key. `aws_access_key_id`: AWS secret access
+                        key ID. \n Or for sts-enabled clusters `credentials` or `role_arn`
+                        key specifying a properly formatted role arn"
+                      properties:
+                        groupBy:
+                          description: GroupBy defines the strategy for grouping logstreams
+                          enum:
+                          - logType
+                          - namespaceName
+                          - namespaceUUID
+                          type: string
+                        groupPrefix:
+                          description: GroupPrefix Add this prefix to all group names.
+                            Useful to avoid group name clashes if an AWS account is
+                            used for multiple clusters and used verbatim (e.g. ""
+                            means no prefix) The default prefix is cluster-name/log-type
+                          type: string
+                        region:
+                          type: string
+                      type: object
+                    elasticsearch:
+                      properties:
+                        enableStructuredContainerLogs:
+                          description: EnableStructuredContainerLogs enables multi-container
+                            structured logs to allow forwarding logs from containers
+                            within a pod to separate indices.  Annotating the pod
+                            with key 'containerType.logging.openshift.io/<container-name>'
+                            and value '<structure-type-name>' will forward those container
+                            logs to an alternate index from that defined by the other
+                            'structured' keys here
+                          type: boolean
+                        structuredTypeKey:
+                          description: StructuredTypeKey specifies the metadata key
+                            to be used as name of elasticsearch index It takes precedence
+                            over StructuredTypeName
+                          type: string
+                        structuredTypeName:
+                          description: StructuredTypeName specifies the name of elasticsearch
+                            schema
+                          type: string
+                        version:
+                          description: 'Version specifies the version of Elasticsearch
+                            to be used. Must be one of: - 6 - Default for internal
+                            ES store - 7 - 8 - Latest for external ES store'
+                          minimum: 6
+                          type: integer
+                      type: object
+                    fluentdForward:
+                      description: "FluentdForward does not provide additional fields,
+                        but note that the fluentforward output allows this additional
+                        keys in the Secret: \n `shared_key`: (string) Key to enable
+                        fluent-forward shared-key authentication."
+                      type: object
+                    googleCloudLogging:
+                      description: GoogleCloudLogging provides configuration for sending
+                        logs to Google Cloud Logging
+                      properties:
+                        billingAccountId:
+                          type: string
+                        folderId:
+                          type: string
+                        logId:
+                          description: LogID is the log ID to which to publish logs.
+                            This identifies log stream.
+                          type: string
+                        organizationId:
+                          type: string
+                        projectId:
+                          type: string
+                      type: object
+                    http:
+                      description: Http provided configuration for sending json encoded
+                        logs to a generic http endpoint.
+                      properties:
+                        headers:
+                          additionalProperties:
+                            type: string
+                          description: Headers specify optional headers to be sent
+                            with the request
+                          type: object
+                        method:
+                          description: Method specifies the Http method to be used
+                            for sending logs. If not set, 'POST' is used.
+                          enum:
+                          - GET
+                          - HEAD
+                          - POST
+                          - PUT
+                          - DELETE
+                          - OPTIONS
+                          - TRACE
+                          - PATCH
+                          type: string
+                        timeout:
+                          description: Timeout specifies the Http request timeout
+                            in seconds. If not set, 10secs is used.
+                          type: string
+                      type: object
+                    kafka:
+                      description: 'Kafka provides optional extra properties for `type:
+                        kafka`'
+                      properties:
+                        brokers:
+                          description: Brokers specifies the list of brokers to register
+                            in addition to the main output URL on initial connect
+                            to enhance reliability.
+                          items:
+                            type: string
+                          type: array
+                        topic:
+                          description: Topic specifies the target topic to send logs
+                            to.
+                          type: string
+                      type: object
+                    loki:
+                      description: 'Loki provides optional extra properties for `type:
+                        loki`'
+                      properties:
+                        labelKeys:
+                          description: "LabelKeys is a list of meta-data field keys
+                            to replace the default Loki labels. \n Loki label names
+                            must match the regular expression \"[a-zA-Z_:][a-zA-Z0-9_:]*\".
+                            Illegal characters in meta-data keys are replaced with
+                            \"_\" to form the label name. For example meta-data key
+                            \"kubernetes.labels.foo\" becomes Loki label \"kubernetes_labels_foo\".
+                            \n If LabelKeys is not set, the default keys are `[log_type,
+                            kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+                            These keys are translated to Loki labels by replacing
+                            '.' with '_' as: `log_type`, `kubernetes_namespace_name`,
+                            `kubernetes_pod_name`, `kubernetes_host` Note that not
+                            all logs will include all of these keys: audit logs and
+                            infrastructure journal logs do not have namespace or pod
+                            name. \n Note: the set of labels should be small, Loki
+                            imposes limits on the size and number of labels allowed.
+                            See https://grafana.com/docs/loki/latest/configuration/#limits_config
+                            for more. You can still query based on any log record
+                            field using query filters."
+                          items:
+                            type: string
+                          type: array
+                        tenantKey:
+                          description: 'TenantKey is a meta-data key field to use
+                            as the TenantID, For example: ''TenantKey: kubernetes.namespace_name`
+                            will use the kubernetes namespace as the tenant ID.'
+                          type: string
+                      type: object
+                    name:
+                      description: Name used to refer to the output from a `pipeline`.
+                      type: string
+                    secret:
+                      description: "Secret for authentication. \n Names a secret in
+                        the same namespace as the ClusterLogForwarder. Sensitive authentication
+                        information is stored in a separate Secret object. A Secret
+                        is like a ConfigMap, where the keys are strings and the values
+                        are base64-encoded binary data, for example TLS certificates.
+                        \n Common keys are described here. Some output types support
+                        additional keys, documented with the output-specific configuration
+                        field. All secret keys are optional, enable the security features
+                        you want by setting the relevant keys. \n Transport Layer
+                        Security (TLS) \n Using a TLS URL (`https://...` or `tls://...`)
+                        without any secret enables basic TLS: client authenticates
+                        server using system default certificate authority. \n Additional
+                        TLS features are enabled by referencing a Secret with the
+                        following optional fields in its spec.data. All data fields
+                        are base64 encoded. \n * `tls.crt`: A client certificate,
+                        for mutual authentication. Requires `tls.key`. * `tls.key`:
+                        Private key to unlock the client certificate. Requires `tls.crt`
+                        * `passphrase`: Passphrase to decode an encoded TLS private
+                        key. Requires tls.key. * `ca-bundle.crt`: Custom CA to validate
+                        certificates. \n Username and Password \n * `username`: Authentication
+                        user name. Requires `password`. * `password`: Authentication
+                        password. Requires `username`. \n Simple Authentication Security
+                        Layer (SASL) \n * `sasl.enable`: (boolean) Explicitly enable
+                        or disable SASL. If missing, SASL is automatically enabled
+                        if any `sasl.*` keys are set. * `sasl.mechanisms`: (array
+                        of string) List of allowed SASL mechanism names. If missing
+                        or empty, the system defaults are used. * `sasl.allow-insecure`:
+                        (boolean) Allow mechanisms that send clear-text passwords.
+                        Default false."
+                      properties:
+                        name:
+                          description: Name of a secret in the namespace configured
+                            for log forwarder secrets.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    splunk:
+                      description: 'Splunk Deliver log data to Splunk’s HTTP Event
+                        Collector Provides optional extra properties for `type: splunk_hec`
+                        (''splunk_hec_logs'' after Vector 0.23'
+                      properties:
+                        fields:
+                          description: Fields to be added to Splunk index. https://docs.splunk.com/Documentation/Splunk/8.0.0/Data/IFXandHEC
+                            Should be a valid JSON object
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    syslog:
+                      description: Syslog provides optional extra properties for output
+                        type `syslog`
+                      properties:
+                        addLogSource:
+                          description: AddLogSource adds log's source information
+                            to the log message If the logs are collected from a process;
+                            namespace_name, pod_name, container_name is added to the
+                            log In addition, it picks the originating process name
+                            and id(known as the `pid`) from the record and injects
+                            them into the header field."
+                          type: boolean
+                        appName:
+                          description: "AppName is APP-NAME part of the syslog-msg
+                            header \n AppName needs to be specified if using rfc5424"
+                          type: string
+                        facility:
+                          description: "Facility to set on outgoing syslog records.
+                            \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+                            The value can be a decimal integer. Facility keywords
+                            are not standardized, this API recognizes at least the
+                            following case-insensitive keywords (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
+                            \n kernel user mail daemon auth syslog lpr news uucp cron
+                            authpriv ftp ntp security console solaris-cron local0
+                            local1 local2 local3 local4 local5 local6 local7"
+                          type: string
+                        msgID:
+                          description: "MsgID is MSGID part of the syslog-msg header
+                            \n MsgID needs to be specified if using rfc5424"
+                          type: string
+                        payloadKey:
+                          description: PayloadKey specifies record field to use as
+                            payload.
+                          type: string
+                        procID:
+                          description: "ProcID is PROCID part of the syslog-msg header
+                            \n ProcID needs to be specified if using rfc5424"
+                          type: string
+                        rfc:
+                          default: RFC5424
+                          description: "Rfc specifies the rfc to be used for sending
+                            syslog \n Rfc values can be one of: - RFC3164 (https://tools.ietf.org/html/rfc3164)
+                            - RFC5424 (https://tools.ietf.org/html/rfc5424) \n If
+                            unspecified, RFC5424 will be assumed."
+                          enum:
+                          - RFC3164
+                          - RFC5424
+                          type: string
+                        severity:
+                          description: "Severity to set on outgoing syslog records.
+                            \n Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+                            The value can be a decimal integer or one of these case-insensitive
+                            keywords: \n Emergency Alert Critical Error Warning Notice
+                            Informational Debug"
+                          type: string
+                        tag:
+                          description: Tag specifies a record field to use as tag.
+                          type: string
+                        trimPrefix:
+                          description: TrimPrefix is a prefix to trim from the tag.
+                          type: string
+                      type: object
+                    tls:
+                      description: TLS contains settings for controlling options on
+                        TLS client connections.
+                      properties:
+                        insecureSkipVerify:
+                          description: "If InsecureSkipVerify is true, then the TLS
+                            client will be configured to ignore errors with certificates.
+                            \n This option is *not* recommended for production configurations."
+                          type: boolean
+                        securityProfile:
+                          description: TLSSecurityProfile is the security profile
+                            to apply to the output connection
+                          properties:
+                            custom:
+                              description: "custom is a user-defined TLS security
+                                profile. Be extremely careful using a custom profile
+                                as invalid configurations can be catastrophic. An
+                                example custom profile looks like this: \n ciphers:
+                                - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305
+                                - ECDHE-RSA-AES128-GCM-SHA256 - ECDHE-ECDSA-AES128-GCM-SHA256
+                                minTLSVersion: TLSv1.1"
+                              nullable: true
+                              properties:
+                                ciphers:
+                                  description: "ciphers is used to specify the cipher
+                                    algorithms that are negotiated during the TLS
+                                    handshake.  Operators may remove entries their
+                                    operands do not support.  For example, to use
+                                    DES-CBC3-SHA  (yaml): \n ciphers: - DES-CBC3-SHA"
+                                  items:
+                                    type: string
+                                  type: array
+                                minTLSVersion:
+                                  description: "minTLSVersion is used to specify the
+                                    minimal version of the TLS protocol that is negotiated
+                                    during the TLS handshake. For example, to use
+                                    TLS versions 1.1, 1.2 and 1.3 (yaml): \n minTLSVersion:
+                                    TLSv1.1 \n NOTE: currently the highest minTLSVersion
+                                    allowed is VersionTLS12"
+                                  enum:
+                                  - VersionTLS10
+                                  - VersionTLS11
+                                  - VersionTLS12
+                                  - VersionTLS13
+                                  type: string
+                              type: object
+                            intermediate:
+                              description: "intermediate is a TLS security profile
+                                based on: \n https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
+                                \n and looks like this (yaml): \n ciphers: - TLS_AES_128_GCM_SHA256
+                                - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256
+                                - ECDHE-ECDSA-AES128-GCM-SHA256 - ECDHE-RSA-AES128-GCM-SHA256
+                                - ECDHE-ECDSA-AES256-GCM-SHA384 - ECDHE-RSA-AES256-GCM-SHA384
+                                - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305
+                                - DHE-RSA-AES128-GCM-SHA256 - DHE-RSA-AES256-GCM-SHA384
+                                minTLSVersion: TLSv1.2"
+                              nullable: true
+                              type: object
+                            modern:
+                              description: "modern is a TLS security profile based
+                                on: \n https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
+                                \n and looks like this (yaml): \n ciphers: - TLS_AES_128_GCM_SHA256
+                                - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256
+                                minTLSVersion: TLSv1.3 \n NOTE: Currently unsupported."
+                              nullable: true
+                              type: object
+                            old:
+                              description: "old is a TLS security profile based on:
+                                \n https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
+                                \n and looks like this (yaml): \n ciphers: - TLS_AES_128_GCM_SHA256
+                                - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256
+                                - ECDHE-ECDSA-AES128-GCM-SHA256 - ECDHE-RSA-AES128-GCM-SHA256
+                                - ECDHE-ECDSA-AES256-GCM-SHA384 - ECDHE-RSA-AES256-GCM-SHA384
+                                - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305
+                                - DHE-RSA-AES128-GCM-SHA256 - DHE-RSA-AES256-GCM-SHA384
+                                - DHE-RSA-CHACHA20-POLY1305 - ECDHE-ECDSA-AES128-SHA256
+                                - ECDHE-RSA-AES128-SHA256 - ECDHE-ECDSA-AES128-SHA
+                                - ECDHE-RSA-AES128-SHA - ECDHE-ECDSA-AES256-SHA384
+                                - ECDHE-RSA-AES256-SHA384 - ECDHE-ECDSA-AES256-SHA
+                                - ECDHE-RSA-AES256-SHA - DHE-RSA-AES128-SHA256 - DHE-RSA-AES256-SHA256
+                                - AES128-GCM-SHA256 - AES256-GCM-SHA384 - AES128-SHA256
+                                - AES256-SHA256 - AES128-SHA - AES256-SHA - DES-CBC3-SHA
+                                minTLSVersion: TLSv1.0"
+                              nullable: true
+                              type: object
+                            type:
+                              description: "type is one of Old, Intermediate, Modern
+                                or Custom. Custom provides the ability to specify
+                                individual TLS security profile parameters. Old, Intermediate
+                                and Modern are TLS security profiles based on: \n
+                                https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations
+                                \n The profiles are intent based, so they may change
+                                over time as new ciphers are developed and existing
+                                ciphers are found to be insecure.  Depending on precisely
+                                which ciphers are available to a process, the list
+                                may be reduced. \n Note that the Modern profile is
+                                currently not supported because it is not yet well
+                                adopted by common software libraries."
+                              enum:
+                              - Old
+                              - Intermediate
+                              - Modern
+                              - Custom
+                              type: string
+                          type: object
+                      type: object
+                    tuning:
+                      description: Tuning parameters for the output
+                      properties:
+                        RateLimit:
+                          description: RateLimit imposes a limit in records-per-second
+                            on the total aggregate rate of logs forwarded by this
+                            output. Logs may be dropped to enforce within the limit.
+                          type: integer
+                      required:
+                      - RateLimit
+                      type: object
+                    type:
+                      description: Type of output plugin.
+                      enum:
+                      - syslog
+                      - fluentdForward
+                      - elasticsearch
+                      - kafka
+                      - cloudwatch
+                      - loki
+                      - googleCloudLogging
+                      - splunk
+                      - http
+                      type: string
+                    url:
+                      description: "URL to send log records to. \n An absolute URL,
+                        with a scheme. Valid schemes depend on `type`. Special schemes
+                        `tcp`, `tls`, `udp` and `udps` are used for types that have
+                        no scheme of their own. For example, to send syslog records
+                        using secure UDP: \n { type: syslog, url: udps://syslog.example.com:1234
+                        } \n Basic TLS is enabled if the URL scheme requires it (for
+                        example 'https' or 'tls'). The 'username@password' part of
+                        `url` is ignored. Any additional authentication material is
+                        in the `secret`. See the `secret` field for more details."
+                      pattern: ^$|[a-zA-z]+:\/\/.*
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
+              pipelines:
+                description: Pipelines forward the messages selected by a set of inputs
+                  to a set of outputs.
+                items:
+                  description: PipelinesSpec link a set of inputs to a set of outputs.
+                  properties:
+                    detectMultilineErrors:
+                      description: DetectMultilineErrors enables multiline error detection
+                        of container logs
+                      type: boolean
+                    filterRefs:
+                      description: "Filters lists the names of filters to be applied
+                        to records going through this pipeline. \n Each filter is
+                        applied in order. If a filter drops a records, subsequent
+                        filters are not applied."
+                      items:
+                        type: string
+                      type: array
+                    inputRefs:
+                      description: "InputRefs lists the names (`input.name`) of inputs
+                        to this pipeline. \n The following built-in input names are
+                        always available: \n `application` selects all logs from application
+                        pods. \n `infrastructure` selects logs from openshift and
+                        kubernetes pods and some node logs. \n `audit` selects node
+                        logs related to security audits."
+                      items:
+                        type: string
+                      type: array
+                    labels:
+                      additionalProperties:
+                        type: string
+                      description: Labels applied to log records passing through this
+                        pipeline. These labels appear in the `openshift.labels` map
+                        in the log record.
+                      type: object
+                    name:
+                      description: Name of the pipeline.
+                      type: string
+                    outputRefs:
+                      description: "OutputRefs lists the names (`output.name`) of
+                        outputs from this pipeline. \n The following built-in names
+                        are always available: \n 'default' Output to the default log
+                        store provided by ClusterLogging."
+                      items:
+                        type: string
+                      type: array
+                    parse:
+                      description: "Parse enables parsing of log entries into structured
+                        logs \n Logs are parsed according to parse value, only `json`
+                        is supported as of now."
+                      enum:
+                      - json
+                      type: string
+                  required:
+                  - inputRefs
+                  - name
+                  - outputRefs
+                  type: object
+                type: array
+              serviceAccountName:
+                description: ServiceAccountName is the name of a serviceaccount in
+                  the forwarders associated namespace.
+                type: string
+            required:
+            - namespace
+            type: object
+          status:
+            description: ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+            properties:
+              conditions:
+                description: Conditions of the log forwarder.
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              filters:
+                additionalProperties:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                description: Filters maps filter name to condition of the filter.
+                type: object
+              inputs:
+                additionalProperties:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                description: Inputs maps input name to condition of the input.
+                type: object
+              outputs:
+                additionalProperties:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                description: Outputs maps output name to condition of the output.
+                type: object
+              pipelines:
+                additionalProperties:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
+                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
+                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                description: Pipelines maps pipeline name to condition of the pipeline.
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: false
     subresources:
       status: {}

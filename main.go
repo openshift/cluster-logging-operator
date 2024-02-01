@@ -10,11 +10,11 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+	"k8s.io/api/node/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 

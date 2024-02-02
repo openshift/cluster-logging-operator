@@ -16,7 +16,7 @@ metadata:
     features.operators.openshift.io/fips-compliant: "true"
     features.operators.openshift.io/proxy-aware: "true"
     features.operators.openshift.io/tls-profiles: "true"
-    features.operators.openshift.io/token-auth-aws: "true"
+    features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
     olm.skipRange: '>=5.7.0-0 <5.9.0'
@@ -353,6 +353,8 @@ spec:
     url: https://www.elastic.co/
   - name: Fluentd
     url: https://www.fluentd.org/
+  - name: Vector
+    url: https://vector.dev/
   - name: Documentation
     url: https://github.com/openshift/cluster-logging-operator/blob/master/README.adoc
   - name: Red Hat OpenShift Logging Operator

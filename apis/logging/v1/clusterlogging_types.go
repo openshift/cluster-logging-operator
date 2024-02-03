@@ -720,6 +720,7 @@ type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 // +kubebuilder:printcolumn:name="Management State",JSONPath=".spec.managementState",type=string
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion
 // A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
 // +operator-sdk:csv:customresourcedefinitions:displayName="Cluster Logging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
 type ClusterLogging struct {

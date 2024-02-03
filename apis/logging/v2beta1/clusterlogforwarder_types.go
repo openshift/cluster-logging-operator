@@ -12,17 +12,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2beta1
 
 import (
+	"time"
+
 	openshiftv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/cluster-logging-operator/internal/status"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
-// ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
+// ClusterLogForwarderSpec specifies log forwarding for the entire cluster.
 type ClusterLogForwarderSpec struct {
 
 	// Inputs are named filters for log messages to be forwarded.
@@ -31,72 +34,63 @@ type ClusterLogForwarderSpec struct {
 	// `audit`. You don't need to define inputs here if those are sufficient for
 	// your needs. See `inputRefs` for more.
 	//
-	// +optional
+	//+optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Inputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderInputs"}
 	Inputs []InputSpec `json:"inputs,omitempty"`
 
 	// Outputs are named destinations for log messages.
 	//
-	// There is a built-in output named `default` which forwards to the default
-	// openshift log store. You can define outputs to forward to other stores or
-	// log processors, inside or outside the cluster.
-	//
-	// +optional
+	//+optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Outputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderOutputs"}
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
-	// Filters are applied to log records passing through a pipeline.
+	// Filters are named selection or transformation rules that can be applied to log records.
+	//
 	// There are different types of filter that can select and modify log records in different ways.
 	// See [FilterTypeSpec] for a list of filter types.
 	Filters []FilterSpec `json:"filters,omitempty"`
 
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
 	//
-	// +required
+	//+required
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
-	// ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
+	// Namespace for resources associated with the ClusterLogForwarder.
+	//
+	// Resources named in this spec (for example the ServiceAccountName) must be in this namespace.
+	// Resources created by the forwarder will be in this namespace.
+	//
+	//+required
+	Namespace string `json:"namespace"`
+
+	// ServiceAccountName is the name of a serviceaccount in the forwarders associated namespace.
 	//
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
-	// DEPRECATED OutputDefaults specify forwarder config explicitly for the
-	// default managed log store named 'default'.  If there is a need to spec
-	// the managed logstore, define an outputSpec like the following where the
-	// managed fields (e.g. URL, Secret.Name) will be replaced with the required values:
-	// spec:
-	//   - outputs:
-	//     - name: default
-	//       type: elasticsearch
-	//       elasticsearch:
-	//         structuredTypeKey: kubernetes.labels.myvalue
-	//
-	// +optional
-	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
 }
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderConditions"}
-	Conditions status.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Inputs maps input name to condition of the input.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Input Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:inputConditions"}
-	Inputs NamedConditions `json:"inputs,omitempty"`
+	Inputs map[string]metav1.Condition `json:"inputs,omitempty"`
 
 	// Outputs maps output name to condition of the output.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:outputConditions"}
-	Outputs NamedConditions `json:"outputs,omitempty"`
+	Outputs map[string]metav1.Condition `json:"outputs,omitempty"`
 
 	// Filters maps filter name to condition of the filter.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Filter Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:filterConditions"}
-	Filters NamedConditions `json:"filters,omitempty"`
+	Filters map[string]metav1.Condition `json:"filters,omitempty"`
 
 	// Pipelines maps pipeline name to condition of the pipeline.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:pipelineConditions"}
-	Pipelines NamedConditions `json:"pipelines,omitempty"`
+	Pipelines map[string]metav1.Condition `json:"pipelines,omitempty"`
 }
 
 // InputSpec defines a selector of log messages for a given log type. The input is rejected
@@ -124,12 +118,25 @@ type InputSpec struct {
 
 	// Audit, if present, enables `audit` logs.
 	//
-	// +optional
+	//+optional
 	Audit *Audit `json:"audit,omitempty"`
 
 	// Receiver to receive logs from non-cluster sources.
-	// +optional
+	//
+	//+optional
 	Receiver *ReceiverSpec `json:"receiver,omitempty"`
+
+	// Tuning parameters for the input.
+	//
+	//+optional
+	Tuning *InputTuningSpec `json:"tuning,omitempty"`
+}
+
+// InputTuningSpec provides tuning parameters for an input.
+type InputTuningSpec struct {
+	// RateLimitPerContainer defines a rate limit on the maximum records-per-second
+	// that each container can produce. Excess logs are dropped if the limit is exceeded.
+	RateLimitPerContainer int `json:"rateLimitPerContainer"`
 }
 
 // Output defines a destination for log messages.
@@ -209,13 +216,52 @@ type OutputSpec struct {
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`
 
-	// Limit of the aggregated logs to this output from any given
-	// collector deployment. The total log flow from an individual collector
-	// deployment to this output cannot exceed the limit.  Generally, one
-	// collector is deployed per node
+	// Tuning parameters for the output
+	Tuning *OutputTuningSpec `json:"tuning,omitempty"`
+}
+
+// OutputTuningSpec tuning parameters for an output
+type OutputTuningSpec struct {
+	// RateLimit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
+	// by this output. Logs may be dropped to enforce the limit.
+	// Missing or 0 means no rate limit.
 	//
 	// +optional
-	Limit *LimitSpec `json:"limit,omitempty"`
+	RateLimit int `json:"rateLimit,omitempty"`
+
+	// Delivery mode for log forwarding.
+	//
+	// - AtLeastOnce (default): if the forwarder crashes or is re-started, any logs that were read before
+	//   the crash but not sent to their destination will be re-read and re-sent. Note it is possible
+	//   that some logs are duplicated in the event of a crash - log recrods are deilvered at-least-once.
+	// - AtMostOnce: The forwarder makes no effort to recover logs lost during a crash. This mode may give
+	//   better throughput, but will result in more log loss.
+	//
+	// +required
+	// +kubebuilder:validation:Enum:=AtLeastOnce;AtMostOnce
+	Delivery string `json:"delivery,omitempty"`
+
+	// Compression causes data to be compressed before sending on the network.
+	// It is an error if the compression type is is not supported by the  output.
+	Compression string `json:"compression,omitempty"`
+
+	// MaxSendBytes limits the maximum payload of a single "send" to the output.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MaxSendBytes resource.Quantity `json:"maxSendBytes,omitempty"`
+
+	// MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MinRetryDuration time.Duration `json:"minRetryWait,omitempty"`
+
+	// MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MaxRetryDuration time.Duration `json:"maxRetryWait,omitempty"`
 }
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
@@ -292,10 +338,10 @@ type PipelineSpec struct {
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// Name is optional, but must be unique in the `pipelines` list if provided.
+	// Name of the pipeline.
 	//
-	// +optional
-	Name string `json:"name,omitempty"`
+	//+required
+	Name string `json:"name"`
 
 	// Parse enables parsing of log entries into structured logs
 	//
@@ -311,46 +357,55 @@ type PipelineSpec struct {
 	DetectMultilineErrors bool `json:"detectMultilineErrors,omitempty"`
 }
 
-type OutputDefaults struct {
+// CollectorSpec  defines scheduling and resources for the log collector.
+type CollectorSpec struct {
+	// The resource requirements for the collector
+	//
+	//+nullable
+	//+optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 
-	// Elasticsearch OutputSpec default values
+	// Define which Nodes the Pods are scheduled on.
 	//
-	// Values specified here will be used as default values for Elasticsearch Output spec
+	//+nullable
+	//+optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:ConfigMap"}
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Define the tolerations the Pods will accept
 	//
-	// +kubebuilder:default:false
-	// +optional
-	Elasticsearch *ElasticsearchStructuredSpec `json:"elasticsearch,omitempty"`
+	//+nullable
+	//+optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Pod Tolerations",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration"}
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:resource:categories=logging,shortName=clf
-// ClusterLogForwarder is an API to configure forwarding logs.
+// ClusterLogForwarder a cluster-scoped resource that forwards logs for the entire cluster.
 //
-// You configure forwarding by specifying a list of `pipelines`,
+// Forwards application, infrastructure and audit logs.
+//
+// Configure forwarding by specifying a list of pipelines,
 // which forward from a set of named inputs to a set of named outputs.
 //
-// There are built-in input names for common log categories, and you can
-// define custom inputs to do additional filtering.
-//
-// There is a built-in output name for the default openshift log store, but
-// you can define your own outputs with a URL and other connection information
-// to forward logs to other stores or processors, inside or outside the cluster.
-//
 // For more details see the documentation on the API fields.
+//
+// +kubebuilder:object:root=true
+// // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=logging,shortName=clf
+// // +kubebuilder:storageversion
+// +kubebuilder:skipversion
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Specification of the desired behavior of ClusterLogForwarder
-	Spec ClusterLogForwarderSpec `json:"spec,omitempty"`
-
-	// Status of the ClusterLogForwarder
+	Spec   ClusterLogForwarderSpec   `json:"spec,omitempty"`
 	Status ClusterLogForwarderStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
 // ClusterLogForwarderList contains a list of ClusterLogForwarder
+//
+// +kubebuilder:object:root=true
 type ClusterLogForwarderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -359,12 +414,4 @@ type ClusterLogForwarderList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterLogForwarder{}, &ClusterLogForwarderList{})
-}
-
-type LimitSpec struct {
-	// MaxRecordsPerSecond is the maximum number of log records
-	// allowed per input/output in a pipeline
-	//
-	// +required
-	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond,omitempty"`
 }

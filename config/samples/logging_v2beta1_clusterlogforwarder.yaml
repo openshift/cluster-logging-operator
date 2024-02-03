@@ -1,0 +1,26 @@
+apiVersion: logging.openshift.io/v2beta1
+kind: ClusterLogForwarder
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterlogforwarder
+    app.kubernetes.io/instance: clusterlogforwarder-sample
+    app.kubernetes.io/part-of: clusterlogging
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: clusterlogging
+  name: clusterlogforwarder-sample
+spec:
+  inputs:
+    - name: infra-containers
+      type: infrastructure
+      infrastructure:
+        sources: [container]
+  outputs:
+    - name: my-managed-loki
+      secret:
+        name: loki-auth
+      type: loki
+      url: https://my-loki.example.org
+  pipelines:
+    - name: forward-to-remote
+      inputRefs: [ application, audit, infra-containers ]
+      outputRefs: [  my-managed-loki ]

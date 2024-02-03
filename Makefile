@@ -207,7 +207,7 @@ GEN_TIMESTAMP=.target/codegen
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
 	@$(CONTROLLER_GEN) object paths="./apis/..."
-	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
+	@$(CONTROLLER_GEN) crd rbac:roleName=clusterlogging-operator webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(VERSION))\"" > version/version.go
 	@$(MAKE) fmt
 	@touch $@

@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-01-09T03:03:58Z"
+    createdAt: "2024-02-03T17:39:09Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -531,6 +531,7 @@ spec:
                 kubectl.kubernetes.io/default-container: cluster-logging-operator
                 target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
               labels:
+                control-plane: cluster-logging-operator
                 name: cluster-logging-operator
             spec:
               containers:
@@ -643,11 +644,11 @@ spec:
         serviceAccountName: cluster-logging-operator
     strategy: deployment
   installModes:
-  - supported: true
+  - supported: false
     type: OwnNamespace
-  - supported: true
+  - supported: false
     type: SingleNamespace
-  - supported: true
+  - supported: false
     type: MultiNamespace
   - supported: true
     type: AllNamespaces

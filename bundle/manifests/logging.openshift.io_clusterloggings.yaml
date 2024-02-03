@@ -22,6 +22,7 @@ spec:
     - jsonPath: .spec.managementState
       name: Management State
       type: string
+    deprecated: true
     name: v1
     schema:
       openAPIV3Schema:

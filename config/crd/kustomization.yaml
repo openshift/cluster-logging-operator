@@ -4,6 +4,12 @@ resources:
 - bases/logging.openshift.io_clusterlogforwarders.yaml
 - bases/logging.openshift.io_clusterloggings.yaml
 - bases/logging.openshift.io_logfilemetricexporters.yaml
+# +kubebuilder:scaffold:crdkustomizeresource
+
+patchesStrategicMerge:
+#- patches/cainjection_in_logging_clusterlogforwarders.yaml
+#- patches/webhook_in_logging_clusterlogforwarders.yaml
+# +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 patches:
   - target:
@@ -19,3 +25,7 @@ patches:
               type: string
               enum:
               - instance
+
+# the following config is for teaching kustomize how to do kustomization for CRDs.
+configurations:
+#  - kustomizeconfig.yaml

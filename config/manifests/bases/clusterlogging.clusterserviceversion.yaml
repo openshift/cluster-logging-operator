@@ -102,6 +102,62 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:pipelineConditions
       version: v1
+    - description: "ClusterLogForwarder a cluster-scoped resource that forwards logs
+        for the entire cluster. \n Forwards application, infrastructure and audit
+        logs. \n Configure forwarding by specifying a list of pipelines, which forward
+        from a set of named inputs to a set of named outputs. \n For more details
+        see the documentation on the API fields. \n // +kubebuilder:subresource:status
+        // +kubebuilder:storageversion"
+      displayName: Cluster Log Forwarder
+      kind: ClusterLogForwarder
+      name: clusterlogforwarders.logging.openshift.io
+      specDescriptors:
+      - description: "Inputs are named filters for log messages to be forwarded. \n
+          There are three built-in inputs named `application`, `infrastructure` and
+          `audit`. You don't need to define inputs here if those are sufficient for
+          your needs. See `inputRefs` for more."
+        displayName: Forwarder Inputs
+        path: inputs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:forwarderInputs
+      - description: Outputs are named destinations for log messages.
+        displayName: Forwarder Outputs
+        path: outputs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:forwarderOutputs
+      - description: Pipelines forward the messages selected by a set of inputs to
+          a set of outputs.
+        displayName: Forwarder Pipelines
+        path: pipelines
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:forwarderPipelines
+      statusDescriptors:
+      - description: Conditions of the log forwarder.
+        displayName: Forwarder Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:forwarderConditions
+      - description: Filters maps filter name to condition of the filter.
+        displayName: Filter Conditions
+        path: filters
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:filterConditions
+      - description: Inputs maps input name to condition of the input.
+        displayName: Input Conditions
+        path: inputs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:inputConditions
+      - description: Outputs maps output name to condition of the output.
+        displayName: Output Conditions
+        path: outputs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:outputConditions
+      - description: Pipelines maps pipeline name to condition of the pipeline.
+        displayName: Pipeline Conditions
+        path: pipelines
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:pipelineConditions
+      version: v2beta1
     - description: A Red Hat OpenShift Logging instance. ClusterLogging is the Schema
         for the clusterloggings API
       displayName: Cluster Logging
@@ -332,11 +388,11 @@ spec:
       deployments: null
     strategy: ""
   installModes:
-  - supported: true
+  - supported: false
     type: OwnNamespace
-  - supported: true
+  - supported: false
     type: SingleNamespace
-  - supported: true
+  - supported: false
     type: MultiNamespace
   - supported: true
     type: AllNamespaces

@@ -8,17 +8,21 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+	"k8s.io/api/node/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv2beta1 "github.com/openshift/cluster-logging-operator/apis/logging/v2beta1"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
+
 	"github.com/openshift/cluster-logging-operator/apis"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -36,12 +40,13 @@ import (
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
 	"github.com/openshift/cluster-logging-operator/controllers/logfilemetricsexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -68,6 +73,7 @@ func init() {
 
 	utilruntime.Must(loggingv1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(loggingv2beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -165,6 +171,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	//if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	//	if err = (&loggingv2beta1.ClusterLogForwarder{}).SetupWebhookWithManager(mgr); err != nil {
+	//		log.Error(err, "unable to create webhook", "webhook", "ClusterLogForwarder")
+	//		os.Exit(1)
+	//	}
+	//}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

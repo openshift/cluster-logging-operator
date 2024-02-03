@@ -18,7 +18,8 @@ spec:
     singular: clusterlogforwarder
   scope: Namespaced
   versions:
-  - name: v1
+  - deprecated: true
+    name: v1
     schema:
       openAPIV3Schema:
         description: "ClusterLogForwarder is an API to configure forwarding logs.

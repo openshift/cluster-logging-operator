@@ -338,7 +338,6 @@ var _ = Describe("#Validate", func() {
 			checkReceiverMismatchTypeHttp(`mismatched Type specified for receiver, specified HTTP and have Syslog`)
 			checkReceiverMismatchTypeSyslog(`mismatched Type specified for receiver, specified Syslog and have HTTP`)
 			checkReceiverType("wrong-receiver", `invalid Type specified for receiver`)
-			checkReceiver(&loggingv1.ReceiverSpec{}, `invalid ReceiverTypeSpec specified for receiver`, map[string]bool{constants.VectorName: true})
 			checkReceiver(&loggingv1.ReceiverSpec{}, `ReceiverSpecs are only supported for the vector log collector`, map[string]bool{})
 		})
 	})

@@ -220,7 +220,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	// Collect defined http inputs
 	httpInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if logging.IsHttpReceiver(&input) {
+		if input.Receiver.IsHttpReceiver() {
 			httpInputs.Insert(clusterRequest.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}
@@ -243,7 +243,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputServices(currOwner []met
 	// Collect defined syslog inputs
 	syslogInputs := sets.NewString()
 	for _, input := range clusterRequest.Forwarder.Spec.Inputs {
-		if logging.IsSyslogReceiver(&input) {
+		if input.Receiver.IsSyslogReceiver() {
 			syslogInputs.Insert(clusterRequest.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}

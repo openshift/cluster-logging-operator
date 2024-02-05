@@ -21,7 +21,8 @@ type ReceiverSpec struct {
 	Type string `json:"type"`
 
 	// The ReceiverTypeSpec that handles particular parameters
-	*ReceiverTypeSpec `json:",inline"`
+	// +optional
+	*ReceiverTypeSpec `json:",inline,omitempty"`
 }
 
 type ReceiverTypeSpec struct {

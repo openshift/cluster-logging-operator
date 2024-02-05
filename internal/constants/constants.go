@@ -144,6 +144,10 @@ const (
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 	OTELSchema             = "opentelemetry"
 
+	HTTPReceiverPort   = 8443
+	HTTPFormat         = "kubeAPIAudit"
+	SyslogReceiverPort = 10514
+
 	LabelHTTPInputService   = "http-input-service"
 	LabelSyslogInputService = "syslog-input-service"
 

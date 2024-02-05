@@ -21,8 +21,8 @@ func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.O
 		ID:            id,
 		InputName:     inputName,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-		ListenPort:    input.Receiver.HTTP.Port,
-		Format:        input.Receiver.HTTP.Format,
+		ListenPort:    input.Receiver.GetHTTPPort(),
+		Format:        input.Receiver.GetHTTPFormat(),
 		TlsMinVersion: minTlsVersion,
 		CipherSuites:  cipherSuites,
 	}

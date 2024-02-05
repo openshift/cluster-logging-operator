@@ -14,13 +14,13 @@ func NewViaqReceiverSource(spec logging.InputSpec, resNames *factory.ForwarderRe
 	var el []generator.Element
 	var id string
 	switch {
-	case logging.IsSyslogReceiver(&spec):
+	case spec.Receiver.IsSyslogReceiver():
 		el = append(el, source.NewSyslogSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op))
 		dropID := helpers.MakeID(base, "drop", "debug")
 		el = append(el, vector.DropJournalDebugLogs(base, dropID)...)
 		id = helpers.MakeID(base, "journal", "viaq")
 		el = append(el, vector.JournalLogs(dropID, id)...)
-	case logging.IsAuditHttpReceiver(&spec):
+	case spec.Receiver.IsAuditHttpReceiver():
 		el = []generator.Element{source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op)}
 		id = helpers.MakeID(base, "viaq")
 		el = append(el, vector.NormalizeK8sAuditLogs(helpers.MakeID(base, "items"), id)...)

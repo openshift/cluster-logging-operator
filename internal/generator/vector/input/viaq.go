@@ -137,9 +137,9 @@ func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) (
 	switch {
 	case spec.Application != nil:
 		logType = logging.InputNameApplication
-	case spec.Infrastructure != nil || logging.IsSyslogReceiver(&spec):
+	case spec.Infrastructure != nil || spec.Receiver.IsSyslogReceiver():
 		logType = logging.InputNameInfrastructure
-	case spec.Audit != nil || logging.IsAuditHttpReceiver(&spec):
+	case spec.Audit != nil || spec.Receiver.IsAuditHttpReceiver():
 		logType = logging.InputNameAudit
 	}
 

@@ -496,8 +496,6 @@ spec:
                           - http
                           - syslog
                           type: string
-                      required:
-                      - type
                       type: object
                   required:
                   - name

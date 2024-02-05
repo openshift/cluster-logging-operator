@@ -21,7 +21,7 @@ func NewSyslogSource(id, inputName string, input logging.InputSpec, op framework
 		ID:            id,
 		InputName:     inputName,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-		ListenPort:    input.Receiver.Syslog.Port,
+		ListenPort:    input.Receiver.GetSyslogPort(),
 		TlsMinVersion: minTlsVersion,
 		CipherSuites:  cipherSuites,
 	}

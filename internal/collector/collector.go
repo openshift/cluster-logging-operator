@@ -249,12 +249,12 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 	for _, input := range f.ForwarderSpec.Inputs {
 		var listenPort int32
 		serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
-		if input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil {
-			if logging.IsHttpReceiver(&input) {
-				listenPort = input.Receiver.HTTP.Port
+		if input.Receiver != nil {
+			if input.Receiver.IsHttpReceiver() {
+				listenPort = input.Receiver.GetHTTPPort()
 			}
-			if logging.IsSyslogReceiver(&input) {
-				listenPort = input.Receiver.Syslog.Port
+			if input.Receiver.IsSyslogReceiver() {
+				listenPort = input.Receiver.GetSyslogPort()
 			}
 			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
 				return err

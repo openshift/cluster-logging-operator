@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -196,19 +197,42 @@ func (output *OutputSpec) GetMaxRecordsPerSecond() int64 {
 	return output.Limit.MaxRecordsPerSecond
 }
 
-func IsAuditHttpReceiver(input *InputSpec) bool {
-	return input.Receiver != nil &&
-		input.Receiver.HTTP != nil &&
-		input.Receiver.Type == ReceiverTypeHttp &&
-		input.Receiver.HTTP.Format == FormatKubeAPIAudit
+func (receiver *ReceiverSpec) IsAuditHttpReceiver() bool {
+	return receiver != nil &&
+		receiver.Type == ReceiverTypeHttp &&
+		receiver.GetHTTPFormat() == FormatKubeAPIAudit
 }
 
-func IsHttpReceiver(input *InputSpec) bool {
-	return input.Receiver != nil &&
-		input.Receiver.Type == ReceiverTypeHttp
+func (receiver *ReceiverSpec) IsHttpReceiver() bool {
+	return receiver != nil &&
+		receiver.Type == ReceiverTypeHttp
 }
 
-func IsSyslogReceiver(input *InputSpec) bool {
-	return input.Receiver != nil &&
-		input.Receiver.Type == ReceiverTypeSyslog
+func (receiver *ReceiverSpec) IsSyslogReceiver() bool {
+	return receiver != nil &&
+		receiver.Type == ReceiverTypeSyslog
+}
+
+func (receiver *ReceiverSpec) GetSyslogPort() (ret int32) {
+	ret = constants.SyslogReceiverPort
+	if receiver != nil && receiver.ReceiverTypeSpec != nil && receiver.Syslog != nil && receiver.Syslog.Port != 0 {
+		ret = receiver.Syslog.Port
+	}
+	return
+}
+
+func (receiver *ReceiverSpec) GetHTTPPort() (ret int32) {
+	ret = constants.HTTPReceiverPort
+	if receiver != nil && receiver.ReceiverTypeSpec != nil && receiver.HTTP != nil && receiver.HTTP.Port != 0 {
+		ret = receiver.HTTP.Port
+	}
+	return
+}
+
+func (receiver *ReceiverSpec) GetHTTPFormat() (ret string) {
+	ret = constants.HTTPFormat
+	if receiver != nil && receiver.ReceiverTypeSpec != nil && receiver.HTTP != nil && receiver.HTTP.Format != FormatKubeAPIAudit {
+		ret = receiver.HTTP.Format
+	}
+	return
 }

@@ -251,10 +251,10 @@ func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName stri
 			if input.Application != nil {
 				return loggingv1.InputNameApplication
 			}
-			if input.Infrastructure != nil || loggingv1.IsSyslogReceiver(&input) {
+			if input.Infrastructure != nil || input.Receiver.IsSyslogReceiver() {
 				return loggingv1.InputNameInfrastructure
 			}
-			if input.Audit != nil || loggingv1.IsAuditHttpReceiver(&input) {
+			if input.Audit != nil || input.Receiver.IsAuditHttpReceiver() {
 				return loggingv1.InputNameAudit
 			}
 		}

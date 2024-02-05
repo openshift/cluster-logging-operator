@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -24,7 +23,7 @@ func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.C
 
 	var receiverInputs []string
 	for _, input := range f.ForwarderSpec.Inputs {
-		if logging.IsHttpReceiver(&input) || logging.IsSyslogReceiver(&input) {
+		if input.Receiver != nil {
 			receiverInputs = append(receiverInputs, f.ResourceNames.GenerateInputServiceName(input.Name))
 		}
 	}

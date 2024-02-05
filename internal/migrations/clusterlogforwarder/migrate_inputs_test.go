@@ -54,4 +54,128 @@ var _ = Describe("migrateInputs", func() {
 		})
 	})
 
+	Context("for input receiver types", func() {
+		var (
+			http = &logging.HTTPReceiver{
+				Port:   8080,
+				Format: logging.FormatKubeAPIAudit,
+			}
+			syslog = &logging.SyslogReceiver{
+				Port: 8080,
+			}
+		)
+
+		It("should set 'http' receiver type HTTPReceiver declared", func() {
+			spec := logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "my-custom-input",
+						Receiver: &logging.ReceiverSpec{
+							ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+								HTTP: http,
+							},
+						},
+					},
+				},
+			}
+			extras := map[string]bool{}
+			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			Expect(result.Inputs).To(HaveLen(1))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
+				Name: "my-custom-input",
+				Receiver: &logging.ReceiverSpec{
+					Type: logging.ReceiverTypeHttp,
+					ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+						HTTP: http,
+					},
+				},
+			}))
+		})
+
+		It("should do nothing if receiver type declared as 'http'", func() {
+			spec := logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "my-custom-input",
+						Receiver: &logging.ReceiverSpec{
+							Type: logging.ReceiverTypeHttp,
+							ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+								HTTP: http,
+							},
+						},
+					},
+				},
+			}
+			extras := map[string]bool{}
+			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			Expect(result.Inputs).To(HaveLen(1))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
+				Name: "my-custom-input",
+				Receiver: &logging.ReceiverSpec{
+					Type: logging.ReceiverTypeHttp,
+					ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+						HTTP: http,
+					},
+				},
+			}))
+			Expect(extras).To(BeEmpty())
+		})
+
+		It("should set 'syslog' receiver type SyslogReceiver declared", func() {
+			spec := logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "my-custom-input",
+						Receiver: &logging.ReceiverSpec{
+							ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+								Syslog: syslog,
+							},
+						},
+					},
+				},
+			}
+			extras := map[string]bool{}
+			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			Expect(result.Inputs).To(HaveLen(1))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
+				Name: "my-custom-input",
+				Receiver: &logging.ReceiverSpec{
+					Type: logging.ReceiverTypeSyslog,
+					ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+						Syslog: syslog,
+					},
+				},
+			}))
+		})
+
+		It("should do nothing if receiver type declared as 'syslog'", func() {
+			spec := logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "my-custom-input",
+						Receiver: &logging.ReceiverSpec{
+							Type: logging.ReceiverTypeSyslog,
+							ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+								Syslog: syslog,
+							},
+						},
+					},
+				},
+			}
+			extras := map[string]bool{}
+			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			Expect(result.Inputs).To(HaveLen(1))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
+				Name: "my-custom-input",
+				Receiver: &logging.ReceiverSpec{
+					Type: logging.ReceiverTypeSyslog,
+					ReceiverTypeSpec: &logging.ReceiverTypeSpec{
+						Syslog: syslog,
+					},
+				},
+			}))
+			Expect(extras).To(BeEmpty())
+		})
+
+	})
 })

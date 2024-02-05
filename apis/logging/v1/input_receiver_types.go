@@ -16,9 +16,8 @@ const (
 type ReceiverSpec struct {
 
 	// Type of Receiver plugin.
-	//
 	// +kubebuilder:validation:Enum:=http;syslog
-	// +required
+	// +optional
 	Type string `json:"type"`
 
 	// The ReceiverTypeSpec that handles particular parameters

@@ -5,6 +5,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
@@ -46,6 +47,8 @@ func New(o logging.OutputSpec, inputs []string, secrets map[string]*corev1.Secre
 		els = append(els, http.New(baseID, o, inputs, secret, op)...)
 	case logging.OutputTypeSyslog:
 		els = append(els, syslog.New(baseID, o, inputs, secret, op)...)
+	case logging.OutputTypeAzureMonitor:
+		els = append(els, azuremonitor.New(baseID, o, inputs, secret, op)...)
 	}
 	return els
 }

@@ -473,6 +473,26 @@ spec:
                 items:
                   description: Output defines a destination for log messages.
                   properties:
+                    azureMonitor:
+                      properties:
+                        azureResourceId:
+                          description: AzureResourceId the Resource ID of the Azure
+                            resource the data should be associated with. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+                          type: string
+                        customerId:
+                          description: CustomerId che unique identifier for the Log
+                            Analytics workspace. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+                          type: string
+                        host:
+                          description: Host alternative host for dedicated Azure regions.
+                            (for example for China region) https://docs.azure.cn/en-us/articles/guidance/developerdifferences#check-endpoints-in-azure
+                          type: string
+                        logType:
+                          description: LogType the record type of the data that is
+                            being submitted. Can only contain letters, numbers, and
+                            underscores (_), and may not exceed 100 characters. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+                          type: string
+                      type: object
                     cloudwatch:
                       description: "Cloudwatch provides configuration for the output
                         type `cloudwatch` \n Note: the cloudwatch output recognizes
@@ -896,6 +916,7 @@ spec:
                       - googleCloudLogging
                       - splunk
                       - http
+                      - azureMonitor
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,

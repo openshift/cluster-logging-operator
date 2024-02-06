@@ -14,6 +14,7 @@ const (
 	OutputTypeGoogleCloudLogging = "googleCloudLogging"
 	OutputTypeSplunk             = "splunk"
 	OutputTypeHttp               = "http"
+	OutputTypeAzureMonitor       = "azureMonitor"
 )
 
 // OutputTypeSpec is a union of optional additional configuration specific to an
@@ -37,6 +38,8 @@ type OutputTypeSpec struct {
 	Splunk *Splunk `json:"splunk,omitempty"`
 	// +optional
 	Http *Http `json:"http,omitempty"`
+	// +optional
+	AzureMonitor *AzureMonitor `json:"azureMonitor,omitempty"`
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
@@ -318,4 +321,25 @@ type Http struct {
 	// +kubebuilder:default:viaq
 	// +optional
 	Schema string `json:"schema,omitempty"`
+}
+
+type AzureMonitor struct {
+	//CustomerId che unique identifier for the Log Analytics workspace.
+	//https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+	CustomerId string `json:"customerId,omitempty"`
+
+	//LogType the record type of the data that is being submitted.
+	//Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
+	//https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+	LogType string `json:"logType,omitempty"`
+
+	//AzureResourceId the Resource ID of the Azure resource the data should be associated with.
+	//https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+	// +optional
+	AzureResourceId string `json:"azureResourceId,omitempty"`
+
+	//Host alternative host for dedicated Azure regions. (for example for China region)
+	//https://docs.azure.cn/en-us/articles/guidance/developerdifferences#check-endpoints-in-azure
+	// +optional
+	Host string `json:"host,omitempty"`
 }

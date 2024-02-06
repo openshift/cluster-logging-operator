@@ -3,6 +3,7 @@ package clusterlogforwarder
 import (
 	"fmt"
 	v12 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
@@ -311,6 +312,100 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Outputs["custom-output"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"custom-output\": Output cannot have negative limit threshold"))
 		})
 
+		It("should pass Azure Monitor Logs with valid conf", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						AzureMonitor: &loggingv1.AzureMonitor{
+							CustomerId: "customer",
+							LogType:    "application",
+						},
+					},
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", true, "", ""))
+		})
+
+		It("should fail Azure Monitor Logs with not valid LogType", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						AzureMonitor: &loggingv1.AzureMonitor{
+							CustomerId: "customer",
+							LogType:    "my.application",
+						},
+					},
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+		})
+
+		It("should fail Azure Monitor Logs output without OutputTypeSpec", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "Azure Monitor Logs output requires type spec"))
+		})
+
+		It("should fail Azure Monitor Logs output without LogType", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						AzureMonitor: &loggingv1.AzureMonitor{
+							CustomerId: string(rand.Word(10)),
+						},
+					},
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "LogType must be set"))
+		})
+
+		It("should fail Azure Monitor Logs output with LogType name more than 100 characters", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						AzureMonitor: &loggingv1.AzureMonitor{
+							CustomerId: string(rand.Word(10)),
+							LogType:    string(rand.Word(101)),
+						},
+					},
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+		})
+
+		It("should fail Azure Monitor Logs output without CustomerId", func() {
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{
+				{
+					Name: "azml",
+					Type: loggingv1.OutputTypeAzureMonitor,
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						AzureMonitor: &loggingv1.AzureMonitor{
+							LogType: string(rand.Word(10)),
+						},
+					},
+				},
+			}
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "CustomerId must be set"))
+		})
+
 		Context("when validating secrets", func() {
 			var secret *corev1.Secret
 			BeforeEach(func() {
@@ -488,6 +583,39 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 					client = fake.NewFakeClient(secret) //nolint
 					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "URL is required for output type splunk"))
+				})
+			})
+
+			Context("for writing to Azure Monitor", func() {
+				const missingMessage = "A non-empty shared_key entry is required"
+				BeforeEach(func() {
+					output = loggingv1.OutputSpec{
+						Name: "aName",
+						Type: loggingv1.OutputTypeAzureMonitor,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							AzureMonitor: &loggingv1.AzureMonitor{
+								LogType:    string(rand.Word(10)),
+								CustomerId: string(rand.Word(20)),
+							},
+						},
+						Secret: &loggingv1.OutputSecretSpec{Name: secret.Name},
+					}
+					forwarderSpec.Pipelines = []loggingv1.PipelineSpec{{OutputRefs: []string{output.Name}}}
+					forwarderSpec.Outputs = []loggingv1.OutputSpec{output}
+				})
+
+				It("should fail outputs with secrets that are missing shared_key", func() {
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+				})
+
+				It("should pass outputs with secrets that have credentials key with valid arn specified", func() {
+					secret.Data[constants.SharedKey] = rand.Word(20)
+					client = fake.NewFakeClient(secret) //nolint
+					verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+					Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+					Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				})
 			})
 

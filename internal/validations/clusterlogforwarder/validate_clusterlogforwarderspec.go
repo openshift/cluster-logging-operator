@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/outputs"
 	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/inputs"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/inputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -207,6 +207,17 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 		case output.Type == loggingv1.OutputTypeCloudwatch && output.Cloudwatch == nil:
 			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
 			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Cloudwatch output requires type spec", output.Name))
+		case output.Type == loggingv1.OutputTypeAzureMonitor:
+			if output.AzureMonitor == nil {
+				log.V(3).Info("verifyOutputs failed", "reason", "Azure Monitor Logs output requires type spec", "output name", output.Name)
+				status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Azure Monitor Logs output requires type spec", output.Name))
+			} else {
+				valid, con := outputs.VerifyAzureMonitorLog(output.Name, output.AzureMonitor)
+				if !valid {
+					log.V(3).Info("verifyOutputs failed", "reason", con.Reason, "output name", output.Name)
+				}
+				status.Outputs.Set(output.Name, con)
+			}
 		// Check googlecloudlogging specs, must only include one of the following
 		case output.Type == loggingv1.OutputTypeGoogleCloudLogging && output.GoogleCloudLogging != nil && !verifyGoogleCloudLogging(output.GoogleCloudLogging):
 			log.V(3).Info("verifyOutputs failed", "reason",
@@ -293,7 +304,8 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		if output.URL == "" {
 			// Some output types allow a missing URL
 			// TODO (alanconway) move output-specific valiation to the output implementation.
-			if output.Type == loggingv1.OutputTypeCloudwatch || output.Type == loggingv1.OutputTypeGoogleCloudLogging {
+			if output.Type == loggingv1.OutputTypeCloudwatch || output.Type == loggingv1.OutputTypeAzureMonitor ||
+				output.Type == loggingv1.OutputTypeGoogleCloudLogging {
 				return true
 			} else {
 				return fail(conditions.CondInvalid("URL is required for output type %v", output.Type))
@@ -352,7 +364,12 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 		if !verifySecretKeysForSplunk(output, conds, secret) {
 			return false
 		}
+	case loggingv1.OutputTypeAzureMonitor:
+		if !outputs.VerifySharedKeysForAzure(output, conds, secret) {
+			return false
+		}
 	}
+
 	return verifySecretKeysForTLS(output, conds, secret)
 }
 

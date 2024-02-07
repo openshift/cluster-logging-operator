@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"fmt"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"strings"
 
@@ -129,87 +130,38 @@ if .log_type == "application" && .structured != null {
 }
 
 func FlattenLabels(id string, inputs []string) Element {
-	return ConfLiteral{
-		ComponentID:  id,
-		InLabel:      helpers.MakeInputs(inputs...),
-		TemplateName: "dedotTemplate",
-		TemplateStr: `{{define "dedotTemplate" -}}
-[transforms.{{.ComponentID}}]
-type = "lua"
-inputs = {{.InLabel}}
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
-source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-		dedot(event.log.kubernetes.namespace_labels)
-		dedot(event.log.kubernetes.labels)
-		flatten_labels(event)
-		prune_labels(event)
-        emit(event)
-    end
-	
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end 
-
-	function prune_labels(event)
-		local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
-		local keys = {}
-		for k,v in pairs(event.log.kubernetes.labels) do
-			for index, e in pairs(exclusions) do
-				if k == e then
-					keys[k] = v
-				end
-			end
-		end
-		event.log.kubernetes.labels = keys
-	end
-'''
-{{end}}`,
+	return Remap{
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL: strings.Join([]string{
+			normalize.VRLOpenShiftSequence,
+			normalize.VRLDedotLabels,
+			VRLFlattenLabels,
+			VRLPruneLabels,
+		}, "\n"),
 	}
 }
+
+const (
+	VRLFlattenLabels = `if exists(.kubernetes.labels) {
+  .kubernetes.flat_labels = []
+  for_each(object!(.kubernetes.labels)) -> |k,v| {
+    .kubernetes.flat_labels = push(.kubernetes.flat_labels, join!([string(k),"=",string!(v)]))
+  }
+}`
+	VRLPruneLabels = `if exists(.kubernetes.labels) {
+  exclusions = ["app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"]
+  keep = {}
+  for_each(object!(.kubernetes.labels))->|k,v|{
+    if !includes(exclusions, k) {
+      .kubernetes.labels, err = remove(object!(.kubernetes.labels),[k],true)
+      if err != null {
+        log(err, level: "error")
+      }
+    }
+  }
+}`
+)
 
 func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputs := []Element{}

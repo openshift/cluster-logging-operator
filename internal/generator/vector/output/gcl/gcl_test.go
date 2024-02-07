@@ -55,51 +55,28 @@ var _ = Describe("Generate Vector config", func() {
 			},
 			ExpectedConf: `
 [transforms.gcl_1_dedot]
-type = "lua"
+type = "remap"
 inputs = ["application"]
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
 source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-		dedot(event.log.kubernetes.namespace_labels)
-        dedot(event.log.kubernetes.labels)
-        emit(event)
-    end
-	
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
 '''
 
 [sinks.gcl_1]
@@ -159,51 +136,28 @@ retry_attempts = 17
 			},
 			ExpectedConf: `
 [transforms.gcl_tls_dedot]
-type = "lua"
+type = "remap"
 inputs = ["application"]
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
 source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-		dedot(event.log.kubernetes.namespace_labels)
-        dedot(event.log.kubernetes.labels)
-        emit(event)
-    end
-	
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
 '''
 
 [sinks.gcl_tls]
@@ -268,51 +222,28 @@ ca_file = "/var/run/ocp-collector/secrets/junk/ca-bundle.crt"
 			},
 			ExpectedConf: `
 [transforms.gcl_tls_dedot]
-type = "lua"
+type = "remap"
 inputs = ["application"]
-version = "2"
-hooks.init = "init"
-hooks.process = "process"
 source = '''
-    function init()
-        count = 0
-    end
-    function process(event, emit)
-        count = count + 1
-        event.log.openshift.sequence = count
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-		dedot(event.log.kubernetes.namespace_labels)
-        dedot(event.log.kubernetes.labels)
-        emit(event)
-    end
-	
-    function dedot(map)
-        if map == nil then
-            return
-        end
-        local new_map = {}
-        local changed_keys = {}
-        for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "[./]", "_")
-            if dedotted ~= k then
-                new_map[dedotted] = v
-                changed_keys[k] = true
-            end
-        end
-        for k in pairs(changed_keys) do
-            map[k] = nil
-        end
-        for k, v in pairs(new_map) do
-            map[k] = v
-        end
-    end
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
+		newkey = replace(key, r'[\./]', "_") 
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
 '''
 
 [sinks.gcl_tls]

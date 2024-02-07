@@ -314,10 +314,11 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
-|limit|object|  *(optional)* Limit of the aggregated logs to this output from any given
+|limit|object|  *(optional)* Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.
+|tuning|object|  *(optional)* Tuning parameters for the output.  Specifying these parameters will alter the characteristics
 |type|string|  Type of output plugin.
 |url|string|  *(optional)* URL to send log records to.
 |======================
@@ -414,6 +415,102 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 
 =====  Type
 * object
+
+=== .spec.outputs[].tuning
+===== Description
+
+OutputTuningSpec tuning parameters for an output
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|compression|string|  *(optional)* Compression causes data to be compressed before sending over the network.
+|delivery|string|  Delivery mode for log forwarding.
+|maxRetryDuration|int|  *(optional)* MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
+|maxWrite|object|  *(optional)* MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+|minRetryDuration|int|  *(optional)* MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
+|======================
+
+=== .spec.outputs[].tuning.maxWrite
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.outputs[].tuning.maxWrite.d
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.outputs[].tuning.maxWrite.d.Dec
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled.abs
+===== Description
+
+=====  Type
+* Word
+
+=== .spec.outputs[].tuning.maxWrite.i
+===== Description
+
+=====  Type
+* int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
+|======================
 
 === .spec.pipelines[]
 ===== Description

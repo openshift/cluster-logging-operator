@@ -17,7 +17,9 @@ package v1
 import (
 	openshiftv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
@@ -209,13 +211,59 @@ type OutputSpec struct {
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`
 
-	// Limit of the aggregated logs to this output from any given
-	// collector deployment. The total log flow from an individual collector
-	// deployment to this output cannot exceed the limit.  Generally, one
-	// collector is deployed per node
+	// Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
+	// to this output from any given collector container. The total log flow from an individual collector
+	// container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node
+	// Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
 	//
 	// +optional
 	Limit *LimitSpec `json:"limit,omitempty"`
+
+	// Tuning parameters for the output.  Specifying these parameters will alter the characteristics
+	// of log forwarder which may be different from its behavior without the tuning.
+	// +optional
+	Tuning *OutputTuningSpec `json:"tuning,omitempty"`
+}
+
+// OutputTuningSpec tuning parameters for an output
+type OutputTuningSpec struct {
+
+	// Delivery mode for log forwarding.
+	//
+	// - AtLeastOnce (default): if the forwarder crashes or is re-started, any logs that were read before
+	//   the crash but not sent to their destination will be re-read and re-sent. Note it is possible
+	//   that some logs are duplicated in the event of a crash - log records are delivered at-least-once.
+	// - AtMostOnce: The forwarder makes no effort to recover logs lost during a crash. This mode may give
+	//   better throughput, but could result in more log loss.
+	//
+	// +required
+	// +kubebuilder:validation:Enum:=AtLeastOnce;AtMostOnce
+	Delivery string `json:"delivery,omitempty"`
+
+	// Compression causes data to be compressed before sending over the network.
+	// It is an error if the compression type is not supported by the  output.
+	//
+	// +optional
+	// +kubebuilder:validation:Enum:='';gzip;none;snappy;zlib;zstd
+	Compression string `json:"compression,omitempty"`
+
+	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MaxWrite resource.Quantity `json:"maxWrite,omitempty"`
+
+	// MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MinRetryDuration time.Duration `json:"minRetryDuration,omitempty"`
+
+	// MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
+	// The default is set to an efficient value based on the output type.
+	//
+	// +optional
+	MaxRetryDuration time.Duration `json:"maxRetryDuration,omitempty"`
 }
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.

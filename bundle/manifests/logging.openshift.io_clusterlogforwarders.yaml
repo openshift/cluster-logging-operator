@@ -667,10 +667,13 @@ spec:
                           type: string
                       type: object
                     limit:
-                      description: Limit of the aggregated logs to this output from
-                        any given collector deployment. The total log flow from an
-                        individual collector deployment to this output cannot exceed
-                        the limit.  Generally, one collector is deployed per node
+                      description: Limit imposes a limit in records-per-second on
+                        the total aggregate rate of logs forwarded to this output
+                        from any given collector container. The total log flow from
+                        an individual collector container to this output cannot exceed
+                        the limit.  Generally, one collector is deployed per cluster
+                        node Logs may be dropped to enforce the limit. Missing or
+                        0 means no rate limit.
                       properties:
                         maxRecordsPerSecond:
                           description: MaxRecordsPerSecond is the maximum number of
@@ -943,6 +946,60 @@ spec:
                               - Custom
                               type: string
                           type: object
+                      type: object
+                    tuning:
+                      description: Tuning parameters for the output.  Specifying these
+                        parameters will alter the characteristics of log forwarder
+                        which may be different from its behavior without the tuning.
+                      properties:
+                        compression:
+                          description: Compression causes data to be compressed before
+                            sending over the network. It is an error if the compression
+                            type is not supported by the  output.
+                          enum:
+                          - ''''''
+                          - gzip
+                          - none
+                          - snappy
+                          - zlib
+                          - zstd
+                          type: string
+                        delivery:
+                          description: "Delivery mode for log forwarding. \n - AtLeastOnce
+                            (default): if the forwarder crashes or is re-started,
+                            any logs that were read before the crash but not sent
+                            to their destination will be re-read and re-sent. Note
+                            it is possible that some logs are duplicated in the event
+                            of a crash - log records are delivered at-least-once.
+                            - AtMostOnce: The forwarder makes no effort to recover
+                            logs lost during a crash. This mode may give better throughput,
+                            but could result in more log loss."
+                          enum:
+                          - AtLeastOnce
+                          - AtMostOnce
+                          type: string
+                        maxRetryDuration:
+                          description: MaxRetryDuration is the maximum time to wait
+                            between re-connect attempts after a connection failure.
+                            The default is set to an efficient value based on the
+                            output type.
+                          format: int64
+                          type: integer
+                        maxWrite:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: MaxWrite limits the maximum payload in terms
+                            of bytes of a single "send" to the output. The default
+                            is set to an efficient value based on the output type.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        minRetryDuration:
+                          description: MinRetryDuration is the minimum time to wait
+                            between attempts to re-connect after a failure. The default
+                            is set to an efficient value based on the output type.
+                          format: int64
+                          type: integer
                       type: object
                     type:
                       description: Type of output plugin.

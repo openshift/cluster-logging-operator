@@ -34,7 +34,16 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 
 	DescribeTable("", func(addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor) {
 
-		Expect(framework.DeployWithVisitor(addDestinationContainer(framework))).To(BeNil())
+		Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+			addDestinationContainer(framework),
+			func(builder *runtime.PodBuilder) error {
+				builder.AddLabels(map[string]string{
+					"app.kubernetes.io/name": "somevalue",
+					"foo.bar":                "a123",
+				})
+				return nil
+			},
+		})).To(BeNil())
 
 		message := "hello world"
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -50,6 +59,8 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		Expect(err).To(BeNil(), fmt.Sprintf("Expected no errors parsing the logs: %s", raw[0]))
 		// Compare to expected template
 		Expect(logs[0].Message).To(Equal(message))
+		Expect(logs[0].Kubernetes.Labels).To(HaveKey(MatchRegexp("^([a-zA-Z0-9_]*)$")))
+		Expect(logs[0].Kubernetes.Labels).To(HaveKey(MatchRegexp("foo")))
 	},
 		Entry("should send message over http to vector", func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {

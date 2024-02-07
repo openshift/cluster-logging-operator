@@ -72,26 +72,18 @@ source = '''
 '''
 
 [transforms.raw_journal_logs]
-type = "lua"
+type = "remap"
 inputs = ["parse_journal_message"]
-version = "2"
-hooks.process = "process"
-source = '''
-function process(event, emit)
-  if event.log.parsed ~= nil then
-    for k,v in pairs(event.log.parsed) do
-      event.log[k] = v
-    end
-    event.log.parsed = nil
-  end
-  event.log.host = event.log.hostname
-  event.log.hostname = nil
-  if event.log.MESSAGE ~= nil then
-    event.log.message = event.log.MESSAGE
-    event.log.MESSAGE = nil
-  end
-  emit(event)
-end
+if exists(.parsed) {
+  for_each(object!(.parsed)) -> |key,value| {
+    . = set!(.,[key],value)
+  }
+  del(.parsed)
+}
+.host = del(.hostname)
+if exists(.MESSAGE) {
+  .message = del(.MESSAGE)
+}
 '''
 
 `

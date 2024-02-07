@@ -28,6 +28,16 @@ if [ "$fitCheck" != "" ]; then
     echo "$fitCheck"
     echo ""
 fi
+
+check=$(grep -nEIr --include=*.go --include=*.toml 'type.*"lua"')
+if [ "$check" != "" ]; then
+    rc=1
+    echo "Transform found that depends upon lua."
+    echo "Please convert transform to use VRL instead"
+    echo ""
+    echo "$check"
+    echo ""
+fi
 set -e
 
 exit $rc

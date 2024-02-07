@@ -2,6 +2,7 @@ package normalization
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"time"
@@ -26,7 +27,14 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 			ToElasticSearchOutput().
 			FromInput(logging.InputNameAudit).
 			ToElasticSearchOutput()
-		Expect(framework.Deploy()).To(BeNil())
+		visitors := append(framework.AddOutputContainersVisitors(), func(builder *runtime.PodBuilder) error {
+			builder.AddLabels(map[string]string{
+				"app.kubernetes.io/name": "somevalue",
+				"foo.bar":                "a123",
+			})
+			return nil
+		})
+		Expect(framework.DeployWithVisitors(visitors)).To(BeNil())
 	})
 	AfterEach(func() {
 		framework.Cleanup()
@@ -82,6 +90,8 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		// Compare to expected template
 		outputTestLog := logs[0]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+		Expect(outputTestLog.Kubernetes.Labels).To(HaveKey(MatchRegexp("^([a-zA-Z0-9_]*)$")))
+		Expect(outputTestLog.Kubernetes.Labels).ToNot(HaveKey(MatchRegexp("foo")))
 	})
 
 	It("should parse application log format correctly if log message contains 'stdout','stderr' (Bug 1889595)", func() {

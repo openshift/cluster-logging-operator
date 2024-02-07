@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -16,7 +17,7 @@ import (
 )
 
 // ReconcileDaemonset reconciles a daemonset specifically for the collector defined by the factory
-func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) error {
 	trustedCABundle, trustHash := GetTrustedCABundle(k8sClient, namespace, f.ResourceNames.CaTrustBundle)
 	f.TrustedCAHash = trustHash
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
@@ -24,7 +25,7 @@ func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.C
 	var httpInputs []string
 	for _, input := range f.ForwarderSpec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil {
-			httpInputs = append(httpInputs, input.Name)
+			httpInputs = append(httpInputs, resNames.GenerateInputServiceName(input.Name))
 		}
 	}
 

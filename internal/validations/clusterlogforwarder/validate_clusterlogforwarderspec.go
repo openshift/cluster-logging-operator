@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/outputs"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -215,11 +216,12 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			status.Outputs.Set(output.Name,
 				conditions.CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 					output.Name))
-		case output.Type == loggingv1.OutputTypeSplunk && output.Splunk != nil && (output.Splunk.IndexKey != "" && output.Splunk.IndexName != ""):
-			log.V(3).Info("verifyOutputsFailed", "reason", "splunk output allows only one of indexKey or indexName, not both.")
-			status.Outputs.Set(output.Name,
-				conditions.CondInvalid("output %q: Only one of indexKey or indexName can be set, not both.",
-					output.Name))
+		case output.Type == loggingv1.OutputTypeSplunk:
+			valid, con := outputs.VerifySplunk(output.Name, output.Splunk)
+			if !valid {
+				log.V(3).Info("verifyOutputs failed", "reason", con.Reason, "output name", output.Name)
+			}
+			status.Outputs.Set(output.Name, con)
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
 			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
 		case !outputRefs.Has(output.Name):
@@ -349,7 +351,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 			return false
 		}
 	case loggingv1.OutputTypeSplunk:
-		if !verifySecretKeysForSplunk(output, conds, secret) {
+		if !outputs.VerifySecretKeysForSplunk(output, conds, secret) {
 			return false
 		}
 	}
@@ -411,19 +413,6 @@ func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1
 		return fail(conditions.CondMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
 	}
 	return true
-}
-
-func verifySecretKeysForSplunk(output *loggingv1.OutputSpec, conds loggingv1.NamedConditions, secret *corev1.Secret) bool {
-	fail := func(c status.Condition) bool {
-		conds.Set(output.Name, c)
-		return false
-	}
-
-	if len(secret.Data[constants.SplunkHECTokenKey]) > 0 {
-		return true
-	} else {
-		return fail(conditions.CondMissing("A non-empty " + constants.SplunkHECTokenKey + " entry is required"))
-	}
 }
 
 func readClusterName(clfClient client.Client) (string, error) {

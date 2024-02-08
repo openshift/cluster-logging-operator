@@ -1,0 +1,157 @@
+=== Steps to forward to Azure Monitor Log via HTTP Data Collector API
+
+(https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell)
+
+. Create a secret containing your `shared_key` using the following command (primary or the secondary key for the workspace that's making the request):
++
+----
+ oc create secret generic azure-secret -n openshift-logging --from-literal=shared_key='<shared_key>'
+----
+
+
+
+. Create a Cluster Log Forwarder instance by specifying your `customerId`, `logType` and the `secret` name:
++
+----
+ oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogForwarder"
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+  - name: azure-monitor-app
+    type: azureMonitor
+    azureMonitor:
+      customerId: my-customer-id
+      logType: application_log
+    secret:
+      name: azure-secret
+  - name: azure-monitor-infra
+    type: azureMonitor
+    azureMonitor:
+      customerId: my-customer-id
+      logType: infra_log
+    secret:
+      name: azure-secret
+  pipelines:
+    - name: app-pipeline
+      inputRefs:
+      - application
+      outputRefs:
+      - azure-monitor-app
+    - name: infra-pipeline
+      inputRefs:
+      - infrastructure
+      outputRefs:
+      - azure-monitor-infra
+----
+NOTE:   _customerId_ and _logType_ are required, _url_ not used
+
+=== Customizing log forwarding with some advance settings
+
+. Specifying `host`:
+to customize the host for dedicated Azure regions or for Azure Government cloud (If not specified, the default host will be used `ods.opinsights.azure.com`):
++
+----
+oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogForwarder"
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+  - name: azure-monitor
+    type: azureMonitor
+    azureMonitor:
+      customerId: my-customer-id
+      logType: my_log_type
+      host: "ods.opinsights.azure.acme"
+    secret:
+       name: azure-secret
+  pipelines:
+  - name: app-pipeline
+    inputRefs:
+    - application
+    outputRefs:
+    - azure-monitor
+
+----
++
+. Specifying `azureResourceId` the Resource ID of the Azure resource the data should be associated with.
+----
+oc apply -f cluster-log-forwarder.yaml
+----
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogForwarder"
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+  - name: azure-monitor
+    type: azureMonitor
+    azureMonitor:
+      customerId: my-customer-id
+      logType: my_log_type
+      azureResourceId: "/subscriptions/111111111"
+    secret:
+       name: azure-mysecret
+  pipelines:
+  - name: app-pipeline
+    inputRefs:
+    - application
+    outputRefs:
+    - azure-monitor
+
+----
+
+
+=== Functional testing: how do we test
+- For functional tests using Mockoon, a mocking API tool for describing environments via JSON files.
+- Mockoon has capabilities to define rules for checking HTTP requests and sending responses accordingly.
+- Rules to validate the `log-type` header and body fields in each record (`message` and `log_type`) to ensure that log records are properly formatted, e.g.:
+```
+"rules": [
+            {
+              "target": "header",
+              "modifier": "log-type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].message",
+              "value": "This is my test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+```
+
+- Set up a mocking environment within a Pod and made it available via a Route to emulate the original API URI format
+- Emulate the original API URI format (`https://<CustomerId>.<Host>/api/logs?api-version=2016-04-01`), including the `<CustomerID>` and `<Host>` components, to accurately replicate the production environment

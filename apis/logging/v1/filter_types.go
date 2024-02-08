@@ -7,6 +7,7 @@ package v1
 const (
 	FilterKubeAPIAudit = "kubeAPIAudit"
 	FilterDrop         = "drop"
+	FilterPrune        = "prune"
 )
 
 // FilterTypeSpec is a union of filter specification types.
@@ -22,6 +23,10 @@ type FilterTypeSpec struct {
 	// A DropTestsSpec contains an array of tests which contains an array of conditions
 	// +optional
 	DropTestsSpec *[]DropTest `json:"drop,omitempty"`
+
+	// The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
+	// +optional
+	PruneFilterSpec *PruneFilterSpec `json:"prune,omitempty"`
 }
 
 type DropTest struct {
@@ -49,4 +54,22 @@ type DropCondition struct {
 	// Must define only one of matches or notMatches
 	// +optional
 	NotMatches string `json:"notMatches,omitempty"`
+}
+
+type PruneFilterSpec struct {
+	// `In` is an array of dot-delimited field paths. Fields included here are removed from the log record.
+	// Each field path expression must start with a `.`.
+	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	// +optional
+	In []string `json:"in,omitempty"`
+
+	// `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record
+	// Each field path expression must start with a `.`.
+	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	// +optional
+	NotIn []string `json:"notIn,omitempty"`
 }

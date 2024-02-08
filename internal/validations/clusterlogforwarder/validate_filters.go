@@ -1,6 +1,7 @@
 package clusterlogforwarder
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 )
 
 // Matches dot delimited paths with alphanumeric & `_`. Any other characters added in a segment will require quotes.
-// Matches `.kubernetes.namespace_name` and `kubernetes."test-label/with slashes"`
-var pathExpRegex = regexp.MustCompile(`^\.[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+|\."[^"]+")*$`)
+// Matches `.kubernetes.namespace_name` & `kubernetes."test-label/with slashes"` & `."@timestamp"`
+var pathExpRegex = regexp.MustCompile(`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`)
 
 // ValidateFilters validates the defined filters.
 func ValidateFilters(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
@@ -21,43 +22,83 @@ func ValidateFilters(clf loggingv1.ClusterLogForwarder, k8sClient client.Client,
 	}
 
 	clf.Status.Filters = loggingv1.NamedConditions{}
-	var err error
 	for _, filterSpec := range clf.Spec.Filters {
-		// Validate the drop filter
-		if filterSpec.Type == loggingv1.FilterDrop {
-			for _, dropFilter := range *filterSpec.DropTestsSpec {
-				testErrors := []string{}
-				for _, test := range dropFilter.DropConditions {
-					// Validate field starts with a '.'
-					if !strings.HasPrefix(test.Field, ".") {
-						testErrors = append(testErrors, "field must start with a '.'")
-					}
-					// Validate field path
-					if !pathExpRegex.MatchString(test.Field) {
-						testErrors = append(testErrors, "field must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")")
-					}
-					// Validate only one of matches/notMatches is defined
-					if test.Matches != "" && test.NotMatches != "" {
-						testErrors = append(testErrors, "only one of matches or notMatches can be defined at once")
-					}
-					// Validate provided regex
-					if test.Matches != "" {
-						_, err = regexp.Compile(test.Matches)
-					} else if test.NotMatches != "" {
-						_, err = regexp.Compile(test.Matches)
-					}
-					if err != nil {
-						testErrors = append(testErrors, "matches/notMatches must be a valid regular expression.")
-					}
-				}
-				if len(testErrors) != 0 {
-					clf.Status.Filters.Set(filterSpec.Name, conditions.CondInvalid("%v", testErrors))
-				}
-			}
+		switch filterSpec.Type {
+		case loggingv1.FilterDrop:
+			validateDropFilter(&filterSpec, &clf.Status.Filters)
+		case loggingv1.FilterPrune:
+			validatePruneFilter(&filterSpec, &clf.Status.Filters)
 		}
 	}
 	if len(clf.Status.Filters) != 0 {
 		return errors.NewValidationError("One or more errors are present in defined filters."), &clf.Status
 	}
 	return nil, nil
+}
+
+// validateDropFilter validates each test and their associated conditions in a drop filter.
+// It sets the filter status for the specific drop test index to better diagnose problems
+func validateDropFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
+	var err error
+	// Validate each test
+	for i, dropTest := range *filterSpec.DropTestsSpec {
+		testErrors := []string{}
+		// For each test, validate conditions
+		for _, testCondition := range dropTest.DropConditions {
+			if err := validateFieldPath(testCondition.Field); err != "" {
+				testErrors = append(testErrors, err)
+			}
+			// Validate only one of matches/notMatches is defined
+			if testCondition.Matches != "" && testCondition.NotMatches != "" {
+				testErrors = append(testErrors, "only one of matches or notMatches can be defined at once")
+			}
+			// Validate provided regex
+			if testCondition.Matches != "" {
+				_, err = regexp.Compile(testCondition.Matches)
+			} else if testCondition.NotMatches != "" {
+				_, err = regexp.Compile(testCondition.Matches)
+			}
+			if err != nil {
+				testErrors = append(testErrors, "matches/notMatches must be a valid regular expression.")
+			}
+		}
+		if len(testErrors) != 0 {
+			clfStatus.Set(fmt.Sprintf("%s: test[%d]", filterSpec.Name, i), conditions.CondInvalid("%v", testErrors))
+		}
+	}
+}
+
+func validatePruneFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
+	errList := []string{}
+	// Validate `in` paths
+	if filterSpec.PruneFilterSpec.In != nil {
+		for _, fieldPath := range filterSpec.PruneFilterSpec.In {
+			if err := validateFieldPath(fieldPath); err != "" {
+				errList = append(errList, err)
+			}
+		}
+	}
+	// Validate `notIn` paths
+	if filterSpec.PruneFilterSpec.NotIn != nil {
+		for _, fieldPath := range filterSpec.PruneFilterSpec.NotIn {
+			if err := validateFieldPath(fieldPath); err != "" {
+				errList = append(errList, err)
+			}
+		}
+	}
+	if len(errList) != 0 {
+		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("%v", errList))
+	}
+}
+
+// validateFieldPath validates a field path for correctness
+func validateFieldPath(fieldPath string) string {
+	// Validate field starts with a '.'
+	if !strings.HasPrefix(fieldPath, ".") {
+		return fmt.Sprintf("%q must start with a '.'", fieldPath)
+		// Validate field path
+	} else if !pathExpRegex.MatchString(fieldPath) {
+		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
+	}
+	return ""
 }

@@ -1,0 +1,54 @@
+= Prune Filter
+
+Collecting all logs from a cluster produces a large amount of data, which can be expensive to transport and store. A lot of log data is low-value noise that does not need to be stored.
+
+The prune filter allows for pruning log record fields to reduce the size of logs flowing into a log store.
+
+== Configuring and Using a Prune Filter
+
+A `prune` filter removes fields from each record passing through the filter.
+
+The prune filter extends the filter API by adding a `prune` field and the `in`, and `notIn` fields nested underneath. Both `in` and `notIn` fields are an array of dot-delimited field paths.
+
+=== Definitions:
+* `in`: Prune fields from the log record that match paths defined in the array.
+* `notIn`: Prune all fields from the log record that do not match paths defined in the array.
+* Dot-delimited field path: A path to a field in the log record. It must start with a dot (`.`). The path can contain alpha-numeric characters and underscores `(a-zA-Z0-9_)`. If segments contain characters outside of this range, the segment must be quoted.
+** Examples: `.kubernetes.namespace_name`, `.log_type`, `.kubernetes.labels.foobar`, `.kubernetes.labels."foo-bar/baz"`
+
+NOTE: `notIn` takes precedence over `in`. That is, if both `in` and `notIn` are specified, vector will initially prune fields **NOT** listed in the `notIn` list followed by pruning fields specified in the `in` list.
+
+=== Example:
+
+Below is an example `ClusterLogForwarder` configuration specifying a custom prune filter called `my-prune`.
+
+
+[source,yaml]
+--
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: instance 
+  namespace: openshift-logging 
+spec:
+  filters:
+    - name: my-prune
+      type: prune
+      prune:
+        in: [.level,.kubernetes.namespace_labels."test-dashes/slashes"]
+        notIn: [.log_type,.message,.kubernetes,."@timestamp",.openshift]
+  pipelines:
+   - name: app-prune
+     filterRefs:
+     - my-prune
+     inputRefs: 
+     - application
+     - infrastructure
+     outputRefs:
+     - default
+--
+== Relevant Links:
+
+1. link:../../../../apis/logging/v1/filter_types.go[API documentation]
+2. https://github.com/openshift/enhancements/blob/a6a1feb9cceb0b61960bcf00f292cb0d04ee3753/enhancements/cluster-logging/content-filter.md#prune-filters[Enhancement Proposal]
+3. https://issues.redhat.com/browse/LOG-3883[Related JIRA]

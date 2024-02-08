@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/drop"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/prune"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/apiaudit"
@@ -27,6 +28,8 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 	switch filterSpec.Type {
 	case loggingv1.FilterDrop:
 		return drop.MakeDropFilter(filterSpec.DropTestsSpec)
+	case loggingv1.FilterPrune:
+		return prune.MakePruneFilter(filterSpec.PruneFilterSpec)
 	case loggingv1.FilterKubeAPIAudit:
 		return apiaudit.PolicyToVRL(filterSpec.KubeAPIAudit)
 	case openshift.Labels:

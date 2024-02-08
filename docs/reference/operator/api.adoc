@@ -61,6 +61,7 @@ See [FilterTypeSpec] for a list of filter types.
 
 |kubeAPIAudit|object|  *(optional)* 
 |drop|object|  *(optional)* A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
+|prune|object|  *(optional)* The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
 |name|string|  Name used to refer to the filter from a `pipeline`.
 |type|string|  Type of filter.
 |======================
@@ -314,6 +315,7 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
+|azureMonitor|object|  *(optional)* 
 |limit|object|  *(optional)* Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.

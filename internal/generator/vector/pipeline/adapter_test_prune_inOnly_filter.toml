@@ -1,0 +1,11 @@
+[transforms.pipeline_mypipeline_my_prune_0]
+type = "remap"
+inputs = ["input_app_in_viaq_logtype"]
+source = '''
+in = [["kubernetes","labels"],["message"],["foo"]]
+
+# Remove keys from `in` list
+for_each(in) -> |_index, val| {
+    . = remove!(., val)
+}
+'''

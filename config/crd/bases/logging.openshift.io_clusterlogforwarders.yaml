@@ -113,8 +113,8 @@ spec:
                         included, the response body is removed. - RequestResponse:
                         All data is included: metadata, request body and response
                         body. Note the response body can be very large. For example
-                        the a command like `oc list -A pods` generates a response
-                        body containing the YAML description of every pod in the cluster.
+                        the a command like `oc get -A pods` generates a response body
+                        containing the YAML description of every pod in the cluster.
                         \n # Extensions \n The following features are extensions to
                         the standard [Kube Audit Policy] \n ## Wildcards \n Names
                         of users, groups, namespaces, and resources can have a leading
@@ -277,11 +277,41 @@ spec:
                     name:
                       description: Name used to refer to the filter from a `pipeline`.
                       type: string
+                    prune:
+                      description: The PruneFilterSpec consists of two arrays, namely
+                        in and notIn, which dictate the fields to be pruned.
+                      properties:
+                        in:
+                          description: '`In` is an array of dot-delimited field paths.
+                            Fields included here are removed from the log record.
+                            Each field path expression must start with a `.`. The
+                            path can contain alpha-numeric characters and underscores
+                            (a-zA-Z0-9_). If segments contain characters outside of
+                            this range, the segment must be quoted otherwise paths
+                            do NOT need to be quoted. Examples: `.kubernetes.namespace_name`,
+                            `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                          items:
+                            type: string
+                          type: array
+                        notIn:
+                          description: '`NotIn` is an array of dot-delimited field
+                            paths. All fields besides the ones listed here are removed
+                            from the log record Each field path expression must start
+                            with a `.`. The path can contain alpha-numeric characters
+                            and underscores (a-zA-Z0-9_). If segments contain characters
+                            outside of this range, the segment must be quoted otherwise
+                            paths do NOT need to be quoted. Examples: `.kubernetes.namespace_name`,
+                            `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                          items:
+                            type: string
+                          type: array
+                      type: object
                     type:
                       description: Type of filter.
                       enum:
                       - kubeAPIAudit
                       - drop
+                      - prune
                       type: string
                   required:
                   - name

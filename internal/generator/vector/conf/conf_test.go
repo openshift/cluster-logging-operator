@@ -41,6 +41,9 @@ var ExpectedComplexOTELToml string
 //go:embed complex_http_receiver.toml
 var ExpectedComplexHTTPReceiverTOML string
 
+//go:embed complex_prune_filter.toml
+var ExpectedComplexPruneFilterTOML string
+
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
@@ -491,6 +494,74 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedComplexDropFilterToml,
+		}),
+
+		Entry("with complex spec with prune filter", testhelpers.ConfGenerateTest{
+			Options: framework.Options{
+				framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Filters: []logging.FilterSpec{
+					{
+						Name: "my-prune",
+						Type: logging.FilterPrune,
+						FilterTypeSpec: logging.FilterTypeSpec{
+							PruneFilterSpec: &logging.PruneFilterSpec{
+								In:    []string{".log_type", ".message", ".kubernetes.container_name"},
+								NotIn: []string{`.kubernetes.labels."foo-bar/baz"`, ".level"},
+							},
+						},
+					},
+				},
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+					{
+						Name:           logging.InputNameInfrastructure,
+						Infrastructure: &logging.Infrastructure{},
+					},
+					{
+						Name:  logging.InputNameAudit,
+						Audit: &logging.Audit{},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"mytestapp",
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit},
+						OutputRefs: []string{"kafka-receiver"},
+						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+						FilterRefs: []string{"my-prune"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedComplexPruneFilterTOML,
 		}),
 	)
 

@@ -39,6 +39,85 @@ var _ = Describe("pipeline/adapter.go", func() {
 		}
 	)
 	Context("#NewPipeline", func() {
+		Describe("when adding a prune filter", func() {
+			It("should add prune filter with only defined `in` fields and no `notIn` fields", func() {
+				adapter := NewPipeline(0, logging.PipelineSpec{
+					Name:       "mypipeline",
+					InputRefs:  []string{"app-in"},
+					FilterRefs: []string{"my-prune"},
+				}, map[string]helpers.InputComponent{
+					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				}, map[string]*output.Output{},
+					map[string]*filter.InternalFilterSpec{
+						"my-prune": {
+							FilterSpec: &logging.FilterSpec{
+								Name: "my-prune",
+								Type: logging.FilterPrune,
+								FilterTypeSpec: logging.FilterTypeSpec{
+									PruneFilterSpec: &logging.PruneFilterSpec{
+										In: []string{".kubernetes.labels", ".message", ".foo"},
+									},
+								},
+							},
+						},
+					},
+				)
+				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(mustLoad("adapter_test_prune_inOnly_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
+			})
+			It("should add prune filter with only defined `notIn` fields and no `in` fields", func() {
+				adapter := NewPipeline(0, logging.PipelineSpec{
+					Name:       "mypipeline",
+					InputRefs:  []string{"app-in"},
+					FilterRefs: []string{"my-prune"},
+				}, map[string]helpers.InputComponent{
+					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				}, map[string]*output.Output{},
+					map[string]*filter.InternalFilterSpec{
+						"my-prune": {
+							FilterSpec: &logging.FilterSpec{
+								Name: "my-prune",
+								Type: logging.FilterPrune,
+								FilterTypeSpec: logging.FilterTypeSpec{
+									PruneFilterSpec: &logging.PruneFilterSpec{
+										NotIn: []string{".kubernetes.labels", ".message", ".foo"},
+									},
+								},
+							},
+						},
+					},
+				)
+				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(mustLoad("adapter_test_prune_notIn_only_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
+			})
+			It("should add prune filter with both defined in fields and notIn fields when spec'd", func() {
+				adapter := NewPipeline(0, logging.PipelineSpec{
+					Name:       "mypipeline",
+					InputRefs:  []string{"app-in"},
+					FilterRefs: []string{"my-prune"},
+				}, map[string]helpers.InputComponent{
+					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				}, map[string]*output.Output{},
+					map[string]*filter.InternalFilterSpec{
+						"my-prune": {
+							FilterSpec: &logging.FilterSpec{
+								Name: "my-prune",
+								Type: logging.FilterPrune,
+								FilterTypeSpec: logging.FilterTypeSpec{
+									PruneFilterSpec: &logging.PruneFilterSpec{
+										In:    []string{".kubernetes.labels.foo", ".log_type", ".message"},
+										NotIn: []string{".kubernetes.container_name", `.foo.bar."baz/bar"`, `.foo`},
+									},
+								},
+							},
+						},
+					},
+				)
+				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(mustLoad("adapter_test_prune_inNotIn_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
+			})
+		})
+
 		It("should add Kube API Server Audit Policy when spec'd for the pipeline", func() {
 			adapter := NewPipeline(0, logging.PipelineSpec{
 				Name:       "mypipeline",

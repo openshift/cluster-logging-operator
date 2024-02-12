@@ -1,8 +1,11 @@
 package clusterlogforwarder
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -32,6 +35,13 @@ var _ = Describe("[internal][validations] ClusterLogForwarder", func() {
 		It("should fail validation when the name results in an object that will fail name validation (e.g. service)", func() {
 			clf := runtime.NewClusterLogForwarder()
 			clf.Namespace = "foobar"
+			clf.Name = "65409debug-3y8sw019"
+			Expect(validateName(*clf, k8sClient, extras)).To(Not(Succeed()))
+		})
+
+		It(fmt.Sprintf("should fail validation when the name of CR not equal to %s in %s namespace", constants.SingletonName, constants.OpenshiftNS), func() {
+			clf := runtime.NewClusterLogForwarder()
+			clf.Namespace = constants.OpenshiftNS
 			clf.Name = "65409debug-3y8sw019"
 			Expect(validateName(*clf, k8sClient, extras)).To(Not(Succeed()))
 		})

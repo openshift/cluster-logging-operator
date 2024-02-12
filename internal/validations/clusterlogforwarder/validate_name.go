@@ -10,6 +10,11 @@ import (
 
 func validateName(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus) {
 
+	if clf.Namespace == constants.OpenshiftNS && clf.Name != constants.SingletonName {
+		return errors.NewValidationError("Name %s is not valid for ClusterLoggingForwarder, only '%s' name can be defined for a CR deploys a CR in %s namespace",
+			clf.Name, constants.SingletonName, constants.OpenshiftNS), nil
+	}
+
 	if clf.Namespace == constants.OpenshiftNS && clf.Name == constants.CollectorName {
 		return errors.NewValidationError("Name %q conflicts with an object for the legacy ClusterLogForwarder deployment.  Choose another", clf.Name), nil
 	}

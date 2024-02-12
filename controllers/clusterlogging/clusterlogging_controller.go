@@ -2,6 +2,8 @@ package clusterlogging
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
@@ -10,9 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"strings"
-	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
@@ -82,7 +81,9 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		}
 		setMigrationStatusConditions(&instance, migrationConditions)
 		if validationerrors.IsValidationError(err) {
-			instance.Status.Conditions.SetCondition(loggingv1.CondInvalid("validation failed: %v", err))
+			condition := loggingv1.NewCondition(loggingv1.ValidationCondition, corev1.ConditionTrue, loggingv1.ValidationFailureReason, "%v", err)
+			instance.Status.Conditions.SetCondition(condition)
+			instance.Status.Conditions.SetCondition(loggingv1.CondNotReady(loggingv1.ValidationFailureReason, ""))
 			return r.updateStatus(&instance)
 		}
 

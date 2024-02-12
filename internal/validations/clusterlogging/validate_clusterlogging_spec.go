@@ -8,6 +8,11 @@ import (
 
 func validateClusterLoggingSpec(cl v1.ClusterLogging) error {
 
+	if cl.Namespace == constants.OpenshiftNS && cl.Name != constants.SingletonName {
+		return errors.NewValidationError("Name %s is not valid for ClusterLogging, only '%s' name can be defined for a CR when deploys a CR in %s namespace",
+			cl.Name, constants.SingletonName, constants.OpenshiftNS)
+	}
+
 	if cl.Namespace == constants.OpenshiftNS && cl.Name == constants.SingletonName {
 		if cl.Spec.Collection != nil && !cl.Spec.Collection.Type.IsSupportedCollector() {
 			return errors.NewValidationError("Collector implementation is not supported: %q", cl.Spec.Collection.Type)

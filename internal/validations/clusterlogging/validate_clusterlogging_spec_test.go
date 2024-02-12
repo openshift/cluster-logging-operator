@@ -1,9 +1,12 @@
 package clusterlogging
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
@@ -73,6 +76,11 @@ var _ = Describe("[internal][validations] ClusterLogging", func() {
 			It("should pass when collection.type is spec'd", func() {
 				err := validateClusterLoggingSpec(*cl)
 				Expect(err).To(Succeed())
+			})
+			It(fmt.Sprintf("should fail validation when the name of CR not equal to %s in %s namespace", constants.SingletonName, constants.OpenshiftNS), func() {
+				cl.Namespace = constants.OpenshiftNS
+				err := validateClusterLoggingSpec(*cl)
+				Expect(err).To(Not(Succeed()))
 			})
 
 		})

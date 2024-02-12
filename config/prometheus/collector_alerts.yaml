@@ -55,6 +55,36 @@ spec:
       labels:
         service: collector
         severity: Warning
+    - alert: ElasticsearchDeprecation
+      annotations:
+        message: "The OpenShift Elasticsearch Operator is deprecated and is planned to be removed in a future release. Red Hat provides bug fixes and support for this feature during the current release lifecycle, but this feature no longer receives enhancements. As an alternative to using the OpenShift Elasticsearch Operator to manage the default log storage, you can use the Loki Operator."
+        summary: "Detected Elasticsearch as the in-cluster storage which is deprecated and will be removed in a future release."
+      expr: |
+        sum(kube_pod_labels{namespace="openshift-logging",label_component='elasticsearch'}) > 0
+      for: 5m
+      labels:
+        service: storage
+        severity: Warning
+    - alert: FluentdDeprecation
+      annotations:
+        message: "Fluentd is deprecated and is planned to be removed in a future release. Red Hat provides bug fixes and support for this feature during the current release lifecycle, but this feature no longer receives enhancements. As an alternative to Fluentd, you can use Vector instead."
+        summary: "Detected Fluentd as the collector which is deprecated and will be removed in a future release."
+      expr: |
+        sum(kube_pod_labels{namespace="openshift-logging", label_implementation='fluentd', label_app_kubernetes_io_managed_by="cluster-logging-operator"}) > 0
+      for: 5m
+      labels:
+        service: collector
+        severity: Warning
+    - alert: KibanaDeprecation
+      annotations:
+        message: "The Kibana web console is now deprecated and is planned to be removed in a future logging release."
+        summary: "Detected Kibana as the visualization which is deprecated and will be removed in a future release."
+      expr: |
+        sum(kube_pod_labels{namespace="openshift-logging",label_component='kibana'}) > 0
+      for: 5m
+      labels:
+        service: visualization
+        severity: Warning
   - name: logging_clusterlogging_telemetry.rules
     rules:
     - expr: |

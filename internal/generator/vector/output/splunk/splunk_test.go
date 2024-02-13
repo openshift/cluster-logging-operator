@@ -55,12 +55,6 @@ default_token = "` + hecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
-
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
 `
 		splunkSinkTls = splunkDedot + `
 [sinks.splunk_hec]
@@ -73,11 +67,6 @@ timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
 [sinks.splunk_hec.tls]
 key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
@@ -93,12 +82,6 @@ default_token = "` + hecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
-
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
 
 [sinks.splunk_hec.tls]
 verify_certificate = false
@@ -118,12 +101,6 @@ timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
-
 [sinks.splunk_hec.tls]
 verify_certificate = false
 verify_hostname = false
@@ -139,12 +116,6 @@ timestamp_key = "@timestamp"
 
 [sinks.splunk_hec.encoding]
 codec = "json"
-
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
 
 [sinks.splunk_hec.tls]
 key_pass = "junk"
@@ -248,35 +219,35 @@ key_pass = "junk"
 		})
 
 		It("should provide a valid config", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), output, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), output, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSink))
 		})
 
 		It("should provide a valid config with passphrase", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithPassphrase, []string{"pipelineName"}, secrets[outputWithPassphrase.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithPassphrase, []string{"pipelineName"}, secrets[outputWithPassphrase.Secret.Name], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkPassphrase))
 		})
 
 		It("should provide a valid config with TLS", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTls, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTls, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTls))
 		})
 
 		It("should provide a valid config with tls.insecureSkipVerify=true", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerify))
 		})
 
 		It("should provide a valid config with tls.insecureSkipVerify=true without secret", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil)
+			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerifyNoCert))
@@ -329,12 +300,6 @@ timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["write_index"]
-
-[sinks.splunk_hec.buffer]
-when_full = "drop_newest"
-
-[sinks.splunk_hec.request]
-retry_attempts = 17
 `
 
 				splunkSinkIndexKey = `
@@ -370,7 +335,7 @@ source = '''
 
 			It("should provide a valid config with indexKey specified", func() {
 				splunkOutputSpec.Splunk.IndexKey = "kubernetes.namespace_name"
-				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexKey + splunkWithIndexDedot))
@@ -378,7 +343,7 @@ source = '''
 
 			It("should provide a valid config with indexName specified", func() {
 				splunkOutputSpec.Splunk.IndexName = "custom-index"
-				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil)
+				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexName + splunkWithIndexDedot))

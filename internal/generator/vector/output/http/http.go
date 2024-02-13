@@ -28,6 +28,7 @@ type Http struct {
 	Inputs      string
 	URI         string
 	Method      string
+	common.RootMixin
 }
 
 func (h Http) Name() string {
@@ -41,8 +42,13 @@ type = "http"
 inputs = {{.Inputs}}
 uri = "{{.URI}}"
 method = "{{.Method}}"
+{{.Compression}}
 {{end}}
 `
+}
+
+func (h *Http) SetCompression(algo string) {
+	h.Compression.Value = algo
 }
 
 type HttpEncoding struct {
@@ -104,7 +110,7 @@ func Normalize(id string, inputs []string) Element {
 	}
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	normalizeID := vectorhelpers.MakeID(id, "normalize")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
@@ -120,15 +126,21 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		inputs = []string{schemaID}
 	}
 	els = append(els, Normalize(normalizeID, inputs))
+	sink := Output(id, o, []string{dedottedID}, secret, op)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
 	return MergeElements(
 
 		els,
 		[]Element{
 			normalize.DedotLabels(dedottedID, []string{normalizeID}),
-			Output(id, o, []string{dedottedID}, secret, op),
+			sink,
 			Encoding(id),
-			common.NewBuffer(id),
-			Request(id, o),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			Request(id, o, strategy),
 		},
 		common.TLS(id, o, secret, op),
 		BasicAuth(id, o, secret),
@@ -136,12 +148,13 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
-	return Http{
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) *Http {
+	return &Http{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		URI:         o.URL,
 		Method:      Method(o.Http),
+		RootMixin:   common.NewRootMixin(nil),
 	}
 }
 
@@ -170,12 +183,12 @@ func Method(h *logging.Http) string {
 	return "post"
 }
 
-func Request(id string, o logging.OutputSpec) *common.Request {
+func Request(id string, o logging.OutputSpec, strategy common.ConfigStrategy) *common.Request {
 	timeout := DefaultHttpTimeoutSecs
 	if o.Http != nil && o.Http.Timeout != 0 {
 		timeout = o.Http.Timeout
 	}
-	req := common.NewRequest(id)
+	req := common.NewRequest(id, strategy)
 	req.TimeoutSecs.Value = timeout
 	if o.Http != nil && len(o.Http.Headers) != 0 {
 		req.SetHeaders(o.Http.Headers)

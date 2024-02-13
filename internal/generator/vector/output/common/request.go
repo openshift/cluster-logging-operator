@@ -7,33 +7,54 @@ import (
 )
 
 type Request struct {
-	ComponentID   string
-	RetryAttempts int
-	Concurrency   helpers.OptionalPair
-	TimeoutSecs   helpers.OptionalPair
-	headers       map[string]string
+	ComponentID            string
+	RetryAttempts          helpers.OptionalPair
+	RetryInitialBackoffSec helpers.OptionalPair
+	RetryMaxDurationSec    helpers.OptionalPair
+	Concurrency            helpers.OptionalPair
+	TimeoutSecs            helpers.OptionalPair
+	headers                map[string]string
 }
 
 // NewRequest section for an output
 // Ref: LOG-4536 for RetryAttempts default
-func NewRequest(id string) *Request {
-	return &Request{
-		ComponentID:   id,
-		RetryAttempts: 17,
-		Concurrency:   helpers.NewOptionalPair("concurrency", nil),
-		TimeoutSecs:   helpers.NewOptionalPair("timeout_secs", nil),
+func NewRequest(id string, s ConfigStrategy) *Request {
+	r := Request{
+		ComponentID:            id,
+		RetryAttempts:          helpers.NewOptionalPair("retry_attempts", nil),
+		RetryInitialBackoffSec: helpers.NewOptionalPair("retry_initial_backoff_secs", nil),
+		RetryMaxDurationSec:    helpers.NewOptionalPair("retry_max_duration_secs", nil),
+		Concurrency:            helpers.NewOptionalPair("concurrency", nil),
+		TimeoutSecs:            helpers.NewOptionalPair("timeout_secs", nil),
 	}
+	if s != nil {
+		r = s.VisitRequest(r)
+	}
+	return &r
 }
 
 func (r *Request) Name() string {
 	return "request"
 }
 
+func (r *Request) isEmpty() bool {
+	return r.RetryInitialBackoffSec.String()+
+		r.RetryMaxDurationSec.String()+
+		r.RetryAttempts.String()+
+		r.Concurrency.String()+
+		r.TimeoutSecs.String() == ""
+}
+
 func (r *Request) Template() string {
+	if r.isEmpty() {
+		return `{{define "` + r.Name() + `" -}}{{end}}`
+	}
 	return `{{define "` + r.Name() + `" -}}
 [sinks.{{.ComponentID}}.request]
-retry_attempts = {{.RetryAttempts}}
-{{ .Concurrency -}}
+{{ .RetryAttempts }}
+{{ .RetryInitialBackoffSec }}
+{{ .RetryMaxDurationSec }}
+{{ .Concurrency }}
 {{ .TimeoutSecs }}
 {{kv .Headers }}
 {{end}}

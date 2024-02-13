@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("Generate vector config", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
+		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], nil, op)
 	}
 	DescribeTable("for kafka output", helpers.TestGenerateConfWith(f),
 		Entry("with plaintext sasl, to single topic", helpers.ConfGenerateTest{
@@ -83,9 +83,6 @@ topic = "build_complete"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
 
 # SASL Config
 [sinks.kafka_receiver.sasl]
@@ -160,9 +157,6 @@ topic = "build_complete"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -244,9 +238,6 @@ topic = "build_complete"
 codec = "json"
 timestamp_format = "rfc3339"
 
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -319,9 +310,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -393,9 +381,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -465,9 +450,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.kafka_receiver.librdkafka_options]
 "enable.ssl.certificate.verification" = "false"
 [sinks.kafka_receiver.tls]
@@ -534,9 +516,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.kafka_receiver.tls]
 enabled = true
 key_pass = "junk"
@@ -589,9 +568,6 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
 `,
 		}),
 		Entry("with plain TLS - no secret", helpers.ConfGenerateTest{
@@ -641,9 +617,6 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
 `,
 		}),
 		Entry("without security", helpers.ConfGenerateTest{
@@ -693,9 +666,6 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-[sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
 `,
 		}),
 	)

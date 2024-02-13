@@ -45,7 +45,7 @@ shared_key = "{{.SharedKey}}"
 {{end}}`
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op framework.Options) []framework.Element {
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
@@ -56,6 +56,10 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		[]framework.Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			Output(id, o, []string{dedottedID}, secret, op),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			common.NewRequest(id, strategy),
 		},
 		TLSConf(id, o, secret, op),
 	)

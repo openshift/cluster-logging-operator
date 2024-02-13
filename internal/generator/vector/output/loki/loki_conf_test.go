@@ -52,7 +52,7 @@ var _ = Describe("Generate vector config", func() {
 	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 	inputPipeline := []string{"application"}
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
+		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], nil, op)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
 		Entry("with default labels", helpers.ConfGenerateTest{
@@ -118,12 +118,6 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
-
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
@@ -206,12 +200,6 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
-
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -292,12 +280,6 @@ tenant_id = "{{foo.bar.baz}}"
 [sinks.loki_receiver.encoding]
 codec = "json"
 
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
-
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -375,12 +357,6 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
-
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
@@ -461,12 +437,6 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
-
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -535,12 +505,6 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
-
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
@@ -620,12 +584,6 @@ healthcheck.enabled = false
 [sinks.loki_receiver.encoding]
 codec = "json"
 
-[sinks.loki_receiver.buffer]
-when_full = "drop_newest"
-
-[sinks.loki_receiver.request]
-retry_attempts = 17
-
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
@@ -648,7 +606,7 @@ token = "token-for-custom-loki"
 var _ = Describe("Generate vector config for in cluster loki", func() {
 	inputPipeline := []string{"application"}
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], framework.NoOptions)
+		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], nil, framework.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
 		Entry("with default logcollector bearer token", helpers.ConfGenerateTest{
@@ -710,12 +668,6 @@ healthcheck.enabled = false
 
 [sinks.default_loki_apps.encoding]
 codec = "json"
-
-[sinks.default_loki_apps.buffer]
-when_full = "drop_newest"
-
-[sinks.default_loki_apps.request]
-retry_attempts = 17
 
 [sinks.default_loki_apps.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"

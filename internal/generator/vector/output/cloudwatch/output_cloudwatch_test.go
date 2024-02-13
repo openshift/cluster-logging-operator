@@ -85,11 +85,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 `
 	cwBufferAndRequest = `
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
 `
 	cwSinkRole = `
@@ -105,11 +101,7 @@ stream_name = "{{ stream_name }}"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
 `
 	cwSinkKeyIdTLS = `
@@ -126,11 +118,7 @@ auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
 
 [sinks.cw.tls]
@@ -154,12 +142,9 @@ auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -179,12 +164,9 @@ auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -207,12 +189,9 @@ stream_name = "{{ stream_name }}"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -233,12 +212,9 @@ stream_name = "{{ stream_name }}"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -261,12 +237,9 @@ stream_name = "{{ stream_name }}"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -287,12 +260,9 @@ stream_name = "{{ stream_name }}"
 encoding.codec = "json"
 healthcheck.enabled = false
 
-[sinks.cw.buffer]
-when_full = "drop_newest"
-
 [sinks.cw.request]
-retry_attempts = 17
 concurrency = 2
+
 [sinks.cw.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -385,7 +355,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + cwSinkKeyId + `
 ` + cwBufferAndRequest + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -420,7 +390,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + cwSinkKeyId + `
 ` + cwBufferAndRequest + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -455,7 +425,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + cwSinkKeyId + `
 ` + cwBufferAndRequest + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -497,7 +467,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + cwSinkKeyId + `
 ` + cwBufferAndRequest + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -534,7 +504,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + cwSinkKeyId + `
 endpoint = "` + endpoint + `"` + cwBufferAndRequest
 
-			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(expConf))
@@ -576,7 +546,7 @@ endpoint = "` + endpoint + `"` + cwBufferAndRequest
 
 	` + cwSinkKeyIdTLSNoCerts + `
 	`
-			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(expConf))
@@ -604,7 +574,7 @@ endpoint = "` + endpoint + `"` + cwBufferAndRequest
 
 	` + cwSinkKeyIdTLS + `
 	`
-			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(expConf))
@@ -636,7 +606,7 @@ endpoint = "` + endpoint + `"` + cwBufferAndRequest
 
 	` + cwSinkKeyIdTLSInsecure + `
 	`
-			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+			element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(expConf))
@@ -720,7 +690,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 ` + cwSinkRole + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -758,7 +728,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 			` + cwSinkRoleTLS + `
 			`
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -789,7 +759,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 			` + cwSinkRoleTLSInsecure + `
 			`
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -838,7 +808,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 ` + cwSinkRole + `
 `
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, nil)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -885,7 +855,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 			` + cwSinkRoleTLSCredentials + `
 			`
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
@@ -916,7 +886,7 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 			` + cwSinkRoleTLSInsecureCredentials + `
 			`
-				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], op)
+				element := New(helpers.FormatComponentID(output.Name), output, pipelineName, secrets[output.Secret.Name], nil, op)
 				results, err := g.GenerateConf(element...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))

@@ -26,6 +26,7 @@ type Splunk struct {
 	Endpoint     string
 	DefaultToken string
 	Index        Element
+	common.RootMixin
 }
 
 func (s Splunk) Name() string {
@@ -38,7 +39,7 @@ func (s Splunk) Template() string {
 type = "splunk_hec_logs"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
-compression = "none"
+{{.Compression}}
 default_token = "{{.DefaultToken}}"
 {{kv .Index -}}
 timestamp_key = "@timestamp"
@@ -63,7 +64,11 @@ codec = {{.Codec}}
 {{end}}`
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func (s *Splunk) SetCompression(algo string) {
+	s.Compression.Value = algo
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -78,27 +83,33 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	if len(indexRemapElement) != 0 {
 		dedotInputs = []string{componentID}
 	}
-
+	sink := Output(id, o, []string{dedottedID}, secret, op)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
 	return MergeElements(
 		indexRemapElement,
 		[]Element{
 			normalize.DedotLabels(dedottedID, dedotInputs),
-			Output(id, o, []string{dedottedID}, secret, op),
+			sink,
 			Encoding(id, o),
-			common.NewBuffer(id),
-			common.NewRequest(id),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			common.NewRequest(id, strategy),
 		},
 		common.TLS(id, o, secret, op),
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
-	return Splunk{
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) *Splunk {
+	return &Splunk{
 		ComponentID:  id,
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
 		DefaultToken: common.GetFromSecret(secret, constants.SplunkHECTokenKey),
 		Index:        AddSplunkIndexToSink(o.Splunk),
+		RootMixin:    common.NewRootMixin("none"),
 	}
 }
 

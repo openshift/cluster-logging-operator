@@ -20,7 +20,7 @@ var _ = Describe("Generate Vector config", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		e := []framework.Element{}
 		for _, o := range clfspec.Outputs {
-			e = framework.MergeElements(e, New(vectorhelpers.FormatComponentID(o.Name), o, inputPipeline, secrets[o.Name], op))
+			e = framework.MergeElements(e, New(vectorhelpers.FormatComponentID(o.Name), o, inputPipeline, secrets[o.Name], nil, op))
 		}
 		return e
 	}
@@ -121,11 +121,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.es_1.buffer]
-when_full = "drop_newest"
-
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 # Basic Auth Config
@@ -232,11 +228,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.es_1.buffer]
-when_full = "drop_newest"
-
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.es_1.tls]
@@ -332,11 +324,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.es_1.buffer]
-when_full = "drop_newest"
-
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -431,11 +419,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.es_1.buffer]
-when_full = "drop_newest"
-
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.es_1.tls]
@@ -571,12 +555,10 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
+
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
@@ -655,11 +637,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_2.buffer]
-when_full = "drop_newest"
 
 [sinks.es_2.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.es_2.tls]
@@ -772,11 +751,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -880,11 +856,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -994,11 +967,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1121,11 +1091,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1216,11 +1183,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1319,11 +1283,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v5"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1422,11 +1383,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1525,11 +1483,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v7"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),
@@ -1629,11 +1584,8 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v9"
-[sinks.es_1.buffer]
-when_full = "drop_newest"
 
 [sinks.es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 `,
 		}),

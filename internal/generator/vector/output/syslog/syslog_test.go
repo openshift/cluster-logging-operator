@@ -14,7 +14,7 @@ import (
 var _ = Describe("vector syslog clf output", func() {
 	const (
 		xyzDefaults = `
-[transforms.syslog_xyz_dedot]
+[transforms.example_dedot]
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
@@ -39,27 +39,27 @@ source = '''
   }
 
 '''
-[transforms.syslog_xyz_json]
+[transforms.example_json]
 type = "remap"
-inputs = ["syslog_xyz_dedot"]
+inputs = ["example_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
 
-[sinks.syslog_xyz]
+[sinks.example]
 type = "socket"
-inputs = ["syslog_xyz_json"]
+inputs = ["example_json"]
 address = "logserver:514"
 mode = "xyz"
 
-[sinks.syslog_xyz.encoding]
+[sinks.example.encoding]
 codec = "syslog"
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"
 `
 		tcpDefaults = `
-[transforms.syslog_tcp_dedot]
+[transforms.example_dedot]
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
@@ -84,27 +84,27 @@ source = '''
   }
 '''
 
-[transforms.syslog_tcp_json]
+[transforms.example_json]
 type = "remap"
-inputs = ["syslog_tcp_dedot"]
+inputs = ["example_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
 
-[sinks.syslog_tcp]
+[sinks.example]
 type = "socket"
-inputs = ["syslog_tcp_json"]
+inputs = ["example_json"]
 address = "logserver:514"
 mode = "tcp"
 
-[sinks.syslog_tcp.encoding]
+[sinks.example.encoding]
 codec = "syslog"
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"
 `
 		tlsInsecure = `
-[transforms.syslog_tcp_dedot]
+[transforms.example_dedot]
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
@@ -129,32 +129,32 @@ source = '''
   }
 '''
 
-[transforms.syslog_tcp_json]
+[transforms.example_json]
 type = "remap"
-inputs = ["syslog_tcp_dedot"]
+inputs = ["example_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
 
-[sinks.syslog_tcp]
+[sinks.example]
 type = "socket"
-inputs = ["syslog_tcp_json"]
+inputs = ["example_json"]
 address = "logserver:514"
 mode = "tcp"
 
-[sinks.syslog_tcp.encoding]
+[sinks.example.encoding]
 codec = "syslog"
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"
 
-[sinks.syslog_tcp.tls]
+[sinks.example.tls]
 enabled = true
 verify_certificate = false
 verify_hostname = false
 `
 		udpEverySetting = `
-[transforms.syslog_udp_dedot]
+[transforms.example_dedot]
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
@@ -179,20 +179,20 @@ source = '''
   }
 '''
 
-[transforms.syslog_udp_json]
+[transforms.example_json]
 type = "remap"
-inputs = ["syslog_udp_dedot"]
+inputs = ["example_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
 
-[sinks.syslog_udp]
+[sinks.example]
 type = "socket"
-inputs = ["syslog_udp_json"]
+inputs = ["example_json"]
 address = "logserver:514"
 mode = "udp"
 
-[sinks.syslog_udp.encoding]
+[sinks.example.encoding]
 codec = "syslog"
 rfc = "rfc3164"
 facility = "kern"
@@ -205,7 +205,7 @@ add_log_source = true
 `
 
 		tlsWithLogRecordReferences = `
-[transforms.syslog_tls_dedot]
+[transforms.example_dedot]
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
@@ -230,20 +230,20 @@ source = '''
   }
 '''
 
-[transforms.syslog_tls_json]
+[transforms.example_json]
 type = "remap"
-inputs = ["syslog_tls_dedot"]
+inputs = ["example_dedot"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 '''
 
-[sinks.syslog_tls]
+[sinks.example]
 type = "socket"
-inputs = ["syslog_tls_json"]
+inputs = ["example_json"]
 address = "logserver:6514"
 mode = "tcp"
 
-[sinks.syslog_tls.encoding]
+[sinks.example.encoding]
 codec = "syslog"
 rfc = "rfc5424"
 facility = "$$.message.facility"
@@ -254,7 +254,7 @@ proc_id = "$$.message.proc_id"
 tag = "$$.message.tag"
 add_log_source = true
 
-[sinks.syslog_tls.tls]
+[sinks.example.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.crt"
@@ -277,12 +277,14 @@ key_pass = "mysecretpassword"
 	}
 
 	Context("syslog config", func() {
+		const outputName = "example"
 		BeforeEach(func() {
 			g = framework.MakeGenerator()
 		})
 
 		It("LOG-4963: allow tls.insecureSkipVerify=true when no secret is defined", func() {
-			element := Conf(
+			element := New(
+				outputName,
 				loggingv1.OutputSpec{
 					Type: loggingv1.OutputTypeSyslog,
 					Name: "syslog-tcp",
@@ -293,13 +295,15 @@ key_pass = "mysecretpassword"
 					TLS: &loggingv1.OutputTLSSpec{
 						InsecureSkipVerify: true,
 					},
-				}, []string{"pipelineName"}, nil, nil)
+				}, []string{"pipelineName"}, nil, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(tlsInsecure))
 		})
+
 		It("LOG-3948: should pass URL scheme to vector for validation", func() {
-			element := Conf(
+			element := New(
+				outputName,
 				loggingv1.OutputSpec{
 					Type: loggingv1.OutputTypeSyslog,
 					Name: "syslog-xyz",
@@ -307,14 +311,15 @@ key_pass = "mysecretpassword"
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
 						Syslog: &loggingv1.Syslog{},
 					},
-				}, []string{"pipelineName"}, nil, nil)
+				}, []string{"pipelineName"}, nil, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(xyzDefaults))
 		})
 
 		It("should configure TCP with defaults", func() {
-			element := Conf(
+			element := New(
+				outputName,
 				loggingv1.OutputSpec{
 					Type: loggingv1.OutputTypeSyslog,
 					Name: "syslog-tcp",
@@ -322,14 +327,15 @@ key_pass = "mysecretpassword"
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
 						Syslog: &loggingv1.Syslog{},
 					},
-				}, []string{"pipelineName"}, nil, nil)
+				}, []string{"pipelineName"}, nil, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(tcpDefaults))
 		})
 
 		It("should configure UDP with every setting", func() {
-			element := Conf(
+			element := New(
+				outputName,
 				loggingv1.OutputSpec{
 					Type: loggingv1.OutputTypeSyslog,
 					Name: "syslog-udp",
@@ -346,14 +352,15 @@ key_pass = "mysecretpassword"
 							AddLogSource: true,
 						},
 					},
-				}, []string{"pipelineName"}, nil, nil)
+				}, []string{"pipelineName"}, nil, nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(udpEverySetting))
 		})
 
 		It("should configure TLS with log record field references", func() {
-			element := Conf(
+			element := New(
+				outputName,
 				loggingv1.OutputSpec{
 					Type: loggingv1.OutputTypeSyslog,
 					Name: "syslog-tls",
@@ -373,7 +380,7 @@ key_pass = "mysecretpassword"
 					Secret: &loggingv1.OutputSecretSpec{
 						Name: "syslog-tls",
 					},
-				}, []string{"pipelineName"}, secrets["syslog-tls"], nil)
+				}, []string{"pipelineName"}, secrets["syslog-tls"], nil, nil)
 			results, err := g.GenerateConf(element...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(tlsWithLogRecordReferences))

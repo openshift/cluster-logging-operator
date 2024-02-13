@@ -84,12 +84,7 @@ severity = "{{.Severity}}"
 {{end}}`
 }
 
-func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	id := vectorhelpers.FormatComponentID(o.Name)
-	return New(id, o, inputs, secret, op)
-}
-
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),

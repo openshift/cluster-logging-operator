@@ -23,7 +23,7 @@ var _ = Describe("Generate Vector config", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
 		e := []framework.Element{}
 		for _, o := range clfspec.Outputs {
-			e = framework.MergeElements(e, New(vectorhelpers.FormatComponentID(o.Name), o, inputPipeline, secrets[o.Name], op))
+			e = framework.MergeElements(e, New(vectorhelpers.FormatComponentID(o.Name), o, inputPipeline, secrets[o.Name], nil, op))
 		}
 		return e
 	}
@@ -90,13 +90,6 @@ severity_key = "level"
 [sinks.gcl_1.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
-
-[sinks.gcl_1.buffer]
-when_full = "drop_newest"
-
-[sinks.gcl_1.request]
-retry_attempts = 17
-
 `,
 		}),
 		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
@@ -171,12 +164,6 @@ severity_key = "level"
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
-
-[sinks.gcl_tls.buffer]
-when_full = "drop_newest"
-
-[sinks.gcl_tls.request]
-retry_attempts = 17
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"
@@ -256,13 +243,6 @@ severity_key = "level"
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
-
-[sinks.gcl_tls.buffer]
-when_full = "drop_newest"
-
-[sinks.gcl_tls.request]
-retry_attempts = 17
-
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"

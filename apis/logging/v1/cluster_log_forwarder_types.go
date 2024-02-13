@@ -225,6 +225,11 @@ type OutputSpec struct {
 	Tuning *OutputTuningSpec `json:"tuning,omitempty"`
 }
 
+const (
+	OutputDeliveryModeAtLeastOnce = "AtLeastOnce"
+	OutputDeliveryModeAtMostOnce  = "AtMostOnce"
+)
+
 // OutputTuningSpec tuning parameters for an output
 type OutputTuningSpec struct {
 
@@ -248,19 +253,16 @@ type OutputTuningSpec struct {
 	Compression string `json:"compression,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
-	// The default is set to an efficient value based on the output type.
 	//
 	// +optional
 	MaxWrite *resource.Quantity `json:"maxWrite,omitempty"`
 
-	// MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
-	// The default is set to an efficient value based on the output type.
+	// MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 	//
 	// +optional
 	MinRetryDuration *time.Duration `json:"minRetryDuration,omitempty"`
 
-	// MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
-	// The default is set to an efficient value based on the output type.
+	// MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 	//
 	// +optional
 	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`

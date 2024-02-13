@@ -24,7 +24,7 @@ func NewOutput(spec logging.OutputSpec, secrets map[string]*corev1.Secret, op ge
 }
 
 func (o *Output) Elements() []generator.Element {
-	el := New(o.spec, o.inputIDs, o.secrets, o.op)
+	el := New(o.spec, o.inputIDs, o.secrets, o, o.op)
 	return el
 }
 

@@ -19,7 +19,7 @@ var _ = Describe("output/factory.go", func() {
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", exp, err))
 		}
-		Expect(string(exp)).To(EqualConfigFrom(New(o, []string{"application"}, secrets, framework.Options{})))
+		Expect(string(exp)).To(EqualConfigFrom(New(o, []string{"application"}, secrets, &Output{}, framework.Options{})))
 
 	},
 		Entry("should honor global minTLSVersion & ciphers with loki as the default logstore regardless of the feature gate setting",

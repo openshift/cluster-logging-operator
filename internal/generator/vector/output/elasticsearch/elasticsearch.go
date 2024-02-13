@@ -23,6 +23,7 @@ type Elasticsearch struct {
 	Index       string
 	Endpoint    string
 	Version     int
+	common.RootMixin
 }
 
 func (e Elasticsearch) Name() string {
@@ -39,6 +40,7 @@ bulk.index = "{{ "{{ write_index }}" }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 id_key = "_id"
+{{.Compression}}
 {{- if ne .Version 0 }}
 api_version = "v{{ .Version }}"
 {{- end }}
@@ -163,7 +165,11 @@ const (
 }`
 )
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func (e *Elasticsearch) SetCompression(algo string) {
+	e.Compression.Value = algo
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	outputs := []Element{}
 
 	esIndexID := helpers.MakeID(id, "add_es_index")
@@ -176,14 +182,20 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			Debug(id, helpers.MakeInputs([]string{dedotID}...)),
 		}
 	}
-	request := common.NewRequest(id)
+	sink := Output(id, o, []string{dedotID}, secret, op)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
+	request := common.NewRequest(id, strategy)
 	request.TimeoutSecs.Value = 2147483648
 	outputs = MergeElements(outputs,
 		[]Element{
 			SetESIndex(esIndexID, inputs, o, op),
 			FlattenLabels(dedotID, []string{esIndexID}),
 			Output(id, o, []string{dedotID}, secret, op),
-			common.NewBuffer(id),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
 			request,
 		},
 
@@ -194,11 +206,12 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return outputs
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) *Elasticsearch {
 	es := Elasticsearch{
 		ComponentID: id,
 		Endpoint:    o.URL,
 		Inputs:      helpers.MakeInputs(inputs...),
+		RootMixin:   common.NewRootMixin(nil),
 	}
 	// If valid version is specified
 	if o.Elasticsearch != nil && o.Elasticsearch.Version > 0 {
@@ -206,7 +219,7 @@ func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Sec
 	} else {
 		es.Version = logging.DefaultESVersion
 	}
-	return es
+	return &es
 }
 
 func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {

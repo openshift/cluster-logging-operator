@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/apis"
@@ -95,14 +97,16 @@ func main() {
 	// https://issues.redhat.com/browse/LOG-3321
 	syncPeriod := time.Minute * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		Namespace:              getOpenshiftNS(),
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "b430cc2e.openshift.io",
-		SyncPeriod:             &syncPeriod,
+		Cache: cache.Options{
+			SyncPeriod: &syncPeriod,
+		},
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -208,18 +212,6 @@ func migrateManifestResources(k8sClient client.Client) {
 	if err := k8sClient.Delete(context.TODO(), loggingruntime.NewPriorityClass("cluster-logging", 0, false, "")); err != nil && !errors.IsNotFound(err) {
 		log.V(1).Error(err, "There was an error trying to remove the old collector PriorityClass named 'cluster-logging'")
 	}
-}
-
-// getOpenshiftNS returns the namespaces being watched by the operator.  Empty means all
-// - https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
-func getOpenshiftNS() string {
-	OpenshiftNSEnvVar := "WATCH_NAMESPACE"
-	ns, found := os.LookupEnv(OpenshiftNSEnvVar)
-	if !found {
-		log.Error(fmt.Errorf("Exiting. %s must be set", OpenshiftNSEnvVar), "Failed to get watch namespace")
-		os.Exit(1)
-	}
-	return ns
 }
 
 // get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 	"time"
 
@@ -25,13 +26,14 @@ import (
 
 // Client operates on any runtime.Object (core or custom) and has Watch to wait efficiently.
 type Client struct {
-	c       crclient.Client
-	cfg     *rest.Config
-	ctx     context.Context
-	mapper  meta.RESTMapper
-	rests   *sync.Map // map[schema.GroupVersion]rest.Interface
-	timeout time.Duration
-	Labels  map[string]string
+	c          crclient.Client
+	httpClient *http.Client
+	cfg        *rest.Config
+	ctx        context.Context
+	mapper     meta.RESTMapper
+	rests      *sync.Map // map[schema.GroupVersion]rest.Interface
+	timeout    time.Duration
+	Labels     map[string]string
 }
 
 // New client.
@@ -52,10 +54,16 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 		timeout: timeout,
 		Labels:  make(map[string]string, len(labels)),
 	}
+
+	if c.httpClient, err = rest.HTTPClientFor(cfg); err != nil {
+		return nil, err
+	}
+
 	for k, v := range labels {
 		c.Labels[k] = v
 	}
-	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg); err != nil {
+
+	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg, c.httpClient); err != nil {
 		return nil, err
 	}
 	if c.c, err = crclient.New(cfg, crclient.Options{Mapper: c.mapper}); err != nil {
@@ -215,7 +223,7 @@ func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	i, _ := c.rests.Load(gv)
 	r, _ := i.(rest.Interface)
 	if r == nil {
-		if r, err = apiutil.RESTClientForGVK(gv.WithKind(""), false, c.cfg, testrt.Codecs); err == nil {
+		if r, err = apiutil.RESTClientForGVK(gv.WithKind(""), false, c.cfg, testrt.Codecs, c.httpClient); err == nil {
 			c.rests.Store(gv, r)
 		}
 	}

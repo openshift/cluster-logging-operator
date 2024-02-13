@@ -1,10 +1,11 @@
 package telemetry
 
 import (
+	"strconv"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"strconv"
 )
 
 func UpdateInfofromCLF(forwarder logging.ClusterLogForwarder) {
@@ -18,6 +19,7 @@ func UpdateInfofromCLF(forwarder logging.ClusterLogForwarder) {
 	//CLO CLF pipelines and set of output specs
 	lgpipeline := forwarder.Spec.Pipelines
 	outputs := forwarder.Spec.OutputMap()
+	inputs := forwarder.Spec.InputMap()
 	log.V(1).Info("OutputMap", "outputs", outputs)
 
 	for _, pipeline := range lgpipeline {
@@ -31,7 +33,16 @@ func UpdateInfofromCLF(forwarder logging.ClusterLogForwarder) {
 			Data.CLFInputType.Set(labelname.(string), constants.IsNotPresent) //reset to zero
 			for _, inputtype := range inref {
 				log.V(1).Info("iter over inputtype", "inputtype", inputtype)
+				hasInput := false
 				if inputtype == labelname {
+					hasInput = true
+					// Check for receiver input types if not app, infra, or audit
+				} else {
+					if _, ok := inputs[inputtype]; ok && inputs[inputtype].Receiver != nil && labelname == inputs[inputtype].Receiver.Type {
+						hasInput = true
+					}
+				}
+				if hasInput {
 					log.V(1).Info("labelname and inputtype", "labelname", labelname, "inputtype", inputtype) //when matched print matched labelname with input type stated in CLF spec
 					Data.CLFInputType.Set(labelname.(string), constants.IsPresent)                           //input type present in CLF spec
 				}

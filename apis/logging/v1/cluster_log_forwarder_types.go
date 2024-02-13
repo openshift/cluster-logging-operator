@@ -251,19 +251,19 @@ type OutputTuningSpec struct {
 	// The default is set to an efficient value based on the output type.
 	//
 	// +optional
-	MaxWrite resource.Quantity `json:"maxWrite,omitempty"`
+	MaxWrite *resource.Quantity `json:"maxWrite,omitempty"`
 
 	// MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
 	// The default is set to an efficient value based on the output type.
 	//
 	// +optional
-	MinRetryDuration time.Duration `json:"minRetryDuration,omitempty"`
+	MinRetryDuration *time.Duration `json:"minRetryDuration,omitempty"`
 
 	// MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
 	// The default is set to an efficient value based on the output type.
 	//
 	// +optional
-	MaxRetryDuration time.Duration `json:"maxRetryDuration,omitempty"`
+	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`
 }
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.

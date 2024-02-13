@@ -1008,9 +1008,7 @@ spec:
                           type: string
                         maxRetryDuration:
                           description: MaxRetryDuration is the maximum time to wait
-                            between re-connect attempts after a connection failure.
-                            The default is set to an efficient value based on the
-                            output type.
+                            between retry attempts after a delivery failure.
                           format: int64
                           type: integer
                         maxWrite:
@@ -1018,14 +1016,12 @@ spec:
                           - type: integer
                           - type: string
                           description: MaxWrite limits the maximum payload in terms
-                            of bytes of a single "send" to the output. The default
-                            is set to an efficient value based on the output type.
+                            of bytes of a single "send" to the output.
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                         minRetryDuration:
                           description: MinRetryDuration is the minimum time to wait
-                            between attempts to re-connect after a failure. The default
-                            is set to an efficient value based on the output type.
+                            between attempts to retry after delivery a failure.
                           format: int64
                           type: integer
                       type: object

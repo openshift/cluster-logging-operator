@@ -28,6 +28,7 @@ type Kafka struct {
 	Inputs           string
 	BootstrapServers string
 	Topic            string
+	common.RootMixin
 }
 
 func (k Kafka) Name() string {
@@ -46,7 +47,11 @@ topic = {{.Topic}}
 `
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func (k *Kafka) SetCompression(algo string) {
+	k.Compression.Value = algo
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -55,28 +60,32 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	brokers, genTlsConf := Brokers(o)
+	sink := Output(id, o, []string{dedottedID}, secret, op, brokers)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			Output(id, o, []string{dedottedID}, secret, op, brokers),
 			Encoding(id, op),
-			common.NewBuffer(id),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
 		},
 		TLSConf(id, o, secret, op, genTlsConf),
 		SASLConf(id, o, secret),
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, brokers string) Element {
-	if genhelper.IsDebugOutput(op) {
-		return genhelper.DebugOutput
-	}
-	return Kafka{
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, brokers string) *Kafka {
+	return &Kafka{
 		Desc:             "Kafka config",
 		ComponentID:      id,
 		Inputs:           vectorhelpers.MakeInputs(inputs...),
 		Topic:            fmt.Sprintf("%q", Topics(o)),
 		BootstrapServers: fmt.Sprintf("%q", brokers),
+		RootMixin:        common.NewRootMixin(nil),
 	}
 }
 

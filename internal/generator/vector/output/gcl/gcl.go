@@ -36,6 +36,7 @@ type GoogleCloudLogging struct {
 	SeverityKey string
 
 	CredentialsPath string
+	common.RootMixin
 }
 
 func (g GoogleCloudLogging) Name() string {
@@ -59,12 +60,11 @@ node_name = "{{"{{hostname}}"}}"
 {{end}}`
 }
 
-func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	id := helpers.FormatComponentID(o.Name)
-	return New(id, o, inputs, secret, op)
+func (g *GoogleCloudLogging) SetCompression(algo string) {
+	g.Compression.Value = algo
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -75,21 +75,27 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	g := o.GoogleCloudLogging
 	dedottedID := helpers.MakeID(id, "dedot")
-	gcl := GoogleCloudLogging{
+	gcl := &GoogleCloudLogging{
 		ComponentID:     id,
 		Inputs:          helpers.MakeInputs(inputs...),
 		LogDestination:  LogDestination(g),
 		LogID:           g.LogID,
 		SeverityKey:     SeverityKey(g),
 		CredentialsPath: common.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
+		RootMixin:       common.NewRootMixin(nil),
 	}
-	setInput(&gcl, []string{dedottedID})
+	if strategy != nil {
+		strategy.VisitSink(gcl)
+	}
+	setInput(gcl, []string{dedottedID})
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
 			gcl,
-			common.NewBuffer(id),
-			common.NewRequest(id),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			common.NewRequest(id, strategy),
 		},
 		common.TLS(id, o, secret, op),
 	)

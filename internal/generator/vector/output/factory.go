@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
@@ -17,7 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func New(o logging.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, op Options) []Element {
+func New(o logging.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	secret := helpers.GetOutputSecret(o, secrets)
 	helpers.SetTLSProfileOptions(o, op)
 
@@ -32,23 +33,23 @@ func New(o logging.OutputSpec, inputs []string, secrets map[string]*corev1.Secre
 
 	switch o.Type {
 	case logging.OutputTypeKafka:
-		els = append(els, kafka.New(baseID, o, inputs, secret, op)...)
+		els = append(els, kafka.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeLoki:
-		els = append(els, loki.New(baseID, o, inputs, secret, op)...)
+		els = append(els, loki.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeElasticsearch:
-		els = append(els, elasticsearch.New(baseID, o, inputs, secret, op)...)
+		els = append(els, elasticsearch.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeCloudwatch:
-		els = append(els, cloudwatch.New(baseID, o, inputs, secret, op)...)
+		els = append(els, cloudwatch.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeGoogleCloudLogging:
-		els = append(els, gcl.New(baseID, o, inputs, secret, op)...)
+		els = append(els, gcl.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeSplunk:
-		els = append(els, splunk.New(baseID, o, inputs, secret, op)...)
+		els = append(els, splunk.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeHttp:
-		els = append(els, http.New(baseID, o, inputs, secret, op)...)
+		els = append(els, http.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeSyslog:
-		els = append(els, syslog.New(baseID, o, inputs, secret, op)...)
+		els = append(els, syslog.New(baseID, o, inputs, secret, strategy, op)...)
 	case logging.OutputTypeAzureMonitor:
-		els = append(els, azuremonitor.New(baseID, o, inputs, secret, op)...)
+		els = append(els, azuremonitor.New(baseID, o, inputs, secret, strategy, op)...)
 	}
 	return els
 }

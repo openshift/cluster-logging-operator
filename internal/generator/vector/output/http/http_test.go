@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("Generate vector config", func() {
 	DescribeTable("for Http output", func(output logging.OutputSpec, secret *corev1.Secret, op framework.Options, exp string) {
-		conf := New(helpers.FormatComponentID(output.Name), output, []string{"application"}, secret, op) //, includeNS, excludes)
+		conf := New(helpers.FormatComponentID(output.Name), output, []string{"application"}, secret, nil, op) //, includeNS, excludes)
 		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("",
@@ -87,11 +87,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
@@ -168,11 +164,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
@@ -246,11 +238,8 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
 
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -324,11 +313,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -408,11 +393,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -489,11 +470,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
@@ -611,11 +588,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
@@ -685,11 +658,7 @@ method = "post"
 [sinks.http_receiver.encoding]
 codec = "json"
 
-[sinks.http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.http_receiver.request]
-retry_attempts = 17
 timeout_secs = 10
 
 # Basic Auth Config

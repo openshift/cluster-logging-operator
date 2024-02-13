@@ -2,7 +2,9 @@ package http
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,6 +28,12 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput()
+		framework.Forwarder.Spec.Outputs[0].Tuning = &logging.OutputTuningSpec{
+			Delivery:         logging.OutputDeliveryModeAtLeastOnce,
+			MaxRetryDuration: utils.GetPtr(30 * time.Second),
+			MinRetryDuration: utils.GetPtr(5 * time.Second),
+			MaxWrite:         utils.GetPtr(resource.MustParse("1M")),
+		}
 	})
 
 	AfterEach(func() {

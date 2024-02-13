@@ -40,6 +40,7 @@ type CloudWatch struct {
 	Region         string
 	EndpointConfig Element
 	SecurityConfig Element
+	common.RootMixin
 }
 
 func (e CloudWatch) Name() string {
@@ -56,7 +57,7 @@ func (e CloudWatch) Template() string {
 type = "aws_cloudwatch_logs"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
-compression = "none"
+{{.Compression}}
 group_name = "{{"{{ group_name }}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
@@ -67,7 +68,11 @@ healthcheck.enabled = false
 `
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func (e *CloudWatch) SetCompression(algo string) {
+	e.Compression.Value = algo
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	componentID := helpers.MakeID(id, "normalize_group_and_streams")
 	dedottedID := helpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
@@ -76,28 +81,36 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			Debug(id, helpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	request := common.NewRequest(id)
+	request := common.NewRequest(id, strategy)
 	request.Concurrency.Value = 2
+	sink := Output(id, o, []string{dedottedID}, secret, op, o.Cloudwatch.Region)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
+
 	return MergeElements(
 		[]Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			OutputConf(id, o, []string{dedottedID}, secret, op, o.Cloudwatch.Region),
-			common.NewBuffer(id),
+			sink,
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
 			request,
 		},
 		common.TLS(id, o, secret, op),
 	)
 }
 
-func OutputConf(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) Element {
-	return CloudWatch{
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) *CloudWatch {
+	return &CloudWatch{
 		Desc:           "Cloudwatch Logs",
 		ComponentID:    id,
 		Inputs:         helpers.MakeInputs(inputs...),
 		Region:         region,
 		SecurityConfig: SecurityConfig(secret),
 		EndpointConfig: EndpointConfig(o),
+		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 

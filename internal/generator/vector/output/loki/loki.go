@@ -49,6 +49,7 @@ type Loki struct {
 	TenantID    Element
 	Endpoint    string
 	LokiLabel   []string
+	common.RootMixin
 }
 
 func (l Loki) Name() string {
@@ -64,6 +65,7 @@ endpoint = "{{.Endpoint}}"
 out_of_order_action = "accept"
 healthcheck.enabled = false
 {{kv .TenantID -}}
+{{.Compression}}
 {{end}}`
 }
 
@@ -107,7 +109,11 @@ func (l LokiLabels) Template() string {
 `
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+func (e *Loki) SetCompression(algo string) {
+	e.Compression.Value = algo
+}
+
+func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -115,14 +121,20 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
+	sink := Output(id, o, []string{dedottedID})
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
-			Output(id, o, []string{dedottedID}),
+			sink,
 			Encoding(id, o),
-			common.NewBuffer(id),
-			common.NewRequest(id),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			common.NewRequest(id, strategy),
 			Labels(id, o),
 		},
 		TLSConf(id, o, secret, op),
@@ -131,12 +143,13 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string) Element {
-	return Loki{
+func Output(id string, o logging.OutputSpec, inputs []string) *Loki {
+	return &Loki{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.URL,
 		TenantID:    Tenant(o.Loki),
+		RootMixin:   common.NewRootMixin(nil),
 	}
 }
 

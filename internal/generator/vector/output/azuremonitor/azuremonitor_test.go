@@ -120,7 +120,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 	)
 
 	DescribeTable("should generate valid config", func(outputSpec loggingv1.OutputSpec, secret, expValue string) {
-		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets[secret], nil)
+		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets[secret], nil, nil)
 		Expect(expValue).To(EqualConfigFrom(conf))
 	},
 		Entry("for common case", outputCommon, secretName, ExpectedAzureCommonToml),

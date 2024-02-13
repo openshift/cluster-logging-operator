@@ -250,6 +250,14 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 				}
 			}
 		}
+
+		if valid, msg := outputs.VerifyTuning(output); !valid {
+			log.V(3).Info("verify output tuning failed", "output name", output.Name, "message", msg)
+			status.Outputs.Set(output.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
+				corev1.ConditionTrue,
+				loggingv1.ValidationFailureReason,
+				msg))
+		}
 		names.Insert(output.Name)
 	}
 }

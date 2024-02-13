@@ -314,6 +314,7 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
+|azureMonitor|object|  *(optional)* 
 |limit|object|  *(optional)* Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
@@ -430,10 +431,16 @@ OutputTuningSpec tuning parameters for an output
 
 |compression|string|  *(optional)* Compression causes data to be compressed before sending over the network.
 |delivery|string|  Delivery mode for log forwarding.
-|maxRetryDuration|int|  *(optional)* MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
+|maxRetryDuration|Duration|  *(optional)* MaxRetryDuration is the maximum time to wait between re-connect attempts after a connection failure.
 |maxWrite|object|  *(optional)* MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
-|minRetryDuration|int|  *(optional)* MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
+|minRetryDuration|Duration|  *(optional)* MinRetryDuration is the minimum time to wait between attempts to re-connect after a failure.
 |======================
+
+=== .spec.outputs[].tuning.maxRetryDuration
+===== Description
+
+=====  Type
+* Duration
 
 === .spec.outputs[].tuning.maxWrite
 ===== Description
@@ -511,6 +518,12 @@ OutputTuningSpec tuning parameters for an output
 |scale|int|  
 |value|int|  
 |======================
+
+=== .spec.outputs[].tuning.minRetryDuration
+===== Description
+
+=====  Type
+* Duration
 
 === .spec.pipelines[]
 ===== Description

@@ -15,6 +15,7 @@ const (
 	InputNameApplication    = v1.InputNameApplication
 	InputNameAudit          = v1.InputNameAudit
 	InputNameInfrastructure = v1.InputNameInfrastructure
+	InputNameHttpReceiver   = "http"
 
 	OutputTypeDefault            = "default"
 	OutputTypeElasticsearch      = v1.OutputTypeElasticsearch
@@ -52,7 +53,11 @@ func NewTD() *TData {
 		CLLogStoreType:      utils.InitStringMap(map[string]string{OutputTypeElasticsearch: IsNotPresent, OutputTypeLoki: IsNotPresent}),
 		CollectorErrorCount: utils.InitFloat64Map(map[string]float64{"CollectorErrorCount": 0}),
 		CLFInfo:             utils.InitStringMap(map[string]string{HealthStatus: IsNotPresent, PipelineNo: IsNotPresent}),
-		CLFInputType:        utils.InitStringMap(map[string]string{InputNameApplication: IsNotPresent, InputNameAudit: IsNotPresent, InputNameInfrastructure: IsNotPresent}),
+		CLFInputType: utils.InitStringMap(map[string]string{
+			InputNameApplication:    IsNotPresent,
+			InputNameAudit:          IsNotPresent,
+			InputNameInfrastructure: IsNotPresent,
+			InputNameHttpReceiver:   IsNotPresent}),
 		CLFOutputType: utils.InitStringMap(map[string]string{
 			OutputTypeDefault:            IsNotPresent,
 			OutputTypeElasticsearch:      IsNotPresent,
@@ -90,7 +95,7 @@ var (
 	mCLFInputType = NewInfoVec(
 		"log_forwarder_input_info",
 		"Clf input type specific metric",
-		[]string{InputNameApplication, InputNameAudit, InputNameInfrastructure},
+		[]string{InputNameApplication, InputNameAudit, InputNameInfrastructure, InputNameHttpReceiver},
 	)
 
 	mCLFOutputType = NewInfoVec(
@@ -185,7 +190,8 @@ func SetCLFMetrics(value float64) {
 	mCLFInputType.With(prometheus.Labels{
 		InputNameApplication:    CLFInputType.Get(InputNameApplication),
 		InputNameAudit:          CLFInputType.Get(InputNameAudit),
-		InputNameInfrastructure: CLFInputType.Get(InputNameInfrastructure)}).Set(value)
+		InputNameInfrastructure: CLFInputType.Get(InputNameInfrastructure),
+		InputNameHttpReceiver:   CLFInputType.Get(InputNameHttpReceiver)}).Set(value)
 
 	mCLFOutputType.With(prometheus.Labels{
 		OutputTypeDefault:            CLFOutputType.Get(OutputTypeDefault),

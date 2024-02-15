@@ -3,7 +3,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	"k8s.io/client-go/util/retry"
 

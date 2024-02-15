@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"

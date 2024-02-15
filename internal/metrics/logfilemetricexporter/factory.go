@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	configv1 "github.com/openshift/api/config/v1"
-	loggingv1a1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	loggingv1a1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"

@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 

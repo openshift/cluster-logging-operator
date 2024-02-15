@@ -1,7 +1,7 @@
 package clusterlogforwarder
 
 import (
-	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

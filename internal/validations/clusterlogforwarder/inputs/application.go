@@ -1,7 +1,7 @@
 package inputs
 
 import (
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 	"regexp"
 )

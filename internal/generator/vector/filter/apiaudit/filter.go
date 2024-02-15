@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/client-go/kubernetes/scheme"

@@ -1,7 +1,7 @@
 package output
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	nhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	corev1 "k8s.io/api/core/v1"

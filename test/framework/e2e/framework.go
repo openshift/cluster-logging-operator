@@ -35,8 +35,8 @@ import (
 
 	logger "github.com/ViaQ/logerr/v2/log"
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )

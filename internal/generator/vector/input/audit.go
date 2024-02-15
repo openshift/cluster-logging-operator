@@ -1,7 +1,7 @@
 package input
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vector "github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"

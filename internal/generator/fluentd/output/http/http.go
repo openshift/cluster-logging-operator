@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 // MakeDropFilter returns a concatenated vrl string of tests and their conditions

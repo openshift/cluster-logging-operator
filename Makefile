@@ -105,7 +105,7 @@ bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
 bin/cluster-logging-operator: force
-	go build $(BUILD_OPTS) -o $@
+	go build $(BUILD_OPTS) -o $@ ./cmd
 
 .PHONY: openshift-client
 openshift-client:
@@ -129,7 +129,7 @@ docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc do
 .PHONY: docs
 
 docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/apis/" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api/" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
 .PHONY: docs/reference/operator/api.adoc
 
 docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
@@ -180,7 +180,7 @@ spotless: clean
 
 .PHONY: image
 image: .target/image
-.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version bundle .bingo apis controllers internal -type f 2>/dev/null) Dockerfile  go.mod go.sum
+.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version bundle .bingo api internal -type f 2>/dev/null) Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
@@ -200,13 +200,13 @@ lint-repo:
 .PHONY: fmt
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find version test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
+	find version test internal api -name '*.go' | xargs gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.target/codegen
 generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
-	@$(CONTROLLER_GEN) object paths="./apis/..."
+$(GEN_TIMESTAMP): $(shell find api -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
+	@$(CONTROLLER_GEN) object paths="./api/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(VERSION))\"" > version/version.go
 	@$(MAKE) fmt
@@ -315,7 +315,7 @@ test-unit: test-forwarder-generator
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
-	go test -coverprofile=test.cov -race ./apis/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
+	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
 
 .PHONY: coverage
 coverage: test-unit

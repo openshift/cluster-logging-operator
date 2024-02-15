@@ -2,7 +2,7 @@ package http
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"

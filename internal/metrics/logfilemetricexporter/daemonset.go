@@ -1,7 +1,7 @@
 package logfilemetricexporter
 
 import (
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/tls"

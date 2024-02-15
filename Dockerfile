@@ -12,9 +12,8 @@ RUN if [ -n $CACHE_DEPS ]; then go mod download ; fi
 COPY ${APP_DIR}/.bingo .bingo
 COPY ${APP_DIR}/Makefile ./Makefile
 COPY ${APP_DIR}/version ./version
-COPY ${APP_DIR}/main.go .
-COPY ${APP_DIR}/apis ./apis
-COPY ${APP_DIR}/controllers ./controllers
+COPY ${APP_DIR}/cmd/main.go ./cmd/main.go
+COPY ${APP_DIR}/api ./api
 COPY ${APP_DIR}/internal ./internal
 
 USER 0

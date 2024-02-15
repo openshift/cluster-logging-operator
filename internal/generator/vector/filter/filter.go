@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/prune"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/apiaudit"
 )
 

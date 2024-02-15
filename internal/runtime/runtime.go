@@ -3,8 +3,8 @@ package runtime
 import (
 	"fmt"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 var _ = Describe("[internal][validations] ClusterLogForwarder: Output URL vs Output TLS", func() {

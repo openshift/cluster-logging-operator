@@ -3,7 +3,7 @@ package filter
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 var _ = Describe("filter validation", func() {

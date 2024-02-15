@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 )
 
 // Returns a new default LogFileMetricExporter

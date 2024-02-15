@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 	"github.com/prometheus/client_golang/prometheus"

@@ -2,7 +2,7 @@ package clusterlogforwarder
 
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"

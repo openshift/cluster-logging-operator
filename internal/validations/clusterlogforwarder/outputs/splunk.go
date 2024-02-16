@@ -23,6 +23,10 @@ func VerifySplunk(name string, splunk *loggingv1.Splunk) (bool, status.Condition
 			return false, conditions.CondInvalid("output %q: IndexKey can only contain letters, numbers, and underscores (a-zA-Z0-9_). "+
 				"Segments that contain characters outside of this range must be quoted.", name)
 		}
+
+		if splunk.Fields != nil {
+			return true, conditions.CondDegraded(loggingv1.ReasonUnused, "Warning: Support for 'fields' is not implemented and deprecated for output %q", name)
+		}
 	}
 	return true, conditions.CondReady
 }

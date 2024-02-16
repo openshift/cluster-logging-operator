@@ -18,6 +18,10 @@ func CondMissing(format string, args ...interface{}) status.Condition {
 	return NotReady(logging.ReasonMissingResource, format, args...)
 }
 
+func CondDegraded(r status.ConditionReason, format string, args ...interface{}) status.Condition {
+	return logging.NewCondition(logging.ConditionDegraded, corev1.ConditionTrue, r, format, args...)
+}
+
 func CondReadyWithMessage(r status.ConditionReason, format string, args ...interface{}) status.Condition {
 	return logging.NewCondition(logging.ConditionReady, corev1.ConditionTrue, r, format, args...)
 }

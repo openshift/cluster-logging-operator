@@ -6,8 +6,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"os"
 	"path"
-	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -78,8 +78,8 @@ func (r *ClusterRunner) Deploy() {
 			conf = strings.Replace(conf, "/var/log/pods/*/*/*.log", pattern, 1)
 			conf = strings.Replace(conf, "/var/log/pods/**/*.log", pattern, 1)
 		case logging.LogCollectionTypeVector:
-			re, _ := regexp.Compile(`.*exclude_paths_glob_patterns.*=.*\[.*\].*`)
-			conf = string(re.ReplaceAll([]byte(conf), []byte(`exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*.log","/var/log/pods/*/http/*.log"]`)))
+			pattern := `exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log"`
+			conf = strings.Replace(conf, `exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*.log"`, pattern, 1)
 			n := strings.Index(conf, "[sinks.prometheus_output]")
 			if n == -1 {
 				return conf
@@ -144,16 +144,25 @@ func (r *ClusterRunner) ReadApplicationLogs() (stats.PerfLogs, error) {
 			files = append(files, file.Name())
 		}
 	}
+	mt := sync.Mutex{}
 	logs := stats.PerfLogs{}
+	wg := sync.WaitGroup{}
+	wg.Add(len(files))
 	for _, file := range files {
 		filePath := path.Join(r.ArtifactDir, file)
-		entries, err := ReadAndParseFile(filePath)
-		if err != nil {
-			log.Error(err, "Trying to read application logs", "path", filePath)
-		}
-		log.V(4).Info("App logs", "file", filePath, "logs", entries)
-		logs = append(logs, entries...)
+		go func() {
+			defer wg.Done()
+			entries, err := ReadAndParseFile(filePath)
+			if err != nil {
+				log.Error(err, "Trying to read application logs", "path", filePath)
+			}
+			log.V(4).Info("App logs", "file", filePath, "logs", entries)
+			defer mt.Unlock()
+			mt.Lock()
+			logs = append(logs, entries...)
+		}()
 	}
+	wg.Wait()
 	log.V(3).Info("Returning all app logs", "logs", logs)
 	return logs, nil
 }
@@ -170,7 +179,7 @@ func ReadAndParseFile(filePath string) (stats.PerfLogs, error) {
 	scanner := bufio.NewScanner(file)
 	purged := 0
 	for scanner.Scan() {
-		if entry := stats.NewPerfLog(scanner.Text(), file.Name()); entry != nil {
+		if entry := stats.NewPerfLog(scanner.Text()); entry != nil {
 			entries = append(entries, *entry)
 		} else {
 			purged += 1

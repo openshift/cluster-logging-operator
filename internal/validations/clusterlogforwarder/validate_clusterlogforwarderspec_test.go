@@ -791,6 +791,25 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
 				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \""+splunkOutputName+"\": Only one of indexKey or indexName can be set, not both."))
 			})
+
+			It("should pass with condition Degraded if Fields is included in spec", func() {
+				forwarderSpec.Outputs = []loggingv1.OutputSpec{
+					{
+						Name: splunkOutputName,
+						Type: loggingv1.OutputTypeSplunk,
+						URL:  "https://splunk-web:8088/endpoint",
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Splunk: &loggingv1.Splunk{
+								Fields: []string{"foo1", "foo2"},
+							},
+						},
+						Secret: &loggingv1.OutputSecretSpec{Name: splunkSecret.Name},
+					},
+				}
+				verifyOutputs(namespace, client, &forwarderSpec, clfStatus, extras)
+				Expect(forwarderSpec.Outputs).To(HaveLen(len(forwarderSpec.Outputs)))
+				Expect(clfStatus.Outputs[splunkOutputName]).To(HaveCondition(loggingv1.ConditionDegraded, true, loggingv1.ReasonUnused, "Warning: Support for 'fields' is not implemented and deprecated for output \""+splunkOutputName+"\""))
+			})
 		})
 	})
 

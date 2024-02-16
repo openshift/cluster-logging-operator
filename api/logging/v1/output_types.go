@@ -275,11 +275,6 @@ type GoogleCloudLogging struct {
 // Splunk Deliver log data to Splunk’s HTTP Event Collector
 // Provides optional extra properties for `type: splunk_hec` ('splunk_hec_logs' after Vector 0.23
 type Splunk struct {
-	// Fields to be added to Splunk index. https://docs.splunk.com/Documentation/Splunk/8.0.0/Data/IFXandHEC
-	// Should be a valid JSON object
-	// +optional
-	Fields []string `json:"fields,omitempty"`
-
 	// IndexKey is a meta-data key field to use to send events to.
 	// For example: 'IndexKey: kubernetes.namespace_name` will use the kubernetes
 	// namespace as the index.
@@ -294,6 +289,11 @@ type Splunk struct {
 	// If IndexKey && IndexName are not specified, the default index defined within Splunk is used.
 	// +optional
 	IndexName string `json:"indexName,omitempty"`
+
+	// Deprecated. Fields to be added to Splunk index.
+	// +optional
+	// +deprecated
+	Fields []string `json:"fields,omitempty"`
 }
 
 // Http provided configuration for sending json encoded logs to a generic http endpoint.

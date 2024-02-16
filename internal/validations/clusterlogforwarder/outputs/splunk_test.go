@@ -43,6 +43,15 @@ var _ = Describe("Validate Splunk:", func() {
 			Expect(valid).To(BeFalse())
 			Expect(map[string]status.Condition{"splunk": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"splunk\": IndexKey can only contain letters, numbers, and underscores \\(a-zA-Z0-9_\\). Segments that contain characters outside of this range must be quoted."))
 		})
+
+		It("should pass with condition Degraded if Fields is included in spec", func() {
+			splunk := &loggingv1.Splunk{
+				Fields: []string{"foo"},
+			}
+			valid, st := VerifySplunk("splunk", splunk)
+			Expect(valid).To(BeTrue())
+			Expect(map[string]status.Condition{"splunk": st}).To(HaveCondition(loggingv1.ConditionDegraded, true, loggingv1.ReasonUnused, "Warning: Support for 'fields' is not implemented and deprecated for output \"splunk\""))
+		})
 	})
 
 	Context("when validating secret for Splunk", func() {

@@ -36,7 +36,7 @@ func (s *StreamLossStats) Range() int {
 }
 
 func (l *StreamLossStats) PercentCollected() float64 {
-	return float64(l.Collected) / float64(l.Range()+1) * 100.0
+	return float64(l.Collected) / float64(l.Range()) * 100.0
 }
 
 func (l *LossStats) LossStatsFor(stream string) (*StreamLossStats, error) {

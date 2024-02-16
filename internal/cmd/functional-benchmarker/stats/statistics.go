@@ -27,7 +27,7 @@ func (stats *Statistics) TotMessages() int {
 }
 
 func (stats *Statistics) MeanBloat() float64 {
-	return stats.GenericMean(func(l *PerfLog) float64 { return l.Bloat })
+	return stats.GenericMean((*PerfLog).Bloat)
 }
 
 func (stats *Statistics) Mean() float64 {

@@ -62,51 +62,6 @@ path = "{{.Path}}"
 [sinks.my_sink.encoding]
 codec = "json"
 `
-	VectorHttpBenchmarkTemplate = "" +
-		`[sources.my_source]
-type = "http_server"
-address = "127.0.0.1:8090"
-decoding.codec = "json"
-framing.method = "newline_delimited"
-
-[transforms.app_logs]
-type = "remap"
-inputs = ["my_source"]
-source = '''
- pLength = to_float(length(encode_json(.)))
- mLength = to_float(length!(.message))
- mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.fZ")
- if err != null {
-   mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.f%z")
-   if err != null {
-     log("Unable to parse @timestamp: " + err, level: "error")
-   }
- }
-
- container = .kubernetes.container_name
-  ., err = parse_regex(.message,r'.*(?P<stream>functional((\.0)?\.[0-9A-Z]*)?) - (?P<seqid>\d{10}) -.*?.*?')
-  if err != null {
-    log("Unable to parse stream and seqid from message: " + err, level: "error")
-  }
- .epoc_out = to_float(now())
- .epoc_in = to_float(mytime)
- .container = container
- .bloat, err = pLength / mLength
- if err != null {
-   log("Unable to calculate the message bloat: " + err, level: "error")
- }
-
-'''
-
-[sinks.my_sink]
-inputs = ["app_logs"]
-type = "file"
-path = "{{.Path}}"
-		
-[sinks.my_sink.encoding]
-codec = "json"
-except_fields = ["container","stream"]
-`
 	FluentdHttpSourceConf = `
 <system>
   log_level debug
@@ -134,12 +89,9 @@ except_fields = ["container","stream"]
 `
 )
 
-func VectorConfFactory(profile configv1.TLSProfileType, path string, confTemplate string) string {
+func VectorConfFactory(profile configv1.TLSProfileType, path string) string {
 	if path == "" {
 		path = "/tmp/app-logs"
-	}
-	if confTemplate == "" {
-		confTemplate = VectorHttpSourceConfTemplate
 	}
 	minTLS := ""
 	ciphers := ""
@@ -150,7 +102,7 @@ func VectorConfFactory(profile configv1.TLSProfileType, path string, confTemplat
 		}
 
 	}
-	tmpl, err := template.New("").Parse(confTemplate)
+	tmpl, err := template.New("").Parse(VectorHttpSourceConfTemplate)
 	if err != nil {
 		log.V(0).Error(err, "Unable to parse the vector http conf template")
 		os.Exit(1)
@@ -176,13 +128,10 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder
 }
 
 func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output logging.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, path string) error {
-	return f.AddVectorHttpOutputWithConfigWithTemplate(b, output, profile, secret, path, "")
-}
-func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfigWithTemplate(b *runtime.PodBuilder, output logging.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, path, confTemplate string) error {
 	log.V(2).Info("Adding vector http output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	toml := VectorConfFactory(profile, path, confTemplate)
+	toml := VectorConfFactory(profile, path)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"vector.toml": toml,
 	})
@@ -228,7 +177,7 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 }
 
 func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec, image string) error {
-	if err := f.AddVectorHttpOutputWithConfigWithTemplate(b, output, "", nil, "/tmp/{{container}}.log", VectorHttpBenchmarkTemplate); err != nil {
+	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, "/tmp/{{kubernetes.container_name}}.log"); err != nil {
 		return err
 	}
 	b.GetContainer(logging.OutputTypeHttp).WithImage(image).Update()

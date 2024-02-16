@@ -38,7 +38,7 @@ func UpdateInfofromCLF(forwarder logging.ClusterLogForwarder) {
 					hasInput = true
 					// Check for receiver input types if not app, infra, or audit
 				} else {
-					if _, ok := inputs[inputtype]; ok && inputs[inputtype].Receiver != nil && labelname == inputs[inputtype].Receiver.Type {
+					if inputSpec, ok := inputs[inputtype]; ok && inputSpec.Receiver != nil && labelname == inputSpec.Receiver.Type {
 						hasInput = true
 					}
 				}

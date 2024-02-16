@@ -177,5 +177,28 @@ var _ = Describe("migrateInputs", func() {
 			Expect(extras).To(BeEmpty())
 		})
 
+		It("should do nothing if receiver.type declared as syslog but receiverTypeSpec is nil", func() {
+			spec := logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "my-custom-input",
+						Receiver: &logging.ReceiverSpec{
+							Type: logging.ReceiverTypeSyslog,
+						},
+					},
+				},
+			}
+			extras := map[string]bool{}
+			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			Expect(result.Inputs).To(HaveLen(1))
+			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
+				Name: "my-custom-input",
+				Receiver: &logging.ReceiverSpec{
+					Type: logging.ReceiverTypeSyslog,
+				},
+			}))
+			Expect(extras).To(BeEmpty())
+		})
+
 	})
 })

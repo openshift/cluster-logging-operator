@@ -182,7 +182,7 @@ var _ = Describe("[InputSelection]", func() {
 			func() {
 				Expect(receiver.ListNamespaces()).To(HaveLen(0), "exp no logs to be collected")
 			}),
-		Entry("application inputsshould collect from included containers",
+		Entry("application inputs should collect from included containers",
 			logging.InputSpec{
 				Application: &logging.Application{
 					Containers: &logging.InclusionSpec{

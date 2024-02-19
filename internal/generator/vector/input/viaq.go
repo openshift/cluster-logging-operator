@@ -3,7 +3,6 @@ package input
 import (
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -66,28 +65,36 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 			ib := source.NewContainerPathGlobBuilder()
 			eb := source.NewContainerPathGlobBuilder()
 
+			switch {
 			// Includes but no excludes, no need to add exclude to config
-			if len(input.Application.Namespaces) > 0 && len(input.Application.ExcludeNamespaces) == 0 {
+			case len(input.Application.Namespaces) > 0 && len(input.Application.ExcludeNamespaces) == 0:
 				ib.AddNamespaces(input.Application.Namespaces...)
-			} else {
+			case len(input.Application.Namespaces) == 0 &&
+				len(input.Application.ExcludeNamespaces) == 0 &&
+				input.Application.Containers != nil &&
+				len(input.Application.Containers.Include) > 0:
+				ib.AddNamespaces("*")
+			default:
 				ib.AddNamespaces(input.Application.Namespaces...)
 
+				finalExcludeList := input.Application.ExcludeNamespaces
+				if len(finalExcludeList) == 0 && input.Application.Containers != nil && len(input.Application.Containers.Exclude) > 0 {
+					finalExcludeList = append(finalExcludeList, "*")
+				}
 				// Prune excluded infra namespaces if includes has any infra namespaces
-				finalExcludeList := append(input.Application.ExcludeNamespaces,
+				finalExcludeList = append(finalExcludeList,
 					pruneInfraNS(input.Application.Namespaces)...)
-
-				// Sort outputs, because we have tests depending on the exact generated configuration
-				sort.Strings(finalExcludeList)
 
 				eb.AddNamespaces(finalExcludeList...).
 					AddExtensions(excludeExtensions...)
 			}
+
 			if input.Application.Containers != nil {
 				ib.AddContainers(input.Application.Containers.Include...)
 				eb.AddContainers(input.Application.Containers.Exclude...)
 			}
 			includes := ib.Build()
-			excludes := eb.Build()
+			excludes := eb.Build(infraNamespaces...)
 			els, ids = NewViaqContainerSource(input, collectorNS, includes, excludes)
 		} else if input.Infrastructure != nil {
 			sources := sets.NewString(input.Infrastructure.Sources...)

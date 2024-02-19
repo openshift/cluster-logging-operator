@@ -261,7 +261,7 @@ The fields of this struct define the set of known Receiver types.
 |======================
 |Property|Type|Description
 
-|type|string|  Type of Receiver plugin.
+|type|string|  *(optional)* Type of Receiver plugin.
 |======================
 
 === .spec.outputDefaults

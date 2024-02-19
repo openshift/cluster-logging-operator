@@ -50,7 +50,9 @@ type Application struct {
 
 	// Containers is the spec of containers to include and exclude when collecting logs.
 	// This effectively is an 'AND' with the other fields
-	// of this input definition. The subfields of containers supports globs
+	// of this input definition. The subfields of containers supports globs.  The includes
+	// defined here are combined with the included namespaces to form a set of namespace
+	// and container permutations.  The same logic is applied to the excluded containers and namespaces
 	//
 	// +optional
 	Containers *InclusionSpec `json:"containers,omitempty"`

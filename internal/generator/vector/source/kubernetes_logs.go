@@ -3,7 +3,9 @@ package source
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -57,17 +59,20 @@ func NewKubernetesLogs(id, includes, excludes string) KubernetesLogs {
 }
 
 const (
-	crioPodPathFmt       = `"/var/log/pods/%s"`
-	crioNamespacePathFmt = `"/var/log/pods/%s/*/*.log"`
-	crioContainerPathFmt = `"/var/log/pods/*/%s/*.log"`
-	crioPathExtFmt       = `"/var/log/pods/*/*/*.%s"`
+	crioPodPathFmt                   = `"/var/log/pods/%s"`
+	crioNamespacePathFmt             = `"/var/log/pods/%s/*/*.log"`
+	crioNamespaceAndContainerPathFmt = `"/var/log/pods/%s/%s/*.log"`
+	crioContainerPathFmt             = `"/var/log/pods/*/%s/*.log"`
+	crioPathExtFmt                   = `"/var/log/pods/*/*/*.%s"`
+	crioEverything                   = `["/var/log/pods/*/*/*.log"]`
 )
 
 // ContainerPathGlobFrom formats a list of kubernetes container file paths to include/exclude for
 // collection given a list of namespaces and containers and return a string that
 // is in a form directly usable by a vector kubernetes_log config. The result is
 // a set of file paths assumed to be at the well known location and structure of
-// CRIO pod logs.
+// CRIO pod logs. Container and namespace includes are combined in their various permutations
+// as well as excludes to allow collection (or exclusion) of specific containers from specific namespaces
 // The format rules:
 //
 //	namespaces:
@@ -97,11 +102,16 @@ func ContainerPathGlobFrom(namespaces, containers []string, extensions ...string
 }
 
 type ContainerPathGlobBuilder struct {
-	paths []string
+	containers *sets.String
+	namespaces *sets.String
+	paths      []string
 }
 
 func NewContainerPathGlobBuilder() *ContainerPathGlobBuilder {
-	return &ContainerPathGlobBuilder{}
+	return &ContainerPathGlobBuilder{
+		containers: sets.NewString(),
+		namespaces: sets.NewString(),
+	}
 }
 
 // AddOther takes an argument and joins it with the well known container path
@@ -113,13 +123,13 @@ func (b *ContainerPathGlobBuilder) AddOther(other ...string) *ContainerPathGlobB
 }
 func (b *ContainerPathGlobBuilder) AddNamespaces(namespaces ...string) *ContainerPathGlobBuilder {
 	for _, n := range namespaces {
-		b.paths = append(b.paths, fmt.Sprintf(crioNamespacePathFmt, normalizeNamespace(n)))
+		b.namespaces.Insert(normalizeNamespace(n))
 	}
 	return b
 }
 func (b *ContainerPathGlobBuilder) AddContainers(containers ...string) *ContainerPathGlobBuilder {
 	for _, c := range containers {
-		b.paths = append(b.paths, fmt.Sprintf(crioContainerPathFmt, collapseWildcards(c)))
+		b.containers.Insert(collapseWildcards(c))
 	}
 	return b
 }
@@ -129,12 +139,35 @@ func (b *ContainerPathGlobBuilder) AddExtensions(extensions ...string) *Containe
 	}
 	return b
 }
-func (b *ContainerPathGlobBuilder) Build() string {
-	paths := joinContainerPathsForVector(b.paths)
-	if paths == "" {
+func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) string {
+	namespacesNotToCombine := sets.NewString()
+	for _, ns := range excludeNSFromContainers {
+		namespacesNotToCombine.Insert(normalizeNamespace(ns))
+	}
+	uniq := sets.NewString(b.paths...)
+	if b.containers.Len() == 0 {
+		for _, n := range b.namespaces.List() {
+			uniq.Insert(fmt.Sprintf(crioNamespaceAndContainerPathFmt, n, "*"))
+		}
+	} else {
+		for _, c := range b.containers.List() {
+			for _, n := range b.namespaces.List() {
+				cFinal := c
+				if namespacesNotToCombine.Has(n) {
+					cFinal = "*"
+				}
+				uniq.Insert(fmt.Sprintf(crioNamespaceAndContainerPathFmt, n, cFinal))
+			}
+
+		}
+	}
+	paths := uniq.List()
+	sort.Strings(paths)
+	pathString := joinContainerPathsForVector(paths)
+	if pathString == "" || pathString == crioEverything {
 		return ""
 	}
-	return paths
+	return pathString
 }
 
 func joinContainerPathsForVector(paths []string) string {
@@ -145,6 +178,9 @@ func joinContainerPathsForVector(paths []string) string {
 }
 
 func normalizeNamespace(ns string) string {
+	if len(ns) == 1 && ns == "*" {
+		return ns
+	}
 	if !strings.Contains(ns, "*") {
 		return fmt.Sprintf("%s_*", ns)
 	}

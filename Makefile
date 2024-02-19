@@ -156,7 +156,7 @@ run:
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
-	$(RUN_CMD) main.go
+	$(RUN_CMD) cmd/main.go
 
 .PHONY: run-debug
 run-debug:

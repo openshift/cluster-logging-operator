@@ -44,10 +44,40 @@ func MakePruneFilter(pruneFilterSpec *loggingv1.PruneFilterSpec) (vrl string, er
 func generateQuotedPathSegmentArrayStr(fieldPathArray []string) string {
 	quotedPathArray := []string{}
 	for _, fieldPath := range fieldPathArray {
-		pathArray := quotePathSegments(strings.Split(fieldPath, ".")[1:])
+		splitPathSegments := splitPath(fieldPath)
+		pathArray := quotePathSegments(splitPathSegments)
 		quotedPathArray = append(quotedPathArray, fmt.Sprintf("[%s]", strings.Join(pathArray, ",")))
 	}
 	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ","))
+}
+
+// splitPath splits a fieldPath by `.` and reassembles the quoted path segments that also contain `.`
+// Example: `.foo."@some"."d.f.g.o111-22/333".foo_bar`
+// Resultant Array: ["foo","@some",`"d.f.g.o111-22/333"`,"foo_bar"]
+func splitPath(path string) []string {
+	result := []string{}
+
+	splitPath := strings.Split(path, ".")
+
+	var currSegment string
+	for _, part := range splitPath {
+		if part == "" {
+			continue
+		} else if strings.HasPrefix(part, `"`) && strings.HasSuffix(part, `"`) {
+			result = append(result, part)
+		} else if strings.HasPrefix(part, `"`) {
+			currSegment = part
+		} else if strings.HasSuffix(part, `"`) {
+			currSegment += "." + part
+			result = append(result, currSegment)
+			currSegment = ""
+		} else if currSegment != "" {
+			currSegment += "." + part
+		} else {
+			result = append(result, part)
+		}
+	}
+	return result
 }
 
 // quotePathSegments quotes all path segments as needed for VRL

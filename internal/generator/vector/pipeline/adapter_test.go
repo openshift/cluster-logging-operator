@@ -55,7 +55,10 @@ var _ = Describe("pipeline/adapter.go", func() {
 								Type: logging.FilterPrune,
 								FilterTypeSpec: logging.FilterTypeSpec{
 									PruneFilterSpec: &logging.PruneFilterSpec{
-										In: []string{".kubernetes.labels", ".message", ".foo"},
+										In: []string{".foo.test",
+											".bar",
+											`.foo."@some"."d.f.g.o111-22/333".foo_bar`,
+											`.foo.labels."test.dot-with/slashes888"`},
 									},
 								},
 							},

@@ -2,7 +2,7 @@
 type = "remap"
 inputs = ["input_app_in_viaq_logtype"]
 source = '''
-in = [["kubernetes","labels"],["message"],["foo"]]
+in = [["foo","test"],["bar"],["foo","@some","d.f.g.o111-22/333","foo_bar"],["foo","labels","test.dot-with/slashes888"]]
 
 # Remove keys from `in` list
 for_each(in) -> |_index, val| {

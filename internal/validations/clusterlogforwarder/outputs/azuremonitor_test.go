@@ -41,7 +41,7 @@ var _ = Describe("Validate AzureMonitor:", func() {
 			}
 			valid, st := VerifyAzureMonitorLog("azureMonitor", azureMonitor)
 			Expect(valid).To(BeFalse())
-			Expect(map[string]status.Condition{"azureMonitor": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"azureMonitor\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+			Expect(map[string]status.Condition{"azureMonitor": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"azureMonitor\": LogType names must start with a letter/number, contain only letters/numbers/underscores \\(_\\), and be between 1-100 characters."))
 		})
 
 		It("should fail if logType bad format: longer than 100", func() {
@@ -51,7 +51,17 @@ var _ = Describe("Validate AzureMonitor:", func() {
 			}
 			valid, st := VerifyAzureMonitorLog("azureMonitor", azureMonitor)
 			Expect(valid).To(BeFalse())
-			Expect(map[string]status.Condition{"azureMonitor": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"azureMonitor\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+			Expect(map[string]status.Condition{"azureMonitor": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"azureMonitor\": LogType names must start with a letter/number, contain only letters/numbers/underscores \\(_\\), and be between 1-100 characters."))
+		})
+
+		It("should fail if logType bad format: begins on '_'", func() {
+			azureMonitor := &loggingv1.AzureMonitor{
+				CustomerId: "customer",
+				LogType:    "_testType",
+			}
+			valid, st := VerifyAzureMonitorLog("azureMonitor", azureMonitor)
+			Expect(valid).To(BeFalse())
+			Expect(map[string]status.Condition{"azureMonitor": st}).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"azureMonitor\": LogType names must start with a letter/number, contain only letters/numbers/underscores \\(_\\), and be between 1-100 characters."))
 		})
 
 		It("should fail if no customerId", func() {

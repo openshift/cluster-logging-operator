@@ -2,9 +2,10 @@ package clusterlogforwarder
 
 import (
 	"fmt"
+	"testing"
+
 	v12 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
-	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
 	v1 "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -343,7 +344,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType names must start with a letter/number, contain only letters/numbers/underscores \\(_\\), and be between 1-100 characters."))
 		})
 
 		It("should fail Azure Monitor Logs output without OutputTypeSpec", func() {
@@ -387,7 +388,7 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType can only contain letters, numbers, and underscores \\(_\\), and may not exceed 100 characters."))
+			Expect(clfStatus.Outputs["azml"]).To(HaveCondition("Ready", false, "Invalid", "output \"azml\": LogType names must start with a letter/number, contain only letters/numbers/underscores \\(_\\), and be between 1-100 characters."))
 		})
 
 		It("should fail Azure Monitor Logs output without CustomerId", func() {

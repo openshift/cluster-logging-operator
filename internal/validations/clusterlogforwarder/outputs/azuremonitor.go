@@ -1,23 +1,24 @@
 package outputs
 
 import (
+	"regexp"
+
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	corev1 "k8s.io/api/core/v1"
-	"regexp"
 )
 
 func VerifyAzureMonitorLog(name string, azml *loggingv1.AzureMonitor) (bool, status.Condition) {
-	pattern := "^[a-zA-Z0-9_]{1,100}$"
+	pattern := "^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$"
 	// Compile the regex pattern
 	reg := regexp.MustCompile(pattern)
 	if azml.LogType == "" {
 		return false, conditions.CondInvalid("output %q: LogType must be set.", name)
 	}
 	if !reg.MatchString(azml.LogType) {
-		return false, conditions.CondInvalid("output %q: LogType can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.", name)
+		return false, conditions.CondInvalid("output %q: LogType names must start with a letter/number, contain only letters/numbers/underscores (_), and be between 1-100 characters.", name)
 	}
 	if azml.CustomerId == "" {
 		return false, conditions.CondInvalid("output %q: CustomerId must be set.", name)

@@ -451,11 +451,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.output_default.buffer]
-when_full = "drop_newest"
-
 [sinks.output_default.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.output_default.tls]
@@ -541,11 +537,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 
-[sinks.output_es_1.buffer]
-when_full = "drop_newest"
-
 [sinks.output_es_1.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.output_es_1.tls]
@@ -634,11 +626,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v8"
 
-[sinks.output_es_2.buffer]
-when_full = "drop_newest"
-
 [sinks.output_es_2.request]
-retry_attempts = 17
 timeout_secs = 2147483648
 
 [sinks.output_es_2.tls]

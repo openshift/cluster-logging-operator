@@ -35,8 +35,6 @@ func (o Output) VisitRequest(r common.Request) common.Request {
 		if o.spec.Tuning.MaxRetryDuration != nil && o.spec.Tuning.MaxRetryDuration.Seconds() > 0 {
 			r.RetryMaxDurationSec.Value = o.spec.Tuning.MaxRetryDuration.Seconds()
 		}
-	} else {
-		r.RetryAttempts.Value = 17
 	}
 
 	return r
@@ -52,8 +50,6 @@ func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
 		case logging.OutputDeliveryModeAtMostOnce:
 			b.WhenFull.Value = common.BufferWhenFullDropNewest
 		}
-	} else {
-		b.WhenFull.Value = common.BufferWhenFullDropNewest
 	}
 	return b
 }

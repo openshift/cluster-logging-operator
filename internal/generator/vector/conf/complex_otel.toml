@@ -466,11 +466,7 @@ method = "post"
 [sinks.output_http_receiver.encoding]
 codec = "json"
 
-[sinks.output_http_receiver.buffer]
-when_full = "drop_newest"
-
 [sinks.output_http_receiver.request]
-retry_attempts = 17
 timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 

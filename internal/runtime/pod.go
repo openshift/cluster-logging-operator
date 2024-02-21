@@ -263,3 +263,8 @@ func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *Cont
 	builder.container.Ports = append(builder.container.Ports, corev1.ContainerPort{Name: name, ContainerPort: port})
 	return builder
 }
+
+func (builder *PodBuilder) AddHostAlias(hostAlias corev1.HostAlias) *PodBuilder {
+	builder.Pod.Spec.HostAliases = append(builder.Pod.Spec.HostAliases, hostAlias)
+	return builder
+}

@@ -3,6 +3,8 @@ package functional
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"strings"
 	"time"
 
@@ -180,4 +182,9 @@ func (f *CollectorFunctionalFramework) ReadNApplicationLogsFrom(n uint64, output
 		}
 	}
 	return lines, err
+}
+
+func (f *CollectorFunctionalFramework) ReadCollectorLogs() (string, error) {
+	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
+	return output, err
 }

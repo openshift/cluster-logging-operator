@@ -283,6 +283,7 @@ test-functional-vector: test-functional-benchmarker-vector
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=vector -race \
 		./test/functional/filters/... \
+		./test/functional/outputs/azuremonitor/... \
 		./test/functional/outputs/elasticsearch/... \
 		./test/functional/outputs/kafka/... \
 		./test/functional/outputs/cloudwatch/... \

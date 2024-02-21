@@ -1,0 +1,258 @@
+{
+  "uuid": "1b373ecc-7a48-42e9-8d18-f2a72ef76e31",
+  "lastMigration": 32,
+  "name": "Azure HTTP Data Collector API",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3000,
+  "hostname": "",
+  "routes": [
+    {
+      "uuid": "711d9c33-a57e-4a78-a3c2-110d70dd147b",
+      "documentation": "Send log data to Azure Monitor by using the HTTP Data Collector API",
+      "method": "post",
+      "endpoint": "api/logs",
+      "responses": [
+        {
+          "uuid": "22577c98-81b3-4f0f-b77c-6bea8f4d06b8",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Vector Healthcheck",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Log-Type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "[]",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "6e0dace5-dabb-4f4b-92a0-cb2917a5882d",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Accept one log event. Checking log-type header, body fields: message and log_type",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "log-type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].message",
+              "value": "This is my test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "541b09b2-e130-4439-8201-598e9f6c6adb",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": " Accept one batch log event. Checking log-type header, body fields in each record: message and log_type",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "log-type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[1].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[2].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[1].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[2].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": "FALLBACK",
+      "type": "http"
+    },
+    {
+      "uuid": "52ac3940-b125-4ba1-b857-226893c0a587",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "",
+      "responses": [
+        {
+          "uuid": "0772f9d2-a5a4-4e35-8f5f-c8943d8742db",
+          "body": "{\"status\":\"OK\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": true,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    },
+    {
+      "key": "Authorization",
+      "value": ""
+    },
+    {
+      "key": "Log-Type",
+      "value": ""
+    },
+    {
+      "key": "x-ms-date",
+      "value": ""
+    },
+    {
+      "key": "x-ms-AzureResourceId",
+      "value": ""
+    },
+    {
+      "key": "time-generated-field",
+      "value": ""
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [],
+  "folders": [],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "711d9c33-a57e-4a78-a3c2-110d70dd147b"
+    },
+    {
+      "type": "route",
+      "uuid": "52ac3940-b125-4ba1-b857-226893c0a587"
+    }
+  ],
+  "callbacks": []
+}

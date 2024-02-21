@@ -320,7 +320,8 @@ type Http struct {
 	// +kubebuilder:validation:Enum:=opentelemetry;viaq
 	// +kubebuilder:default:viaq
 	// +optional
-	Schema string `json:"schema,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
+	Schema string `json:"-"`
 }
 
 type AzureMonitor struct {

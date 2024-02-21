@@ -659,15 +659,6 @@ spec:
                           - TRACE
                           - PATCH
                           type: string
-                        schema:
-                          description: "Schema enables configuration of the way log
-                            records are normalized. \n Supported models: viaq(default),
-                            opentelemetry \n Logs are converted to the Open Telemetry
-                            specification according to schema value"
-                          enum:
-                          - opentelemetry
-                          - viaq
-                          type: string
                         timeout:
                           description: Timeout specifies the Http request timeout
                             in seconds. If not set, 10secs is used.

@@ -32,7 +32,7 @@ var _ = Describe("[Functional][Normalization][Schema] OTEL", func() {
 		framework.Cleanup()
 	})
 
-	It("should normalize application logs to OTEL format for HTTP sink", func() {
+	It("should not normalize application logs to OTEL format for HTTP sink", func() {
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(loggingv1.InputNameApplication).
 			ToHttpOutputWithSchema(constants.OTELSchema)
@@ -52,11 +52,10 @@ var _ = Describe("[Functional][Normalization][Schema] OTEL", func() {
 
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		otelLog := logs[0].ContainerLog
-		Expect(otelLog.TimeUnixNano).To(Equal(timestampNano), "Expect timestamp to be converted into unix nano")
-		Expect(otelLog.SeverityText).ToNot(BeNil(), "Expect severityText to exist")
-		Expect(otelLog.SeverityNumber).To(Equal(9), "Expect severityNumber to parse to 9")
-		Expect(otelLog.Resources).ToNot(BeNil(), "Expect resources to exist")
-		Expect(otelLog.Resources.K8s.Namespace.Name).To(Equal(appNamespace), "Expect namespace name to be nested under k8s.namespace")
+		Expect(otelLog.TimeUnixNano).ToNot(Equal(timestampNano), "Expect timestamp to not be converted into unix nano")
+		Expect(otelLog.SeverityText).To(BeEmpty(), "Expect severityText to be an empty string")
+		Expect(otelLog.SeverityNumber).ToNot(Equal(9), "Expect severityNumber to not be parsed to 9")
+		Expect(otelLog.Resources.K8s.Namespace.Name).ToNot(Equal(appNamespace), "Expect namespace name to not be nested under k8s.namespace")
 	})
 
 })

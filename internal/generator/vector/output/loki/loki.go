@@ -37,6 +37,13 @@ var (
 		lokiLabelKubernetesPodName,
 		lokiLabelKubernetesContainerName,
 	}
+
+	containerLabels = []string{
+		lokiLabelKubernetesNamespaceName,
+		lokiLabelKubernetesPodName,
+		lokiLabelKubernetesContainerName,
+	}
+
 	requiredLabelKeys = []string{
 		lokiLabelKubernetesHost,
 	}
@@ -121,7 +128,8 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
-	sink := Output(id, o, []string{dedottedID})
+	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
+	sink := Output(id, o, []string{remapLabelID})
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -129,6 +137,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		[]Element{
 			CleanupFields(componentID, inputs),
 			normalize.DedotLabels(dedottedID, []string{componentID}),
+			RemapLabels(remapLabelID, o, []string{dedottedID}),
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),
@@ -192,6 +201,18 @@ func lokiLabels(lo *logging.Loki) []Label {
 	return ls
 }
 
+func remapLabelsVrl(labels []string) string {
+	k8sEventLabel := `
+if !exists(.%s) {
+  .%s = ""
+}`
+	sb := strings.Builder{}
+	for _, v := range labels {
+		sb.WriteString(fmt.Sprintf(k8sEventLabel, v, v))
+	}
+	return sb.String()
+}
+
 func formatLokiLabelValue(value string) string {
 	if strings.HasPrefix(value, "kubernetes.labels.") || strings.HasPrefix(value, "kubernetes.namespace_labels.") {
 		parts := strings.SplitAfterN(value, "labels.", 2)
@@ -201,6 +222,14 @@ func formatLokiLabelValue(value string) string {
 		value = fmt.Sprintf("%s%s", parts[0], key)
 	}
 	return fmt.Sprintf("{{%s}}", value)
+}
+
+func RemapLabels(id string, o logging.OutputSpec, inputs []string) Element {
+	return Remap{
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL:         remapLabelsVrl(containerLabels),
+	}
 }
 
 func Labels(id string, o logging.OutputSpec) Element {

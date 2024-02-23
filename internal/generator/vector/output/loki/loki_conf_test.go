@@ -1,13 +1,16 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	_ "embed"
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -17,7 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -47,12 +49,38 @@ var _ = Describe("outputLabelConf", func() {
 	})
 })
 
+//go:embed with_default_labels.toml
+var withDefaultLabels string
+
+//go:embed with_custom_labels.toml
+var withCustomLabels string
+
+//go:embed with_tenant_id.toml
+var withTenantId string
+
+//go:embed with_custom_bearer_token.toml
+var withCustomBearerToken string
+
+//go:embed with_insecure.toml
+var withInsecure string
+
+//go:embed with_insecure_nocert.toml
+var withInsecureNoCert string
+
+//go:embed with_default_tls.toml
+var withDefaultTls string
+
+//go:embed with_default_logcollector_bearer_token.toml
+var withDefaultLogcollectorToken string
+
 var _ = Describe("Generate vector config", func() {
 	defaultTLS := "VersionTLS12"
 	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 	inputPipeline := []string{"application"}
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], nil, op)
+		elements := New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], nil, op)
+
+		return elements
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
 		Entry("with default labels", helpers.ConfGenerateTest{
@@ -76,62 +104,7 @@ var _ = Describe("Generate vector config", func() {
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://logs-us-west1.grafana.net"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-# Basic Auth Config
-[sinks.loki_receiver.auth]
-strategy = "basic"
-user = "username"
-password = "password"
-`,
+			ExpectedConf: withDefaultLabels,
 		}),
 		Entry("with custom labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -157,60 +130,7 @@ password = "password"
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://logs-us-west1.grafana.net"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_labels_app = "{{kubernetes.labels.\"app\"}}"
-
-# Basic Auth Config
-[sinks.loki_receiver.auth]
-strategy = "basic"
-user = "username"
-password = "password"
-`,
+			ExpectedConf: withCustomLabels,
 		}),
 		Entry("with tenant id", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -236,64 +156,7 @@ password = "password"
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://logs-us-west1.grafana.net"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-tenant_id = "{{foo.bar.baz}}"
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-# Basic Auth Config
-[sinks.loki_receiver.auth]
-strategy = "basic"
-user = "username"
-password = "password"
-
-`,
+			ExpectedConf: withTenantId,
 		}),
 		Entry("with custom bearer token", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -315,61 +178,7 @@ password = "password"
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-# Bearer Auth Config
-[sinks.loki_receiver.auth]
-strategy = "bearer"
-token = "token-for-custom-loki"
-`,
+			ExpectedConf: withCustomBearerToken,
 		}),
 		Entry("with TLS insecureSkipVerify=true", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -394,61 +203,7 @@ token = "token-for-custom-loki"
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-[sinks.loki_receiver.tls]
-verify_certificate = false
-verify_hostname = false
-ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
-`,
+			ExpectedConf: withInsecure,
 		}),
 		Entry("with TLS insecureSkipVerify=true, no certificate in secret", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -463,60 +218,7 @@ ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-[sinks.loki_receiver.tls]
-verify_certificate = false
-verify_hostname = false
-`,
+			ExpectedConf: withInsecureNoCert,
 		}),
 		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -542,63 +244,7 @@ verify_hostname = false
 				framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
 				framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
-			ExpectedConf: `
-[transforms.loki_receiver_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.loki_receiver]
-type = "loki"
-inputs = ["loki_receiver_dedot"]
-endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-[sinks.loki_receiver.encoding]
-codec = "json"
-
-[sinks.loki_receiver.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-[sinks.loki_receiver.tls]
-min_tls_version = "` + defaultTLS + `"
-ciphersuites = "` + defaultCiphers + `"
-
-# Bearer Auth Config
-[sinks.loki_receiver.auth]
-strategy = "bearer"
-token = "token-for-custom-loki"
-`,
+			ExpectedConf: fmt.Sprintf(withDefaultTls, defaultTLS, defaultCiphers),
 		}),
 	)
 })
@@ -626,64 +272,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 					},
 				},
 			},
-			ExpectedConf: `
-[transforms.default_loki_apps_remap]
-type = "remap"
-inputs = ["application"]
-source = '''
-  del(.tag)
-'''
-
-[transforms.default_loki_apps_dedot]
-type = "remap"
-inputs = ["default_loki_apps_remap"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[sinks.default_loki_apps]
-type = "loki"
-inputs = ["default_loki_apps_dedot"]
-endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-
-[sinks.default_loki_apps.encoding]
-codec = "json"
-
-[sinks.default_loki_apps.labels]
-kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
-log_type = "{{log_type}}"
-
-[sinks.default_loki_apps.tls]
-ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-
-# Bearer Auth Config
-[sinks.default_loki_apps.auth]
-strategy = "bearer"
-token = "token-for-internal-loki"
-`,
+			ExpectedConf: withDefaultLogcollectorToken,
 		}),
 	)
 })

@@ -36,9 +36,32 @@ source = '''
   }
 '''
 
+[transforms.output_default_loki_apps_remap_label]
+type = "remap"
+inputs = ["output_default_loki_apps_dedot"]
+source = '''
+      if exists("{{kubernetes.container_name}}") {
+        kubernetes_container_name = "{{kubernetes.container_name}}"
+      } else {
+        kubernetes_container_name = ""
+      }
+      kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+      if exists("{{kubernetes.namespace_name}}") {
+        kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+      } else {
+        kubernetes_namespace_name = ""
+      }
+      if exists("{{kubernetes.pod_name}}") {
+        kubernetes_pod_name = "{{kubernetes.pod_name}}"
+      } else {
+        kubernetes_pod_name = ""
+      }
+      log_type = "{{log_type}}"
+    '''
+
 [sinks.output_default_loki_apps]
 type = "loki"
-inputs = ["output_default_loki_apps_dedot"]
+inputs = ["output_default_loki_apps_remap_label"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false

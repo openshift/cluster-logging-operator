@@ -28,6 +28,7 @@ const (
 	OutputTypeHttp               = v1.OutputTypeHttp
 	OutputTypeGoogleCloudLogging = v1.OutputTypeGoogleCloudLogging
 	OutputTypeSplunk             = v1.OutputTypeSplunk
+	OutputTypeAzureMonitor       = v1.OutputTypeAzureMonitor
 
 	ManagedStatus = "managedStatus"
 	HealthStatus  = "healthStatus"
@@ -71,7 +72,8 @@ func NewTD() *TData {
 			OutputTypeCloudwatch:         IsNotPresent,
 			OutputTypeHttp:               IsNotPresent,
 			OutputTypeSplunk:             IsNotPresent,
-			OutputTypeGoogleCloudLogging: IsNotPresent}),
+			OutputTypeGoogleCloudLogging: IsNotPresent,
+			OutputTypeAzureMonitor:       IsNotPresent}),
 		LFMEInfo: utils.InitStringMap(map[string]string{Deployed: IsNotPresent, HealthStatus: IsNotPresent}),
 	}
 }
@@ -114,7 +116,8 @@ var (
 			OutputTypeCloudwatch,
 			OutputTypeHttp,
 			OutputTypeSplunk,
-			OutputTypeGoogleCloudLogging},
+			OutputTypeGoogleCloudLogging,
+			OutputTypeAzureMonitor},
 	)
 
 	mLFMEInfo = NewInfoVec(
@@ -207,7 +210,8 @@ func SetCLFMetrics(value float64) {
 		OutputTypeCloudwatch:         CLFOutputType.Get(OutputTypeCloudwatch),
 		OutputTypeHttp:               CLFOutputType.Get(OutputTypeHttp),
 		OutputTypeSplunk:             CLFOutputType.Get(OutputTypeSplunk),
-		OutputTypeGoogleCloudLogging: CLFOutputType.Get(OutputTypeGoogleCloudLogging)}).Set(value)
+		OutputTypeGoogleCloudLogging: CLFOutputType.Get(OutputTypeGoogleCloudLogging),
+		OutputTypeAzureMonitor:       CLFOutputType.Get(OutputTypeAzureMonitor)}).Set(value)
 }
 
 func SetLFMEMetrics(value float64) {

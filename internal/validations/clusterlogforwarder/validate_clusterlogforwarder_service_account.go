@@ -137,10 +137,10 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 			}
 		}
 
-		if input.Receiver != nil && input.Receiver.HTTP != nil {
+		if input.Receiver.IsHttpReceiver() || input.Receiver.IsSyslogReceiver() {
 			noOfReceivers += 1
 		}
-		if input.Receiver != nil && input.Receiver.Syslog != nil {
+		if input.Receiver.IsSyslogReceiver() {
 			inputTypes.Insert(loggingv1.InputNameInfrastructure)
 		}
 	}

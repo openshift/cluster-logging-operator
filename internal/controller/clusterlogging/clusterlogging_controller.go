@@ -3,14 +3,15 @@ package clusterlogging
 import (
 	"context"
 
+	"strings"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strings"
-	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
@@ -114,7 +115,9 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 	// Make sure that the ClusterForwarder status is updated as well, as we might migrate from an invalid to a valid
 	// configuration or vice versa.
-	clf.Status.Synchronize(cls)
+	if err := clf.Status.Synchronize(cls); err != nil {
+		return ctrl.Result{}, err
+	}
 	defer func() {
 		if err := r.Client.Status().Update(ctx, &clf); err != nil {
 			log.Error(err, "Error while updating status for ClusterLoggingForwarder %s/%s", clf.Namespace, clf.Name)

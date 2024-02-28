@@ -96,7 +96,10 @@ func (nc NamedConditions) IsAllReady() bool {
 // field which is left unmodified by Synchronize for noops. Whereas all updates and additions shall use the current
 // (= now) timestamp. In short, ignore any timestamp in newNamedCondition, and for noops use the timestamp from nc
 // or use time.Now().
-func (nc NamedConditions) Synchronize(newNamedCondition NamedConditions) {
+func (nc NamedConditions) Synchronize(newNamedCondition NamedConditions) error {
+	if nc == nil {
+		return fmt.Errorf("cannot operate on a nil map in NamedConditions.Synchronize()")
+	}
 	for name, newConditions := range newNamedCondition {
 		oldConditions, ok := nc[name]
 		// If map entry doesn't exist, create it.
@@ -114,6 +117,7 @@ func (nc NamedConditions) Synchronize(newNamedCondition NamedConditions) {
 			delete(nc, name)
 		}
 	}
+	return nil
 }
 
 var CondReady = Condition{Type: ConditionReady, Status: corev1.ConditionTrue}

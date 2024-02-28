@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -86,14 +87,43 @@ func (status ClusterLogForwarderStatus) IsReady() bool {
 // (= now) timestamp.
 // In short, ignore any timestamp in newStatus, and for noops use the timestamp from old status or use time.Now() for
 // updates and additions.
-func (status *ClusterLogForwarderStatus) Synchronize(newStatus *ClusterLogForwarderStatus) {
+func (status *ClusterLogForwarderStatus) Synchronize(newStatus *ClusterLogForwarderStatus) error {
+	if status == nil {
+		return fmt.Errorf("cannot operate on a nil pointer in *ClusterLogForwarderStatus.Synchronize()")
+	}
+
 	// Synchronize status.Conditions.
 	synchronizeConditions(&status.Conditions, &newStatus.Conditions)
+
+	// Initialize the named status fields if they are nil.
+	if status.Filters == nil {
+		status.Filters = NamedConditions{}
+	}
+	if status.Inputs == nil {
+		status.Inputs = NamedConditions{}
+	}
+	if status.Outputs == nil {
+		status.Outputs = NamedConditions{}
+	}
+	if status.Pipelines == nil {
+		status.Pipelines = NamedConditions{}
+	}
+
 	// Synchronize the named status fields.
-	status.Filters.Synchronize(newStatus.Filters)
-	status.Inputs.Synchronize(newStatus.Inputs)
-	status.Outputs.Synchronize(newStatus.Outputs)
-	status.Pipelines.Synchronize(newStatus.Pipelines)
+	if err := status.Filters.Synchronize(newStatus.Filters); err != nil {
+		return err
+	}
+	if err := status.Inputs.Synchronize(newStatus.Inputs); err != nil {
+		return err
+	}
+	if err := status.Outputs.Synchronize(newStatus.Outputs); err != nil {
+		return err
+	}
+	if err := status.Pipelines.Synchronize(newStatus.Pipelines); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // synchronizeConditions is a helper used by *ClusterLogForwarderStatus.Synchronize and NamedConditions.Synchronize.

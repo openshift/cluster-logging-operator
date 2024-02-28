@@ -2,9 +2,10 @@ package forwarding
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector"
 
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -83,7 +84,9 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	// Fetch the ClusterLogForwarder instance
 	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, true, func() logging.ClusterLogging { return *cl })
 	if status != nil {
-		instance.Status.Synchronize(status)
+		if err := instance.Status.Synchronize(status); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 	if err != nil {
 		log.V(3).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())

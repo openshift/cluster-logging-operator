@@ -471,9 +471,238 @@ var _ = Describe("ClusterLogForwarderStatus", func() {
 			},
 		}
 
-		original.Synchronize(&syncTarget)
+		err := original.Synchronize(&syncTarget)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(original.Conditions).To(MatchConditions(expected.Conditions))
 		namedConditionEquals(original.Inputs, expected.Inputs)
+	})
+
+	It("synchronizes ClusterLogForwarderStatus with empty conditions", func() {
+		var original0 *ClusterLogForwarderStatus
+		original1 := ClusterLogForwarderStatus{
+			Conditions: nil,
+			Inputs: NamedConditions{
+				"name1": nil,
+			},
+		}
+		original2 := ClusterLogForwarderStatus{
+			Conditions: nil,
+			Filters:    nil,
+			Inputs:     nil,
+			Outputs:    nil,
+			Pipelines:  nil,
+		}
+
+		syncTarget := ClusterLogForwarderStatus{
+			Conditions: status.Conditions{
+				{
+					Type:               "Ready",
+					Status:             "True",
+					Reason:             "Operator is ready",
+					Message:            "Operator is ready",
+					LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+				{
+					Type:               "Available",
+					Status:             "True",
+					Reason:             "Operator is available",
+					Message:            "Operator is available",
+					LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+				},
+			},
+			Filters: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+			Inputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+			Outputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+			Pipelines: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(2024, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(2023, 1, 1, 12, 30, 30, 100, time.UTC)),
+					},
+				},
+			},
+		}
+
+		expected := ClusterLogForwarderStatus{
+			Conditions: status.Conditions{
+				{
+					Type:               "Ready",
+					Status:             "True",
+					Reason:             "Operator is ready",
+					Message:            "Operator is ready",
+					LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+				},
+				{
+					Type:               "Available",
+					Status:             "True",
+					Reason:             "Operator is available",
+					Message:            "Operator is available",
+					LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+				},
+			},
+			Filters: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+			},
+			Inputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+			},
+			Outputs: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+			},
+			Pipelines: NamedConditions{
+				"name1": {
+					{
+						Type:               "Ready",
+						Status:             "True",
+						Reason:             "name1 is ready",
+						Message:            "name1 is ready with no issue",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+				"name2": {
+					{
+						Type:               "Foo",
+						Status:             "True",
+						Reason:             "Bar",
+						Message:            "Bar's message",
+						LastTransitionTime: metav1.NewTime(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)),
+					},
+				},
+			},
+		}
+
+		err := original0.Synchronize(&syncTarget)
+		Expect(err).To(HaveOccurred())
+
+		err = original1.Synchronize(&syncTarget)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(original1.Conditions).To(MatchConditions(expected.Conditions))
+		namedConditionEquals(original1.Inputs, expected.Inputs)
+
+		err = original2.Synchronize(&syncTarget)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(original2.Conditions).To(MatchConditions(expected.Conditions))
+		namedConditionEquals(original2.Inputs, expected.Inputs)
 	})
 })
 

@@ -1,13 +1,14 @@
 package outputs
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"time"
 )
 
 var _ = Describe("Validate ", func() {
@@ -24,8 +25,8 @@ var _ = Describe("Validate ", func() {
 			Tuning: &loggingv1.OutputTuningSpec{
 				Compression:      "gzip",
 				Delivery:         "AtLeastOnce",
-				MinRetryDuration: utils.GetPtr(10 * time.Second),
-				MaxRetryDuration: utils.GetPtr(20 * time.Second),
+				MinRetryDuration: utils.GetPtr(time.Duration(10)),
+				MaxRetryDuration: utils.GetPtr(time.Duration(20)),
 				MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
 			},
 		}),
@@ -56,13 +57,13 @@ var _ = Describe("Validate ", func() {
 		Entry("should fail for kafka when MaxRetryDuration is spec'd", false, loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeKafka,
 			Tuning: &loggingv1.OutputTuningSpec{
-				MaxRetryDuration: utils.GetPtr(1 * time.Second),
+				MaxRetryDuration: utils.GetPtr(time.Duration(1)),
 			},
 		}),
 		Entry("should fail for kafka when MinRetryDuration is spec'd", false, loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeKafka,
 			Tuning: &loggingv1.OutputTuningSpec{
-				MinRetryDuration: utils.GetPtr(1 * time.Second),
+				MinRetryDuration: utils.GetPtr(time.Duration(1)),
 			},
 		}),
 	)

@@ -1,6 +1,8 @@
 package output
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -9,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"time"
 )
 
 type fakeSink struct {
@@ -69,7 +70,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 		It("should set request.retry_max_duration_secs for values greater then zero", func() {
 			output := NewOutput(logging.OutputSpec{
 				Tuning: &logging.OutputTuningSpec{
-					MaxRetryDuration: utils.GetPtr(35 * 1000 * time.Millisecond),
+					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
 				},
 			}, nil, nil)
 
@@ -91,7 +92,7 @@ retry_max_duration_secs = 35
 		It("should set request.retry_initial_backoff_secs for values greater then zero", func() {
 			output := NewOutput(logging.OutputSpec{
 				Tuning: &logging.OutputTuningSpec{
-					MinRetryDuration: utils.GetPtr(25 * 1000 * time.Millisecond),
+					MinRetryDuration: utils.GetPtr(time.Duration(25)),
 				},
 			}, nil, nil)
 

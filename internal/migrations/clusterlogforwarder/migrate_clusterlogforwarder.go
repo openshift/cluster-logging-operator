@@ -2,6 +2,7 @@ package clusterlogforwarder
 
 import (
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -77,6 +78,9 @@ func migrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 					}
 					if output.Elasticsearch != nil {
 						defaultOutput.Elasticsearch = output.Elasticsearch
+					}
+					if output.Tuning != nil {
+						defaultOutput.Tuning = output.Tuning
 					}
 					output = defaultOutput
 					// We set this, so we know it was our default that was migrated

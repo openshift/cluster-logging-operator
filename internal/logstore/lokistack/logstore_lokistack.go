@@ -219,6 +219,7 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 	if spec.Outputs != nil {
 		outputs = spec.Outputs
 	}
+	outputMap := spec.OutputMap()
 	// Now create output from each input
 	for input := range needOutput {
 		tenant := getInputTypeFromName(spec, input)
@@ -229,6 +230,7 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 			Secret: &loggingv1.OutputSecretSpec{
 				Name: saTokenSecret,
 			},
+			Tuning: getDefaultTuneSpec(outputMap),
 		})
 	}
 
@@ -299,4 +301,12 @@ func FormatOutputNameFromInput(inputName string) string {
 	}
 
 	return loggingv1.OutputNameDefault + "-" + inputName
+}
+
+// getDefaultTuneSpec returns a tuning spec if defined for the default lokistack in spec.Outputs
+func getDefaultTuneSpec(outputMap map[string]*loggingv1.OutputSpec) *loggingv1.OutputTuningSpec {
+	if output, ok := outputMap[loggingv1.OutputNameDefault]; ok && output.Type == loggingv1.OutputTypeLoki {
+		return output.Tuning
+	}
+	return nil
 }

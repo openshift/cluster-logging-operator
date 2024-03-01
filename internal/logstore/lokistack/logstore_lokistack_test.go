@@ -62,6 +62,53 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			},
 		},
 		{
+			desc: "single tenant - single output with defined default tune spec",
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: loggingv1.OutputNameDefault,
+						Type: loggingv1.OutputTypeLoki,
+						Tuning: &loggingv1.OutputTuningSpec{
+							Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs:  []string{loggingv1.InputNameApplication},
+					},
+				},
+			},
+			wantOutputs: []loggingv1.OutputSpec{
+				{
+					Name: loggingv1.OutputNameDefault,
+					Type: loggingv1.OutputTypeLoki,
+					Tuning: &loggingv1.OutputTuningSpec{
+						Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+					},
+				},
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-apps",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+					Tuning: &loggingv1.OutputTuningSpec{
+						Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+					},
+				},
+			},
+			wantPipelines: []loggingv1.PipelineSpec{
+				{
+					Name:       "default_loki_pipeline_0_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-apps"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+				},
+			},
+		},
+		{
 			desc: "multiple tenants - single output",
 			spec: loggingv1.ClusterLogForwarderSpec{
 				Pipelines: []loggingv1.PipelineSpec{
@@ -89,6 +136,72 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
 					Secret: &loggingv1.OutputSecretSpec{
 						Name: constants.LogCollectorToken,
+					},
+				},
+			},
+			wantPipelines: []loggingv1.PipelineSpec{
+				{
+					Name:       "default_loki_pipeline_0_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-apps"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+				},
+				{
+					Name:       "default_loki_pipeline_1_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-infra"},
+					InputRefs:  []string{loggingv1.InputNameInfrastructure},
+				},
+			},
+		},
+		{
+			desc: "multiple tenants - single output with defined default tuning spec",
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: loggingv1.OutputNameDefault,
+						Type: loggingv1.OutputTypeLoki,
+						Tuning: &loggingv1.OutputTuningSpec{
+							Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameInfrastructure,
+						},
+					},
+				},
+			},
+			wantOutputs: []loggingv1.OutputSpec{
+				{
+					Name: loggingv1.OutputNameDefault,
+					Type: loggingv1.OutputTypeLoki,
+					Tuning: &loggingv1.OutputTuningSpec{
+						Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+					},
+				},
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-apps",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+					Tuning: &loggingv1.OutputTuningSpec{
+						Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
+					},
+				},
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-infra",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+					Tuning: &loggingv1.OutputTuningSpec{
+						Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
 					},
 				},
 			},

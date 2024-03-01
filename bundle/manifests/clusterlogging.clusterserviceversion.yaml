@@ -114,7 +114,7 @@ metadata:
         }
       ]
     capabilities: Seamless Upgrades
-    categories: OpenShift Optional, Logging & Tracing, Observability
+    categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest

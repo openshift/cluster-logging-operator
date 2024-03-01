@@ -1,4 +1,4 @@
-package collection
+package security
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ClusterLogging E2E Suite - Collection")
+	RunSpecs(t, "[e2e][collection][security] Suite")
 }

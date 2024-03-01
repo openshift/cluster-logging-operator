@@ -1,4 +1,4 @@
-package collection
+package security
 
 import (
 	"fmt"
@@ -124,13 +124,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("having all sysctls disabled")
-		result, err = runInCollectorContainer("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0")
-		if collectorType == logging.LogCollectionTypeFluentd {
-			Expect(result).To(MatchRegexp(`(permission denied|setting key).*net\.ipv4\.ip_local_port_range.*(Read-only file system)?`))
-		}
-		if collectorType == logging.LogCollectionTypeVector && err != nil {
-			Expect(result).To(ContainSubstring("sysctl: no such file"))
-		}
+		result, _ = runInCollectorContainer("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0")
+		Expect(result).To(ContainSubstring("sysctl: no such file"))
 
 		By("disabling privilege escalation")
 		result, err = runInCollectorContainer("bash", "-c", "cat /proc/1/status | grep NoNewPrivs")

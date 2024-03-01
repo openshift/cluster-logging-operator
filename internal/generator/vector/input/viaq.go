@@ -33,7 +33,7 @@ var (
 		fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "opa"),
 	).AddExtensions(excludeExtensions...).
 		Build()
-	excludeExtensions = []string{"gz", "tmp"}
+	excludeExtensions = []string{"gz", "tmp", "log.*"}
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
 	infraNSRegex      = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
 

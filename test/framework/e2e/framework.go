@@ -102,7 +102,7 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 
 func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 	namespace := tc.CreateTestNamespace()
-	return namespace, tc.DeployLogGeneratorWithNamespaceName(namespace, "log-generator")
+	return namespace, tc.DeployLogGeneratorWithNamespaceName(namespace, "log-generator", DefaultLogGeneratorOptions)
 }
 
 func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, error) {
@@ -110,8 +110,17 @@ func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, err
 	return namespace, tc.DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint)
 }
 
-func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string) error {
-	pod := runtime.NewLogGenerator(namespace, name, 1000, 0, "My life is my message")
+type LogGeneratorOptions struct {
+	Count          int
+	Delay          time.Duration
+	Message        string
+	GeneratorCount int
+}
+
+var DefaultLogGeneratorOptions = LogGeneratorOptions{Count: 1000, Delay: 0, Message: "My life is my message", GeneratorCount: 1}
+
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string, options LogGeneratorOptions) error {
+	pod := runtime.NewMultiContainerLogGenerator(namespace, name, options.Count, options.Delay, options.Message, options.GeneratorCount)
 	clolog.Info("Checking SA for LogGenerator", "Deployment name", pod.Name, "namespace", namespace)
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
@@ -129,8 +138,8 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name 
 	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
-func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace, name string, labels map[string]string) error {
-	err := tc.DeployLogGeneratorWithNamespaceName(namespace, name)
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace, name string, labels map[string]string, options LogGeneratorOptions) error {
+	err := tc.DeployLogGeneratorWithNamespaceName(namespace, name, options)
 	if err != nil {
 		return err
 	}

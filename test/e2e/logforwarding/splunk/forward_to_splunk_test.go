@@ -121,7 +121,7 @@ func testLogForwardingToSplunk(t *testing.T, cl *loggingv1.ClusterLogging, clf *
 	require.Equal(t, 3, len(logs))
 	for _, log := range logs {
 		require.Contains(t, log.Message, message)
-		require.Equal(t, log.Kubernetes.ContainerName, logGenerator)
+		require.Contains(t, log.Kubernetes.ContainerName, logGenerator)
 		require.Equal(t, log.LogType, "application")
 	}
 

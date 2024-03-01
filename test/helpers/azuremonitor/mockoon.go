@@ -104,7 +104,7 @@ func ReadApplicationLogFromMockoon(framework *functional.CollectorFunctionalFram
 	return extractStructuredLogs(output, "application")
 }
 
-//parse output and extract structured log by given log type
+// parse output and extract structured log by given log type
 func extractStructuredLogs(output, logType string) ([]types.ApplicationLog, error) {
 	var logs []MockoonLog
 

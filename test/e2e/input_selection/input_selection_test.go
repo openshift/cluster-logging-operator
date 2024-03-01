@@ -60,7 +60,7 @@ var _ = Describe("[InputSelection]", func() {
 			if err := e2e.DeployLogGeneratorWithNamespaceAndLabels(namespace, generatorName(componentName), map[string]string{
 				"testtype": "myinfra",
 				component:  componentName,
-			}); err != nil {
+			}, framework.DefaultLogGeneratorOptions); err != nil {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
 		}
@@ -144,7 +144,7 @@ var _ = Describe("[InputSelection]", func() {
 				}},
 			nil,
 			func() {
-				Expect(receiver.ListContainers()).To(HaveEach(MatchRegexp(fmt.Sprintf("^(%s|%s)$", valueFrontend, valueBackend))))
+				Expect(receiver.ListContainers()).To(HaveEach(MatchRegexp(fmt.Sprintf("^(%s|%s)$", valueFrontend, valueBackend))), "")
 			}),
 		Entry("application inputs should only collect from matching pod labels",
 			logging.InputSpec{

@@ -15,10 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const (
-	DefaultHttpTimeoutSecs = 10
-)
-
 var (
 	httpEncodingJson = fmt.Sprintf("%q", "json")
 )
@@ -64,40 +60,6 @@ func (h HttpEncoding) Template() string {
 	return `{{define "` + h.Name() + `" -}}
 [sinks.{{.ComponentID}}.encoding]
 codec = {{.Codec}}
-{{end}}`
-}
-
-type HttpBatch struct {
-	ComponentID string
-	MaxBytes    string
-}
-
-func (b HttpBatch) Name() string {
-	return "vectorHttpBatch"
-}
-
-func (b HttpBatch) Template() string {
-	return `{{define "` + b.Name() + `" -}}
-[sinks.{{.ComponentID}}.batch]
-max_bytes = {{.MaxBytes}}
-{{end}}`
-}
-
-type HttpRequest struct {
-	ComponentID string
-	Timeout     string
-	Headers     Element
-}
-
-func (h HttpRequest) Name() string {
-	return "vectorHttpRequest"
-}
-
-func (h HttpRequest) Template() string {
-	return `{{define "` + h.Name() + `" -}}
-[sinks.{{.ComponentID}}.request]
-timeout_secs = {{.Timeout}}
-{{kv .Headers -}}
 {{end}}`
 }
 
@@ -184,12 +146,10 @@ func Method(h *logging.Http) string {
 }
 
 func Request(id string, o logging.OutputSpec, strategy common.ConfigStrategy) *common.Request {
-	timeout := DefaultHttpTimeoutSecs
-	if o.Http != nil && o.Http.Timeout != 0 {
-		timeout = o.Http.Timeout
-	}
 	req := common.NewRequest(id, strategy)
-	req.TimeoutSecs.Value = timeout
+	if o.Http != nil && o.Http.Timeout != 0 {
+		req.TimeoutSecs.Value = o.Http.Timeout
+	}
 	if o.Http != nil && len(o.Http.Headers) != 0 {
 		req.SetHeaders(o.Http.Headers)
 	}

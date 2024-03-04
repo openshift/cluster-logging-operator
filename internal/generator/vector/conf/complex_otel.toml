@@ -467,7 +467,6 @@ method = "post"
 codec = "json"
 
 [sinks.output_http_receiver.request]
-timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
 [sinks.output_http_receiver.tls]

@@ -38,7 +38,7 @@ func (r *Request) Name() string {
 }
 
 func (r *Request) isEmpty() bool {
-	return r.RetryInitialBackoffSec.String()+
+	return len(r.headers) == 0 && r.RetryInitialBackoffSec.String()+
 		r.RetryMaxDurationSec.String()+
 		r.RetryAttempts.String()+
 		r.Concurrency.String()+

@@ -88,7 +88,6 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.request]
-timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
 # Basic Auth Config
@@ -165,7 +164,6 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.request]
-timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
 # Bearer Auth Config
@@ -589,7 +587,6 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.request]
-timeout_secs = 10
 headers = {"h1"="v1","h2"="v2"}
 
 # Basic Auth Config
@@ -657,9 +654,6 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
-
-[sinks.http_receiver.request]
-timeout_secs = 10
 
 # Basic Auth Config
 [sinks.http_receiver.auth]

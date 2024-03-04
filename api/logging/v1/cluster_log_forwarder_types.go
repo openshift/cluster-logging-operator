@@ -15,11 +15,12 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	openshiftv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
@@ -249,7 +250,7 @@ type OutputTuningSpec struct {
 	// It is an error if the compression type is not supported by the  output.
 	//
 	// +optional
-	// +kubebuilder:validation:Enum:='';gzip;none;snappy;zlib;zstd
+	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
 	Compression string `json:"compression,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.

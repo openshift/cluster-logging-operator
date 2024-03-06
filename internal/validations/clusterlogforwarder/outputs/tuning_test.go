@@ -54,6 +54,18 @@ var _ = Describe("Validate ", func() {
 				Compression: "gzip",
 			},
 		}),
+		Entry("should fail for gcp when compression is spec'd", false, loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeGoogleCloudLogging,
+			Tuning: &loggingv1.OutputTuningSpec{
+				Compression: "gzip",
+			},
+		}),
+		Entry("should pass for gcp when compression is empty", true, loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeGoogleCloudLogging,
+			Tuning: &loggingv1.OutputTuningSpec{
+				Compression: "",
+			},
+		}),
 		Entry("should fail for kafka when MaxRetryDuration is spec'd", false, loggingv1.OutputSpec{
 			Type: loggingv1.OutputTypeKafka,
 			Tuning: &loggingv1.OutputTuningSpec{
@@ -64,6 +76,18 @@ var _ = Describe("Validate ", func() {
 			Type: loggingv1.OutputTypeKafka,
 			Tuning: &loggingv1.OutputTuningSpec{
 				MinRetryDuration: utils.GetPtr(time.Duration(1)),
+			},
+		}),
+		Entry("should pass for kafka when lz4 spec'd as compression", true, loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeKafka,
+			Tuning: &loggingv1.OutputTuningSpec{
+				Compression: "lz4",
+			},
+		}),
+		Entry("should fail for elasticsearch when lz4 spec'd as compression", false, loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeElasticsearch,
+			Tuning: &loggingv1.OutputTuningSpec{
+				Compression: "lz4",
 			},
 		}),
 	)

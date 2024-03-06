@@ -2,6 +2,7 @@ package gcl
 
 import (
 	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -52,7 +53,6 @@ inputs = {{.Inputs}}
 credentials_path = {{.CredentialsPath}}
 log_id = "{{.LogID}}"
 severity_key = "{{.SeverityKey}}"
-
 
 [sinks.{{.ComponentID}}.resource]
 type = "k8s_node"

@@ -1308,6 +1308,87 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 		})
 
 	})
+
+	Context("tuning specs", func() {
+
+		client := fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
+			constants.OpenshiftNS, constants.CollectorSecretName, nil,
+		)).Build()
+		extras := map[string]bool{}
+
+		const (
+			pipelineName = "test"
+			outputName   = "my-output"
+			esURL        = "https://es.svc.infra.cluster:9999"
+		)
+
+		It("should pass with valid tuning parameters", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: outputName,
+						Type: loggingv1.OutputTypeElasticsearch,
+						URL:  esURL,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Elasticsearch: &loggingv1.Elasticsearch{},
+						},
+						Tuning: &loggingv1.OutputTuningSpec{
+							Compression: "zlib",
+							Delivery:    loggingv1.OutputDeliveryModeAtLeastOnce,
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						InputRefs:  []string{loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure, loggingv1.InputNameAudit},
+						OutputRefs: []string{outputName},
+						Name:       pipelineName,
+					},
+				},
+			}
+			clf := loggingv1.ClusterLogForwarder{}
+			clf.Spec = *forwarderSpec
+			clf.Name = constants.SingletonName
+			clf.Namespace = constants.OpenshiftNS
+
+			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
+			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ConditionReady, true, "", ""))
+		})
+
+		It("should fail with invalid tuning parameters", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Outputs: []loggingv1.OutputSpec{
+					{
+						Name: outputName,
+						Type: loggingv1.OutputTypeElasticsearch,
+						URL:  esURL,
+						OutputTypeSpec: loggingv1.OutputTypeSpec{
+							Elasticsearch: &loggingv1.Elasticsearch{},
+						},
+						Tuning: &loggingv1.OutputTuningSpec{
+							Compression: "lz4",
+							Delivery:    loggingv1.OutputDeliveryModeAtLeastOnce,
+						},
+					},
+				},
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						InputRefs:  []string{loggingv1.InputNameApplication, loggingv1.InputNameInfrastructure, loggingv1.InputNameAudit},
+						OutputRefs: []string{outputName},
+						Name:       pipelineName,
+					},
+				},
+			}
+			clf := loggingv1.ClusterLogForwarder{}
+			clf.Spec = *forwarderSpec
+			clf.Name = constants.SingletonName
+			clf.Namespace = constants.OpenshiftNS
+
+			_, clfStatus = ValidateInputsOutputsPipelines(clf, client, extras)
+			Expect(clfStatus.Pipelines[pipelineName]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid: unrecognized outputs*"))
+			Expect(clfStatus.Outputs[outputName]).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, `output "my-output": compression is not supported for the output type`))
+		})
+	})
 })
 
 func Test_verifyOutputURL(t *testing.T) {

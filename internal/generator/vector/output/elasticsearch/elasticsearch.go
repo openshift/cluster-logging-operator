@@ -2,10 +2,11 @@ package elasticsearch
 
 import (
 	"fmt"
+	"strings"
+
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -192,7 +193,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		[]Element{
 			SetESIndex(esIndexID, inputs, o, op),
 			FlattenLabels(dedotID, []string{esIndexID}),
-			Output(id, o, []string{dedotID}, secret, op),
+			sink,
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),
 			common.NewBuffer(id, strategy),

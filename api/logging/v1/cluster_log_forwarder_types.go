@@ -250,7 +250,7 @@ type OutputTuningSpec struct {
 	// It is an error if the compression type is not supported by the  output.
 	//
 	// +optional
-	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
+	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd;lz4
 	Compression string `json:"compression,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.

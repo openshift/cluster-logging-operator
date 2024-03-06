@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	unsupportedCompression = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeAzureMonitor)
+	unsupportedCompression = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeAzureMonitor, loggingv1.OutputTypeGoogleCloudLogging)
 	unsupportedRequest     = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeKafka)
 )
 
@@ -24,6 +24,11 @@ func VerifyTuning(spec loggingv1.OutputSpec) (valid bool, msg string) {
 
 	//compression
 	if unsupportedCompression.Has(spec.Type) && spec.Tuning.Compression != "" && spec.Tuning.Compression != "none" {
+		return false, compressionNotSupportedForType
+	}
+
+	// lz4 is only supported for kafka
+	if spec.Tuning.Compression == "lz4" && spec.Type != loggingv1.OutputTypeKafka {
 		return false, compressionNotSupportedForType
 	}
 

@@ -2,10 +2,11 @@ package kafka
 
 import (
 	"fmt"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"net/url"
 	"strings"
+
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 
@@ -43,6 +44,7 @@ type = "kafka"
 inputs = {{.Inputs}}
 bootstrap_servers = {{.BootstrapServers}}
 topic = {{.Topic}}
+{{.Compression}}
 {{end}}
 `
 }
@@ -67,7 +69,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(id, o, []string{dedottedID}, secret, op, brokers),
+			sink,
 			Encoding(id, op),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),

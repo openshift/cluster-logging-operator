@@ -984,6 +984,7 @@ spec:
                           - snappy
                           - zlib
                           - zstd
+                          - lz4
                           type: string
                         delivery:
                           description: "Delivery mode for log forwarding. \n - AtLeastOnce

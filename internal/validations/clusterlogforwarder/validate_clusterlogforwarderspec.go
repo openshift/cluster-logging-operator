@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/outputs"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
@@ -253,6 +254,7 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 
 		if valid, msg := outputs.VerifyTuning(output); !valid {
 			log.V(3).Info("verify output tuning failed", "output name", output.Name, "message", msg)
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: %s", output.Name, msg))
 			status.Outputs.Set(output.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
 				corev1.ConditionTrue,
 				loggingv1.ValidationFailureReason,

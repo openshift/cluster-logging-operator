@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"strings"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
@@ -98,7 +99,15 @@ func main() {
 	)
 
 	// https://issues.redhat.com/browse/LOG-3321
-	syncPeriod := time.Minute * 3
+	cacheOptions := cache.Options{
+		SyncPeriod: utils.GetPtr(time.Minute * 3),
+	}
+	if watchNS := getWatchNS(); len(watchNS) > 0 {
+		cacheOptions.DefaultNamespaces = map[string]cache.Config{}
+		for _, ns := range watchNS {
+			cacheOptions.DefaultNamespaces[ns] = cache.Config{}
+		}
+	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
@@ -107,9 +116,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "b430cc2e.openshift.io",
-		Cache: cache.Options{
-			SyncPeriod: &syncPeriod,
-		},
+		Cache:                  cacheOptions,
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -208,6 +215,18 @@ func main() {
 		os.Exit(1)
 	}
 
+}
+
+// getWatchNS returns the namespaces being watched by the operator.  Empty means all
+// - https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
+func getWatchNS() []string {
+	OpenshiftNSEnvVar := "WATCH_NAMESPACE"
+	ns, found := os.LookupEnv(OpenshiftNSEnvVar)
+	if !found {
+		log.Error(fmt.Errorf("Exiting. %s must be set", OpenshiftNSEnvVar), "Failed to get watch namespace")
+		os.Exit(1)
+	}
+	return strings.Split(ns, ",")
 }
 
 func migrateManifestResources(k8sClient client.Client) {

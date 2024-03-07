@@ -1,9 +1,13 @@
-:toc:
-:toclevels: 2
-:toc-placement!:
-toc::[]
+// Module included in the following assemblies:
+//
+// * /logging/api_reference/logging-5-x-reference.adoc
+// UPDATE THE NAME OF THE ASSEMBLY FOR THE API VERSION
 
-== ClusterLogForwarder
+// :_mod-docs-content-type: <REFERENCE>
+// [id="filename_{context}"]
+
+= ClusterLogForwarder
+
 ClusterLogForwarder is an API to configure forwarding logs.
 
 You configure forwarding by specifying a list of `pipelines`,
@@ -26,13 +30,11 @@ For more details see the documentation on the API fields.
 |status|object|  Status of the ClusterLogForwarder
 |======================
 
-=== .spec
-===== Description
+== .spec
 
 ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -46,14 +48,12 @@ ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 |serviceAccountName|string|  *(optional)* ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
 |======================
 
-=== .spec.filters[]
-===== Description
+== .spec.filters[]
 
 Filter defines a filter for log messages.
 See [FilterTypeSpec] for a list of filter types.
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -66,14 +66,12 @@ See [FilterTypeSpec] for a list of filter types.
 |type|string|  Type of filter.
 |======================
 
-=== .spec.inputs[]
-===== Description
+== .spec.inputs[]
 
 InputSpec defines a selector of log messages for a given log type. The input is rejected
 if more than one of the following subfields are defined: application, infrastructure, audit, and receiver.
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -86,14 +84,12 @@ if more than one of the following subfields are defined: application, infrastruc
 |receiver|object|  *(optional)* Receiver to receive logs from non-cluster sources.
 |======================
 
-=== .spec.inputs[].application
-===== Description
+== .spec.inputs[].application
 
 Application log selector.
 All conditions in the selector must be satisfied (logical AND) to select logs.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -106,11 +102,9 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================
 
-=== .spec.inputs[].application.containerLimit
-===== Description
+== .spec.inputs[].application.containerLimit
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -119,13 +113,11 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
-=== .spec.inputs[].application.containers
-===== Description
+== .spec.inputs[].application.containers
 
 InclusionSpec defines a set of similar resources for inclusion or exclusion
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -135,37 +127,27 @@ InclusionSpec defines a set of similar resources for inclusion or exclusion
 |include|array|  *(optional)* Include resources.  May supports glob patterns
 |======================
 
-=== .spec.inputs[].application.containers.exclude[]
-===== Description
+== .spec.inputs[].application.containers.exclude[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].application.containers.include[]
-===== Description
+== .spec.inputs[].application.containers.include[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].application.excludeNamespaces[]
-===== Description
+== .spec.inputs[].application.excludeNamespaces[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].application.namespaces[]
-===== Description
+== .spec.inputs[].application.namespaces[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].application.selector
-===== Description
+== .spec.inputs[].application.selector
 
 LabelSelector is a label query over a set of resources.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -175,11 +157,9 @@ LabelSelector is a label query over a set of resources.
 |matchLabels|object|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
 |======================
 
-=== .spec.inputs[].application.selector.matchExpressions[]
-===== Description
+== .spec.inputs[].application.selector.matchExpressions[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -190,25 +170,19 @@ LabelSelector is a label query over a set of resources.
 |values|array|  *(optional)* values is an array of string values. If the operator is In or NotIn,
 |======================
 
-=== .spec.inputs[].application.selector.matchExpressions[].values[]
-===== Description
+== .spec.inputs[].application.selector.matchExpressions[].values[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].application.selector.matchLabels
-===== Description
+== .spec.inputs[].application.selector.matchLabels
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.inputs[].audit
-===== Description
+== .spec.inputs[].audit
 
 Audit enables audit logs. Filtering may be added in future.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -217,22 +191,18 @@ Audit enables audit logs. Filtering may be added in future.
 |sources|array|  *(optional)* Sources defines the list of audit sources to collect.
 |======================
 
-=== .spec.inputs[].audit.sources[]
-===== Description
+== .spec.inputs[].audit.sources[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].infrastructure
-===== Description
+== .spec.inputs[].infrastructure
 
 Infrastructure enables infrastructure logs. Filtering may be added in future.
 Sources of these logs:
 * container workloads deployed to namespaces: default, kube*, openshift*
 * journald logs from cluster nodes
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -241,21 +211,17 @@ Sources of these logs:
 |sources|array|  *(optional)* Sources defines the list of infrastructure sources to collect.
 |======================
 
-=== .spec.inputs[].infrastructure.sources[]
-===== Description
+== .spec.inputs[].infrastructure.sources[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.inputs[].receiver
-===== Description
+== .spec.inputs[].receiver
 
 ReceiverSpec is a union of input Receiver types.
 
 The fields of this struct define the set of known Receiver types.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -264,11 +230,9 @@ The fields of this struct define the set of known Receiver types.
 |type|string|  *(optional)* Type of Receiver plugin.
 |======================
 
-=== .spec.outputDefaults
-===== Description
+== .spec.outputDefaults
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -277,13 +241,11 @@ The fields of this struct define the set of known Receiver types.
 |elasticsearch|object|  *(optional)* Elasticsearch OutputSpec default values
 |======================
 
-=== .spec.outputDefaults.elasticsearch
-===== Description
+== .spec.outputDefaults.elasticsearch
 
 ElasticsearchStructuredSpec is spec related to structured log changes to determine the elasticsearch index
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -294,13 +256,11 @@ ElasticsearchStructuredSpec is spec related to structured log changes to determi
 |structuredTypeName|string|  *(optional)* StructuredTypeName specifies the name of elasticsearch schema
 |======================
 
-=== .spec.outputs[]
-===== Description
+== .spec.outputs[]
 
 Output defines a destination for log messages.
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -325,11 +285,9 @@ Output defines a destination for log messages.
 |url|string|  *(optional)* URL to send log records to.
 |======================
 
-=== .spec.outputs[].limit
-===== Description
+== .spec.outputs[].limit
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -338,13 +296,11 @@ Output defines a destination for log messages.
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
-=== .spec.outputs[].secret
-===== Description
+== .spec.outputs[].secret
 
 OutputSecretSpec is a secret reference containing name only, no namespace.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -353,13 +309,11 @@ OutputSecretSpec is a secret reference containing name only, no namespace.
 |name|string|  Name of a secret in the namespace configured for log forwarder secrets.
 |======================
 
-=== .spec.outputs[].tls
-===== Description
+== .spec.outputs[].tls
 
 OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -369,11 +323,9 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 |securityProfile|object|  TLSSecurityProfile is the security profile to apply to the output connection
 |======================
 
-=== .spec.outputs[].tls.securityProfile
-===== Description
+== .spec.outputs[].tls.securityProfile
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -386,11 +338,9 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 |type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
 |======================
 
-=== .spec.outputs[].tls.securityProfile.custom
-===== Description
+== .spec.outputs[].tls.securityProfile.custom
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -400,31 +350,23 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 |minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
 |======================
 
-=== .spec.outputs[].tls.securityProfile.intermediate
-===== Description
+== .spec.outputs[].tls.securityProfile.intermediate
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.outputs[].tls.securityProfile.modern
-===== Description
+== .spec.outputs[].tls.securityProfile.modern
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.outputs[].tls.securityProfile.old
-===== Description
+== .spec.outputs[].tls.securityProfile.old
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.outputs[].tuning
-===== Description
+== .spec.outputs[].tuning
 
 OutputTuningSpec tuning parameters for an output
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -437,17 +379,13 @@ OutputTuningSpec tuning parameters for an output
 |minRetryDuration|Duration|  *(optional)* MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 |======================
 
-=== .spec.outputs[].tuning.maxRetryDuration
-===== Description
+== .spec.outputs[].tuning.maxRetryDuration
 
-=====  Type
-* Duration
+Type:: Duration
 
-=== .spec.outputs[].tuning.maxWrite
-===== Description
+== .spec.outputs[].tuning.maxWrite
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -459,11 +397,9 @@ OutputTuningSpec tuning parameters for an output
 |s|string|  s is the generated value of this quantity to avoid recalculation
 |======================
 
-=== .spec.outputs[].tuning.maxWrite.d
-===== Description
+== .spec.outputs[].tuning.maxWrite.d
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -472,11 +408,9 @@ OutputTuningSpec tuning parameters for an output
 |Dec|object|  
 |======================
 
-=== .spec.outputs[].tuning.maxWrite.d.Dec
-===== Description
+== .spec.outputs[].tuning.maxWrite.d.Dec
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -486,11 +420,9 @@ OutputTuningSpec tuning parameters for an output
 |unscaled|object|  
 |======================
 
-=== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled
-===== Description
+== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -500,17 +432,13 @@ OutputTuningSpec tuning parameters for an output
 |neg|bool|  
 |======================
 
-=== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled.abs
-===== Description
+== .spec.outputs[].tuning.maxWrite.d.Dec.unscaled.abs
 
-=====  Type
-* Word
+Type:: Word
 
-=== .spec.outputs[].tuning.maxWrite.i
-===== Description
+== .spec.outputs[].tuning.maxWrite.i
 
-=====  Type
-* int
+Type:: int
 
 [options="header"]
 |======================
@@ -520,19 +448,15 @@ OutputTuningSpec tuning parameters for an output
 |value|int|  
 |======================
 
-=== .spec.outputs[].tuning.minRetryDuration
-===== Description
+== .spec.outputs[].tuning.minRetryDuration
 
-=====  Type
-* Duration
+Type:: Duration
 
-=== .spec.pipelines[]
-===== Description
+== .spec.pipelines[]
 
 PipelinesSpec link a set of inputs to a set of outputs.
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -547,37 +471,27 @@ PipelinesSpec link a set of inputs to a set of outputs.
 |parse|string|  *(optional)* Parse enables parsing of log entries into structured logs
 |======================
 
-=== .spec.pipelines[].filterRefs[]
-===== Description
+== .spec.pipelines[].filterRefs[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.pipelines[].inputRefs[]
-===== Description
+== .spec.pipelines[].inputRefs[]
 
-=====  Type
-* array
+Type:: array
 
-=== .spec.pipelines[].labels
-===== Description
+== .spec.pipelines[].labels
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.pipelines[].outputRefs[]
-===== Description
+== .spec.pipelines[].outputRefs[]
 
-=====  Type
-* array
+Type:: array
 
-=== .status
-===== Description
+== .status
 
 ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -590,37 +504,28 @@ ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 |pipelines|Conditions|  Pipelines maps pipeline name to condition of the pipeline.
 |======================
 
-=== .status.conditions
-===== Description
+== .status.conditions
 
-=====  Type
-* object
+Type:: object
 
-=== .status.filters
-===== Description
+== .status.filters
 
-=====  Type
-* Conditions
+Type:: Conditions
 
-=== .status.inputs
-===== Description
+== .status.inputs
 
-=====  Type
-* Conditions
+Type:: Conditions
 
-=== .status.outputs
-===== Description
+== .status.outputs
 
-=====  Type
-* Conditions
+Type:: Conditions
 
-=== .status.pipelines
-===== Description
+== .status.pipelines
 
-=====  Type
-* Conditions
+Type:: Conditions
 
-== ClusterLogging
+= ClusterLogging
+
 A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
 
 [options="header"]
@@ -631,13 +536,11 @@ A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clust
 |status|object|  Status defines the observed state of ClusterLogging
 |======================
 
-=== .spec
-===== Description
+== .spec
 
 ClusterLoggingSpec defines the desired state of ClusterLogging
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -651,13 +554,11 @@ ClusterLoggingSpec defines the desired state of ClusterLogging
 |visualization|object|  *(optional)* Specification of the Visualization component for the cluster
 |======================
 
-=== .spec.collection
-===== Description
+== .spec.collection
 
 This is the struct that will contain information pertinent to Log and event collection
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -671,13 +572,11 @@ This is the struct that will contain information pertinent to Log and event coll
 |type|string|  The type of Log Collection to configure
 |======================
 
-=== .spec.collection.fluentd
-===== Description
+== .spec.collection.fluentd
 
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -687,8 +586,7 @@ FluentdForwarderSpec represents the configuration for forwarders of type fluentd
 |inFile|object|  
 |======================
 
-=== .spec.collection.fluentd.buffer
-===== Description
+== .spec.collection.fluentd.buffer
 
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
@@ -704,8 +602,7 @@ https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
 For retry parameters refer to:
 https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -723,8 +620,7 @@ https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 |totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
 |======================
 
-=== .spec.collection.fluentd.inFile
-===== Description
+== .spec.collection.fluentd.inFile
 
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
@@ -732,8 +628,7 @@ to tune the configuration for all fluentd in-tail inputs.
 For general parameters refer to:
 https://docs.fluentd.org/input/tail#parameters
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -742,16 +637,17 @@ https://docs.fluentd.org/input/tail#parameters
 |readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 
-=== .spec.collection.logs
-===== Description
+== .spec.collection.logs
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
 Specification of Log Collection for the cluster
 See spec.collection
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -761,13 +657,11 @@ See spec.collection
 |type|string|  The type of Log Collection to configure
 |======================
 
-=== .spec.collection.logs.fluentd
-===== Description
+== .spec.collection.logs.fluentd
 
 CollectorSpec is spec to define scheduling and resources for a collector
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -778,17 +672,13 @@ CollectorSpec is spec to define scheduling and resources for a collector
 |tolerations|array|  *(optional)* Define the tolerations the Pods will accept
 |======================
 
-=== .spec.collection.logs.fluentd.nodeSelector
-===== Description
+== .spec.collection.logs.fluentd.nodeSelector
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.collection.logs.fluentd.resources
-===== Description
+== .spec.collection.logs.fluentd.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -799,11 +689,9 @@ CollectorSpec is spec to define scheduling and resources for a collector
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.collection.logs.fluentd.resources.claims[]
-===== Description
+== .spec.collection.logs.fluentd.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -812,23 +700,17 @@ CollectorSpec is spec to define scheduling and resources for a collector
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.collection.logs.fluentd.resources.limits
-===== Description
+== .spec.collection.logs.fluentd.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.collection.logs.fluentd.resources.requests
-===== Description
+== .spec.collection.logs.fluentd.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.collection.logs.fluentd.tolerations[]
-===== Description
+== .spec.collection.logs.fluentd.tolerations[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -841,21 +723,20 @@ CollectorSpec is spec to define scheduling and resources for a collector
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.collection.logs.fluentd.tolerations[].tolerationSeconds
-===== Description
+== .spec.collection.logs.fluentd.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .spec.curation
-===== Description
+== .spec.curation
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
 This is the struct that will contain information pertinent to Log curation (Curator)
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -865,11 +746,9 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |type|string|  The kind of curation to configure
 |======================
 
-=== .spec.curation.curator
-===== Description
+== .spec.curation.curator
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -881,17 +760,13 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |tolerations|array|  
 |======================
 
-=== .spec.curation.curator.nodeSelector
-===== Description
+== .spec.curation.curator.nodeSelector
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.curation.curator.resources
-===== Description
+== .spec.curation.curator.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -902,11 +777,9 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.curation.curator.resources.claims[]
-===== Description
+== .spec.curation.curator.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -915,23 +788,17 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.curation.curator.resources.limits
-===== Description
+== .spec.curation.curator.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.curation.curator.resources.requests
-===== Description
+== .spec.curation.curator.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.curation.curator.tolerations[]
-===== Description
+== .spec.curation.curator.tolerations[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -944,24 +811,23 @@ This is the struct that will contain information pertinent to Log curation (Cura
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.curation.curator.tolerations[].tolerationSeconds
-===== Description
+== .spec.curation.curator.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .spec.forwarder
-===== Description
+== .spec.forwarder
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
 ForwarderSpec contains global tuning parameters for specific forwarder implementations.
 This field is not required for general use, it allows performance tuning by users
 familiar with the underlying forwarder technology.
 Currently supported: `fluentd`.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -970,13 +836,11 @@ Currently supported: `fluentd`.
 |fluentd|object|  
 |======================
 
-=== .spec.forwarder.fluentd
-===== Description
+== .spec.forwarder.fluentd
 
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -986,8 +850,7 @@ FluentdForwarderSpec represents the configuration for forwarders of type fluentd
 |inFile|object|  
 |======================
 
-=== .spec.forwarder.fluentd.buffer
-===== Description
+== .spec.forwarder.fluentd.buffer
 
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
@@ -1003,8 +866,7 @@ https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
 For retry parameters refer to:
 https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1022,8 +884,7 @@ https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 |totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
 |======================
 
-=== .spec.forwarder.fluentd.inFile
-===== Description
+== .spec.forwarder.fluentd.inFile
 
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
@@ -1031,8 +892,7 @@ to tune the configuration for all fluentd in-tail inputs.
 For general parameters refer to:
 https://docs.fluentd.org/input/tail#parameters
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1041,13 +901,11 @@ https://docs.fluentd.org/input/tail#parameters
 |readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 
-=== .spec.logStore
-===== Description
+== .spec.logStore
 
 The LogStoreSpec contains information about how logs are stored.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1059,13 +917,14 @@ The LogStoreSpec contains information about how logs are stored.
 |type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
 |======================
 
-=== .spec.logStore.elasticsearch
-===== Description
+== .spec.logStore.elasticsearch
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1080,17 +939,13 @@ The LogStoreSpec contains information about how logs are stored.
 |tolerations|array|  
 |======================
 
-=== .spec.logStore.elasticsearch.nodeSelector
-===== Description
+== .spec.logStore.elasticsearch.nodeSelector
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.logStore.elasticsearch.proxy
-===== Description
+== .spec.logStore.elasticsearch.proxy
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1099,11 +954,9 @@ The LogStoreSpec contains information about how logs are stored.
 |resources|object|  
 |======================
 
-=== .spec.logStore.elasticsearch.proxy.resources
-===== Description
+== .spec.logStore.elasticsearch.proxy.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1114,11 +967,9 @@ The LogStoreSpec contains information about how logs are stored.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.logStore.elasticsearch.proxy.resources.claims[]
-===== Description
+== .spec.logStore.elasticsearch.proxy.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1127,23 +978,17 @@ The LogStoreSpec contains information about how logs are stored.
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.logStore.elasticsearch.proxy.resources.limits
-===== Description
+== .spec.logStore.elasticsearch.proxy.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.logStore.elasticsearch.proxy.resources.requests
-===== Description
+== .spec.logStore.elasticsearch.proxy.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.logStore.elasticsearch.resources
-===== Description
+== .spec.logStore.elasticsearch.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1154,11 +999,9 @@ The LogStoreSpec contains information about how logs are stored.
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.logStore.elasticsearch.resources.claims[]
-===== Description
+== .spec.logStore.elasticsearch.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1167,23 +1010,17 @@ The LogStoreSpec contains information about how logs are stored.
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.logStore.elasticsearch.resources.limits
-===== Description
+== .spec.logStore.elasticsearch.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.logStore.elasticsearch.resources.requests
-===== Description
+== .spec.logStore.elasticsearch.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.logStore.elasticsearch.storage
-===== Description
+== .spec.logStore.elasticsearch.storage
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1193,11 +1030,9 @@ The LogStoreSpec contains information about how logs are stored.
 |storageClassName|string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
 |======================
 
-=== .spec.logStore.elasticsearch.storage.size
-===== Description
+== .spec.logStore.elasticsearch.storage.size
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1209,11 +1044,9 @@ The LogStoreSpec contains information about how logs are stored.
 |s|string|  s is the generated value of this quantity to avoid recalculation
 |======================
 
-=== .spec.logStore.elasticsearch.storage.size.d
-===== Description
+== .spec.logStore.elasticsearch.storage.size.d
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1222,11 +1055,9 @@ The LogStoreSpec contains information about how logs are stored.
 |Dec|object|  
 |======================
 
-=== .spec.logStore.elasticsearch.storage.size.d.Dec
-===== Description
+== .spec.logStore.elasticsearch.storage.size.d.Dec
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1236,11 +1067,9 @@ The LogStoreSpec contains information about how logs are stored.
 |unscaled|object|  
 |======================
 
-=== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled
-===== Description
+== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1250,17 +1079,13 @@ The LogStoreSpec contains information about how logs are stored.
 |neg|bool|  
 |======================
 
-=== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs
-===== Description
+== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs
 
-=====  Type
-* Word
+Type:: Word
 
-=== .spec.logStore.elasticsearch.storage.size.i
-===== Description
+== .spec.logStore.elasticsearch.storage.size.i
 
-=====  Type
-* int
+Type:: int
 
 [options="header"]
 |======================
@@ -1270,11 +1095,9 @@ The LogStoreSpec contains information about how logs are stored.
 |value|int|  
 |======================
 
-=== .spec.logStore.elasticsearch.tolerations[]
-===== Description
+== .spec.logStore.elasticsearch.tolerations[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1287,20 +1110,16 @@ The LogStoreSpec contains information about how logs are stored.
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.logStore.elasticsearch.tolerations[].tolerationSeconds
-===== Description
+== .spec.logStore.elasticsearch.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .spec.logStore.lokistack
-===== Description
+== .spec.logStore.lokistack
 
 LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
 It points to an existing LokiStack in the same namespace.
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1309,13 +1128,14 @@ It points to an existing LokiStack in the same namespace.
 |name|string|  Name of the LokiStack resource.
 |======================
 
-=== .spec.logStore.retentionPolicy
-===== Description
+== .spec.logStore.retentionPolicy
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1326,11 +1146,9 @@ It points to an existing LokiStack in the same namespace.
 |infra|object|  
 |======================
 
-=== .spec.logStore.retentionPolicy.application
-===== Description
+== .spec.logStore.retentionPolicy.application
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1342,11 +1160,9 @@ It points to an existing LokiStack in the same namespace.
 |pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.application.namespaceSpec[]
-===== Description
+== .spec.logStore.retentionPolicy.application.namespaceSpec[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1356,11 +1172,9 @@ It points to an existing LokiStack in the same namespace.
 |namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
-=== .spec.logStore.retentionPolicy.audit
-===== Description
+== .spec.logStore.retentionPolicy.audit
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1372,11 +1186,9 @@ It points to an existing LokiStack in the same namespace.
 |pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.audit.namespaceSpec[]
-===== Description
+== .spec.logStore.retentionPolicy.audit.namespaceSpec[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1386,11 +1198,9 @@ It points to an existing LokiStack in the same namespace.
 |namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
-=== .spec.logStore.retentionPolicy.infra
-===== Description
+== .spec.logStore.retentionPolicy.infra
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1402,11 +1212,9 @@ It points to an existing LokiStack in the same namespace.
 |pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.infra.namespaceSpec[]
-===== Description
+== .spec.logStore.retentionPolicy.infra.namespaceSpec[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1416,13 +1224,11 @@ It points to an existing LokiStack in the same namespace.
 |namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
-=== .spec.visualization
-===== Description
+== .spec.visualization
 
 This is the struct that will contain information pertinent to Log visualization (Kibana)
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1435,13 +1241,14 @@ This is the struct that will contain information pertinent to Log visualization 
 |type|string|  The type of Visualization to configure
 |======================
 
-=== .spec.visualization.kibana
-===== Description
+== .spec.visualization.kibana
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1454,19 +1261,18 @@ This is the struct that will contain information pertinent to Log visualization 
 |tolerations|array| **(DEPRECATED)** Define the tolerations the Pods will accept
 |======================
 
-=== .spec.visualization.kibana.nodeSelector
-===== Description
+== .spec.visualization.kibana.nodeSelector
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.kibana.proxy
-===== Description
+== .spec.visualization.kibana.proxy
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1475,11 +1281,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |resources|object|  
 |======================
 
-=== .spec.visualization.kibana.proxy.resources
-===== Description
+== .spec.visualization.kibana.proxy.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1490,11 +1294,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.visualization.kibana.proxy.resources.claims[]
-===== Description
+== .spec.visualization.kibana.proxy.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1503,29 +1305,21 @@ This is the struct that will contain information pertinent to Log visualization 
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.visualization.kibana.proxy.resources.limits
-===== Description
+== .spec.visualization.kibana.proxy.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.kibana.proxy.resources.requests
-===== Description
+== .spec.visualization.kibana.proxy.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.kibana.replicas
-===== Description
+== .spec.visualization.kibana.replicas
 
-=====  Type
-* int
+Type:: int
 
-=== .spec.visualization.kibana.resources
-===== Description
+== .spec.visualization.kibana.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1536,11 +1330,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.visualization.kibana.resources.claims[]
-===== Description
+== .spec.visualization.kibana.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1549,25 +1341,22 @@ This is the struct that will contain information pertinent to Log visualization 
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.visualization.kibana.resources.limits
-===== Description
+== .spec.visualization.kibana.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.kibana.resources.requests
-===== Description
+== .spec.visualization.kibana.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.kibana.tolerations[]
-===== Description
+== .spec.visualization.kibana.tolerations[]
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1580,23 +1369,17 @@ This is the struct that will contain information pertinent to Log visualization 
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.visualization.kibana.tolerations[].tolerationSeconds
-===== Description
+== .spec.visualization.kibana.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .spec.visualization.nodeSelector
-===== Description
+== .spec.visualization.nodeSelector
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.visualization.ocpConsole
-===== Description
+== .spec.visualization.ocpConsole
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1606,11 +1389,9 @@ This is the struct that will contain information pertinent to Log visualization 
 |timeout|string|  *(optional)* Timeout is the max duration before a query timeout
 |======================
 
-=== .spec.visualization.tolerations[]
-===== Description
+== .spec.visualization.tolerations[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1623,19 +1404,15 @@ This is the struct that will contain information pertinent to Log visualization 
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.visualization.tolerations[].tolerationSeconds
-===== Description
+== .spec.visualization.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .status
-===== Description
+== .status
 
 ClusterLoggingStatus defines the observed state of ClusterLogging
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1648,13 +1425,14 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |visualization|object|  *(optional)* 
 |======================
 
-=== .status.collection
-===== Description
+== .status.collection
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1663,11 +1441,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |logs|object|  *(optional)* 
 |======================
 
-=== .status.collection.logs
-===== Description
+== .status.collection.logs
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1676,11 +1452,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |fluentdStatus|object|  *(optional)* 
 |======================
 
-=== .status.collection.logs.fluentdStatus
-===== Description
+== .status.collection.logs.fluentdStatus
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1692,33 +1466,28 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |pods|string|  *(optional)* 
 |======================
 
-=== .status.collection.logs.fluentdStatus.clusterCondition
-===== Description
+== .status.collection.logs.fluentdStatus.clusterCondition
 
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
-=====  Type
-* object
+Type:: object
 
-=== .status.collection.logs.fluentdStatus.nodes
-===== Description
+== .status.collection.logs.fluentdStatus.nodes
 
-=====  Type
-* object
+Type:: object
 
-=== .status.conditions
-===== Description
+== .status.conditions
 
-=====  Type
-* object
+Type:: object
 
-=== .status.curation
-===== Description
+== .status.curation
 
-**(DEPRECATED)**
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1727,11 +1496,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |curatorStatus|array|  *(optional)* 
 |======================
 
-=== .status.curation.curatorStatus[]
-===== Description
+== .status.curation.curatorStatus[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1743,19 +1510,15 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |suspended|bool|  *(optional)* 
 |======================
 
-=== .status.curation.curatorStatus[].clusterCondition
-===== Description
+== .status.curation.curatorStatus[].clusterCondition
 
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
-=====  Type
-* object
+Type:: object
 
-=== .status.logStore
-===== Description
+== .status.logStore
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1764,11 +1527,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |elasticsearchStatus|array|  *(optional)* 
 |======================
 
-=== .status.logStore.elasticsearchStatus[]
-===== Description
+== .status.logStore.elasticsearchStatus[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1787,11 +1548,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |statefulSets|array|  *(optional)* 
 |======================
 
-=== .status.logStore.elasticsearchStatus[].cluster
-===== Description
+== .status.logStore.elasticsearchStatus[].cluster
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1808,47 +1567,33 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |unassignedShards|int|  The number of Unassigned Shards for the Elasticsearch Cluster
 |======================
 
-=== .status.logStore.elasticsearchStatus[].clusterConditions
-===== Description
+== .status.logStore.elasticsearchStatus[].clusterConditions
 
-=====  Type
-* object
+Type:: object
 
-=== .status.logStore.elasticsearchStatus[].deployments[]
-===== Description
+== .status.logStore.elasticsearchStatus[].deployments[]
 
-=====  Type
-* array
+Type:: array
 
-=== .status.logStore.elasticsearchStatus[].nodeConditions
-===== Description
+== .status.logStore.elasticsearchStatus[].nodeConditions
 
-=====  Type
-* object
+Type:: object
 
-=== .status.logStore.elasticsearchStatus[].pods
-===== Description
+== .status.logStore.elasticsearchStatus[].pods
 
-=====  Type
-* object
+Type:: object
 
-=== .status.logStore.elasticsearchStatus[].replicaSets[]
-===== Description
+== .status.logStore.elasticsearchStatus[].replicaSets[]
 
-=====  Type
-* array
+Type:: array
 
-=== .status.logStore.elasticsearchStatus[].statefulSets[]
-===== Description
+== .status.logStore.elasticsearchStatus[].statefulSets[]
 
-=====  Type
-* array
+Type:: array
 
-=== .status.visualization
-===== Description
+== .status.visualization
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1857,11 +1602,9 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |kibanaStatus|array|  *(optional)* 
 |======================
 
-=== .status.visualization.kibanaStatus[]
-===== Description
+== .status.visualization.kibanaStatus[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1874,19 +1617,16 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |replicas|int|  *(optional)* 
 |======================
 
-=== .status.visualization.kibanaStatus[].clusterCondition
-===== Description
+== .status.visualization.kibanaStatus[].clusterCondition
 
-=====  Type
-* object
+Type:: object
 
-=== .status.visualization.kibanaStatus[].replicaSets[]
-===== Description
+== .status.visualization.kibanaStatus[].replicaSets[]
 
-=====  Type
-* array
+Type:: array
 
-== LogFileMetricExporter
+= LogFileMetricExporter
+
 A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the logFileMetricExporters API
 
 [options="header"]
@@ -1897,13 +1637,11 @@ A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the
 |status|object|  
 |======================
 
-=== .spec
-===== Description
+== .spec
 
 LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1914,17 +1652,13 @@ LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 |tolerations|array|  *(optional)* Define the tolerations the Pods will accept
 |======================
 
-=== .spec.nodeSelector
-===== Description
+== .spec.nodeSelector
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.resources
-===== Description
+== .spec.resources
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1935,11 +1669,9 @@ LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 |requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
-=== .spec.resources.claims[]
-===== Description
+== .spec.resources.claims[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1948,23 +1680,17 @@ LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 |name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
 |======================
 
-=== .spec.resources.limits
-===== Description
+== .spec.resources.limits
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.resources.requests
-===== Description
+== .spec.resources.requests
 
-=====  Type
-* object
+Type:: object
 
-=== .spec.tolerations[]
-===== Description
+== .spec.tolerations[]
 
-=====  Type
-* array
+Type:: array
 
 [options="header"]
 |======================
@@ -1977,19 +1703,15 @@ LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 |value|string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.tolerations[].tolerationSeconds
-===== Description
+== .spec.tolerations[].tolerationSeconds
 
-=====  Type
-* int
+Type:: int
 
-=== .status
-===== Description
+== .status
 
 LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
 
-=====  Type
-* object
+Type:: object
 
 [options="header"]
 |======================
@@ -1998,8 +1720,6 @@ LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
 |conditions|object|  Conditions of the Log File Metrics Exporter.
 |======================
 
-=== .status.conditions
-===== Description
+== .status.conditions
 
-=====  Type
-* object
+Type:: object

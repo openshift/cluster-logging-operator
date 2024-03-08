@@ -3,18 +3,21 @@
  {{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
 
 === {{ .Path }}
-===== Description
+
 {{ if (isDeprecatedMember .Member) }}
-  {{ "**(DEPRECATED)**" }}
+  {{ "[IMPORTANT]\n" -}}
+  {{ "====\n" -}}
+  {{ "This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.\n" -}}
+  {{ "====" -}}
 {{ end }}
+
 {{ if .Type.Elem -}}
   {{ (comments .Type.Elem.CommentLines) }}
 {{- else -}}
   {{  (comments .Type.CommentLines) }}
 {{- end }}
 
-=====  Type
-* {{ (yamlType .Type) }}
+Type:: {{ (yamlType .Type) }}
 
 {{- template "properties" .Type  -}}
 {{- template "members" (nodeParent .Type .Path) -}}

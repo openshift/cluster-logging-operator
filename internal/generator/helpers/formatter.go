@@ -1,6 +1,8 @@
 package helpers
 
-import "strings"
+import (
+	"strings"
+)
 
 func FormatFluentConf(conf string) string {
 	indent := 0
@@ -31,4 +33,23 @@ func pad(line string, indent int) string {
 		prefix = strings.Repeat("  ", indent)
 	}
 	return prefix + line
+}
+
+func FormatVectorToml(conf string) string {
+	result := []string{}
+	prev := ""
+	for _, line := range strings.Split(conf, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			switch {
+			case prev == "" && strings.HasPrefix(trimmed, "#"):
+				result = append(result, "")
+			case !strings.HasPrefix(prev, "#") && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]"):
+				result = append(result, "")
+			}
+			result = append(result, line)
+		}
+		prev = line
+	}
+	return strings.Join(result, "\n")
 }

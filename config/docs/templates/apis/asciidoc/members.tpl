@@ -2,7 +2,7 @@
  {{- if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) -}}
  {{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
 
-== {{ .Path }}
+=== {{ .Path }}
 
 {{ if (isDeprecatedMember .Member) }}
   {{ "[IMPORTANT]\n" -}}

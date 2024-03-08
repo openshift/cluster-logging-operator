@@ -113,16 +113,19 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
-	// Make sure that the ClusterForwarder status is updated as well, as we might migrate from an invalid to a valid
-	// configuration or vice versa.
-	if err := clf.Status.Synchronize(cls); err != nil {
-		return ctrl.Result{}, err
-	}
-	defer func() {
-		if err := r.Client.Status().Update(ctx, &clf); err != nil {
-			log.Error(err, "Error while updating status for ClusterLoggingForwarder %s/%s", clf.Namespace, clf.Name)
+
+	if clf.UID != "" {
+		// Make sure that the ClusterForwarder status is updated as well, as we might migrate from an invalid to a valid
+		// configuration or vice versa.
+		if err := clf.Status.Synchronize(cls); err != nil {
+			return ctrl.Result{}, err
 		}
-	}()
+		defer func() {
+			if err := r.Client.Status().Update(ctx, &clf); err != nil {
+				log.Error(err, "Error while updating status for ClusterLoggingForwarder %s/%s", clf.Namespace, clf.Name)
+			}
+		}()
+	}
 
 	clusterVersion, clusterID := r.GetClusterVersionID(ctx, request.Namespace)
 	resourceNames := factory.GenerateResourceNames(clf)

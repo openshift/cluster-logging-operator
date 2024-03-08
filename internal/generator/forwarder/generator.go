@@ -43,6 +43,7 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 		g.format = helpers.FormatFluentConf
 		g.conf = fluentd.Conf
 	case logging.LogCollectionTypeVector:
+		g.format = helpers.FormatVectorToml
 		g.conf = conf.Conf
 	default:
 		log.Error(errors.New("Unsupported collector implementation"), "type", collectorType)

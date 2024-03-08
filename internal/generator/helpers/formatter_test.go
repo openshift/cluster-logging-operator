@@ -3,6 +3,7 @@ package helpers
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("FormatFluentConf", func() {
@@ -12,12 +13,12 @@ var _ = Describe("FormatFluentConf", func() {
 		"    @type record_modifier\n    remove_keys structured\n  </filter>\n  \n" +
 		"  #flatten labels to prevent field explosion in ES\n  <filter **>\n    @type record_transformer\n" +
 		"    enable_ruby true\n    <record>\n      foo bar\n    </record>\n  </filter>\n</label>"
-	It("should do nothing for and empty string", func() {
+	It("should do nothing for an empty string", func() {
 		Expect(FormatFluentConf("")).To(BeEmpty())
 	})
 
 	It("should format the fluent configuration", func() {
-		Expect(FormatFluentConf(unformatted)).To(Equal(`
+		Expect(FormatFluentConf(unformatted)).To(matchers.EqualDiff(`
 <system>
   log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 </system>
@@ -41,4 +42,92 @@ var _ = Describe("FormatFluentConf", func() {
 </label>`))
 	})
 
+})
+
+var _ = Describe("FormatVectorToml", func() {
+	const unformatted = `
+expire_metrics_secs = 60
+
+data_dir = "/var/lib/vector/testhack-nttnlemu/instance"
+
+
+[api]
+enabled = true
+
+[sources.internal_metrics]
+type = "internal_metrics"
+
+# Logs from containers (including openshift containers)
+# to this output
+[sinks.output_http]
+type = "http"
+inputs = ["output_http_dedot"]
+uri = "http://localhost:8090"
+method = "post"
+
+
+[sinks.output_http.encoding]
+codec = "json"
+
+
+
+[sinks.output_http.buffer]
+
+when_full = "drop_newest"
+
+
+
+[sinks.output_http.request]
+
+
+
+
+
+headers = {"k1"="v1"}
+
+
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+    .tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''
+`
+	It("should do nothing for an empty string", func() {
+		Expect(FormatVectorToml("")).To(BeEmpty())
+	})
+	It("should format the vector.toml configuration", func() {
+		Expect(FormatVectorToml(unformatted)).To(matchers.EqualDiff(`expire_metrics_secs = 60
+data_dir = "/var/lib/vector/testhack-nttnlemu/instance"
+
+[api]
+enabled = true
+
+[sources.internal_metrics]
+type = "internal_metrics"
+
+# Logs from containers (including openshift containers)
+# to this output
+[sinks.output_http]
+type = "http"
+inputs = ["output_http_dedot"]
+uri = "http://localhost:8090"
+method = "post"
+
+[sinks.output_http.encoding]
+codec = "json"
+
+[sinks.output_http.buffer]
+when_full = "drop_newest"
+
+[sinks.output_http.request]
+headers = {"k1"="v1"}
+
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+    .tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''`))
+	})
 })

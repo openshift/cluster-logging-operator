@@ -19,25 +19,20 @@ import (
 )
 
 const (
-	azureSecret   = "azure-secret"
-	application   = "application"
-	serverStarted = "Server started on port 3000"
-	failedReason  = "reason=\"Service call failed. No retries or retries exhausted.\""
+	failedReason = "reason=\"Service call failed. No retries or retries exhausted.\""
 )
 
 var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 	var (
-		framework   *functional.CollectorFunctionalFramework
-		sharedKey   = rand.Word(16)
-		customerId  = strings.ToLower(string(rand.Word(16)))
-		azureDomain = "acme.com"
+		framework  *functional.CollectorFunctionalFramework
+		sharedKey  = rand.Word(16)
+		customerId = strings.ToLower(string(rand.Word(16)))
 	)
 
 	BeforeEach(func() {
-		azureHostPort := fmt.Sprintf("%s:%d", azureDomain, azuremonitor.Port)
 
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
-		secret := runtime.NewSecret(framework.Namespace, azureSecret,
+		secret := runtime.NewSecret(framework.Namespace, azuremonitor.AzureSecretName,
 			map[string][]byte{
 				constants.SharedKey: sharedKey,
 			},
@@ -48,28 +43,10 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 			FromInputWithVisitor("custom-app",
 				func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{}
-				}).
-			ToOutputWithVisitor(
-				func(spec *logging.OutputSpec) {
-					spec.Type = logging.OutputTypeAzureMonitor
-					spec.OutputTypeSpec = logging.OutputTypeSpec{
-						AzureMonitor: &logging.AzureMonitor{
-							LogType:    "myLogType",
-							CustomerId: customerId,
-							Host:       azureHostPort,
-						},
-					}
-					spec.TLS = &logging.OutputTLSSpec{
-						InsecureSkipVerify: true,
-					}
-					spec.Secret = &logging.OutputSecretSpec{
-						Name: azureSecret,
-					}
-				},
-				logging.OutputTypeAzureMonitor)
+				}).ToAzureMonitorOutputWithCuId(customerId)
 
 		Expect(framework.DeployWithVisitor(func(b *runtime.PodBuilder) error {
-			altHost := fmt.Sprintf("%s.%s", customerId, azureDomain)
+			altHost := fmt.Sprintf("%s.%s", customerId, azuremonitor.AzureDomain)
 			return azuremonitor.NewMockoonVisitor(b, altHost, framework)
 		})).To(BeNil())
 	})

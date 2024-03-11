@@ -120,4 +120,41 @@ pipelines:
 		})
 	})
 
+	Context("#WithFilter", func() {
+		It("should correctly build to Elasticsearch with prune filter", func() {
+			builder := NewClusterLogForwarderBuilder(forwarder)
+			builder.FromInput(logging.InputNameApplication).
+				WithFilterWithVisitor("foo-prune",
+					func(spec *logging.FilterSpec) {
+						spec.Type = logging.FilterPrune
+						spec.PruneFilterSpec = &logging.PruneFilterSpec{
+							NotIn: []string{".log_type"},
+						}
+					}).ToElasticSearchOutput()
+
+			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`filters:
+- name: foo-prune
+  prune:
+    notIn:
+    - .log_type
+  type: prune
+inputs:
+- name: application
+outputs:
+- name: elasticsearch
+  elasticsearch: {}
+  type: elasticsearch
+  url: http://0.0.0.0:9200
+pipelines:
+- filterRefs:
+  - foo-prune
+  inputRefs:
+  - application
+  name: forward-pipeline
+  outputRefs:
+  - elasticsearch
+`))
+		})
+	})
+
 })

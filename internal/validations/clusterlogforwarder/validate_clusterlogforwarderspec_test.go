@@ -986,6 +986,125 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			conds := clfStatus.Pipelines["someDefinedPipeline"]
 			Expect(conds).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "invalid: custom ClusterLogForwarders cannot forward to the `default` log store, unrecognized outputs: .?default.?"))
 		})
+
+		DescribeTable("gcl and prune filter", func(pruneSpec loggingv1.PruneFilterSpec) {
+			gclOutput := loggingv1.OutputSpec{
+
+				Name: "gcl-out",
+				Type: "googleCloudLogging",
+				OutputTypeSpec: loggingv1.OutputTypeSpec{
+					GoogleCloudLogging: &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID"},
+				},
+			}
+
+			pruneHost := loggingv1.FilterSpec{
+				Name: "prune",
+				Type: loggingv1.FilterPrune,
+				FilterTypeSpec: loggingv1.FilterTypeSpec{
+					PruneFilterSpec: &pruneSpec,
+				},
+			}
+
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{gclOutput}
+			forwarderSpec.Filters = []loggingv1.FilterSpec{pruneHost}
+
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
+				{
+					Name:       "gclPruneHost",
+					OutputRefs: []string{"gcl-out"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+					FilterRefs: []string{"prune"},
+				},
+			}
+			clfStatus.Outputs.Set("gcl-out", condReady)
+
+			verifyPipelines("custom-clf-name", &forwarderSpec, clfStatus)
+			Expect(clfStatus.Pipelines).To(HaveLen(1))
+			Expect(clfStatus.Pipelines).To(HaveKey("gclPruneHost"))
+			conds := clfStatus.Pipelines["gclPruneHost"]
+			Expect(conds).To(HaveCondition(loggingv1.ConditionReady, false, loggingv1.ReasonInvalid, "googleCloudLogging cannot prune `.hostname` field.+"))
+		},
+			Entry("when `in` prunes .hostname", loggingv1.PruneFilterSpec{In: []string{".hostname"}}),
+			Entry("when `notIn` prunes .hostname", loggingv1.PruneFilterSpec{NotIn: []string{".foo"}}),
+			Entry("when `in` prunes .hostname but `notIn` does not", loggingv1.PruneFilterSpec{In: []string{".hostname"}, NotIn: []string{".foo"}}),
+			Entry("when `notIn` prunes .hostname but `in` does not", loggingv1.PruneFilterSpec{In: []string{".foo"}, NotIn: []string{".foo"}}),
+			Entry("when `notIn` && `in` prunes .hostname", loggingv1.PruneFilterSpec{In: []string{".hostname"}, NotIn: []string{".foo"}}),
+		)
+
+		DescribeTable("valid prune and gcl pipeline", func(pruneSpec loggingv1.PruneFilterSpec) {
+			gclOutput := loggingv1.OutputSpec{
+
+				Name: "gcl-out",
+				Type: "googleCloudLogging",
+				OutputTypeSpec: loggingv1.OutputTypeSpec{
+					GoogleCloudLogging: &loggingv1.GoogleCloudLogging{BillingAccountID: "billingAccountID"},
+				},
+			}
+
+			pruneHost := loggingv1.FilterSpec{
+				Name: "prune",
+				Type: loggingv1.FilterPrune,
+				FilterTypeSpec: loggingv1.FilterTypeSpec{
+					PruneFilterSpec: &pruneSpec,
+				},
+			}
+
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{gclOutput}
+			forwarderSpec.Filters = []loggingv1.FilterSpec{pruneHost}
+
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
+				{
+					Name:       "gclPruneHost",
+					OutputRefs: []string{"gcl-out"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+					FilterRefs: []string{"prune"},
+				},
+			}
+
+			clfStatus.Outputs.Set("gcl-out", condReady)
+
+			verifyPipelines("custom-clf-name", &forwarderSpec, clfStatus)
+			Expect(clfStatus.Pipelines["gclPruneHost"]).To(HaveCondition("Ready", true, "", ""))
+		},
+			Entry("when `in` does not include .hostname", loggingv1.PruneFilterSpec{In: []string{".foo"}}),
+			Entry("when `notIn` includes .hostname", loggingv1.PruneFilterSpec{NotIn: []string{".hostname"}}),
+			Entry("when `in` does not include and `notIn` includes .hostname", loggingv1.PruneFilterSpec{In: []string{".foo"}, NotIn: []string{".hostname"}}))
+
+		It("should pass validation when prune filters `.hostname` for pipeline without GCL output", func() {
+			esOutput := loggingv1.OutputSpec{
+
+				Name: "myOutput",
+				Type: "elasticsearch",
+				URL:  "http://here",
+			}
+
+			pruneHost := loggingv1.FilterSpec{
+				Name: "prune",
+				Type: loggingv1.FilterPrune,
+				FilterTypeSpec: loggingv1.FilterTypeSpec{
+					PruneFilterSpec: &loggingv1.PruneFilterSpec{
+						In:    []string{".foo, .hostname"},
+						NotIn: []string{".foo"},
+					},
+				},
+			}
+
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{esOutput}
+			forwarderSpec.Filters = []loggingv1.FilterSpec{pruneHost}
+
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
+				{
+					Name:       "esPruneHost",
+					OutputRefs: []string{"myOutput"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+					FilterRefs: []string{"prune"},
+				},
+			}
+
+			verifyPipelines("custom-clf-name", &forwarderSpec, clfStatus)
+			Expect(clfStatus.Pipelines["esPruneHost"]).To(HaveCondition("Ready", true, "", ""))
+		})
+
 	})
 
 	Context("validating all", func() {

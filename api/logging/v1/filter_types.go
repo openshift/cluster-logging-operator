@@ -62,6 +62,8 @@ type PruneFilterSpec struct {
 	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
 	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
 	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	// NOTE1: `In` CANNOT contain `.log_type` or `.message` as those fields are required and cannot be pruned.
+	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 	// +optional
 	In []string `json:"in,omitempty"`
 
@@ -70,6 +72,8 @@ type PruneFilterSpec struct {
 	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
 	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
 	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	// NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields are required and cannot be pruned.
+	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
 	// +optional
 	NotIn []string `json:"notIn,omitempty"`
 }

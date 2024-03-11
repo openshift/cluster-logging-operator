@@ -2,12 +2,98 @@ package functional
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	openshiftv1 "github.com/openshift/api/route/v1"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+const (
+	AwsAccessKeyID      = "AKIAIOSFODNN7EXAMPLE"
+	AwsSecretAccessKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
+	cloudwatchMotoImage = "quay.io/openshift-logging/moto:2.2.3.dev0"
+	CloudwatchSecret    = "cloudwatch-secret"
+)
+
+var (
+	cwlClient *cwl.Client
+	service   *v1.Service
+	route     *openshiftv1.Route
+)
+
+func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+	if err := f.createCloudWatchService(); err != nil {
+		return err
+	}
+
+	if err := f.createServiceRoute(); err != nil {
+		return err
+	}
+
+	cwlClient = cwl.NewFromConfig(
+		aws.Config{
+			Region: "us-east-1",
+			Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+				return aws.Credentials{
+					AccessKeyID:     AwsAccessKeyID,
+					SecretAccessKey: AwsSecretAccessKey,
+				}, nil
+			}),
+			HTTPClient: &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true, //nolint:gosec
+					},
+				},
+			},
+			EndpointResolver: aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+				return aws.Endpoint{
+					PartitionID:   "aws",
+					URL:           "https://" + route.Spec.Host,
+					SigningRegion: "us-east-1",
+				}, nil
+			}),
+		})
+
+	b.AddContainer(logging.OutputTypeCloudwatch, cloudwatchMotoImage).
+		WithCmdArgs([]string{"-s"}).
+		End()
+
+	return nil
+}
+
+func (f *CollectorFunctionalFramework) createCloudWatchService() error {
+	service = runtime.NewService(f.Namespace, "moto-server")
+	runtime.NewServiceBuilder(service).
+		AddServicePort(5000, 5000).
+		WithSelector(map[string]string{"testname": "functional"})
+
+	if err := f.Test.Client.Create(service); err != nil {
+		return fmt.Errorf("unable to create service: %v", err)
+	}
+	return nil
+}
+
+func (f *CollectorFunctionalFramework) createServiceRoute() error {
+	log.V(2).Info("Creating route moto-server")
+	route = runtime.NewRoute(f.Namespace, "moto-server", "moto-server", "5000")
+	route.Spec.TLS = &openshiftv1.TLSConfig{
+		Termination:                   openshiftv1.TLSTerminationPassthrough,
+		InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
+	}
+	if err := f.Test.Client.Create(route); err != nil {
+		return fmt.Errorf("unable to create route: %v", err)
+	}
+	return nil
+}
 
 func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) ([]string, error) {
 	var (
@@ -33,13 +119,13 @@ func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) (
 	return allGroups, nil
 }
 
-func (f *CollectorFunctionalFramework) GetLogGroupByType(client *cwl.Client, inputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) GetLogGroupByType(inputName string) ([]string, error) {
 	var (
 		myGroups        []string
 		logGroupsOutput *cwl.DescribeLogGroupsOutput
 	)
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		logGroupsOutput, err = client.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
+		logGroupsOutput, err = cwlClient.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
 		if err != nil || len(logGroupsOutput.LogGroups) == 0 {
 			return false, err
 		}
@@ -65,14 +151,14 @@ func (f *CollectorFunctionalFramework) GetLogGroupByType(client *cwl.Client, inp
 	return myGroups, nil
 }
 
-func (f *CollectorFunctionalFramework) GetLogStreamsByGroup(client *cwl.Client, groupName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) GetLogStreamsByGroup(groupName string) ([]string, error) {
 	var (
 		myStreams        []string
 		logStreamsOutput *cwl.DescribeLogStreamsOutput
 	)
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		// TODO: need to query for log group or get more log group info above
-		logStreamsOutput, err = client.DescribeLogStreams(
+		logStreamsOutput, err = cwlClient.DescribeLogStreams(
 			cxt,
 			&cwl.DescribeLogStreamsInput{LogGroupName: &groupName},
 		)
@@ -91,14 +177,14 @@ func (f *CollectorFunctionalFramework) GetLogStreamsByGroup(client *cwl.Client, 
 	return myStreams, nil
 }
 
-func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cwl.Client, groupName string, streamName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(groupName string, streamName string) ([]string, error) {
 	var (
 		myMessages      []string
 		logEventsOutput *cwl.GetLogEventsOutput
 	)
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
 		// NOTE:  This is assuming only one stream is created for this group
-		logEventsOutput, err = client.GetLogEvents(
+		logEventsOutput, err = cwlClient.GetLogEvents(
 			cxt,
 			&cwl.GetLogEventsInput{
 				LogGroupName:  &groupName,
@@ -119,23 +205,23 @@ func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cw
 	return myMessages, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(client *cwl.Client, inputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(inputName string) ([]string, error) {
 	log.V(3).Info("Reading cloudwatch log groups by type")
-	logGroupName, err := f.GetLogGroupByType(client, inputName)
+	logGroupName, err := f.GetLogGroupByType(inputName)
 	if err != nil {
 		return nil, err
 	}
 	log.V(3).Info("GetLogGroupByType", "logGroupName", logGroupName)
 
 	log.V(3).Info("Reading cloudwatch log streams")
-	logStreams, e := f.GetLogStreamsByGroup(client, logGroupName[0])
+	logStreams, e := f.GetLogStreamsByGroup(logGroupName[0])
 	if e != nil {
 		return nil, e
 	}
 	log.V(3).Info("GetLogStreamsByGroup", "logStreams", logStreams)
 
 	log.V(3).Info("Reading cloudwatch messages")
-	messages, er := f.GetLogMessagesByGroupAndStream(client, logGroupName[0], logStreams[0])
+	messages, er := f.GetLogMessagesByGroupAndStream(logGroupName[0], logStreams[0])
 	if er != nil {
 		return nil, er
 	}

@@ -64,7 +64,7 @@
           },
           "targets": [
             {
-              "expr": "sum by(job, namespace, app_kubernetes_io_name) (increase(vector_processed_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[24h]))",
+              "expr": "sum by(job, namespace, app_kubernetes_io_name) (increase(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[24h]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,
@@ -317,7 +317,7 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(vector_processed_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
+              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
               "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
               "interval": "",
               "exemplar": true,

@@ -26,11 +26,12 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 	Describe("when drop filter is spec'd", func() {
 		It("should drop logs that have `error` in its message OR logs with messages that doesn't include `information` AND includes `debug`", func() {
 			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
-			f.Forwarder.Spec.Filters = []logging.FilterSpec{
-				{
-					Name: dropFilterName,
-					Type: logging.FilterDrop,
-					FilterTypeSpec: logging.FilterTypeSpec{
+
+			functional.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(logging.InputNameApplication).
+				WithFilterWithVisitor(dropFilterName, func(spec *logging.FilterSpec) {
+					spec.Type = logging.FilterDrop
+					spec.FilterTypeSpec = logging.FilterTypeSpec{
 						DropTestsSpec: &[]logging.DropTest{
 							{
 								DropConditions: []logging.DropCondition{
@@ -53,21 +54,9 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 								},
 							},
 						},
-					},
-				},
-			}
-			functional.NewClusterLogForwarderBuilder(f.Forwarder).
-				FromInput(logging.InputNameApplication).
+					}
+				}).
 				ToElasticSearchOutput()
-
-			f.Forwarder.Spec.Pipelines = []logging.PipelineSpec{
-				{
-					Name:       "myDropPipeline",
-					FilterRefs: []string{dropFilterName},
-					InputRefs:  []string{logging.InputNameApplication, logging.InputNameAudit, logging.InputNameInfrastructure},
-					OutputRefs: []string{logging.OutputTypeElasticsearch},
-				},
-			}
 
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), "my error message")

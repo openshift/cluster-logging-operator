@@ -155,6 +155,12 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 			continue
 		}
 
+		// Verify prune filter does not prune `.hostname` for GCL if filter/output in pipeline
+		if invMsg := verifyHostNameNotFilteredForGCL(pipeline.OutputRefs, pipeline.FilterRefs, spec.OutputMap(), spec.FilterMap()); len(invMsg) != 0 {
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("googleCloudLogging cannot prune `.hostname` field. %q", invMsg))
+			continue
+		}
+
 		_, msgIn := verifyRefs("inputs", forwarderName, *status, pipeline.InputRefs, inputs, true)
 		_, msgOut := verifyRefs("outputs", forwarderName, *status, pipeline.OutputRefs, outputs, true)
 		_, msgFilter := verifyRefs("filters", forwarderName, *status, pipeline.FilterRefs, filters, false)
@@ -449,4 +455,61 @@ func readClusterName(clfClient client.Client) (string, error) {
 	}
 
 	return infra.Status.InfrastructureName, nil
+}
+
+// verifyHostNameNotFilteredForGCL verifies that within a pipeline featuring a GCL sink and prune filters, the `.hostname` field is exempted from pruning.
+func verifyHostNameNotFilteredForGCL(outputRefs []string, filterRefs []string, outputs map[string]*loggingv1.OutputSpec, filters map[string]*loggingv1.FilterSpec) []string {
+	if len(filterRefs) == 0 {
+		return nil
+	}
+
+	var errMsgs []string
+
+	for _, out := range outputRefs {
+		if outputs[out].Type == loggingv1.OutputTypeGoogleCloudLogging {
+			for _, f := range filterRefs {
+				filterSpec := filters[f]
+				if prunesHostName(*filterSpec) {
+					errMsgs = append(errMsgs, fmt.Sprintf("filter: %s prunes the `.hostname` field which is required for output: %s of type googleCloudLogging.", filterSpec.Name, outputs[out].Name))
+				}
+			}
+		}
+	}
+	return errMsgs
+}
+
+// prunesHostName checks if a prune filter prunes the `.hostname` field
+func prunesHostName(filter loggingv1.FilterSpec) bool {
+	if filter.Type != loggingv1.FilterPrune {
+		return false
+	}
+
+	hostName := ".hostname"
+
+	inListPrunes := false
+	notInListPrunes := false
+
+	if filter.PruneFilterSpec.NotIn != nil {
+		found := false
+		for _, field := range filter.PruneFilterSpec.NotIn {
+			if field == hostName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			inListPrunes = true
+		}
+	}
+
+	if filter.PruneFilterSpec.In != nil {
+		for _, field := range filter.PruneFilterSpec.In {
+			if field == hostName {
+				notInListPrunes = true
+				break
+			}
+		}
+	}
+
+	return inListPrunes || notInListPrunes
 }

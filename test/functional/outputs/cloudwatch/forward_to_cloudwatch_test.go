@@ -1,19 +1,13 @@
 package cloudwatch
 
 import (
-	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	openshiftv1 "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -28,81 +22,21 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	const (
 		logSize   = 128
 		numOfLogs = 8
-
-		// examples from AWS docs
-		awsAccessKeyID      = "AKIAIOSFODNN7EXAMPLE"
-		awsSecretAccessKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
-		cloudwatchMotoImage = "quay.io/openshift-logging/moto:2.2.3.dev0"
 	)
 
 	var (
-		framework               *functional.CollectorFunctionalFramework
-		addMotoContainerVisitor = func(b *runtime.PodBuilder) error {
-			log.V(2).Info("Adding AWS CloudWatch Logs mock container")
-			b.AddContainer(logging.OutputTypeCloudwatch, cloudwatchMotoImage).
-				WithCmdArgs([]string{"-s"}).
-				End()
-			return nil
-		}
-
-		cwlClient *cloudwatchlogs.Client
-		service   *v1.Service
-		route     *openshiftv1.Route
+		framework *functional.CollectorFunctionalFramework
 		secret    *v1.Secret
 	)
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 
-		log.V(2).Info("Creating service moto-server")
-		service = runtime.NewService(framework.Namespace, "moto-server")
-		runtime.NewServiceBuilder(service).
-			AddServicePort(5000, 5000).
-			WithSelector(map[string]string{"testname": "functional"})
-		if err := framework.Test.Client.Create(service); err != nil {
-			Fail(fmt.Sprintf("Unable to create service: %v", err))
-		}
-
-		log.V(2).Info("Creating route moto-server")
-		route = runtime.NewRoute(framework.Namespace, "moto-server", "moto-server", "5000")
-		route.Spec.TLS = &openshiftv1.TLSConfig{
-			Termination:                   openshiftv1.TLSTerminationPassthrough,
-			InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
-		}
-		if err := framework.Test.Client.Create(route); err != nil {
-			Fail(fmt.Sprintf("Unable to create route: %v", err))
-		}
-
-		cwlClient = cloudwatchlogs.NewFromConfig(
-			aws.Config{
-				Region: "us-east-1",
-				Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
-					return aws.Credentials{
-						AccessKeyID:     awsAccessKeyID,
-						SecretAccessKey: awsSecretAccessKey,
-					}, nil
-				}),
-				HTTPClient: &http.Client{
-					Transport: &http.Transport{
-						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: true, //nolint:gosec
-						},
-					},
-				},
-				EndpointResolver: aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-					return aws.Endpoint{
-						PartitionID:   "aws",
-						URL:           "https://" + route.Spec.Host,
-						SigningRegion: "us-east-1",
-					}, nil
-				}),
-			})
-
 		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
-		secret = runtime.NewSecret(framework.Namespace, "cloudwatch",
+		secret = runtime.NewSecret(framework.Namespace, functional.CloudwatchSecret,
 			map[string][]byte{
-				"aws_access_key_id":     []byte(awsAccessKeyID),
-				"aws_secret_access_key": []byte(awsSecretAccessKey),
+				"aws_access_key_id":     []byte(functional.AwsAccessKeyID),
+				"aws_secret_access_key": []byte(functional.AwsSecretAccessKey),
 			},
 		)
 	})
@@ -117,19 +51,15 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addMotoContainerVisitor,
-			})).To(BeNil())
+
+			Expect(framework.Deploy()).To(BeNil())
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
 			time.Sleep(10 * time.Second)
-			Eventually(func(g Gomega) int {
-				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-				Expect(err).To(BeNil())
-				Expect(logs).To(HaveLen(numOfLogs))
-				return len(logs)
-			}).WithTimeout(time.Second).Should(Equal(numOfLogs))
 
+			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
 		})
 
 		It("should be able to forward by user-defined pod labels", func() {
@@ -154,19 +84,16 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addMotoContainerVisitor,
-			})).To(BeNil())
+			Expect(framework.Deploy()).To(BeNil())
 
 			// Write logs
 			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
 			time.Sleep(10 * time.Second)
-			Eventually(func(g Gomega) string {
-				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-				Expect(err).To(BeNil())
-				Expect(logs).To(HaveLen(numOfLogs))
-				return logs[0]
-			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)))
+
+			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
+			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)))
 		})
 
 		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
@@ -184,13 +111,11 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				ToCloudwatchOutput()
 			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
 			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addMotoContainerVisitor,
-			})).To(BeNil())
+			Expect(framework.Deploy()).To(BeNil())
 
 			exception := `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
-	        at testjava.Main.printMe(Main.java:19)
-	        at testjava.Main.main(Main.java:10)`
+        at testjava.Main.printMe(Main.java:19)
+        at testjava.Main.main(Main.java:10)`
 			timestamp := "2021-03-31T12:59:28.573159188+00:00"
 
 			buffer := []string{}
@@ -201,13 +126,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
 			time.Sleep(10 * time.Second)
-			Eventually(func(g Gomega) string {
-				raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-				Expect(err).To(BeNil(), "Expected no errors reading the logs")
-				logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
-				Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
-				return logs[0].Message
-			}).WithTimeout(time.Second).Should(Equal(exception))
+
+			raw, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
+			Expect(logs[0].Message).Should(Equal(exception))
 		})
 	})
 
@@ -230,9 +154,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				FromInput(logging.InputNameInfrastructure).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addMotoContainerVisitor,
-			})).To(BeNil())
+			Expect(framework.Deploy()).To(BeNil())
 
 			// Write audit logs
 			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
@@ -254,15 +176,14 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
 			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
 			time.Sleep(10 * time.Second)
-			Eventually(func(g Gomega) string {
-				// Get application logs from Cloudwatch
-				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-				log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
 
-				Expect(err).To(BeNil(), "Expected no errors reading the logs")
-				Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
-				return logs[0]
-			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)), "Expected log_type to be correct")
+			// Get application logs from Cloudwatch
+			logs, err := framework.ReadLogsFromCloudwatch(readLogType)
+			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
+			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)), "Expected log_type to be correct")
 		})
 	})
 
@@ -276,9 +197,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				FromInput(logging.InputNameAudit).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addMotoContainerVisitor,
-			})).To(BeNil())
+			Expect(framework.Deploy()).To(BeNil())
 
 			// Write audit logs
 			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
@@ -286,13 +205,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, numLogsSent)
 			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
 			time.Sleep(10 * time.Second)
+
 			// Get audit logs from Cloudwatch
-			Eventually(func(g Gomega) string {
-				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-				g.Expect(err).To(BeNil(), "Expected no errors reading the logs")
-				g.Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
-				return logs[0]
-			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)))
+			logs, err := framework.ReadLogsFromCloudwatch(readLogType)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
+			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)))
 		})
 	})
 })

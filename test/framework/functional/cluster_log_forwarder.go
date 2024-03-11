@@ -12,8 +12,9 @@ const (
 )
 
 type ClusterLogForwarderBuilder struct {
-	Forwarder  *logging.ClusterLogForwarder
-	inputSpecs map[string]*logging.InputSpec
+	Forwarder   *logging.ClusterLogForwarder
+	inputSpecs  map[string]*logging.InputSpec
+	filterSpecs map[string]*logging.FilterSpec
 }
 
 type PipelineBuilder struct {
@@ -23,16 +24,20 @@ type PipelineBuilder struct {
 	jsonParsing                   string
 	input                         *logging.InputSpec
 	pipelineName                  string
+	filterName                    string
+	filter                        *logging.FilterSpec
 }
 
 type InputSpecVisitor func(spec *logging.InputSpec)
 type OutputSpecVisitor func(spec *logging.OutputSpec)
+type FilterSpecVisitor func(spec *logging.FilterSpec)
 type PipelineSpecVisitor func(spec *logging.PipelineSpec)
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
-		Forwarder:  clf,
-		inputSpecs: map[string]*logging.InputSpec{},
+		Forwarder:   clf,
+		inputSpecs:  map[string]*logging.InputSpec{},
+		filterSpecs: map[string]*logging.FilterSpec{},
 	}
 }
 
@@ -53,6 +58,25 @@ func (b *ClusterLogForwarderBuilder) FromInputWithVisitor(inputName string, visi
 	pipelineBuilder := b.FromInput(inputName)
 	visit(pipelineBuilder.input)
 	return pipelineBuilder
+}
+
+func (p *PipelineBuilder) withFilter(filterName string) *PipelineBuilder {
+	builder := p.clfb
+	filterSpec := &logging.FilterSpec{Name: filterName}
+	if _, ok := builder.filterSpecs[filterName]; ok {
+		filterSpec = builder.filterSpecs[filterName]
+	}
+	p.filterName = filterName
+	p.filter = filterSpec
+
+	builder.filterSpecs[filterName] = filterSpec
+	return p
+}
+
+func (p *PipelineBuilder) WithFilterWithVisitor(filterName string, visit FilterSpecVisitor) *PipelineBuilder {
+	p.withFilter(filterName)
+	visit(p.filter)
+	return p
 }
 
 func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
@@ -140,6 +164,13 @@ func (p *PipelineBuilder) ToHttpOutputWithSchema(schema string) *ClusterLogForwa
 	return p.ToOutputWithVisitor(httpVisitor, logging.OutputTypeHttp)
 }
 
+func (p *PipelineBuilder) ToAzureMonitorOutputWithCuId(cuId string) *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
+		output.AzureMonitor.CustomerId = cuId
+	},
+		logging.OutputTypeAzureMonitor)
+}
+
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
@@ -185,7 +216,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 					},
 				},
 				Secret: &logging.OutputSecretSpec{
-					Name: "cloudwatch",
+					Name: CloudwatchSecret,
 				},
 				TLS: &logging.OutputTLSSpec{
 					InsecureSkipVerify: true,
@@ -217,6 +248,23 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 					Name: "splunk-secret",
 				},
 			}
+		case logging.OutputTypeAzureMonitor:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeAzureMonitor,
+				Type: logging.OutputTypeAzureMonitor,
+				OutputTypeSpec: logging.OutputTypeSpec{
+					AzureMonitor: &logging.AzureMonitor{
+						LogType: "myLogType",
+						Host:    "acme.com:3000",
+					},
+				},
+				TLS: &logging.OutputTLSSpec{
+					InsecureSkipVerify: true,
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "azure-secret",
+				},
+			}
 		default:
 			output = &logging.OutputSpec{
 				Name: outputName,
@@ -239,6 +287,18 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 		}
 	}
 
+	if p.filter != nil {
+		found = false
+		for _, filter := range clf.Spec.Filters {
+			if filter.Name == p.filter.Name {
+				found = true
+			}
+		}
+		if !found {
+			clf.Spec.Filters = append(clf.Spec.Filters, *p.filter)
+		}
+	}
+
 	added := false
 	pipelineName := forwardPipelineName
 	if p.pipelineName != "" {
@@ -246,13 +306,17 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 	}
 	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, pipelineName, clf.Spec.Pipelines)
 	if !added {
-		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
+		pSpec := logging.PipelineSpec{
 			Name:                  pipelineName,
 			InputRefs:             []string{p.inputName},
 			OutputRefs:            []string{output.Name},
 			DetectMultilineErrors: p.enableMultilineErrorDetection,
 			Parse:                 p.jsonParsing,
-		})
+		}
+		if p.filterName != "" {
+			pSpec.FilterRefs = append(pSpec.FilterRefs, p.filterName)
+		}
+		clf.Spec.Pipelines = append(clf.Spec.Pipelines, pSpec)
 	}
 	return p.clfb
 }

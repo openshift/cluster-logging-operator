@@ -16,7 +16,17 @@ The prune filter extends the filter API by adding a `prune` field and the `in`, 
 * Dot-delimited field path: A path to a field in the log record. It must start with a dot (`.`). The path can contain alpha-numeric characters and underscores `(a-zA-Z0-9_)`. If segments contain characters outside of this range, the segment must be quoted.
 ** Examples: `.kubernetes.namespace_name`, `.log_type`, `.kubernetes.labels.foobar`, `.kubernetes.labels."foo-bar/baz"`
 
-NOTE: `notIn` takes precedence over `in`. That is, if both `in` and `notIn` are specified, vector will initially prune fields **NOT** listed in the `notIn` list followed by pruning fields specified in the `in` list.
+.Note #1
+[NOTE] 
+`notIn` takes precedence over `in`. That is, if both `in` and `notIn` are specified, vector will initially prune fields **NOT** listed in the `notIn` list followed by pruning fields specified in the `in` list.
+
+.Note #2
+[NOTE]
+`in` **CANNOT** contain `.log_type` or `.message` as those fields are required and cannot be pruned. Additionally if this filter is used in a pipeline with `GoogleCloudLogging`, `.hostname` **CANNOT** be added to the `in` list as it is also a required field.
+
+.Note #3
+[NOTE]
+`notIn` **MUST** contain `.log_type` and `.message` as those fields are required and cannot be pruned. Additionally if this filter is used in a pipeline with `GoogleCloudLogging`, `.hostname` **MUST** be added to the `notIn` list as it is also a required field.
 
 === Example:
 

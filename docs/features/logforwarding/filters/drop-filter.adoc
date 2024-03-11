@@ -34,7 +34,7 @@ spec:
     - name: my-drop
       type: drop
       drop:
-        # 1. drop logs with a namespace of openshift-logging
+        # 1. drop logs with a namespace that leads with `openshift`
         - test:
           - field: .kubernetes.namespace_name
             matches: "openshift*"

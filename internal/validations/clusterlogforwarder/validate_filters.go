@@ -6,14 +6,17 @@ import (
 	"strings"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Matches dot delimited paths with alphanumeric & `_`. Any other characters added in a segment will require quotes.
-// Matches `.kubernetes.namespace_name` & `kubernetes."test-label/with slashes"` & `."@timestamp"`
-var pathExpRegex = regexp.MustCompile(`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`)
+var (
+	// Matches dot delimited paths with alphanumeric & `_`. Any other characters added in a segment will require quotes.
+	// Matches `.kubernetes.namespace_name` & `kubernetes."test-label/with slashes"` & `."@timestamp"`
+	pathExpRegex = regexp.MustCompile(`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`)
+)
 
 // ValidateFilters validates the defined filters.
 func ValidateFilters(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
@@ -77,13 +80,22 @@ func validatePruneFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.
 				errList = append(errList, err)
 			}
 		}
+		// Ensure required fields are not in this list
+		if valMsg := validateRequiredFields(filterSpec.PruneFilterSpec.In, "in"); valMsg != "" {
+			errList = append(errList, valMsg)
+		}
 	}
+
 	// Validate `notIn` paths
 	if filterSpec.PruneFilterSpec.NotIn != nil {
 		for _, fieldPath := range filterSpec.PruneFilterSpec.NotIn {
 			if err := validateFieldPath(fieldPath); err != "" {
 				errList = append(errList, err)
 			}
+		}
+		// Ensure required fields are in this list
+		if valMsg := validateRequiredFields(filterSpec.PruneFilterSpec.NotIn, "notIn"); valMsg != "" {
+			errList = append(errList, valMsg)
 		}
 	}
 	if len(errList) != 0 {
@@ -100,5 +112,32 @@ func validateFieldPath(fieldPath string) string {
 	} else if !pathExpRegex.MatchString(fieldPath) {
 		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
 	}
+	return ""
+}
+
+func validateRequiredFields(fieldList []string, pruneType string) string {
+	requiredFields := sets.NewString(".log_type", ".message")
+
+	if pruneType == "in" {
+		foundInList := []string{}
+		for _, field := range fieldList {
+			if requiredFields.Has(field) {
+				foundInList = append(foundInList, field)
+			}
+		}
+		if len(foundInList) != 0 {
+			return fmt.Sprintf("%q is/are required fields and must be removed from the `in` list.", foundInList)
+		}
+	} else {
+		for _, field := range fieldList {
+			if requiredFields.Has(field) {
+				requiredFields.Remove(field)
+			}
+		}
+		if requiredFields.Len() != 0 {
+			return fmt.Sprintf("%q is/are required fields and must be included in the `notIn` list.", requiredFields.List())
+		}
+	}
+
 	return ""
 }

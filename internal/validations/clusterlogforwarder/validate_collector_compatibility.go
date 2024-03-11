@@ -32,19 +32,19 @@ var (
 	)
 )
 
-//validateCollectorCompatibility checking is given collector support proposed output if not error will return, nil otherwise
+// validateCollectorCompatibility checking is given collector support proposed output if not error will return, nil otherwise
 //
-//Output type         | Supported collector type
-//Elasticsearch       | Fluentd, Vector
-//Fluent Forward      | Fluentd
-//Google Cloud Logging| Vector
-//HTTP                | Fluentd, Vector
-//Kafka               | Fluentd, Vector
-//Loki                | Fluentd, Vector
-//Splunk              | Vector
-//Syslog              | Fluentd, Vector
-//Amazon CloudWatch   | Fluentd, Vector
-//Azure Monitor Logs  | Vector
+// Output type         | Supported collector type
+// Elasticsearch       | Fluentd, Vector
+// Fluent Forward      | Fluentd
+// Google Cloud Logging| Vector
+// HTTP                | Fluentd, Vector
+// Kafka               | Fluentd, Vector
+// Loki                | Fluentd, Vector
+// Splunk              | Vector
+// Syslog              | Fluentd, Vector
+// Amazon CloudWatch   | Fluentd, Vector
+// Azure Monitor Logs  | Vector
 func validateCollectorCompatibility(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus) {
 	collector := constants.VectorName
 	supportedOutputs := vector

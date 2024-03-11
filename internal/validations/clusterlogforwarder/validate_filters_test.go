@@ -15,7 +15,7 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 	)
 
 	Context("#validateDropFilters", func() {
-		var _ = DescribeTable("invalid fields and matches/notMatches", func(dropTests []v1.DropTest, errMsg string) {
+		DescribeTable("invalid fields and matches/notMatches", func(dropTests []v1.DropTest, errMsg string) {
 			clf := &v1.ClusterLogForwarder{
 				Spec: v1.ClusterLogForwarderSpec{
 					Filters: []v1.FilterSpec{
@@ -108,7 +108,7 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 			),
 		)
 
-		var _ = DescribeTable("valid drop filter spec", func(dropTests []v1.DropTest) {
+		DescribeTable("valid drop filter spec", func(dropTests []v1.DropTest) {
 			clf := &v1.ClusterLogForwarder{
 				Spec: v1.ClusterLogForwarderSpec{
 					Filters: []v1.FilterSpec{
@@ -184,7 +184,8 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 	})
 
 	Context("#validatePruneFilter", func() {
-		var _ = DescribeTable("invalid field paths", func(pruneFilter v1.PruneFilterSpec, errMsg string) {
+		var requiredFields = []string{".log_type", ".message"}
+		DescribeTable("invalid field paths", func(pruneFilter v1.PruneFilterSpec, errMsg string) {
 			clf := &v1.ClusterLogForwarder{
 				Spec: v1.ClusterLogForwarderSpec{
 					Filters: []v1.FilterSpec{
@@ -210,7 +211,7 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 			),
 			Entry("should fail validation if fields in `Notin` do not start with a '.'",
 				v1.PruneFilterSpec{
-					NotIn: []string{"foo.bar", `-foo."bar-baz/other@"`},
+					NotIn: append(requiredFields, "foo.bar", `-foo."bar-baz/other@"`),
 				},
 				"[field must start with a '.']",
 			),
@@ -222,13 +223,13 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 			),
 			Entry("should fail validation if fields in `notIn` are not valid path expressions",
 				v1.PruneFilterSpec{
-					NotIn: []string{".foo.bar", `.foo.bar-baz/other@`, ".@timestamp"},
+					NotIn: append(requiredFields, ".foo.bar", `.foo.bar-baz/other@`, ".@timestamp"),
 				},
 				"[field must be a valid dot delimited path expression+]",
 			),
 		)
 
-		var _ = DescribeTable("valid field paths", func(pruneFilter v1.PruneFilterSpec) {
+		DescribeTable("valid field paths", func(pruneFilter v1.PruneFilterSpec) {
 			clf := &v1.ClusterLogForwarder{
 				Spec: v1.ClusterLogForwarderSpec{
 					Filters: []v1.FilterSpec{
@@ -251,12 +252,12 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 			),
 			Entry("should pass validation if fields in `notIn` start with a '.'",
 				v1.PruneFilterSpec{
-					NotIn: []string{".foo"},
+					NotIn: append(requiredFields, ".foo"),
 				},
 			),
 			Entry("should pass validation if fields in `notIn` are valid path expressions",
 				v1.PruneFilterSpec{
-					NotIn: []string{".foo.bar", `.foo."bar-baz/test"`, `."@timestamp"`},
+					NotIn: append(requiredFields, ".foo.bar", `.foo."bar-baz/test"`, `."@timestamp"`),
 				},
 			),
 			Entry("should pass validation if fields in `in` are valid path expressions",
@@ -266,10 +267,180 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 			),
 			Entry("should pass validation if fields in both `in` & `notIn` are valid path expressions",
 				v1.PruneFilterSpec{
-					NotIn: []string{".foo.bar", `.foo."bar-baz/test"`, `."@timestamp"`},
+					NotIn: append(requiredFields, ".foo.bar", `.foo."bar-baz/test"`, `."@timestamp"`),
 					In:    []string{".foo", `.foo."bar-baz/test"`, `."@timestamp"`, ".foo_bar.testing.valid"},
 				},
 			),
 		)
+
+		Context("required fields", func() {
+			It("should pass validation if required fields are not in the `in` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										In: []string{".foo", ".bar", ".foo.bar.baz"},
+									},
+								},
+							},
+						},
+					},
+				}
+				Expect(ValidateFilters(*clf, nil, nil)).To(Succeed())
+			})
+
+			It("should fail validation if required fields are in the `in` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										In: append(requiredFields, ".foo", ".bar", ".foo.bar.baz"),
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be removed.+"))
+			})
+
+			It("should fail validation if 1 required field is in the `in` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										In: []string{".foo", ".bar", ".foo.bar.baz", requiredFields[0]},
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be removed.+"))
+			})
+
+			It("should pass validation if required fields are in the `notIn` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										NotIn: append(requiredFields, ".foo", ".bar", ".foo.bar.baz"),
+									},
+								},
+							},
+						},
+					},
+				}
+				Expect(ValidateFilters(*clf, nil, nil)).To(Succeed())
+			})
+
+			It("should fail validation if required fields are not in the `notIn` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										NotIn: []string{".foo", ".bar", ".foo.bar.baz"},
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be included.+"))
+			})
+
+			It("should fail validation if 1 required field is not in the `notIn` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										NotIn: []string{".foo", ".bar", ".foo.bar.baz", requiredFields[0]},
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be included.+"))
+			})
+
+			It("should fail validation if required fields are in the `notIn` list and in the `in` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										In:    append(requiredFields, ".foo", ".bar", ".foo.bar.baz"),
+										NotIn: append(requiredFields, ".foo", ".bar", ".foo.bar.baz"),
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be removed.+"))
+			})
+
+			It("should fail validation if required fields are not in the `notIn` list and not in the `in` list", func() {
+				clf := &v1.ClusterLogForwarder{
+					Spec: v1.ClusterLogForwarderSpec{
+						Filters: []v1.FilterSpec{
+							{
+								Name: myPrune,
+								Type: v1.FilterPrune,
+								FilterTypeSpec: v1.FilterTypeSpec{
+									PruneFilterSpec: &v1.PruneFilterSpec{
+										In:    []string{".foo", ".bar", ".foo.bar.baz"},
+										NotIn: []string{".foo", ".bar", ".foo.bar.baz"},
+									},
+								},
+							},
+						},
+					},
+				}
+				err, status := ValidateFilters(*clf, nil, nil)
+				Expect(err).ToNot(BeNil())
+				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be included.+"))
+			})
+
+		})
+
 	})
 })

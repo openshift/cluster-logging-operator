@@ -15,15 +15,11 @@ type Application struct {
 	// Only messages from these namespaces are collected.
 	// If absent or empty, logs are collected from all namespaces. This field supports
 	// globs (e.g. mynam*space, *myanmespace)
+	// Deprecated: Use []NamespaceContainerSpec instead.
 	//
 	// +optional
+	// +deprecated
 	Namespaces []string `json:"namespaces,omitempty"`
-
-	// ExcludeNamespaces is the set of namespaces to ignore when collecting logs.
-	//  This field supports globs (e.g. mynam*space, *myanmespace).  ExcludeNamespaces takes precedence over Namespaces
-	//
-	// +optional
-	ExcludeNamespaces []string `json:"excludeNamespaces,omitempty"`
 
 	// Selector for logs from pods with matching labels.
 	// Only messages from pods with these labels are collected.
@@ -48,26 +44,33 @@ type Application struct {
 	// +optional
 	ContainerLimit *LimitSpec `json:"containerLimit,omitempty"`
 
-	// Containers is the spec of containers to include and exclude when collecting logs.
-	// This effectively is an 'AND' with the other fields
-	// of this input definition. The subfields of containers supports globs.  The includes
-	// defined here are combined with the included namespaces to form a set of namespace
-	// and container permutations.  The same logic is applied to the excluded containers and namespaces
+	// Includes is the set of namespaces and containers to include when collecting logs.
+	// Note: infrastructure namespaces are still excluded for "*" values unless a qualifying glob pattern is specified.
 	//
 	// +optional
-	Containers *InclusionSpec `json:"containers,omitempty"`
+	Includes []NamespaceContainerSpec `json:"includes,omitempty"`
+
+	// Excludes is the set of namespaces and containers to ignore when collecting logs.
+	// Takes precedence over Includes option.
+	//
+	// +optional
+	Excludes []NamespaceContainerSpec `json:"excludes,omitempty"`
 }
 
-// InclusionSpec defines a set of similar resources for inclusion or exclusion
-type InclusionSpec struct {
+type NamespaceContainerSpec struct {
 
-	// Include resources.  May supports glob patterns
+	// Namespace resources. Creates a combined file pattern together with Container resources.
+	// Supports glob patterns and presumes "*" if ommitted.
+	// Note: infrastructure namespaces are still excluded for "*" values unless a qualifying glob pattern is specified.
+	//
 	// +optional
-	Include []string `json:"include,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 
-	// Exclude resources.  May supports glob patterns
+	// Container resources. Creates a combined file pattern together with Namespace resources.
+	// Supports glob patterns and presumes "*" if ommitted.
+	//
 	// +optional
-	Exclude []string `json:"exclude,omitempty"`
+	Container string `json:"container,omitempty"`
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.

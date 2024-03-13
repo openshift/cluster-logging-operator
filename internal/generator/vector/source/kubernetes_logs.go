@@ -62,6 +62,7 @@ const (
 	crioPodPathFmt                   = `"/var/log/pods/%s"`
 	crioNamespacePathFmt             = `"/var/log/pods/%s/*/*.log"`
 	crioNamespaceAndContainerPathFmt = `"/var/log/pods/%s/%s/*.log"`
+	crioNamespaceContainerCombined   = `"/var/log/pods/%s/*.log"`
 	crioContainerPathFmt             = `"/var/log/pods/*/%s/*.log"`
 	crioPathExtFmt                   = `"/var/log/pods/*/*/*.%s"`
 	crioEverything                   = `["/var/log/pods/*/*/*.log"]`
@@ -102,16 +103,37 @@ func ContainerPathGlobFrom(namespaces, containers []string, extensions ...string
 }
 
 type ContainerPathGlobBuilder struct {
-	containers *sets.String
-	namespaces *sets.String
-	paths      []string
+	containers   *sets.String
+	namespaces   *sets.String
+	nsContainers *sets.String
+	paths        []string
+}
+
+type NamespaceContainer struct {
+	Namespace string
+	Container string
 }
 
 func NewContainerPathGlobBuilder() *ContainerPathGlobBuilder {
 	return &ContainerPathGlobBuilder{
-		containers: sets.NewString(),
-		namespaces: sets.NewString(),
+		containers:   sets.NewString(),
+		namespaces:   sets.NewString(),
+		nsContainers: sets.NewString(),
 	}
+}
+
+func (b *ContainerPathGlobBuilder) AddCombined(ncs ...NamespaceContainer) *ContainerPathGlobBuilder {
+	for _, n := range ncs {
+		if n.Namespace == "" {
+			n.Namespace = "*"
+		}
+		if n.Container == "" {
+			n.Container = "*"
+		}
+		combined := fmt.Sprintf("%s/%s", normalizeNamespace(n.Namespace), collapseWildcards(n.Container))
+		b.nsContainers.Insert(combined)
+	}
+	return b
 }
 
 // AddOther takes an argument and joins it with the well known container path
@@ -123,13 +145,17 @@ func (b *ContainerPathGlobBuilder) AddOther(other ...string) *ContainerPathGlobB
 }
 func (b *ContainerPathGlobBuilder) AddNamespaces(namespaces ...string) *ContainerPathGlobBuilder {
 	for _, n := range namespaces {
-		b.namespaces.Insert(normalizeNamespace(n))
+		if n != "" {
+			b.namespaces.Insert(normalizeNamespace(n))
+		}
 	}
 	return b
 }
 func (b *ContainerPathGlobBuilder) AddContainers(containers ...string) *ContainerPathGlobBuilder {
 	for _, c := range containers {
-		b.containers.Insert(collapseWildcards(c))
+		if c != "" {
+			b.containers.Insert(collapseWildcards(c))
+		}
 	}
 	return b
 }
@@ -145,11 +171,21 @@ func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) stri
 		namespacesNotToCombine.Insert(normalizeNamespace(ns))
 	}
 	uniq := sets.NewString(b.paths...)
-	if b.containers.Len() == 0 {
+	if b.nsContainers.Len() > 0 {
+		for _, ncs := range b.nsContainers.List() {
+			uniq.Insert(fmt.Sprintf(crioNamespaceContainerCombined, ncs))
+		}
+	}
+	switch {
+	case b.containers.Len() == 0 && b.namespaces.Len() > 0:
 		for _, n := range b.namespaces.List() {
 			uniq.Insert(fmt.Sprintf(crioNamespaceAndContainerPathFmt, n, "*"))
 		}
-	} else {
+	case b.namespaces.Len() == 0 && b.containers.Len() > 0:
+		for _, c := range b.containers.List() {
+			uniq.Insert(fmt.Sprintf(crioNamespaceAndContainerPathFmt, "*", c))
+		}
+	case b.namespaces.Len() > 0 && b.containers.Len() > 0:
 		for _, c := range b.containers.List() {
 			for _, n := range b.namespaces.List() {
 				cFinal := c
@@ -158,7 +194,6 @@ func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) stri
 				}
 				uniq.Insert(fmt.Sprintf(crioNamespaceAndContainerPathFmt, n, cFinal))
 			}
-
 		}
 	}
 	paths := uniq.List()

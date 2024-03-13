@@ -147,29 +147,66 @@ var _ = Describe("#Validate", func() {
 				input.Application.Namespaces = []string{"$my-namespace123_", "bar"}
 				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for namespaces.*Must match`))
 			})
-			It("should fail invalid excludesNamespace", func() {
-				input.Application.ExcludeNamespaces = []string{"$my-namespace123_", "bar"}
-				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for excludeNamespaces.*Must match`))
+			It("should fail invalid exclude Namespaces", func() {
+				input.Application.Excludes = []loggingv1.NamespaceContainerSpec{
+					{
+						Namespace: "$my-namespace123_",
+					},
+					{
+						Namespace: "bar",
+					},
+				}
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for namespace excludes.*Must match`))
 			})
 			It("should fail invalid container includes", func() {
-				input.Application.Containers = &loggingv1.InclusionSpec{
-					Include: []string{"$my-namespace123_", "bar"},
+				input.Application.Includes = []loggingv1.NamespaceContainerSpec{
+					{
+						Container: "$my-namespace123_",
+					},
+					{
+						Container: "bar",
+					},
 				}
-				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for containers include.*Must match`))
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for container includes.*Must match`))
 			})
 			It("should fail invalid container excludes", func() {
-				input.Application.Containers = &loggingv1.InclusionSpec{
-					Exclude: []string{"$my-namespace123_", "bar"},
+				input.Application.Excludes = []loggingv1.NamespaceContainerSpec{
+					{
+						Container: "$my-namespace123_",
+					},
+					{
+						Container: "bar",
+					},
 				}
-				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for containers exclude.*Must match`))
+				Expect(validate().Inputs[input.Name]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, `invalid glob for container excludes.*Must match`))
 			})
 			It("should pass when valid", func() {
-				input.Application = &loggingv1.Application{
-					Namespaces:        []string{"my-namespace123", "bar", "**one*with***stars*"},
-					ExcludeNamespaces: []string{"my-namespace123", "bar", "**one*with***stars*"},
-					Containers: &loggingv1.InclusionSpec{
-						Include: []string{"my-namespace123", "bar", "**one*with***stars*"},
-						Exclude: []string{"my-namespace123", "bar", "**one*with***stars*"},
+				input.Application.Excludes = []loggingv1.NamespaceContainerSpec{
+					{
+						Namespace: "my-namespace123",
+						Container: "my-namespace123",
+					},
+					{
+						Namespace: "my-namespace123",
+						Container: "bar",
+					},
+					{
+						Namespace: "my-namespace123",
+						Container: "**one*with***stars*",
+					},
+				}
+				input.Application.Includes = []loggingv1.NamespaceContainerSpec{
+					{
+						Namespace: "my-namespace123",
+						Container: "my-namespace123",
+					},
+					{
+						Namespace: "bar",
+						Container: "my-namespace123",
+					},
+					{
+						Namespace: "**one*with***stars*",
+						Container: "my-namespace123",
 					},
 				}
 				Expect(validate().Inputs[input.Name]).To(BeEmpty())

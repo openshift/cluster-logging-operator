@@ -30,21 +30,36 @@ func validApplication(spec loggingv1.InputSpec, status *loggingv1.ClusterLogForw
 				corev1.ConditionTrue,
 				loggingv1.ValidationFailureReason,
 				globErrorFmt, "namespaces"))
-		case !validGlob(spec.Application.ExcludeNamespaces):
-			status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
-				corev1.ConditionTrue,
-				loggingv1.ValidationFailureReason,
-				globErrorFmt, "excludeNamespaces"))
-		case spec.Application.Containers != nil && !validGlob(spec.Application.Containers.Include):
-			status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
-				corev1.ConditionTrue,
-				loggingv1.ValidationFailureReason,
-				globErrorFmt, "containers include"))
-		case spec.Application.Containers != nil && !validGlob(spec.Application.Containers.Exclude):
-			status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
-				corev1.ConditionTrue,
-				loggingv1.ValidationFailureReason,
-				globErrorFmt, "containers exclude"))
+		case spec.Application.Excludes != nil:
+			for _, ex := range spec.Application.Excludes {
+				if !globRE.MatchString(ex.Namespace) {
+					status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
+						corev1.ConditionTrue,
+						loggingv1.ValidationFailureReason,
+						globErrorFmt, "namespace excludes"))
+				}
+				if !globRE.MatchString(ex.Container) {
+					status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
+						corev1.ConditionTrue,
+						loggingv1.ValidationFailureReason,
+						globErrorFmt, "container excludes"))
+				}
+			}
+		case spec.Application.Includes != nil:
+			for _, in := range spec.Application.Includes {
+				if !globRE.MatchString(in.Namespace) {
+					status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
+						corev1.ConditionTrue,
+						loggingv1.ValidationFailureReason,
+						globErrorFmt, "namespace includes"))
+				}
+				if !globRE.MatchString(in.Container) {
+					status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
+						corev1.ConditionTrue,
+						loggingv1.ValidationFailureReason,
+						globErrorFmt, "container includes"))
+				}
+			}
 		}
 	}
 	return len(status.Inputs[spec.Name]) == 0

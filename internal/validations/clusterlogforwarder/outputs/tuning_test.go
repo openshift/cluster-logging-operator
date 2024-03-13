@@ -90,6 +90,12 @@ var _ = Describe("Validate ", func() {
 				Compression: "lz4",
 			},
 		}),
+		Entry("should fail for syslog when maxWrite is spec'd", false, loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeSyslog,
+			Tuning: &loggingv1.OutputTuningSpec{
+				MaxWrite: utils.GetPtr(resource.MustParse("10M")),
+			},
+		}),
 	)
 
 })

@@ -2,11 +2,12 @@ package syslog
 
 import (
 	"fmt"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"net/url"
 	"regexp"
 	"strings"
+
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -28,6 +29,7 @@ type Syslog struct {
 	Inputs      string
 	Address     string
 	Mode        string
+	common.RootMixin
 }
 
 func (s Syslog) Name() string {
@@ -84,6 +86,10 @@ severity = "{{.Severity}}"
 {{end}}`
 }
 
+func (s *Syslog) SetCompression(algo string) {
+	s.Compression.Value = algo
+}
+
 func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
@@ -92,26 +98,33 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	u, _ := url.Parse(o.URL)
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
+	sink := Output(id, o, []string{dedottedID}, secret, op, u.Scheme, u.Host)
+	if strategy != nil {
+		strategy.VisitSink(sink)
+	}
 	return MergeElements(
 		[]Element{
 			normalize.DedotLabels(dedottedID, inputs),
-			Output(id, o, []string{dedottedID}, secret, op, u.Scheme, u.Host),
+			sink,
 			Encoding(id, o),
+			common.NewAcknowledgments(id, strategy),
+			common.NewBuffer(id, strategy),
 		},
 		TLSConf(id, o, secret, op),
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) Element {
+func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) *Syslog {
 	var mode = strings.ToLower(urlScheme)
 	if urlScheme == TLS {
 		mode = TCP
 	}
-	return Syslog{
+	return &Syslog{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Address:     host,
 		Mode:        mode,
+		RootMixin:   common.NewRootMixin(nil),
 	}
 }
 

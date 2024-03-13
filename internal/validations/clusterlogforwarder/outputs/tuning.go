@@ -10,11 +10,13 @@ const (
 
 	maxRetryDurationNotSupportedForType = "maxRetryDuration is not supported for the output type"
 	minRetryDurationNotSupportedForType = "minRetryDuration is not supported for the output type"
+	maxWriteNotSupportedForType         = "maxWrite is not supported for the output type"
 )
 
 var (
 	unsupportedCompression = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeAzureMonitor, loggingv1.OutputTypeGoogleCloudLogging)
 	unsupportedRequest     = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeKafka)
+	unsupportedBatch       = sets.NewString(loggingv1.OutputTypeSyslog)
 )
 
 func VerifyTuning(spec loggingv1.OutputSpec) (valid bool, msg string) {
@@ -25,6 +27,11 @@ func VerifyTuning(spec loggingv1.OutputSpec) (valid bool, msg string) {
 	//compression
 	if unsupportedCompression.Has(spec.Type) && spec.Tuning.Compression != "" && spec.Tuning.Compression != "none" {
 		return false, compressionNotSupportedForType
+	}
+
+	// batch
+	if unsupportedBatch.Has(spec.Type) && spec.Tuning.MaxWrite != nil && !spec.Tuning.MaxWrite.IsZero() {
+		return false, maxWriteNotSupportedForType
 	}
 
 	// lz4 is only supported for kafka

@@ -105,9 +105,9 @@ Type:: object
 |Property|Type|Description
 
 |containerLimit|object|  *(optional)* Container limit applied to each container of the pod(s) selected
-|containers|object|  *(optional)* Containers is the spec of containers to include and exclude when collecting logs.
-|excludeNamespaces|array|  *(optional)* ExcludeNamespaces is the set of namespaces to ignore when collecting logs.
-|namespaces|array|  *(optional)* Namespaces from which to collect application logs.
+|excludes|array|  *(optional)* Excludes is the set of namespaces and containers to ignore when collecting logs.
+|includes|array|  *(optional)* Includes is the set of namespaces and containers to include when collecting logs.
+|namespaces|array| **(DEPRECATED)** *(optional)* Namespaces from which to collect application logs.
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
 |======================
 
@@ -122,33 +122,36 @@ Type:: object
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
-=== .spec.inputs[].application.containers
+=== .spec.inputs[].application.excludes[]
 
-InclusionSpec defines a set of similar resources for inclusion or exclusion
-
-Type:: object
+Type:: array
 
 [options="header"]
 |======================
 |Property|Type|Description
 
-|exclude|array|  *(optional)* Exclude resources.  May supports glob patterns
-|include|array|  *(optional)* Include resources.  May supports glob patterns
+|container|string|  *(optional)* Container resources. Creates a combined file pattern together with Namespace resources.
+|namespace|string|  *(optional)* Namespace resources. Creates a combined file pattern together with Container resources.
 |======================
 
-=== .spec.inputs[].application.containers.exclude[]
+=== .spec.inputs[].application.includes[]
 
 Type:: array
 
-=== .spec.inputs[].application.containers.include[]
+[options="header"]
+|======================
+|Property|Type|Description
 
-Type:: array
-
-=== .spec.inputs[].application.excludeNamespaces[]
-
-Type:: array
+|container|string|  *(optional)* Container resources. Creates a combined file pattern together with Namespace resources.
+|namespace|string|  *(optional)* Namespace resources. Creates a combined file pattern together with Container resources.
+|======================
 
 === .spec.inputs[].application.namespaces[]
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
 Type:: array
 

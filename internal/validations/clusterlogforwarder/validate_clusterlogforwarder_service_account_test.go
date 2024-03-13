@@ -300,8 +300,10 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 										"kube*",
 										"foo",
 									},
-									ExcludeNamespaces: []string{
-										"foobar",
+									Excludes: []loggingv1.NamespaceContainerSpec{
+										{
+											Namespace: "foobar",
+										},
 									},
 								},
 							},
@@ -360,13 +362,21 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 							{
 								Name: appWithInfraNSInputName,
 								Application: &loggingv1.Application{
-									Namespaces: []string{
-										"openshift-image-registry",
-										"kube*",
-										"foo",
+									Includes: []loggingv1.NamespaceContainerSpec{
+										{
+											Namespace: "openshift-image-registry",
+										},
+										{
+											Namespace: "kube*",
+										},
+										{
+											Namespace: "foo",
+										},
 									},
-									ExcludeNamespaces: []string{
-										"foobar",
+									Excludes: []loggingv1.NamespaceContainerSpec{
+										{
+											Namespace: "foobar",
+										},
 									},
 								},
 							},

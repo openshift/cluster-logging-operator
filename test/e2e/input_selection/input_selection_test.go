@@ -173,10 +173,27 @@ var _ = Describe("[InputSelection]", func() {
 			func() {
 				Expect(receiver.ListNamespaces()).To(HaveEach(MatchRegexp("^clo-test.*$")))
 			}),
+		Entry("application inputs should only collect from included namespaces with wildcards",
+			logging.InputSpec{
+				Application: &logging.Application{
+					Includes: []logging.NamespaceContainerSpec{
+						{
+							Namespace: "clo-test*",
+						},
+					},
+				}},
+			logGeneratorNameFn,
+			func() {
+				Expect(receiver.ListNamespaces()).To(HaveEach(MatchRegexp("^clo-test.*$")))
+			}),
 		Entry("application inputs should not collect from excluded namespaces",
 			logging.InputSpec{
 				Application: &logging.Application{
-					ExcludeNamespaces: []string{"clo-test*"},
+					Excludes: []logging.NamespaceContainerSpec{
+						{
+							Namespace: "clo-test*",
+						},
+					},
 				}},
 			logGeneratorNameFn,
 			func() {
@@ -185,8 +202,10 @@ var _ = Describe("[InputSelection]", func() {
 		Entry("application inputs should collect from included containers",
 			logging.InputSpec{
 				Application: &logging.Application{
-					Containers: &logging.InclusionSpec{
-						Include: []string{"log-*"},
+					Includes: []logging.NamespaceContainerSpec{
+						{
+							Container: "log-*",
+						},
 					},
 				}},
 			logGeneratorNameFn,
@@ -196,8 +215,10 @@ var _ = Describe("[InputSelection]", func() {
 		Entry("should not collect from excluded containers",
 			logging.InputSpec{
 				Application: &logging.Application{
-					Containers: &logging.InclusionSpec{
-						Exclude: []string{"log-*"},
+					Excludes: []logging.NamespaceContainerSpec{
+						{
+							Container: "log-*",
+						},
 					},
 				}},
 			logGeneratorNameFn,

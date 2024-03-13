@@ -130,6 +130,13 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 				if hasInfraNamespaces(input.Application.Namespaces) {
 					inputTypes.Insert(loggingv1.InputNameInfrastructure)
 				}
+				if len(input.Application.Includes) > 0 {
+					for _, in := range input.Application.Includes {
+						if infraNamespaces.MatchString(in.Namespace) {
+							inputTypes.Insert(loggingv1.InputNameInfrastructure)
+						}
+					}
+				}
 			case input.Infrastructure != nil:
 				inputTypes.Insert(loggingv1.InputNameInfrastructure)
 			case input.Audit != nil:

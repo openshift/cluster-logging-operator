@@ -56,8 +56,16 @@ pipelines:
 				FromInputWithVisitor("application-logs1",
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
-							Namespaces:        []string{"abc"},
-							ExcludeNamespaces: []string{"xyz"},
+							Includes: []logging.NamespaceContainerSpec{
+								{
+									Namespace: "abc",
+								},
+							},
+							Excludes: []logging.NamespaceContainerSpec{
+								{
+									Namespace: "xyz",
+								},
+							},
 							Selector: &logging.LabelSelector{
 								MatchLabels: appLabels1,
 							},
@@ -83,10 +91,10 @@ pipelines:
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
 - name: application-logs1
   application:
-    excludeNamespaces:
-    - xyz
-    namespaces:
-    - abc
+    - includes:
+      - namespace: abc
+    - excludes:
+      - namespace: xyz
     selector:
       matchLabels: 
         env: env1

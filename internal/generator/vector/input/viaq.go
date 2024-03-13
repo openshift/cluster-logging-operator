@@ -64,35 +64,45 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 		if input.Application != nil {
 			ib := source.NewContainerPathGlobBuilder()
 			eb := source.NewContainerPathGlobBuilder()
-
-			switch {
-			// Includes but no excludes, no need to add exclude to config
-			case len(input.Application.Namespaces) > 0 && len(input.Application.ExcludeNamespaces) == 0:
-				ib.AddNamespaces(input.Application.Namespaces...)
-			case len(input.Application.Namespaces) == 0 &&
-				len(input.Application.ExcludeNamespaces) == 0 &&
-				input.Application.Containers != nil &&
-				len(input.Application.Containers.Include) > 0:
-				ib.AddNamespaces("*")
-			default:
-				ib.AddNamespaces(input.Application.Namespaces...)
-
-				finalExcludeList := input.Application.ExcludeNamespaces
-				if len(finalExcludeList) == 0 && input.Application.Containers != nil && len(input.Application.Containers.Exclude) > 0 {
-					finalExcludeList = append(finalExcludeList, "*")
+			appIncludes := []string{}
+			// Migrate existing namespaces
+			if len(input.Application.Namespaces) > 0 {
+				for _, ns := range input.Application.Namespaces {
+					ncs := source.NamespaceContainer{
+						Namespace: ns,
+					}
+					ib.AddCombined(ncs)
+					appIncludes = append(appIncludes, ncs.Namespace)
 				}
-				// Prune excluded infra namespaces if includes has any infra namespaces
-				finalExcludeList = append(finalExcludeList,
-					pruneInfraNS(input.Application.Namespaces)...)
-
-				eb.AddNamespaces(finalExcludeList...).
-					AddExtensions(excludeExtensions...)
 			}
-
-			if input.Application.Containers != nil {
-				ib.AddContainers(input.Application.Containers.Include...)
-				eb.AddContainers(input.Application.Containers.Exclude...)
+			if len(input.Application.Includes) > 0 {
+				for _, in := range input.Application.Includes {
+					ncs := source.NamespaceContainer{
+						Namespace: in.Namespace,
+						Container: in.Container,
+					}
+					ib.AddCombined(ncs)
+					appIncludes = append(appIncludes, ncs.Namespace)
+				}
 			}
+			// Need to remove any of the default excluded infra namespaces if they are part of the includes
+			excludesList := pruneInfraNS(appIncludes)
+			for _, ns := range excludesList {
+				ncs := source.NamespaceContainer{
+					Namespace: ns,
+				}
+				eb.AddCombined(ncs)
+			}
+			if len(input.Application.Excludes) > 0 {
+				for _, ex := range input.Application.Excludes {
+					ncs := source.NamespaceContainer{
+						Namespace: ex.Namespace,
+						Container: ex.Container,
+					}
+					eb.AddCombined(ncs)
+				}
+			}
+			eb.AddExtensions(excludeExtensions...)
 			includes := ib.Build()
 			excludes := eb.Build(infraNamespaces...)
 			els, ids = NewViaqContainerSource(input, collectorNS, includes, excludes)

@@ -45,23 +45,26 @@ var _ = Describe("inputs", func() {
 		},
 			"viaq_application_with_throttle.toml",
 		),
-		Entry("with an application that specs specific namespaces", logging.InputSpec{
+		Entry("[migrate deprecated] with an application that specs specific namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
 				Namespaces: []string{"test-ns1", "test-ns2"},
-				Containers: &logging.InclusionSpec{
-					Include: []string{"mesh*"},
-				},
 			},
 		},
 			"viaq_application_with_includes.toml",
 		),
-		Entry("with an application that specs specific exclude namespaces", logging.InputSpec{
+		Entry("with an application that specs specific exclude namespaces and containers", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				ExcludeNamespaces: []string{"test-ns1", "test-ns2"},
-				Containers: &logging.InclusionSpec{
-					Exclude: []string{"mesh*"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns1",
+						Container: "mesh*",
+					},
+					{
+						Namespace: "test-ns2",
+						Container: "mesh*",
+					},
 				},
 			},
 		},
@@ -70,8 +73,10 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs including a container from all namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Containers: &logging.InclusionSpec{
-					Include: []string{"log-*"},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Container: "log-*",
+					},
 				},
 			},
 		},
@@ -80,8 +85,10 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs excluding a container from all namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Containers: &logging.InclusionSpec{
-					Exclude: []string{"log-*"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Container: "log-*",
+					},
 				},
 			},
 		},
@@ -90,10 +97,23 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs specific namespaces and exclude namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Namespaces:        []string{"test-ns-foo", "test-ns-bar"},
-				ExcludeNamespaces: []string{"test-ns1", "test-ns2"},
-				Containers: &logging.InclusionSpec{
-					Exclude: []string{"mesh*"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns1",
+						Container: "mesh*",
+					},
+					{
+						Namespace: "test-ns2",
+						Container: "mesh*",
+					},
+				},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns-foo",
+					},
+					{
+						Namespace: "test-ns-bar",
+					},
 				},
 			},
 		},
@@ -102,10 +122,24 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs infra namespaces and exclude namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Namespaces:        []string{"test-ns-foo", "openshift-logging", "kube-apiserver"},
-				ExcludeNamespaces: []string{"test-ns1"},
-				Containers: &logging.InclusionSpec{
-					Include: []string{"mesh"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns1",
+					},
+				},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns-foo",
+						Container: "mesh",
+					},
+					{
+						Namespace: "openshift-logging",
+						Container: "mesh",
+					},
+					{
+						Namespace: "kube-apiserver",
+						Container: "mesh",
+					},
 				},
 			},
 		},
@@ -114,10 +148,16 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that collects infra namespaces and excludes a container", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Namespaces:        []string{"openshift-logging"},
-				ExcludeNamespaces: []string{"openshift-logging"},
-				Containers: &logging.InclusionSpec{
-					Exclude: []string{"mesh"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "openshift-logging",
+						Container: "mesh",
+					},
+				},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "openshift-logging",
+					},
 				},
 			},
 		},
@@ -126,8 +166,25 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs infra namespaces and excludes infra namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Namespaces:        []string{"test-ns-foo", "openshift*", "kube-apiserver"},
-				ExcludeNamespaces: []string{"test-ns1", "openshift-logging"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns1",
+					},
+					{
+						Namespace: "openshift-logging",
+					},
+				},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns-foo",
+					},
+					{
+						Namespace: "openshift*",
+					},
+					{
+						Namespace: "kube-apiserver",
+					},
+				},
 			},
 		},
 			"viaq_application_with_infra_includes_infra_excludes.toml",
@@ -135,8 +192,25 @@ var _ = Describe("inputs", func() {
 		Entry("with an application that specs specific infra namespace and excludes infra namespaces", logging.InputSpec{
 			Name: "my-app",
 			Application: &logging.Application{
-				Namespaces:        []string{"test-ns-foo", "openshift-logging", "kube-apiserver"},
-				ExcludeNamespaces: []string{"test-ns1", "openshift*"},
+				Excludes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns1",
+					},
+					{
+						Namespace: "openshift*",
+					},
+				},
+				Includes: []logging.NamespaceContainerSpec{
+					{
+						Namespace: "test-ns-foo",
+					},
+					{
+						Namespace: "openshift-logging",
+					},
+					{
+						Namespace: "kube-apiserver",
+					},
+				},
 			},
 		},
 			"viaq_application_with_specific_infra_includes_infra_excludes.toml",

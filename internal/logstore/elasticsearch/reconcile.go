@@ -13,12 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Reconcile(k8sClient client.Client, logStore *logging.LogStoreSpec, namespace, logstoreSecretName string, ownerRef v1.OwnerReference, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
+func Reconcile(reader client.Reader, k8sClient client.Client, logStore *logging.LogStoreSpec, namespace, logstoreSecretName string, ownerRef v1.OwnerReference, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
 	if err := ReconcileCustomResource(k8sClient, logStore, namespace, logstoreSecretName, ownerRef); err != nil {
 		return err
 	}
 
-	if err := UpdateStatus(k8sClient, namespace, fetchClusterLogging); err != nil {
+	if err := UpdateStatus(reader, k8sClient, namespace, fetchClusterLogging); err != nil {
 		log.Error(err, "Failed to update Cluster Logging Elasticsearch status")
 	}
 

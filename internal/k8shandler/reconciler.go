@@ -84,7 +84,7 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 
 	// Clean up any stale http input services
 	if err = clusterLoggingRequest.RemoveInputServices([]metav1.OwnerReference{utils.AsOwner(forwarder)}, false); err != nil {
-		return fmt.Errorf("error removing stale http input services")
+		return fmt.Errorf("error removing stale http input services. %v", err)
 	}
 
 	//if there is no early exit from reconciler then new CL spec is applied successfully hence healthStatus is set to true or 1

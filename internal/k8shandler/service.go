@@ -44,11 +44,11 @@ func (clusterRequest *ClusterLoggingRequest) RemoveInputService(serviceName stri
 	return nil
 }
 
-// GetServiceList returns a list of services based on a key/value label
+// GetServiceList returns a list of services based on a key/value label and namespace
 func (clusterRequest *ClusterLoggingRequest) GetServiceList(key, val, namespace string) (*core.ServiceList, error) {
 	labelSelector, _ := labels.Parse(fmt.Sprintf("%s=%s", key, val))
 	httpServices := core.ServiceList{}
-	if err := clusterRequest.Client.List(context.TODO(), &httpServices, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace}); err != nil {
+	if err := clusterRequest.Reader.List(context.TODO(), &httpServices, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace}); err != nil {
 		return nil, fmt.Errorf("failure listing services with label: %s,  %v", fmt.Sprintf("%s=%s", key, val), err)
 	}
 	return &httpServices, nil

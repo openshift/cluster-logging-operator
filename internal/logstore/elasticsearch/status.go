@@ -3,18 +3,20 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	"k8s.io/client-go/util/retry"
 
+	"sort"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sort"
 )
 
-func UpdateStatus(k8sClient client.Client, namespace string, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
+func UpdateStatus(reader client.Reader, k8sClient client.Client, namespace string, fetchClusterLogging func() (*logging.ClusterLogging, error)) error {
 
-	elasticsearchStatus, err := getElasticsearchStatus(k8sClient, namespace)
+	elasticsearchStatus, err := getElasticsearchStatus(reader, namespace)
 	if err != nil {
 		return fmt.Errorf("Failed to get Elasticsearch status: %v", err)
 	}
@@ -37,7 +39,7 @@ func UpdateStatus(k8sClient client.Client, namespace string, fetchClusterLogging
 	return nil
 }
 
-func getElasticsearchStatus(k8sClient client.Client, namespace string) ([]logging.ElasticsearchStatus, error) {
+func getElasticsearchStatus(reader client.Reader, namespace string) ([]logging.ElasticsearchStatus, error) {
 
 	// we can scrape the status provided by the elasticsearch-operator
 	// get list of elasticsearch objects
@@ -47,7 +49,7 @@ func getElasticsearchStatus(k8sClient client.Client, namespace string) ([]loggin
 			APIVersion: elasticsearch.GroupVersion.String(),
 		},
 	}
-	err := k8sClient.List(context.TODO(), esList, client.InNamespace(namespace))
+	err := reader.List(context.TODO(), esList, client.InNamespace(namespace))
 	var status []logging.ElasticsearchStatus
 
 	if err != nil {

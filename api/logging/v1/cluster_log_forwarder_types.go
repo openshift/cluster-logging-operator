@@ -25,32 +25,26 @@ import (
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
-// ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
+// The `ClusterLogForwarderSpec` field specifies how logs should be forwarded to remote targets.
 type ClusterLogForwarderSpec struct {
 
-	// Inputs are named filters for log messages to be forwarded.
-	//
-	// There are three built-in inputs named `application`, `infrastructure` and
-	// `audit`. You don't need to define inputs here if those are sufficient for
-	// your needs. See `inputRefs` for more.
-	//
+	/*
+	Inputs are named filters for log messages to be forwarded. The `application`, `infrastructure` and `audit` inputs are provided by default, and can be used to forward application, infrastructure, or audit logs. If these default inputs fit your use case, you do not need to define additional custom inputs. See `inputRefs` for more information.
+	*/
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Inputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderInputs"}
 	Inputs []InputSpec `json:"inputs,omitempty"`
 
-	// Outputs are named destinations for log messages.
-	//
-	// There is a built-in output named `default` which forwards to the default
-	// openshift log store. You can define outputs to forward to other stores or
-	// log processors, inside or outside the cluster.
-	//
+	/*
+	Outputs are named destinations for log messages. A `default` output is provided which forwards logs to the internal {product-title} log store. You can define outputs to forward to other stores or log processors, inside or outside the cluster.
+	*/
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Outputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderOutputs"}
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
-	// Filters are applied to log records passing through a pipeline.
-	// There are different types of filter that can select and modify log records in different ways.
-	// See [FilterTypeSpec] for a list of filter types.
+	/*
+	Filters are applied to log records passing through a pipeline.There are different types of filter that can select and modify log records in different ways. See [`FilterTypeSpec`] for a list of filter types.
+	*/
 	Filters []FilterSpec `json:"filters,omitempty"`
 
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
@@ -59,7 +53,7 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
-	// ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
+	// The `ServiceAccountName` field specifies the service account associated with the `ClusterLogForwarder` object.
 	//
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
@@ -79,7 +73,7 @@ type ClusterLogForwarderSpec struct {
 	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
 }
 
-// ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+// The `ClusterLogForwarderStatus` field specifies the observed state of the `ClusterLogForwarder` object.
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderConditions"}
@@ -102,21 +96,18 @@ type ClusterLogForwarderStatus struct {
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 
-// InputSpec defines a selector of log messages for a given log type. The input is rejected
-// if more than one of the following subfields are defined: application, infrastructure, audit, and receiver.
+/*
+The `InputSpec` field specifies a selector of log messages for a given log type. The input is rejected if more than one of the following subfields are defined: `application`, `infrastructure`, `audit`, or `receiver`.
+*/
 type InputSpec struct {
-	// Name used to refer to the input of a `pipeline`.
+	// The name used to refer to the input of a pipeline.
 	//
 	// +kubebuilder:validation:minLength:=1
 	// +required
 	Name string `json:"name"`
-
-	// NOTE: the following fields in this struct are deliberately _not_ `omitempty`.
-	// An empty field means enable that input type with no filter.
-
-	// Application, if present, enables named set of `application` logs that
-	// can specify a set of match criteria
-	//
+	/*
+	Note: The following fields in this struct are deliberately _not_ `omitempty`. An empty field means enable that input type with no filter. Application, if present, enables named set of `application` logs that can specify a set of match criteria.
+	*/
 	// +optional
 	Application *Application `json:"application,omitempty"`
 
@@ -378,15 +369,11 @@ type OutputDefaults struct {
 // +kubebuilder:resource:categories=logging,shortName=clf
 // ClusterLogForwarder is an API to configure forwarding logs.
 //
-// You configure forwarding by specifying a list of `pipelines`,
-// which forward from a set of named inputs to a set of named outputs.
+// You configure forwarding by specifying a list of pipelines, which forward logs from a set of named inputs to a set of named outputs.
 //
-// There are built-in input names for common log categories, and you can
-// define custom inputs to do additional filtering.
+// There are built-in input names for common log categories, and you can define custom inputs to do additional filtering.
 //
-// There is a built-in output name for the default openshift log store, but
-// you can define your own outputs with a URL and other connection information
-// to forward logs to other stores or processors, inside or outside the cluster.
+// There is a built-in `default` output name for the internal {product-title} log store, but you can define your own outputs with a URL and other connection information to forward logs to other stores or processors, inside or outside the cluster.
 //
 // For more details see the documentation on the API fields.
 type ClusterLogForwarder struct {

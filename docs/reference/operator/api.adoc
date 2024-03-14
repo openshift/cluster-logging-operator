@@ -19,15 +19,11 @@ toc::[]
 
 ClusterLogForwarder is an API to configure forwarding logs.
 
-You configure forwarding by specifying a list of `pipelines`,
-which forward from a set of named inputs to a set of named outputs.
+You configure forwarding by specifying a list of pipelines, which forward logs from a set of named inputs to a set of named outputs.
 
-There are built-in input names for common log categories, and you can
-define custom inputs to do additional filtering.
+There are built-in input names for common log categories, and you can define custom inputs to do additional filtering.
 
-There is a built-in output name for the default openshift log store, but
-you can define your own outputs with a URL and other connection information
-to forward logs to other stores or processors, inside or outside the cluster.
+There is a built-in `default` output name for the internal {product-title} log store, but you can define your own outputs with a URL and other connection information to forward logs to other stores or processors, inside or outside the cluster.
 
 For more details see the documentation on the API fields.
 
@@ -41,26 +37,21 @@ For more details see the documentation on the API fields.
 
 === .spec
 
-ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
-
 Type:: object
 
 [options="header"]
 |======================
 |Property|Type|Description
 
-|filters|array|  Filters are applied to log records passing through a pipeline.
-|inputs|array|  *(optional)* Inputs are named filters for log messages to be forwarded.
+|filters|array|  	Filters are applied to log records passing through a pipeline.There are different types of filter that can select and modify log records in different ways. See [`FilterTypeSpec`] for a list of filter types.
+|inputs|array|  *(optional)* 	Inputs are named filters for log messages to be forwarded. The `application`, `infrastructure` and `audit` inputs are provided by default, and can be used to forward application, infrastructure, or audit logs. If these default inputs fit your use case, you do not need to define additional custom inputs. See `inputRefs` for more information.
 |outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
-|outputs|array|  *(optional)* Outputs are named destinations for log messages.
+|outputs|array|  *(optional)* 	Outputs are named destinations for log messages. A `default` output is provided which forwards logs to the internal {product-title} log store. You can define outputs to forward to other stores or log processors, inside or outside the cluster.
 |pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
-|serviceAccountName|string|  *(optional)* ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
+|serviceAccountName|string|  *(optional)* The `ServiceAccountName` field specifies the service account associated with the `ClusterLogForwarder` object.
 |======================
 
 === .spec.filters[]
-
-Filter defines a filter for log messages.
-See [FilterTypeSpec] for a list of filter types.
 
 Type:: array
 
@@ -77,26 +68,20 @@ Type:: array
 
 === .spec.inputs[]
 
-InputSpec defines a selector of log messages for a given log type. The input is rejected
-if more than one of the following subfields are defined: application, infrastructure, audit, and receiver.
-
 Type:: array
 
 [options="header"]
 |======================
 |Property|Type|Description
 
-|application|object|  *(optional)* Application, if present, enables named set of `application` logs that
+|application|object|  *(optional)* 	Note: The following fields in this struct are deliberately _not_ `omitempty`. An empty field means enable that input type with no filter. Application, if present, enables named set of `application` logs that can specify a set of match criteria.
 |audit|object|  *(optional)* Audit, if present, enables `audit` logs.
 |infrastructure|object|  *(optional)* Infrastructure, if present, enables `infrastructure` logs.
-|name|string|  Name used to refer to the input of a `pipeline`.
+|name|string|  The name used to refer to the input of a pipeline.
 |receiver|object|  *(optional)* Receiver to receive logs from non-cluster sources.
 |======================
 
 === .spec.inputs[].application
-
-Application log selector.
-All conditions in the selector must be satisfied (logical AND) to select logs.
 
 Type:: object
 
@@ -123,8 +108,6 @@ Type:: object
 |======================
 
 === .spec.inputs[].application.containers
-
-InclusionSpec defines a set of similar resources for inclusion or exclusion
 
 Type:: object
 
@@ -153,8 +136,6 @@ Type:: array
 Type:: array
 
 === .spec.inputs[].application.selector
-
-LabelSelector is a label query over a set of resources.
 
 Type:: object
 
@@ -189,8 +170,6 @@ Type:: object
 
 === .spec.inputs[].audit
 
-Audit enables audit logs. Filtering may be added in future.
-
 Type:: object
 
 [options="header"]
@@ -206,11 +185,6 @@ Type:: array
 
 === .spec.inputs[].infrastructure
 
-Infrastructure enables infrastructure logs. Filtering may be added in future.
-Sources of these logs:
-* container workloads deployed to namespaces: default, kube*, openshift*
-* journald logs from cluster nodes
-
 Type:: object
 
 [options="header"]
@@ -225,10 +199,6 @@ Type:: object
 Type:: array
 
 === .spec.inputs[].receiver
-
-ReceiverSpec is a union of input Receiver types.
-
-The fields of this struct define the set of known Receiver types.
 
 Type:: object
 
@@ -252,8 +222,6 @@ Type:: object
 
 === .spec.outputDefaults.elasticsearch
 
-ElasticsearchStructuredSpec is spec related to structured log changes to determine the elasticsearch index
-
 Type:: object
 
 [options="header"]
@@ -266,8 +234,6 @@ Type:: object
 |======================
 
 === .spec.outputs[]
-
-Output defines a destination for log messages.
 
 Type:: array
 
@@ -307,8 +273,6 @@ Type:: object
 
 === .spec.outputs[].secret
 
-OutputSecretSpec is a secret reference containing name only, no namespace.
-
 Type:: object
 
 [options="header"]
@@ -319,8 +283,6 @@ Type:: object
 |======================
 
 === .spec.outputs[].tls
-
-OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
 
 Type:: object
 
@@ -372,8 +334,6 @@ Type:: object
 Type:: object
 
 === .spec.outputs[].tuning
-
-OutputTuningSpec tuning parameters for an output
 
 Type:: object
 
@@ -463,8 +423,6 @@ Type:: Duration
 
 === .spec.pipelines[]
 
-PipelinesSpec link a set of inputs to a set of outputs.
-
 Type:: array
 
 [options="header"]
@@ -497,8 +455,6 @@ Type:: object
 Type:: array
 
 === .status
-
-ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 
 Type:: object
 
@@ -548,8 +504,6 @@ A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clust
 
 === .spec
 
-ClusterLoggingSpec defines the desired state of ClusterLogging
-
 Type:: object
 
 [options="header"]
@@ -565,8 +519,6 @@ Type:: object
 |======================
 
 === .spec.collection
-
-This is the struct that will contain information pertinent to Log and event collection
 
 Type:: object
 
@@ -584,8 +536,6 @@ Type:: object
 
 === .spec.collection.fluentd
 
-FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
-
 Type:: object
 
 [options="header"]
@@ -597,20 +547,6 @@ Type:: object
 |======================
 
 === .spec.collection.fluentd.buffer
-
-FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
-the buffer configuration for all fluentd outputs. It supports a subset of
-parameters to configure buffer and queue sizing, flush operations and retry
-flushing.
-
-For general parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
-
-For flush parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
-
-For retry parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 Type:: object
 
@@ -632,12 +568,6 @@ Type:: object
 
 === .spec.collection.fluentd.inFile
 
-FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
-to tune the configuration for all fluentd in-tail inputs.
-
-For general parameters refer to:
-https://docs.fluentd.org/input/tail#parameters
-
 Type:: object
 
 [options="header"]
@@ -654,9 +584,6 @@ Type:: object
 This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
 ====
 
-Specification of Log Collection for the cluster
-See spec.collection
-
 Type:: object
 
 [options="header"]
@@ -668,8 +595,6 @@ Type:: object
 |======================
 
 === .spec.collection.logs.fluentd
-
-CollectorSpec is spec to define scheduling and resources for a collector
 
 Type:: object
 
@@ -743,8 +668,6 @@ Type:: int
 ====
 This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
 ====
-
-This is the struct that will contain information pertinent to Log curation (Curator)
 
 Type:: object
 
@@ -832,11 +755,6 @@ Type:: int
 This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
 ====
 
-ForwarderSpec contains global tuning parameters for specific forwarder implementations.
-This field is not required for general use, it allows performance tuning by users
-familiar with the underlying forwarder technology.
-Currently supported: `fluentd`.
-
 Type:: object
 
 [options="header"]
@@ -847,8 +765,6 @@ Type:: object
 |======================
 
 === .spec.forwarder.fluentd
-
-FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
 Type:: object
 
@@ -861,20 +777,6 @@ Type:: object
 |======================
 
 === .spec.forwarder.fluentd.buffer
-
-FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
-the buffer configuration for all fluentd outputs. It supports a subset of
-parameters to configure buffer and queue sizing, flush operations and retry
-flushing.
-
-For general parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
-
-For flush parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
-
-For retry parameters refer to:
-https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 Type:: object
 
@@ -896,12 +798,6 @@ Type:: object
 
 === .spec.forwarder.fluentd.inFile
 
-FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
-to tune the configuration for all fluentd in-tail inputs.
-
-For general parameters refer to:
-https://docs.fluentd.org/input/tail#parameters
-
 Type:: object
 
 [options="header"]
@@ -913,8 +809,6 @@ Type:: object
 
 === .spec.logStore
 
-The LogStoreSpec contains information about how logs are stored.
-
 Type:: object
 
 [options="header"]
@@ -924,7 +818,7 @@ Type:: object
 |elasticsearch|object| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
 |lokistack|object|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
 |retentionPolicy|object| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
-|type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+|type|string|   Specifies the type of log Storage to configure. The {clo} currently supports either using the ElasticSearch log store, managed by the {es-op}, or the LokiStack log store, managed by the {loki-op}, as a default log store. 	If you are using ElasticSearch as a log store, the {es-op} also manages the ElasticSearch deployment. If you are using LokiStack as a log store, the {loki-op} does not manage the LokiStack deployment. The {loki-op} creates configuration referencing an existing LokiStack deployment. You are responsible for creating and managing your own LokiStack deployment.
 |======================
 
 === .spec.logStore.elasticsearch
@@ -1126,9 +1020,6 @@ Type:: int
 
 === .spec.logStore.lokistack
 
-LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
-It points to an existing LokiStack in the same namespace.
-
 Type:: object
 
 [options="header"]
@@ -1235,8 +1126,6 @@ Type:: array
 |======================
 
 === .spec.visualization
-
-This is the struct that will contain information pertinent to Log visualization (Kibana)
 
 Type:: object
 
@@ -1420,8 +1309,6 @@ Type:: int
 
 === .status
 
-ClusterLoggingStatus defines the observed state of ClusterLogging
-
 Type:: object
 
 [options="header"]
@@ -1478,8 +1365,6 @@ Type:: object
 
 === .status.collection.logs.fluentdStatus.clusterCondition
 
-`operator-sdk generate crds` does not allow map-of-slice, must use a named type.
-
 Type:: object
 
 === .status.collection.logs.fluentdStatus.nodes
@@ -1521,8 +1406,6 @@ Type:: array
 |======================
 
 === .status.curation.curatorStatus[].clusterCondition
-
-`operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
 Type:: object
 
@@ -1650,8 +1533,6 @@ A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the
 
 === .spec
 
-LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
-
 Type:: object
 
 [options="header"]
@@ -1719,8 +1600,6 @@ Type:: array
 Type:: int
 
 === .status
-
-LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
 
 Type:: object
 

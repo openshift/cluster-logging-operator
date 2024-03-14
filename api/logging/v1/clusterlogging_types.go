@@ -185,15 +185,8 @@ type ProxySpec struct {
 
 // The LogStoreSpec contains information about how logs are stored.
 type LogStoreSpec struct {
-	// The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
-	// managed by elasticsearch-operator or Loki managed by loki-operator (LokiStack) as a default log store.
-	//
-	// When using ElasticSearch as a log store this operator also manages the ElasticSearch deployment.
-	//
-	// When using LokiStack as a log store this operator does not manage the LokiStack, but only creates
-	// configuration referencing an existing LokiStack deployment. The user is responsible for creating and
-	// managing the LokiStack himself.
-	//
+	/* Specifies the type of log Storage to configure. The {clo} currently supports either using the ElasticSearch log store, managed by the {es-op}, or the LokiStack log store, managed by the {loki-op}, as a default log store. 	If you are using ElasticSearch as a log store, the {es-op} also manages the ElasticSearch deployment. If you are using LokiStack as a log store, the {loki-op} does not manage the LokiStack deployment. The {loki-op} creates configuration referencing an existing LokiStack deployment. You are responsible for creating and managing your own LokiStack deployment.
+	*/
 	// +kubebuilder:validation:Enum=elasticsearch;lokistack
 	// +kubebuilder:default:=lokistack
 	Type LogStoreType `json:"type"`

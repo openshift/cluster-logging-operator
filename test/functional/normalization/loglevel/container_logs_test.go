@@ -24,9 +24,9 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput().
+			ToHttpOutput().
 			FromInput(logging.InputNameAudit).
-			ToFluentForwardOutput()
+			ToHttpOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {
@@ -43,11 +43,11 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		outputLogTemplate.Message = message
 		outputLogTemplate.Level = expLevel
 
-		// Write log line as input to fluentd
+		// Write log line
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

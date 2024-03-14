@@ -1,6 +1,6 @@
 {{- define "member" -}}
-{{- if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) -}}
-{{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
+  {{- if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) -}}
+  {{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
 
 === {{ .Path }}
 
@@ -10,6 +10,12 @@
   {{ "This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.\n" -}}
   {{ "====" -}}
 {{ end }}
+
+{{ if .Type.Elem -}}
+  {{ (comments .Type.Elem.CommentLines) }}
+{{- else -}}
+  {{  (comments .Type.CommentLines) }}
+{{- end }}
 
 Type:: {{ (yamlType .Type) }}
 

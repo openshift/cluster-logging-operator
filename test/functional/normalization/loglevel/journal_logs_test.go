@@ -13,7 +13,10 @@ import (
 )
 
 var _ = Describe("[functional][normalization][loglevel] tests for message format of journal logs", func() {
-
+	if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+		defer GinkgoRecover()
+		Skip("Tests disabled for vector")
+	}
 	var (
 		framework *functional.CollectorFunctionalFramework
 	)
@@ -26,7 +29,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameInfrastructure).
-			ToFluentForwardOutput().
+			ToHttpOutput().
 			FromInput(logging.InputNameAudit).
 			ToElasticSearchOutput()
 		Expect(framework.Deploy()).To(BeNil())

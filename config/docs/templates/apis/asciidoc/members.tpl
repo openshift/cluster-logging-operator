@@ -1,6 +1,6 @@
 {{- define "member" -}}
-  {{- if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) -}}
-  {{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
+ {{- if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) -}}
+ {{ if not (or (or (fieldEmbedded .Member) (hiddenMember .Member) (ignoreMember .Member))) }}
 
 === {{ .Path }}
 
@@ -54,15 +54,15 @@ Type:: {{ (yamlType .Type) }}
 |======================
 |Property|Type|Description
 
-{{ range (sortMembers .Members) -}}
-{{- if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) -}}
-{{- else -}}
-{{- if (fieldEmbedded . ) -}}
-{{- template "rows" .Type  -}}
-{{- else -}}
-{{- template "row" .  -}}
-{{- end -}}
-{{- end -}}
+{{ range ( sortMembers .Members) -}}
+   {{- if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) -}}
+   {{- else -}}
+     {{- if (fieldEmbedded . ) -}}
+       {{- template "rows" .Type  -}}
+     {{- else -}}
+       {{- template "row" .  -}}
+     {{- end -}}
+   {{- end -}}
 {{- end -}}
 |======================
 {{- end -}}

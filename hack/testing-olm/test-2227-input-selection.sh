@@ -41,7 +41,11 @@ for dir in $(ls -d $TEST_DIR); do
   os::log::info "=========================================================="
   os::log::info "Starting test of collection input selection '$dir'"
   os::log::info "=========================================================="
-  if go test -count=1 -parallel=1 -timeout=60m "$dir" -ginkgo.noColor -ginkgo.trace -ginkgo.slowSpecThreshold=300.0 | tee -a "$ARTIFACT_DIR/test.log" ; then
+  artifact_dir=$ARTIFACT_DIR/$(basename $dir)
+  mkdir -p $artifact_dir
+  if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/input_selection/cleanup.sh $artifact_dir" \
+    artifact_dir=$artifact_dir \
+    go test -count=1 -parallel=1 -timeout=60m "$dir" -ginkgo.noColor -ginkgo.trace -ginkgo.slowSpecThreshold=300.0 | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Collection Input Selection '$dir' passed"
     os::log::info "======================================================="

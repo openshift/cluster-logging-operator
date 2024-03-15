@@ -357,8 +357,7 @@ spec:
                         excludes:
                           description: Excludes is the set of namespaces and containers
                             to ignore when collecting logs. Takes precedence over
-                            Includes option. The exclude patterns are applied after
-                            the attempt to glob everything in include.
+                            Includes option.
                           items:
                             properties:
                               container:
@@ -371,15 +370,16 @@ spec:
                                   file pattern together with Container resources.
                                   Supports glob patterns and presumes "*" if ommitted.
                                   Note: infrastructure namespaces are still excluded
-                                  for "*" values and each must specifically included.'
+                                  for "*" values unless a qualifying glob pattern
+                                  is specified.'
                                 type: string
                             type: object
                           type: array
                         includes:
                           description: 'Includes is the set of namespaces and containers
                             to include when collecting logs. Note: infrastructure
-                            namespaces are still excluded for "*" values and each
-                            must specifically included.'
+                            namespaces are still excluded for "*" values unless a
+                            qualifying glob pattern is specified.'
                           items:
                             properties:
                               container:
@@ -392,7 +392,8 @@ spec:
                                   file pattern together with Container resources.
                                   Supports glob patterns and presumes "*" if ommitted.
                                   Note: infrastructure namespaces are still excluded
-                                  for "*" values and each must specifically included.'
+                                  for "*" values unless a qualifying glob pattern
+                                  is specified.'
                                 type: string
                             type: object
                           type: array

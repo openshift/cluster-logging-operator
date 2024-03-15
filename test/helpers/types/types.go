@@ -477,6 +477,13 @@ type AllLog struct {
 	OpenshiftAuditLevel      string         `json:"openshift_audit_level,omitempty"`
 }
 
+func (l AllLog) StreamName() string {
+	if l.Kubernetes.NamespaceName != "" {
+		return fmt.Sprintf("%s_%s_%s", l.Kubernetes.NamespaceName, l.Kubernetes.PodName, l.Kubernetes.ContainerName)
+	}
+	return l.STREAMID
+}
+
 func StrictlyParseLogsFromSlice(in []string, logs interface{}) error {
 	jsonString := fmt.Sprintf("[%s]", strings.Join(in, ","))
 	return StrictlyParseLogs(jsonString, logs)

@@ -125,7 +125,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 	opts := metav1.CreateOptions{}
 	config := k8shandler.NewConfigMap(container.Name, ns, map[string]string{
 		vector.ConfigFile:    vectorHttpConf,
-		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, "/var/lib/vector"),
+		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
 	})
 	config, err = tc.KubeClient.CoreV1().ConfigMaps(ns).Create(context.TODO(), config, opts)
 	if err != nil {
@@ -147,7 +147,9 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 	)
 	// Add instance label to pod spec template. Service now selects using instance name as well
 	logStore.Deployment.Spec.Template.Labels[constants.LabelK8sInstance] = HttpReceiver
+	logStore.Deployment.Spec.Template.Labels["vector.dev/exclude"] = "true"
 
+	log.V(1).Info("Deploying http receiver deployment", "namespace", ns, "name", logStore.Deployment.Name)
 	logStore.Deployment, err = tc.KubeClient.AppsV1().Deployments(ns).Create(context.TODO(), logStore.Deployment, dOpts)
 	if err != nil {
 		log.Error(err, "Unable to create Deployment", "meta", logStore.Deployment.ObjectMeta)
@@ -209,11 +211,12 @@ func NewLogSimpleMeta(parts []string) *ContainerLogSimpleMeta {
 }
 
 type Query struct {
-	Meta []ContainerLogSimpleMeta
+	Meta  []ContainerLogSimpleMeta
+	files []string
 }
 
 func (v VectorHttpReceiverLogStore) ListNamespaces() (namespaces []string) {
-	q, err := v.Query()
+	q, err := v.Query(nil)
 	if err != nil {
 		log.Error(err, "Error checking receiver")
 	}
@@ -224,7 +227,7 @@ func (v VectorHttpReceiverLogStore) ListNamespaces() (namespaces []string) {
 }
 
 func (v VectorHttpReceiverLogStore) ListContainers() (containers []string) {
-	q, err := v.Query()
+	q, err := v.Query(nil)
 	if err != nil {
 		log.Error(err, "Error checking receiver")
 	}
@@ -239,7 +242,7 @@ func isFileDoesNotExistError(out string) bool {
 }
 
 func (v VectorHttpReceiverLogStore) ListJournalLogs() ([]types.JournalLog, error) {
-	result, err := v.RunCmd("head -n 10 /tmp/journal/journal.json")
+	result, err := v.RunCmd("head -n 10 /tmp/journal/journal.json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +250,10 @@ func (v VectorHttpReceiverLogStore) ListJournalLogs() ([]types.JournalLog, error
 	return types.ParseJournalLogs[types.JournalLog](out)
 }
 
-func (v VectorHttpReceiverLogStore) RunCmd(cmd string) (string, error) {
+func (v VectorHttpReceiverLogStore) RunCmd(cmd string, timeout *time.Duration) (string, error) {
+	if timeout == nil {
+		timeout = utils.GetPtr(2 * time.Minute)
+	}
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sInstance, HttpReceiver),
 	}
@@ -258,11 +264,10 @@ func (v VectorHttpReceiverLogStore) RunCmd(cmd string) (string, error) {
 	if len(pods.Items) == 0 {
 		return "", errors.New("No pods found for receiver")
 	}
-	log.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	result := ""
-	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, 30*time.Second, true, func(cxt context.Context) (done bool, err error) {
-		if result, err = v.tc.PodExec(v.Namespace, pods.Items[0].Name, "", []string{"bash", "-c", cmd}); err != nil {
-			log.Error(err, "Failed to fetch logs from receiver", "out", result)
+	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, *timeout, true, func(cxt context.Context) (done bool, err error) {
+		if result, err = v.tc.PodExec(v.Namespace, pods.Items[0].Name, "", strings.Split(cmd, " ")); err != nil {
+			log.V(4).Error(err, "Failed to fetch logs from receiver", "name", pods.Items[0].Name, "out", result)
 			return false, nil
 		}
 		return true, nil
@@ -277,34 +282,59 @@ func (v VectorHttpReceiverLogStore) RunCmd(cmd string) (string, error) {
 	return result, nil
 }
 
-func (v VectorHttpReceiverLogStore) Query() (*Query, error) {
+// Query queries the receiver with a timeout for the request and returns a simple list
+// of the meta available
+func (v VectorHttpReceiverLogStore) Query(timeout *time.Duration) (*Query, error) {
 	q := Query{}
-	result, err := v.RunCmd("ls /tmp/container/*.json")
+	result, err := v.RunCmd("ls /tmp/container", timeout)
 	if err != nil {
 		return nil, err
 	}
 	if result == "" {
 		return &q, nil
 	}
-	files := strings.Split(result, "\n")
-	log.V(3).Info("Split raw", "files", files)
-	for _, ns := range files {
-		parts := strings.Split(strings.TrimPrefix(ns, "/tmp/container/"), "_")
-		if len(parts) > 0 {
-			q.Meta = append(q.Meta, *NewLogSimpleMeta(parts))
+	q.files = strings.Split(result, "\n")
+	log.V(4).Info("Split raw", "files", q.files)
+	for _, ns := range q.files {
+		if path.Ext(ns) == ".json" {
+			parts := strings.Split(strings.TrimPrefix(ns, "/tmp/container/"), "_")
+			if len(parts) > 0 {
+				q.Meta = append(q.Meta, *NewLogSimpleMeta(parts))
+			}
 		}
 	}
 	return &q, nil
 }
 
 func (v VectorHttpReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
-	//TODO implement me
-	panic("implement me")
+	result, err := v.Query(&timeToWait)
+	if err != nil {
+		return nil, err
+	}
+	lines := []string{}
+	for _, file := range result.files {
+		out, err := v.RunCmd(fmt.Sprintf("cat /tmp/container/%s", file), &timeToWait)
+		if err != nil {
+			return nil, err
+		}
+		stream := strings.Split(out, "\n")
+		for _, line := range stream {
+			if strings.HasPrefix(line, "{") && strings.HasSuffix(line, "}") {
+				lines = append(lines, line)
+			} else {
+				log.Info("Dropped incomplete JSON line", "line", line)
+			}
+		}
+	}
+	return types.ParseLogs(fmt.Sprintf("[%s]", strings.Join(lines, ",")))
 }
 
 func (v VectorHttpReceiverLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+	result, err := v.Query(&timeToWait)
+	if err != nil {
+		return false, err
+	}
+	return len(result.Meta) > 0, nil
 }
 
 func (v VectorHttpReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {

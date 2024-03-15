@@ -79,7 +79,7 @@ var _ = Describe("migrateInputs", func() {
 				},
 			}
 			extras := map[string]bool{}
-			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			result, _, _ := EnsureInputsHasType("", "", spec, nil, extras, "", "")
 			Expect(result.Inputs).To(HaveLen(1))
 			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
 				Name: "my-custom-input",
@@ -135,7 +135,7 @@ var _ = Describe("migrateInputs", func() {
 				},
 			}
 			extras := map[string]bool{}
-			result, _, _ := MigrateInputs("", "", spec, nil, extras, "", "")
+			result, _, _ := EnsureInputsHasType("", "", spec, nil, extras, "", "")
 			Expect(result.Inputs).To(HaveLen(1))
 			Expect(result.Inputs[0]).To(Equal(logging.InputSpec{
 				Name: "my-custom-input",

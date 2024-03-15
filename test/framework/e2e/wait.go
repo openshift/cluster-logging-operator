@@ -68,23 +68,25 @@ func (tc *E2ETestFramework) WaitForResourceCondition(namespace, kind, name, sele
 	times := 0
 	return wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, defaultTimeout, true, func(cxt context.Context) (done bool, err error) {
 		out, err := oc.Get().WithNamespace(namespace).Resource(kind, name).Selector(selector).OutputJsonpath(jsonPath).Run()
-		clolog.V(3).Error(err, "Error returned from retrieving resources")
-		if err == nil {
-			met, err := isSatisfied(out)
-			if err != nil {
-				times = 0
-				clolog.V(3).Error(err, "Error returned from condition check")
-				return false, nil
-			}
-			if met {
-				times++
-				clolog.V(3).Info("Condition met", "success", times, "need", maxtimes)
-			} else {
-				times = 0
-			}
-			if times == maxtimes {
-				return true, nil
-			}
+		if err != nil {
+			clolog.V(3).Error(err, "Error returned from retrieving resources")
+			return false, nil
+		}
+		met, err := isSatisfied(out)
+		if err != nil {
+			times = 0
+			clolog.V(3).Error(err, "Error returned from condition check")
+			return false, nil
+		}
+		if met {
+			times++
+			clolog.V(4).Info("Condition met", "success", times, "need", maxtimes)
+		} else {
+			times = 0
+		}
+		if times == maxtimes {
+			clolog.V(3).Info("Condition met", "success", times, "need", maxtimes)
+			return true, nil
 		}
 		return false, nil
 	})

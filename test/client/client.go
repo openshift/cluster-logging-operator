@@ -66,7 +66,7 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg, c.httpClient); err != nil {
 		return nil, err
 	}
-	if c.c, err = crclient.New(cfg, crclient.Options{Mapper: c.mapper}); err != nil {
+	if c.c, err = crclient.New(cfg, crclient.Options{Mapper: c.mapper, WarningHandler: crclient.WarningHandlerOptions{SuppressWarnings: true}}); err != nil {
 		return nil, err
 	}
 	return c, nil

@@ -2,6 +2,7 @@ package input_selection
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -11,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // These tests exist as e2e because vector interacts directly with the API server
@@ -57,10 +57,12 @@ var _ = Describe("[InputSelection]", func() {
 			valueFrontend: e2e.CreateTestNamespace(),
 			valueBackend:  e2e.CreateTestNamespace(),
 			valueMiddle:   e2e.CreateTestNamespaceWithPrefix("openshift-test")} {
-			if err := e2e.DeployLogGeneratorWithNamespaceAndLabels(namespace, generatorName(componentName), map[string]string{
+			options := framework.NewDefaultLogGeneratorOptions()
+			options.Labels = map[string]string{
 				"testtype": "myinfra",
 				component:  componentName,
-			}); err != nil {
+			}
+			if err := e2e.DeployLogGeneratorWithNamespace(namespace, generatorName(componentName), options); err != nil {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
 		}
@@ -122,14 +124,16 @@ var _ = Describe("[InputSelection]", func() {
 					Selector: &logging.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
 							{
-								Key: component, Operator: metav1.LabelSelectorOpNotIn, Values: []string{valueFrontend, valueBackend},
+								Key: component, Operator: metav1.LabelSelectorOpNotIn, Values: []string{valueFrontend},
 							},
 						},
 					},
 				}},
 			nil,
 			func() {
-				Expect(receiver.ListContainers()).To(Not(HaveEach(MatchRegexp(fmt.Sprintf("^(%s|%s)$", valueFrontend, valueBackend)))))
+				containers := receiver.ListContainers()
+				Expect(containers).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(containers).To(Not(HaveEach(MatchRegexp(fmt.Sprintf("^(%s)$", valueFrontend)))))
 			}),
 		Entry("application inputs should only collect from matching pod label 'in' expressions",
 			logging.InputSpec{
@@ -137,14 +141,16 @@ var _ = Describe("[InputSelection]", func() {
 					Selector: &logging.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
 							{
-								Key: component, Operator: metav1.LabelSelectorOpIn, Values: []string{valueFrontend, valueBackend},
+								Key: component, Operator: metav1.LabelSelectorOpIn, Values: []string{valueFrontend},
 							},
 						},
 					},
 				}},
 			nil,
 			func() {
-				Expect(receiver.ListContainers()).To(HaveEach(MatchRegexp(fmt.Sprintf("^(%s|%s)$", valueFrontend, valueBackend))))
+				containers := receiver.ListContainers()
+				Expect(containers).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(containers).To(HaveEach(MatchRegexp(fmt.Sprintf("^(%s)$", valueFrontend))))
 			}),
 		Entry("application inputs should only collect from matching pod labels",
 			logging.InputSpec{
@@ -162,7 +168,9 @@ var _ = Describe("[InputSelection]", func() {
 				return logGeneratorNameFn(component)
 			},
 			func() {
-				Expect(receiver.ListContainers()).To(HaveEach(valueFrontend))
+				containers := receiver.ListContainers()
+				Expect(containers).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(containers).To(HaveEach(valueFrontend), "Expected to collect logs from only the the 'frontend' services")
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
 			logging.InputSpec{
@@ -171,7 +179,9 @@ var _ = Describe("[InputSelection]", func() {
 				}},
 			logGeneratorNameFn,
 			func() {
-				Expect(receiver.ListNamespaces()).To(HaveEach(MatchRegexp("^clo-test.*$")))
+				namespaces := receiver.ListNamespaces()
+				Expect(namespaces).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(namespaces).To(HaveEach(MatchRegexp("^clo-test.*$")))
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
 			logging.InputSpec{
@@ -208,9 +218,16 @@ var _ = Describe("[InputSelection]", func() {
 						},
 					},
 				}},
-			logGeneratorNameFn,
+			func(name string) string {
+				if name == valueFrontend {
+					return name
+				}
+				return logGeneratorNameFn(name)
+			},
 			func() {
-				Expect(receiver.ListContainers()).To(HaveEach(MatchRegexp("^log-.*$")))
+				containers := receiver.ListContainers()
+				Expect(containers).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(containers).To(HaveEach(MatchRegexp("^log-.*$")))
 			}),
 		Entry("should not collect from excluded containers",
 			logging.InputSpec{
@@ -221,9 +238,16 @@ var _ = Describe("[InputSelection]", func() {
 						},
 					},
 				}},
-			logGeneratorNameFn,
+			func(name string) string {
+				if name == valueFrontend {
+					return name
+				}
+				return logGeneratorNameFn(name)
+			},
 			func() {
-				Expect(receiver.ListContainers()).To(Not(HaveEach(MatchRegexp("^log-.*$"))))
+				containers := receiver.ListContainers()
+				Expect(containers).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(containers).To(Not(HaveEach(MatchRegexp("^log-.*$"))))
 			}),
 	)
 })

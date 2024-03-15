@@ -134,17 +134,15 @@ max_bytes = 1024
 					Delivery: logging.OutputDeliveryModeAtLeastOnce,
 				},
 			}, nil, nil)
-			It("should enable acknowledgments", func() {
-				Expect(`
-[sinks.id.acknowledgements]
-enabled = true
-`).To(EqualConfigFrom(common.NewAcknowledgments(ID, output)))
-
+			It("should do nothing to enable acknowledgments", func() {
+				Expect(``).To(EqualConfigFrom(common.NewAcknowledgments(ID, output)))
 			})
 			It("should block when the buffer becomes full", func() {
 				Expect(`
 [sinks.id.buffer]
+type = "disk"
 when_full = "block"
+max_size = 268435488
 `).To(EqualConfigFrom(common.NewBuffer(ID, output)))
 			})
 		})

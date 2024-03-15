@@ -102,7 +102,7 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 
 func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 	namespace := tc.CreateTestNamespace()
-	return namespace, tc.DeployLogGeneratorWithNamespaceName(namespace, "log-generator")
+	return namespace, tc.DeployLogGeneratorWithNamespaceName(namespace, "log-generator", NewDefaultLogGeneratorOptions())
 }
 
 func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, error) {
@@ -110,8 +110,20 @@ func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, err
 	return namespace, tc.DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint)
 }
 
-func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string) error {
-	pod := runtime.NewLogGenerator(namespace, name, 1000, 0, "My life is my message")
+type LogGeneratorOptions struct {
+	Count          int
+	Delay          time.Duration
+	Message        string
+	ContainerCount int
+	Labels         map[string]string
+}
+
+func NewDefaultLogGeneratorOptions() LogGeneratorOptions {
+	return LogGeneratorOptions{Count: 1000, Delay: 0, Message: "My life is my message", ContainerCount: 1, Labels: map[string]string{}}
+}
+
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string, options LogGeneratorOptions) error {
+	pod := runtime.NewMultiContainerLogGenerator(namespace, name, options.Count, options.Delay, options.Message, options.ContainerCount, options.Labels)
 	clolog.Info("Checking SA for LogGenerator", "Deployment name", pod.Name, "namespace", namespace)
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
@@ -129,17 +141,8 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name 
 	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
-func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace, name string, labels map[string]string) error {
-	err := tc.DeployLogGeneratorWithNamespaceName(namespace, name)
-	if err != nil {
-		return err
-	}
-	for k, v := range labels {
-		if out, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s --overwrite", namespace, k, v).Run(); err2 != nil {
-			return fmt.Errorf("error: %v response: %s", err2, out)
-		}
-	}
-	return err
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace, name string, options LogGeneratorOptions) error {
+	return tc.DeployLogGeneratorWithNamespaceName(namespace, name, options)
 }
 
 func (tc *E2ETestFramework) DeployJsonLogGenerator(vals, labels map[string]string) (string, string, error) {

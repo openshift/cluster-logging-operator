@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math/rand"
 	"time"
@@ -35,7 +36,7 @@ func (b *AuthorizationBuilder) AllowClusterRole(roleName string) *AuthorizationB
 
 func (b *AuthorizationBuilder) Create() (sa *corev1.ServiceAccount, err error) {
 	sa, err = b.tc.createServiceAccount(b.saNamespace, b.saName)
-	if err != nil {
+	if err != nil && !errors.IsAlreadyExists(err) {
 		return nil, err
 	}
 
@@ -60,7 +61,8 @@ func (b *AuthorizationBuilder) Create() (sa *corev1.ServiceAccount, err error) {
 			return b.tc.KubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), crb.GetName(), opts)
 		})
 		opts := metav1.CreateOptions{}
-		if _, err = b.tc.KubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), crb, opts); err != nil {
+		clolog.V(3).Info("Creating", "clusterrolebinding", crb.Name, "namespace", sa.Namespace, "name", sa.Name)
+		if _, err = b.tc.KubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), crb, opts); err != nil && !errors.IsAlreadyExists(err) {
 			return nil, err
 		}
 	}

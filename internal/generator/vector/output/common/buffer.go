@@ -9,15 +9,20 @@ const (
 
 type Buffer struct {
 	ComponentID string
-	WhenFull    helpers.OptionalPair
-	MaxEvents   helpers.OptionalPair
+
+	Type      helpers.OptionalPair
+	WhenFull  helpers.OptionalPair
+	MaxEvents helpers.OptionalPair
+	MaxSize   helpers.OptionalPair
 }
 
 func NewBuffer(id string, s ConfigStrategy) Buffer {
 	b := Buffer{
 		ComponentID: id,
+		Type:        helpers.NewOptionalPair("type", nil),
 		WhenFull:    helpers.NewOptionalPair("when_full", nil),
 		MaxEvents:   helpers.NewOptionalPair("max_events", nil),
+		MaxSize:     helpers.NewOptionalPair("max_size", nil),
 	}
 	if s != nil {
 		b = s.VisitBuffer(b)
@@ -31,7 +36,9 @@ func (b Buffer) Name() string {
 
 func (b Buffer) isEmpty() bool {
 	return b.MaxEvents.String()+
+		b.Type.String()+
 		b.WhenFull.String()+
+		b.MaxSize.String()+
 		b.MaxEvents.String() == ""
 }
 
@@ -41,7 +48,9 @@ func (b Buffer) Template() string {
 	}
 	return `{{define "` + b.Name() + `" -}}
 [sinks.{{.ComponentID}}.buffer]
+{{.Type}}
 {{.WhenFull}}
 {{.MaxEvents}}
+{{.MaxSize}}
 {{end}}`
 }

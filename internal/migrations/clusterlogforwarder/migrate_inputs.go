@@ -6,19 +6,6 @@ import (
 )
 
 func MigrateInputs(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition) {
-	for i, input := range spec.Inputs {
-		if input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil {
-			if input.Receiver.HTTP != nil && input.Receiver.Type == "" {
-				input.Receiver.Type = loggingv1.ReceiverTypeHttp
-				spec.Inputs[i] = input
-			}
-			if input.Receiver.Syslog != nil && input.Receiver.Type == "" {
-				input.Receiver.Type = loggingv1.ReceiverTypeSyslog
-				spec.Inputs[i] = input
-			}
-		}
-	}
-
 	inputs := map[string]loggingv1.InputSpec{}
 	for _, p := range spec.Pipelines {
 		for _, i := range p.InputRefs {
@@ -50,6 +37,22 @@ func MigrateInputs(namespace, name string, spec loggingv1.ClusterLogForwarderSpe
 	}
 	for _, i := range inputs {
 		spec.Inputs = append(spec.Inputs, i)
+	}
+	return spec, extras, nil
+}
+
+func EnsureInputsHasType(namespace, name string, spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool, logstoreSecretName, saTokenSecret string) (loggingv1.ClusterLogForwarderSpec, map[string]bool, []loggingv1.Condition) {
+	for i, input := range spec.Inputs {
+		if input.Receiver != nil && input.Receiver.ReceiverTypeSpec != nil {
+			if input.Receiver.HTTP != nil && input.Receiver.Type == "" {
+				input.Receiver.Type = loggingv1.ReceiverTypeHttp
+				spec.Inputs[i] = input
+			}
+			if input.Receiver.Syslog != nil && input.Receiver.Type == "" {
+				input.Receiver.Type = loggingv1.ReceiverTypeSyslog
+				spec.Inputs[i] = input
+			}
+		}
 	}
 	return spec, extras, nil
 }

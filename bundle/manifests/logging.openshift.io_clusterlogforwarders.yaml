@@ -504,9 +504,6 @@ spec:
                           type: object
                         type:
                           description: Type of Receiver plugin.
-                          enum:
-                          - http
-                          - syslog
                           type: string
                       type: object
                   required:

@@ -57,7 +57,7 @@ func (c *VectorCollector) Image() string {
 }
 
 const fakeJournal = `
-[sources.fake_raw_journal_logs]
+[sources.fake_input_infrastructure_journal]
 type = "file"
 include = ["/var/log/fakejournal/0.log"]
 host_key = "hostname"
@@ -65,19 +65,20 @@ glob_minimum_cooldown_ms = 15000
 
 [transforms.parse_journal_message]
 type= "remap"
-inputs = ["fake_raw_journal_logs"]
+inputs = ["fake_input_infrastructure_journal"]
 source = '''
   content = parse_json!(.message)
   .parsed = content
 '''
 
-[transforms.raw_journal_logs]
+[transforms.input_infrastructure_journal]
 type = "remap"
 inputs = ["parse_journal_message"]
+source = '''
 if exists(.parsed) {
   for_each(object!(.parsed)) -> |key,value| {
     . = set!(.,[key],value)
-  }
+  }	
   del(.parsed)
 }
 .host = del(.hostname)
@@ -90,6 +91,6 @@ if exists(.MESSAGE) {
 
 func (c *VectorCollector) ModifyConfig(conf string) string {
 	//remove journal for now since we can not mimic it
-	re := regexp.MustCompile(`(?msU)\[sources\.raw_journal_logs\].*^\n`)
+	re := regexp.MustCompile(`(?msU)\[sources\.input_infrastructure_journal\].*^\n`)
 	return string(re.ReplaceAll([]byte(conf), []byte(fakeJournal)))
 }

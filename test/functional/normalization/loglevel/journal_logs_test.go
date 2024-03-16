@@ -13,10 +13,6 @@ import (
 )
 
 var _ = Describe("[functional][normalization][loglevel] tests for message format of journal logs", func() {
-	if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-		defer GinkgoRecover()
-		Skip("Tests disabled for vector")
-	}
 	var (
 		framework *functional.CollectorFunctionalFramework
 	)

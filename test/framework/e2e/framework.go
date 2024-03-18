@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -33,7 +34,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	logger "github.com/ViaQ/logerr/v2/log"
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -48,7 +48,9 @@ func init() {
 			verbosity = i
 		}
 	}
-	clolog.SetLogger(logger.NewLogger("e2e-framework", logger.WithVerbosity(verbosity)))
+	failureLogger, delayedWriter := commonlog.NewLogger("e2e-framework", verbosity)
+	clolog.SetLogger(failureLogger)
+	delayedLogWriter = delayedWriter
 }
 
 const (
@@ -59,6 +61,10 @@ const (
 	defaultRetryInterval      = 1 * time.Second
 	defaultTimeout            = 5 * time.Minute
 	DefaultWaitForLogsTimeout = 5 * time.Minute
+)
+
+var (
+	delayedLogWriter *commonlog.BufferedLogWriter
 )
 
 type LogStore interface {
@@ -351,6 +357,9 @@ func (tc *E2ETestFramework) Cleanup() {
 		(tc.ClusterLogging.Spec.Collection.Type == logging.LogCollectionTypeFluentd ||
 			tc.ClusterLogging.Spec.Collection.Logs != nil && tc.ClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd) {
 		tc.CleanFluentDBuffers()
+	}
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+		delayedLogWriter.Flush()
 	}
 }
 

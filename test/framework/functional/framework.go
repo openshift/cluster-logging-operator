@@ -25,12 +25,12 @@ import (
 
 	yaml "sigs.k8s.io/yaml"
 
-	logger "github.com/ViaQ/logerr/v2/log"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
 	frameworkfluent "github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 	frameworkvector "github.com/openshift/cluster-logging-operator/test/framework/functional/vector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -75,6 +75,8 @@ type CollectorFunctionalFramework struct {
 
 	//MaxReadDuration is the max duration to wait to read logs from the receiver
 	MaxReadDuration *time.Duration
+
+	delayedWriter *commonlog.BufferedLogWriter
 }
 
 func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
@@ -106,7 +108,8 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 		}
 	}
 
-	log.SetLogger(logger.NewLogger("functional-Framework", logger.WithVerbosity(verbosity)))
+	failureLogger, delayedWriter := commonlog.NewLogger("functional-Framework", verbosity)
+	log.SetLogger(failureLogger)
 
 	log.Info("Using collector", "impl", collectorImpl.String())
 
@@ -119,10 +122,11 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 			"testtype": "functional",
 			"testname": testName,
 		},
-		Test:        t,
-		Forwarder:   testruntime.NewClusterLogForwarder(),
-		closeClient: fnClose,
-		collector:   collectorImpl,
+		Test:          t,
+		Forwarder:     testruntime.NewClusterLogForwarder(),
+		closeClient:   fnClose,
+		collector:     collectorImpl,
+		delayedWriter: delayedWriter,
 	}
 	framework.Forwarder.SetNamespace(t.NS.Name)
 	return framework
@@ -144,6 +148,7 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 			}
 			fmt.Fprintln(test.Writer(), logs)
 		}
+		f.delayedWriter.Flush()
 	}
 	f.closeClient()
 }

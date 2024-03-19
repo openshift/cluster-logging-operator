@@ -83,4 +83,51 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		}),
 	)
 
+	Context("with tuning parameters", func() {
+		var (
+			compVisitFunc           func(spec *logging.OutputSpec)
+			addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor
+		)
+		DescribeTable("with compression", func(compression string) {
+			compVisitFunc = func(spec *logging.OutputSpec) {
+				spec.Tuning = &logging.OutputTuningSpec{
+					Compression: compression,
+				}
+			}
+			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeHttp)
+
+			addDestinationContainer = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
+				return func(b *runtime.PodBuilder) error {
+					return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0])
+				}
+			}
+
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				addDestinationContainer(framework),
+				func(builder *runtime.PodBuilder) error {
+					builder.AddLabels(map[string]string{
+						"app.kubernetes.io/name": "somevalue",
+						"foo.bar":                "a123",
+					})
+					return nil
+				},
+			})).To(BeNil())
+
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs for type")
+			Expect(raw).ToNot(BeEmpty())
+		},
+			Entry("should pass with gzip", "gzip"),
+			Entry("should pass with snappy", "snappy"),
+			Entry("should pass with zlib", "zlib"),
+			Entry("should pass with zstd", "zstd"),
+			Entry("should pass with no compression", ""))
+	})
+
 })

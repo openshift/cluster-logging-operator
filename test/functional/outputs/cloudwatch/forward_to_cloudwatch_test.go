@@ -7,6 +7,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -212,5 +213,39 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
 			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)))
 		})
+	})
+
+	Context("When setting tuning parameters", func() {
+		var (
+			compVisitFunc func(spec *logging.OutputSpec)
+		)
+		DescribeTable("with compression", func(compression string) {
+			compVisitFunc = func(spec *logging.OutputSpec) {
+				spec.Tuning = &logging.OutputTuningSpec{
+					Compression: compression,
+				}
+			}
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeCloudwatch)
+			framework.Secrets = append(framework.Secrets, secret)
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
+			time.Sleep(10 * time.Second)
+
+			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
+
+		},
+			Entry("should pass with no compression", ""),
+			Entry("should pass with gzip", "gzip"),
+			Entry("should pass with snappy", "snappy"),
+			Entry("should pass with zlib", "zlib"),
+			Entry("should pass with zstd", "zstd"),
+		)
 	})
 })

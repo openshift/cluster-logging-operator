@@ -8,6 +8,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -177,5 +178,52 @@ var _ = Describe("Forwarding to Splunk", func() {
 			outputTestLog := appLogs[0]
 			Expect(outputTestLog.LogType).To(Equal(logging.InputNameApplication))
 		})
+	})
+
+	Context("tuning parameters", func() {
+		var (
+			compVisitFunc func(spec *logging.OutputSpec)
+		)
+
+		DescribeTable("with compression settings", func(compression string) {
+
+			compVisitFunc = func(spec *logging.OutputSpec) {
+				spec.Tuning = &logging.OutputTuningSpec{
+					Compression: compression,
+				}
+			}
+
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeSplunk)
+			framework.Secrets = append(framework.Secrets, secret)
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Wait for splunk to be ready
+			time.Sleep(90 * time.Second)
+
+			// Write app logs
+			timestamp := "2020-11-04T18:13:59.061892+00:00"
+			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
+
+			// Read app logs
+			logs, err := framework.ReadLogsByTypeFromSplunk(framework.Namespace, framework.Name, logging.InputNameApplication)
+
+			Expect(err).To(BeNil(), "expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			// Parse the logs
+			var appLogs []types.ApplicationLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &appLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			outputTestLog := appLogs[0]
+			Expect(outputTestLog.LogType).To(Equal(logging.InputNameApplication))
+
+		},
+			Entry("should pass with gzip", "gzip"),
+			Entry("should pass with no compression", ""),
+		)
 	})
 })

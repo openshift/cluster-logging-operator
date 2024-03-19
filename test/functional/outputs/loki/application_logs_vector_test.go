@@ -4,13 +4,14 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 )
 
@@ -107,6 +108,28 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			lines := result[0].Lines()
 			Expect(len(lines)).To(Equal(1))
 		})
+	})
+
+	Context("with tuning parameters", func() {
+		DescribeTable("with compression", func(compression string) {
+			functional.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+					spec.Type = logging.OutputTypeLoki
+					spec.URL = l.InternalURL("").String()
+					spec.Tuning.Compression = compression
+				}, logging.OutputTypeLoki)
+
+			Expect(f.Deploy()).To(BeNil())
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+			_, err := l.QueryUntil(`{log_type=~".+"}`, "", 1)
+			Expect(err).To(Succeed())
+		},
+			Entry("should pass with gzip", "gzip"),
+			Entry("should pass with snappy", "snappy"),
+			Entry("should pass with none", ""))
 	})
 
 })

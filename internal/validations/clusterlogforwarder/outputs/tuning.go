@@ -14,29 +14,46 @@ const (
 )
 
 var (
-	unsupportedCompression = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeAzureMonitor, loggingv1.OutputTypeGoogleCloudLogging)
-	unsupportedRequest     = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeKafka)
-	unsupportedBatch       = sets.NewString(loggingv1.OutputTypeSyslog)
+	compressionOutputMap = map[string]sets.String{
+		"gzip": *sets.NewString(
+			loggingv1.OutputTypeCloudwatch,
+			loggingv1.OutputTypeElasticsearch,
+			loggingv1.OutputTypeHttp,
+			loggingv1.OutputTypeLoki,
+			loggingv1.OutputTypeSplunk),
+		"snappy": *sets.NewString(
+			loggingv1.OutputTypeCloudwatch,
+			loggingv1.OutputTypeHttp,
+			loggingv1.OutputTypeKafka,
+			loggingv1.OutputTypeLoki),
+		"zlib": *sets.NewString(
+			loggingv1.OutputTypeCloudwatch,
+			loggingv1.OutputTypeElasticsearch,
+			loggingv1.OutputTypeHttp),
+		"zstd": *sets.NewString(
+			loggingv1.OutputTypeCloudwatch,
+			loggingv1.OutputTypeHttp,
+			loggingv1.OutputTypeKafka,
+		),
+		"lz4": *sets.NewString(loggingv1.OutputTypeKafka),
+	}
+	unsupportedRequest = sets.NewString(loggingv1.OutputTypeSyslog, loggingv1.OutputTypeKafka)
+	unsupportedBatch   = sets.NewString(loggingv1.OutputTypeSyslog)
 )
 
-func VerifyTuning(spec loggingv1.OutputSpec) (valid bool, msg string) {
+func VerifyTuning(spec loggingv1.OutputSpec) (bool, string) {
 	if spec.Tuning == nil {
 		return true, ""
 	}
 
-	//compression
-	if unsupportedCompression.Has(spec.Type) && spec.Tuning.Compression != "" && spec.Tuning.Compression != "none" {
-		return false, compressionNotSupportedForType
+	// compression
+	if msg := verifyCompression(spec.Type, spec.Tuning.Compression); msg != "" {
+		return false, msg
 	}
 
 	// batch
 	if unsupportedBatch.Has(spec.Type) && spec.Tuning.MaxWrite != nil && !spec.Tuning.MaxWrite.IsZero() {
 		return false, maxWriteNotSupportedForType
-	}
-
-	// lz4 is only supported for kafka
-	if spec.Tuning.Compression == "lz4" && spec.Type != loggingv1.OutputTypeKafka {
-		return false, compressionNotSupportedForType
 	}
 
 	//MaxRetryDuration
@@ -49,4 +66,21 @@ func VerifyTuning(spec loggingv1.OutputSpec) (valid bool, msg string) {
 	}
 
 	return true, ""
+}
+
+func verifyCompression(outputType string, compression string) string {
+	if compression == "" || compression == "none" {
+		return ""
+	}
+
+	if outputs, ok := compressionOutputMap[compression]; ok {
+		if !outputs.Has(outputType) {
+			return compressionNotSupportedForType
+		}
+		// Compression not in map
+	} else {
+		return compressionNotSupportedForType
+	}
+
+	return ""
 }

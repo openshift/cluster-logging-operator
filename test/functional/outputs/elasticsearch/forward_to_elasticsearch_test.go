@@ -103,4 +103,37 @@ var _ = Describe(fmt.Sprintf("[Functional][Outputs][ElasticSearch] %s Logforward
 		Entry("Elasticsearch v8", functional.ElasticsearchVersion8),
 	)
 
+	Context("with tuning parameters", func() {
+		var (
+			compVisitFunc func(spec *logging.OutputSpec)
+		)
+		DescribeTable("with compression", func(compression string) {
+			compVisitFunc = func(spec *logging.OutputSpec) {
+				spec.Tuning = &logging.OutputTuningSpec{
+					Compression: compression,
+				}
+			}
+			outputLogTemplate.ViaqIndexName = "app-write"
+			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeElasticsearch)
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Write app logs
+			timestamp := "2020-11-04T18:13:59.061892+00:00"
+			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
+
+			raw, err := framework.ReadLogsFrom(logging.OutputTypeElasticsearch, logging.InputNameApplication)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).To(Not(BeEmpty()))
+
+		},
+			Entry("should pass with gzip", "gzip"),
+			Entry("should pass with zlib", "zlib"),
+			Entry("should pass with no compression", ""))
+	})
+
 })

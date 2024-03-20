@@ -112,20 +112,18 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 
 	Context("with tuning parameters", func() {
 		DescribeTable("with compression", func(compression string) {
-			functional.NewClusterLogForwarderBuilder(f.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-					spec.Type = logging.OutputTypeLoki
-					spec.URL = l.InternalURL("").String()
-					spec.Tuning.Compression = compression
-				}, logging.OutputTypeLoki)
+			f.Forwarder.Spec.Outputs[0].Tuning = &logging.OutputTuningSpec{
+				Compression: compression,
+			}
 
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
-			_, err := l.QueryUntil(`{log_type=~".+"}`, "", 1)
-			Expect(err).To(Succeed())
+			result, err := l.QueryUntil(`{log_type=~".+"}`, "", 1)
+			Expect(err).To(BeNil())
+			Expect(result).NotTo(BeNil())
+			Expect(len(result)).To(Equal(1))
 		},
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with snappy", "snappy"),

@@ -7,6 +7,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
+const (
+	minBufferSize   = 268435488
+	buffertTypeDisk = "disk"
+)
+
 func (o Output) VisitSink(s common.SinkConfig) {
 	if o.spec.Tuning != nil {
 		comp := o.spec.Tuning.Compression
@@ -51,8 +56,8 @@ func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
 		switch o.spec.Tuning.Delivery {
 		case logging.OutputDeliveryModeAtLeastOnce:
 			b.WhenFull.Value = common.BufferWhenFullBlock
-			b.Type.Value = common.BufferTypeDisk
-			b.MaxSize.Value = common.BufferMinSizeBytes
+			b.Type.Value = buffertTypeDisk
+			b.MaxSize.Value = minBufferSize
 		case logging.OutputDeliveryModeAtMostOnce:
 			b.WhenFull.Value = common.BufferWhenFullDropNewest
 		}

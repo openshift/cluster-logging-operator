@@ -2,7 +2,6 @@ package clusterlogforwarder
 
 import (
 	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/outputs"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -23,7 +22,6 @@ func Validate(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[st
 var validations = []func(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus){
 	validateName,
 	validateCollectorCompatibility,
-	outputs.ValidateCumulativeDiskBuffer,
 	ValidateClusterLoggingDependency,
 	ValidateFilters,
 	ValidateInputsOutputsPipelines,

@@ -85,6 +85,6 @@ Type:: {{ (yamlType .Type) }}
            {{- if (isOptionalMember .) -}}
               {{- $extra = (printf "%s %s" $extra "*(optional)*") -}}
            {{- end -}}
-           |{{ (fieldName .) }}|{{ (yamlType .Type)}}| {{ $extra }} {{ (comments .CommentLines "summary") }}
+           |{{ (fieldName .) }}|{{ (yamlType .Type)}}| {{ $extra }} {{ (comments .CommentLines "") }}
        {{- end }}
 {{ end }}

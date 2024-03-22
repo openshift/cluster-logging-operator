@@ -1,11 +1,6 @@
 package outputs
 
 import (
-	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -143,75 +138,4 @@ var _ = Describe("Validate ", func() {
 
 		})
 	})
-})
-
-var _ = Describe("ValidateCumulativeDiskBuffer", func() {
-
-	Context("when delivery mode is AtLeastOnce", func() {
-		var (
-			clf        *loggingv1.ClusterLogForwarder
-			extras     = map[string]bool{}
-			fakeClient client.Client
-			nodeDisk   = resource.MustParse("120G")
-			maxBuffer  = nodeDisk.Value() * nodeDiskLimitPercent / 100
-
-			builder *fake.ClientBuilder
-		)
-
-		BeforeEach(func() {
-			builder = fake.NewClientBuilder()
-			clf = runtime.NewClusterLogForwarder("testme", "checkme")
-			clf.Spec = loggingv1.ClusterLogForwarderSpec{
-				Outputs: []loggingv1.OutputSpec{
-					{
-						Tuning: &loggingv1.OutputTuningSpec{
-							Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
-						},
-					},
-				},
-			}
-		})
-
-		Context("and the node disk limit is below capacity", func() {
-			It("should not fail validation", func() {
-				fakeClient = builder.Build()
-				err, _ := ValidateCumulativeDiskBuffer(*clf, fakeClient, extras)
-				Expect(err).To(Succeed())
-			})
-		})
-
-		Context("and the node disk limit is at capacity", func() {
-			BeforeEach(func() {
-				totBuffer := int64(0)
-				for totBuffer < maxBuffer {
-					totBuffer += common.BufferMinSizeBytes
-					clf := runtime.NewClusterLogForwarder(fmt.Sprintf("mynamespace-%d", totBuffer/1000), "aforwarder")
-					clf.Spec = loggingv1.ClusterLogForwarderSpec{
-						Outputs: []loggingv1.OutputSpec{
-							{
-								Name: "anAtLeastOnceOutput",
-							},
-							{
-								Name: "anAtLeastOnceOutput",
-								Tuning: &loggingv1.OutputTuningSpec{
-									Delivery: loggingv1.OutputDeliveryModeAtLeastOnce,
-								},
-							},
-						},
-					}
-					builder.WithRuntimeObjects(clf)
-				}
-
-				builder.WithRuntimeObjects(clf)
-				fakeClient = builder.Build()
-			})
-			It("should fail validation when the total amount of allocated buffer across all outputs for all CLF exceeds the threshold percentage of the node disk", func() {
-				err, _ := ValidateCumulativeDiskBuffer(*clf, fakeClient, extras)
-				Expect(err).ToNot(Succeed())
-			})
-
-		})
-
-	})
-
 })

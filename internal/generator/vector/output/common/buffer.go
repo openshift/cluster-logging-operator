@@ -3,9 +3,6 @@ package common
 import "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 
 const (
-	//BufferMinSizeBytes is the minimal buffer required by vector for disk buffers
-	BufferMinSizeBytes       = 268435488
-	BufferTypeDisk           = "disk"
 	BufferWhenFullBlock      = "block"
 	BufferWhenFullDropNewest = "drop_newest"
 )

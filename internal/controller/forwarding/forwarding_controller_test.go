@@ -75,7 +75,10 @@ var _ = Describe("ReconcileForwarder", func() {
 					Type: logging.LogCollectionTypeVector,
 				},
 			}
-			client = fake.NewClientBuilder().WithRuntimeObjects(exp).Build()
+
+			clf := runtime.NewClusterLogForwarder(exp.Namespace, exp.Name)
+
+			client = fake.NewClientBuilder().WithRuntimeObjects(exp, clf).Build()
 			controller := ReconcileForwarder{
 				Client: client,
 			}

@@ -2,10 +2,10 @@ package elasticsearch
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"strings"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -137,8 +137,8 @@ func FlattenLabels(id string, inputs []string) Element {
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
 		VRL: strings.Join([]string{
-			normalize.VRLOpenShiftSequence,
-			normalize.VRLDedotLabels,
+			viaq.VRLOpenShiftSequence,
+			viaq.VRLDedotLabels,
 			VRLFlattenLabels,
 			VRLPruneLabels,
 		}, "\n"),

@@ -2,11 +2,11 @@ package splunk
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -90,7 +90,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		indexRemapElement,
 		[]Element{
-			normalize.DedotLabels(dedottedID, dedotInputs),
+			viaq.DedotLabels(dedottedID, dedotInputs),
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),

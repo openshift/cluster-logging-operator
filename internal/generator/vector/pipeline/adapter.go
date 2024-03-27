@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"os"
 	"strconv"
 
@@ -73,7 +74,15 @@ func NewPipeline(index int, p logging.PipelineSpec, inputs map[string]helpers.In
 
 // TODO: add migration to treat like any other
 func addPrefilters(p *Pipeline) {
-	prefilters := []string{}
+	prefilters := []string{viaq.Viaq}
+	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
+		FilterSpec:        &logging.FilterSpec{Type: viaq.Viaq},
+		SuppliesTransform: true,
+		TranformFactory: func(id, inputs string) framework.Element {
+			return viaq.New(id, inputs, p.Labels)
+		},
+		Labels: p.Labels,
+	}
 	if p.DetectMultilineErrors {
 		p.filterMap[openshiftfilter.DetectMultilineException] = filter.InternalFilterSpec{
 			FilterSpec:        &logging.FilterSpec{Type: openshiftfilter.DetectMultilineException},
@@ -81,11 +90,6 @@ func addPrefilters(p *Pipeline) {
 			TranformFactory:   openshiftfilter.NewDetectException,
 		}
 		prefilters = append(prefilters, openshiftfilter.DetectMultilineException)
-	}
-	if len(p.Labels) > 0 {
-		p.filterMap[openshiftfilter.Labels] = filter.InternalFilterSpec{
-			FilterSpec: &logging.FilterSpec{Type: openshiftfilter.Labels}, Labels: p.Labels}
-		prefilters = append(prefilters, openshiftfilter.Labels)
 	}
 	if p.Parse == openshiftfilter.ParseTypeJson {
 		p.filterMap[openshiftfilter.ParseJson] = filter.InternalFilterSpec{

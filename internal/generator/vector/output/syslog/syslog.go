@@ -2,6 +2,7 @@ package syslog
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"net/url"
 	"regexp"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -104,7 +104,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	return MergeElements(
 		[]Element{
-			normalize.DedotLabels(dedottedID, inputs),
+			viaq.DedotLabels(dedottedID, inputs),
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),

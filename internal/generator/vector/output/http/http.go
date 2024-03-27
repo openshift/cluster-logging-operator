@@ -7,9 +7,9 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize/schema/otel"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	corev1 "k8s.io/api/core/v1"
@@ -96,7 +96,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 
 		els,
 		[]Element{
-			normalize.DedotLabels(dedottedID, []string{normalizeID}),
+			viaq.DedotLabels(dedottedID, []string{normalizeID}),
 			sink,
 			Encoding(id),
 			common.NewAcknowledgments(id, strategy),

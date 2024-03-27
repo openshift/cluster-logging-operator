@@ -3,8 +3,8 @@ package input
 import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	vector "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vector "github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	sources "github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 

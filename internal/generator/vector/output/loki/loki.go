@@ -2,18 +2,17 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"strings"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
-
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	corev1 "k8s.io/api/core/v1"
@@ -136,7 +135,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
-			normalize.DedotLabels(dedottedID, []string{componentID}),
+			viaq.DedotLabels(dedottedID, []string{componentID}),
 			RemapLabels(remapLabelID, o, []string{dedottedID}),
 			sink,
 			Encoding(id, o),

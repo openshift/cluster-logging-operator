@@ -1,0 +1,14 @@
+# Logs from kubernetes audit
+[sources.input_myaudit_kube]
+type = "file"
+include = ["/var/log/kube-apiserver/audit.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_myaudit_kube_meta]
+type = "remap"
+inputs = ["input_myaudit_kube"]
+source = '''
+  .log_source = "kubeAPI"
+  .log_type = "audit"
+'''

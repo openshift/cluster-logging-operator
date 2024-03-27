@@ -1,0 +1,14 @@
+# Logs from openshift audit
+[sources.input_myaudit_openshift]
+type = "file"
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_myaudit_openshift_meta]
+type = "remap"
+inputs = ["input_myaudit_openshift"]
+source = '''
+  .log_source = "openshiftAPI"
+  .log_type = "audit"
+'''

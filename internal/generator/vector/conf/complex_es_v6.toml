@@ -22,65 +22,11 @@ pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_ms = 5000
 
-[transforms.input_application_container_viaq]
+[transforms.input_application_container_meta]
 type = "remap"
 inputs = ["input_application_container"]
 source = '''
-  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-   if !exists(.level) {
-    .level = "default"
-    if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
-      .level = "warn"
-    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
-      .level = "error"
-    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
-      .level = "critical"
-    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
-      .level = "debug"
-    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
-      .level = "notice"
-    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
-      .level = "alert"
-    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
-      .level = "emergency"
-    } else if match!(.message, r'(?i)\b(?:info)\b|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
-      .level = "info"
-    }
-  }
-  pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "eventrouter-") {
-    parsed, err = parse_json(.message)
-    if err != null {
-      log("Unable to process EventRouter log: " + err, level: "info")
-    } else {
-      ., err = merge(.,parsed)
-      if err == null && exists(.event) && is_object(.event) {
-          if exists(.verb) {
-            .event.verb = .verb
-            del(.verb)
-          }
-          .kubernetes.event = del(.event)
-          .message = del(.kubernetes.event.message)
-          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
-          del(.kubernetes.event.metadata.creationTimestamp)
-		  . = compact(., nullish: true)
-      } else {
-        log("Unable to merge EventRouter log message into record: " + err, level: "info")
-      }
-    }
-  }
-  del(.source_type)
-  del(.stream)
-  del(.kubernetes.pod_ips)
-  del(.kubernetes.node_labels)
-  del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
-'''
-# Set log_type
-[transforms.input_application_viaq_logtype]
-type = "remap"
-inputs = ["input_application_container_viaq"]
-source = '''
+  .log_source = "container"
   .log_type = "application"
 '''
 
@@ -91,10 +37,107 @@ include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 
-[transforms.input_audit_host_viaq]
+[transforms.input_audit_host_meta]
 type = "remap"
 inputs = ["input_audit_host"]
 source = '''
+  .log_source = "auditd"
+  .log_type = "audit"
+'''
+
+# Logs from kubernetes audit
+[sources.input_audit_kube]
+type = "file"
+include = ["/var/log/kube-apiserver/audit.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_audit_kube_meta]
+type = "remap"
+inputs = ["input_audit_kube"]
+source = '''
+  .log_source = "kubeAPI"
+  .log_type = "audit"
+'''
+
+# Logs from openshift audit
+[sources.input_audit_openshift]
+type = "file"
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_audit_openshift_meta]
+type = "remap"
+inputs = ["input_audit_openshift"]
+source = '''
+  .log_source = "openshiftAPI"
+  .log_type = "audit"
+'''
+
+# Logs from ovn audit
+[sources.input_audit_ovn]
+type = "file"
+include = ["/var/log/ovn/acl-audit-log.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_audit_ovn_meta]
+type = "remap"
+inputs = ["input_audit_ovn"]
+source = '''
+  .log_source = "ovn"
+  .log_type = "audit"
+'''
+
+# Logs from containers (including openshift containers)
+[sources.input_infrastructure_container]
+type = "kubernetes_logs"
+max_read_bytes = 3145728
+glob_minimum_cooldown_ms = 15000
+auto_partial_merge = true
+include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
+pod_annotation_fields.pod_labels = "kubernetes.labels"
+pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = "kubernetes.annotations"
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
+namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
+
+[transforms.input_infrastructure_container_meta]
+type = "remap"
+inputs = ["input_infrastructure_container"]
+source = '''
+  .log_source = "container"
+  .log_type = "infrastructure"
+'''
+
+[sources.input_infrastructure_journal]
+type = "journald"
+journal_directory = "/var/log/journal"
+
+[transforms.input_infrastructure_journal_meta]
+type = "remap"
+inputs = ["input_infrastructure_journal"]
+source = '''
+  .log_source = "node"
+  .log_type = "infrastructure"
+'''
+
+[transforms.pipeline_pipeline_viaqjournal_0]
+type = "filter"
+inputs = ["input_application_container_meta","input_audit_host_meta","input_audit_kube_meta","input_audit_openshift_meta","input_audit_ovn_meta","input_infrastructure_container_meta","input_infrastructure_journal_meta"]
+condition = '''
+(.log_source == "node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "container" || .log_type == "audit"
+'''
+
+[transforms.pipeline_pipeline_viaq_1]
+type = "remap"
+inputs = ["pipeline_pipeline_viaqjournal_0"]
+source = '''
+if .log_type == "audit" && .log_source == "auditd" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".linux-audit.log"
 
@@ -116,55 +159,28 @@ source = '''
   }
 
   .level = "default"
-'''
-
-# Logs from kubernetes audit
-[sources.input_audit_kube]
-type = "file"
-include = ["/var/log/kube-apiserver/audit.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-
-[transforms.input_audit_kube_viaq]
-type = "remap"
-inputs = ["input_audit_kube"]
-source = '''
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+}
+if .log_type == "audit" && .log_source == "kubeAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .k8s_audit_level = .level
-'''
-
-# Logs from openshift audit
-[sources.input_audit_openshift]
-type = "file"
-include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-
-[transforms.input_audit_openshift_viaq]
-type = "remap"
-inputs = ["input_audit_openshift"]
-source = '''
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+}
+if .log_type == "audit" && .log_source == "openshiftAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .openshift_audit_level = .level
-'''
-
-# Logs from ovn audit
-[sources.input_audit_ovn]
-type = "file"
-include = ["/var/log/ovn/acl-audit-log.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-
-[transforms.input_audit_ovn_viaq]
-type = "remap"
-inputs = ["input_audit_ovn"]
-source = '''
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+}
+if .log_type == "audit" && .log_source == "ovn" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".ovn-audit.log"
   if !exists(.level) {
@@ -187,38 +203,10 @@ source = '''
       .level = "info"
     }
   }
-'''
-
-# Set log_type
-[transforms.input_audit_viaq_logtype]
-type = "remap"
-inputs = ["input_audit_host_viaq","input_audit_kube_viaq","input_audit_openshift_viaq","input_audit_ovn_viaq"]
-source = '''
-  .log_type = "audit"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
-'''
-
-# Logs from containers (including openshift containers)
-[sources.input_infrastructure_container]
-type = "kubernetes_logs"
-max_read_bytes = 3145728
-glob_minimum_cooldown_ms = 15000
-auto_partial_merge = true
-include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
-rotate_wait_ms = 5000
-
-[transforms.input_infrastructure_container_viaq]
-type = "remap"
-inputs = ["input_infrastructure_container"]
-source = '''
+}
+if .log_source == "container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
     .level = "default"
@@ -268,24 +256,27 @@ source = '''
   del(.kubernetes.node_labels)
   del(.timestamp_end)
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
-'''
-
-[sources.input_infrastructure_journal]
-type = "journald"
-journal_directory = "/var/log/journal"
-
-[transforms.input_infrastructure_journal_drop]
-type = "filter"
-inputs = ["input_infrastructure_journal"]
-condition = '''
-.PRIORITY != "7" && .PRIORITY != 7
-'''
-
-
-[transforms.input_infrastructure_journal_viaq]
-type = "remap"
-inputs = ["input_infrastructure_journal_drop"]
-source = '''
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+}
+if .log_source == "node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
 
@@ -366,20 +357,12 @@ source = '''
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+}
 '''
-
-# Set log_type
-[transforms.input_infrastructure_viaq_logtype]
-type = "remap"
-inputs = ["input_infrastructure_container_viaq","input_infrastructure_journal_viaq"]
-source = '''
-  .log_type = "infrastructure"
-'''
-
 # Set Elasticsearch index
 [transforms.output_default_add_es_index]
 type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
+inputs = ["pipeline_pipeline_viaq_1"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -440,6 +423,7 @@ source = '''
     }
   }
 '''
+
 [sinks.output_default]
 type = "elasticsearch"
 inputs = ["output_default_dedot_and_flatten"]
@@ -462,7 +446,7 @@ ca_file = "/var/run/ocp-collector/secrets/collector/ca-bundle.crt"
 # Set Elasticsearch index
 [transforms.output_es_1_add_es_index]
 type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
+inputs = ["pipeline_pipeline_viaq_1"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -527,6 +511,7 @@ source = '''
     }
   }
 '''
+
 [sinks.output_es_1]
 type = "elasticsearch"
 inputs = ["output_es_1_dedot_and_flatten"]
@@ -550,7 +535,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 # Set Elasticsearch index
 [transforms.output_es_2_add_es_index]
 type = "remap"
-inputs = ["input_application_viaq_logtype","input_infrastructure_viaq_logtype","input_audit_viaq_logtype"]
+inputs = ["pipeline_pipeline_viaq_1"]
 source = '''
   index = "default"
   if (.log_type == "application"){
@@ -615,6 +600,7 @@ source = '''
     }
   }
 '''
+
 [sinks.output_es_2]
 type = "elasticsearch"
 inputs = ["output_es_2_dedot_and_flatten"]

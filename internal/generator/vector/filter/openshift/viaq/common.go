@@ -1,4 +1,4 @@
-package normalize
+package viaq
 
 const (
 	ClusterID         = `.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`

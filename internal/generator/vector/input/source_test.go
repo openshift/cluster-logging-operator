@@ -15,7 +15,7 @@ import (
 )
 
 var _ = Describe("inputs", func() {
-	DescribeTable("#NewViaQ", func(input logging.InputSpec, expFile string) {
+	DescribeTable("#NewSource", func(input logging.InputSpec, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -26,14 +26,14 @@ var _ = Describe("inputs", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 		}
-		conf, _ := NewViaQ(input, constants.OpenshiftNS, factory.GenerateResourceNames(clf), framework.NoOptions)
+		conf, _ := NewSource(input, constants.OpenshiftNS, factory.GenerateResourceNames(clf), framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with an application input should generate a VIAQ container source", logging.InputSpec{
+		Entry("with an application input should generate a container source", logging.InputSpec{
 			Name:        logging.InputNameApplication,
 			Application: &logging.Application{},
 		},
-			"viaq_application.toml",
+			"application.toml",
 		),
 		Entry("with a throttled application input should generate a VIAQ container with throttling", logging.InputSpec{
 			Name: logging.InputNameApplication,
@@ -43,7 +43,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_throttle.toml",
+			"application_with_throttle.toml",
 		),
 		Entry("[migrate deprecated] with an application that specs specific namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -51,7 +51,7 @@ var _ = Describe("inputs", func() {
 				Namespaces: []string{"test-ns1", "test-ns2"},
 			},
 		},
-			"viaq_application_with_includes.toml",
+			"application_with_includes.toml",
 		),
 		Entry("with an application that specs specific exclude namespaces and containers", logging.InputSpec{
 			Name: "my-app",
@@ -68,7 +68,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_excludes.toml",
+			"application_with_excludes.toml",
 		),
 		Entry("with an application that specs including a container from all namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -80,7 +80,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_includes_container.toml",
+			"application_includes_container.toml",
 		),
 		Entry("with an application that specs excluding a container from all namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -92,7 +92,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_excludes_container.toml",
+			"application_excludes_container.toml",
 		),
 		Entry("with an application that specs specific namespaces and exclude namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -117,7 +117,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_includes_excludes.toml",
+			"application_with_includes_excludes.toml",
 		),
 		Entry("with an application that specs infra namespaces and exclude namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -143,7 +143,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_infra_includes_excludes.toml",
+			"application_with_infra_includes_excludes.toml",
 		),
 		Entry("with an application that collects infra namespaces and excludes a container", logging.InputSpec{
 			Name: "my-app",
@@ -161,7 +161,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_exclude_container_from_infra.toml",
+			"application_exclude_container_from_infra.toml",
 		),
 		Entry("with an application that specs infra namespaces and excludes infra namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -187,7 +187,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_infra_includes_infra_excludes.toml",
+			"application_with_infra_includes_infra_excludes.toml",
 		),
 		Entry("with an application that specs specific infra namespace and excludes infra namespaces", logging.InputSpec{
 			Name: "my-app",
@@ -213,7 +213,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_specific_infra_includes_infra_excludes.toml",
+			"application_with_specific_infra_includes_infra_excludes.toml",
 		),
 		Entry("with an application that specs specific match labels", logging.InputSpec{
 			Name: "my-app",
@@ -226,67 +226,67 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_application_with_matchLabels.toml",
+			"application_with_matchLabels.toml",
 		),
-		Entry("with an infrastructure input should generate a VIAQ container and journal source", logging.InputSpec{
+		Entry("with an infrastructure input should generate a container and journal source", logging.InputSpec{
 			Name:           logging.InputNameInfrastructure,
 			Infrastructure: &logging.Infrastructure{},
 		},
-			"viaq_infrastructure.toml",
+			"infrastructure.toml",
 		),
-		Entry("with an infrastructure input for containers should generate only a VIAQ container source", logging.InputSpec{
+		Entry("with an infrastructure input for containers should generate only a container source", logging.InputSpec{
 			Name: "myinfra",
 			Infrastructure: &logging.Infrastructure{
 				Sources: []string{logging.InfrastructureSourceContainer},
 			},
 		},
-			"viaq_infrastructure_container.toml",
+			"infrastructure_container.toml",
 		),
-		Entry("with an infrastructure input for node should generate only a VIAQ journal source", logging.InputSpec{
+		Entry("with an infrastructure input for node should generate only a journal source", logging.InputSpec{
 			Name: "myinfra",
 			Infrastructure: &logging.Infrastructure{
 				Sources: []string{logging.InfrastructureSourceNode},
 			},
 		},
-			"viaq_infrastructure_journal.toml",
+			"infrastructure_journal.toml",
 		),
-		Entry("with an audit input should generate VIAQ file sources", logging.InputSpec{
+		Entry("with an audit input should generate file sources", logging.InputSpec{
 			Name:  logging.InputNameAudit,
 			Audit: &logging.Audit{},
 		},
-			"viaq_audit.toml",
+			"audit.toml",
 		),
-		Entry("with an audit input for auditd logs should generate VIAQ auditd file source", logging.InputSpec{
+		Entry("with an audit input for auditd logs should generate auditd file source", logging.InputSpec{
 			Name: "myaudit",
 			Audit: &logging.Audit{
 				Sources: []string{logging.AuditSourceAuditd},
 			},
 		},
-			"viaq_audit_host.toml",
+			"audit_host.toml",
 		),
-		Entry("with an audit input for kube logs should generate VIAQ kube audit file source", logging.InputSpec{
+		Entry("with an audit input for kube logs should generate kube audit file source", logging.InputSpec{
 			Name: "myaudit",
 			Audit: &logging.Audit{
 				Sources: []string{logging.AuditSourceKube},
 			},
 		},
-			"viaq_audit_kube.toml",
+			"audit_kube.toml",
 		),
-		Entry("with an audit input for openshift logs should generate VIAQ openshift audit file source", logging.InputSpec{
+		Entry("with an audit input for openshift logs should generate openshift audit file source", logging.InputSpec{
 			Name: "myaudit",
 			Audit: &logging.Audit{
 				Sources: []string{logging.AuditSourceOpenShift},
 			},
 		},
-			"viaq_audit_openshift.toml",
+			"audit_openshift.toml",
 		),
-		Entry("with an audit input for OVN logs should generate VIAQ OVN audit file source", logging.InputSpec{
+		Entry("with an audit input for OVN logs should generate OVN audit file source", logging.InputSpec{
 			Name: "myaudit",
 			Audit: &logging.Audit{
 				Sources: []string{logging.AuditSourceOVN},
 			},
 		},
-			"viaq_audit_ovn.toml",
+			"audit_ovn.toml",
 		),
 		Entry("with an http audit receiver input should generate VIAQ http receiver audit source", logging.InputSpec{
 			Name: "myreceiver",
@@ -300,7 +300,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_receiver_http_audit.toml",
+			"receiver_http_audit.toml",
 		),
 		Entry("with a syslog receiver input should generate VIAQ syslog receiver", logging.InputSpec{
 			Name: "myreceiver",
@@ -313,7 +313,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"viaq_receiver_syslog.toml",
+			"receiver_syslog.toml",
 		),
 	)
 })

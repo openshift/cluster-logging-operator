@@ -32,8 +32,6 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 		return prune.MakePruneFilter(filterSpec.PruneFilterSpec)
 	case loggingv1.FilterKubeAPIAudit:
 		return apiaudit.PolicyToVRL(filterSpec.KubeAPIAudit)
-	case openshift.Labels:
-		return openshift.NewLabels(filterSpec.Labels)
 	case openshift.ParseJson:
 		return openshift.NewParseJSON()
 	case "":
@@ -50,7 +48,7 @@ type InternalFilterSpec struct {
 	SuppliesTransform bool
 
 	//TranformFactory takes an id, inputs and returns an Element
-	TranformFactory func(string, string) framework.Element
+	TranformFactory func(id string, inputs ...string) framework.Element
 }
 
 func NewInternalFilterMap(filters map[string]*loggingv1.FilterSpec) map[string]*InternalFilterSpec {

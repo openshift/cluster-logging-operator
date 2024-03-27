@@ -61,8 +61,8 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 			log := logs[0]
 
-			Expect(log.ViaQCommon.Message).ToNot(BeNil())
-			Expect(log.ViaQCommon.LogType).ToNot(BeNil())
+			Expect(log.Message).ToNot(BeNil())
+			Expect(log.LogType).ToNot(BeNil())
 			Expect(log.Kubernetes).ToNot(BeNil())
 			Expect(log.Openshift).ToNot(BeNil())
 			Expect(log.Timestamp).ToNot(BeNil())

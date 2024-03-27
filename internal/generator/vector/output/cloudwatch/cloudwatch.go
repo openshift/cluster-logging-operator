@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"fmt"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"regexp"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -91,7 +91,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		[]Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
-			normalize.DedotLabels(dedottedID, []string{componentID}),
+			viaq.DedotLabels(dedottedID, []string{componentID}),
 			sink,
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),

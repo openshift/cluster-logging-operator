@@ -8,13 +8,15 @@ import (
 
 // Input is an adapter between CLF.input and any collector config segments
 type Input struct {
+	spec     logging.InputSpec
 	ids      []string
 	elements []framework.Element
 }
 
 func NewInput(spec logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) *Input {
-	elements, ids := NewViaQ(spec, collectorNS, resNames, op)
+	elements, ids := NewSource(spec, collectorNS, resNames, op)
 	return &Input{
+		spec:     spec,
 		ids:      ids,
 		elements: elements,
 	}

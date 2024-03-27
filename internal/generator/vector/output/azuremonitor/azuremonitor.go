@@ -4,7 +4,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -54,7 +54,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	return framework.MergeElements(
 		[]framework.Element{
-			normalize.DedotLabels(dedottedID, inputs),
+			viaq.DedotLabels(dedottedID, inputs),
 			Output(id, o, []string{dedottedID}, secret, op),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),

@@ -2,18 +2,14 @@ package input
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
-
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	"regexp"
 )
 
 const (
@@ -42,20 +38,20 @@ var (
 			Build()
 )
 
-// NewViaQ creates an input adapter to generate config for ViaQ sources to collect logs excluding the
+// NewSource creates an input adapter to generate config for ViaQ sources to collect logs excluding the
 // collector container logs from the namespace where the collector is deployed
-func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) ([]framework.Element, []string) {
+func NewSource(input logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
 	switch {
 	case input.Name == logging.InputNameApplication:
-		els, ids = NewViaqContainerSource(input, collectorNS, "", infraExcludes)
+		els, ids = NewContainerSource(input, collectorNS, "", infraExcludes, logging.InputNameApplication, logging.InfrastructureSourceContainer)
 	case input.Name == logging.InputNameInfrastructure:
 		infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-		cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, loggingExcludes)
+		cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer)
 		els = append(els, cels...)
 		ids = append(ids, cids...)
-		jels, jids := NewViaqJournalSource(input)
+		jels, jids := NewJournalSource(input)
 		els = append(els, jels...)
 		ids = append(ids, jids...)
 	case input.Name == logging.InputNameAudit:
@@ -105,17 +101,17 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 			eb.AddExtensions(excludeExtensions...)
 			includes := ib.Build()
 			excludes := eb.Build(infraNamespaces...)
-			els, ids = NewViaqContainerSource(input, collectorNS, includes, excludes)
+			els, ids = NewContainerSource(input, collectorNS, includes, excludes, logging.InputNameApplication, logging.InfrastructureSourceContainer)
 		} else if input.Infrastructure != nil {
 			sources := sets.NewString(input.Infrastructure.Sources...)
 			if sources.Has(logging.InfrastructureSourceContainer) {
 				infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, loggingExcludes)
+				cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer)
 				els = append(els, cels...)
 				ids = append(ids, cids...)
 			}
 			if sources.Has(logging.InfrastructureSourceNode) {
-				jels, jids := NewViaqJournalSource(input)
+				jels, jids := NewJournalSource(input)
 				els = append(els, jels...)
 				ids = append(ids, jids...)
 			}
@@ -145,51 +141,17 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 			els, ids = NewViaqReceiverSource(input, resNames, op)
 		}
 	}
-	els, ids = addLogType(input, els, ids)
 	return els, ids
 }
 
-func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) ([]framework.Element, []string) {
-	logType := ""
-	switch {
-	case spec.Application != nil:
-		logType = logging.InputNameApplication
-	case spec.Infrastructure != nil || spec.Receiver.IsSyslogReceiver():
-		logType = logging.InputNameInfrastructure
-	case spec.Audit != nil || spec.Receiver.IsAuditHttpReceiver():
-		logType = logging.InputNameAudit
-	}
-
-	if logType != "" {
-		id := helpers.MakeInputID(spec.Name, "viaq", "logtype")
-
-		remap := elements.Remap{
-			Desc:        `Set log_type`,
-			ComponentID: id,
-			Inputs:      helpers.MakeInputs(ids...),
-			VRL:         fmt.Sprintf(".log_type = %q", logType),
-		}
-		if logType == logging.InputNameAudit {
-			remap.VRL = strings.Join(helpers.TrimSpaces([]string{
-				remap.VRL,
-				normalize.FixHostname,
-				normalize.FixTimestampField,
-			}), "\n")
-		}
-		els = append(els, remap)
-		return els, []string{id}
-	}
-	return els, ids
-}
-
-// NewViaqContainerSource generates config elements and the id reference of this input and normalizes
-// the tomlContent to VIAQ api
-func NewViaqContainerSource(spec logging.InputSpec, namespace, includes, excludes string) ([]framework.Element, []string) {
+// NewContainerSource generates config elements and the id reference of this input and normalizes
+func NewContainerSource(spec logging.InputSpec, namespace, includes, excludes, logType, logSource string) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *logging.LabelSelector
 	if spec.Application != nil {
 		selector = spec.Application.Selector
 	}
+	metaID := helpers.MakeID(base, "meta")
 	el := []framework.Element{
 		source.KubernetesLogs{
 			ComponentID:        base,
@@ -198,17 +160,16 @@ func NewViaqContainerSource(spec logging.InputSpec, namespace, includes, exclude
 			ExcludePaths:       excludes,
 			ExtraLabelSelector: source.LabelSelectorFrom(selector),
 		},
+		NewLogSourceAndType(metaID, logSource, logType, base),
 	}
-	inputID := base
+	inputID := metaID
 	if spec.HasPolicy() {
 		throttleID := helpers.MakeID(base, "throttle")
 		inputID = throttleID
-		el = append(el, AddThrottleToInput(throttleID, base, spec)...)
+		el = append(el, AddThrottleToInput(throttleID, metaID, spec)...)
 	}
-	id := helpers.MakeID(base, "viaq")
-	el = append(el, normalize.NormalizeContainerLogs(inputID, id)...)
 
-	return el, []string{id}
+	return el, []string{inputID}
 }
 
 // pruneInfraNS returns a pruned infra namespace list depending on which infra namespaces were included

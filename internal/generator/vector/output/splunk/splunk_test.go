@@ -19,37 +19,11 @@ const hecToken = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
 var _ = Describe("Generating vector config for Splunk output", func() {
 
 	const (
-		splunkDedot = `
-[transforms.splunk_hec_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-`
 		fixTimestamp = `
 	# Ensure timestamp field well formatted for Splunk
 	[transforms.splunk_hec_timestamp]
 	type = "remap"
-	inputs = ["splunk_hec_dedot"]
+	inputs = ["pipelineName"]
 	source = '''
 
 	ts, err = parse_timestamp(.@timestamp,"%+")
@@ -61,7 +35,7 @@ source = '''
 
 	'''
 `
-		splunkSink = splunkDedot + fixTimestamp + `
+		splunkSink = fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
@@ -72,7 +46,7 @@ timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 `
-		splunkSinkTls = splunkDedot + fixTimestamp + `
+		splunkSinkTls = fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
@@ -88,7 +62,7 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
-		splunkSinkTlsSkipVerify = splunkDedot + fixTimestamp + `
+		splunkSinkTlsSkipVerify = fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
@@ -106,7 +80,7 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
-		splunkSinkTlsSkipVerifyNoCert = splunkDedot + fixTimestamp + `
+		splunkSinkTlsSkipVerifyNoCert = fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
@@ -121,7 +95,7 @@ codec = "json"
 verify_certificate = false
 verify_hostname = false
 `
-		splunkSinkPassphrase = splunkDedot + fixTimestamp + `
+		splunkSinkPassphrase = fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
@@ -279,35 +253,10 @@ type = "remap"
 inputs = ["pipelineName"]			
 `
 				splunkWithIndexDedot = `
-
-[transforms.splunk_hec_dedot]
-type = "remap"
-inputs = ["splunk_hec_add_splunk_index"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
 # Ensure timestamp field well formatted for Splunk
 [transforms.splunk_hec_timestamp]
 type = "remap"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_add_splunk_index"]
 source = '''
 
 ts, err = parse_timestamp(.@timestamp,"%+")

@@ -1,0 +1,22 @@
+# Logs from containers (including openshift containers)
+[sources.input_application_container]
+type = "kubernetes_logs"
+max_read_bytes = 3145728
+glob_minimum_cooldown_ms = 15000
+auto_partial_merge = true
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
+pod_annotation_fields.pod_labels = "kubernetes.labels"
+pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = "kubernetes.annotations"
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
+namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
+rotate_wait_ms = 5000
+
+[transforms.input_application_container_meta]
+type = "remap"
+inputs = ["input_application_container"]
+source = '''
+  .log_source = "container"
+  .log_type = "application"
+'''

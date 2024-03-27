@@ -50,6 +50,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 					Hostname:         types.AnyString,
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 					Timestamp:        time.Time{},
+					LogSource:        logging.InfrastructureSourceContainer,
 					LogType:          logging.InputNameApplication,
 					ViaqMsgID:        types.AnyString,
 					Openshift: types.OpenshiftMeta{
@@ -87,6 +88,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 			ToHttpOutput()
 
 		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
+			Skip("fluentd is not supported")
 			containerPath = fmt.Sprintf("/var/log/pods/%s_eventrouter-123_12345/eventrouter/0.log", framework.Namespace)
 			framework.VisitConfig = func(conf string) string {
 				return strings.Replace(conf, "/var/log/pods/*/*/*.log", containerPath, 1)

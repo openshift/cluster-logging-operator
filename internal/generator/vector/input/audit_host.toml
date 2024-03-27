@@ -1,0 +1,14 @@
+# Logs from host audit
+[sources.input_myaudit_host]
+type = "file"
+include = ["/var/log/audit/audit.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_myaudit_host_meta]
+type = "remap"
+inputs = ["input_myaudit_host"]
+source = '''
+  .log_source = "auditd"
+  .log_type = "audit"
+'''

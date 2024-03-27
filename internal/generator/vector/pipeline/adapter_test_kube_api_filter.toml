@@ -1,6 +1,21 @@
-[transforms.pipeline_mypipeline_my_audit_0]
+[transforms.pipeline_mypipeline_viaq_0]
 type = "remap"
-inputs = ["input_audit_in_viaq_logtype"]
+inputs = ["input_audit_in_kube_meta"]
+source = '''
+if .log_type == "audit" && .log_source == "kubeAPI" {
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  .tag = ".k8s-audit.log"
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+  .k8s_audit_level = .level
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+}
+'''
+
+[transforms.pipeline_mypipeline_my_audit_1]
+type = "remap"
+inputs = ["pipeline_mypipeline_viaq_0"]
 source = '''
 	if is_string(.auditID) && is_string(.verb) {
 		res = if is_null(.objectRef.resource) { "" } else { string!(.objectRef.resource) }

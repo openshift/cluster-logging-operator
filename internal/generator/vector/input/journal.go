@@ -4,18 +4,15 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
-func NewViaqJournalSource(input logging.InputSpec) ([]Element, []string) {
+func NewJournalSource(input logging.InputSpec) ([]Element, []string) {
 	id := helpers.MakeInputID(input.Name, "journal")
+	metaID := helpers.MakeID(id, "meta")
 	el := []Element{
 		source.NewJournalLog(id),
+		NewLogSourceAndType(metaID, logging.InfrastructureSourceNode, logging.InputNameInfrastructure, id),
 	}
-	dropID := helpers.MakeID(id, "drop")
-	el = append(el, normalize.DropJournalDebugLogs(id, dropID)...)
-	normalizeID := helpers.MakeID(id, "viaq")
-	el = append(el, normalize.JournalLogs(dropID, normalizeID)...)
-	return el, []string{normalizeID}
+	return el, []string{metaID}
 }

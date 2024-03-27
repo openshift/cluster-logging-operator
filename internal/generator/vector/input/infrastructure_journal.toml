@@ -1,0 +1,11 @@
+[sources.input_myinfra_journal]
+type = "journald"
+journal_directory = "/var/log/journal"
+
+[transforms.input_myinfra_journal_meta]
+type = "remap"
+inputs = ["input_myinfra_journal"]
+source = '''
+  .log_source = "node"
+  .log_type = "infrastructure"
+'''

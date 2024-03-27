@@ -22,6 +22,8 @@ var (
 
 	//go:embed prune.vrl.tmpl
 	pruneVRLTemplateStr string
+
+	dedottedFields = []string{".kubernetes.labels.", ".kubernetes.namespace_labels."}
 )
 
 func MakePruneFilter(pruneFilterSpec *loggingv1.PruneFilterSpec) (vrl string, err error) {
@@ -44,9 +46,20 @@ func MakePruneFilter(pruneFilterSpec *loggingv1.PruneFilterSpec) (vrl string, er
 func generateQuotedPathSegmentArrayStr(fieldPathArray []string) string {
 	quotedPathArray := []string{}
 	for _, fieldPath := range fieldPathArray {
-		splitPathSegments := splitPath(fieldPath)
-		pathArray := quotePathSegments(splitPathSegments)
-		quotedPathArray = append(quotedPathArray, fmt.Sprintf("[%s]", strings.Join(pathArray, ",")))
+		f := func(path string) string {
+			splitPathSegments := splitPath(path)
+			pathArray := quotePathSegments(splitPathSegments)
+			return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
+		}
+		quotedPathArray = append(quotedPathArray, f(fieldPath))
+		for _, d := range dedottedFields {
+			label, found := strings.CutPrefix(fieldPath, d)
+			if found && strings.ContainsAny(label, "/.") {
+				label = strings.ReplaceAll(label, ".", "_")
+				label = strings.ReplaceAll(label, "/", "_")
+				quotedPathArray = append(quotedPathArray, f(d+label))
+			}
+		}
 	}
 	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ","))
 }

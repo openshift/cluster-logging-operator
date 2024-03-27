@@ -48,35 +48,10 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -122,35 +97,10 @@ mechanism = "PLAIN"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -202,35 +152,10 @@ mechanism = "PLAIN"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -274,35 +199,10 @@ mechanism = "SCRAM-SHA-256"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -345,35 +245,10 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1:9092,broker2:9092,broker3:9092"
 topic = "topic"
 
@@ -414,35 +289,10 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -480,35 +330,10 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 				},
 			},
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -533,35 +358,10 @@ key_pass = "junk"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -582,35 +382,10 @@ timestamp_format = "rfc3339"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -631,35 +406,10 @@ timestamp_format = "rfc3339"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
-[transforms.kafka_receiver_dedot]
-type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["kafka_receiver_dedot"]
+inputs = ["pipeline_1","pipeline_2"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 

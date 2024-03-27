@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -23,6 +24,7 @@ func MakeInputs(in ...string) string {
 			out[i] = fmt.Sprintf("%q", o)
 		}
 	}
+	sort.Strings(out)
 	return fmt.Sprintf("[%s]", strings.Join(out, ","))
 }
 

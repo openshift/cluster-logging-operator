@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
-func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.Options) framework.Element {
+func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.Options) (framework.Element, string) {
 	var minTlsVersion, cipherSuites string
 	if _, ok := op[framework.ClusterTLSProfileSpec]; ok {
 		tlsProfileSpec := op[framework.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
@@ -25,7 +25,7 @@ func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.O
 		Format:        input.Receiver.GetHTTPFormat(),
 		TlsMinVersion: minTlsVersion,
 		CipherSuites:  cipherSuites,
-	}
+	}, helpers.MakeID(id, "items")
 }
 
 type HttpReceiver struct {

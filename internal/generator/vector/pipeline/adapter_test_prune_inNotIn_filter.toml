@@ -1,6 +1,82 @@
-[transforms.pipeline_mypipeline_my_prune_0]
+[transforms.pipeline_mypipeline_viaq_0]
 type = "remap"
-inputs = ["input_app_in_viaq_logtype"]
+inputs = ["input_app_in_container_meta"]
+source = '''
+if .log_source == "container" {
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+   if !exists(.level) {
+    .level = "default"
+    if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+      .level = "warn"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
+      .level = "notice"
+    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
+      .level = "alert"
+    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
+      .level = "emergency"
+    } else if match!(.message, r'(?i)\b(?:info)\b|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    }
+  }
+  pod_name = string!(.kubernetes.pod_name)
+  if starts_with(pod_name, "eventrouter-") {
+    parsed, err = parse_json(.message)
+    if err != null {
+      log("Unable to process EventRouter log: " + err, level: "info")
+    } else {
+      ., err = merge(.,parsed)
+      if err == null && exists(.event) && is_object(.event) {
+          if exists(.verb) {
+            .event.verb = .verb
+            del(.verb)
+          }
+          .kubernetes.event = del(.event)
+          .message = del(.kubernetes.event.message)
+          set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+          del(.kubernetes.event.metadata.creationTimestamp)
+		  . = compact(., nullish: true)
+      } else {
+        log("Unable to merge EventRouter log message into record: " + err, level: "info")
+      }
+    }
+  }
+  del(.source_type)
+  del(.stream)
+  del(.kubernetes.pod_ips)
+  del(.kubernetes.node_labels)
+  del(.timestamp_end)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+}
+'''
+
+[transforms.pipeline_mypipeline_my_prune_1]
+type = "remap"
+inputs = ["pipeline_mypipeline_viaq_0"]
 source = '''
 notIn = [["kubernetes","container_name"],["foo","bar","baz/bar"],["foo"]]
 

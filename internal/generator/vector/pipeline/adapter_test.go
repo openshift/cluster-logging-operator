@@ -2,8 +2,6 @@ package pipeline_test
 
 import (
 	"fmt"
-	"sort"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -40,13 +38,19 @@ var _ = Describe("pipeline/adapter.go", func() {
 	)
 	Context("#NewPipeline", func() {
 		Describe("when adding a prune filter", func() {
+			var (
+				inputSpecs = []logging.InputSpec{
+					{Name: "app-in", Application: &logging.Application{}},
+				}
+			)
+
 			It("should add prune filter with only defined `in` fields and no `notIn` fields", func() {
 				adapter := NewPipeline(0, logging.PipelineSpec{
 					Name:       "mypipeline",
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					map[string]*filter.InternalFilterSpec{
 						"my-prune": {
@@ -64,8 +68,9 @@ var _ = Describe("pipeline/adapter.go", func() {
 							},
 						},
 					},
+					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(2), "expected a VIAQ and prune filter to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_inOnly_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 			It("should add prune filter with only defined `notIn` fields and no `in` fields", func() {
@@ -74,7 +79,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					map[string]*filter.InternalFilterSpec{
 						"my-prune": {
@@ -89,8 +94,9 @@ var _ = Describe("pipeline/adapter.go", func() {
 							},
 						},
 					},
+					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(2), "expected VIA and prune filter to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_notIn_only_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 			It("should add prune filter with both defined in fields and notIn fields when spec'd", func() {
@@ -99,7 +105,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					"app-in": input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					map[string]*filter.InternalFilterSpec{
 						"my-prune": {
@@ -115,19 +121,25 @@ var _ = Describe("pipeline/adapter.go", func() {
 							},
 						},
 					},
+					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(2), "expected a VIA and prune filter to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_inNotIn_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 		})
 
 		It("should add Kube API Server Audit Policy when spec'd for the pipeline", func() {
+			inputSpecs := []logging.InputSpec{
+				{Name: "audit-in", Audit: &logging.Audit{
+					Sources: []string{logging.AuditSourceKube},
+				}},
+			}
 			adapter := NewPipeline(0, logging.PipelineSpec{
 				Name:       "mypipeline",
-				InputRefs:  []string{"audit-in"},
+				InputRefs:  []string{inputSpecs[0].Name},
 				FilterRefs: []string{"my-audit"},
 			}, map[string]helpers.InputComponent{
-				"audit-in": input.NewInput(logging.InputSpec{Name: "audit-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[0].Name: input.NewInput(inputSpecs[0], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
 				map[string]*filter.InternalFilterSpec{
 					"my-audit": {
@@ -146,55 +158,26 @@ var _ = Describe("pipeline/adapter.go", func() {
 						},
 					},
 				},
+				inputSpecs,
 			)
-			Expect(adapter.Filters).To(HaveLen(1), "expected a filter to be added to the pipeline")
+			Expect(adapter.Filters).To(HaveLen(2), "expected VIAQ and kubeapi filter to be added to the pipeline")
 			Expect(mustLoad("adapter_test_kube_api_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 		})
 
-		It("should configure all inputRefs to all the outputRefs", func() {
-
-			outputAdapter := output.NewOutput(logging.OutputSpec{
-				Name: "mylogstore",
-			}, nil, nil)
-			otherOutputAdapter := output.NewOutput(logging.OutputSpec{
-				Name: "other",
-			}, nil, nil)
-			NewPipeline(0, logging.PipelineSpec{
-				Name: "mypipeline",
-				InputRefs: []string{
-					logging.InputNameApplication,
-					logging.InputNameInfrastructure,
-					logging.InputNameAudit,
-				},
-				OutputRefs: []string{"mylogstore", "other"},
-				FilterRefs: []string{},
-			}, map[string]helpers.InputComponent{
-				logging.InputNameApplication:    FakeInputAdapter{ids: []string{logging.InputNameApplication}},
-				logging.InputNameInfrastructure: FakeInputAdapter{ids: []string{logging.InputNameInfrastructure}},
-				logging.InputNameAudit:          FakeInputAdapter{ids: []string{logging.InputNameAudit}},
-			}, map[string]*output.Output{
-				"mylogstore": outputAdapter,
-				"other":      otherOutputAdapter,
-			},
-				map[string]*filter.InternalFilterSpec{},
-			)
-			inputs := outputAdapter.Inputs()
-			sort.Strings(inputs)
-			Expect(inputs).To(Equal([]string{logging.InputNameApplication, logging.InputNameAudit, logging.InputNameInfrastructure}))
-
-			inputs = otherOutputAdapter.Inputs()
-			sort.Strings(inputs)
-			Expect(inputs).To(Equal([]string{logging.InputNameApplication, logging.InputNameAudit, logging.InputNameInfrastructure}))
-		})
-
 		It("should add drop filter when spec'd for the pipeline", func() {
+			inputSpecs := []logging.InputSpec{
+				{Name: "app-in", Application: &logging.Application{}},
+				{Name: "infra-in", Infrastructure: &logging.Infrastructure{
+					Sources: logging.InfrastructureSources.List(),
+				}},
+			}
 			adapter := NewPipeline(0, logging.PipelineSpec{
 				Name:       "mypipeline",
-				InputRefs:  []string{"app-in", "infra-in"},
+				InputRefs:  []string{inputSpecs[0].Name, inputSpecs[1].Name},
 				FilterRefs: []string{"my-drop-filter"},
 			}, map[string]helpers.InputComponent{
-				"app-in":   input.NewInput(logging.InputSpec{Name: "app-in", Application: &logging.Application{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
-				"infra-in": input.NewInput(logging.InputSpec{Name: "infra-in", Infrastructure: &logging.Infrastructure{}}, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[0].Name: input.NewInput(inputSpecs[0], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[1].Name: input.NewInput(inputSpecs[1], "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
 				map[string]*filter.InternalFilterSpec{
 					"my-drop-filter": {
@@ -232,8 +215,9 @@ var _ = Describe("pipeline/adapter.go", func() {
 						},
 					},
 				},
+				inputSpecs,
 			)
-			Expect(adapter.Filters).To(HaveLen(1), "expected the drop filter to be added to the pipeline")
+			Expect(adapter.Filters).To(HaveLen(3), "expected VIAQ and drop filter to be added to the pipeline")
 			Expect(mustLoad("adapter_test_drop_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 		})
 	})

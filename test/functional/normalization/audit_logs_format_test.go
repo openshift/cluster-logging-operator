@@ -17,12 +17,13 @@ import (
 )
 
 var _ = Describe("[Functional][LogForwarding][Normalization] message format tests for audit logs", func() {
-
+	defer GinkgoRecover()
 	var (
 		framework *functional.CollectorFunctionalFramework
 	)
 
 	Context("with fluentd", func() {
+		Skip("fluentd is going away")
 		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
 			BeforeEach(func() {
 				framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeFluentd)
@@ -163,6 +164,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					AuditLogCommon: types.AuditLogCommon{
 						Kind:             "Event",
 						Hostname:         framework.Pod.Spec.NodeName,
+						LogSource:        logging.AuditSourceKube,
 						LogType:          "audit",
 						Level:            "Metadata",
 						Timestamp:        time.Time{},
@@ -199,6 +201,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					AuditLogCommon: types.AuditLogCommon{
 						Kind:             "Event",
 						Hostname:         framework.Pod.Spec.NodeName,
+						LogSource:        logging.AuditSourceOpenShift,
 						LogType:          "audit",
 						Level:            "Metadata",
 						Timestamp:        time.Time{},
@@ -233,10 +236,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				auditLogLine := functional.NewAuditHostLog(testTime)
 				// Template expected as output Log
 				var outputLogTemplate = types.LinuxAuditLog{
-					Message:  auditLogLine,
-					LogType:  "audit",
-					Level:    "default",
-					Hostname: framework.Pod.Spec.NodeName,
+					Message:   auditLogLine,
+					LogSource: logging.AuditSourceAuditd,
+					LogType:   "audit",
+					Level:     "default",
+					Hostname:  framework.Pod.Spec.NodeName,
 					AuditLinux: types.AuditLinux{
 						Type:     "DAEMON_START",
 						RecordID: "*",
@@ -273,6 +277,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Hostname:  framework.Pod.Spec.NodeName,
 					Timestamp: time.Time{},
 					LogType:   "audit",
+					LogSource: logging.AuditSourceOVN,
 					Openshift: types.OpenshiftMeta{
 						Sequence:  types.NewOptionalInt(""),
 						ClusterID: "*",

@@ -1,6 +1,7 @@
 package functional
 
 import (
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -56,6 +57,7 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 		ViaQCommon: types.ViaQCommon{
 			Timestamp: time.Time{},
 			Message:   "*",
+			LogSource: "*",
 			LogType:   "application",
 			Level:     "*",
 			Hostname:  "*",
@@ -80,6 +82,7 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 		ViaQCommon: types.ViaQCommon{
 			Timestamp: time.Time{},
 			Message:   "*",
+			LogSource: logging.InfrastructureSourceContainer,
 			LogType:   "infrastructure",
 			Level:     "*",
 			Hostname:  "*",
@@ -105,6 +108,7 @@ func NewJournalInfrastructureLogTemplate() types.JournalLog {
 
 			Timestamp:        time.Time{},
 			Message:          "*",
+			LogSource:        logging.InfrastructureSourceNode,
 			LogType:          "infrastructure",
 			Level:            "*",
 			Hostname:         "*",

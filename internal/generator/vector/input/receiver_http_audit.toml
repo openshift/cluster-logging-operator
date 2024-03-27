@@ -22,23 +22,10 @@ source = '''
   if exists(.items) {. = .items} else {.}
 '''
 
-[transforms.input_myreceiver_viaq]
+[transforms.input_myreceiver_meta]
 type = "remap"
 inputs = ["input_myreceiver_items"]
 source = '''
-  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  .tag = ".k8s-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-  .k8s_audit_level = .level
-'''
-
-# Set log_type
-[transforms.input_myreceiver_viaq_logtype]
-type = "remap"
-inputs = ["input_myreceiver_viaq"]
-source = '''
-    .log_type = "audit"
-    .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-    ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  .log_source = "kubeAPI"
+  .log_type = "audit"
 '''

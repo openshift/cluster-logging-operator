@@ -1,6 +1,8 @@
-package normalize
+package viaq
 
 import (
+	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -92,33 +94,37 @@ if exists(.UNIT) { .systemd.u.UNIT = del(.UNIT) }
 `
 )
 
-func JournalLogs(inputs, id string) []framework.Element {
-	return []framework.Element{
-		Remap{
-			ComponentID: id,
-			Inputs:      helpers.MakeInputs(inputs),
-			VRL: strings.Join(helpers.TrimSpaces([]string{
-				ClusterID,
-				AddJournalLogTag,
-				DeleteJournalLogFields,
-				FixJournalLogLevel,
-				AddHostName,
-				SystemK,
-				SystemT,
-				SystemU,
-				AddTime,
-				FixTimestampField,
-			}), "\n\n"),
-		},
-	}
+func NewJournal(id string, inputs ...string) framework.Element {
+	return DropJournalDebugLogs(id, inputs...)
 }
 
-func DropJournalDebugLogs(inputs, id string) []framework.Element {
-	return []framework.Element{
-		Filter{
-			ComponentID: id,
-			Inputs:      helpers.MakeInputs(inputs),
-			Condition:   `.PRIORITY != "7" && .PRIORITY != 7`,
-		},
+func journalLogs() string {
+	return fmt.Sprintf(`
+if .log_source == "%s" {
+  %s
+}
+`, logging.InfrastructureSourceNode, journalLogsVRL())
+}
+
+func journalLogsVRL() string {
+	return strings.Join(helpers.TrimSpaces([]string{
+		ClusterID,
+		AddJournalLogTag,
+		DeleteJournalLogFields,
+		FixJournalLogLevel,
+		AddHostName,
+		SystemK,
+		SystemT,
+		SystemU,
+		AddTime,
+		FixTimestampField,
+	}), "\n\n")
+}
+
+func DropJournalDebugLogs(id string, inputs ...string) framework.Element {
+	return Filter{
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		Condition:   `(.log_source == "node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "container" || .log_type == "audit"`,
 	}
 }

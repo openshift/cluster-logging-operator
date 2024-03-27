@@ -44,6 +44,9 @@ var ExpectedComplexHTTPReceiverTOML string
 //go:embed complex_prune_filter.toml
 var ExpectedComplexPruneFilterTOML string
 
+//go:embed container.toml
+var ExpectedContainerToml string
+
 // TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
@@ -57,6 +60,58 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	)
 
 	DescribeTable("Generate full vector.toml", f,
+		Entry("with spec for containers", testhelpers.ConfGenerateTest{
+			Options: framework.Options{
+				framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+					{
+						Name: "myinfra",
+						Infrastructure: &logging.Infrastructure{
+							Sources: []string{logging.InfrastructureSourceContainer},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"myinfra",
+							"mytestapp",
+						},
+						OutputRefs: []string{"kafka-receiver"},
+						Name:       "mypipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: ExpectedContainerToml,
+		}),
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			Options: framework.Options{
 				framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),

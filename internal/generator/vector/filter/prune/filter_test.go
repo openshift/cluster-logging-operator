@@ -29,5 +29,24 @@ var _ = Describe("prune functions", func() {
 		expectedString := `[["foo","bar","foo.bar.baz-ok","foo123","bar/baz0-9.test"],["foo","bar"]]`
 		Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 	})
+	Context("for explicitly dedoted fields", func() {
+
+		It("should do nothing special for path segments where the dedotted labels dont have dots", func() {
+			pathExpression := []string{`.kubernetes.labels.foo`}
+			expectedString := `[["kubernetes","labels","foo"]]`
+			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
+		})
+		It("should generate path segments for the original and dedotted labels", func() {
+			pathExpression := []string{`.kubernetes.labels."bar/baz0-9.test"`}
+			expectedString := `[["kubernetes","labels","bar/baz0-9.test"],["kubernetes","labels","bar_baz0-9_test"]]`
+			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
+		})
+		It("should generate path segments for the original and dedotted namespace labels", func() {
+			pathExpression := []string{`.kubernetes.namespace_labels."bar/baz0-9.test"`}
+			expectedString := `[["kubernetes","namespace_labels","bar/baz0-9.test"],["kubernetes","namespace_labels","bar_baz0-9_test"]]`
+			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
+		})
+
+	})
 
 })

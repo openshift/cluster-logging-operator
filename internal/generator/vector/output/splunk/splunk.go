@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -77,13 +76,8 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 
 	componentID := vectorhelpers.MakeID(id, "add_splunk_index")
 	timestampID := vectorhelpers.MakeID(id, "timestamp")
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
 
-	dedotInputs := inputs
-	indexRemapElement := SetSplunkIndexRemap(o.Splunk, componentID, inputs)
-	if len(indexRemapElement) != 0 {
-		dedotInputs = []string{componentID}
-	}
+	indexRemapElement, nextIDs := SetSplunkIndexRemap(o.Splunk, componentID, inputs)
 	sink := Output(id, o, []string{timestampID}, secret, op)
 	if strategy != nil {
 		strategy.VisitSink(sink)
@@ -91,8 +85,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	return MergeElements(
 		indexRemapElement,
 		[]Element{
-			normalize.DedotLabels(dedottedID, dedotInputs),
-			FixTimestampFormat(timestampID, []string{dedottedID}),
+			FixTimestampFormat(timestampID, nextIDs),
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),
@@ -119,12 +112,13 @@ func hasCustomIndex(s *logging.Splunk) bool {
 	return s != nil && (s.IndexKey != "" || s.IndexName != "")
 }
 
-func SetSplunkIndexRemap(s *logging.Splunk, componentID string, inputs []string) []Element {
+// SetSplunkIndexRemap, provides the template to remap and the input IDs to feed into the next component
+func SetSplunkIndexRemap(s *logging.Splunk, componentID string, inputs []string) ([]Element, []string) {
 	var vrl string
 	var index string
 
 	if !hasCustomIndex(s) {
-		return []Element{}
+		return []Element{}, inputs
 	}
 
 	switch {
@@ -153,7 +147,7 @@ if !is_null(val) {
 			Inputs:      vectorhelpers.MakeInputs(inputs...),
 			VRL:         strings.TrimSpace(fmt.Sprintf(vrl, index)),
 		},
-	}
+	}, []string{componentID}
 }
 
 func AddSplunkIndexToSink(s *logging.Splunk) Element {

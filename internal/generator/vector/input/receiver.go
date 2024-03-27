@@ -5,25 +5,25 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vector "github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
 func NewViaqReceiverSource(spec logging.InputSpec, resNames *factory.ForwarderResourceNames, op generator.Options) ([]generator.Element, []string) {
 	base := helpers.MakeInputID(spec.Name)
-	var el []generator.Element
-	var id string
+	var els []generator.Element
+	metaID := helpers.MakeID(base, "meta")
 	switch {
 	case spec.Receiver.IsSyslogReceiver():
-		el = append(el, source.NewSyslogSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op))
-		dropID := helpers.MakeID(base, "drop", "debug")
-		el = append(el, vector.DropJournalDebugLogs(base, dropID)...)
-		id = helpers.MakeID(base, "journal", "viaq")
-		el = append(el, vector.JournalLogs(dropID, id)...)
+		els = append(els,
+			source.NewSyslogSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op),
+			NewLogSourceAndType(metaID, logging.InfrastructureSourceNode, logging.InputNameInfrastructure, base),
+		)
 	case spec.Receiver.IsAuditHttpReceiver():
-		el = []generator.Element{source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op)}
-		id = helpers.MakeID(base, "viaq")
-		el = append(el, vector.NormalizeK8sAuditLogs(helpers.MakeID(base, "items"), id)...)
+		el, id := source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec, op)
+		return []generator.Element{
+			el,
+			NewLogSourceAndType(metaID, logging.AuditSourceKube, logging.InputNameAudit, id),
+		}, []string{id}
 	}
-	return el, []string{id}
+	return els, []string{metaID}
 }

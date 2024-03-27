@@ -1,0 +1,14 @@
+# Logs from ovn audit
+[sources.input_myaudit_ovn]
+type = "file"
+include = ["/var/log/ovn/acl-audit-log.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.input_myaudit_ovn_meta]
+type = "remap"
+inputs = ["input_myaudit_ovn"]
+source = '''
+  .log_source = "ovn"
+  .log_type = "audit"
+'''

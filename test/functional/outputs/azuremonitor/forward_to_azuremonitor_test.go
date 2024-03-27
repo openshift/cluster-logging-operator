@@ -61,6 +61,7 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 		message := "This is my new test message"
 		var appLogTemplate = functional.NewApplicationLogTemplate()
+		appLogTemplate.LogSource = logging.InfrastructureSourceContainer
 		appLogTemplate.Timestamp = nanoTime
 		appLogTemplate.Message = message
 		appLogTemplate.Level = "default"

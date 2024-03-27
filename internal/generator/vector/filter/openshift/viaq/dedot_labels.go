@@ -1,4 +1,4 @@
-package normalize
+package viaq
 
 import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"

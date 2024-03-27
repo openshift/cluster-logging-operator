@@ -1,0 +1,17 @@
+[sources.input_myreceiver]
+type = "syslog"
+address = "[::]:12345"
+mode = "tcp"
+
+[sources.input_myreceiver.tls]
+enabled = true
+key_file = "/etc/collector/receiver/collector-myreceiver/tls.key"
+crt_file = "/etc/collector/receiver/collector-myreceiver/tls.crt"
+
+[transforms.input_myreceiver_meta]
+type = "remap"
+inputs = ["input_myreceiver"]
+source = '''
+  .log_source = "node"
+  .log_type = "infrastructure"
+'''

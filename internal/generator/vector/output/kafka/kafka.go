@@ -15,7 +15,6 @@ import (
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -60,15 +59,13 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		}
 	}
 
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	brokers, genTlsConf := Brokers(o)
-	sink := Output(id, o, []string{dedottedID}, secret, op, brokers)
+	sink := Output(id, o, inputs, secret, op, brokers)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 	return MergeElements(
 		[]Element{
-			normalize.DedotLabels(dedottedID, inputs),
 			sink,
 			Encoding(id, op),
 			common.NewAcknowledgments(id, strategy),

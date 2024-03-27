@@ -76,7 +76,7 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 	filters := filter.NewInternalFilterMap(clfspec.FilterMap())
 	pipelineMap := map[string]*pipeline.Pipeline{}
 	for i, p := range clfspec.Pipelines {
-		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters)
+		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs)
 		pipelineMap[p.Name] = a
 	}
 

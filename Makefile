@@ -262,7 +262,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 
 .PHONY: test-functional
-test-functional: test-functional-fluentd test-functional-vector
+test-functional: test-functional-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \

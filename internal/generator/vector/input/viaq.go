@@ -110,7 +110,7 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 			sources := sets.NewString(input.Infrastructure.Sources...)
 			if sources.Has(logging.InfrastructureSourceContainer) {
 				infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, "")
+				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, loggingExcludes)
 				els = append(els, cels...)
 				ids = append(ids, cids...)
 			}

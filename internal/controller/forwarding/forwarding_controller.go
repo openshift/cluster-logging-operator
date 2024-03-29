@@ -84,8 +84,8 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	// Fetch the ClusterLogForwarder instance
 	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, true, func() logging.ClusterLogging { return *cl })
 	if status != nil {
-		if err := instance.Status.Synchronize(status); err != nil {
-			return ctrl.Result{}, err
+		if syncErr := instance.Status.Synchronize(status); syncErr != nil {
+			return ctrl.Result{}, syncErr
 		}
 	}
 	if err != nil {

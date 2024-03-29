@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,17 +23,17 @@ var _ = Describe("[internal][validations][errors]", func() {
 	})
 	Context("#MustUndeployCollector", func() {
 
-		It("should fail when not authorized to collect", func() {
+		It("should pass when not authorized to collect", func() {
 			myerror := &ValidationError{
 				msg: "something" + NotAuthorizedToCollect,
 			}
-			Expect(MustUndeployCollector(myerror)).To(BeFalse())
+			Expect(MustUndeployCollector(myerror)).To(BeTrue())
 		})
-		It("should pass does not mention authorized to collect", func() {
+		It("should fail does not mention authorized to collect", func() {
 			myerror := &ValidationError{
 				msg: "something",
 			}
-			Expect(MustUndeployCollector(myerror)).To(BeTrue())
+			Expect(MustUndeployCollector(myerror)).To(BeFalse())
 		})
 
 	})

@@ -52,7 +52,7 @@ type ClusterLoggingSpec struct {
 	// +nullable
 	Collection *CollectionSpec `json:"collection,omitempty"`
 
-	// Deprecated. Specification of the Curation component for the cluster
+	// Specification of the Curation component for the cluster
 	// This component was specifically for use with Elasticsearch and was
 	// replaced by index management spec
 	//
@@ -62,7 +62,7 @@ type ClusterLoggingSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	Curation *CurationSpec `json:"curation,omitempty"`
 
-	// Deprecated. Specification for Forwarder component for the cluster
+	// Specification for Forwarder component for the cluster
 	// See spec.collection.fluentd
 	//
 	// +nullable
@@ -84,7 +84,6 @@ type ClusterLoggingStatus struct {
 	// +optional
 	LogStore LogStoreStatus `json:"logStore"`
 
-	// Deprecated.
 	// +optional
 	// +deprecated
 	// +nullable
@@ -294,7 +293,7 @@ type CollectionSpec struct {
 	// +kubebuilder:validation:Optional
 	Type LogCollectionType `json:"type"`
 
-	// Deprecated. Specification of Log Collection for the cluster
+	// Specification of Log Collection for the cluster
 	// See spec.collection
 	// +nullable
 	// +optional

@@ -45,7 +45,11 @@ type Application struct {
 	ContainerLimit *LimitSpec `json:"containerLimit,omitempty"`
 
 	// Includes is the set of namespaces and containers to include when collecting logs.
-	// Note: infrastructure namespaces are still excluded for "*" values unless a qualifying glob pattern is specified.
+	//
+	// [NOTE]
+	// ====
+	// Infrastructure namespaces are excluded for `*` values unless a qualifying glob pattern is specified.
+	// ====
 	//
 	// +optional
 	Includes []NamespaceContainerSpec `json:"includes,omitempty"`
@@ -60,14 +64,18 @@ type Application struct {
 type NamespaceContainerSpec struct {
 
 	// Namespace resources. Creates a combined file pattern together with Container resources.
-	// Supports glob patterns and presumes "*" if ommitted.
-	// Note: infrastructure namespaces are still excluded for "*" values unless a qualifying glob pattern is specified.
+	// Supports glob patterns and presumes `*` if ommitted.
+	//
+	// [NOTE]
+	// ====
+	// Infrastructure namespaces are excluded for `*` values unless a qualifying glob pattern is specified.
+	// ====
 	//
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
 
 	// Container resources. Creates a combined file pattern together with Namespace resources.
-	// Supports glob patterns and presumes "*" if ommitted.
+	// Supports glob patterns and presumes `*` if ommitted.
 	//
 	// +optional
 	Container string `json:"container,omitempty"`
@@ -75,7 +83,7 @@ type NamespaceContainerSpec struct {
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.
 // Sources of these logs:
-// * container workloads deployed to namespaces: default, kube*, openshift*
+// * container workloads deployed to namespaces: `default`, `kube*`, `openshift*`
 // * journald logs from cluster nodes
 type Infrastructure struct {
 

@@ -17,31 +17,33 @@ toc::[]
 [id="logging-5-x-reference-ClusterLogForwarder"]
 == ClusterLogForwarder
 
-ClusterLogForwarder is an API to configure forwarding logs.
+You can use the `ClusterLogForwarder` custom resource (CR) to configure log forwarding.
 
-You configure forwarding by specifying a list of `pipelines`,
-which forward from a set of named inputs to a set of named outputs.
+You can configure log forwarding by specifying a list of pipelines which forward logs from a set of named inputs to a set of named outputs.
 
 There are built-in input names for common log categories, and you can
 define custom inputs to do additional filtering.
 
-There is a built-in output name for the default openshift log store, but
+There is a built-in output name for the default {product-title} log store, but
 you can define your own outputs with a URL and other connection information
 to forward logs to other stores or processors, inside or outside the cluster.
-
-For more details see the documentation on the API fields.
 
 [options="header"]
 |======================
 |Property|Type|Description
 
-|spec|object|  Specification of the desired behavior of ClusterLogForwarder
-|status|object|  Status of the ClusterLogForwarder
+| spec
+| object
+| The `spec` struct defines the desired state of the `ClusterLogForwarder` CR.
+
+| status
+| object
+| The `status` field defines the status of the `ClusterLogForwarder` CR.
 |======================
 
 === .spec
 
-ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
+The `spec` struct defines how logs should be forwarded to remote targets.
 
 Type:: object
 
@@ -49,12 +51,73 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|filters|array|  Filters are applied to log records passing through a pipeline.
-|inputs|array|  *(optional)* Inputs are named filters for log messages to be forwarded.
-|outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
-|outputs|array|  *(optional)* Outputs are named destinations for log messages.
-|pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
-|serviceAccountName|string|  *(optional)* ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
+| filters
+| array
+| Filters are applied to log records passing through a pipeline.
+There are different types of filter that can select and modify log records in different ways.
+
+| inputs
+| array
+| Inputs are named filters that are used to forward different types of logs.
+
+There are three default inputs available named `application`, `infrastructure` and
+`audit`. You do not need to define additional custom inputs if those are sufficient for
+your needs.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| outputDefaults
+| object
+| OutputDefaults specify forwarder config explicitly for the
+default managed log store named &#39;default&#39;.  If there is a need to spec
+the managed logstore, define an outputSpec like the following where the
+managed fields (e.g. URL, Secret.Name) will be replaced with the required values:
+spec:
+
+- outputs:
+
+- name: default
+
+type: elasticsearch
+
+elasticsearch:
+
+structuredTypeKey: kubernetes.labels.myvalue
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| outputs
+| array
+| Outputs are named destinations for log messages.
+
+There is a built-in output named `default` which forwards to the default
+{product-title} log store. You can define outputs to forward to other stores or
+log processors, inside or outside the cluster.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| pipelines
+| array
+| Pipelines forward the messages selected by a set of inputs to a set of outputs.
+
+| serviceAccountName
+| string
+| The `ServiceAccountName` field specifies the service account associated with the `ClusterLogForwarder` CR
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.filters[]
@@ -68,11 +131,18 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|kubeAPIAudit|object|  *(optional)* 
-|drop|object|  *(optional)* A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
-|prune|object|  *(optional)* The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
-|name|string|  Name used to refer to the filter from a `pipeline`.
-|type|string|  Type of filter.
+| FilterTypeSpec
+| object
+| 
+
+| name
+| string
+| Name used to refer to the filter from a `pipeline`.
+
+| type
+| string
+| Type of filter.
+
 |======================
 
 === .spec.inputs[]
@@ -86,11 +156,46 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|application|object|  *(optional)* Application, if present, enables named set of `application` logs that
-|audit|object|  *(optional)* Audit, if present, enables `audit` logs.
-|infrastructure|object|  *(optional)* Infrastructure, if present, enables `infrastructure` logs.
-|name|string|  Name used to refer to the input of a `pipeline`.
-|receiver|object|  *(optional)* Receiver to receive logs from non-cluster sources.
+| application
+| object
+| Application, if present, enables named set of `application` logs that
+can specify a set of match criteria
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| audit
+| object
+| Audit, if present, enables `audit` logs.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| infrastructure
+| object
+| Infrastructure, if present, enables `infrastructure` logs.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| name
+| string
+| Name used to refer to the input of a `pipeline`.
+
+| receiver
+| object
+| Receiver to receive logs from non-cluster sources.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application
@@ -104,11 +209,65 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|containerLimit|object|  *(optional)* Container limit applied to each container of the pod(s) selected
-|excludes|array|  *(optional)* Excludes is the set of namespaces and containers to ignore when collecting logs.
-|includes|array|  *(optional)* Includes is the set of namespaces and containers to include when collecting logs.
-|namespaces|array| **(DEPRECATED)** *(optional)* Namespaces from which to collect application logs.
-|selector|object|  *(optional)* Selector for logs from pods with matching labels.
+| containerLimit
+| object
+| Container limit applied to each container of the pod(s) selected
+by this input. No container of pods on selected by this input can
+exceed this limit.  This limit is applied per collector deployment.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| excludes
+| array
+| Excludes is the set of namespaces and containers to ignore when collecting logs.
+Takes precedence over Includes option.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| includes
+| array
+| Includes is the set of namespaces and containers to include when collecting logs.
+
+[NOTE]
+====
+Infrastructure namespaces are excluded for `*` values unless a qualifying glob pattern is specified.
+====
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespaces
+| array
+| Namespaces from which to collect application logs.
+Only messages from these namespaces are collected.
+If absent or empty, logs are collected from all namespaces. This field supports
+globs (e.g. mynam*space, *myanmespace)
+Deprecated: Use []NamespaceContainerSpec instead.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| selector
+| object
+| Selector for logs from pods with matching labels.
+Only messages from pods with these labels are collected.
+If absent or empty, logs are collected regardless of labels.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application.containerLimit
@@ -119,7 +278,11 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+| maxRecordsPerSecond
+| int
+| The `MaxRecordsPerSecond` field defines the maximum number of log records
+allowed per input or output of a pipeline.
+
 |======================
 
 === .spec.inputs[].application.excludes[]
@@ -130,8 +293,31 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|container|string|  *(optional)* Container resources. Creates a combined file pattern together with Namespace resources.
-|namespace|string|  *(optional)* Namespace resources. Creates a combined file pattern together with Container resources.
+| container
+| string
+| Container resources. Creates a combined file pattern together with Namespace resources.
+Supports glob patterns and presumes `*` if ommitted.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespace
+| string
+| Namespace resources. Creates a combined file pattern together with Container resources.
+Supports glob patterns and presumes `*` if ommitted.
+
+[NOTE]
+====
+Infrastructure namespaces are excluded for `*` values unless a qualifying glob pattern is specified.
+====
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application.includes[]
@@ -142,8 +328,31 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|container|string|  *(optional)* Container resources. Creates a combined file pattern together with Namespace resources.
-|namespace|string|  *(optional)* Namespace resources. Creates a combined file pattern together with Container resources.
+| container
+| string
+| Container resources. Creates a combined file pattern together with Namespace resources.
+Supports glob patterns and presumes `*` if ommitted.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespace
+| string
+| Namespace resources. Creates a combined file pattern together with Container resources.
+Supports glob patterns and presumes `*` if ommitted.
+
+[NOTE]
+====
+Infrastructure namespaces are excluded for `*` values unless a qualifying glob pattern is specified.
+====
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application.namespaces[]
@@ -165,8 +374,24 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+| matchExpressions
+| array
+| matchExpressions is a list of label selector requirements. The requirements are ANDed.
+[NOTE]
+====
+This API key is optional.
+====
+
+| matchLabels
+| object
+| matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the
+operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application.selector.matchExpressions[]
@@ -177,9 +402,26 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|key|string|  key is the label key that the selector applies to.
-|operator|string|  operator represents a key&#39;s relationship to a set of values.
-|values|array|  *(optional)* values is an array of string values. If the operator is In or NotIn,
+| key
+| string
+| key is the label key that the selector applies to.
+
+| operator
+| string
+| operator represents a key&#39;s relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.
+
+| values
+| array
+| values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].application.selector.matchExpressions[].values[]
@@ -200,7 +442,17 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|sources|array|  *(optional)* Sources defines the list of audit sources to collect.
+| sources
+| array
+| Sources defines the list of audit sources to collect.
+This field is optional and its exclusion results in the collection of all audit sources. Valid sources are:
+kubeAPI, openshiftAPI, auditd, ovn
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].audit.sources[]
@@ -211,7 +463,7 @@ Type:: array
 
 Infrastructure enables infrastructure logs. Filtering may be added in future.
 Sources of these logs:
-* container workloads deployed to namespaces: default, kube*, openshift*
+* container workloads deployed to namespaces: `default`, `kube*`, `openshift*`
 * journald logs from cluster nodes
 
 Type:: object
@@ -220,7 +472,17 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|sources|array|  *(optional)* Sources defines the list of infrastructure sources to collect.
+| sources
+| array
+| Sources defines the list of infrastructure sources to collect.
+This field is optional and omission results in the collection of all infrastructure sources. Valid sources are:
+node, container
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.inputs[].infrastructure.sources[]
@@ -239,10 +501,30 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|type|string|  *(optional)* Type of Receiver plugin.
+| ReceiverTypeSpec
+| object
+| The ReceiverTypeSpec that handles particular parameters
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| Type of Receiver plugin.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputDefaults
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
 
 Type:: object
 
@@ -250,7 +532,17 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|elasticsearch|object|  *(optional)* Elasticsearch OutputSpec default values
+| elasticsearch
+| object
+| Elasticsearch OutputSpec default values
+
+Any values specified here are used as default values for the Elasticsearch `output` spec.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputDefaults.elasticsearch
@@ -263,9 +555,38 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|enableStructuredContainerLogs|bool|  *(optional)* EnableStructuredContainerLogs enables multi-container structured logs to allow
-|structuredTypeKey|string|  *(optional)* StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
-|structuredTypeName|string|  *(optional)* StructuredTypeName specifies the name of elasticsearch schema
+| enableStructuredContainerLogs
+| bool
+| EnableStructuredContainerLogs enables multi-container structured logs to allow
+forwarding logs from containers within a pod to separate indices.  Annotating
+the pod with key &#39;containerType.logging.openshift.io/&lt;container-name&gt;&#39; and value
+&#39;&lt;structure-type-name&gt;&#39; will forward those container logs to an alternate index
+from that defined by the other &#39;structured&#39; keys here
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| structuredTypeKey
+| string
+| StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
+It takes precedence over StructuredTypeName
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| structuredTypeName
+| string
+| StructuredTypeName specifies the name of elasticsearch schema
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputs[]
@@ -278,23 +599,117 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|syslog|object|  *(optional)* 
-|fluentdForward|object|  *(optional)* 
-|elasticsearch|object|  *(optional)* 
-|kafka|object|  *(optional)* 
-|cloudwatch|object|  *(optional)* 
-|loki|object|  *(optional)* 
-|googleCloudLogging|object|  *(optional)* 
-|splunk|object|  *(optional)* 
-|http|object|  *(optional)* 
-|azureMonitor|object|  *(optional)* 
-|limit|object|  *(optional)* Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
-|name|string|  Name used to refer to the output from a `pipeline`.
-|secret|object|  *(optional)* Secret for authentication.
-|tls|object|  TLS contains settings for controlling options on TLS client connections.
-|tuning|object|  *(optional)* Tuning parameters for the output.  Specifying these parameters will alter the characteristics
-|type|string|  Type of output plugin.
-|url|string|  *(optional)* URL to send log records to.
+| OutputTypeSpec
+| object
+| 
+
+| limit
+| object
+| Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
+to this output from any given collector container. The total log flow from an individual collector
+container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node
+Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| name
+| string
+| Name used to refer to the output from a `pipeline`.
+
+| secret
+| object
+| Secret for authentication.
+
+Names a secret in the same namespace as the `ClusterLogForwarder` CR.
+Sensitive authentication information is stored in a separate Secret object.
+A Secret is like a ConfigMap, where the keys are strings and the values are
+base64-encoded binary data, for example TLS certificates.
+
+Common keys are described here.
+Some output types support additional keys, documented with the output-specific configuration field.
+All secret keys are optional, enable the security features you want by setting the relevant keys.
+
+Transport Layer Security (TLS)
+
+Using a TLS URL (`https://...` or `tls://...`) without any secret enables basic TLS:
+client authenticates server using system default certificate authority.
+
+Additional TLS features are enabled by referencing a Secret with the following optional fields in its spec.data.
+All data fields are base64 encoded.
+
+* `tls.crt`: A client certificate, for mutual authentication. Requires `tls.key`.
+
+* `tls.key`: Private key to unlock the client certificate. Requires `tls.crt`
+
+* `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
+
+* `ca-bundle.crt`: Custom CA to validate certificates.
+
+Username and Password
+
+* `username`: Authentication user name. Requires `password`.
+
+* `password`: Authentication password. Requires `username`.
+
+Simple Authentication Security Layer (SASL)
+
+* `sasl.enable`: (boolean) Explicitly enable or disable SASL.
+
+If missing, SASL is automatically enabled if any `sasl.*` keys are set.
+
+* `sasl.mechanisms`: (array of string) List of allowed SASL mechanism names.
+
+If missing or empty, the system defaults are used.
+
+* `sasl.allow-insecure`: (boolean) Allow mechanisms that send clear-text passwords.
+
+Default false.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| tls
+| object
+| TLS contains settings for controlling options on TLS client connections.
+
+| tuning
+| object
+| Tuning parameters for the output.  Specifying these parameters will alter the characteristics
+of log forwarder which may be different from its behavior without the tuning.
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| Type of output plugin.
+
+| url
+| string
+| URL to send log records to.
+
+An absolute URL, with a scheme. Valid schemes depend on `type`.
+Special schemes `tcp`, `tls`, `udp` and `udps` are used for types that
+have no scheme of their own. For example, to send syslog records using secure UDP:
+
+{ type: syslog, url: udps://syslog.example.com:1234 }
+
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+Any additional authentication material is in the `secret`.
+See the `secret` field for more details.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputs[].limit
@@ -305,7 +720,11 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+| maxRecordsPerSecond
+| int
+| The `MaxRecordsPerSecond` field defines the maximum number of log records
+allowed per input or output of a pipeline.
+
 |======================
 
 === .spec.outputs[].secret
@@ -318,7 +737,10 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|name|string|  Name of a secret in the namespace configured for log forwarder secrets.
+| name
+| string
+| Name of a secret in the namespace configured for log forwarder secrets.
+
 |======================
 
 === .spec.outputs[].tls
@@ -331,8 +753,15 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|insecureSkipVerify|bool|  If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
-|securityProfile|object|  TLSSecurityProfile is the security profile to apply to the output connection
+| insecureSkipVerify
+| bool
+| If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
+
+This option is *not* recommended for production configurations.
+
+| securityProfile
+| object
+| TLSSecurityProfile is the security profile to apply to the output connection
 |======================
 
 === .spec.outputs[].tls.securityProfile
@@ -343,11 +772,188 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
-|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
-|modern|object|  *(optional)* modern is a TLS security profile based on:
-|old|object|  *(optional)* old is a TLS security profile based on:
-|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
+| custom
+| object
+| custom is a user-defined TLS security profile. Be extremely careful using a custom
+profile as invalid configurations can be catastrophic. An example custom profile
+looks like this:
+
+ciphers:
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+minTLSVersion: VersionTLS11
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| intermediate
+| object
+| intermediate is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES256-GCM-SHA384
+
+- ECDHE-RSA-AES256-GCM-SHA384
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- DHE-RSA-AES128-GCM-SHA256
+
+- DHE-RSA-AES256-GCM-SHA384
+
+minTLSVersion: VersionTLS12
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| modern
+| object
+| modern is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+minTLSVersion: VersionTLS13
+
+NOTE: Currently unsupported.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| old
+| object
+| old is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES256-GCM-SHA384
+
+- ECDHE-RSA-AES256-GCM-SHA384
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- DHE-RSA-AES128-GCM-SHA256
+
+- DHE-RSA-AES256-GCM-SHA384
+
+- DHE-RSA-CHACHA20-POLY1305
+
+- ECDHE-ECDSA-AES128-SHA256
+
+- ECDHE-RSA-AES128-SHA256
+
+- ECDHE-ECDSA-AES128-SHA
+
+- ECDHE-RSA-AES128-SHA
+
+- ECDHE-ECDSA-AES256-SHA384
+
+- ECDHE-RSA-AES256-SHA384
+
+- ECDHE-ECDSA-AES256-SHA
+
+- ECDHE-RSA-AES256-SHA
+
+- DHE-RSA-AES128-SHA256
+
+- DHE-RSA-AES256-SHA256
+
+- AES128-GCM-SHA256
+
+- AES256-GCM-SHA384
+
+- AES128-SHA256
+
+- AES256-SHA256
+
+- AES128-SHA
+
+- AES256-SHA
+
+- DES-CBC3-SHA
+
+minTLSVersion: VersionTLS10
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| type is one of Old, Intermediate, Modern or Custom. Custom provides
+the ability to specify individual TLS security profile parameters.
+Old, Intermediate and Modern are TLS security profiles based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations
+
+The profiles are intent based, so they may change over time as new ciphers are developed and existing ciphers
+are found to be insecure.  Depending on precisely which ciphers are available to a process, the list may be
+reduced.
+
+Note that the Modern profile is currently not supported because it is not
+yet well adopted by common software libraries.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputs[].tls.securityProfile.custom
@@ -358,8 +964,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
-|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
+| TLSProfileSpec
+| object
+| 
 |======================
 
 === .spec.outputs[].tls.securityProfile.intermediate
@@ -384,11 +991,56 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|compression|string|  *(optional)* Compression causes data to be compressed before sending over the network.
-|delivery|string|  Delivery mode for log forwarding.
-|maxRetryDuration|Duration|  *(optional)* MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
-|maxWrite|object|  *(optional)* MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
-|minRetryDuration|Duration|  *(optional)* MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+| compression
+| string
+| Compression causes data to be compressed before sending over the network.
+It is an error if the compression type is not supported by the  output.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| delivery
+| string
+| Delivery mode for log forwarding.
+
+- AtLeastOnce (default): if the forwarder crashes or is re-started, any logs that were read before
+
+the crash but not sent to their destination will be re-read and re-sent. Note it is possible
+
+that some logs are duplicated in the event of a crash - log records are delivered at-least-once.
+- AtMostOnce: The forwarder makes no effort to recover logs lost during a crash. This mode may give
+
+better throughput, but could result in more log loss.
+
+| maxRetryDuration
+| Duration
+| MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| maxWrite
+| object
+| MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| minRetryDuration
+| Duration
+| MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.outputs[].tuning.maxRetryDuration
@@ -403,10 +1055,22 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|Format|string|  Change Format at will. See the comment for Canonicalize for
-|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
-|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
-|s|string|  s is the generated value of this quantity to avoid recalculation
+| Format
+| string
+| Change Format at will. See the comment for Canonicalize for
+more details.
+
+| d
+| object
+| d is the quantity in inf.Dec form if d.Dec != nil
+
+| i
+| int
+| i is the quantity in int64 scaled form, if d.Dec == nil
+
+| s
+| string
+| s is the generated value of this quantity to avoid recalculation
 |======================
 
 === .spec.outputs[].tuning.maxWrite.d
@@ -417,7 +1081,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|Dec|object|  
+| Dec
+| object
+| 
 |======================
 
 === .spec.outputs[].tuning.maxWrite.d.Dec
@@ -428,8 +1094,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|scale|int|  
-|unscaled|object|  
+| scale
+| int
+| 
+
+| unscaled
+| object
+| 
 |======================
 
 === .spec.outputs[].tuning.maxWrite.d.Dec.unscaled
@@ -440,8 +1111,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|abs|Word|  sign
-|neg|bool|  
+| abs
+| Word
+| sign
+
+| neg
+| bool
+| 
 |======================
 
 === .spec.outputs[].tuning.maxWrite.d.Dec.unscaled.abs
@@ -456,8 +1132,13 @@ Type:: int
 |======================
 |Property|Type|Description
 
-|scale|int|  
-|value|int|  
+| scale
+| int
+| 
+
+| value
+| int
+| 
 |======================
 
 === .spec.outputs[].tuning.minRetryDuration
@@ -474,13 +1155,75 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|detectMultilineErrors|bool|  *(optional)* DetectMultilineErrors enables multiline error detection of container logs
-|filterRefs|array|  *(optional)* Filters lists the names of filters to be applied to records going through this pipeline.
-|inputRefs|array|  InputRefs lists the names (`input.name`) of inputs to this pipeline.
-|labels|object|  *(optional)* Labels applied to log records passing through this pipeline.
-|name|string|  *(optional)* Name is optional, but must be unique in the `pipelines` list if provided.
-|outputRefs|array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
-|parse|string|  *(optional)* Parse enables parsing of log entries into structured logs
+| detectMultilineErrors
+| bool
+| The `DetectMultilineErrors` field enables multiline error detection of container logs.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| filterRefs
+| array
+| Filters lists the names of filters to be applied to records going through this pipeline.
+
+Each filter is applied in order.
+If a filter drops a records, subsequent filters are not applied.
+[NOTE]
+====
+This API key is optional.
+====
+
+| inputRefs
+| array
+| InputRefs lists the names (`input.name`) of inputs to this pipeline.
+
+The following built-in input names are always available:
+
+`application` selects all logs from application pods.
+
+`infrastructure` selects logs from {product-title} and kubernetes pods and some node logs.
+
+`audit` selects node logs related to security audits.
+
+| labels
+| object
+| Labels applied to log records passing through this pipeline.
+These labels appear in the `openshift.labels` map in the log record.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| name
+| string
+| Name is optional, but must be unique in the `pipelines` list if provided.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| outputRefs
+| array
+| OutputRefs lists the names (`output.name`) of outputs from this pipeline.
+
+The following built-in names are always available:
+
+&#39;default&#39; Output to the default log store provided by ClusterLogging.
+
+| parse
+| string
+| The `parse` field enables parsing of log entries into structured logs.
+Logs are parsed according to parse value. Currently, the only supported parse value is `json`.
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.pipelines[].filterRefs[]
@@ -501,7 +1244,7 @@ Type:: array
 
 === .status
 
-ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+The `ClusterLogForwarder` CR `status` field defines the observed state of the `ClusterLogForwarder` CR.
 
 Type:: object
 
@@ -509,11 +1252,25 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|conditions|object|  Conditions of the log forwarder.
-|filters|Conditions|  Filters maps filter name to condition of the filter.
-|inputs|Conditions|  Inputs maps input name to condition of the input.
-|outputs|Conditions|  Outputs maps output name to condition of the output.
-|pipelines|Conditions|  Pipelines maps pipeline name to condition of the pipeline.
+| conditions
+| object
+| Conditions of the log forwarder.
+
+| filters
+| Conditions
+| Filters maps filter name to condition of the filter.
+
+| inputs
+| Conditions
+| Inputs maps input name to condition of the input.
+
+| outputs
+| Conditions
+| Outputs maps output name to condition of the output.
+
+| pipelines
+| Conditions
+| Pipelines maps pipeline name to condition of the pipeline.
 |======================
 
 === .status.conditions
@@ -545,8 +1302,13 @@ A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clust
 |======================
 |Property|Type|Description
 
-|spec|object|  Specification of the desired behavior of ClusterLogging
-|status|object|  Status defines the observed state of ClusterLogging
+| spec
+| object
+| Specification of the desired behavior of ClusterLogging
+
+| status
+| object
+| Status defines the observed state of ClusterLogging
 |======================
 
 === .spec
@@ -559,12 +1321,58 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|collection|object|  Specification of the Collection component for the cluster
-|curation|object| **(DEPRECATED)** *(optional)* Deprecated. Specification of the Curation component for the cluster
-|forwarder|object| **(DEPRECATED)** *(optional)* Deprecated. Specification for Forwarder component for the cluster
-|logStore|object|  *(optional)* Specification of the Log Storage component for the cluster
-|managementState|string|  *(optional)* Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
-|visualization|object|  *(optional)* Specification of the Visualization component for the cluster
+| collection
+| object
+| Specification of the Collection component for the cluster
+
+| curation
+| object
+| Specification of the Curation component for the cluster
+This component was specifically for use with Elasticsearch and was
+replaced by index management spec
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| forwarder
+| object
+| Specification for Forwarder component for the cluster
+See spec.collection.fluentd
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| logStore
+| object
+| Specification of the Log Storage component for the cluster
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| managementState
+| string
+| Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| visualization
+| object
+| Specification of the Visualization component for the cluster
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection
@@ -577,12 +1385,34 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|resources|object|  *(optional)* The resource requirements for the collector
-|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
-|fluentd|object|  *(optional)* Fluentd represents the configuration for forwarders of type fluentd.
-|logs|object| **(DEPRECATED)** *(optional)* Deprecated. Specification of Log Collection for the cluster
-|type|string|  The type of Log Collection to configure
+| CollectorSpec
+| object
+| CollectorSpec is the common specification that applies to any collector
+[NOTE]
+====
+This API key is optional.
+====
+
+| fluentd
+| object
+| Fluentd represents the configuration for forwarders of type fluentd.
+[NOTE]
+====
+This API key is optional.
+====
+
+| logs
+| object
+| Specification of Log Collection for the cluster
+See spec.collection
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| The type of Log Collection to configure
 |======================
 
 === .spec.collection.fluentd
@@ -595,8 +1425,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|buffer|object|  
-|inFile|object|  
+| buffer
+| object
+| 
+
+| inFile
+| object
+| 
 |======================
 
 === .spec.collection.fluentd.buffer
@@ -621,16 +1456,108 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|chunkLimitSize|string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
-|flushInterval|string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
-|flushMode|string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
-|flushThreadCount|int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
-|overflowAction|string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
-|retryMaxInterval|string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
-|retryTimeout|string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
-|retryType|string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
-|retryWait|string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
-|totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+| chunkLimitSize
+| string
+| ChunkLimitSize represents the maximum size of each chunk. Events will be
+written into chunks until the size of chunks become this size.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushInterval
+| string
+| FlushInterval represents the time duration to wait between two consecutive flush
+operations. Takes only effect used together with `flushMode: interval`.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushMode
+| string
+| FlushMode represents the mode of the flushing thread to write chunks. The mode
+allows lazy (if `time` parameter set), per interval or immediate flushing.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushThreadCount
+| int
+| FlushThreadCount reprents the number of threads used by the fluentd buffer
+plugin to flush/write chunks in parallel.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| overflowAction
+| string
+| OverflowAction represents the action for the fluentd buffer plugin to
+execute when a buffer queue is full. (Default: block)
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryMaxInterval
+| string
+| RetryMaxInterval represents the maximum time interval for exponential backoff
+between retries. Takes only effect if used together with `retryType: exponential_backoff`.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryTimeout
+| string
+| RetryTimeout represents the maximum time interval to attempt retries before giving up
+and the record is disguarded.  If unspecified, the default will be used
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryType
+| string
+| RetryType represents the type of retrying flush operations. Flush operations can
+be retried either periodically or by applying exponential backoff.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryWait
+| string
+| RetryWait represents the time duration between two consecutive retries to flush
+buffers for periodic retries or a constant factor of time on retries with exponential
+backoff.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| totalLimitSize
+| string
+| TotalLimitSize represents the threshold of node space allowed per fluentd
+buffer to allocate. Once this threshold is reached, all append operations
+will fail with error (and data will be lost).
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection.fluentd.inFile
@@ -647,7 +1574,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+| readLinesLimit
+| int
+| ReadLinesLimit represents the number of lines to read with each I/O operation
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection.logs
@@ -666,8 +1600,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|fluentd|object|  Specification of the Fluentd Log Collection component
-|type|string|  The type of Log Collection to configure
+| fluentd
+| object
+| Specification of the Fluentd Log Collection component
+
+| type
+| string
+| The type of Log Collection to configure
 |======================
 
 === .spec.collection.logs.fluentd
@@ -680,9 +1619,30 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
-|resources|object|  *(optional)* The resource requirements for the collector
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+[NOTE]
+====
+This API key is optional.
+====
+
+| resources
+| object
+| The resource requirements for the collector
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerations
+| array
+| Define the tolerations the Pods will accept
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection.logs.fluentd.nodeSelector
@@ -697,9 +1657,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection.logs.fluentd.resources.claims[]
@@ -710,7 +1702,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.collection.logs.fluentd.resources.limits
@@ -729,11 +1725,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.collection.logs.fluentd.tolerations[].tolerationSeconds
@@ -755,8 +1795,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|curator|object|  The specification of curation to configure
-|type|string|  The kind of curation to configure
+| curator
+| object
+| The specification of curation to configure
+
+| type
+| string
+| The kind of curation to configure
 |======================
 
 === .spec.curation.curator
@@ -767,10 +1812,26 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|resources|object|  *(optional)* The resource requirements for Curator
-|schedule|string|  The cron schedule that the Curator job is run. Defaults to &#34;30 3 * * *&#34;
-|tolerations|array|  
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+
+| resources
+| object
+| The resource requirements for Curator
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| schedule
+| string
+| The cron schedule that the Curator job is run. Defaults to &#34;30 3 * * *&#34;
+
+| tolerations
+| array
+| 
 |======================
 
 === .spec.curation.curator.nodeSelector
@@ -785,9 +1846,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.curation.curator.resources.claims[]
@@ -798,7 +1891,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.curation.curator.resources.limits
@@ -817,11 +1914,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.curation.curator.tolerations[].tolerationSeconds
@@ -846,7 +1987,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|fluentd|object|  
+| fluentd
+| object
+| 
 |======================
 
 === .spec.forwarder.fluentd
@@ -859,8 +2002,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|buffer|object|  
-|inFile|object|  
+| buffer
+| object
+| 
+
+| inFile
+| object
+| 
 |======================
 
 === .spec.forwarder.fluentd.buffer
@@ -885,16 +2033,108 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|chunkLimitSize|string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
-|flushInterval|string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
-|flushMode|string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
-|flushThreadCount|int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
-|overflowAction|string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
-|retryMaxInterval|string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
-|retryTimeout|string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
-|retryType|string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
-|retryWait|string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
-|totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+| chunkLimitSize
+| string
+| ChunkLimitSize represents the maximum size of each chunk. Events will be
+written into chunks until the size of chunks become this size.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushInterval
+| string
+| FlushInterval represents the time duration to wait between two consecutive flush
+operations. Takes only effect used together with `flushMode: interval`.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushMode
+| string
+| FlushMode represents the mode of the flushing thread to write chunks. The mode
+allows lazy (if `time` parameter set), per interval or immediate flushing.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| flushThreadCount
+| int
+| FlushThreadCount reprents the number of threads used by the fluentd buffer
+plugin to flush/write chunks in parallel.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| overflowAction
+| string
+| OverflowAction represents the action for the fluentd buffer plugin to
+execute when a buffer queue is full. (Default: block)
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryMaxInterval
+| string
+| RetryMaxInterval represents the maximum time interval for exponential backoff
+between retries. Takes only effect if used together with `retryType: exponential_backoff`.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryTimeout
+| string
+| RetryTimeout represents the maximum time interval to attempt retries before giving up
+and the record is disguarded.  If unspecified, the default will be used
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryType
+| string
+| RetryType represents the type of retrying flush operations. Flush operations can
+be retried either periodically or by applying exponential backoff.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| retryWait
+| string
+| RetryWait represents the time duration between two consecutive retries to flush
+buffers for periodic retries or a constant factor of time on retries with exponential
+backoff.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| totalLimitSize
+| string
+| TotalLimitSize represents the threshold of node space allowed per fluentd
+buffer to allocate. Once this threshold is reached, all append operations
+will fail with error (and data will be lost).
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.forwarder.fluentd.inFile
@@ -911,7 +2151,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+| readLinesLimit
+| int
+| ReadLinesLimit represents the number of lines to read with each I/O operation
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore
@@ -924,10 +2171,40 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|elasticsearch|object| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
-|lokistack|object|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
-|retentionPolicy|object| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
-|type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+| elasticsearch
+| object
+| Specification of the Elasticsearch Log Store component
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+| lokistack
+| object
+| LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+
+The cluster-logging-operator does not create or manage the referenced LokiStack.
+
+| retentionPolicy
+| object
+| Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+managed by elasticsearch-operator or Loki managed by loki-operator (LokiStack) as a default log store.
+
+When using ElasticSearch as a log store this operator also manages the ElasticSearch deployment.
+
+When using LokiStack as a log store this operator does not manage the LokiStack, but only creates
+configuration referencing an existing LokiStack deployment. The user is responsible for creating and
+managing the LokiStack himself.
+
 |======================
 
 === .spec.logStore.elasticsearch
@@ -943,13 +2220,47 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|nodeCount|int|  Number of nodes to deploy for Elasticsearch
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|proxy|object|  Specification of the Elasticsearch Proxy component
-|redundancyPolicy|string|  *(optional)* 
-|resources|object|  *(optional)* The resource requirements for Elasticsearch
-|storage|object|  *(optional)* The storage specification for Elasticsearch data nodes
-|tolerations|array|  
+| nodeCount
+| int
+| Number of nodes to deploy for Elasticsearch
+
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+
+| proxy
+| object
+| Specification of the Elasticsearch Proxy component
+
+| redundancyPolicy
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| resources
+| object
+| The resource requirements for Elasticsearch
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| storage
+| object
+| The storage specification for Elasticsearch data nodes
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerations
+| array
+| 
 |======================
 
 === .spec.logStore.elasticsearch.nodeSelector
@@ -964,7 +2275,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|resources|object|  
+| resources
+| object
+| 
 |======================
 
 === .spec.logStore.elasticsearch.proxy.resources
@@ -975,9 +2288,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.elasticsearch.proxy.resources.claims[]
@@ -988,7 +2333,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.logStore.elasticsearch.proxy.resources.limits
@@ -1007,9 +2356,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.elasticsearch.resources.claims[]
@@ -1020,7 +2401,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.logStore.elasticsearch.resources.limits
@@ -1039,8 +2424,19 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|size|object|  The max storage capacity for the node to provision.
-|storageClassName|string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
+| size
+| object
+| The max storage capacity for the node to provision.
+
+| storageClassName
+| string
+| The name of the storage class to use with creating the node&#39;s PVC.
+More info: https://kubernetes.io/docs/concepts/storage/storage-classes/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.elasticsearch.storage.size
@@ -1051,10 +2447,22 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|Format|string|  Change Format at will. See the comment for Canonicalize for
-|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
-|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
-|s|string|  s is the generated value of this quantity to avoid recalculation
+| Format
+| string
+| Change Format at will. See the comment for Canonicalize for
+more details.
+
+| d
+| object
+| d is the quantity in inf.Dec form if d.Dec != nil
+
+| i
+| int
+| i is the quantity in int64 scaled form, if d.Dec == nil
+
+| s
+| string
+| s is the generated value of this quantity to avoid recalculation
 |======================
 
 === .spec.logStore.elasticsearch.storage.size.d
@@ -1065,7 +2473,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|Dec|object|  
+| Dec
+| object
+| 
 |======================
 
 === .spec.logStore.elasticsearch.storage.size.d.Dec
@@ -1076,8 +2486,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|scale|int|  
-|unscaled|object|  
+| scale
+| int
+| 
+
+| unscaled
+| object
+| 
 |======================
 
 === .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled
@@ -1088,8 +2503,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|abs|Word|  sign
-|neg|bool|  
+| abs
+| Word
+| sign
+
+| neg
+| bool
+| 
 |======================
 
 === .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs
@@ -1104,8 +2524,13 @@ Type:: int
 |======================
 |Property|Type|Description
 
-|scale|int|  
-|value|int|  
+| scale
+| int
+| 
+
+| value
+| int
+| 
 |======================
 
 === .spec.logStore.elasticsearch.tolerations[]
@@ -1116,11 +2541,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.elasticsearch.tolerations[].tolerationSeconds
@@ -1138,7 +2607,10 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|name|string|  Name of the LokiStack resource.
+| name
+| string
+| Name of the LokiStack resource.
+
 |======================
 
 === .spec.logStore.retentionPolicy
@@ -1154,9 +2626,17 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|application|object|  
-|audit|object|  
-|infra|object|  
+| application
+| object
+| 
+
+| audit
+| object
+| 
+
+| infra
+| object
+| 
 |======================
 
 === .spec.logStore.retentionPolicy.application
@@ -1167,10 +2647,38 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| diskThresholdPercent
+| int
+| The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+[NOTE]
+====
+This API key is optional.
+====
+
+| maxAge
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespaceSpec
+| array
+| The per namespace specification to delete documents older than a given minimum age
+[NOTE]
+====
+This API key is optional.
+====
+
+| pruneNamespacesInterval
+| string
+| How often to run a new prune-namespaces job
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.retentionPolicy.application.namespaceSpec[]
@@ -1181,8 +2689,18 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| minAge
+| string
+| Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespace
+| string
+| Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
 |======================
 
 === .spec.logStore.retentionPolicy.audit
@@ -1193,10 +2711,38 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| diskThresholdPercent
+| int
+| The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+[NOTE]
+====
+This API key is optional.
+====
+
+| maxAge
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespaceSpec
+| array
+| The per namespace specification to delete documents older than a given minimum age
+[NOTE]
+====
+This API key is optional.
+====
+
+| pruneNamespacesInterval
+| string
+| How often to run a new prune-namespaces job
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.retentionPolicy.audit.namespaceSpec[]
@@ -1207,8 +2753,18 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| minAge
+| string
+| Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespace
+| string
+| Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
 |======================
 
 === .spec.logStore.retentionPolicy.infra
@@ -1219,10 +2775,38 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| diskThresholdPercent
+| int
+| The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+[NOTE]
+====
+This API key is optional.
+====
+
+| maxAge
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespaceSpec
+| array
+| The per namespace specification to delete documents older than a given minimum age
+[NOTE]
+====
+This API key is optional.
+====
+
+| pruneNamespacesInterval
+| string
+| How often to run a new prune-namespaces job
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.logStore.retentionPolicy.infra.namespaceSpec[]
@@ -1233,8 +2817,18 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| minAge
+| string
+| Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+[NOTE]
+====
+This API key is optional.
+====
+
+| namespace
+| string
+| Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
 |======================
 
 === .spec.visualization
@@ -1247,11 +2841,40 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
-|type|string|  The type of Visualization to configure
+| kibana
+| object
+| Specification of the Kibana Visualization component
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+
+| ocpConsole
+| object
+| OCPConsole is the specification for the OCP console plugin
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerations
+| array
+| Define the tolerations the Pods will accept
+[NOTE]
+====
+This API key is optional.
+====
+
+| type
+| string
+| The type of Visualization to configure
+
 |======================
 
 === .spec.visualization.kibana
@@ -1267,11 +2890,45 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|nodeSelector|object| **(DEPRECATED)** Define which Nodes the Pods are scheduled on.
-|proxy|object|  Specification of the Kibana Proxy component
-|replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
-|resources|object|  *(optional)* The resource requirements for Kibana
-|tolerations|array| **(DEPRECATED)** Define the tolerations the Pods will accept
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+| proxy
+| object
+| Specification of the Kibana Proxy component
+
+| replicas
+| int
+| Number of instances to deploy for a Kibana deployment
+[NOTE]
+====
+This API key is optional.
+====
+
+| resources
+| object
+| The resource requirements for Kibana
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerations
+| array
+| Define the tolerations the Pods will accept
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
 |======================
 
 === .spec.visualization.kibana.nodeSelector
@@ -1291,7 +2948,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|resources|object|  
+| resources
+| object
+| 
 |======================
 
 === .spec.visualization.kibana.proxy.resources
@@ -1302,9 +2961,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.visualization.kibana.proxy.resources.claims[]
@@ -1315,7 +3006,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.visualization.kibana.proxy.resources.limits
@@ -1338,9 +3033,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.visualization.kibana.resources.claims[]
@@ -1351,7 +3078,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.visualization.kibana.resources.limits
@@ -1375,11 +3106,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.visualization.kibana.tolerations[].tolerationSeconds
@@ -1398,8 +3173,24 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|logsLimit|int|  *(optional)* LogsLimit is the max number of entries returned for a query.
-|timeout|string|  *(optional)* Timeout is the max duration before a query timeout
+| logsLimit
+| int
+| LogsLimit is the max number of entries returned for a query.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| timeout
+| string
+| Timeout is the max duration before a query timeout
+
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.visualization.tolerations[]
@@ -1410,11 +3201,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.visualization.tolerations[].tolerationSeconds
@@ -1431,11 +3266,46 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|collection|object| **(DEPRECATED)** *(optional)* Deprecated.
-|conditions|object|  *(optional)* 
-|curation|object| **(DEPRECATED)** *(optional)* 
-|logStore|object|  *(optional)* 
-|visualization|object|  *(optional)* 
+| collection
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| conditions
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| curation
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| logStore
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| visualization
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.collection
@@ -1451,7 +3321,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|logs|object|  *(optional)* 
+| logs
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.collection.logs
@@ -1462,7 +3339,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|fluentdStatus|object|  *(optional)* 
+| fluentdStatus
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.collection.logs.fluentdStatus
@@ -1473,10 +3357,38 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|clusterCondition|object|  *(optional)* 
-|daemonSet|string|  *(optional)* 
-|nodes|object|  *(optional)* 
-|pods|string|  *(optional)* 
+| clusterCondition
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| daemonSet
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| nodes
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| pods
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.collection.logs.fluentdStatus.clusterCondition
@@ -1506,7 +3418,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|curatorStatus|array|  *(optional)* 
+| curatorStatus
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.curation.curatorStatus[]
@@ -1517,10 +3436,38 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|clusterCondition|object|  *(optional)* 
-|cronJobs|string|  *(optional)* 
-|schedules|string|  *(optional)* 
-|suspended|bool|  *(optional)* 
+| clusterCondition
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| cronJobs
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| schedules
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| suspended
+| bool
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.curation.curatorStatus[].clusterCondition
@@ -1537,7 +3484,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|elasticsearchStatus|array|  *(optional)* 
+| elasticsearchStatus
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.logStore.elasticsearchStatus[]
@@ -1548,17 +3502,94 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|cluster|object|  *(optional)* 
-|clusterConditions|object|  *(optional)* 
-|clusterHealth|string|  *(optional)* 
-|clusterName|string|  *(optional)* 
-|deployments|array|  *(optional)* 
-|nodeConditions|object|  *(optional)* 
-|nodeCount|int|  *(optional)* 
-|pods|object|  *(optional)* 
-|replicaSets|array|  *(optional)* 
-|shardAllocationEnabled|string|  *(optional)* 
-|statefulSets|array|  *(optional)* 
+| cluster
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| clusterConditions
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| clusterHealth
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| clusterName
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| deployments
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| nodeConditions
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| nodeCount
+| int
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| pods
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| replicaSets
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| shardAllocationEnabled
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| statefulSets
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.logStore.elasticsearchStatus[].cluster
@@ -1569,15 +3600,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|activePrimaryShards|int|  The number of Active Primary Shards for the Elasticsearch Cluster
-|activeShards|int|  The number of Active Shards for the Elasticsearch Cluster
-|initializingShards|int|  The number of Initializing Shards for the Elasticsearch Cluster
-|numDataNodes|int|  The number of Data Nodes for the Elasticsearch Cluster
-|numNodes|int|  The number of Nodes for the Elasticsearch Cluster
-|pendingTasks|int|  
-|relocatingShards|int|  The number of Relocating Shards for the Elasticsearch Cluster
-|status|string|  The current Status of the Elasticsearch Cluster
-|unassignedShards|int|  The number of Unassigned Shards for the Elasticsearch Cluster
+| activePrimaryShards
+| int
+| The number of Active Primary Shards for the Elasticsearch Cluster
+
+| activeShards
+| int
+| The number of Active Shards for the Elasticsearch Cluster
+
+| initializingShards
+| int
+| The number of Initializing Shards for the Elasticsearch Cluster
+
+| numDataNodes
+| int
+| The number of Data Nodes for the Elasticsearch Cluster
+
+| numNodes
+| int
+| The number of Nodes for the Elasticsearch Cluster
+
+| pendingTasks
+| int
+| 
+
+| relocatingShards
+| int
+| The number of Relocating Shards for the Elasticsearch Cluster
+
+| status
+| string
+| The current Status of the Elasticsearch Cluster
+
+| unassignedShards
+| int
+| The number of Unassigned Shards for the Elasticsearch Cluster
 |======================
 
 === .status.logStore.elasticsearchStatus[].clusterConditions
@@ -1612,7 +3669,14 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|kibanaStatus|array|  *(optional)* 
+| kibanaStatus
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.visualization.kibanaStatus[]
@@ -1623,11 +3687,46 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|clusterCondition|object|  *(optional)* 
-|deployment|string|  *(optional)* 
-|pods|string|  *(optional)* The status for each of the Kibana pods for the Visualization component
-|replicaSets|array|  *(optional)* 
-|replicas|int|  *(optional)* 
+| clusterCondition
+| object
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| deployment
+| string
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| pods
+| string
+| The status for each of the Kibana pods for the Visualization component
+[NOTE]
+====
+This API key is optional.
+====
+
+| replicaSets
+| array
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
+| replicas
+| int
+| 
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .status.visualization.kibanaStatus[].clusterCondition
@@ -1647,8 +3746,13 @@ A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the
 |======================
 |Property|Type|Description
 
-|spec|object|  
-|status|object|  
+| spec
+| object
+| 
+
+| status
+| object
+| 
 |======================
 
 === .spec
@@ -1661,9 +3765,30 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
-|resources|object|  *(optional)* The resource requirements for the LogFileMetricExporter
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+| nodeSelector
+| object
+| Define which Nodes the Pods are scheduled on.
+[NOTE]
+====
+This API key is optional.
+====
+
+| resources
+| object
+| The resource requirements for the LogFileMetricExporter
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerations
+| array
+| Define the tolerations the Pods will accept
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.nodeSelector
@@ -1678,9 +3803,41 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| claims
+| array
+| Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+[NOTE]
+====
+This API key is optional.
+====
+
+| limits
+| object
+| Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
+| requests
+| object
+| Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.resources.claims[]
@@ -1691,7 +3848,11 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+| name
+| string
+| Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
 |======================
 
 === .spec.resources.limits
@@ -1710,11 +3871,55 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| effect
+| string
+| Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+[NOTE]
+====
+This API key is optional.
+====
+
+| key
+| string
+| Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+[NOTE]
+====
+This API key is optional.
+====
+
+| operator
+| string
+| Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+[NOTE]
+====
+This API key is optional.
+====
+
+| tolerationSeconds
+| int
+| TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+[NOTE]
+====
+This API key is optional.
+====
+
+| value
+| string
+| Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+[NOTE]
+====
+This API key is optional.
+====
+
 |======================
 
 === .spec.tolerations[].tolerationSeconds
@@ -1731,7 +3936,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|conditions|object|  Conditions of the Log File Metrics Exporter.
+| conditions
+| object
+| Conditions of the Log File Metrics Exporter.
 |======================
 
 === .status.conditions

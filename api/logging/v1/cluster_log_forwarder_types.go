@@ -25,14 +25,14 @@ import (
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
-// ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
+// The `spec` struct defines how logs should be forwarded to remote targets.
 type ClusterLogForwarderSpec struct {
 
-	// Inputs are named filters for log messages to be forwarded.
+	// Inputs are named filters that are used to forward different types of logs.
 	//
-	// There are three built-in inputs named `application`, `infrastructure` and
-	// `audit`. You don't need to define inputs here if those are sufficient for
-	// your needs. See `inputRefs` for more.
+	// There are three default inputs available named `application`, `infrastructure` and
+	// `audit`. You do not need to define additional custom inputs if those are sufficient for
+	// your needs.
 	//
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Inputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderInputs"}
@@ -41,7 +41,7 @@ type ClusterLogForwarderSpec struct {
 	// Outputs are named destinations for log messages.
 	//
 	// There is a built-in output named `default` which forwards to the default
-	// openshift log store. You can define outputs to forward to other stores or
+	// {product-title} log store. You can define outputs to forward to other stores or
 	// log processors, inside or outside the cluster.
 	//
 	// +optional
@@ -50,7 +50,6 @@ type ClusterLogForwarderSpec struct {
 
 	// Filters are applied to log records passing through a pipeline.
 	// There are different types of filter that can select and modify log records in different ways.
-	// See [FilterTypeSpec] for a list of filter types.
 	Filters []FilterSpec `json:"filters,omitempty"`
 
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
@@ -59,12 +58,12 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
-	// ServiceAccountName is the serviceaccount associated with the clusterlogforwarder
+	// The `ServiceAccountName` field specifies the service account associated with the `ClusterLogForwarder` CR
 	//
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// DEPRECATED OutputDefaults specify forwarder config explicitly for the
+	// OutputDefaults specify forwarder config explicitly for the
 	// default managed log store named 'default'.  If there is a need to spec
 	// the managed logstore, define an outputSpec like the following where the
 	// managed fields (e.g. URL, Secret.Name) will be replaced with the required values:
@@ -76,10 +75,11 @@ type ClusterLogForwarderSpec struct {
 	//         structuredTypeKey: kubernetes.labels.myvalue
 	//
 	// +optional
+	// +deprecated
 	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
 }
 
-// ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+// The `ClusterLogForwarder` CR `status` field defines the observed state of the `ClusterLogForwarder` CR.
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderConditions"}
@@ -173,7 +173,7 @@ type OutputSpec struct {
 
 	// Secret for authentication.
 	//
-	// Names a secret in the same namespace as the ClusterLogForwarder.
+	// Names a secret in the same namespace as the `ClusterLogForwarder` CR.
 	// Sensitive authentication information is stored in a separate Secret object.
 	// A Secret is like a ConfigMap, where the keys are strings and the values are
 	// base64-encoded binary data, for example TLS certificates.
@@ -323,7 +323,7 @@ type PipelineSpec struct {
 	//
 	// `application` selects all logs from application pods.
 	//
-	// `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+	// `infrastructure` selects logs from {product-title} and kubernetes pods and some node logs.
 	//
 	// `audit` selects node logs related to security audits.
 	//
@@ -348,15 +348,14 @@ type PipelineSpec struct {
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// Parse enables parsing of log entries into structured logs
-	//
-	// Logs are parsed according to parse value, only `json` is supported as of now.
+	// The `parse` field enables parsing of log entries into structured logs.
+	// Logs are parsed according to parse value. Currently, the only supported parse value is `json`.
 	//
 	// +kubebuilder:validation:Enum:=json
 	// +optional
 	Parse string `json:"parse,omitempty"`
 
-	// DetectMultilineErrors enables multiline error detection of container logs
+	// The `DetectMultilineErrors` field enables multiline error detection of container logs.
 	//
 	// +optional
 	DetectMultilineErrors bool `json:"detectMultilineErrors,omitempty"`
@@ -366,7 +365,7 @@ type OutputDefaults struct {
 
 	// Elasticsearch OutputSpec default values
 	//
-	// Values specified here will be used as default values for Elasticsearch Output spec
+	// Any values specified here are used as default values for the Elasticsearch `output` spec.
 	//
 	// +kubebuilder:default:false
 	// +optional
@@ -376,32 +375,30 @@ type OutputDefaults struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=clf
-// ClusterLogForwarder is an API to configure forwarding logs.
+// You can use the `ClusterLogForwarder` custom resource (CR) to configure log forwarding.
 //
-// You configure forwarding by specifying a list of `pipelines`,
-// which forward from a set of named inputs to a set of named outputs.
+// You can configure log forwarding by specifying a list of pipelines which forward logs from a set of named inputs to a set of named outputs.
 //
 // There are built-in input names for common log categories, and you can
 // define custom inputs to do additional filtering.
 //
-// There is a built-in output name for the default openshift log store, but
+// There is a built-in output name for the default {product-title} log store, but
 // you can define your own outputs with a URL and other connection information
 // to forward logs to other stores or processors, inside or outside the cluster.
 //
-// For more details see the documentation on the API fields.
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Specification of the desired behavior of ClusterLogForwarder
+	// The `spec` struct defines the desired state of the `ClusterLogForwarder` CR.
 	Spec ClusterLogForwarderSpec `json:"spec,omitempty"`
 
-	// Status of the ClusterLogForwarder
+	// The `status` field defines the status of the `ClusterLogForwarder` CR.
 	Status ClusterLogForwarderStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-// ClusterLogForwarderList contains a list of ClusterLogForwarder
+// The `list` struct contains a list of `ClusterLogForwarder` CRs in the cluster.
 type ClusterLogForwarderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -413,8 +410,8 @@ func init() {
 }
 
 type LimitSpec struct {
-	// MaxRecordsPerSecond is the maximum number of log records
-	// allowed per input/output in a pipeline
+	// The `MaxRecordsPerSecond` field defines the maximum number of log records
+	// allowed per input or output of a pipeline.
 	//
 	// +required
 	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond,omitempty"`

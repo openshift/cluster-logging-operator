@@ -53,38 +53,28 @@ Type:: {{ (yamlType .Type) }}
 [options="header"]
 |======================
 |Property|Type|Description
-    {{ range ( sortMembers .Members) -}}
-       {{- if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) -}}
-       {{- else -}}
-         {{- if (fieldEmbedded . ) -}}
-           {{- template "rows" .Type  -}}
-         {{- else -}}
-           {{- template "row" .  -}}
-         {{- end -}}
-       {{- end -}}
-   {{- end -}}
+{{ "\n" }}
+{{ range (sortMembers .Members) -}}
+{{- if or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .) -}}
+{{- else -}}
+{{- if ne (fieldName .) "" }}{{ "\n" }}{{ end -}}
+{{- template "row" . }}
+{{- end -}}
+{{- end -}}
 |======================
 {{- end -}}
 {{- end -}}
 
-{{- define "rows" -}}
-{{- if .Members -}}
-   {{- range .Members -}}
-        {{ template "row" . }}
-   {{- end -}}
+{{- define "row" }}
+{{- if or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .) -}}
+{{- else -}}
+{{- $extra := "" -}}
+{{- if isDeprecatedMember . -}}
+{{- $extra = "\n[IMPORTANT]\n====\nThis API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.\n====\n" -}}
+{{- end -}}
+{{- if isOptionalMember . -}}
+{{- $extra = "\n[NOTE]\n====\nThis API key is optional.\n====\n" -}}
+{{- end -}}
+{{- printf "| %s\n| %s\n| %s%s\n" (fieldName .) (yamlType .Type) (comments .CommentLines "") $extra -}}
 {{- end -}}
 {{- end -}}
-
-{{ define "row" }}
-       {{- if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) -}}
-       {{- else -}}
-           {{- $extra := "" -}}
-           {{- if (isDeprecatedMember .) -}}
-              {{- $extra = "**(DEPRECATED)**" -}}
-           {{- end -}}
-           {{- if (isOptionalMember .) -}}
-              {{- $extra = (printf "%s %s" $extra "*(optional)*") -}}
-           {{- end -}}
-           |{{ (fieldName .) }}|{{ (yamlType .Type)}}| {{ $extra }} {{ (comments .CommentLines "") }}
-       {{- end }}
-{{ end }}

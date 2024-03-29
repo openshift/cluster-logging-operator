@@ -32,5 +32,5 @@ func IsValidationError(err error) bool {
 }
 
 func MustUndeployCollector(err error) bool {
-	return !strings.Contains(err.Error(), NotAuthorizedToCollect)
+	return strings.Contains(err.Error(), NotAuthorizedToCollect)
 }

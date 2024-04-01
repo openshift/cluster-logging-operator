@@ -181,6 +181,22 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 				},
 			),
 		)
+
+		It("should fail if no drop conditions spec'd", func() {
+			clf := &v1.ClusterLogForwarder{
+				Spec: v1.ClusterLogForwarderSpec{
+					Filters: []v1.FilterSpec{
+						{
+							Name: myDrop,
+							Type: v1.FilterDrop,
+						},
+					},
+				},
+			}
+			err, status := ValidateFilters(*clf, nil, nil)
+			Expect(err).ToNot(BeNil())
+			Expect(status.Filters[myDrop]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, "drop filter must have at least one test spec'd"))
+		})
 	})
 
 	Context("#validatePruneFilter", func() {
@@ -440,6 +456,22 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() 
 				Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, ".+is/are required fields and must be included.+"))
 			})
 
+		})
+
+		It("should fail validation if prune filter spec'd without pruneFilterSpec", func() {
+			clf := &v1.ClusterLogForwarder{
+				Spec: v1.ClusterLogForwarderSpec{
+					Filters: []v1.FilterSpec{
+						{
+							Name: myPrune,
+							Type: v1.FilterPrune,
+						},
+					},
+				},
+			}
+			err, status := ValidateFilters(*clf, nil, nil)
+			Expect(err).ToNot(BeNil())
+			Expect(status.Filters[myPrune]).To(HaveCondition(v1.ConditionReady, false, v1.ReasonInvalid, "prune filter must have one or both of `in`, `notIn`"))
 		})
 
 	})

@@ -42,6 +42,11 @@ func ValidateFilters(clf loggingv1.ClusterLogForwarder, k8sClient client.Client,
 // validateDropFilter validates each test and their associated conditions in a drop filter.
 // It sets the filter status for the specific drop test index to better diagnose problems
 func validateDropFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
+	if filterSpec.DropTestsSpec == nil {
+		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("drop filter must have at least one test spec'd"))
+		return
+	}
+
 	var err error
 	// Validate each test
 	for i, dropTest := range *filterSpec.DropTestsSpec {
@@ -72,6 +77,10 @@ func validateDropFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.N
 }
 
 func validatePruneFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
+	if filterSpec.PruneFilterSpec == nil {
+		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("prune filter must have one or both of `in`, `notIn`"))
+		return
+	}
 	errList := []string{}
 	// Validate `in` paths
 	if filterSpec.PruneFilterSpec.In != nil {

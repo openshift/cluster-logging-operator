@@ -179,6 +179,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&dashboard.ReconcileDashboards{
+		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "GrafanaDashboard")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -201,11 +209,6 @@ func main() {
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
-	}
-
-	// Create the dashboard
-	if err := initLoggingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
-		log.V(2).Error(err, "couldn't load all logging resources")
 	}
 
 	log.Info("Starting the Cmd.")
@@ -254,14 +257,6 @@ func getClusterVersion(k8client client.Reader) (*configv1.ClusterVersion, error)
 		return nil, err
 	}
 	return clusterVersion, nil
-}
-
-func initLoggingResources(k8sClient client.Client, reader client.Reader) error {
-	// Create dashboard config map on CLO install
-	if err := dashboard.ReconcileDashboards(k8sClient, reader); err != nil {
-		return err
-	}
-	return nil
 }
 
 func cleanUpResources(k8sClient client.Client) error {

@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("ReconcileDashboards", func() {
+var _ = Describe("ReconcileForDashboards", func() {
 	var (
 		fakeClient client.Client
 
@@ -41,7 +41,7 @@ var _ = Describe("ReconcileDashboards", func() {
 			setup(nil)
 		})
 		It("should create a new dashboard configmap", func() {
-			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
+			Expect(ReconcileForDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})
@@ -52,13 +52,13 @@ var _ = Describe("ReconcileDashboards", func() {
 			initial := newDashboardConfigMap()
 			initial.Labels[DashboardHashName] = "abc"
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
+			Expect(ReconcileForDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp), "Exp the configmap to be updated")
 		})
 
 		It("should do nothing to the configmap when the dashboard is the same", func() {
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
+			Expect(ReconcileForDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})

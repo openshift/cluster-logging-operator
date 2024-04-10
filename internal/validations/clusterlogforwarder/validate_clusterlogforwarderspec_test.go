@@ -1313,6 +1313,7 @@ func Test_verifyOutputURL(t *testing.T) {
 		output *loggingv1.OutputSpec
 		conds  loggingv1.NamedConditions
 	}
+	var groupPrefix = "all-logs"
 	tests := []struct {
 		name   string
 		fields fields
@@ -1538,6 +1539,73 @@ func Test_verifyOutputURL(t *testing.T) {
 				conds: loggingv1.NamedConditions{},
 			},
 			want: false,
+		},
+		{
+			name: "should pass with not URL and given TLS config for CloudWatch",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeCloudwatch,
+					Name: "cw",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Cloudwatch: &loggingv1.Cloudwatch{
+							Region:      "us-east-test",
+							GroupPrefix: &groupPrefix,
+							GroupBy:     loggingv1.LogGroupByLogType,
+						},
+					},
+					TLS: &loggingv1.OutputTLSSpec{
+						TLSSecurityProfile: &v12.TLSSecurityProfile{
+							Type: v12.TLSProfileOldType,
+						},
+					},
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "should pass with not URL and given TLS config for Google Cloud Logging",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeGoogleCloudLogging,
+					Name: "gcl",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						GoogleCloudLogging: &loggingv1.GoogleCloudLogging{
+							LogID:     "log-id-test",
+							ProjectID: "project-id",
+						},
+					},
+					TLS: &loggingv1.OutputTLSSpec{
+						TLSSecurityProfile: &v12.TLSSecurityProfile{
+							Type: v12.TLSProfileOldType,
+						},
+					},
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "should pass with not URL and given TLS config for Google Cloud Logging",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeGoogleCloudLogging,
+					Name: "gcl",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						GoogleCloudLogging: &loggingv1.GoogleCloudLogging{
+							LogID:     "log-id-test",
+							ProjectID: "project-id",
+						},
+					},
+					TLS: &loggingv1.OutputTLSSpec{
+						TLSSecurityProfile: &v12.TLSSecurityProfile{
+							Type: v12.TLSProfileOldType,
+						},
+					},
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
 		},
 	}
 	for _, tt := range tests {

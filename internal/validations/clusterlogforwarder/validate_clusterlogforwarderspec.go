@@ -306,14 +306,13 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		conds.Set(output.Name, c)
 		return false
 	}
-
-	if u, _ := url.Parse(output.URL); u != nil && output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
-		return fail(CondInvalid("invalid configuration: provided not secure URL along with TLS configuration"))
-	}
-
+	notSecureUrlMsg := "invalid configuration: secure URL is required with TLS configurations"
 	if output.Type == loggingv1.OutputTypeKafka {
 		brokerUrls := []string{}
 		if output.URL != "" {
+			if u, _ := url.Parse(output.URL); output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
+				return fail(CondInvalid(notSecureUrlMsg))
+			}
 			brokerUrls = append(brokerUrls, output.URL)
 		}
 		if output.Kafka != nil { // Add optional extra broker URLs.
@@ -347,6 +346,9 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		}
 		if err != nil {
 			return fail(CondInvalid("invalid URL: %v", err))
+		}
+		if output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
+			return fail(CondInvalid(notSecureUrlMsg))
 		}
 		if output.Type == loggingv1.OutputTypeSyslog {
 			scheme := strings.ToLower(u.Scheme)

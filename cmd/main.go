@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
@@ -177,6 +178,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&dashboard.ReconcileDashboards{
+		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "GrafanaDashboard")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -199,11 +208,6 @@ func main() {
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
-	}
-
-	// Create the dashboard
-	if err := initLoggingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
-		log.V(2).Error(err, "couldn't load all logging resources")
 	}
 
 	log.Info("Starting the Cmd.")
@@ -232,14 +236,6 @@ func migrateManifestResources(k8sClient client.Client) {
 	if err := k8sClient.Delete(context.TODO(), loggingruntime.NewPriorityClass("cluster-logging", 0, false, "")); err != nil && !errors.IsNotFound(err) {
 		log.V(1).Error(err, "There was an error trying to remove the old collector PriorityClass named 'cluster-logging'")
 	}
-}
-
-func initLoggingResources(k8sClient client.Client, reader client.Reader) error {
-	// Create dashboard config map on CLO install
-	if err := dashboard.ReconcileDashboards(k8sClient, reader); err != nil {
-		return err
-	}
-	return nil
 }
 
 func cleanUpResources(k8sClient client.Client) error {

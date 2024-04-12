@@ -17,7 +17,7 @@ LABEL com.redhat.openshift.versions="${OPENSHIFT_VERSIONS}"
 
 LABEL \\
     com.redhat.component="cluster-logging-operator" \\
-    version="v1.1" \\
+    version="v${LOGGING_VERSION}" \\
     name="cluster-logging-operator" \\
     License="Apache-2.0" \\
     io.k8s.display-name="cluster-logging-operator bundle" \\

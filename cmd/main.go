@@ -130,13 +130,11 @@ func main() {
 		}
 	}()
 
-	clusterVersion, err := getClusterVersion(mgr.GetAPIReader())
+	clusterVersion, clusterID, err := version.ClusterVersion(mgr.GetAPIReader())
 	if err != nil {
-		log.Error(err, "unable to retrieve the clusterID")
+		log.Error(err, "unable to retrieve the cluster version")
 		os.Exit(1)
 	}
-	clusterID := string(clusterVersion.Spec.ClusterID)
-
 	migrateManifestResources(mgr.GetClient())
 
 	log.Info("Registering Components.")
@@ -146,7 +144,7 @@ func main() {
 		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("clusterlogging-controller"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
@@ -158,7 +156,7 @@ func main() {
 		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("clusterlogforwarder"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
@@ -171,7 +169,7 @@ func main() {
 		Client:         mgr.GetClient(),
 		Scheme:         mgr.GetScheme(),
 		Recorder:       mgr.GetEventRecorderFor("logfilemetricexporter"),
-		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
@@ -191,7 +189,7 @@ func main() {
 	}
 
 	// updating clo Telemetry Data - to be published by prometheus
-	cloversion, err := getCLOVersion()
+	cloversion, err := version.OperatorVersion()
 	if err != nil {
 		cloversion = version.Version
 		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
@@ -234,26 +232,6 @@ func migrateManifestResources(k8sClient client.Client) {
 	if err := k8sClient.Delete(context.TODO(), loggingruntime.NewPriorityClass("cluster-logging", 0, false, "")); err != nil && !errors.IsNotFound(err) {
 		log.V(1).Error(err, "There was an error trying to remove the old collector PriorityClass named 'cluster-logging'")
 	}
-}
-
-// get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards
-func getCLOVersion() (string, error) {
-	CLOVersionEnvVar := "OPERATOR_CONDITION_NAME"
-	cloversion, found := os.LookupEnv(CLOVersionEnvVar)
-	if !found {
-		return "", fmt.Errorf("%s must be set", CLOVersionEnvVar)
-	}
-	return cloversion, nil
-}
-
-// getClusterVersion retrieves the ID of the cluster
-func getClusterVersion(k8client client.Reader) (*configv1.ClusterVersion, error) {
-	clusterVersion := &configv1.ClusterVersion{}
-	key := client.ObjectKey{Name: "version"}
-	if err := k8client.Get(context.TODO(), key, clusterVersion); err != nil {
-		return nil, err
-	}
-	return clusterVersion, nil
 }
 
 func initLoggingResources(k8sClient client.Client, reader client.Reader) error {

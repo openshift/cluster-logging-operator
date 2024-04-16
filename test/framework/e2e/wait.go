@@ -153,6 +153,9 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 }
 
 func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels []string) {
+	if !DoCleanup() {
+		return
+	}
 	if err := tc.waitForClusterLoggingPodsCompletion(namespace, podlabels); err != nil {
 		clolog.Error(err, "Cleanup completion error")
 	}

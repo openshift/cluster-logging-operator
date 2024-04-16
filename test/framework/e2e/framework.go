@@ -210,7 +210,7 @@ func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(names
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
 	}
-	pod := runtime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 1000, 0, "My life is my message")
+	pod := runtime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 0, 0, "My life is my message")
 	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
 	opts := metav1.CreateOptions{}
 	pod, err := tc.KubeClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, opts)
@@ -326,13 +326,17 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	return result.Error()
 }
 
+func DoCleanup() bool {
+	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
+	clolog.Info("Running Cleanup script ....", "DO_CLEANUP", doCleanup)
+	return doCleanup == "" || strings.ToLower(doCleanup) == "true"
+}
+
 func (tc *E2ETestFramework) Cleanup() {
 	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		clolog.Info("Test failed", "TestText", g.FullTestText)
 		//allow caller to cleanup if unset (e.g script cleanup())
-		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-		clolog.Info("Running Cleanup script ....", "DO_CLEANUP", doCleanup)
-		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+		if DoCleanup() {
 			RunCleanupScript()
 		} else {
 			return

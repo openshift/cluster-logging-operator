@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -24,11 +25,11 @@ var _ = Describe("Tests of collector container security stance", func() {
 	var (
 		collector               string
 		runInCollectorContainer = func(command string, args ...string) (string, error) {
-			return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
+			return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).RunFor(time.Second * 15)
 		}
 		checkMountReadOnly = func(mount string) {
 			touchFile := mount + "/1"
-			result, err := runInCollectorContainer("bash", "-c", "touch "+touchFile)
+			result, err := runInCollectorContainer("touch", touchFile)
 			Expect(result).To(HavePrefix("touch: cannot touch '" + touchFile + "': Read-only file system"))
 			Expect(err).To(MatchError("exit status 1"))
 		}
@@ -49,7 +50,6 @@ var _ = Describe("Tests of collector container security stance", func() {
 	}, framework.DefaultCleanUpTimeout)
 
 	var _ = DescribeTable("collector containers should have tight security settings", func(collectorType logging.LogCollectionType) {
-
 		_, filename, _, _ := runtime.Caller(0)
 		log.Info("Running ", "filename", filename)
 		e2e = framework.NewE2ETestFramework()
@@ -75,7 +75,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 					{
 						Name:       "infra-pipe",
 						OutputRefs: []string{"es"},
-						InputRefs:  []string{logging.InputNameInfrastructure},
+						InputRefs:  []string{logging.InputNameInfrastructure, logging.InputNameApplication, logging.InputNameAudit},
 					},
 				},
 			},
@@ -119,7 +119,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		Expect(collector).To(Not(BeNil()))
 
 		By("having all Linux capabilities disabled")
-		result, err := runInCollectorContainer("bash", "-c", "getpcaps 1 2>&1")
+		result, err := runInCollectorContainer("getpcaps", "1")
 		Expect(result).To(MatchRegexp(`^(Capabilities\sfor\s.)?1'?:\s=$`))
 		Expect(err).NotTo(HaveOccurred())
 
@@ -128,8 +128,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 		Expect(result).To(ContainSubstring("sysctl: no such file"))
 
 		By("disabling privilege escalation")
-		result, err = runInCollectorContainer("bash", "-c", "cat /proc/1/status | grep NoNewPrivs")
-		Expect(result).To(Equal("NoNewPrivs:\t1"))
+		result, err = runInCollectorContainer("cat", "/proc/1/status")
+		Expect(result).To(MatchRegexp("NoNewPrivs:\t1"))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("mounting the root filesystem read-only")
@@ -145,12 +145,13 @@ var _ = Describe("Tests of collector container security stance", func() {
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())
-
 		if collectorType == logging.LogCollectionTypeFluentd {
 			By("making sure on disk footprint is readable only to the collector")
-			result, err = runInCollectorContainer("bash", "-c", `stat --format=%a /var/lib/fluentd/es/*  | sort -u`)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal("600"), "Exp the data directory to have alternate permissions")
+			Eventually(func() (string, error) {
+				return runInCollectorContainer("bash", "-ceuo", "pipefail", `stat --format=%a /var/lib/fluentd/es/* | sort -u`)
+			}).
+				WithTimeout(2*time.Minute).
+				Should(Equal("600"), "Exp the data directory to have alternate permissions")
 		}
 
 		// LOG-2620: containers violate PodSecurity for 4.12+

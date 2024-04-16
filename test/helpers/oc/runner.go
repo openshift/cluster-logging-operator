@@ -77,7 +77,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	cmdargs := strings.Join(r.args, " ")
 	err := r.Cmd.Start()
 	if err != nil {
-		log.V(1).Error(err, "could not start oc command", "arguments", cmdargs)
+		log.V(1).Error(err, "could not start oc command", "arguments", r.args, "argstr", cmdargs)
 		return "", err
 	}
 	// Wait for the process to finish or kill it after a timeout (whichever happens first):
@@ -92,7 +92,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 		}
 	case err = <-done:
 		if err != nil {
-			log.V(1).Error(err, "oc finished with error", "args", cmdargs)
+			log.V(1).Error(err, "oc finished with error", "args", r.args, "argstr", cmdargs)
 		}
 	}
 	if err != nil {
@@ -100,7 +100,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		log.V(2).Info("command result", "arguments", cmdargs, "output", errout, "error", err)
+		log.V(2).Info("command result", "arguments", r.args, "output", errout, "error", err, "argstr", cmdargs)
 		return errout, err
 	}
 	if r.tostdout {
@@ -108,9 +108,9 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	}
 	out := strings.TrimSpace(outbuf.String())
 	if len(out) > 500 {
-		log.V(2).Info("output(truncated 500/length)", "arguments", cmdargs, "length", len(out), "result", truncateString(out, 500))
+		log.V(2).Info("output(truncated 500/length)", "arguments", r.args, "length", len(out), "result", truncateString(out, 500), "argstr", cmdargs)
 	} else {
-		log.V(2).Info("command output", "arguments", cmdargs, "output", out)
+		log.V(2).Info("command output", "arguments", r.args, "output", out, "argstr", cmdargs)
 	}
 	return out, nil
 }

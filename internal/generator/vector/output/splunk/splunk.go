@@ -76,6 +76,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 
 	componentID := vectorhelpers.MakeID(id, "add_splunk_index")
+	timestampID := vectorhelpers.MakeID(id, "timestamp")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 
 	dedotInputs := inputs
@@ -83,7 +84,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	if len(indexRemapElement) != 0 {
 		dedotInputs = []string{componentID}
 	}
-	sink := Output(id, o, []string{dedottedID}, secret, op)
+	sink := Output(id, o, []string{timestampID}, secret, op)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -91,6 +92,7 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		indexRemapElement,
 		[]Element{
 			normalize.DedotLabels(dedottedID, dedotInputs),
+			FixTimestampFormat(timestampID, []string{dedottedID}),
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),
@@ -175,5 +177,22 @@ func Encoding(id string, o logging.OutputSpec) Element {
 		ComponentID:  id,
 		Codec:        splunkEncodingJson,
 		ExceptFields: AddSplunkEncodeExceptFields(o.Splunk),
+	}
+}
+
+func FixTimestampFormat(componentID string, inputs []string) Element {
+	var vrl = `
+ts, err = parse_timestamp(.@timestamp,"%+")
+if err != null {
+	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
+} else {
+	.@timestamp = ts
+}
+`
+	return Remap{
+		Desc:        "Ensure timestamp field well formatted for Splunk",
+		ComponentID: componentID,
+		Inputs:      vectorhelpers.MakeInputs(inputs...),
+		VRL:         vrl,
 	}
 }

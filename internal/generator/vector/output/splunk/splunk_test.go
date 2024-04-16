@@ -45,10 +45,26 @@ source = '''
   }
 '''
 `
-		splunkSink = splunkDedot + `
+		fixTimestamp = `
+	# Ensure timestamp field well formatted for Splunk
+	[transforms.splunk_hec_timestamp]
+	type = "remap"
+	inputs = ["splunk_hec_dedot"]
+	source = '''
+
+	ts, err = parse_timestamp(.@timestamp,"%+")
+	if err != null {
+		log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
+	} else {
+		.@timestamp = ts
+	}
+
+	'''
+`
+		splunkSink = splunkDedot + fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
@@ -56,10 +72,10 @@ timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 `
-		splunkSinkTls = splunkDedot + `
+		splunkSinkTls = splunkDedot + fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
@@ -72,10 +88,10 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
-		splunkSinkTlsSkipVerify = splunkDedot + `
+		splunkSinkTlsSkipVerify = splunkDedot + fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
@@ -90,10 +106,10 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
-		splunkSinkTlsSkipVerifyNoCert = splunkDedot + `
+		splunkSinkTlsSkipVerifyNoCert = splunkDedot + fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = ""
@@ -105,10 +121,10 @@ codec = "json"
 verify_certificate = false
 verify_hostname = false
 `
-		splunkSinkPassphrase = splunkDedot + `
+		splunkSinkPassphrase = splunkDedot + fixTimestamp + `
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
@@ -288,10 +304,24 @@ source = '''
 	  }
   }
 '''
+# Ensure timestamp field well formatted for Splunk
+[transforms.splunk_hec_timestamp]
+type = "remap"
+inputs = ["splunk_hec_dedot"]
+source = '''
+
+ts, err = parse_timestamp(.@timestamp,"%+")
+if err != null {
+	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
+} else {
+	.@timestamp = ts
+}
+
+'''
 
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_dedot"]
+inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"

@@ -289,6 +289,7 @@ test-functional-vector: test-functional-benchmarker-vector
 		./test/functional/outputs/cloudwatch/... \
 		./test/functional/outputs/loki/... \
 		./test/functional/outputs/http/... \
+		./test/functional/outputs/splunk/... \
 		./test/functional/outputs/syslog/... \
 		./test/functional/normalization/... \
 		./test/functional/flowcontrol/... \

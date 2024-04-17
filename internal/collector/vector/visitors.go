@@ -8,9 +8,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodSpec, resNames *factory.ForwarderResourceNames, namespace string) {
+func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string) {
 	collectorContainer.Env = append(collectorContainer.Env,
-		corev1.EnvVar{Name: "VECTOR_LOG", Value: "WARN"},
+		corev1.EnvVar{Name: "VECTOR_LOG", Value: logLevel},
 		corev1.EnvVar{Name: "KUBERNETES_SERVICE_HOST", Value: "kubernetes.default.svc"},
 		corev1.EnvVar{
 			Name: "VECTOR_SELF_NODE_NAME",

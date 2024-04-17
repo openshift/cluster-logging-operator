@@ -79,6 +79,20 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
 			})
 		})
+
+		Context("with vector collector", func() {
+			It("should set VECTOR_LOG env variable with debug value", func() {
+				logLevelDebug := "debug"
+				factory.CollectorType = logging.LogCollectionTypeVector
+				factory.ImageName = constants.VectorName
+				factory.Visit = vector.CollectorVisitor
+				factory.LogLevel = logLevelDebug
+
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				collector = podSpec.Containers[0]
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
+			})
+		})
 	})
 
 	Describe("when creating the podSpec", func() {

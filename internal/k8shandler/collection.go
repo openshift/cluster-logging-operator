@@ -82,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		return
 	}
 
-	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames, clusterRequest.isDaemonset)
+	factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.Forwarder.Spec, clusterRequest.ResourceNames.CommonName, clusterRequest.ResourceNames, clusterRequest.isDaemonset, clusterRequest.LogLevel)
 
 	if err := network.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Forwarder.Namespace, clusterRequest.ResourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, clusterRequest.ResourceNames.SecretMetrics, collector.MetricsPort, clusterRequest.ResourceOwner, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")

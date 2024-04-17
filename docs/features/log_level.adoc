@@ -1,0 +1,42 @@
+== Vector Collector: Configuring Log Level
+
+This feature enables configuring the log level of the Vector collector. The log level can be configured through an annotation on the `ClusterLogForwarder` along with the appropriate log level. Internally, this sets the `VECTOR_LOG` environment variable to the desired log level.
+
+Annotation: `observability.openshift.io/log-level`.
+
+The Cluster Logging Operator will default Vector's log level to `warn`.footnote:[https://issues.redhat.com/browse/LOG-3435[LOG-3435]]
+
+Supported values are: footnote:[https://vector.dev/docs/administration/monitoring/#levels[Vector Log Levels]]
+
+. `trace`
+. `debug`
+. `info`
+. `warn`
+. `error`
+. `off`
+
+=== Example
+.Enable Debug Log Level for Vector
+[source]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+  annotations:
+    observability.openshift.io/log-level: "debug"
+spec:
+  outputs:
+  - name: devel
+    type: elasticsearch
+  pipelines:
+   - name: devel-logs
+     inputRefs:
+     - application
+     outputRefs:
+     - devel
+----
+This configuration will configure vector's log level to `debug`.
+
+

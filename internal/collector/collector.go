@@ -53,7 +53,7 @@ const (
 	tmpPath                         = "/tmp"
 )
 
-type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace string)
+type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
 type CommonLabelVisitor func(o runtime.Object)
 type PodLabelVisitor func(o runtime.Object)
 
@@ -71,6 +71,7 @@ type Factory struct {
 	PodLabelVisitor        PodLabelVisitor
 	ResourceNames          *factory.ForwarderResourceNames
 	isDaemonset            bool
+	LogLevel               string
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -98,7 +99,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string, resNames *factory.ForwarderResourceNames, isDaemonset bool) *Factory {
+func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec, instanceName string, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	factory := &Factory{
 		ClusterID:     clusterID,
 		ConfigHash:    confHash,
@@ -114,6 +115,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		ResourceNames:   resNames,
 		PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
 		isDaemonset:     isDaemonset,
+		LogLevel:        logLevel,
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
@@ -175,7 +177,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
-	f.Visit(collector, podSpec, f.ResourceNames, namespace)
+	f.Visit(collector, podSpec, f.ResourceNames, namespace, f.LogLevel)
 
 	addWebIdentityForCloudwatch(collector, podSpec, forwarderSpec, f.Secrets, f.CollectorType)
 

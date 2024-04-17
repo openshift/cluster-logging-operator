@@ -46,6 +46,10 @@ type ClusterLoggingRequest struct {
 
 	// Determine the collector deployment strategy; Daemonset || Deployment
 	isDaemonset bool
+
+	// Vector log level
+	// Default is `warn`: https://issues.redhat.com/browse/LOG-3435
+	LogLevel string
 }
 
 func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) ClusterLoggingRequest {
@@ -60,6 +64,7 @@ func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.Clu
 		ResourceNames:  resourceNames,
 		ResourceOwner:  utils.AsOwner(forwarder),
 		isDaemonset:    true,
+		LogLevel:       "warn",
 	}
 
 	// Owner is always the ClusterLogging instance for legacy ClusterLogging
@@ -74,6 +79,10 @@ func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.Clu
 		if inputs.Len() == 1 && inputs.Has(logging.InputNameReceiver) {
 			request.isDaemonset = false
 		}
+	}
+
+	if level, ok := request.Forwarder.Annotations[constants.AnnotationVectorLogLevel]; ok {
+		request.LogLevel = level
 	}
 
 	return request

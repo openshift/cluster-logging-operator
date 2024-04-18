@@ -23,6 +23,7 @@ metadata:
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
+    operators.openshift.io/must-gather-image: registry.redhat.io/openshift-logging/cluster-logging-rhel9-operator@sha256:b3a09d6dfc5109cd5d3ebf24201f9d0549d77f8965907c1b6b15faba15c767eb
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift
       Container Platform", "OpenShift Platform Plus"]'
     operators.operatorframework.io/builder: operator-sdk-unknown
@@ -34,7 +35,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v0.0.0
+  name: clusterlogging.v5.9.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}

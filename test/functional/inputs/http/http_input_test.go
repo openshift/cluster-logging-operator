@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -123,7 +124,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 		framework.VisitConfig = func(conf string) string {
 			return strings.Replace(conf, "enabled = true", "enabled = false", 2) // turn off TLS for testing
 		}
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInputWithVisitor(httpInputName,
 				func(spec *logging.InputSpec) {
 					spec.Receiver = &logging.ReceiverSpec{

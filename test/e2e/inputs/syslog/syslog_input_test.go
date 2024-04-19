@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
@@ -50,7 +49,7 @@ var _ = Describe("[ClusterLogForwarder] Inputs Syslog", func() {
 			forwarder.Spec.ServiceAccountName = sa.Name
 
 			//deploy forwarder
-			functional.NewClusterLogForwarderBuilder(forwarder).
+			testruntime.NewClusterLogForwarderBuilder(forwarder).
 				FromInputWithVisitor("syslog", func(spec *logging.InputSpec) {
 					spec.Receiver = &logging.ReceiverSpec{
 						Type: logging.ReceiverTypeSyslog,

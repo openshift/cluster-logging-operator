@@ -2,6 +2,7 @@ package normalization
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 	Context("with vector", func() {
 		BeforeEach(func() {
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
 				ToElasticSearchOutput()
 			Expect(framework.Deploy()).To(BeNil())

@@ -5,6 +5,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +23,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput().
 			FromInput(logging.InputNameAudit).

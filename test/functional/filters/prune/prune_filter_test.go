@@ -2,6 +2,7 @@ package prune
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			specialCharLabel := "foo-bar/baz"
 			f.Labels = map[string]string{specialCharLabel: "specialCharLabel"}
 
-			functional.NewClusterLogForwarderBuilder(f.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
 				FromInput(logging.InputNameApplication).
 				WithFilterWithVisitor(pruneFilterName, func(spec *logging.FilterSpec) {
 					spec.Type = logging.FilterPrune
@@ -80,7 +81,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 	Context("minimal set of fields for each output", func() {
 		var (
-			pipelineBuilder *functional.PipelineBuilder
+			pipelineBuilder *testruntime.PipelineBuilder
 			secret          *v1.Secret
 
 			sharedKey  = rand.Word(16)
@@ -89,7 +90,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 		BeforeEach(func() {
 			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
-			pipelineBuilder = functional.NewClusterLogForwarderBuilder(f.Forwarder).
+			pipelineBuilder = testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
 				FromInput(logging.InputNameApplication).
 				WithFilterWithVisitor(pruneFilterName, func(spec *logging.FilterSpec) {
 					spec.Type = logging.FilterPrune

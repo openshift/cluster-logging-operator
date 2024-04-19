@@ -3,6 +3,7 @@ package normalization
 import (
 	"encoding/json"
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -58,7 +59,7 @@ const (
 var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	var (
 		framework       *functional.CollectorFunctionalFramework
-		clfb            *functional.ClusterLogForwarderBuilder
+		clfb            *testruntime.ClusterLogForwarderBuilder
 		expected        map[string]interface{}
 		empty           map[string]interface{}
 		expectedMessage string
@@ -74,7 +75,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	BeforeEach(func() {
 		empty = map[string]interface{}{}
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		clfb = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(output *logging.OutputSpec) {
 				output.Elasticsearch.StructuredTypeName = "foo"
@@ -181,7 +182,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 
 	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		clfb = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()
 

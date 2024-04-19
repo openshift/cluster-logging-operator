@@ -83,8 +83,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 		}
-		components := []helpers.LogComponentType{helpers.ComponentTypeCollectorVector}
-		if err := e2e.SetupClusterLogging(components...); err != nil {
+		if err := e2e.DeployComponents(helpers.ComponentTypeCollectorVector); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 		}
 		nodes := 0
@@ -141,7 +140,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())
-		// TODO: fix for vector buffering?
+
+		//TODO: fix me for vector buffered
 		//if collectorType == logging.LogCollectionTypeFluentd {
 		//	By("making sure on disk footprint is readable only to the collector")
 		//	Eventually(func() (string, error) {

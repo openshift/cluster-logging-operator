@@ -62,26 +62,18 @@ const (
 
 	SingletonName = "instance"
 	OpenshiftNS   = "openshift-logging"
-	// global proxy / trusted ca bundle consts
-	ProxyName = "cluster"
 
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
-	SecretHashPrefix           = "logging.openshift.io/"
-	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	ElasticsearchFQDN          = "elasticsearch"
 	ElasticsearchName          = "elasticsearch"
-	LokiName                   = "loki"
 	ElasticsearchPort          = "9200"
 	FluentdName                = "fluentd"
 	VectorName                 = "vector"
 	KibanaName                 = "kibana"
-	KibanaProxyName            = "kibana-proxy"
 	LogfilesmetricexporterName = "logfilesmetricexporter"
-	ConsolePluginName          = "consoleplugin"
 	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
-	MasterCASecretName         = "master-certs"
 	CollectorSecretName        = "collector"
 	PodSecurityLabelEnforce    = "pod-security.kubernetes.io/enforce"
 	PodSecurityLabelAudit      = "pod-security.kubernetes.io/audit"
@@ -89,13 +81,11 @@ const (
 	PodSecurityLabelValue      = "privileged"
 	PodSecuritySyncLabel       = "security.openshift.io/scc.podSecurityLabelSync"
 	// Disable gosec linter, complains "possible hard-coded secret"
-	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
-	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
+	CollectorSecretsDir = "/var/run/ocp-collector/secrets" //nolint:gosec
 
 	CollectorName               = "collector"
 	CollectorConfigSecretName   = "collector-config"
 	CollectorMetricSecretName   = "collector-metrics"
-	CollectorMonitorJobLabel    = "monitor-collector"
 	CollectorServiceAccountName = "logcollector"
 	CollectorTrustedCAName      = "collector-trusted-ca-bundle"
 	CollectorDeploymentKind     = "collector-deployment-kind"
@@ -103,7 +93,6 @@ const (
 
 	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"
 	LogfilesmetricImageEnvVar     = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
-	ConsolePluginImageEnvVar      = "RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN"
 	ClusterInfrastructureInstance = "cluster"
 
 	ContainerLogDir = "/var/log/containers"

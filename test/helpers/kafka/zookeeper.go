@@ -3,7 +3,7 @@ package kafka
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -219,7 +219,7 @@ func NewZookeeperConfigMap(namespace string) *v1.ConfigMap {
 		"zookeeper.properties": zookeeperProperties,
 		"log4j.properties":     zookeeperLog4JProperties,
 	}
-	return k8shandler.NewConfigMap(zookeeperDeploymentName, namespace, data)
+	return runtime.NewConfigMap(namespace, zookeeperDeploymentName, data)
 }
 func NewZookeeperConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 	data := map[string]string{
@@ -227,5 +227,5 @@ func NewZookeeperConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 		"zookeeper.properties": functionalPodzookeeperProperties,
 		"log4j.properties":     functionalPodzookeeperLog4JProperties,
 	}
-	return k8shandler.NewConfigMap(zookeeperDeploymentName, namespace, data)
+	return runtime.NewConfigMap(namespace, zookeeperDeploymentName, data)
 }

@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 
 	openshiftv1 "github.com/openshift/api/config/v1"
@@ -47,7 +48,7 @@ var _ = Describe("[functional][outputs][tlssecurityprofile] Functional tests ", 
 				runtime.NewSecret("", clientSecretName, map[string][]byte{
 					constants.TrustedCABundleKey: ca.CertificatePEM(),
 				}))
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.URL = strings.Replace(spec.URL, "http://", "https://", 1)

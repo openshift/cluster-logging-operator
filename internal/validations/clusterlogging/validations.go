@@ -17,6 +17,5 @@ func Validate(cl v1.ClusterLogging, k8sClient client.Client, extras map[string]b
 // validations are the set of admission rules for validating
 // a ClusterLogging
 var validations = []func(cl v1.ClusterLogging, k8sClient client.Client) error{
-	validateSetup,
 	validateClusterLoggingSpec,
 }

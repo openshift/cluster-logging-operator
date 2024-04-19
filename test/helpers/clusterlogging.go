@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	receiverses "github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,12 +15,13 @@ import (
 type LogComponentType string
 
 const (
-	ComponentTypeStore               LogComponentType = "LogStore"
-	ComponentTypeVisualization       LogComponentType = "Visualization"
-	ComponentTypeCollector           LogComponentType = "collector"
-	ComponentTypeCollectorFluentd    LogComponentType = "collector-fluentd"
-	ComponentTypeCollectorVector     LogComponentType = "collector-vector"
-	ComponentTypeCollectorDeployment LogComponentType = "collector-deployment"
+	ComponentTypeStore                          LogComponentType = "LogStore"
+	ComponentTypeVisualization                  LogComponentType = "Visualization"
+	ComponentTypeCollector                      LogComponentType = "collector"
+	ComponentTypeCollectorFluentd               LogComponentType = "collector-fluentd"
+	ComponentTypeCollectorVector                LogComponentType = "collector-vector"
+	ComponentTypeCollectorDeployment            LogComponentType = "collector-deployment"
+	ComponentTypeReceiverElasticsearchRHManaged LogComponentType = receiverses.ManagedLogStore
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {

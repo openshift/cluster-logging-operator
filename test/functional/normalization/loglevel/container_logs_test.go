@@ -2,7 +2,7 @@ package loglevel
 
 import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -21,8 +21,8 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput().
 			FromInput(logging.InputNameAudit).

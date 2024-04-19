@@ -3,6 +3,7 @@ package multiple
 import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,12 +16,12 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework
-		builder   *functional.PipelineBuilder
+		builder   *testruntime.PipelineBuilder
 	)
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		builder = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		builder = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(loggingv1.InputNameApplication)
 		builder.ToHttpOutput()
 		builder.ToElasticSearchOutput()

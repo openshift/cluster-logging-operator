@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
@@ -76,7 +75,7 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 
 		//deploy forwarder
 		generatorNS = e2e.CreateTestNamespace()
-		functional.NewClusterLogForwarderBuilder(forwarder).
+		testruntime.NewClusterLogForwarderBuilder(forwarder).
 			FromInputWithVisitor("myinput", func(spec *logging.InputSpec) {
 				spec.Application = &logging.Application{
 					Includes: []logging.NamespaceContainerSpec{

@@ -21,9 +21,9 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	switch component {
 	case helpers.ComponentTypeVisualization:
 		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
-	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeCollectorVector:
-		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
-	case helpers.ComponentTypeStore:
+	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorVector:
+		return tc.WaitForDaemonSet(constants.OpenshiftNS, "mycollector")
+	case helpers.ComponentTypeStore, helpers.ComponentTypeReceiverElasticsearchRHManaged:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollectorDeployment:
 		return tc.waitForDeployment(constants.OpenshiftNS, constants.CollectorName, defaultRetryInterval, defaultTimeout)
@@ -31,16 +31,12 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }
 
-func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
-	return tc.WaitForDaemonSet(constants.OpenshiftNS, constants.CollectorName)
-}
-
 func (tc *E2ETestFramework) WaitForDaemonSet(namespace, name string) error {
 	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
 	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(cxt context.Context) (done bool, err error) {
-		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get daemonset/%s --ignore-not-found -o jsonpath={.status.numberUnavailable}", namespace, name)).Run()
+		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get ds/%s --ignore-not-found -o jsonpath={.status.numberUnavailable}", namespace, name)).Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"

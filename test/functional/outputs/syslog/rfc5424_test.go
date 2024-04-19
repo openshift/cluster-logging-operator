@@ -2,6 +2,7 @@ package syslog
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -33,7 +34,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
 			Skip("Test requires fluentd")
 		}
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 				spec.Syslog.Facility = "user"
@@ -64,7 +65,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	)
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
@@ -88,7 +89,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		})
 	})
 	It("should be able to send a large payload", func() {
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 				spec.Syslog.RFC = e2e.RFC5424.String()

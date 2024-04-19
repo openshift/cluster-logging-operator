@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -20,7 +21,7 @@ var _ = Describe("[Functional][Outputs][Unavailable] Output", func() {
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput()
 	})

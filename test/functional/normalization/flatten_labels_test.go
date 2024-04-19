@@ -3,6 +3,7 @@ package normalization
 import (
 	"context"
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"regexp"
 	"sort"
 	"time"
@@ -23,7 +24,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 	var (
 		framework         *functional.CollectorFunctionalFramework
-		pb                *functional.PipelineBuilder
+		pb                *testruntime.PipelineBuilder
 		applicationLabels map[string]string
 		expLabels         map[string]string
 
@@ -84,7 +85,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 		}
 
-		pb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		pb = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication)
 	})
 

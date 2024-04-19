@@ -3,6 +3,7 @@ package elasticsearchmanaged
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"runtime"
 	"strings"
 
@@ -43,21 +44,24 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	}, framework.DefaultCleanUpTimeout)
 
 	DescribeTable("when the output is a CLO managed elasticsearch and no explicit forwarder is configured should default to forwarding logs to the spec'd logstore", func(collectorType helpers.LogComponentType) {
-		components := []helpers.LogComponentType{collectorType, helpers.ComponentTypeStore}
-		if err := e2e.SetupClusterLogging(components...); err != nil {
-			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
+		if err := e2e.DeployComponents(helpers.ComponentTypeReceiverElasticsearchRHManaged); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of RH managed Elasticsearch: %v", err))
 		}
-		for _, component := range components {
-			if err := e2e.WaitFor(component); err != nil {
-				Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-			}
+		if err := e2e.WaitFor(helpers.ComponentTypeReceiverElasticsearchRHManaged); err != nil {
+			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeReceiverElasticsearchRHManaged, err))
+		}
+		if err := e2e.DeployComponents(collectorType); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of LogForwarder: %v", err))
+		}
+		if err := e2e.WaitFor(collectorType); err != nil {
+			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", collectorType, err))
 		}
 
-		Expect(e2e.LogStores["elasticsearch"].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-		Expect(e2e.LogStores["elasticsearch"].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+		Expect(e2e.LogStores[elasticsearch.ManagedLogStore].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+		Expect(e2e.LogStores[elasticsearch.ManagedLogStore].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 		//verify infra namespaces are not stored to their own index
-		elasticSearch := framework.ElasticLogStore{Framework: e2e}
+		elasticSearch := e2e.LogStores[elasticsearch.ManagedLogStore].(*elasticsearch.ManagedElasticsearch)
 		if indices, err := elasticSearch.Indices(); err != nil {
 			Fail(fmt.Sprintf("Error fetching indices: %v", err))
 		} else {

@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/syslog"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 )
@@ -51,7 +52,7 @@ var _ = Describe("[Functional][Inputs][SysLog] Functional tests", func() {
 
 	Context("", func() {
 		It("should sending log record to the SysLog input", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor(sysLogInputName,
 					func(spec *logging.InputSpec) {
 						spec.Receiver = &logging.ReceiverSpec{

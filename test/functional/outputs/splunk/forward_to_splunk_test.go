@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -36,7 +37,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 	It("should accept application logs", func() {
 
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToSplunkOutput()
 		framework.Secrets = append(framework.Secrets, secret)
@@ -66,7 +67,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 	})
 
 	It("should accept audit logs without timestamp unexpected type warning (see: https://issues.redhat.com/browse/LOG-4672)", func() {
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameAudit).
 			ToSplunkOutput()
 		framework.Secrets = append(framework.Secrets, secret)
@@ -124,7 +125,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 		It("should send logs to spec'd indexName in Splunk", func() {
 
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withIndexName, logging.OutputTypeSplunk)
 			framework.Secrets = append(framework.Secrets, secret)
@@ -155,7 +156,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 		It("should send logs to spec'd indexKey in Splunk", func() {
 
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withIndexKey, logging.OutputTypeSplunk)
 			framework.Secrets = append(framework.Secrets, secret)
@@ -186,7 +187,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 		It("should send logs to default index if spec'd indexKey is not available", func() {
 
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withFakeIndexKey, logging.OutputTypeSplunk)
 			framework.Secrets = append(framework.Secrets, secret)
@@ -229,7 +230,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 				}
 			}
 
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeSplunk)
 			framework.Secrets = append(framework.Secrets, secret)

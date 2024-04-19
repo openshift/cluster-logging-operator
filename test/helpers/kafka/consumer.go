@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -94,5 +94,5 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 		},
 	}
 
-	return k8shandler.NewDeployment(name, namespace, DeploymentName, name, podSpec)
+	return factory.NewDeployment(namespace, name, DeploymentName, name, "", podSpec)
 }

@@ -2,6 +2,7 @@ package azuremonitor
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -37,7 +38,7 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		)
 		framework.Secrets = append(framework.Secrets, secret)
 
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInputWithVisitor("custom-app",
 				func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{}

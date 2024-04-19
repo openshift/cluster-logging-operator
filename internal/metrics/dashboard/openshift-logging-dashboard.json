@@ -1742,6 +1742,160 @@
             "align": false,
             "alignLevel": 0
           }
+        },
+        {
+          "aliasColors": {},
+          "bars": true,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${datasource}",
+          "format": "bytes",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 44
+          },
+          "hiddenSeries": false,
+          "id": 35,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": true,
+          "pluginVersion": "8.5.0",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": "${datasource}",
+              "editorMode": "code",
+              "expr": "sum by(hostname, component_kind, namespace, app_kubernetes_io_instance)(vector_buffer_byte_size{component_kind='sink', buffer_type='disk'})",
+              "legendFormat": "{{hostname}}/{{namespace}}/{{app_kubernetes_io_instance}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Collector buffer consuming bytes disk space on node",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:214",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:215",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "datasource": "${datasource}",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"value": 5, "color": "green"},
+                  {"value": 10, "color": "orange"},
+                  {"value": 15, "color": "red"}
+                ]
+              },
+              "type": "number",
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 18,
+            "x": 6,
+            "y": 5
+          },
+          "id": 4,
+          "styles": [
+            {
+              "alias": "Buffer Usage (%)",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Value #A",
+              "type": "number",
+              "unit": "percentunit"
+            },
+            {
+              "alias": "instance",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "instance",
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 5, "color": "green"},
+                {"value": 10, "color": "orange"},
+                {"value": 15, "color": "red"}
+              ]
+            },
+            "footer": {
+              "show": false,
+              "countRows": false,
+              "fields": ""
+            }
+          },
+          "pluginVersion": "8.5.0",
+          "targets": [
+            {
+              "datasource": "${datasource}",
+              "editorMode": "code",
+              "expr": "100 * (label_replace(sum by(hostname) (vector_buffer_byte_size{component_kind='sink', buffer_type='disk'}), 'instance', '$1', 'hostname', '(.*)') / on(instance) group_left() sum by(instance) (node_filesystem_size_bytes{mountpoint='/var'}))",
+              "refId": "A"
+            }
+          ],
+          "title": "Collector buffer consuming % disk space on node",
+          "transformations": {},
+          "type": "table"
         }
       ],
       "repeat": "datasource",

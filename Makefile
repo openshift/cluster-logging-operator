@@ -28,7 +28,6 @@ NAMESPACE=$(shell awk '/namespace:/{print $$2}' $(OVERLAY)/kustomization.yaml)
 DEPLOY_ENV=$(shell awk '/name:/ {NAME = $$NF} /value: / { if (NAME == "$(1)") { print $$NF; exit 0; }  }' $(OVERLAY)/deployment_patch.yaml)
 IMAGE_LOGGING_VECTOR=$(call DEPLOY_ENV,RELATED_IMAGE_VECTOR)
 IMAGE_LOGFILEMETRICEXPORTER=$(call DEPLOY_ENV,RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER)
-IMAGE_LOGGING_CONSOLE_PLUGIN=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN)
 
 export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
 BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
@@ -49,7 +48,6 @@ export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:6.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.0
-IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)
 endif # ifdef OVERLAY
 
 REPLICAS?=0
@@ -139,7 +137,6 @@ run:
 	LOG_LEVEL=$(LOG_LEVEL) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	OPERATOR_NAME=$(OPERATOR_NAME) \
 	WATCH_NAMESPACE="" \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -227,31 +224,17 @@ deploy-catalog:
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-catalog-deploy
 
-.PHONY: deploy-elasticsearch-operator
-deploy-elasticsearch-operator:
-	hack/deploy-eo.sh
-
-.PHONY: undeploy-elasticsearch-operator
-undeploy-elasticsearch-operator:
-	make -C ../elasticsearch-operator elasticsearch-cleanup
-
-.PHONY: deploy-example
-deploy-example: deploy
-	oc create -n $(NAMESPACE) -f hack/cr.yaml
-
 # NOTE: you can run tests directly using `go test` as follows:
 #   env $(make -s test-env) go test ./my/packages
 test-env: ## Echo test environment, useful for running tests outside of the Makefile.
 	@echo \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 
 .PHONY: test-functional
 test-functional: test-functional-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -cover -race ./test/helpers/... ./test/client/...
 
 .PHONY: test-functional-vector
@@ -274,7 +257,6 @@ test-functional-benchmarker-vector: bin/functional-benchmarker
 test-unit: test-forwarder-generator
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
 
 .PHONY: coverage

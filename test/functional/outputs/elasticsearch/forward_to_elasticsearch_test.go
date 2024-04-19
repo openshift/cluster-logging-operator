@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"sort"
 	"time"
 
@@ -31,7 +32,7 @@ var _ = Describe(fmt.Sprintf("[Functional][Outputs][ElasticSearch] %s Logforward
 		BeforeEach(func() {
 			outputLogTemplate.ViaqIndexName = "app-write"
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToElasticSearchOutput()
 			Expect(framework.Deploy()).To(BeNil())
@@ -115,7 +116,7 @@ var _ = Describe(fmt.Sprintf("[Functional][Outputs][ElasticSearch] %s Logforward
 			}
 			outputLogTemplate.ViaqIndexName = "app-write"
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeElasticsearch)
 			Expect(framework.Deploy()).To(BeNil())

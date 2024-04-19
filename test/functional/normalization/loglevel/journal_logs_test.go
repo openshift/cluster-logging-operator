@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -23,7 +24,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameInfrastructure).
 			ToHttpOutput().
 			FromInput(logging.InputNameAudit).

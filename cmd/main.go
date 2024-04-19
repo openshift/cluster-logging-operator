@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
@@ -47,7 +47,6 @@ import (
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
-	"github.com/openshift/cluster-logging-operator/internal/controller/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/internal/controller/forwarding"
 	"github.com/openshift/cluster-logging-operator/internal/controller/logfilemetricsexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -146,18 +145,6 @@ func main() {
 
 	log.Info("Registering Components.")
 
-	if err = (&clusterlogging.ReconcileClusterLogging{
-		Client:         mgr.GetClient(),
-		Reader:         mgr.GetAPIReader(),
-		Scheme:         mgr.GetScheme(),
-		Recorder:       mgr.GetEventRecorderFor("clusterlogging-controller"),
-		ClusterVersion: clusterVersion,
-		ClusterID:      clusterID,
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
-		os.Exit(1)
-	}
 	if err = (&forwarding.ReconcileForwarder{
 		Client:         mgr.GetClient(),
 		Reader:         mgr.GetAPIReader(),

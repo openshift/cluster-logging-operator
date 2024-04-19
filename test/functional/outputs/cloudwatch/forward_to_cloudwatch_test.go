@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 	Context("When sending a sequence of app log messages to CloudWatch", func() {
 		It("should be able to read messages from application log group", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
@@ -71,8 +72,8 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			// Add new label
 			framework.Labels[labelKey] = labelValue
 
-			// Generate a pod spec with a selector for labels and namespace
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			// testruntime a pod spec with a selector for labels and namespace
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("app-logs",
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
@@ -102,7 +103,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				Skip("not supported for this vector release")
 			}
 			appNamespace := "multi-line-test"
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("applogs-one", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
 						Namespaces: []string{appNamespace},
@@ -147,7 +148,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
 				Skip("not a valid test for vector since we route by namespace")
 			}
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput().
 				FromInput(logging.InputNameAudit).
@@ -194,7 +195,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			readLogType = logging.InputNameAudit
 		)
 		It("should appear in the audit log group with audit log_type", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
 				ToCloudwatchOutput()
 			framework.Secrets = append(framework.Secrets, secret)
@@ -225,7 +226,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 					Compression: compression,
 				}
 			}
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeCloudwatch)
 			framework.Secrets = append(framework.Secrets, secret)

@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -43,7 +44,7 @@ var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", fu
 			logging.InputNameApplication:    framework.ReadRawApplicationLogsFrom,
 		}
 
-		builder := functional.NewClusterLogForwarderBuilder(framework.Forwarder)
+		builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder)
 		for _, source := range sources {
 			builder.FromInput(source).Named("test-" + source).ToElasticSearchOutput()
 		}

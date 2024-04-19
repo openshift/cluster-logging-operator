@@ -1,4 +1,4 @@
-package functional
+package runtime
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -26,6 +26,7 @@ type PipelineBuilder struct {
 	pipelineName                  string
 	filterName                    string
 	filter                        *logging.FilterSpec
+	inputRefs                     []string
 }
 
 type InputSpecVisitor func(spec *logging.InputSpec)
@@ -50,9 +51,14 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 		clfb:      b,
 		inputName: inputName,
 		input:     inputSpec,
+		inputRefs: []string{},
 	}
 	b.inputSpecs[inputName] = inputSpec
 	return pipelineBuilder
+}
+func (p *PipelineBuilder) AndInput(inputName string) *PipelineBuilder {
+	p.inputRefs = append(p.inputRefs, inputName)
+	return p
 }
 func (b *ClusterLogForwarderBuilder) FromInputWithVisitor(inputName string, visit InputSpecVisitor) *PipelineBuilder {
 	pipelineBuilder := b.FromInput(inputName)
@@ -216,7 +222,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 					},
 				},
 				Secret: &logging.OutputSecretSpec{
-					Name: CloudwatchSecret,
+					Name: "cloudwatch-secret",
 				},
 				TLS: &logging.OutputTLSSpec{
 					InsecureSkipVerify: true,
@@ -306,9 +312,11 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputNam
 	}
 	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, pipelineName, clf.Spec.Pipelines)
 	if !added {
+		inputRefs := sets.NewString(p.inputRefs...)
+		inputRefs.Insert(p.inputName)
 		pSpec := logging.PipelineSpec{
 			Name:                  pipelineName,
-			InputRefs:             []string{p.inputName},
+			InputRefs:             inputRefs.List(),
 			OutputRefs:            []string{output.Name},
 			DetectMultilineErrors: p.enableMultilineErrorDetection,
 			Parse:                 p.jsonParsing,

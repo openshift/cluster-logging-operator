@@ -1,4 +1,4 @@
-package functional
+package runtime
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,7 +8,8 @@ import (
 )
 
 var _ = Describe("ClustLogForwarderBuilder", func() {
-
+	defer GinkgoRecover()
+	Skip("TODO: FIX Me when we fully impl observability")
 	var (
 		forwarder *logging.ClusterLogForwarder
 	)

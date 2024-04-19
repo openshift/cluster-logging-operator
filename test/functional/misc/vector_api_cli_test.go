@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Misc][API_CLI] Functional test", func() {
@@ -16,7 +17,7 @@ var _ = Describe("[Functional][Misc][API_CLI] Functional test", func() {
 	BeforeEach(func() {
 		Expect(testfw.LogCollectionType).To(Equal(logging.LogCollectionTypeVector))
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).FromInput(logging.InputNameInfrastructure).ToHttpOutput()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).FromInput(logging.InputNameInfrastructure).ToHttpOutput()
 	})
 
 	AfterEach(func() {

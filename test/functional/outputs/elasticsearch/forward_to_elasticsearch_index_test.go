@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -79,7 +80,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		}
 
 		It("should send logs spec'd by structuredTypeName", func() {
-			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withStructuredTypeName,
 					logging.OutputTypeElasticsearch)
@@ -108,7 +109,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, client.UseInfraNamespaceTestOption)
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
-			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameInfrastructure).
 				ToOutputWithVisitor(withStructuredTypeName,
 					logging.OutputTypeElasticsearch)
@@ -135,7 +136,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, client.UseInfraNamespaceTestOption)
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
-			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameInfrastructure).
 				ToOutputWithVisitor(withK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
 			clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
@@ -158,7 +159,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send logs spec'd by k8s label structuredTypeKey", func() {
-			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
 			clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
@@ -186,7 +187,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send logs spec'd by openshift label structuredTypeKey", func() {
-			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(withOpenshiftLabelsTypeKey, logging.OutputTypeElasticsearch)
 			clfb.Forwarder.Spec.Pipelines[0].Labels = map[string]string{
@@ -216,7 +217,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		})
 		Context("and enabling sending each container log to different indices", func() {
 			It("should send one container's log as defined by the annotation and the other defined by structuredTypeKey", func() {
-				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 						spec.OutputTypeSpec = logging.OutputTypeSpec{
@@ -261,7 +262,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		Context("if structured type name/key not configured", func() {
 
 			It("should send logs to app-write", func() {
-				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToElasticSearchOutput()
 				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
@@ -287,7 +288,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 		Context("if elasticsearch structuredTypeKey wrongly configured", func() {
 			It("should send logs to app-write", func() {
-				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 						spec.Elasticsearch = &logging.Elasticsearch{
@@ -318,7 +319,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 		Context("if json parsing failed", func() {
 			It("should send logs to app-write", func() {
-				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				clfb := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(withK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
 				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"

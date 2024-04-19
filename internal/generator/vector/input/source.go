@@ -18,6 +18,7 @@ const (
 )
 
 var (
+	// TODO: Remove ES/Kibana from excludes
 	loggingExcludes = source.NewContainerPathGlobBuilder().
 			AddOther(
 			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.LogfilesmetricexporterName),

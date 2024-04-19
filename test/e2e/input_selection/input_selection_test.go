@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 )
@@ -82,7 +81,7 @@ var _ = Describe("[InputSelection]", func() {
 			Create()
 		Expect(err).To(BeNil())
 		forwarder.Spec.ServiceAccountName = sa.Name
-		functional.NewClusterLogForwarderBuilder(forwarder).
+		testruntime.NewClusterLogForwarderBuilder(forwarder).
 			FromInputWithVisitor("myinput", func(spec *logging.InputSpec) {
 				spec.Application = input.Application
 				spec.Infrastructure = input.Infrastructure

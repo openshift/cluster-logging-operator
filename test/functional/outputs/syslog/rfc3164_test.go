@@ -2,6 +2,7 @@ package syslog
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -33,7 +34,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
 			Skip("TODO: fix me for vector?Does that make sense? Test requires fluentd")
 		}
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 				spec.Syslog.Facility = "user"
@@ -62,7 +63,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 	)
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
@@ -98,7 +99,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 			readLogsFrom = framework.ReadRawApplicationLogsFrom
 		}
 
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(source).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 				spec.Syslog.Facility = "user"

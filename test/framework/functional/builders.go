@@ -4,25 +4,26 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	runtime2 "github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type CollectorFunctionalFrameworkBuilder struct {
-	builder     *ClusterLogForwarderBuilder
+	builder     *runtime2.ClusterLogForwarderBuilder
 	Framework   *CollectorFunctionalFramework
 	podVisitors []runtime.PodBuilderVisitor
 }
 
 type FrameworkPipelineBuilder struct {
 	frameworkBuilder *CollectorFunctionalFrameworkBuilder
-	pipelineBuilder  *PipelineBuilder
+	pipelineBuilder  *runtime2.PipelineBuilder
 }
 
 func NewCollectorFunctionalFrameworkUsingCollectorBuilder(logCollectorType logging.LogCollectionType, testOptions ...client.TestOption) *CollectorFunctionalFrameworkBuilder {
 	framework := NewCollectorFunctionalFrameworkUsingCollector(logCollectorType, testOptions...)
 
 	return &CollectorFunctionalFrameworkBuilder{
-		builder:     NewClusterLogForwarderBuilder(framework.Forwarder),
+		builder:     runtime2.NewClusterLogForwarderBuilder(framework.Forwarder),
 		Framework:   framework,
 		podVisitors: []runtime.PodBuilderVisitor{},
 	}

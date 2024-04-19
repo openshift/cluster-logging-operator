@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"strings"
 	"time"
 
@@ -29,7 +30,7 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
 	}
-	return logs.ByIndex(ProjectIndexPrefix), nil
+	return logs.ByIndex(elasticsearch.ProjectIndexPrefix), nil
 }
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
@@ -44,7 +45,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 			clolog.Error(err, "error occurred while fetching infra logs")
 			return false, nil
 		}
-		l := logs.ByIndex(InfraIndexPrefix)
+		l := logs.ByIndex(elasticsearch.InfraIndexPrefix)
 		if l.NonEmpty() {
 			clolog.Info("found infra logs")
 		} else {
@@ -67,7 +68,7 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 			clolog.Error(err, "error occurred while fetching application logs")
 			return false, nil
 		}
-		l := logs.ByIndex(ProjectIndexPrefix)
+		l := logs.ByIndex(elasticsearch.ProjectIndexPrefix)
 		if l.NonEmpty() {
 			clolog.Info("found app logs")
 		} else {
@@ -90,7 +91,7 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 			clolog.Error(err, "error occurred while fetching audit logs")
 			return false, nil
 		}
-		l := logs.ByIndex(AuditIndexPrefix)
+		l := logs.ByIndex(elasticsearch.AuditIndexPrefix)
 		if l.NonEmpty() {
 			clolog.Info("found audit logs")
 		} else {

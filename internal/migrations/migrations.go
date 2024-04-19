@@ -19,7 +19,6 @@ func MigrateClusterLogging(spec loggingv1.ClusterLoggingSpec) (loggingv1.Cluster
 // migrations are the set of rules for migrating a ClusterLogging that modify the spec
 // for reconciliation and provides warning or informational messages to be added as status
 var clMigrations = []func(cl loggingv1.ClusterLoggingSpec) (loggingv1.ClusterLoggingSpec, []loggingv1.Condition){
-	clusterlogging.MigrateCollectionSpec,
 	clusterlogging.MigrateVisualizationSpec,
 }
 

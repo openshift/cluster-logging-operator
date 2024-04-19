@@ -1,10 +1,11 @@
-package e2e
+package elasticsearch
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework"
 	"strconv"
 	"strings"
 	"time"
@@ -81,7 +82,13 @@ func (indices *Indices) HasAuditLogs() bool {
 }
 
 type ElasticLogStore struct {
-	Framework *E2ETestFramework
+	framework.Test
+}
+
+func NewElasticLogStore(test framework.Test) *ElasticLogStore {
+	return &ElasticLogStore{
+		Test: test,
+	}
 }
 
 func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
@@ -89,7 +96,7 @@ func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs
 }
 
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), framework.DefaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
@@ -102,7 +109,7 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 }
 
 func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), framework.DefaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
@@ -115,7 +122,7 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 }
 
 func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), framework.DefaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
@@ -145,7 +152,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		LabelSelector: "component=elasticsearch",
 	}
 
-	pods, err := es.Framework.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	pods, err := es.Client().CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +161,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}
-	stdout, err := es.Framework.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
+	stdout, err := es.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
 	if err != nil {
 		return nil, err
 	}

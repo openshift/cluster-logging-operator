@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -274,16 +275,47 @@ func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string) string 
 	}
 	return name
 }
+
+func (tc *E2ETestFramework) DeployComponents(componentTypes ...helpers.LogComponentType) error {
+	for _, comp := range componentTypes {
+		switch comp {
+		case helpers.ComponentTypeReceiverElasticsearchRHManaged:
+			receiver := elasticsearch.NewManagedElasticsearch(tc)
+			if err := receiver.Deploy(); err != nil {
+				return err
+			}
+			tc.LogStores[elasticsearch.ManagedLogStore] = receiver
+		case helpers.ComponentTypeCollectorVector:
+			clf := runtime.NewClusterLogForwarder()
+			clf.Name = "mycollector"
+			runtime.NewClusterLogForwarderBuilder(clf).
+				FromInput(logging.InputNameApplication).
+				AndInput(logging.InputNameInfrastructure).
+				AndInput(logging.InputNameAudit).
+				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+					spec.Type = logging.OutputTypeElasticsearch
+					spec.URL = "https://elasticsearch:9200"
+					spec.Secret = &logging.OutputSecretSpec{
+						Name: clf.Name,
+					}
+				}, elasticsearch.ManagedLogStore)
+			if err := tc.CreateServiceAccountAndAuthorizeFor(clf); err != nil {
+				return err
+			}
+			if err := tc.CreateClusterLogForwarder(clf); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (tc *E2ETestFramework) Client() *kubernetes.Clientset {
+	return tc.KubeClient
+}
+
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) (err error) {
-	tc.ClusterLogging = helpers.NewClusterLogging(componentTypes...)
-	tc.LogStores["elasticsearch"] = &ElasticLogStore{
-		Framework: tc,
-	}
-	err = tc.CreateClusterLogging(tc.ClusterLogging)
-	if err == nil {
-		clolog.V(1).Info("Created clusterlogging", "object", tc.ClusterLogging)
-	}
-	return err
+	return tc.DeployComponents()
 }
 
 func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {

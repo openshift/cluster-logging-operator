@@ -1,6 +1,7 @@
 package outputs
 
 import (
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"path"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -91,7 +92,7 @@ output {
 		Skip("Enable me for vector?  Over http?")
 		framework = functional.NewCollectorFunctionalFramework()
 		addLogStashContainer := newVisitor(framework)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()
 		Expect(framework.DeployWithVisitor(addLogStashContainer)).To(BeNil())

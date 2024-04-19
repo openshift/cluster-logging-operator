@@ -53,6 +53,10 @@ type ClusterLoggingRequest struct {
 }
 
 func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarder, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string, resourceNames *factory.ForwarderResourceNames) ClusterLoggingRequest {
+	ownerRef := metav1.OwnerReference{}
+	if forwarder != nil {
+		ownerRef = utils.AsOwner(forwarder)
+	}
 	request := ClusterLoggingRequest{
 		Cluster:        cl,
 		Client:         requestClient,
@@ -62,7 +66,7 @@ func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.Clu
 		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
 		ResourceNames:  resourceNames,
-		ResourceOwner:  utils.AsOwner(forwarder),
+		ResourceOwner:  ownerRef,
 		isDaemonset:    true,
 		LogLevel:       "warn",
 	}
@@ -72,12 +76,14 @@ func NewClusterLoggingRequest(cl *logging.ClusterLogging, forwarder *logging.Clu
 		request.ResourceOwner = utils.AsOwner(cl)
 	}
 
-	// Collector is not a daemonset if the only input source is an HTTP receiver
-	// Enabled through an annotation
-	if _, ok := request.Forwarder.Annotations[constants.AnnotationEnableCollectorAsDeployment]; ok {
-		inputs := generatorUtils.GatherSources(&forwarder.Spec, framework.NoOptions)
-		if inputs.Len() == 1 && inputs.Has(logging.InputNameReceiver) {
-			request.isDaemonset = false
+	if request.Forwarder != nil {
+		// Collector is not a daemonset if the only input source is an HTTP receiver
+		// Enabled through an annotation
+		if _, ok := request.Forwarder.Annotations[constants.AnnotationEnableCollectorAsDeployment]; ok {
+			inputs := generatorUtils.GatherSources(&forwarder.Spec, framework.NoOptions)
+			if inputs.Len() == 1 && inputs.Has(logging.InputNameReceiver) {
+				request.isDaemonset = false
+			}
 		}
 	}
 

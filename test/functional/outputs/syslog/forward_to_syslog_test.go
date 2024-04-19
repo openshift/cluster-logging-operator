@@ -3,6 +3,7 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -61,7 +62,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 
 	Context("Application Logs", func() {
 		It("should send large message over UDP", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
 					spec.URL = "udp://0.0.0.0:24224"
@@ -86,7 +87,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
 		It("should send NonJson App logs to syslog", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
@@ -106,7 +107,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
 		It("should take values of appname, procid, messageid from record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
 					spec.Syslog.AppName = "$.message.appname_key"
@@ -133,7 +134,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
 				Skip("Test requires fluentd; Can this be enabled for the new API")
 			}
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
 					spec.Syslog.AppName = "tag"
@@ -156,7 +157,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 	})
 	Context("Audit logs", func() {
 		It("should send kubernetes audit logs", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
 				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
@@ -177,7 +178,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
 		It("should send openshift audit logs", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
 				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(Succeed())

@@ -1,6 +1,7 @@
 package multiple
 
 import (
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"sort"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -28,7 +29,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 
 	Context("LOG-1575", func() {
 		It("should fix sending JSON logs to syslog and elasticsearch without error", func() {
-			pipelineBuilder := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			pipelineBuilder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication)
 			pipelineBuilder.ToElasticSearchOutput()
 			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
@@ -76,7 +77,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 
 	Context("LOG-3640", func() {
 		It("should send parsed JSON logs to different outputs when using multiple pipelines", func() {
-			builder := functional.NewClusterLogForwarderBuilder(framework.Forwarder)
+			builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder)
 			pipelineBuilder := builder.FromInput(logging.InputNameApplication).WithParseJson().Named("one")
 			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 				spec.URL = "http://0.0.0.0:9200"

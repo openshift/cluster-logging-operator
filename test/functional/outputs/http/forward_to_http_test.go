@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
@@ -26,7 +27,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput()
 		framework.Forwarder.Spec.Outputs[0].Tuning = &logging.OutputTuningSpec{
@@ -95,7 +96,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 				}
 			}
 			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeHttp)
 

@@ -5,8 +5,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +14,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,26 +35,6 @@ func Reconcile(cl *logging.ClusterLogging, forwarder *logging.ClusterLogForwarde
 	// CL is managed by default set it as 1
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
 	telemetry.UpdateInfofromCL(*clusterLoggingRequest.Cluster)
-
-	if clusterLoggingRequest.IsLegacyDeployment() {
-
-		if clusterLoggingRequest.IncludesManagedStorage() {
-			// Reconcile Log Store
-			if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-				telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-				return fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-			}
-
-			// Reconcile Visualization
-			if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
-				telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-				return fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-			}
-
-		} else {
-			removeManagedStorage(clusterLoggingRequest)
-		}
-	}
 
 	if !forwarder.Status.IsReady() {
 		removeCollectorAndUpdate(clusterLoggingRequest)
@@ -98,23 +75,6 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	if err := clusterRequest.removeCollector(); err != nil {
 		log.Error(err, "Error removing collector")
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-	}
-}
-
-func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
-	log.V(1).Info("Removing managed store components...")
-	for _, remove := range []func() error{
-		func() error {
-			return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace, clusterRequest.ResourceNames.InternalLogStoreSecret)
-		},
-		clusterRequest.removeKibana,
-		func() error {
-			return lokistack.RemoveRbac(clusterRequest.Client)
-		}} {
-		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		if err := remove(); err != nil && !apierrors.IsNotFound(err) {
-			log.Error(err, "Error removing component")
-		}
 	}
 }
 

@@ -3,11 +3,11 @@ package kafka
 import (
 	"bytes"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -337,7 +337,7 @@ func NewBrokerConfigMap(namespace string) *v1.ConfigMap {
 		"client.properties": clientProperties,
 		"log4j.properties":  log4jProperties,
 	}
-	return k8shandler.NewConfigMap(DeploymentName, namespace, data)
+	return runtime.NewConfigMap(namespace, DeploymentName, data)
 }
 
 func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
@@ -347,7 +347,7 @@ func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 		"client.properties": functionalPodclientProperties,
 		"log4j.properties":  functionalPodlog4jProperties,
 	}
-	return k8shandler.NewConfigMap(DeploymentName, namespace, data)
+	return runtime.NewConfigMap(namespace, DeploymentName, data)
 }
 
 func NewBrokerSecret(namespace string) *v1.Secret {
@@ -365,9 +365,9 @@ func NewBrokerSecret(namespace string) *v1.Secret {
 		"tls.crt":       clientCert.CertificatePEM(),
 		"tls.key":       clientCert.PrivateKeyPEM(),
 	}
-	secret := k8shandler.NewSecret(
-		DeploymentName,
+	secret := runtime.NewSecret(
 		namespace,
+		DeploymentName,
 		data,
 	)
 	return secret

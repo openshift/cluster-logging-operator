@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -32,7 +33,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 
 	Context("Application Logs", func() {
 		It("should send large message over Kafka", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToKafkaOutput()
 			Expect(framework.Deploy()).To(BeNil())
@@ -48,7 +49,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 	Context("LOG-3458", func() {
 		It("should deliver message to a topic named the same as payload key", func() {
 			topic := "openshift"
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToKafkaOutput(func(output *logging.OutputSpec) {
 					output.Kafka.Topic = topic
@@ -73,7 +74,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 					Compression: compression,
 				}
 			}
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToKafkaOutput(compVisitFunc)
 

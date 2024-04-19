@@ -65,31 +65,5 @@ var _ = Describe("ReconcileForwarder", func() {
 
 		})
 
-		It("should fetch the ClusterLogging resource with the same namespace and name as the ClusterLogForwarder", func() {
-			exp := runtime.NewClusterLogging("somenamespace", "somename")
-			exp.Labels = map[string]string{
-				"foo": "bar",
-			}
-			exp.Spec = logging.ClusterLoggingSpec{
-				Collection: &logging.CollectionSpec{
-					Type: logging.LogCollectionTypeVector,
-				},
-			}
-
-			clf := runtime.NewClusterLogForwarder(exp.Namespace, exp.Name)
-
-			client = fake.NewClientBuilder().WithRuntimeObjects(exp, clf).Build()
-			controller := ReconcileForwarder{
-				Client: client,
-			}
-			request := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: "somenamespace",
-					Name:      "somename",
-				},
-			}
-			Expect(controller.fetchOrStubClusterLogging(request)).To(BeEquivalentTo(exp))
-		})
-
 	})
 })

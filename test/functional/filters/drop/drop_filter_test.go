@@ -1,6 +1,7 @@
 package drop
 
 import (
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -27,7 +28,7 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 		It("should drop logs that have `error` in its message OR logs with messages that doesn't include `information` AND includes `debug`", func() {
 			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
 
-			functional.NewClusterLogForwarderBuilder(f.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
 				FromInput(logging.InputNameApplication).
 				WithFilterWithVisitor(dropFilterName, func(spec *logging.FilterSpec) {
 					spec.Type = logging.FilterDrop

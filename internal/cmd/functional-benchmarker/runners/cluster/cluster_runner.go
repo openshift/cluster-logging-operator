@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"path"
 	"strings"
@@ -62,7 +63,7 @@ func (r *ClusterRunner) Deploy() {
 	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, cleanup, r.Verbosity, logging.LogCollectionTypeVector)
 	r.framework.Conf = r.CollectorConfig
 
-	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).
+	testruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
 		FromInputWithVisitor("benchmark", func(spec *logging.InputSpec) {
 			spec.Application = &logging.Application{
 				Namespaces: []string{r.Namespace()},

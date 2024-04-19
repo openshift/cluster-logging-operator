@@ -1,6 +1,7 @@
 package normalization
 
 import (
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -80,7 +81,7 @@ created by main.main
 
 		if buildLogForwarder == nil {
 			buildLogForwarder = func(framework *functional.CollectorFunctionalFramework) {
-				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					WithMultineErrorDetection().
 					ToHttpOutput()
@@ -126,7 +127,7 @@ created by main.main
 			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
 				Skip("skip for vector")
 			}
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("forward-pipeline", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
 						Namespaces: []string{appNamespace},
@@ -139,7 +140,7 @@ created by main.main
 			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
 				Skip("skip for vector")
 			}
-			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
 						Namespaces: []string{appNamespace},
@@ -157,7 +158,7 @@ created by main.main
 			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
 				Skip("skip for vector")
 			}
-			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
 						Namespaces: []string{appNamespace, "multi-line-test-2"},

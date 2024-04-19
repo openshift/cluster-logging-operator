@@ -32,9 +32,7 @@ var (
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
 	constants.VectorName:                 constants.VectorImageEnvVar,
-	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
-	constants.ConsolePluginName:          constants.ConsolePluginImageEnvVar,
 }
 
 func AsOwner(o runtime.Object) metav1.OwnerReference {

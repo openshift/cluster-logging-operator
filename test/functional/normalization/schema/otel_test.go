@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/schema/otel"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 const (
@@ -32,7 +33,7 @@ var _ = Describe("[Functional][Normalization][Schema] OTEL", func() {
 	})
 
 	It("should not normalize application logs to OTEL format for HTTP sink", func() {
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(loggingv1.InputNameApplication).
 			ToHttpOutputWithSchema(constants.OTELSchema)
 

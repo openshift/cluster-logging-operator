@@ -67,6 +67,7 @@ func NewServiceMonitor(namespace, name, component, portName string, owner metav1
 			constants.LabelK8sName,
 			constants.LabelK8sComponent,
 			constants.LabelK8sPartOf,
+			constants.LabelK8sInstance,
 		},
 	}
 

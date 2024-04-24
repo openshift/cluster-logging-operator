@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
@@ -47,10 +48,6 @@ import (
 // Change below variables to serve metrics on different host or port.
 var (
 	scheme = apiruntime.NewScheme()
-)
-
-const (
-	UnHealthyStatus = "0"
 )
 
 func init() {
@@ -136,7 +133,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -148,7 +144,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 
@@ -161,7 +156,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
-		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, UnHealthyStatus)
 		os.Exit(1)
 	}
 
@@ -182,10 +176,8 @@ func main() {
 		cloversion = version.Version
 		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
 	}
-	telemetry.Data.CLInfo.Set("version", cloversion)
 
-	errr := telemetry.RegisterMetrics()
-	if errr != nil {
+	if err := telemetry.Setup(context.TODO(), mgr.GetClient(), metrics.Registry, cloversion); err != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
 

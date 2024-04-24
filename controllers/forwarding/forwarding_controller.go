@@ -13,8 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -72,9 +70,6 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
 	r.Recorder.Event(loggingruntime.NewClusterLogForwarder(request.NamespacedName.Namespace, request.NamespacedName.Name), corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 
-	telemetry.SetCLFMetrics(0) // Cancel previous info metric
-	defer func() { telemetry.SetCLFMetrics(1) }()
-
 	cl, err := r.fetchOrStubClusterLogging(request)
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
@@ -98,7 +93,6 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 			instance.Status.Conditions.SetCondition(condition)
 			instance.Status.Conditions.SetCondition(logging.CondNotReady(logging.ValidationFailureReason, ""))
 			r.Recorder.Event(&instance, "Warning", string(logging.ReasonInvalid), condition.Message)
-			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 			return r.updateStatus(&instance)
 		} else if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.
@@ -114,15 +108,12 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	resourceNames := factory.GenerateResourceNames(instance)
 	reconcileErr := k8shandler.Reconcile(cl, &instance, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames)
 	if reconcileErr != nil {
-		// if cluster is set to fail to reconcile then set healthStatus as 0
-		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 	} else {
 		if instance.Status.Conditions.IsTrueFor(logging.ConditionReady) {
 			// This returns False if SetCondition updates the condition instead of setting it.
 			// For condReady, it will always be updating the status.
 			if !instance.Status.Conditions.SetCondition(logging.CondReady) {
-				telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
 				r.Recorder.Event(&instance, "Normal", string(logging.CondReady.Type), "ClusterLogForwarder is valid")
 			}
 		}

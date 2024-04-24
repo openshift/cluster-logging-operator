@@ -58,14 +58,15 @@ func NewKubernetesLogs(id, includes, excludes string) KubernetesLogs {
 	}
 }
 
+// LOG-5156 Replacing `*.log` with `*` in all file paths to account for rotated files
 const (
 	crioPodPathFmt                   = `"/var/log/pods/%s"`
-	crioNamespacePathFmt             = `"/var/log/pods/%s/*/*.log"`
-	crioNamespaceAndContainerPathFmt = `"/var/log/pods/%s/%s/*.log"`
-	crioNamespaceContainerCombined   = `"/var/log/pods/%s/*.log"`
-	crioContainerPathFmt             = `"/var/log/pods/*/%s/*.log"`
+	crioNamespacePathFmt             = `"/var/log/pods/%s/*/*"`
+	crioNamespaceAndContainerPathFmt = `"/var/log/pods/%s/%s/*"`
+	crioNamespaceContainerCombined   = `"/var/log/pods/%s/*"`
+	crioContainerPathFmt             = `"/var/log/pods/*/%s/*"`
 	crioPathExtFmt                   = `"/var/log/pods/*/*/*.%s"`
-	crioEverything                   = `["/var/log/pods/*/*/*.log"]`
+	crioEverything                   = `["/var/log/pods/*/*/*"]`
 )
 
 // ContainerPathGlobFrom formats a list of kubernetes container file paths to include/exclude for
@@ -77,14 +78,14 @@ const (
 // The format rules:
 //
 //	namespaces:
-//	  namespace:     /var/log/pods/namespace_*/*/*.log
-//	  **namespace:   /var/log/pods/*namespace_*/*/*.log
-//	  **name*pace**: /var/log/pods/*name*pace*/*/*.log
-//	  namespace**:   /var/log/pods/namespace*/*/*.log
+//	  namespace:     /var/log/pods/namespace_*/*/*
+//	  **namespace:   /var/log/pods/*namespace_*/*/*
+//	  **name*pace**: /var/log/pods/*name*pace*/*/*
+//	  namespace**:   /var/log/pods/namespace*/*/*
 //	containers:
-//	  container:    /var/log/pods/*/container/*.log
-//	  *cont**iner*:    /var/log/pods/*/*cont*iner*/*.log
-//	  cont**iner*:    /var/log/pods/*/cont*iner*/*.log
+//	  container:    /var/log/pods/*/container/*
+//	  *cont**iner*:    /var/log/pods/*/*cont*iner*/*
+//	  cont**iner*:    /var/log/pods/*/cont*iner*/*
 func ContainerPathGlobFrom(namespaces, containers []string, extensions ...string) string {
 	paths := []string{}
 	for _, n := range namespaces {

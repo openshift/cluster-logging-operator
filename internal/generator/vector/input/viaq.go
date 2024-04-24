@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	nsPodPathFmt       = "%s_%s-*/*/*.log"
-	nsContainerPathFmt = "%s_*/%s/*.log"
+	nsPodPathFmt       = "%s_%s-*/*/*"
+	nsContainerPathFmt = "%s_*/%s/*"
 )
 
 var (
@@ -110,7 +110,8 @@ func NewViaQ(input logging.InputSpec, collectorNS string, resNames *factory.Forw
 			sources := sets.NewString(input.Infrastructure.Sources...)
 			if sources.Has(logging.InfrastructureSourceContainer) {
 				infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, "")
+				infraExcludes = source.NewContainerPathGlobBuilder().AddExtensions(excludeExtensions...).Build()
+				cels, cids := NewViaqContainerSource(input, collectorNS, infraIncludes, infraExcludes)
 				els = append(els, cels...)
 				ids = append(ids, cids...)
 			}

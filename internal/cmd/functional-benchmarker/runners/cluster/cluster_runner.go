@@ -78,8 +78,8 @@ func (r *ClusterRunner) Deploy() {
 			conf = strings.Replace(conf, "/var/log/pods/*/*/*.log", pattern, 1)
 			conf = strings.Replace(conf, "/var/log/pods/**/*.log", pattern, 1)
 		case logging.LogCollectionTypeVector:
-			pattern := `exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log"`
-			conf = strings.Replace(conf, `exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*.log"`, pattern, 1)
+			pattern := `exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*"`
+			conf = strings.Replace(conf, `exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*"`, pattern, 1)
 			n := strings.Index(conf, "[sinks.prometheus_output]")
 			if n == -1 {
 				return conf

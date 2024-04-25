@@ -2,8 +2,9 @@
 # with the cluster logging operator source so we can use all the
 # test scripts to deploy the elasticsearch operator and then
 # test the clusterlogging operator
-FROM registry.ci.openshift.org/ocp/4.7:elasticsearch-operator-src
-ADD . /go/src/github.com/openshift/cluster-logging-operator
+FROM registry.ci.openshift.org/logging/5.8:elasticsearch-operator-src AS es-src
+FROM src
+COPY --from=es-src /go/src/github.com/openshift/elasticsearch-operator /go/src/github.com/openshift/elasticsearch-operator
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 USER 0
 RUN mkdir -p /go/src/github.com/openshift/cluster-logging-operator/bin/

@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 
@@ -56,4 +57,20 @@ func GenerateResourceNames(clf logging.ClusterLogForwarder) *ForwarderResourceNa
 		forwarderResNames.ServiceAccountTokenSecret = clf.Spec.ServiceAccountName + "-token"
 	}
 	return forwarderResNames
+}
+
+// ResourceNames is a factory for naming of objects based on ClusterLogForwarder namespace and name
+func ResourceNames(clf obsv1.ClusterLogForwarder) *ForwarderResourceNames {
+	resBaseName := clf.Name
+	return &ForwarderResourceNames{
+		CommonName:                       resBaseName,
+		SecretMetrics:                    resBaseName + "-metrics",
+		ConfigMap:                        resBaseName + "-config",
+		MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", clf.Namespace, resBaseName),
+		ForwarderName:                    clf.Name,
+		CaTrustBundle:                    resBaseName + "-trustbundle",
+		ServiceAccount:                   clf.Spec.ServiceAccount.Name,
+		InternalLogStoreSecret:           clf.Spec.ServiceAccount.Name + "-default",
+		ServiceAccountTokenSecret:        clf.Spec.ServiceAccount.Name + "-token",
+	}
 }

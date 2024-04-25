@@ -3,3 +3,4 @@ resources:
 - logging_v1_clusterlogforwarder.yaml
 - logging_v1_clusterlogging.yaml
 - logging_v1alpha1_logfilemetricexporter.yaml
+- observability_v1_clusterlogforwarder.yaml

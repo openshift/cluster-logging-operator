@@ -10,20 +10,24 @@ import (
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-
-	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	observabilitycontroller "github.com/openshift/cluster-logging-operator/internal/controller/observability"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/api"
+
+	apis "github.com/openshift/cluster-logging-operator/api"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 
@@ -40,12 +44,13 @@ import (
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+
 	"github.com/openshift/cluster-logging-operator/internal/controller/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/internal/controller/forwarding"
 	"github.com/openshift/cluster-logging-operator/internal/controller/logfilemetricsexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -72,6 +77,7 @@ func init() {
 
 	utilruntime.Must(loggingv1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(observabilityv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -186,6 +192,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&observabilitycontroller.ClusterLogForwarderReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

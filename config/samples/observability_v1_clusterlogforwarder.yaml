@@ -1,0 +1,36 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: log-collector
+  namespace: acme-logging
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: log-collector
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: cluster-logging
+    app.kubernetes.io/managed-by: cluster-logging-operator
+spec:
+  outputs:
+    - name: rh-loki
+      type: lokiStack
+      service:
+        namespace: openshift-logging
+        name: rh-managed-loki
+        authorization:
+          secret:
+            name: audit-collector-sa-token
+          token:
+            key: token
+  inputs:
+    - name: infra-container
+      type: infrastructure
+      infrastructure:
+        sources: [container]
+  serviceAccount:
+    name: audit-collector-sa
+  pipelines:
+    - inputRefs:
+        - infra-container
+        - audit
+      outputRefs:
+        - rh-loki

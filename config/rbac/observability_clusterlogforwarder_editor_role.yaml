@@ -1,0 +1,31 @@
+# permissions for end users to edit clusterlogforwarders.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: clusterlogforwarder-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: clusterlogging
+    app.kubernetes.io/part-of: clusterlogging
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterlogforwarder-editor-role
+rules:
+- apiGroups:
+  - observability.openshift.io
+  resources:
+  - clusterlogforwarders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - observability.openshift.io
+  resources:
+  - clusterlogforwarders/status
+  verbs:
+  - get

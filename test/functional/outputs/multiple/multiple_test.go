@@ -99,7 +99,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 				}, "other-es")
 
 			builder.FromInput(logging.InputNameApplication).WithParseJson().Named("three").
-				ToFluentForwardOutput()
+				ToHttpOutput()
 
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -115,11 +115,11 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(esLogs).To(HaveLen(1))
 
-			fluentlogs, err := framework.ReadLogsFrom(logging.OutputTypeFluentdForward, logging.InputNameApplication)
+			httpLogs, err := framework.ReadLogsFrom(logging.OutputTypeHttp, logging.InputNameApplication)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(fluentlogs).To(HaveLen(1))
+			Expect(httpLogs).To(HaveLen(1))
 
-			for output, raw := range map[string][]string{"other-es": otherLogs, "elasticsearch": esLogs, "flluentforward": fluentlogs} {
+			for output, raw := range map[string][]string{"other-es": otherLogs, "elasticsearch": esLogs, "http": httpLogs} {
 				// Parse log line
 				var logs []types.ApplicationLog
 				err = types.StrictlyParseLogsFromSlice(raw, &logs)

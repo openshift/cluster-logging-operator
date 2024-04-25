@@ -31,7 +31,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 	})
 	DescribeTable("logforwarder configured with output.syslog.tag", func(tagSpec, expTag string, requiresFluentd bool) {
 		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
-			Skip("Test requires fluentd")
+			Skip("TODO: fix me for vector?Does that make sense? Test requires fluentd")
 		}
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
@@ -89,7 +89,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 
 	DescribeTable("configured to addLogSourceToMessage should add namespace, pod, container name", func(source string, requiresFluentd bool) {
 		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
-			Skip("Test requires fluentd")
+			Skip("TODO fix for vector? Test requires fluentd")
 		}
 		writeLogs := framework.WriteMessagesToInfraContainerLog
 		readLogsFrom := framework.ReadInfrastructureLogsFrom

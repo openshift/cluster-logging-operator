@@ -1,4 +1,3 @@
-// go:build !fluentd
 package misc
 
 import (
@@ -11,11 +10,6 @@ import (
 )
 
 var _ = Describe("[Functional][Misc][API_CLI] Functional test", func() {
-
-	if testfw.LogCollectionType != logging.LogCollectionTypeVector {
-		defer GinkgoRecover()
-		Skip("skip for non-vector")
-	}
 
 	var framework *functional.CollectorFunctionalFramework
 

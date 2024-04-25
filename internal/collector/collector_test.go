@@ -12,7 +12,6 @@ import (
 	"os"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"
@@ -33,9 +32,9 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 	)
 	BeforeEach(func() {
 		factory = &Factory{
-			CollectorType: logging.LogCollectionTypeFluentd,
-			ImageName:     constants.FluentdName,
-			Visit:         fluentd.CollectorVisitor,
+			CollectorType: logging.LogCollectionTypeVector,
+			ImageName:     constants.VectorName,
+			Visit:         vector.CollectorVisitor,
 			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 			isDaemonset:   true,
 		}
@@ -246,8 +245,8 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 
 		Context("and mounting volumes", func() {
 			It("should mount host path volumes", func() {
-				Expect(podSpec.Volumes).To(HaveLen(15))
-				Expect(podSpec.Volumes).To(ContainElement(v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}}))
+				Expect(podSpec.Volumes).To(ContainElement(v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}}))
+				Expect(podSpec.Volumes).To(HaveLen(13))
 			})
 		})
 	})
@@ -263,9 +262,9 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 	)
 	BeforeEach(func() {
 		factory = &Factory{
-			CollectorType: logging.LogCollectionTypeFluentd,
-			ImageName:     constants.FluentdName,
-			Visit:         fluentd.CollectorVisitor,
+			CollectorType: logging.LogCollectionTypeVector,
+			ImageName:     constants.VectorName,
+			Visit:         vector.CollectorVisitor,
 			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
 			isDaemonset:   false,
 		}
@@ -462,8 +461,8 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 
 		Context("and mounting volumes", func() {
 			It("should not mount host path volumes", func() {
-				Expect(podSpec.Volumes).To(HaveLen(6))
-				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}}))
+				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}}))
+				Expect(podSpec.Volumes).To(HaveLen(5))
 			})
 		})
 	})
@@ -514,29 +513,6 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 		})
 
 	})
-	Context("when collectorType is fluentd", func() {
-		BeforeEach(func() {
-			factory = &Factory{
-				CollectorType: logging.LogCollectionTypeFluentd,
-				ImageName:     constants.FluentdName,
-				Visit:         fluentd.CollectorVisitor,
-			}
-		})
-		It("should apply the default resources when none are defined", func() {
-			Expect(factory.CollectorResourceRequirements()).To(Equal(v1.ResourceRequirements{
-				Limits: v1.ResourceList{v1.ResourceMemory: fluentd.DefaultMemory},
-				Requests: v1.ResourceList{
-					v1.ResourceMemory: fluentd.DefaultMemory,
-					v1.ResourceCPU:    fluentd.DefaultCpuRequest,
-				},
-			}))
-		})
-		It("should apply the spec'd resources when defined", func() {
-			factory.CollectorSpec = collectionSpec
-			Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
-		})
-
-	})
 })
 
 var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
@@ -574,73 +550,6 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 			},
 		}
 	)
-	Context("when collectorType is fluentd", func() {
-		BeforeEach(func() {
-			factory = &Factory{
-				CollectorType: logging.LogCollectionTypeFluentd,
-				ImageName:     constants.FluentdName,
-				Visit:         fluentd.CollectorVisitor,
-				Secrets:       secrets,
-				ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
-			}
-		})
-		Context("when collector has a secret containing a credentials key", func() {
-
-			It("should NO LONGER be setting AWS ENV vars in the container", func() {
-				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
-					Outputs:   outputs,
-					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector := podSpec.Containers[0]
-
-				// LOG-4084 fluentd no longer setting env vars
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRegionEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRoleArnEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRoleSessionEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSWebIdentityTokenEnvVarKey,
-				})))
-			})
-		})
-		Context("when collector has a secret containing a role_arn key", func() {
-			BeforeEach(func() {
-				factory.Secrets = map[string]*v1.Secret{
-					outputs[0].Name: {
-						Data: map[string][]byte{
-							"role_arn": []byte(roleArn),
-						},
-					},
-				}
-			})
-			It("should NO LONGER be setting AWS ENV vars in the container", func() {
-				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
-					Outputs:   outputs,
-					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector := podSpec.Containers[0]
-
-				// LOG-4084 fluentd no longer setting env vars
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRegionEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRoleArnEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSRoleSessionEnvVarKey,
-				})))
-				Expect(collector.Env).To(Not(IncludeEnvVar(v1.EnvVar{
-					Name: constants.AWSWebIdentityTokenEnvVarKey,
-				})))
-			})
-		})
-	})
 	Context("when collectorType is vector", func() {
 		BeforeEach(func() {
 			factory = &Factory{

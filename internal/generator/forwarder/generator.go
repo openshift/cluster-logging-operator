@@ -10,7 +10,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -39,9 +38,6 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 		format: func(conf string) string { return conf },
 	}
 	switch collectorType {
-	case logging.LogCollectionTypeFluentd:
-		g.format = helpers.FormatFluentConf
-		g.conf = fluentd.Conf
 	case logging.LogCollectionTypeVector:
 		g.format = helpers.FormatVectorToml
 		g.conf = conf.Conf

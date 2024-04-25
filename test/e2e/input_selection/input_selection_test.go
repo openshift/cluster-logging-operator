@@ -34,6 +34,8 @@ var _ = Describe("[InputSelection]", func() {
 		logGeneratorNameFn = func(name string) string {
 			return "log-generator"
 		}
+
+		valueFrontendNS string
 	)
 
 	AfterEach(func() {
@@ -52,9 +54,13 @@ var _ = Describe("[InputSelection]", func() {
 				return component
 			}
 		}
-
+		valueFrontendNS = e2e.CreateTestNamespace()
+		// HACK
+		if input.Application != nil && len(input.Application.Namespaces) == 1 && input.Application.Namespaces[0] == "" {
+			input.Application.Namespaces[0] = valueFrontendNS
+		}
 		for componentName, namespace := range map[string]string{
-			valueFrontend: e2e.CreateTestNamespace(),
+			valueFrontend: valueFrontendNS,
 			valueBackend:  e2e.CreateTestNamespace(),
 			valueMiddle:   e2e.CreateTestNamespaceWithPrefix("openshift-test")} {
 			options := framework.NewDefaultLogGeneratorOptions()
@@ -182,6 +188,17 @@ var _ = Describe("[InputSelection]", func() {
 				namespaces := receiver.ListNamespaces()
 				Expect(namespaces).ToNot(BeEmpty(), "Exp. to collect some logs")
 				Expect(namespaces).To(HaveEach(MatchRegexp("^clo-test.*$")))
+			}),
+		Entry("application inputs should only collect from explicit namespaces",
+			logging.InputSpec{
+				Application: &logging.Application{
+					Namespaces: []string{valueFrontendNS},
+				}},
+			logGeneratorNameFn,
+			func() {
+				namespaces := receiver.ListNamespaces()
+				Expect(namespaces).ToNot(BeEmpty(), "Exp. to collect some logs")
+				Expect(namespaces).To(HaveEach(Equal(valueFrontendNS)))
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
 			logging.InputSpec{

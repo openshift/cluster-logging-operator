@@ -1,5 +1,3 @@
-//go:build fluentd
-
 package normalization
 
 import (
@@ -31,6 +29,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 	)
 
 	BeforeEach(func() {
+		Skip("fix me for vector")
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

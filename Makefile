@@ -27,7 +27,6 @@ NAMESPACE=$(shell awk '/namespace:/{print $$2}' $(OVERLAY)/kustomization.yaml)
 # Get operand image names from the deployment patch in the overlay.
 DEPLOY_ENV=$(shell awk '/name:/ {NAME = $$NF} /value: / { if (NAME == "$(1)") { print $$NF; exit 0; }  }' $(OVERLAY)/deployment_patch.yaml)
 IMAGE_LOGGING_VECTOR=$(call DEPLOY_ENV,RELATED_IMAGE_VECTOR)
-IMAGE_LOGGING_FLUENTD=$(call DEPLOY_ENV,RELATED_IMAGE_FLUENTD)
 IMAGE_LOGFILEMETRICEXPORTER=$(call DEPLOY_ENV,RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER)
 IMAGE_LOGGING_CONSOLE_PLUGIN=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN)
 
@@ -48,8 +47,6 @@ export LOGGING_VERSION?=6.0
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
-
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:5.9.0
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:6.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.0
 IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)
@@ -79,8 +76,7 @@ check: build compile-tests bin/forwarder-generator bin/cluster-logging-operator 
 
 # Compile all tests and code but don't run the tests.
 compile-tests: generate
-	go test -tags vector ./test/... -run NONE > /dev/null
-	go test -tags fluentd ./test/... -run NONE > /dev/null
+	go test ./test/... -run NONE > /dev/null
 
 .PHONY: ci-check
 # CI calls ci-check first.
@@ -114,13 +110,6 @@ openshift-client:
 .PHONY: build
 build: bin/cluster-logging-operator
 
-.PHONY: build-functional-e2e-tests
-build-functional-e2e-tests:
-	for d in $$(find ./test/e2e -type d -name "*" -not -path '*/.*'); do go test -c $$d --tags fluentd; done
-	for d in $$(find ./test/e2e -type d -name "*" -not -path '*/.*'); do go test -c $$d --tags vector; done
-	for d in $$(find ./test/functional -type d -name "*"  -not -path '*/.*'); do go test -c $$d --tags fluentd; done
-	for d in $$(find ./test/functional -type d -name "*"  -not -path '*/.*'); do go test -c $$d --tags vector; done
-
 .PHONY: build-debug
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
@@ -148,7 +137,6 @@ run:
 	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	LOG_LEVEL=$(LOG_LEVEL) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
@@ -189,8 +177,7 @@ image: .target/image
 # - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
 export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
 lint:  $(GOLANGCI_LINT) lint-repo
-	$(GOLANGCI_LINT) run --color=never --build-tags fluentd --timeout=3m $(if $(CI),,--fix)
-	$(GOLANGCI_LINT) run --color=never --build-tags vector --timeout=3m $(if $(CI),,--fix)
+	$(GOLANGCI_LINT) run --color=never  --timeout=3m $(if $(CI),,--fix)
 .PHONY: lint
 
 .PHONY: lint-repo
@@ -257,65 +244,35 @@ deploy-example: deploy
 test-env: ## Echo test environment, useful for running tests outside of the Makefile.
 	@echo \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 
 .PHONY: test-functional
 test-functional: test-functional-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -cover -race ./test/helpers/... ./test/client/...
 
-.PHONY: test-functional-fluentd
-test-functional-fluentd: test-functional-benchmarker-fluentd
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
-
 .PHONY: test-functional-vector
 test-functional-vector: test-functional-benchmarker-vector
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=vector -race \
-		./test/functional/filters/... \
-		./test/functional/outputs/azuremonitor/... \
-		./test/functional/outputs/elasticsearch/... \
-		./test/functional/outputs/kafka/... \
-		./test/functional/outputs/cloudwatch/... \
-		./test/functional/outputs/loki/... \
-		./test/functional/outputs/http/... \
-		./test/functional/outputs/splunk/... \
-		./test/functional/outputs/syslog/... \
-		./test/functional/normalization/... \
-		./test/functional/flowcontrol/... \
-		./test/functional/inputs/http/... \
-		./test/functional/inputs/syslog/... \
-		./test/functional/misc/... \
+	go test -race \
+		./test/functional/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator
-	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null
 	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
 
 test-functional-benchmarker-vector: bin/functional-benchmarker
 	@rm -rf /tmp/benchmark-test-vector
 	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --collector-impl=vector --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
-.PHONY: test-functional-benchmarker-fluentd
-test-functional-benchmarker-fluentd: bin/functional-benchmarker
-	@rm -rf /tmp/benchmark-test-fluentd
-	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_FLUENTD) --collector-impl=fluentd --artifact-dir=/tmp/benchmark-test-fluentd 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
-
 .PHONY: test-unit
 test-unit: test-forwarder-generator
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
@@ -389,14 +346,12 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image
 	LOG_LEVEL=3 \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \

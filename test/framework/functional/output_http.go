@@ -2,6 +2,7 @@ package functional
 
 import (
 	"bytes"
+	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	"os"
 	"strings"
 	"text/template"
@@ -168,7 +169,7 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 	}
 
 	log.V(2).Info("Adding fluentd container", "name", name)
-	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
+	b.AddContainer(name, fluentdhelpers.Image).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().

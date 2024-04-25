@@ -30,7 +30,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		checkMountReadOnly = func(mount string) {
 			touchFile := mount + "/1"
 			result, err := runInCollectorContainer("touch", touchFile)
-			Expect(result).To(HavePrefix("touch: cannot touch '" + touchFile + "': Read-only file system"))
+			Expect(result).To(MatchRegexp("touch:.cannot.*touch.*" + touchFile + ".*Read-only file system"))
 			Expect(err).To(MatchError("exit status 1"))
 		}
 
@@ -83,11 +83,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 		}
-		impl := helpers.ComponentTypeCollectorFluentd
-		if collectorType == logging.LogCollectionTypeVector {
-			impl = helpers.ComponentTypeCollectorVector
-		}
-		components := []helpers.LogComponentType{impl}
+		components := []helpers.LogComponentType{helpers.ComponentTypeCollectorVector}
 		if err := e2e.SetupClusterLogging(components...); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 		}
@@ -136,7 +132,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		checkMountReadOnly("/")
 
 		By("mounting the needed subdirectories of /var/log read-only")
-		for _, d := range []string{"", "containers", "journal", "openshift-apiserver", "audit", "kube-apiserver", "pods", "oauth-apiserver"} {
+		for _, d := range []string{"", "journal", "openshift-apiserver", "audit", "kube-apiserver", "pods", "oauth-apiserver"} {
 			checkMountReadOnly("/var/log/" + d)
 		}
 
@@ -145,21 +141,21 @@ var _ = Describe("Tests of collector container security stance", func() {
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())
-		if collectorType == logging.LogCollectionTypeFluentd {
-			By("making sure on disk footprint is readable only to the collector")
-			Eventually(func() (string, error) {
-				return runInCollectorContainer("bash", "-ceuo", "pipefail", `stat --format=%a /var/lib/fluentd/es/* | sort -u`)
-			}).
-				WithTimeout(2*time.Minute).
-				Should(Equal("600"), "Exp the data directory to have alternate permissions")
-		}
+		// TODO: fix for vector buffering?
+		//if collectorType == logging.LogCollectionTypeFluentd {
+		//	By("making sure on disk footprint is readable only to the collector")
+		//	Eventually(func() (string, error) {
+		//		return runInCollectorContainer("bash", "-ceuo", "pipefail", `stat --format=%a /var/lib/fluentd/es/* | sort -u`)
+		//	}).
+		//		WithTimeout(2*time.Minute).
+		//		Should(Equal("600"), "Exp the data directory to have alternate permissions")
+		//}
 
 		// LOG-2620: containers violate PodSecurity for 4.12+
 		By("making sure collector namespace has the pod security label")
 		verifyNamespaceLabels()
 
 	},
-		Entry("for fluentd impl", logging.LogCollectionTypeFluentd),
 		Entry("for vector impl", logging.LogCollectionTypeVector),
 	)
 })

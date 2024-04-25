@@ -17,4 +17,4 @@ spec:
     kibana:
       replicas: 1
   collection:
-    type: "fluentd"
+    type: vector

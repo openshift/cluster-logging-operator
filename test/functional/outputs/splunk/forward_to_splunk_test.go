@@ -1,5 +1,3 @@
-// go:build !fluentd
-
 package splunk
 
 import (

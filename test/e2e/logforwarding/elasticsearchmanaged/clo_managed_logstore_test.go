@@ -68,7 +68,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			}
 		}
 	},
-		Entry("using fluentd collector", helpers.ComponentTypeCollectorFluentd),
 		Entry("using vector collector", helpers.ComponentTypeCollectorVector),
 	)
 

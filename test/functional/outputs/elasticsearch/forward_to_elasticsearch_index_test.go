@@ -324,7 +324,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 				Expect(framework.Deploy()).To(BeNil())
 
-				// Write log line as input to fluentd
+				// Write log line as input
 				invalidJson := `{"key":"v}`
 				timestamp := "2020-11-04T18:13:59.061892+00:00"
 				//expectedMessage := invalidJson

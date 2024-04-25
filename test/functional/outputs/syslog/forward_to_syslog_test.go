@@ -131,7 +131,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 		})
 		It("should take values from fluent tag", func() {
 			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
-				Skip("Test requires fluentd")
+				Skip("Test requires fluentd; Can this be enabled for the new API")
 			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).

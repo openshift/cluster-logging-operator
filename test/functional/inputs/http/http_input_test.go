@@ -1,4 +1,3 @@
-// go:build !fluentd
 package http
 
 import (

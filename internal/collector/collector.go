@@ -18,7 +18,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -29,8 +28,6 @@ const (
 	clusterLoggingPriorityClassName = "system-node-critical"
 	MetricsPort                     = int32(24231)
 	MetricsPortName                 = "metrics"
-	logContainers                   = "varlogcontainers"
-	logContainersValue              = "/var/log/containers"
 	logPods                         = "varlogpods"
 	logPodsValue                    = "/var/log/pods"
 	logJournal                      = "varlogjournal"
@@ -81,13 +78,6 @@ func (f *Factory) CollectorResourceRequirements() v1.ResourceRequirements {
 		if f.CollectorType == logging.LogCollectionTypeVector {
 			return v1.ResourceRequirements{}
 		}
-		return v1.ResourceRequirements{
-			Limits: v1.ResourceList{v1.ResourceMemory: fluentd.DefaultMemory},
-			Requests: v1.ResourceList{
-				v1.ResourceMemory: fluentd.DefaultMemory,
-				v1.ResourceCPU:    fluentd.DefaultCpuRequest,
-			},
-		}
 	}
 	return *f.CollectorSpec.Resources
 }
@@ -105,22 +95,17 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		ConfigHash:    confHash,
 		CollectorSpec: collectorSpec,
 		CollectorType: collectorSpec.Type,
-		ImageName:     constants.FluentdName,
-		Visit:         fluentd.CollectorVisitor,
+		ImageName:     constants.VectorName,
+		Visit:         vector.CollectorVisitor,
 		Secrets:       secrets,
 		ForwarderSpec: forwarderSpec,
 		CommonLabelInitializer: func(o runtime.Object) {
-			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName, constants.CollectorName)
+			runtime.SetCommonLabels(o, constants.VectorName, instanceName, constants.CollectorName)
 		},
 		ResourceNames:   resNames,
-		PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
+		PodLabelVisitor: vector.PodLogExcludeLabel,
 		isDaemonset:     isDaemonset,
 		LogLevel:        logLevel,
-	}
-	if collectorSpec.Type == logging.LogCollectionTypeVector {
-		factory.ImageName = constants.VectorName
-		factory.Visit = vector.CollectorVisitor
-		factory.PodLabelVisitor = vector.PodLogExcludeLabel
 	}
 	return factory
 }
@@ -153,7 +138,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	if f.isDaemonset {
 		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
 			v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
 			v1.Volume{Name: logJournal, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logJournalValue}}},
 			v1.Volume{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
@@ -218,7 +202,6 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 
 	if f.isDaemonset {
 		collector.VolumeMounts = append(collector.VolumeMounts,
-			v1.VolumeMount{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
 			v1.VolumeMount{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
 			v1.VolumeMount{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
 			v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},

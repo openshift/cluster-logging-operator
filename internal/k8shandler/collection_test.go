@@ -49,19 +49,19 @@ var _ = Describe("Reconciling", func() {
 					Type: loggingv1.LogStoreTypeElasticsearch,
 				},
 				Collection: &loggingv1.CollectionSpec{
-					Type:          loggingv1.LogCollectionTypeFluentd,
+					Type:          loggingv1.LogCollectionTypeVector,
 					CollectorSpec: loggingv1.CollectorSpec{},
 				},
 			},
 		}
 
-		fluentdSecret = &corev1.Secret{
+		collectorSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.CollectorName,
 				Namespace: cluster.GetNamespace(),
 			},
 		}
-		fluentdCABundle = &corev1.ConfigMap{
+		collectorCABundle = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.CollectorTrustedCAName,
 				Namespace: cluster.GetNamespace(),
@@ -134,8 +134,8 @@ var _ = Describe("Reconciling", func() {
 				cluster.TypeMeta.SetGroupVersionKind(loggingv1.GroupVersion.WithKind("ClusterLogging"))
 				client = fake.NewFakeClient( //nolint
 					cluster,
-					fluentdSecret,
-					fluentdCABundle,
+					collectorSecret,
+					collectorCABundle,
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
@@ -158,7 +158,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
 				// Inject custom CA bundle into collector config map
-				injectedCABundle := fluentdCABundle.DeepCopy()
+				injectedCABundle := collectorCABundle.DeepCopy()
 				injectedCABundle.Data[constants.TrustedCABundleKey] = customCABundle
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
 
@@ -182,7 +182,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
 				// Inject custom CA bundle into collector config map
-				injectedCABundle := fluentdCABundle.DeepCopy()
+				injectedCABundle := collectorCABundle.DeepCopy()
 				injectedCABundle.Data[constants.TrustedCABundleKey] = customCABundle
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
 
@@ -227,8 +227,8 @@ var _ = Describe("Reconciling", func() {
 			BeforeEach(func() {
 				client = fake.NewFakeClient( //nolint
 					cluster,
-					fluentdSecret,
-					fluentdCABundle,
+					collectorSecret,
+					collectorCABundle,
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
@@ -251,9 +251,9 @@ var _ = Describe("Reconciling", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
-				fluentdCaBundle := &corev1.ConfigMap{}
-				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
-				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
+				CABundle := &corev1.ConfigMap{}
+				Expect(client.Get(context.TODO(), key, CABundle)).Should(Succeed())
+				Expect(collectorCABundle.Data).To(Equal(CABundle.Data))
 
 				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}
@@ -270,9 +270,9 @@ var _ = Describe("Reconciling", func() {
 				clusterRequest.isDaemonset = false
 				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
-				fluentdCaBundle := &corev1.ConfigMap{}
-				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
-				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
+				CABundle := &corev1.ConfigMap{}
+				Expect(client.Get(context.TODO(), key, CABundle)).Should(Succeed())
+				Expect(collectorCABundle.Data).To(Equal(CABundle.Data))
 
 				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				dpl := &appsv1.Deployment{}
@@ -290,8 +290,8 @@ var _ = Describe("Reconciling", func() {
 			BeforeEach(func() {
 				client = fake.NewFakeClient( //nolint
 					cluster,
-					fluentdSecret,
-					fluentdCABundle,
+					collectorSecret,
+					collectorCABundle,
 					namespace,
 				)
 

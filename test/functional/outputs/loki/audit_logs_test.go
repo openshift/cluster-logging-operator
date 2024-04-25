@@ -1,5 +1,3 @@
-//go:build fluentd
-
 package loki
 
 import (
@@ -13,12 +11,14 @@ import (
 )
 
 var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
+
 	var (
 		f *functional.CollectorFunctionalFramework
 		l *loki.Receiver
 	)
 
 	BeforeEach(func() {
+		Skip("Can this test be adapted to Vector")
 		f = functional.NewCollectorFunctionalFramework()
 		// Start a Loki server
 		l = loki.NewReceiver(f.Namespace, "loki-server")

@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	apps "k8s.io/api/apps/v1"
@@ -226,7 +227,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(rootDir string, secure
 	}
 	container := corev1.Container{
 		Name:            receiverName,
-		Image:           utils.GetComponentImage(constants.FluentdName),
+		Image:           fluentdhelpers.Image,
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"fluentd", "-c", "/fluentd/etc/fluent.conf"},
 		VolumeMounts: []corev1.VolumeMount{

@@ -22,7 +22,7 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		builder = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(loggingv1.InputNameApplication)
-		builder.ToFluentForwardOutput()
+		builder.ToHttpOutput()
 		builder.ToElasticSearchOutput()
 	})
 	AfterEach(func() {
@@ -38,11 +38,10 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 			})
 
-			It("should send logs to the fluentd receiver and elasticsearch", func() {
-
-				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeFluentdForward)
-				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeFluentdForward)
-				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeFluentdForward)
+			It("should send logs to the http receiver and elasticsearch", func() {
+				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeHttp)
+				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeHttp)
+				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeHttp)
 
 				raw, err := framework.GetLogsFromElasticSearch(loggingv1.OutputTypeElasticsearch, loggingv1.InputNameApplication)
 				Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -57,14 +56,14 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 		Describe("and one store is not available", func() {
 			BeforeEach(func() {
 				Expect(framework.DeployWithVisitor(func(builder *runtime.PodBuilder) error {
-					return framework.AddForwardOutput(builder, framework.Forwarder.Spec.Outputs[0])
+					return framework.AddFluentdHttpOutput(builder, framework.Forwarder.Spec.Outputs[0])
 				})).To(BeNil())
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 			})
-			It("should send logs to the fluentd receiver only", func() {
-				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeFluentdForward)
-				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeFluentdForward)
-				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeFluentdForward)
+			It("should send logs to the http receiver only", func() {
+				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeHttp)
+				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeHttp)
+				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeHttp)
 
 			})
 		})

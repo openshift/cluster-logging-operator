@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
@@ -25,6 +24,7 @@ const (
 	appName   = "fluentd-receiver"
 	dataDir   = "/opt/app-root/data"
 	configDir = "/opt/app-root/etc"
+	Image     = "quay.io/openshift-logging/fluentd:5.9.0"
 )
 
 // Receiver is a service running fluentd, listening on on one or more source ports.
@@ -98,7 +98,7 @@ func NewReceiver(ns, name string) *Receiver {
 	runtime.Labels(r.Pod)[appName] = name
 	r.Pod.Spec.Containers = []corev1.Container{{
 		Name:  name,
-		Image: utils.GetComponentImage(constants.FluentdName),
+		Image: "quay.io/openshift-logging/fluentd:5.9",
 		Args:  []string{"fluentd", "--no-supervisor", "-v", "-c", filepath.Join(configDir, "fluent.conf")},
 		VolumeMounts: []corev1.VolumeMount{
 			{

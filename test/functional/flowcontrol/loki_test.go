@@ -1,4 +1,3 @@
-// go:build !fluentd
 package flowcontrol
 
 import (

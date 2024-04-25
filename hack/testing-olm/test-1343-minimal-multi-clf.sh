@@ -63,4 +63,4 @@ os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/clusterlog
 
 assert_collector_exist my-collector
 
-os::cmd::expect_success "oc -n $LOGGING_NS wait -lcomponent=collector --for=jsonpath='{.status.phase}'=Running pod"
+os::cmd::try_until_success "oc -n $LOGGING_NS wait -lcomponent=collector --for=jsonpath='{.status.phase}'=Running pod" ${TIMEOUT_MIN}

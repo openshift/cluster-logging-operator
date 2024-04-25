@@ -101,7 +101,6 @@ const (
 	CollectorDeploymentKind     = "collector-deployment-kind"
 	DeploymentType              = "deployment"
 
-	FluentdImageEnvVar            = "RELATED_IMAGE_FLUENTD"
 	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"
 	LogfilesmetricImageEnvVar     = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
 	ConsolePluginImageEnvVar      = "RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN"

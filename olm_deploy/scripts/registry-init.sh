@@ -9,7 +9,6 @@ echo -e "\n\n"
 
 # update the manifest with the image built by ci
 sed -i "s,quay.io/openshift-logging/cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," /manifests/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift-logging/fluentd:.*,${IMAGE_LOGGING_FLUENTD}," /manifests/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift-logging/vector:.*,${IMAGE_LOGGING_VECTOR}," /manifests/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift-logging/log-file-metric-exporter:.*,${IMAGE_LOG_FILE_METRIC_EXPORTER}," /manifests/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift-logging/logging-view-plugin:.*,${IMAGE_LOGGING_CONSOLE_PLUGIN}," /manifests/*clusterserviceversion.yaml

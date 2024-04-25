@@ -1,5 +1,3 @@
-//go:build vector
-
 package functional
 
 import (

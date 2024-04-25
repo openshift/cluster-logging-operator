@@ -126,7 +126,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					store := e2e.LogStores["elasticsearch"]
 					AssertLogStoreHasIndex(store, "app-redhat")
 				},
-					Entry("with fluentd", helpers.ComponentTypeCollectorFluentd),
 					Entry("with vector", helpers.ComponentTypeCollectorVector),
 				)
 
@@ -172,7 +171,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					store := e2e.LogStores["elasticsearch"]
 					AssertLogStoreHasIndex(store, "app-testindex")
 				},
-					Entry("with fluentd", helpers.ComponentTypeCollectorFluentd),
 					Entry("with vector", helpers.ComponentTypeCollectorVector),
 				)
 			})

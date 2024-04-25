@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,8 +31,6 @@ var (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	constants.CollectorName:              constants.FluentdImageEnvVar,
-	constants.FluentdName:                constants.FluentdImageEnvVar,
 	constants.VectorName:                 constants.VectorImageEnvVar,
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
@@ -383,13 +380,4 @@ func AddLabels(object metav1.Object, labels map[string]string) {
 		labels[key] = val
 	}
 	object.SetLabels(labels)
-}
-
-func GetCollectorName(collectorType logging.LogCollectionType) string {
-	if collectorType == logging.LogCollectionTypeFluentd {
-		return constants.FluentdName
-	} else if collectorType == logging.LogCollectionTypeVector {
-		return constants.VectorName
-	}
-	return "unknown"
 }

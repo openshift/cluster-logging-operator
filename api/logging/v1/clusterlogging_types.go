@@ -684,7 +684,7 @@ const (
 )
 
 func (ct LogCollectionType) IsSupportedCollector() bool {
-	return ct == LogCollectionTypeFluentd || ct == LogCollectionTypeVector
+	return ct == LogCollectionTypeVector
 }
 
 type EventCollectionType string

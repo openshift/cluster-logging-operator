@@ -36,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 	logCollectorType := logging.LogCollectionType(*colltype)
-	if logCollectorType != logging.LogCollectionTypeFluentd && logCollectorType != logging.LogCollectionTypeVector {
+	if !logCollectorType.IsSupportedCollector() {
 		pflag.Usage()
 		os.Exit(1)
 	}

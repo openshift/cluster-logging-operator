@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
-var _ = Describe("[Functional][Outputs][Unavailable] FluentdForward Output", func() {
+var _ = Describe("[Functional][Outputs][Unavailable] Output", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework
@@ -22,7 +22,7 @@ var _ = Describe("[Functional][Outputs][Unavailable] FluentdForward Output", fun
 		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput()
+			ToHttpOutput()
 	})
 	AfterEach(func() {
 		framework.Cleanup()
@@ -34,7 +34,7 @@ var _ = Describe("[Functional][Outputs][Unavailable] FluentdForward Output", fun
 				return nil
 			}
 			Expect(framework.DeployWithVisitor(skipAddingOutput)).To(BeNil())
-			//allow fluent process to load config
+			//allow process to load config
 			time.Sleep(8 * time.Second)
 			Expect(oc.Literal().
 				From(fmt.Sprintf("oc -n %s get pod %s -o jsonpath={.status.containerStatuses[0].restartCount}", framework.Namespace, framework.Name)).

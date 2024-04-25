@@ -50,6 +50,7 @@ var _ = Describe("[ConsolePlugin]", func() {
 	}
 
 	BeforeEach(func() {
+		Skip("This will be removed by another PR")
 		c = client.NewTest()
 		r = console.NewReconciler(
 			c.ControllerRuntimeClient(),

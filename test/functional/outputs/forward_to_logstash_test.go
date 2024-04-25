@@ -88,7 +88,7 @@ output {
 	)
 
 	BeforeEach(func() {
-
+		Skip("Enable me for vector?  Over http?")
 		framework = functional.NewCollectorFunctionalFramework()
 		addLogStashContainer := newVisitor(framework)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).

@@ -1,6 +1,7 @@
 package functional
 
 import (
+	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
@@ -8,8 +9,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -95,7 +94,7 @@ func (f *CollectorFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBu
 	}
 
 	log.V(2).Info("Adding container", "name", name)
-	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
+	b.AddContainer(name, fluentdhelpers.Image).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().

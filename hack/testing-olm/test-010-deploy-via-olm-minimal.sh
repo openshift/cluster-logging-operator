@@ -93,24 +93,3 @@ os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/cr.yaml"
 assert_resources_exist
 # assert kibana instance exists
 assert_kibana_instance_exists
-
-# modify the collector
-os::cmd::expect_success "oc  -n $LOGGING_NS patch clusterlogging instance --type='json' -p '[{\"op\":\"replace\",\"path\":\"/spec/collection/type\",\"value\":\"vector\"}]'"
-
-# wait few seconds since CLO reconciles every 30
-sleep 40
-
-# assert deployment
-assert_resources_exist
-
-# delete cluster logging
-os::cmd::expect_success "oc -n $LOGGING_NS delete -f ${repo_dir}/hack/cr.yaml"
-# wait few seconds since CLO reconciles every 30
-sleep 40
-# deploy cluster logging
-os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/cr-deprecated.yaml"
-
-assert_collector_exist
-
-# https://issues.redhat.com/browse/LOG-4086
-os::cmd::expect_success "oc -n $LOGGING_NS get ds/collector -ojsonpath='{.metadata.labels.implementation}' | grep fluentd"

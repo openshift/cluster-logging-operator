@@ -1,4 +1,3 @@
-// go:build vector
 package schema
 
 import (

@@ -99,16 +99,6 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 			return logs, err
 		}
 
-		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
-			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeFluentd)
-			clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToFluentForwardOutput()
-			readLogs = func() ([]types.ApplicationLog, error) {
-				return framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-			}
-		}
-
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		ExpectOK(framework.Deploy())
 
@@ -238,7 +228,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		invalidJson := `{"key":"v}`
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
 
-		// Write log line as input to fluentd
+		// Write log line as input
 		expectedMessage := invalidJson
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())

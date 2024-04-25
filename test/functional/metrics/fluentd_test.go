@@ -2,13 +2,12 @@ package metrics
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 )
 
 var _ = Describe("[Functional][Metrics]Function testing of fluentd metrics", func() {
@@ -26,6 +25,7 @@ var _ = Describe("[Functional][Metrics]Function testing of fluentd metrics", fun
 	})
 
 	BeforeEach(func() {
+		Skip("Should we enable a comparative test in vector?  Is there value?")
 		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

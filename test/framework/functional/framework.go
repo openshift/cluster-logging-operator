@@ -31,7 +31,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
-	frameworkfluent "github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 	frameworkvector "github.com/openshift/cluster-logging-operator/test/framework/functional/vector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	corev1 "k8s.io/api/core/v1"
@@ -99,13 +98,8 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 			verbosity = i
 		}
 	}
-	var collectorImpl CollectorFramework = &frameworkfluent.FluentdCollector{
+	var collectorImpl CollectorFramework = &frameworkvector.VectorCollector{
 		Test: t,
-	}
-	if collectorType == logging.LogCollectionTypeVector {
-		collectorImpl = &frameworkvector.VectorCollector{
-			Test: t,
-		}
 	}
 
 	failureLogger, delayedWriter := commonlog.NewLogger("functional-Framework", verbosity)

@@ -1,0 +1,27 @@
+# permissions for end users to view clusterlogforwarders.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: clusterlogforwarder-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: clusterlogging
+    app.kubernetes.io/part-of: clusterlogging
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterlogforwarder-viewer-role
+rules:
+- apiGroups:
+  - observability.openshift.io
+  resources:
+  - clusterlogforwarders
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - observability.openshift.io
+  resources:
+  - clusterlogforwarders/status
+  verbs:
+  - get

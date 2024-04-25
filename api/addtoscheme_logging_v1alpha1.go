@@ -1,4 +1,4 @@
-package apis
+package api
 
 import (
 	v1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"

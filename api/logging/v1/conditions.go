@@ -129,3 +129,23 @@ func CondNotReady(r ConditionReason, format string, args ...interface{}) Conditi
 func CondInvalid(format string, args ...interface{}) Condition {
 	return CondNotReady(ReasonInvalid, format, args...)
 }
+
+// synchronizeConditions is a helper used by *ClusterLogForwarderStatus.Synchronize and NamedConditions.Synchronize.
+func synchronizeConditions(oldConditions, newConditions *status.Conditions) {
+	// Set all conditions from newConditions in oldConditions.
+	// SetCondition adds (or updates) the set of conditions, and sets the current timestamp in case of an add or update.
+	// The timestamp won't be updated if the condition exists and does not need an update.
+	for _, cond := range *newConditions {
+		oldConditions.SetCondition(cond)
+	}
+	// Remove any superfluous conditions.
+	var conditionsToRemove []status.ConditionType
+	for _, oldCond := range *oldConditions {
+		if newConditions.GetCondition(oldCond.Type) == nil {
+			conditionsToRemove = append(conditionsToRemove, oldCond.Type)
+		}
+	}
+	for _, ctr := range conditionsToRemove {
+		oldConditions.RemoveCondition(ctr)
+	}
+}

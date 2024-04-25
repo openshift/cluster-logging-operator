@@ -4,6 +4,7 @@ resources:
 - bases/logging.openshift.io_clusterlogforwarders.yaml
 - bases/logging.openshift.io_clusterloggings.yaml
 - bases/logging.openshift.io_logfilemetricexporters.yaml
+- bases/observability.openshift.io_clusterlogforwarders.yaml
 
 patches:
   - target:

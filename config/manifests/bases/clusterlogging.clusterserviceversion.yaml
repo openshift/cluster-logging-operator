@@ -102,6 +102,223 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:pipelineConditions
       version: v1
+    - description: "ClusterLogForwarder is an API to configure forwarding logs. \n
+        You configure forwarding by specifying a list of `pipelines`, which forward
+        from a set of named inputs to a set of named outputs."
+      displayName: Cluster Log Forwarder
+      kind: ClusterLogForwarder
+      name: clusterlogforwarders.observability.openshift.io
+      specDescriptors:
+      - description: Specification of the Collector deployment to define resource
+          limits and workload placement
+        displayName: Collector Resources and Placement
+        path: collector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Define nodes for scheduling the pods.
+        displayName: Node Selector
+        path: collector.nodeSelector
+      - description: The resource requirements for the collector
+        displayName: Collector Resource Requirements
+        path: collector.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Filters are applied to log records passing through a pipeline.
+          There are different types of filter that can select and modify log records
+          in different ways. See [FilterTypeSpec] for a list of filter types.
+        displayName: Log Forwarder Pipeline Filters
+        path: filters
+      - description: "Inputs are named filters for log messages to be forwarded. \n
+          There are three built-in inputs named `application`, `infrastructure` and
+          `audit`. You don't need to define inputs here if those are sufficient for
+          your needs. See `inputRefs` for more."
+        displayName: Log Forwarder Inputs
+        path: inputs
+      - description: MaxRecordsPerSecond is the maximum number of log records allowed
+          per input/output in a pipeline
+        displayName: Max Records Per Second
+        path: inputs[0].application.tuning.rateLimitPerContainer.maxRecordsPerSecond
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Name of the key used to get the value in either the referenced
+          ConfigMap or Secret.
+        displayName: Key Name
+        path: inputs[0].receiver.tls.ca.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value in either the referenced
+          ConfigMap or Secret.
+        displayName: Key Name
+        path: inputs[0].receiver.tls.certificate.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: inputs[0].receiver.tls.key.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: inputs[0].receiver.tls.keyPassphrase.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Outputs are named destinations for log messages.
+        displayName: Log Forwarder Outputs
+        path: outputs
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].azureMonitor.authentication.sharedKey.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.accessKeyID.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.accessKeySecret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.credentials.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.password.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.username.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].googleCloudLogging.authentication.credentials.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.password.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.username.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].kafka.authentication.sasl.password.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].kafka.authentication.sasl.username.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.password.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.username.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: MaxRecordsPerSecond is the maximum number of log records allowed
+          per input/output in a pipeline
+        displayName: Max Records Per Second
+        path: outputs[0].rateLimit.maxRecordsPerSecond
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].splunk.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value in either the referenced
+          ConfigMap or Secret.
+        displayName: Key Name
+        path: outputs[0].tls.ca.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value in either the referenced
+          ConfigMap or Secret.
+        displayName: Key Name
+        path: outputs[0].tls.certificate.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].tls.key.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].tls.keyPassphrase.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Pipelines forward the messages selected by a set of inputs to
+          a set of outputs.
+        displayName: Log Forwarder Pipelines
+        path: pipelines
+      - description: Name of the pipeline
+        displayName: Name
+        path: pipelines[0].name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      statusDescriptors:
+      - description: Conditions of the log forwarder.
+        displayName: Forwarder Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
+      - description: Filters maps filter name to condition of the filter.
+        displayName: Filter Conditions
+        path: filters
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
+      - description: Inputs maps input name to condition of the input.
+        displayName: Input Conditions
+        path: inputs
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
+      - description: Outputs maps output name to condition of the output.
+        displayName: Output Conditions
+        path: outputs
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
+      - description: Pipelines maps pipeline name to condition of the pipeline.
+        displayName: Pipeline Conditions
+        path: pipelines
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
+      version: v1
     - description: A Red Hat OpenShift Logging instance. ClusterLogging is the Schema
         for the clusterloggings API
       displayName: Cluster Logging

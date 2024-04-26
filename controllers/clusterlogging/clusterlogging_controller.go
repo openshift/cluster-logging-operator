@@ -2,7 +2,6 @@ package clusterlogging
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"strings"
 	"time"
 
@@ -59,9 +58,6 @@ type ReconcileClusterLogging struct {
 func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("Clusterlogging reconcile request.", "namespace", request.Namespace, "name", request.Name)
 
-	telemetry.SetCLMetrics(0) // Cancel previous info metric
-	defer func() { telemetry.SetCLMetrics(1) }()
-
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
 	loggingruntime.Initialize(instance, request.NamespacedName.Namespace, request.NamespacedName.Name)
@@ -82,13 +78,10 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
-		// if cluster is set to unmanaged then set managedStatus as 0
-		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		return ctrl.Result{}, nil
 	}
 
 	if _, err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID); err != nil {
-		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
@@ -108,7 +101,6 @@ func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLoggin
 			return reconcile.Result{RequeueAfter: time.Second * 1}, nil
 		}
 
-		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "clusterlogging-controller error updating status")
 		return ctrl.Result{}, err
 	}

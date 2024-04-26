@@ -9,12 +9,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/apis"
@@ -26,7 +23,11 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -45,10 +46,6 @@ import (
 var (
 	scheme   = apiruntime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-)
-
-const (
-	UnHealthyStatus = "0"
 )
 
 func init() {
@@ -126,7 +123,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -137,7 +133,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -157,10 +152,8 @@ func main() {
 		cloversion = version.Version
 		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
 	}
-	telemetry.Data.CLInfo.Set("version", cloversion)
 
-	errr := telemetry.RegisterMetrics()
-	if errr != nil {
+	if err := telemetry.Setup(context.TODO(), mgr.GetClient(), metrics.Registry, cloversion); err != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
 

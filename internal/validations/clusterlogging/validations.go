@@ -7,7 +7,7 @@ import (
 
 func Validate(cl v1.ClusterLogging, k8sClient client.Client, extras map[string]bool) error {
 	for _, validate := range validations {
-		if err := validate(cl); err != nil {
+		if err := validate(cl, k8sClient); err != nil {
 			return err
 		}
 	}
@@ -16,6 +16,7 @@ func Validate(cl v1.ClusterLogging, k8sClient client.Client, extras map[string]b
 
 // validations are the set of admission rules for validating
 // a ClusterLogging
-var validations = []func(cl v1.ClusterLogging) error{
+var validations = []func(cl v1.ClusterLogging, k8sClient client.Client) error{
+	validateSetup,
 	validateClusterLoggingSpec,
 }

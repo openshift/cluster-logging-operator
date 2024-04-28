@@ -34,11 +34,11 @@ func validateClusterLoggingSpec(cl v1.ClusterLogging, k8sClient client.Client) e
 	return nil
 }
 
-//CL(openshift-logging/instance) only - This is a valid LEGACY use case
-//CL(openshift-logging/instance) & CLF(openshift-logging/instance) - This is a valid LEGACY usecase
-//CL(ANY_NS/OTHER) - This is an invalid use case
-//CLF(ANY_NS/ANY_NAME) - This is a valid mCLF use case
-//CL(ANY_NS/ANY_NAME) && CLF(ANY_NS/ANY_NAME) - This is a valid mCLF use case
+// CL(openshift-logging/instance) only - This is a valid LEGACY use case
+// CL(openshift-logging/instance) & CLF(openshift-logging/instance) - This is a valid LEGACY usecase
+// CL(ANY_NS/OTHER) - This is an invalid use case
+// CLF(ANY_NS/ANY_NAME) - This is a valid mCLF use case
+// CL(ANY_NS/ANY_NAME) && CLF(ANY_NS/ANY_NAME) - This is a valid mCLF use case
 func validateSetup(cl v1.ClusterLogging, k8sClient client.Client) error {
 	key := types.NamespacedName{Name: cl.Name, Namespace: cl.Namespace}
 	clf := &v1.ClusterLogForwarder{}

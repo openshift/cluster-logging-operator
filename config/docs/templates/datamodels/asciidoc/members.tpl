@@ -93,6 +93,6 @@
            {{ end }}
            |{{ (fieldName .) }}
            |{{ (yamlType .Type)}}
-           a| {{ $extra }} {{ (comments .CommentLines "summary")}}
+           a| {{ $extra }} {{ (comments .CommentLines)}}
        {{ end }}
 {{ end }}

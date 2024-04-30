@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -35,8 +36,8 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
@@ -45,10 +46,6 @@ import (
 var (
 	scheme   = apiruntime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-)
-
-const (
-	UnHealthyStatus = "0"
 )
 
 func init() {
@@ -126,7 +123,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -137,7 +133,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -151,16 +146,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// updating clo Telemetry Data - to be published by prometheus
 	cloversion, err := getCLOVersion()
 	if err != nil {
 		cloversion = version.Version
 		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
 	}
-	telemetry.Data.CLInfo.Set("version", cloversion)
 
-	errr := telemetry.RegisterMetrics()
-	if errr != nil {
+	// Initialize CLO Telemetry
+	if err := telemetry.Setup(context.TODO(), mgr.GetClient(), metrics.Registry, cloversion); err != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
 

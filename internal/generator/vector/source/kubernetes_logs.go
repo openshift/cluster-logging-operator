@@ -2,11 +2,12 @@ package source
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 type KubernetesLogs struct {
@@ -44,7 +45,7 @@ pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
-rotate_wait_ms = 5000
+rotate_wait_secs = 5
 {{end}}`
 }
 

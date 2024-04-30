@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"io"
 	"os"
 	"time"
+
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -18,7 +19,7 @@ import (
 
 const (
 	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:0.2"
-	imageVector      = "quay.io/openshift-logging/vector:5.9"
+	imageVector      = "quay.io/openshift-logging/vector:6.0"
 	imageFluentd     = "quay.io/openshift-logging/fluentd:5.9"
 )
 

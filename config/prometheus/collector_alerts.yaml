@@ -91,7 +91,7 @@ spec:
         summary: "Detected consuming too much node disk on $labels.hostname host"
       expr: |
         (label_replace(sum by(hostname) (vector_buffer_byte_size{component_kind='sink', buffer_type='disk'}), 'instance', '$1', 'hostname', '(.*)') 
-        / on(instance) group_left() sum by(instance) (node_filesystem_size_bytes{mountpoint='/var'})) * 100  > 0.15
+        / on(instance) group_left() sum by(instance) (node_filesystem_size_bytes{mountpoint='/var'})) * 100  > 15
       for: 5m
       labels:
         service: collector

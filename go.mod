@@ -20,7 +20,7 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/net v0.21.0
+	golang.org/x/net v0.24.0
 	golang.org/x/sync v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.1
@@ -34,7 +34,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/openshift/api v0.0.0-20240212125214-04ea3891d9cb
 	golang.org/x/mod v0.14.0
-	golang.org/x/sys v0.17.0
+	golang.org/x/sys v0.19.0
 	k8s.io/apiserver v0.29.1
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 )
@@ -79,7 +79,7 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
-	golang.org/x/term v0.17.0 // indirect
+	golang.org/x/term v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect

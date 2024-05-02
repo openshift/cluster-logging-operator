@@ -294,6 +294,7 @@ test-functional-vector: test-functional-benchmarker-vector
 		./test/functional/normalization/... \
 		./test/functional/flowcontrol/... \
 		./test/functional/inputs/http/... \
+		./test/functional/inputs/syslog/... \
 		./test/functional/misc/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
@@ -396,6 +397,7 @@ test-e2e-olm: $(JUNITREPORT)
 test-e2e-local: $(JUNITREPORT) deploy-image
 	LOG_LEVEL=3 \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \

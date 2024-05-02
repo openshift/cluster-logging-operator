@@ -147,6 +147,24 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name 
 	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
+// DeploySocat will deploy pod with socat software
+func (tc *E2ETestFramework) DeploySocat(namespace, name, forwarderName string, options LogGeneratorOptions) error {
+	pod := runtime.NewSocatPod(namespace, name, forwarderName, options.Labels)
+	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
+		return err
+	}
+	opts := metav1.CreateOptions{}
+	pod, err := tc.KubeClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, opts)
+	if err != nil {
+		return err
+	}
+	tc.AddCleanup(func() error {
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, opts)
+	})
+	return client.Get().WaitFor(pod, client.PodRunning)
+}
+
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace, name string, options LogGeneratorOptions) error {
 	return tc.DeployLogGeneratorWithNamespaceName(namespace, name, options)
 }
@@ -511,8 +529,8 @@ func NewKubeClient() (*kubernetes.Clientset, *rest.Config) {
 	return clientset, config
 }
 
-func (tc *E2ETestFramework) PodExec(namespace, name, container string, command []string) (string, error) {
-	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
+func (tc *E2ETestFramework) PodExec(namespace, pod, container string, command []string) (string, error) {
+	return oc.Exec().WithNamespace(namespace).Pod(pod).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {

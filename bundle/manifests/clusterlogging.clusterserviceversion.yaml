@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-01-09T18:24:05Z"
+    createdAt: "2024-05-03T19:44:05Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"

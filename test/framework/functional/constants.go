@@ -7,14 +7,15 @@ import (
 )
 
 const (
-	applicationLog     = "application"
-	auditLog           = "audit"
-	ovnAuditLog        = "ovn"
-	k8sAuditLog        = "k8s"
-	oauthAuditLog      = "oauth-audit-logs"
-	OpenshiftAuditLog  = "openshift-audit-logs"
-	ApplicationLogFile = "/tmp/app-logs"
-	FunctionalNodeName = "functional-test-node"
+	applicationLog        = "application"
+	auditLog              = "audit"
+	ovnAuditLog           = "ovn"
+	k8sAuditLog           = "k8s"
+	oauthAuditLog         = "oauth-audit-logs"
+	OpenshiftAuditLog     = "openshift-audit-logs"
+	ApplicationLogFile    = "/tmp/app-logs"
+	InfrastructureLogFile = "/tmp/infra.log"
+	FunctionalNodeName    = "functional-test-node"
 
 	ApplicationLogDir    = "/var/log/pods"
 	AuditLogDir          = "/var/log/audit"

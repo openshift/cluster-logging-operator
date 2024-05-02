@@ -12,12 +12,12 @@ func NewPolicyRule(apiGroups, resources, resourceNames, verbs []string) rbacv1.P
 	}
 }
 
-//NewPolicyRules stubs policy rules
+// NewPolicyRules stubs policy rules
 func NewPolicyRules(rules ...rbacv1.PolicyRule) []rbacv1.PolicyRule {
 	return rules
 }
 
-//NewRole returns a role with namespace, names, rules
+// NewRole returns a role with namespace, names, rules
 func NewRole(namespace, name string, rules ...rbacv1.PolicyRule) *rbacv1.Role {
 	role := &rbacv1.Role{
 		Rules: rules,
@@ -26,7 +26,7 @@ func NewRole(namespace, name string, rules ...rbacv1.PolicyRule) *rbacv1.Role {
 	return role
 }
 
-//NewClusterRole returns a role with namespace, names, rules
+// NewClusterRole returns a role with namespace, names, rules
 func NewClusterRole(name string, rules ...rbacv1.PolicyRule) *rbacv1.ClusterRole {
 	role := &rbacv1.ClusterRole{
 		Rules: rules,
@@ -35,7 +35,7 @@ func NewClusterRole(name string, rules ...rbacv1.PolicyRule) *rbacv1.ClusterRole
 	return role
 }
 
-//NewRoleBinding returns a role with namespace, names, rules
+// NewRoleBinding returns a role with namespace, names, rules
 func NewRoleBinding(namespace, name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.RoleBinding {
 	binding := &rbacv1.RoleBinding{
 		RoleRef:  roleRef,
@@ -59,7 +59,7 @@ func NewSubjects(subjects ...rbacv1.Subject) []rbacv1.Subject {
 	return subjects
 }
 
-//NewClusterRoleBinding returns a role with namespace, names, rules
+// NewClusterRoleBinding returns a role with namespace, names, rules
 func NewClusterRoleBinding(name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.ClusterRoleBinding {
 	binding := &rbacv1.ClusterRoleBinding{
 		RoleRef:  roleRef,

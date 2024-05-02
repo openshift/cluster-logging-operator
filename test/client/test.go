@@ -51,7 +51,7 @@ func NewTest(testOptions ...TestOption) *Test {
 	return t
 }
 
-//TestOption is an option to alter a test in some way
+// TestOption is an option to alter a test in some way
 type TestOption string
 
 type TestOptions []TestOption
@@ -73,7 +73,7 @@ const (
 	DryRunTestOption TestOption = "dryRun"
 )
 
-//NamespaceClient wraps the singleton test client for use with hack testing
+// NamespaceClient wraps the singleton test client for use with hack testing
 type NamespaceClient struct {
 	Test
 }

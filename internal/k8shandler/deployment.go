@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewDeployment stubs an instance of a Deployment
+// NewDeployment stubs an instance of a Deployment
 func NewDeployment(deploymentName string, namespace string, loggingComponent string, component string, podSpec core.PodSpec) *apps.Deployment {
 	return &apps.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -58,7 +58,7 @@ func NewDeployment(deploymentName string, namespace string, loggingComponent str
 	}
 }
 
-//GetDeploymentList returns a list for a give namespace and selector
+// GetDeploymentList returns a list for a give namespace and selector
 func (clusterRequest *ClusterLoggingRequest) GetDeploymentList(selector map[string]string) (*apps.DeploymentList, error) {
 	list := &apps.DeploymentList{
 		TypeMeta: metav1.TypeMeta{
@@ -75,7 +75,7 @@ func (clusterRequest *ClusterLoggingRequest) GetDeploymentList(selector map[stri
 	return list, err
 }
 
-//RemoveDeployment of given name and namespace
+// RemoveDeployment of given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveDeployment(deploymentName string) error {
 
 	deployment := NewDeployment(

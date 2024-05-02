@@ -8,7 +8,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 )
 
-//AreSame compares daemonset for equality and return true equal otherwise false
+// AreSame compares daemonset for equality and return true equal otherwise false
 func AreSame(current *apps.DaemonSet, desired *apps.DaemonSet) (bool, string) {
 	if !utils.AreMapsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
 		log.V(3).Info("DaemonSet nodeSelector change", "DaemonSetName", current.Name)

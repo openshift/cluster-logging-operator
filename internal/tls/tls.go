@@ -20,7 +20,7 @@ var (
 	DefaultMinTLSVersion = configv1.TLSProfiles[DefaultTLSProfileType].MinTLSVersion
 )
 
-//FetchAPIServerTlsProfile fetches tlsSecurityProfile configured in APIServer
+// FetchAPIServerTlsProfile fetches tlsSecurityProfile configured in APIServer
 func FetchAPIServerTlsProfile(k8client client.Client) (*configv1.TLSSecurityProfile, error) {
 	apiServer := &configv1.APIServer{}
 	key := client.ObjectKey{Name: APIServerName}

@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewRoute stubs an instance of a Route
+// NewRoute stubs an instance of a Route
 func NewRoute(routeName, namespace, serviceName, cafilePath string) *route.Route {
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
@@ -72,7 +72,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateRoute(newRoute *route
 	return nil
 }
 
-//GetRouteURL retrieves the route URL from a given route and namespace
+// GetRouteURL retrieves the route URL from a given route and namespace
 func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (string, error) {
 
 	foundRoute := &route.Route{}
@@ -87,7 +87,7 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 	return fmt.Sprintf("%s%s", "https://", foundRoute.Spec.Host), nil
 }
 
-//RemoveRoute with given name and namespace
+// RemoveRoute with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error {
 
 	rt := NewRoute(

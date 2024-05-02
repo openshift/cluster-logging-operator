@@ -17,8 +17,8 @@ func (InternalMetrics) Name() string {
 	return "internalMetricsTemplate"
 }
 
-//#namespace = "collector"
-//#scrape_interval_secs = {{.ScrapeIntervalSec}}
+// #namespace = "collector"
+// #scrape_interval_secs = {{.ScrapeIntervalSec}}
 func (i InternalMetrics) Template() string {
 	return `
 {{define "` + i.Name() + `" -}}

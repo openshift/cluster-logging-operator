@@ -1,6 +1,6 @@
 package fluentd
 
-//RunScript is the run.sh script for launching the fluentd container process
+// RunScript is the run.sh script for launching the fluentd container process
 const RunScript = `
 #!/bin/bash
 

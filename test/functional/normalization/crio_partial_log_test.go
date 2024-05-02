@@ -15,9 +15,9 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
-//Fast test for checking reassembly logic for split log by CRI-O.
-//CRI-O split long string on parts. Part marked by 'P' letter and finished with 'F'.
-//Example:
+// Fast test for checking reassembly logic for split log by CRI-O.
+// CRI-O split long string on parts. Part marked by 'P' letter and finished with 'F'.
+// Example:
 // 2021-03-31T12:59:28.573159188+00:00 stdout P First line of log entry
 // 2021-03-31T12:59:28.573159188+00:00 stdout P Second line of the log entry
 // 2021-03-31T12:59:28.573159188+00:00 stdout F Last line of the log entry
@@ -115,7 +115,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 	})
 })
 
-//JsonJavaStackTrace - sample of Java stack trace in JSON format
+// JsonJavaStackTrace - sample of Java stack trace in JSON format
 const JsonJavaStackTrace = `{"instant":{"epochSecond":1617711572,"nanoOfSecond":619500000},"thread":"main",
 "level":"ERROR","loggerName":"App","message":"trace","thrown":{"commonElementCount":0,
 "localizedMessage":"/ by zero","message":"/ by zero","name":"java.lang.ArithmeticException",

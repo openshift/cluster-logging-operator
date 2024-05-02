@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewCronJob stubs an instance of a cronjob
+// NewCronJob stubs an instance of a cronjob
 func NewCronJob(cronjobName, namespace, loggingComponent, component string, cronjobSpec batch.CronJobSpec) *batch.CronJob {
 	return &batch.CronJob{
 		TypeMeta: metav1.TypeMeta{
@@ -29,7 +29,7 @@ func NewCronJob(cronjobName, namespace, loggingComponent, component string, cron
 	}
 }
 
-//GetCronJobList retrieves the list of cronjobs with a given selector in namespace
+// GetCronJobList retrieves the list of cronjobs with a given selector in namespace
 func (clusterRequest *ClusterLoggingRequest) GetCronJobList(selector map[string]string) (*batch.CronJobList, error) {
 	list := &batch.CronJobList{
 		TypeMeta: metav1.TypeMeta{
@@ -46,7 +46,7 @@ func (clusterRequest *ClusterLoggingRequest) GetCronJobList(selector map[string]
 	return list, err
 }
 
-//RemoveCronJob with given name and namespace
+// RemoveCronJob with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveCronJob(cronjobName string) error {
 
 	cronjob := NewCronJob(

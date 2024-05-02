@@ -11,7 +11,7 @@ const (
 	UseOldRemoteSyslogPlugin   = "useOldRemoteSyslogPlugin"
 )
 
-//GatherSources collects the set of unique source types and namespaces
+// GatherSources collects the set of unique source types and namespaces
 func GatherSources(forwarder *logging.ClusterLogForwarderSpec, op Options) sets.String {
 	types := sets.NewString()
 	specs := forwarder.InputMap()

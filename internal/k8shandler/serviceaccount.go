@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//RemoveServiceAccount of given name and namespace
+// RemoveServiceAccount of given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccountName string) error {
 
 	serviceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, serviceAccountName)

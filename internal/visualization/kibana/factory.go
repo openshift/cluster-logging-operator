@@ -20,7 +20,7 @@ var (
 func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *logging.LogStoreSpec, owner metav1.OwnerReference) *es.Kibana {
 
 	resources := &v1.ResourceRequirements{}
-	proxyResources := &v1.ResourceRequirements{}
+	proxyResources := &v1.ResourceRequirements{} //nolint:staticcheck
 	nodeSelector := map[string]string{}
 	tolerations := []v1.Toleration{}
 	replicas := int32(0)
@@ -48,7 +48,7 @@ func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *l
 			}
 		}
 
-		if proxyResources == nil {
+		if proxyResources == nil { //nolint:staticcheck
 			proxyResources = &v1.ResourceRequirements{
 				Limits: v1.ResourceList{v1.ResourceMemory: DefaultKibanaProxyMemory},
 				Requests: v1.ResourceList{

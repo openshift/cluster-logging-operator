@@ -113,9 +113,11 @@ func UniqueNameForTest() string { return UniqueName("test") }
 // LogBeginEnd logs an  l.V(3) begin message, returns func to log an lV(2) end message.
 // End message includes elapsed time and error errp and *errp are non nil.
 // Use it to log the time spent in a function like this:
-//     func blah() (err error) {
-//         defer LogBeginEnd(log, "eating", &err)()
-//         ...
+//
+//	func blah() (err error) {
+//	    defer LogBeginEnd(log, "eating", &err)()
+//	    ...
+//
 // Note the trailing () - this calls LogBeginEnd() and defers calling the func it returns.
 func LogBeginEnd(l logr.Logger, msg string, errp *error, kv ...interface{}) func() {
 	l.V(3).Info("begin: "+msg, kv...)

@@ -78,7 +78,7 @@ Suffix:
 	return value, suffix, err
 }
 
-//Serializes the values such as 750K, 8m, 1g to eqivalent base 10 value
+// Serializes the values such as 750K, 8m, 1g to eqivalent base 10 value
 func ParseQuantity(str string) (resource.Quantity, error) {
 	value, suffix, err := parseQuantityString(str)
 	if err != nil {

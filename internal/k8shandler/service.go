@@ -9,7 +9,7 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-//RemoveService with given name and namespace
+// RemoveService with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveService(serviceName string) error {
 
 	service := factory.NewService(

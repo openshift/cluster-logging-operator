@@ -15,14 +15,15 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
 	openshiftv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"time"
 )
 
 // OutputType is used to define the type of output to be created.
 //
-// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;lokiStack;googleCloudLogging;splunk;syslog
+// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog
 type OutputType string
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
@@ -33,6 +34,7 @@ const (
 	OutputTypeGoogleCloudLogging OutputType = "googleCloudLogging"
 	OutputTypeHttp               OutputType = "http"
 	OutputTypeKafka              OutputType = "kafka"
+	OutputTypeLoki               OutputType = "loki"
 	OutputTypeLokiStack          OutputType = "lokiStack"
 	OutputTypeSplunk             OutputType = "splunk"
 	OutputTypeSyslog             OutputType = "syslog"
@@ -47,6 +49,7 @@ var (
 		OutputTypeGoogleCloudLogging,
 		OutputTypeHttp,
 		OutputTypeKafka,
+		OutputTypeLoki,
 		OutputTypeLokiStack,
 		OutputTypeSplunk,
 		OutputTypeSyslog,
@@ -101,6 +104,9 @@ type OutputSpec struct {
 
 	// +kubebuilder:validation:Optional
 	Kafka *Kafka `json:"kafka,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Loki *Loki `json:"loki,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`
@@ -373,7 +379,7 @@ type IndexSpec struct {
 	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
 	//
 	// +kubebuilder:validation:Required
-	// +kubebuilder:default:={{.log_type}}
+	// +kubebuilder:default:="{{.log_type}}"
 	Index string `json:"index,omitempty"`
 }
 
@@ -611,6 +617,45 @@ type LokiStack struct {
 	//
 	// +kubebuilder:validation:Optional
 	LabelKeys []string `json:"labelKeys,omitempty"`
+}
+
+// Loki provides optional extra properties for `type: loki`
+type Loki struct {
+	// Authentication sets credentials for authenticating the requests.
+	//
+	// +kubebuilder:validation:Optional
+	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	Tuning *LokiTuningSpec `json:"tuning,omitempty"`
+
+	URLSpec `json:",inline"`
+
+	// LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
+	//
+	// If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+	//
+	// Note: Loki label names must match the regular expression "[a-zA-Z_:][a-zA-Z0-9_:]*"
+	// Log record keys may contain characters like "." and "/" that are not allowed in Loki labels.
+	// Log record keys are translated to Loki labels by replacing any illegal characters with '_'.
+	// For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+	//
+	// Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
+	// See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
+	// Loki queries can also query based on any log record field (not just labels) using query filters.
+	//
+	// +kubebuilder:validation:Optional
+	LabelKeys []string `json:"labelKeys,omitempty"`
+
+	// TenantKey is the tenant for the logs. This supports vector's template syntax
+	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="{{.log_type}}"
+	TenantKey string `json:"tenantKey,omitempty"`
 }
 
 type SplunkTuningSpec struct {

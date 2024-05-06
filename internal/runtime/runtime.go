@@ -5,6 +5,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -28,6 +29,7 @@ var Codecs = serializer.NewCodecFactory(scheme.Scheme)
 func init() {
 	must(loggingv1.AddToScheme(scheme.Scheme)) // Add our types
 	must(loggingv1alpha1.AddToScheme(scheme.Scheme))
+	must(observabilityv1.AddToScheme(scheme.Scheme))
 }
 
 // Decode JSON or YAML resource manifest to a new typed struct.

@@ -2,20 +2,20 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	auth "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -119,56 +119,53 @@ func (e *Loki) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
 	sink := Output(id, o, []string{remapLabelID})
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
-	return MergeElements(
-		[]Element{
-			CleanupFields(componentID, inputs),
-			viaq.DedotLabels(dedottedID, []string{componentID}),
-			RemapLabels(remapLabelID, o, []string{dedottedID}),
-			sink,
-			Encoding(id, o),
-			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
-			common.NewBuffer(id, strategy),
-			common.NewRequest(id, strategy),
-			Labels(id, o),
-		},
-		TLSConf(id, o, secret, op),
-		BasicAuth(id, o, secret),
-		BearerTokenAuth(id, o, secret),
-	)
+
+	return []Element{
+		CleanupFields(componentID, inputs),
+		RemapLabels(remapLabelID, o, []string{componentID}),
+		sink,
+		Encoding(id, o),
+		common.NewAcknowledgments(id, strategy),
+		common.NewBatch(id, strategy),
+		common.NewBuffer(id, strategy),
+		common.NewRequest(id, strategy),
+		Labels(id, o),
+		tls.New(id, o.TLS, secrets, op),
+		auth.HTTPAuth(id, o.Loki.Authentication, secrets),
+	}
+
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string) *Loki {
+func Output(id string, o obs.OutputSpec, inputs []string) *Loki {
 	return &Loki{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		Endpoint:    o.URL,
+		Endpoint:    o.Loki.URLSpec.URL,
 		TenantID:    Tenant(o.Loki),
 		RootMixin:   common.NewRootMixin(nil),
 	}
 }
 
-func Encoding(id string, o logging.OutputSpec) Element {
+func Encoding(id string, o obs.OutputSpec) Element {
 	return LokiEncoding{
 		ComponentID: id,
 		Codec:       lokiEncodingJson,
 	}
 }
 
-func lokiLabelKeys(l *logging.Loki) []string {
+func lokiLabelKeys(l *obs.Loki) []string {
 	var keys sets.String
 	if l != nil && len(l.LabelKeys) != 0 {
 		keys = *sets.NewString(l.LabelKeys...)
@@ -180,7 +177,7 @@ func lokiLabelKeys(l *logging.Loki) []string {
 	return keys.List()
 }
 
-func lokiLabels(lo *logging.Loki) []Label {
+func lokiLabels(lo *obs.Loki) []Label {
 	ls := []Label{}
 	for _, k := range lokiLabelKeys(lo) {
 		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
@@ -223,7 +220,7 @@ func formatLokiLabelValue(value string) string {
 	return fmt.Sprintf("{{%s}}", value)
 }
 
-func RemapLabels(id string, o logging.OutputSpec, inputs []string) Element {
+func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
 	return Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
@@ -231,95 +228,18 @@ func RemapLabels(id string, o logging.OutputSpec, inputs []string) Element {
 	}
 }
 
-func Labels(id string, o logging.OutputSpec) Element {
+func Labels(id string, o obs.OutputSpec) Element {
 	return LokiLabels{
 		ComponentID: id,
 		Labels:      lokiLabels(o.Loki),
 	}
 }
 
-func Tenant(l *logging.Loki) Element {
+func Tenant(l *obs.Loki) Element {
 	if l == nil || l.TenantKey == "" {
 		return Nil
 	}
-	return KV("tenant_id", fmt.Sprintf("%q", fmt.Sprintf("{{%s}}", l.TenantKey)))
-}
-
-func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	conf := []Element{}
-	if isDefaultOutput(o.Name) {
-		// Set CA from logcollector ServiceAccount for internal Loki
-		tlsConf := common.TLSConf{
-			ComponentID: id,
-			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
-		}
-		tlsConf.SetTLSProfileFromOptions(op)
-		return append(conf, tlsConf)
-	}
-	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
-
-		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
-			tlsConf.NeedsEnabled = false
-			conf = append(conf, tlsConf)
-		}
-
-	} else if secret != nil {
-		// Use secret of logcollector service account as backup
-		tlsConf := common.TLSConf{
-			ComponentID: id,
-			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
-		}
-		tlsConf.SetTLSProfileFromOptions(op)
-		conf = append(conf, tlsConf)
-	}
-
-	return conf
-}
-
-func isDefaultOutput(name string) bool {
-	return strings.HasPrefix(name, "default-")
-}
-
-func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
-
-	if o.Secret != nil {
-		hasBasicAuth := false
-		conf = append(conf, BasicAuthConf{
-			Desc:        "Basic Auth Config",
-			ComponentID: id,
-		})
-		if common.HasUsernamePassword(secret) {
-			hasBasicAuth = true
-			up := UserNamePass{
-				Username: common.GetFromSecret(secret, constants.ClientUsername),
-				Password: common.GetFromSecret(secret, constants.ClientPassword),
-			}
-			conf = append(conf, up)
-		}
-		if !hasBasicAuth {
-			return []Element{}
-		}
-	}
-
-	return conf
-}
-
-func BearerTokenAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
-	if secret != nil {
-		// Inject token from secret, either provided by user using a custom secret
-		// or from the default logcollector service account.
-		if common.HasBearerTokenFileKey(secret) {
-			conf = append(conf, BasicAuthConf{
-				Desc:        "Bearer Auth Config",
-				ComponentID: id,
-			}, BearerToken{
-				Token: common.GetFromSecret(secret, constants.BearerTokenFileKey),
-			})
-		}
-	}
-	return conf
+	return KV("tenant_id", fmt.Sprintf("%q", l.TenantKey))
 }
 
 func CleanupFields(id string, inputs []string) Element {

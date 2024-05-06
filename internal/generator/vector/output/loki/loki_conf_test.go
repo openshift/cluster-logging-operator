@@ -5,31 +5,28 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("outputLabelConf", func() {
 	defer GinkgoRecover()
-	Skip("TODO: Enable me after rewire")
 	var (
-		loki *logging.Loki
+		loki *obs.Loki
 	)
 	BeforeEach(func() {
-		loki = &logging.Loki{}
+		loki = &obs.Loki{}
 	})
 	Context("#lokiLabelKeys when LabelKeys", func() {
 		Context("are not spec'd", func() {
@@ -50,237 +47,146 @@ var _ = Describe("outputLabelConf", func() {
 	})
 })
 
-//go:embed with_default_labels.toml
-var withDefaultLabels string
-
-//go:embed with_custom_labels.toml
-var withCustomLabels string
-
-//go:embed with_tenant_id.toml
-var withTenantId string
-
-//go:embed with_custom_bearer_token.toml
-var withCustomBearerToken string
-
-//go:embed with_insecure.toml
-var withInsecure string
-
-//go:embed with_insecure_nocert.toml
-var withInsecureNoCert string
-
-//go:embed with_default_tls.toml
-var withDefaultTls string
-
-//go:embed with_default_logcollector_bearer_token.toml
-var withDefaultLogcollectorToken string
-
 var _ = Describe("Generate vector config", func() {
-	defer GinkgoRecover()
-	Skip("TODO: Enable me after rewire")
-	defaultTLS := "VersionTLS12"
-	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		elements := New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], nil, op)
+	const (
+		secretName        = "loki-receiver"
+		saTokenSecretName = "test-sa-token"
+		defaultTLS        = "VersionTLS12"
+		defaultCiphers    = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+		defaultTenantKey  = "{{.log_type}}"
+	)
 
-		return elements
-	}
-	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
-		Entry("with default labels", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://logs-us-west1.grafana.net",
-						Secret: &logging.OutputSecretSpec{
-							Name: "loki-receiver",
-						},
-					},
+	var (
+		secrets = map[string]*corev1.Secret{
+			secretName: {
+				Data: map[string][]byte{
+					constants.ClientUsername:     []byte("testuser"),
+					constants.ClientPassword:     []byte("testpass"),
+					constants.ClientPrivateKey:   []byte("akey"),
+					constants.ClientCertKey:      []byte("acert"),
+					constants.TrustedCABundleKey: []byte("aca"),
+					constants.TokenKey:           []byte("loki-token"),
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
+			saTokenSecretName: {
+				Data: map[string][]byte{
+					constants.TokenKey: []byte("test-token"),
 				},
 			},
-			ExpectedConf: withDefaultLabels,
+		}
+		tlsSpec = &obs.OutputTLSSpec{
+			CA: &obs.ConfigMapOrSecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: constants.TrustedCABundleKey,
+			},
+			Certificate: &obs.ConfigMapOrSecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: constants.ClientCertKey,
+			},
+			Key: &obs.SecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: constants.ClientPrivateKey,
+			},
+		}
+		initOutput = func() obs.OutputSpec {
+			return obs.OutputSpec{
+				Type: obs.OutputTypeLoki,
+				Name: "loki-receiver",
+				Loki: &obs.Loki{
+					URLSpec: obs.URLSpec{
+						URL: "https://logs-us-west1.grafana.net",
+					},
+					TenantKey: defaultTenantKey,
+				},
+			}
+		}
+	)
+	DescribeTable("for Loki output", func(expFile string, op framework.Options, visit func(spec *obs.OutputSpec)) {
+		exp, err := tomlContent.ReadFile(expFile)
+		if err != nil {
+			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
+		}
+		outputSpec := initOutput()
+		if visit != nil {
+			visit(&outputSpec)
+		}
+		conf := New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"application"}, secrets, nil, op)
+		Expect(string(exp)).To(EqualConfigFrom(conf))
+	},
+		Entry("with default labels", "with_default_labels.toml", framework.NoOptions, func(spec *obs.OutputSpec) {}),
+		Entry("with custom labels", "with_custom_labels.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Loki.LabelKeys = []string{"kubernetes.labels.app", "kubernetes.container_name"}
 		}),
-		Entry("with custom labels", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://logs-us-west1.grafana.net",
-						Secret: &logging.OutputSecretSpec{
-							Name: "loki-receiver",
-						},
-						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
-							LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
-						}},
-					},
-				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
-				},
-			},
-			ExpectedConf: withCustomLabels,
+		Entry("with tenant id", "with_tenant_id.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Loki.TenantKey = "{{.foo.bar.baz}}"
 		}),
-		Entry("with tenant id", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://logs-us-west1.grafana.net",
-						Secret: &logging.OutputSecretSpec{
-							Name: "loki-receiver",
-						},
-						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
-							TenantKey: "foo.bar.baz",
-						}},
+		Entry("with custom bearer token", "with_custom_bearer_token.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Loki.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
 					},
+					Key: constants.TokenKey,
 				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"username": []byte("username"),
-						"password": []byte("password"),
-					},
-				},
-			},
-			ExpectedConf: withTenantId,
+			}
 		}),
-		Entry("with custom bearer token", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-						Secret: &logging.OutputSecretSpec{
-							Name: "custom-loki-secret",
-						},
+		Entry("with username/password token", "with_username_password.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Loki.Authentication = &obs.HTTPAuthentication{
+				Username: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
 					},
+					Key: constants.ClientUsername,
 				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"token": []byte("token-for-custom-loki"),
+				Password: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
 					},
+					Key: constants.ClientPassword,
 				},
-			},
-			ExpectedConf: withCustomBearerToken,
+			}
 		}),
-		Entry("with TLS insecureSkipVerify=true", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-						Secret: &logging.OutputSecretSpec{
-							Name: "custom-loki-secret",
-						},
-						TLS: &logging.OutputTLSSpec{
-							InsecureSkipVerify: true,
-						},
+		Entry("with service account", "with_service_account.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Loki.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					ServiceAccount: &corev1.LocalObjectReference{
+						Name: "test-sa",
 					},
 				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"ca-bundle.crt": []byte("junk"),
-					},
-				},
-			},
-			ExpectedConf: withInsecure,
+			}
 		}),
-		Entry("with TLS insecureSkipVerify=true, no certificate in secret", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-						TLS: &logging.OutputTLSSpec{
-							InsecureSkipVerify: true,
-						},
+		Entry("with TLS insecureSkipVerify=true", "with_insecure.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+				CA: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
 					},
+					Key: constants.TrustedCABundleKey,
 				},
-			},
-			ExpectedConf: withInsecureNoCert,
+			}
 		}),
-		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: "loki-receiver",
-						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-						Secret: &logging.OutputSecretSpec{
-							Name: "custom-loki-secret",
-						},
-					},
-				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"token": []byte("token-for-custom-loki"),
-					},
-				},
-			},
-			Options: framework.Options{
-				framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
-				framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
-			},
-			ExpectedConf: fmt.Sprintf(withDefaultTls, defaultTLS, defaultCiphers),
+		Entry("with TLS insecureSkipVerify=true, no certificate in secret", "with_insecure_nocert.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			}
+		}),
+		Entry("with TLS", "with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.TLS = tlsSpec
+		}),
+		Entry("with TLS config with default minTLSVersion & ciphers", "with_default_tls.toml", framework.Options{
+			framework.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+			framework.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+		}, func(spec *obs.OutputSpec) {
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: false,
+			}
 		}),
 	)
 })
-
-var _ = Describe("Generate vector config for in cluster loki", func() {
-	inputPipeline := []string{"application"}
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op framework.Options) []framework.Element {
-		return New(vectorhelpers.FormatComponentID(clfspec.Outputs[0].Name), clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], nil, framework.NoOptions)
-	}
-	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
-		Entry("with default logcollector bearer token", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeLoki,
-						Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
-						URL:  "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-					},
-				},
-			},
-			Secrets: map[string]*corev1.Secret{
-				constants.LogCollectorToken: {
-					Data: map[string][]byte{
-						"token": []byte("token-for-internal-loki"),
-					},
-				},
-			},
-			ExpectedConf: withDefaultLogcollectorToken,
-		}),
-	)
-})
-
-func TestVectorConfGenerator(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vector Conf Generation")
-}

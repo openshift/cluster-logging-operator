@@ -19,6 +19,26 @@ import (
 )
 
 const (
+	// Ready indicates the service is ready.
+	//
+	// Ready=True means the operands are running and providing some service.
+	// See the Degraded condition to distinguish full service from partial service.
+	//
+	// Ready=False means the operands cannot provide any service, and
+	// the operator cannot recover without some external change. Either
+	// the spec is invalid, or there is some environmental problem that is
+	// outside of the the operator's control.
+	//
+	// Ready=Unknown means the operator is in transition.
+	//
+	ConditionReady string = "Ready"
+
+	ValidationCondition string = "Validation"
+
+	ConditionMigrate string = "Migrate"
+)
+
+const (
 	// ReasonInvalid is used when the spec is ill-formed in some way, or contains unknown references.
 	ReasonInvalid string = "Invalid"
 
@@ -30,6 +50,8 @@ const (
 
 	// ReasonValidationFailure is used when a validation failed.
 	ReasonValidationFailure string = "ValidationFailure"
+
+	ReasonMigrateOutput string = "Migrate"
 )
 
 // ConditionMap contains a map of resource names to a list of their conditions.

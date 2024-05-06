@@ -1109,8 +1109,7 @@ spec:
                               type: object
                           type: object
                         index:
-                          default:
-                          - - .log_type
+                          default: '{{.log_type}}'
                           description: Index is the tenant for the logs. This supports
                             template syntax to allow dynamic per-event values. Defaults
                             to the log type (i.e. application, audit, infrastructure)
@@ -1516,6 +1515,177 @@ spec:
                       required:
                       - url
                       type: object
+                    loki:
+                      description: 'Loki provides optional extra properties for `type:
+                        loki`'
+                      properties:
+                        authentication:
+                          description: Authentication sets credentials for authenticating
+                            the requests.
+                          properties:
+                            password:
+                              description: Password to use for authenticating requests.
+                              nullable: true
+                              properties:
+                                key:
+                                  description: Name of the key used to get the value
+                                    from the referenced Secret.
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              required:
+                              - key
+                              - secret
+                              type: object
+                            token:
+                              description: Token specifies a bearer token to be used
+                                for authenticating requests.
+                              nullable: true
+                              properties:
+                                key:
+                                  description: Name of the key used to get the value
+                                    from the referenced Secret.
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                serviceAccount:
+                                  description: ServiceAccount contains the name of
+                                    the Kubernetes ServiceAccount that should be used
+                                    for getting a token for authenticating requests.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              type: object
+                            username:
+                              description: Username to use for authenticating requests.
+                              nullable: true
+                              properties:
+                                key:
+                                  description: Name of the key used to get the value
+                                    from the referenced Secret.
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              required:
+                              - key
+                              - secret
+                              type: object
+                          type: object
+                        labelKeys:
+                          description: "LabelKeys is a list of log record keys that
+                            will be used as Loki labels with the corresponding log
+                            record value. \n If LabelKeys is not set, the default
+                            keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name,
+                            kubernetes_host]` \n Note: Loki label names must match
+                            the regular expression \"[a-zA-Z_:][a-zA-Z0-9_:]*\" Log
+                            record keys may contain characters like \".\" and \"/\"
+                            that are not allowed in Loki labels. Log record keys are
+                            translated to Loki labels by replacing any illegal characters
+                            with '_'. For example the default log record keys translate
+                            to these Loki labels: `log_type`, `kubernetes_namespace_name`,
+                            `kubernetes_pod_name`, `kubernetes_host` \n Note: the
+                            set of labels should be small, Loki imposes limits on
+                            the size and number of labels allowed. See https://grafana.com/docs/loki/latest/configuration/#limits_config
+                            for more. Loki queries can also query based on any log
+                            record field (not just labels) using query filters."
+                          items:
+                            type: string
+                          type: array
+                        tenantKey:
+                          default: '{{.log_type}}'
+                          description: TenantKey is the tenant for the logs. This
+                            supports vector's template syntax to allow dynamic per-event
+                            values. Defaults to the log type (i.e. application, audit,
+                            infrastructure)
+                          type: string
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          nullable: true
+                          properties:
+                            compression:
+                              default: snappy
+                              description: Compression causes data to be compressed
+                                before sending over the network.
+                              enum:
+                              - none
+                              - gzip
+                              - snappy
+                              type: string
+                            delivery:
+                              description: DeliveryMode sets the delivery mode for
+                                log forwarding.
+                              enum:
+                              - atLeastOnce
+                              - atMostOnce
+                              type: string
+                            maxRetryDuration:
+                              description: MaxRetryDuration is the maximum time to
+                                wait between retry attempts after a delivery failure.
+                              format: int64
+                              type: integer
+                            maxWrite:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: MaxWrite limits the maximum payload in
+                                terms of bytes of a single "send" to the output.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            minRetryDuration:
+                              description: MinRetryDuration is the minimum time to
+                                wait between attempts to retry after delivery a failure.
+                              format: int64
+                              type: integer
+                          type: object
+                        url:
+                          description: "URL to send log records to. \n An absolute
+                            URL, with a scheme. Valid schemes depend on `type`. Special
+                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
+                            that have no scheme of their own. For example, to send
+                            syslog records using secure UDP: \n { type: syslog, url:
+                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
+                            if the URL scheme requires it (for example 'https' or
+                            'tls'). The 'username@password' part of `url` is ignored."
+                          type: string
+                      required:
+                      - url
+                      type: object
                     lokiStack:
                       description: 'LokiStack provides optional extra properties for
                         `type: lokistack`'
@@ -1737,8 +1907,7 @@ spec:
                               type: object
                           type: object
                         index:
-                          default:
-                          - - .log_type
+                          default: '{{.log_type}}'
                           description: Index is the tenant for the logs. This supports
                             template syntax to allow dynamic per-event values. Defaults
                             to the log type (i.e. application, audit, infrastructure)
@@ -2107,6 +2276,7 @@ spec:
                       - elasticsearch
                       - http
                       - kafka
+                      - loki
                       - lokiStack
                       - googleCloudLogging
                       - splunk

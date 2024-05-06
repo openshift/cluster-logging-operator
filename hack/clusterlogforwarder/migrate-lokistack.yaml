@@ -1,0 +1,27 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-collector
+spec:
+  serviceAccountName: test-sa
+  outputs:
+    - name: lokistack-out
+      type: lokistack
+      lokiStack:
+        target:
+          name: lokistack-test
+          namespace: openshift-logging
+        authentication:
+          token:
+            serviceAccount:
+              name: lokistack-sa
+      tls:
+        insecureSkipVerify: true
+  pipelines:
+    - name: all-logs
+      inputRefs:
+        - application
+        - audit
+        - infrastructure
+      outputRefs:
+        - lokistack-out

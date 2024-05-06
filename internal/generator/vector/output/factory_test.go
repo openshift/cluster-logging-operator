@@ -2,13 +2,13 @@ package output
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -16,6 +16,7 @@ import (
 var _ = Describe("output/factory.go", func() {
 	defer GinkgoRecover()
 	Skip("TODO: Enable me after rewire")
+	// TODO: I don't this these tests are relevant anymore/ or need to redo them
 	DescribeTable("#New", func(o logging.OutputSpec, secrets map[string]*corev1.Secret, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
@@ -27,7 +28,7 @@ var _ = Describe("output/factory.go", func() {
 		Entry("should honor global minTLSVersion & ciphers with loki as the default logstore regardless of the feature gate setting",
 			logging.OutputSpec{
 				Type: logging.OutputTypeLoki,
-				Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
+				Name: "default-loki-apps",
 				URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
 			},
 			map[string]*corev1.Secret{
@@ -42,7 +43,7 @@ var _ = Describe("output/factory.go", func() {
 		Entry("should add output throttling when present",
 			logging.OutputSpec{
 				Type: logging.OutputTypeLoki,
-				Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
+				Name: "default-loki-apps",
 				URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
 				Limit: &logging.LimitSpec{
 					MaxRecordsPerSecond: 100,

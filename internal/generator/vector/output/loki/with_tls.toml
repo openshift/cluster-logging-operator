@@ -2,7 +2,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-  del(.tag)
+	del(.tag)
 '''
 
 [transforms.loki_receiver_remap_label]
@@ -19,6 +19,7 @@ if !exists(.kubernetes.container_name) {
   .kubernetes.container_name = ""
 }
 '''
+
 
 [sinks.loki_receiver]
 type = "loki"
@@ -38,6 +39,9 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
-[sinks.loki_receiver.auth]
-strategy = "bearer"
-token = "loki-token"
+
+[sinks.loki_receiver.tls]
+key_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/loki-receiver/ca-bundle.crt"
+

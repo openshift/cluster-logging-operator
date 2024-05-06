@@ -2,37 +2,12 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-		 del(.tag)
-		'''
-
-[transforms.loki_receiver_dedot]
-type = "remap"
-inputs = ["loki_receiver_remap"]
-source = '''
-		 .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-		 if exists(.kubernetes.namespace_labels) {
-			  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
-				newkey = replace(key, r'[\./]', "_")
-				.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-				if newkey != key {
-				  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-				}
-			  }
-		 }
-		 if exists(.kubernetes.labels) {
-			  for_each(object!(.kubernetes.labels)) -> |key,value| {
-				newkey = replace(key, r'[\./]', "_")
-				.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-				if newkey != key {
-				  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-				}
-			  }
-		 }
-		'''
+	del(.tag)
+'''
 
 [transforms.loki_receiver_remap_label]
 type = "remap"
-inputs = ["loki_receiver_dedot"]
+inputs = ["loki_receiver_remap"]
 source = '''
 if !exists(.kubernetes.namespace_name) {
   .kubernetes.namespace_name = ""
@@ -45,13 +20,13 @@ if !exists(.kubernetes.container_name) {
 }
 '''
 
-
 [sinks.loki_receiver]
 type = "loki"
 inputs = ["loki_receiver_remap_label"]
-endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
+tenant_id = "{{.log_type}}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -63,12 +38,6 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
-
 [sinks.loki_receiver.tls]
-min_tls_version = "%s"
-ciphersuites = "%s"
-
-# Bearer Auth Config
-[sinks.loki_receiver.auth]
-strategy = "bearer"
-token = "token-for-custom-loki"
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"

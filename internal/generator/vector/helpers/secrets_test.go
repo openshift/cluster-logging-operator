@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -31,10 +30,6 @@ var _ = Describe("helpers", func() {
 			Name: "nameNotFoune",
 			Type: logging.OutputTypeSplunk,
 		}, nil),
-		Entry("should return the legacy token secret when output is default lokiStack", logging.OutputSpec{
-			Name: lokistack.FormatOutputNameFromInput(logging.InputNameApplication),
-			Type: logging.OutputTypeLoki,
-		}, legacyToken),
 	)
 
 })

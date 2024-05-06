@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -53,4 +54,12 @@ func ListenOnAllLocalInterfacesAddress() string {
 	}
 	listenAllOnce.Do(f)
 	return listenAllAddress
+}
+
+func AuthPath(name string, file string) string {
+	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/auth", name, file))
+}
+
+func SecretPath(name string, file string) string {
+	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/secrets", name, file))
 }

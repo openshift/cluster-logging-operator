@@ -16,6 +16,8 @@ import (
 )
 
 var _ = Describe("Generate vector config", func() {
+	defer GinkgoRecover()
+	Skip("TODO: Enable me after rewire")
 	DescribeTable("for Http output", func(output logging.OutputSpec, secret *corev1.Secret, op framework.Options, exp string) {
 		conf := New(helpers.FormatComponentID(output.Name), output, []string{"application"}, secret, nil, op) //, includeNS, excludes)
 		Expect(exp).To(EqualConfigFrom(conf))

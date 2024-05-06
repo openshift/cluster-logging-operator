@@ -3,6 +3,7 @@ package helpers
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	corev1 "k8s.io/api/core/v1"
@@ -19,4 +20,27 @@ func GetOutputSecret(o logging.OutputSpec, secrets map[string]*corev1.Secret) *c
 	}
 	log.V(9).Info("No Secret found for output", "output", o.Name)
 	return nil
+}
+
+// Secrets is a map of secrets
+type Secrets map[string]*corev1.Secret
+
+// Value returns the content of the given secret with key if it exists or nil
+func (s Secrets) Value(key *v1.SecretKey) []byte {
+	if key != nil && key.Secret != nil {
+		if secret, exists := s[key.Secret.Name]; exists {
+			if value, exists := secret.Data[key.Key]; exists {
+				return value
+			}
+		}
+	}
+	return nil
+}
+
+// AsString returns the value of the given secret with key if it exists or empty
+func (s Secrets) AsString(key *v1.SecretKey) string {
+	if v := s.Value(key); v != nil {
+		return string(v)
+	}
+	return ""
 }

@@ -149,7 +149,7 @@ facility = "user"
 severity = "informational"
 
 [sinks.example.tls]
-enabled = true
+
 verify_certificate = false
 verify_hostname = false
 `
@@ -255,7 +255,7 @@ tag = "$$.message.tag"
 add_log_source = true
 
 [sinks.example.tls]
-enabled = true
+
 key_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/syslog-tls/ca-bundle.crt"

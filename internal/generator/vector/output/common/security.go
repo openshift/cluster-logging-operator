@@ -1,18 +1,14 @@
 package common
 
 import (
-	"fmt"
-	"net/url"
-	"path/filepath"
-
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-
 	corev1 "k8s.io/api/core/v1"
+	"net/url"
 )
 
 type UserNamePass struct {
@@ -105,12 +101,12 @@ func (t TLSConf) Name() string {
 }
 
 func (t TLSConf) Template() string {
+	if !t.NeedsEnabled {
+		return `{{define "vectorTLS" -}}{{end}}`
+	}
 	return `
 {{define "vectorTLS" -}}
 [sinks.{{.ComponentID}}.tls]
-{{- if .NeedsEnabled }}
-enabled = true
-{{- end }}
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}
@@ -189,7 +185,7 @@ func HasKeys(secret *corev1.Secret, keys ...string) bool {
 }
 
 func SecretPath(name string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/secrets", name, file))
+	return helpers.SecretPath(name, file)
 }
 
 // TryKeys try keys in turn return data for fist one present with ok=true.
@@ -211,9 +207,6 @@ func GetFromSecret(secret *corev1.Secret, name string) string {
 	return ""
 }
 
-func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op framework.Options, genTLSConf bool) *TLSConf {
-	return GenerateTLSConfWithID(helpers.FormatComponentID(o.Name), o, secret, op, genTLSConf)
-}
 func GenerateTLSConfWithID(id string, o logging.OutputSpec, secret *corev1.Secret, op framework.Options, genTLSConf bool) *TLSConf {
 	if !genTLSConf {
 		if o.URL == "" {

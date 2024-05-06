@@ -1,17 +1,15 @@
 package azuremonitor
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type AzureMonitor struct {
@@ -45,43 +43,33 @@ shared_key = "{{.SharedKey}}"
 {{end}}`
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			Debug(vectorhelpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	return framework.MergeElements(
-		[]framework.Element{
-			viaq.DedotLabels(dedottedID, inputs),
-			Output(id, o, []string{dedottedID}, secret, op),
-			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
-			common.NewBuffer(id, strategy),
-			common.NewRequest(id, strategy),
-		},
-		TLSConf(id, o, secret, op),
-	)
-}
-
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op framework.Options) framework.Element {
 	azm := o.AzureMonitor
-	return AzureMonitor{
+	e := AzureMonitor{
 		ComponentID:     id,
-		Inputs:          vectorhelpers.MakeInputs(inputs...),
+		Inputs:          vectorhelpers.MakeInputs(dedottedID),
 		CustomerId:      azm.CustomerId,
 		LogType:         azm.LogType,
 		AzureResourceId: azm.AzureResourceId,
-		SharedKey:       security.GetFromSecret(secret, constants.SharedKey),
 		Host:            azm.Host,
 	}
-}
-
-func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op framework.Options) []framework.Element {
-	if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
-		tlsConf.NeedsEnabled = false
-		return []framework.Element{tlsConf}
+	if azm.Authentication != nil {
+		e.SharedKey = secrets.AsString(azm.Authentication.SharedKey)
 	}
-	return []framework.Element{}
+	confTLS := tls.New(id, o.TLS, secrets, op)
+	return []framework.Element{
+		viaq.DedotLabels(dedottedID, inputs),
+		e,
+		common.NewAcknowledgments(id, strategy),
+		common.NewBatch(id, strategy),
+		common.NewBuffer(id, strategy),
+		common.NewRequest(id, strategy),
+		confTLS,
+	}
 }

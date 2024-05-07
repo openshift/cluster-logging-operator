@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -16,27 +17,23 @@ import (
 var _ = Describe("Generating vector config for Azure Monitor Logs output:", func() {
 
 	const (
-		sharedKeyValue   = "z9ndQSFH1RLDnS6WR35m84u326p3"
-		azureId          = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage"
-		hostCN           = "ods.opinsights.azure.cn"
-		customerId       = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
-		secretName       = "azure-monitor-secret"
-		secretTlsName    = "azure-monitor-secret-tls"
-		outputName       = "azure_monitor_logs"
-		logType          = "myLogType"
-		CAName           = "ca-bundle.crt"
-		PublicKeyName    = "tls.crt"
-		PrivateKeyName   = "tls.key"
-		sharedKey        = "shared_key"
-		keyPassphraseKey = "passphrase"
+		sharedKeyValue = "z9ndQSFH1RLDnS6WR35m84u326p3"
+		azureId        = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage"
+		hostCN         = "ods.opinsights.azure.cn"
+		customerId     = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
+		secretName     = "azure-monitor-secret"
+		secretTlsName  = "azure-monitor-secret-tls"
+		outputName     = "azure_monitor_logs"
+		logType        = "myLogType"
+		sharedKey      = "shared_key"
 	)
 
 	var (
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
-					sharedKey:        []byte(sharedKeyValue),
-					keyPassphraseKey: []byte("foo"),
+					sharedKey:            []byte(sharedKeyValue),
+					constants.Passphrase: []byte("foo"),
 				},
 			},
 		}
@@ -46,25 +43,25 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				Secret: &corev1.LocalObjectReference{
 					Name: secretTlsName,
 				},
-				Key: CAName,
+				Key: constants.TrustedCABundleKey,
 			},
 			Certificate: &obs.ConfigMapOrSecretKey{
 				Secret: &corev1.LocalObjectReference{
 					Name: secretTlsName,
 				},
-				Key: PublicKeyName,
+				Key: constants.ClientCertKey,
 			},
 			Key: &obs.SecretKey{
 				Secret: &corev1.LocalObjectReference{
 					Name: secretTlsName,
 				},
-				Key: PrivateKeyName,
+				Key: constants.ClientPrivateKey,
 			},
 			KeyPassphrase: &obs.SecretKey{
 				Secret: &corev1.LocalObjectReference{
 					Name: secretName,
 				},
-				Key: keyPassphraseKey,
+				Key: constants.Passphrase,
 			},
 			InsecureSkipVerify: true,
 		}

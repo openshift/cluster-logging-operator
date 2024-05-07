@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -67,6 +68,7 @@ func (conf *TLSConf) SetTLSProfileFromOptions(op framework.Options) {
 	if ciphers, found := op[framework.Ciphers]; found {
 		conf.CipherSuites = ciphers.(string)
 	}
+	fmt.Println(conf)
 }
 
 func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) bool {
@@ -109,7 +111,7 @@ func (t TLSConf) Template() string {
 [sinks.{{.ComponentID}}.tls]
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
-{{- end }}
+{{- end }} 
 {{- if ne .CipherSuites "" }}
 ciphersuites = "{{ .CipherSuites }}"
 {{- end }}

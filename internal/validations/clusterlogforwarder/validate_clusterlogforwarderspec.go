@@ -13,7 +13,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
@@ -43,7 +42,7 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 	}
 	verifyOutputs(clf.Namespace, k8sClient, &clf.Spec, status, extras)
 	if !status.Outputs.IsAllReady() {
-		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
+		log.V(3).Info("sink not Ready", "outputs", status.Outputs)
 	}
 	verifyPipelines(clf.Name, &clf.Spec, status)
 	if !status.Pipelines.IsAllReady() {
@@ -240,9 +239,9 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			}
 			status.Outputs.Set(output.Name, con)
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
-			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: sink cannot have negative limit threshold", output.Name))
 		case !outputRefs.Has(output.Name):
-			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Output not referenced by any pipeline", output.Name))
+			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: sink not referenced by any pipeline", output.Name))
 		default:
 			status.Outputs.Set(output.Name, conditions.CondReady)
 		}
@@ -437,7 +436,8 @@ func verifySecretKeysForCloudwatch(output *loggingv1.OutputSpec, conds loggingv1
 	hasSecretKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
 	hasRoleArnKey := common.HasAwsRoleArnKey(secret)
 	hasCredentialsKey := common.HasAwsCredentialsKey(secret)
-	hasValidRoleArn := len(cloudwatch.ParseRoleArn(secret)) > 0
+	// TODO: FIXME
+	hasValidRoleArn := false //len(cloudwatch.ParseRoleArn(secret)) > 0
 	switch {
 	case hasValidRoleArn: // Sts secret format is the first check
 		return true

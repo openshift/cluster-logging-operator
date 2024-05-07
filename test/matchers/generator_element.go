@@ -41,14 +41,14 @@ func (m *GeneratorElementMatcher) FailureMessage(expected interface{}) (message 
 	if m.err != nil {
 		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
 	}
-	return fmt.Sprintf("Expected element to produce a config from 'elements'\nexpected:\n%s\nactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
+	return fmt.Sprintf("Expected element to produce a config from 'elements'\nexpected:\n%s\n\nactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
 }
 
 func (m *GeneratorElementMatcher) NegatedFailureMessage(expected interface{}) (message string) {
 	if m.err != nil {
 		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
 	}
-	return fmt.Sprintf("Expected element to not produce a config from 'elements'\nexpected:\n%sactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
+	return fmt.Sprintf("Expected element to not produce a config from 'elements'\nexpected:\n%s\n\nactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
 }
 
 func generateConf(expected interface{}) (string, error) {

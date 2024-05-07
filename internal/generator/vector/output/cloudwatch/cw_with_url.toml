@@ -1,0 +1,69 @@
+# Cloudwatch Group and Stream Names
+[transforms.cw_normalize_group_and_streams]
+type = "remap"
+inputs = ["cw-forward"]
+source = '''
+  .group_name = "default"
+  .stream_name = "default"
+
+  if (.file != null) {
+   .file = "kubernetes" + replace!(.file, "/", ".")
+   .stream_name = del(.file)
+  }
+
+  if ( .log_type == "application" ) {
+   .group_name = ( .log_type ) ?? "application"
+  }
+  if ( .log_type == "audit" ) {
+   .group_name = "audit"
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+  }
+  if ( .log_type == "infrastructure" ) {
+   .group_name = "infrastructure"
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
+  }
+
+  if ( .tag == ".journal.system" ) {
+   .stream_name =  ( .hostname + .tag ) ?? .stream_name
+  }
+  del(.tag)
+  del(.source_type)
+'''
+
+[transforms.cw_dedot]
+type = "remap"
+inputs = ["cw_normalize_group_and_streams"]
+source = '''
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+  if exists(.kubernetes.namespace_labels) {
+	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+		}
+	  }
+  }
+  if exists(.kubernetes.labels) {
+	  for_each(object!(.kubernetes.labels)) -> |key,value| {
+		newkey = replace(key, r'[\./]', "_")
+		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+		if newkey != key {
+		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+		}
+	  }
+  }
+'''
+# Cloudwatch Logs
+[sinks.cw]
+type = "aws_cloudwatch_logs"
+inputs = ["cw_dedot"]
+region = "us-east-test"
+compression = "none"
+group_name = "{{ group_name }}"
+stream_name = "{{ stream_name }}"
+auth.access_key_id = "AKIAIOSFODNN7EXAMPLE"
+auth.secret_access_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+encoding.codec = "json"
+healthcheck.enabled = false
+endpoint = "http://mylogreceiver"

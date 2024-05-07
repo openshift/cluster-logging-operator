@@ -83,8 +83,14 @@ func (g Generator) generate(es []Element) (string, error) {
 		if e == nil || e == Nil {
 			continue
 		}
-		t = template.Must(t.Parse(e.Template()))
-		err := t.ExecuteTemplate(b, e.Name(), e)
+		var err error
+		t, err = t.Parse(e.Template())
+		if err != nil {
+			log.V(0).Error(err, "Error parsing template", "element", e, "name", e.Name(), "template", e.Template())
+			log.V(3).Error(err, "Error parsing template", "element", e)
+			panic(err)
+		}
+		err = t.ExecuteTemplate(b, e.Name(), e)
 		if err != nil {
 			log.V(0).Error(err, "Error in conf generation")
 			return "error in conf generation", err

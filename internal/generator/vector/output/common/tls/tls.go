@@ -8,24 +8,32 @@ import (
 )
 
 type TLSConf struct {
-	*common.TLSConf
+	ComponentID        string
+	NeedsEnabled       bool
+	InsecureSkipVerify bool
+	TlsMinVersion      string
+	CipherSuites       string
+	CAFilePath         string
+	CertPath           string
+	KeyPath            string
+	PassPhrase         string
 }
 
-func New(id string, tls *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options) common.TLSConf {
+func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options) common.TLSConf {
 	conf := common.TLSConf{
-		ComponentID:  id,
-		NeedsEnabled: tls != nil,
+		ComponentID: id,
 	}
-	if tls != nil {
-		conf.CAFilePath = ConfigMapOrSecretPath(tls.CA)
-		conf.CertPath = ConfigMapOrSecretPath(tls.Certificate)
-		conf.KeyPath = SecretPath(tls.Key)
-		conf.PassPhrase = secrets.AsString(tls.KeyPassphrase)
-		conf.InsecureSkipVerify = tls.InsecureSkipVerify
-
+	if spec != nil {
+		conf.CAFilePath = ConfigMapOrSecretPath(spec.CA)
+		conf.CertPath = ConfigMapOrSecretPath(spec.Certificate)
+		conf.KeyPath = SecretPath(spec.Key)
+		conf.PassPhrase = secrets.AsString(spec.KeyPassphrase)
+		conf.InsecureSkipVerify = spec.InsecureSkipVerify
 	}
-	conf.SetTLSProfileFromOptions(op)
-
+	setTLSProfileFromOptions(&conf, op)
+	if conf.CipherSuites != "" || conf.TlsMinVersion != "" || spec != nil {
+		conf.NeedsEnabled = true
+	}
 	return conf
 }
 
@@ -46,4 +54,47 @@ func SecretPath(resource *obs.SecretKey) string {
 		return ""
 	}
 	return helpers.SecretPath(resource.Secret.Name, resource.Key)
+}
+
+func setTLSProfileFromOptions(t *common.TLSConf, op framework.Options) {
+	if version, found := op[framework.MinTLSVersion]; found {
+		t.TlsMinVersion = version.(string)
+	}
+	if ciphers, found := op[framework.Ciphers]; found {
+		t.CipherSuites = ciphers.(string)
+	}
+}
+
+func (t TLSConf) Name() string {
+	return "vectorTLS"
+}
+
+func (t TLSConf) Template() string {
+	if !t.NeedsEnabled {
+		return `{{define "vectorTLS" -}}{{end}}`
+	}
+	return `
+{{define "vectorTLS" -}}
+[sinks.{{.ComponentID}}.tls]
+{{- if ne .TlsMinVersion "" }}
+min_tls_version = "{{ .TlsMinVersion }}"
+{{- end }}
+{{- if ne .CipherSuites "" }}
+ciphersuites = "{{ .CipherSuites }}"
+{{- end }}
+{{- if .InsecureSkipVerify }}
+verify_certificate = false
+verify_hostname = false
+{{- end }}
+{{- if and .KeyPath .CertPath }}
+key_file = {{ .KeyPath }}
+crt_file = {{ .CertPath }}
+{{- end }}
+{{- if .CAFilePath }}
+ca_file = {{ .CAFilePath }}
+{{- end }}
+{{- if .PassPhrase }}
+key_pass = "{{ .PassPhrase }}"
+{{- end }}
+{{ end }}`
 }

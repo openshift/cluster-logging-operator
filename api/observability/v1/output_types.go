@@ -158,8 +158,6 @@ type URLSpec struct {
 	//
 	// Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
 	// The 'username@password' part of `url` is ignored.
-	// Any additional authentication material is in the `secret`.
-	// See the `secret` field for more details.
 	//
 	// +kubebuilder:validation:Required
 	URL string `json:"url"`
@@ -317,6 +315,13 @@ type CloudwatchAuthentication struct {
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
 type Cloudwatch struct {
+	// URL to send log records to.
+	//
+	// The 'username@password' part of `url` is ignored.
+	//
+	// +kubebuilder:validation:Optional
+	URL string `json:"url"`
+
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
@@ -342,7 +347,7 @@ type Cloudwatch struct {
 	// used verbatim (e.g. "" means no prefix). The default prefix is cluster-name/log-type
 	//
 	// +kubebuilder:validation:Optional
-	GroupPrefix *string `json:"groupPrefix,omitempty"`
+	GroupPrefix string `json:"groupPrefix,omitempty"`
 }
 
 // LogGroupByType defines a fixed strategy type

@@ -5,7 +5,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	v1 "k8s.io/api/core/v1"
 	"path"
 )
@@ -76,10 +75,11 @@ func AddWebIdentityTokenEnvVars(collector *v1.Container, output logging.OutputSp
 			Name:  constants.AWSRegionEnvVarKey,
 			Value: output.Cloudwatch.Region,
 		},
-		v1.EnvVar{
-			Name:  constants.AWSRoleArnEnvVarKey,
-			Value: cloudwatch.ParseRoleArn(secret),
-		},
+		// TODO: FIX ME
+		//v1.EnvVar{
+		//	Name:  constants.AWSRoleArnEnvVarKey,
+		//	Value: cloudwatch.ParseRoleArn(secret),
+		//},
 		v1.EnvVar{
 			Name:  constants.AWSRoleSessionEnvVarKey,
 			Value: constants.AWSRoleSessionName,

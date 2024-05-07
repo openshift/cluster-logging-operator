@@ -2,18 +2,18 @@ package cloudwatch
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"regexp"
 	"strings"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	corev1 "k8s.io/api/core/v1"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 type Endpoint struct {
@@ -72,7 +72,7 @@ func (e *CloudWatch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	componentID := helpers.MakeID(id, "normalize_group_and_streams")
 	dedottedID := helpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
@@ -81,61 +81,62 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 			Debug(id, helpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	request := common.NewRequest(id, strategy)
-	request.Concurrency.Value = 2
-	sink := Output(id, o, []string{dedottedID}, secret, op, o.Cloudwatch.Region)
+	sink := sink(id, o, []string{dedottedID}, secrets, op, o.Cloudwatch.Region)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 
-	return MergeElements(
-		[]Element{
-			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
-			viaq.DedotLabels(dedottedID, []string{componentID}),
-			sink,
-			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
-			common.NewBuffer(id, strategy),
-			request,
-		},
-		common.TLS(id, o, secret, op),
-	)
+	return []Element{
+		NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
+		viaq.DedotLabels(dedottedID, []string{componentID}),
+		sink,
+		common.NewAcknowledgments(id, strategy),
+		common.NewBatch(id, strategy),
+		common.NewBuffer(id, strategy),
+		common.NewRequest(id, strategy),
+		tls.New(id, o.TLS, secrets, op),
+	}
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) *CloudWatch {
+func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options, region string) *CloudWatch {
 	return &CloudWatch{
 		Desc:           "Cloudwatch Logs",
 		ComponentID:    id,
 		Inputs:         helpers.MakeInputs(inputs...),
 		Region:         region,
-		SecurityConfig: SecurityConfig(secret),
-		EndpointConfig: EndpointConfig(o),
+		SecurityConfig: authConfig(o.Cloudwatch.Authentication, secrets),
+		EndpointConfig: endpointConfig(o.Cloudwatch),
 		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 
-func SecurityConfig(secret *corev1.Secret) Element {
-	// First check for credentials or role_arn key, indicating a sts-enabled authentication
-	if common.HasAwsRoleArnKey(secret) || common.HasAwsCredentialsKey(secret) {
-		return AWSKey{
-			KeyRoleArn: ParseRoleArn(secret),
+func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) Element {
+	authConfig := NewAuth()
+	if auth != nil {
+		if auth.RoleARN != nil || auth.Credentials != nil {
+			return authConfig
 		}
+		// Otherwise use ID and Secret
+		authConfig.KeyID.Value = strings.TrimSpace(secrets.AsString(auth.AccessKeyID))
+		authConfig.KeySecret.Value = strings.TrimSpace(secrets.AsString(auth.AccessKeySecret))
 	}
-	// Otherwise use ID and Secret
-	return AWSKey{
-		KeyID:     strings.TrimSpace(common.GetFromSecret(secret, constants.AWSAccessKeyID)),
-		KeySecret: strings.TrimSpace(common.GetFromSecret(secret, constants.AWSSecretAccessKey)),
-	}
+	return authConfig
 }
 
-func EndpointConfig(o logging.OutputSpec) Element {
+func endpointConfig(cw *obs.Cloudwatch) Element {
+	if cw == nil {
+		return Endpoint{}
+	}
 	return Endpoint{
-		URL: o.URL,
+		URL: cw.URL,
 	}
 }
 
 func NormalizeGroupAndStreamName(logGroupNameField string, logGroupPrefix string, componentID string, inputs []string) Element {
 	appGroupName := fmt.Sprintf("%q + %s", logGroupPrefix, logGroupNameField)
+	if logGroupPrefix == "" {
+		appGroupName = logGroupNameField
+	}
 	auditGroupName := fmt.Sprintf("%s%s", logGroupPrefix, "audit")
 	infraGroupName := fmt.Sprintf("%s%s", logGroupPrefix, "infrastructure")
 	vrl := strings.TrimSpace(`
@@ -172,23 +173,23 @@ del(.source_type)
 	}
 }
 
-func LogGroupPrefix(o logging.OutputSpec) string {
+func LogGroupPrefix(o obs.OutputSpec) string {
 	if o.Cloudwatch != nil {
 		prefix := o.Cloudwatch.GroupPrefix
-		if prefix != nil && strings.TrimSpace(*prefix) != "" {
-			return fmt.Sprintf("%s.", *prefix)
+		if strings.TrimSpace(prefix) != "" {
+			return fmt.Sprintf("%s.", prefix)
 		}
 	}
 	return ""
 }
 
 // LogGroupNameField Return the field used for grouping the application logs
-func LogGroupNameField(o logging.OutputSpec) string {
+func LogGroupNameField(o obs.OutputSpec) string {
 	if o.Cloudwatch != nil {
 		switch o.Cloudwatch.GroupBy {
-		case logging.LogGroupByNamespaceName:
+		case obs.LogGroupByNamespaceName:
 			return ".kubernetes.namespace_name"
-		case logging.LogGroupByNamespaceUUID:
+		case obs.LogGroupByNamespaceUUID:
 			return ".kubernetes.namespace_id"
 		default:
 			return ".log_type"
@@ -198,10 +199,10 @@ func LogGroupNameField(o logging.OutputSpec) string {
 }
 
 // ParseRoleArn search for matching valid arn within the 'credentials' or 'role_arn' key
-func ParseRoleArn(secret *corev1.Secret) string {
-	roleArnString := common.GetFromSecret(secret, constants.AWSCredentialsKey)
+func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) string {
+	roleArnString := secrets.AsString(auth.Credentials)
 	if roleArnString == "" {
-		roleArnString = common.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
+		roleArnString = secrets.AsString(auth.RoleARN)
 	}
 
 	if roleArnString != "" {

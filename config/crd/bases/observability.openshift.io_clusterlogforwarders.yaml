@@ -1011,6 +1011,10 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                        url:
+                          description: "URL to send log records to. \n The 'username@password'
+                            part of `url` is ignored."
+                          type: string
                       required:
                       - groupBy
                       - region
@@ -1156,9 +1160,7 @@ spec:
                             syslog records using secure UDP: \n { type: syslog, url:
                             udps://syslog.example.com:1234 } \n Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored.
-                            Any additional authentication material is in the `secret`.
-                            See the `secret` field for more details."
+                            'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                         version:
                           default: 8
@@ -1382,9 +1384,7 @@ spec:
                             syslog records using secure UDP: \n { type: syslog, url:
                             udps://syslog.example.com:1234 } \n Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored.
-                            Any additional authentication material is in the `secret`.
-                            See the `secret` field for more details."
+                            'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
                       - url
@@ -1509,9 +1509,7 @@ spec:
                             syslog records using secure UDP: \n { type: syslog, url:
                             udps://syslog.example.com:1234 } \n Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored.
-                            Any additional authentication material is in the `secret`.
-                            See the `secret` field for more details."
+                            'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
                       - url
@@ -1778,9 +1776,7 @@ spec:
                             syslog records using secure UDP: \n { type: syslog, url:
                             udps://syslog.example.com:1234 } \n Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored.
-                            Any additional authentication material is in the `secret`.
-                            See the `secret` field for more details."
+                            'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
                       - url
@@ -1844,9 +1840,7 @@ spec:
                             syslog records using secure UDP: \n { type: syslog, url:
                             udps://syslog.example.com:1234 } \n Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored.
-                            Any additional authentication material is in the `secret`.
-                            See the `secret` field for more details."
+                            'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
                       - url

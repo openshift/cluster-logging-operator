@@ -56,3 +56,11 @@ func (s Secrets) AsStringFromBearerToken(key *v1.BearerToken) string {
 	// TODO: find value when SA is defined
 	return ""
 }
+
+// Path returns the path to the given secret key if it exists or empty
+func (s Secrets) Path(key *v1.SecretKey) string {
+	if s.Value(key) != nil {
+		return SecretPath(key.Secret.Name, key.Key)
+	}
+	return ""
+}

@@ -60,6 +60,6 @@ func AuthPath(name string, file string) string {
 	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/auth", name, file))
 }
 
-func SecretPath(name string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/secrets", name, file))
+func SecretPath(secretName string, file string) string {
+	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/secrets", secretName, file))
 }

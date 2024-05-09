@@ -1110,8 +1110,11 @@ spec:
                               type: object
                           type: object
                         index:
+                          default:
+                          - - .log_type
                           description: Index is the tenant for the logs. This supports
-                            template syntax to allow dynamic per-event values
+                            template syntax to allow dynamic per-event values. Defaults
+                            to the log type (i.e. application, audit, infrastructure)
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1735,8 +1738,11 @@ spec:
                               type: object
                           type: object
                         index:
+                          default:
+                          - - .log_type
                           description: Index is the tenant for the logs. This supports
-                            template syntax to allow dynamic per-event values
+                            template syntax to allow dynamic per-event values. Defaults
+                            to the log type (i.e. application, audit, infrastructure)
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output

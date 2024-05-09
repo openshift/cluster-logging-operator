@@ -1,0 +1,8 @@
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["application"]
+endpoints = ["https://es.svc.infra.cluster:9200"]
+bulk.index = "foo"
+bulk.action = "create"
+id_key = "_id"
+api_version = "v8"

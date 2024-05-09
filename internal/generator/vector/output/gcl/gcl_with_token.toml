@@ -1,0 +1,11 @@
+[sinks.gcl_1]
+type = "gcp_stackdriver_logs"
+inputs = ["application"]
+billing_account_id = "billing-1"
+credentials_path = "/var/run/ocp-collector/secrets/gcl-1/google-application-credentials.json"
+log_id = "vector-1"
+severity_key = "level"
+
+[sinks.gcl_1.resource]
+type = "k8s_node"
+node_name = "{{hostname}}"

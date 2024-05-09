@@ -2,9 +2,9 @@ package gcl
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
@@ -12,7 +12,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -64,7 +63,7 @@ func (g *GoogleCloudLogging) SetCompression(algo string) {
 	g.Compression.Value = algo
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -74,40 +73,37 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 		return []Element{}
 	}
 	g := o.GoogleCloudLogging
-	dedottedID := helpers.MakeID(id, "dedot")
 	gcl := &GoogleCloudLogging{
 		ComponentID:     id,
 		Inputs:          helpers.MakeInputs(inputs...),
 		LogDestination:  LogDestination(g),
 		LogID:           g.LogID,
 		SeverityKey:     SeverityKey(g),
-		CredentialsPath: common.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
+		CredentialsPath: auth(g.Authentication, secrets),
 		RootMixin:       common.NewRootMixin(nil),
 	}
 	if strategy != nil {
 		strategy.VisitSink(gcl)
 	}
-	setInput(gcl, []string{dedottedID})
-	return MergeElements(
-		[]Element{
-			viaq.DedotLabels(dedottedID, inputs),
-			gcl,
-			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
-			common.NewBuffer(id, strategy),
-			common.NewRequest(id, strategy),
-		},
-		common.TLS(id, o, secret, op),
-	)
+	return []Element{
+		gcl,
+		common.NewAcknowledgments(id, strategy),
+		common.NewBatch(id, strategy),
+		common.NewBuffer(id, strategy),
+		common.NewRequest(id, strategy),
+		tls.New(id, o.TLS, secrets, op),
+	}
 }
 
-func setInput(gcl *GoogleCloudLogging, inputs []string) Element {
-	gcl.Inputs = helpers.MakeInputs(inputs...)
-	return gcl
+func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets helpers.Secrets) string {
+	if spec == nil {
+		return ""
+	}
+	return secrets.Path(spec.Credentials)
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order
-func LogDestination(g *logging.GoogleCloudLogging) Element {
+func LogDestination(g *obs.GoogleCloudLogging) Element {
 	if g.BillingAccountID != "" {
 		return KV(BillingAccountID, fmt.Sprintf("%q", g.BillingAccountID))
 	}
@@ -123,6 +119,6 @@ func LogDestination(g *logging.GoogleCloudLogging) Element {
 	return Nil
 }
 
-func SeverityKey(g *logging.GoogleCloudLogging) string {
+func SeverityKey(g *obs.GoogleCloudLogging) string {
 	return DefaultSeverityKey
 }

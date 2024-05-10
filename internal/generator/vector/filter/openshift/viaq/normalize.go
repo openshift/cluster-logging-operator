@@ -39,7 +39,7 @@ if starts_with(pod_name, "eventrouter-") {
         }
         .kubernetes.event = del(.event)
         .message = del(.kubernetes.event.message)
-        set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
+        . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
         del(.kubernetes.event.metadata.creationTimestamp)
 		. = compact(., nullish: true)
     } else {

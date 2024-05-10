@@ -1,0 +1,14 @@
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["pipeline_1","pipeline_2"]
+bootstrap_servers = "broker1:9092,broker2:9092,broker3:9092"
+topic = "build_complete"
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+
+[sinks.kafka_receiver.tls]
+key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"

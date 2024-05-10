@@ -1,0 +1,28 @@
+# Ensure timestamp field well formatted for Splunk
+[transforms.splunk_hec_timestamp]
+type = "remap"
+inputs = ["pipelineName"]
+source = '''
+ts, err = parse_timestamp(.@timestamp,"%+")
+if err != null {
+	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
+} else {
+	.@timestamp = ts
+}
+
+'''
+[sinks.splunk_hec]
+type = "splunk_hec_logs"
+inputs = ["splunk_hec_timestamp"]
+endpoint = "https://splunk-web:8088/endpoint"
+compression = "none"
+default_token = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
+index = "foo"
+timestamp_key = "@timestamp"
+[sinks.splunk_hec.encoding]
+codec = "json"
+
+[sinks.splunk_hec.tls]
+key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/ca-bundle.crt"

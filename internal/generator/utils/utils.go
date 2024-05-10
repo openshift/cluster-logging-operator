@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// TODO: DELETE ME once fluentd removal merges
 func ToHeaderStr(h map[string]string, formatStr string) string {
 	if len(h) == 0 {
 		return ""

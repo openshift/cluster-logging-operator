@@ -1,9 +1,11 @@
 package common
 
 import (
+	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"sort"
+	"strings"
 )
 
 type Request struct {
@@ -62,9 +64,27 @@ func (r *Request) Template() string {
 }
 
 func (r *Request) Headers() elements.KeyVal {
-	return elements.KV("headers", utils.ToHeaderStr(r.headers, "%q=%q"))
+	return elements.KV("headers", toHeaderStr(r.headers, "%q=%q"))
 }
 
 func (r *Request) SetHeaders(headers map[string]string) {
 	r.headers = headers
+}
+
+func toHeaderStr(h map[string]string, formatStr string) string {
+	if len(h) == 0 {
+		return ""
+	}
+	sortedKeys := make([]string, len(h))
+	i := 0
+	for k := range h {
+		sortedKeys[i] = k
+		i += 1
+	}
+	sort.Strings(sortedKeys)
+	hv := make([]string, len(h))
+	for i, k := range sortedKeys {
+		hv[i] = fmt.Sprintf(formatStr, k, h[k])
+	}
+	return fmt.Sprintf("{%s}", strings.Join(hv, ","))
 }

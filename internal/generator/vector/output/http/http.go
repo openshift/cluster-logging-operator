@@ -2,17 +2,15 @@ package http
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize/schema/otel"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 )
 
 var (
@@ -63,32 +61,14 @@ codec = {{.Codec}}
 {{end}}`
 }
 
-func Normalize(id string, inputs []string) Element {
-	removeFile := `del(.file)`
-	return Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         removeFile,
-	}
-}
-
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
-	normalizeID := vectorhelpers.MakeID(id, "normalize")
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
+func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Normalize(normalizeID, inputs),
-			Debug(helpers.MakeID(id, "debug"), normalizeID),
+			Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	var els []Element
-	if op.Has(constants.AnnotationEnableSchema) && o.Http != nil && o.Http.Schema == constants.OTELSchema {
-		schemaID := vectorhelpers.MakeID(id, "otel")
-		els = append(els, otel.Transform(schemaID, inputs))
-		inputs = []string{schemaID}
-	}
-	els = append(els, Normalize(normalizeID, inputs))
-	sink := Output(id, o, []string{dedottedID}, secret, op)
+	sink := Output(id, o, inputs, secrets, op)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -96,31 +76,29 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 
 		els,
 		[]Element{
-			viaq.DedotLabels(dedottedID, []string{normalizeID}),
 			sink,
 			Encoding(id),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),
 			common.NewBuffer(id, strategy),
 			Request(id, o, strategy),
+			tls.New(id, o.TLS, secrets, op),
+			auth.HTTPAuth(id, o.HTTP.Authentication, secrets),
 		},
-		common.TLS(id, o, secret, op),
-		BasicAuth(id, o, secret),
-		BearerTokenAuth(id, o, secret),
 	)
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) *Http {
+func Output(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options) *Http {
 	return &Http{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		URI:         o.URL,
-		Method:      Method(o.Http),
+		URI:         o.HTTP.URL,
+		Method:      Method(o.HTTP),
 		RootMixin:   common.NewRootMixin(nil),
 	}
 }
 
-func Method(h *logging.Http) string {
+func Method(h *obs.HTTP) string {
 	if h == nil {
 		return "post"
 	}
@@ -145,13 +123,13 @@ func Method(h *logging.Http) string {
 	return "post"
 }
 
-func Request(id string, o logging.OutputSpec, strategy common.ConfigStrategy) *common.Request {
+func Request(id string, o obs.OutputSpec, strategy common.ConfigStrategy) *common.Request {
 	req := common.NewRequest(id, strategy)
-	if o.Http != nil && o.Http.Timeout != 0 {
-		req.TimeoutSecs.Value = o.Http.Timeout
+	if o.HTTP != nil && o.HTTP.Timeout != 0 {
+		req.TimeoutSecs.Value = o.HTTP.Timeout
 	}
-	if o.Http != nil && len(o.Http.Headers) != 0 {
-		req.SetHeaders(o.Http.Headers)
+	if o.HTTP != nil && len(o.HTTP.Headers) != 0 {
+		req.SetHeaders(o.HTTP.Headers)
 	}
 	return req
 }
@@ -161,46 +139,4 @@ func Encoding(id string) Element {
 		ComponentID: id,
 		Codec:       httpEncodingJson,
 	}
-}
-
-func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
-
-	if o.Secret != nil {
-		hasBasicAuth := false
-		conf = append(conf, BasicAuthConf{
-			Desc:        "Basic Auth Config",
-			ComponentID: id,
-		})
-		if common.HasUsernamePassword(secret) {
-			hasBasicAuth = true
-			up := UserNamePass{
-				Username: common.GetFromSecret(secret, constants.ClientUsername),
-				Password: common.GetFromSecret(secret, constants.ClientPassword),
-			}
-			conf = append(conf, up)
-		}
-		if !hasBasicAuth {
-			return []Element{}
-		}
-	}
-
-	return conf
-}
-
-func BearerTokenAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
-	if secret != nil {
-		// Inject token from secret, either provided by user using a custom secret
-		// or from the default logcollector service account.
-		if common.HasBearerTokenFileKey(secret) {
-			conf = append(conf, BasicAuthConf{
-				Desc:        "Bearer Auth Config",
-				ComponentID: id,
-			}, BearerToken{
-				Token: common.GetFromSecret(secret, constants.BearerTokenFileKey),
-			})
-		}
-	}
-	return conf
 }

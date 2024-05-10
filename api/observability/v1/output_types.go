@@ -372,7 +372,7 @@ type IndexSpec struct {
 	// Index is the tenant for the logs. This supports template syntax
 	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	// +kubebuilder:default:={{.log_type}}
 	Index string `json:"index,omitempty"`
 }

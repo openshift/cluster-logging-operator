@@ -1,338 +1,97 @@
-package splunk
+package splunk_test
 
 import (
-	"testing"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-
+	"fmt"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// #nosec G101
-const hecToken = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
-
 var _ = Describe("Generating vector config for Splunk output", func() {
-	defer GinkgoRecover()
-	Skip("TODO: Enable me after rewire")
 	const (
-		fixTimestamp = `
-	# Ensure timestamp field well formatted for Splunk
-	[transforms.splunk_hec_timestamp]
-	type = "remap"
-	inputs = ["pipelineName"]
-	source = '''
-
-	ts, err = parse_timestamp(.@timestamp,"%+")
-	if err != null {
-		log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
-	} else {
-		.@timestamp = ts
-	}
-
-	'''
-`
-		splunkSink = fixTimestamp + `
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = "` + hecToken + `"
-timestamp_key = "@timestamp"
-[sinks.splunk_hec.encoding]
-codec = "json"
-`
-		splunkSinkTls = fixTimestamp + `
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = "` + hecToken + `"
-timestamp_key = "@timestamp"
-[sinks.splunk_hec.encoding]
-codec = "json"
-
-[sinks.splunk_hec.tls]
-key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
-`
-		splunkSinkTlsSkipVerify = fixTimestamp + `
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = "` + hecToken + `"
-timestamp_key = "@timestamp"
-[sinks.splunk_hec.encoding]
-codec = "json"
-
-[sinks.splunk_hec.tls]
-verify_certificate = false
-verify_hostname = false
-key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
-`
-		splunkSinkTlsSkipVerifyNoCert = fixTimestamp + `
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = ""
-timestamp_key = "@timestamp"
-[sinks.splunk_hec.encoding]
-codec = "json"
-
-[sinks.splunk_hec.tls]
-verify_certificate = false
-verify_hostname = false
-`
-		splunkSinkPassphrase = fixTimestamp + `
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = "` + hecToken + `"
-timestamp_key = "@timestamp"
-
-[sinks.splunk_hec.encoding]
-codec = "json"
-
-[sinks.splunk_hec.tls]
-key_pass = "junk"
-`
+		hecToken   = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
+		secretName = "vector-splunk-secret"
+		aToken     = "atoken"
 	)
-
 	var (
-		g framework.Generator
-
-		output = loggingv1.OutputSpec{
-			Type: loggingv1.OutputTypeSplunk,
-			Name: "splunk_hec",
-			URL:  "https://splunk-web:8088/endpoint",
-			OutputTypeSpec: loggingv1.OutputTypeSpec{
-				Splunk: &loggingv1.Splunk{},
-			},
-			Secret: &loggingv1.OutputSecretSpec{
-				Name: "vector-splunk-secret",
-			},
-		}
-
-		outputWithPassphrase = loggingv1.OutputSpec{
-			Type: loggingv1.OutputTypeSplunk,
-			Name: "splunk_hec",
-			URL:  "https://splunk-web:8088/endpoint",
-			OutputTypeSpec: loggingv1.OutputTypeSpec{
-				Splunk: &loggingv1.Splunk{},
-			},
-			Secret: &loggingv1.OutputSecretSpec{
-				Name: "vector-splunk-secret-passphrase",
-			},
-		}
-		outputWithTls = loggingv1.OutputSpec{
-			Type: loggingv1.OutputTypeSplunk,
-			Name: "splunk_hec",
-			URL:  "https://splunk-web:8088/endpoint",
-			OutputTypeSpec: loggingv1.OutputTypeSpec{
-				Splunk: &loggingv1.Splunk{},
-			},
-			Secret: &loggingv1.OutputSecretSpec{
-				Name: "vector-splunk-secret-tls",
-			},
-		}
-
-		outputWithTlsSkipVerify = loggingv1.OutputSpec{
-			Type: loggingv1.OutputTypeSplunk,
-			Name: "splunk_hec",
-			URL:  "https://splunk-web:8088/endpoint",
-			OutputTypeSpec: loggingv1.OutputTypeSpec{
-				Splunk: &loggingv1.Splunk{},
-			},
-			Secret: &loggingv1.OutputSecretSpec{
-				Name: "vector-splunk-secret-tls",
-			},
-			TLS: &loggingv1.OutputTLSSpec{
-				InsecureSkipVerify: true,
-			},
-		}
-
-		outputWithTlsSkipVerifyNoCert = loggingv1.OutputSpec{
-			Type: loggingv1.OutputTypeSplunk,
-			Name: "splunk_hec",
-			URL:  "https://splunk-web:8088/endpoint",
-			OutputTypeSpec: loggingv1.OutputTypeSpec{
-				Splunk: &loggingv1.Splunk{},
-			},
-			//Secret: &loggingv1.OutputSecretSpec{
-			//	Name: "vector-splunk-secret",
-			//},
-			TLS: &loggingv1.OutputTLSSpec{
-				InsecureSkipVerify: true,
-			},
-		}
-
 		secrets = map[string]*corev1.Secret{
-			output.Secret.Name: {
+			secretName: {
 				Data: map[string][]byte{
-					"hecToken": []byte(hecToken),
+					constants.TokenKey: []byte(aToken),
+					"hecToken":         []byte(hecToken),
+					"tls.key":          []byte("junk"),
+					"tls.crt":          []byte("junk"),
+					"ca-bundle.crt":    []byte("junk"),
+					"passphrase":       []byte("junk"),
 				},
 			},
-			outputWithTls.Secret.Name: {
-				Data: map[string][]byte{
-					"hecToken":      []byte(hecToken),
-					"tls.key":       []byte("junk"),
-					"tls.crt":       []byte("junk"),
-					"ca-bundle.crt": []byte("junk"),
+		}
+		tlsSpec = &obs.OutputTLSSpec{
+			CA: &obs.ConfigMapOrSecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
 				},
+				Key: constants.TrustedCABundleKey,
 			},
-			outputWithPassphrase.Secret.Name: {
-				Data: map[string][]byte{
-					"hecToken":   []byte(hecToken),
-					"passphrase": []byte("junk"),
+			Certificate: &obs.ConfigMapOrSecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
 				},
+				Key: constants.ClientCertKey,
 			},
+			Key: &obs.SecretKey{
+				Secret: &corev1.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: constants.ClientPrivateKey,
+			},
+		}
+		initOutput = func() obs.OutputSpec {
+			return obs.OutputSpec{
+				Type: obs.OutputTypeSplunk,
+				Name: "splunk_hec",
+				Splunk: &obs.Splunk{
+					URLSpec: obs.URLSpec{URL: "https://splunk-web:8088/endpoint"},
+					Authentication: &obs.SplunkAuthentication{
+						Token: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: constants.SplunkHECTokenKey,
+						},
+					},
+					IndexSpec: obs.IndexSpec{Index: "{{.log_type}}"},
+				},
+			}
 		}
 	)
 
-	Context("splunk config", func() {
-		BeforeEach(func() {
-			g = framework.MakeGenerator()
-		})
-
-		It("should provide a valid config", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), output, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
-			results, err := g.GenerateConf(element...)
-			Expect(err).To(BeNil())
-			Expect(results).To(EqualTrimLines(splunkSink))
-		})
-
-		It("should provide a valid config with passphrase", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithPassphrase, []string{"pipelineName"}, secrets[outputWithPassphrase.Secret.Name], nil, nil)
-			results, err := g.GenerateConf(element...)
-			Expect(err).To(BeNil())
-			Expect(results).To(EqualTrimLines(splunkSinkPassphrase))
-		})
-
-		It("should provide a valid config with TLS", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTls, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil, nil)
-			results, err := g.GenerateConf(element...)
-			Expect(err).To(BeNil())
-			Expect(results).To(EqualTrimLines(splunkSinkTls))
-		})
-
-		It("should provide a valid config with tls.insecureSkipVerify=true", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerify, []string{"pipelineName"}, secrets[outputWithTls.Secret.Name], nil, nil)
-			results, err := g.GenerateConf(element...)
-			Expect(err).To(BeNil())
-			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerify))
-		})
-
-		It("should provide a valid config with tls.insecureSkipVerify=true without secret", func() {
-			element := New(vectorhelpers.FormatComponentID(output.Name), outputWithTlsSkipVerifyNoCert, []string{"pipelineName"}, nil, nil, nil)
-			results, err := g.GenerateConf(element...)
-			Expect(err).To(BeNil())
-			Expect(results).To(EqualTrimLines(splunkSinkTlsSkipVerifyNoCert))
-		})
-
-		Context("with custom index", func() {
-			var (
-				splunkOutputSpec loggingv1.OutputSpec
-				splunkIndexRemap = `
-# Set Splunk Index
-[transforms.splunk_hec_add_splunk_index]
-type = "remap"
-inputs = ["pipelineName"]			
-`
-				splunkWithIndexDedot = `
-# Ensure timestamp field well formatted for Splunk
-[transforms.splunk_hec_timestamp]
-type = "remap"
-inputs = ["splunk_hec_add_splunk_index"]
-source = '''
-
-ts, err = parse_timestamp(.@timestamp,"%+")
-if err != null {
-	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
-} else {
-	.@timestamp = ts
-}
-
-'''
-
-[sinks.splunk_hec]
-type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
-endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
-default_token = "` + hecToken + `"
-index = "{{ write_index }}"
-timestamp_key = "@timestamp"
-[sinks.splunk_hec.encoding]
-codec = "json"
-except_fields = ["write_index"]
-`
-
-				splunkSinkIndexKey = `
-source = '''
-val = .kubernetes.namespace_name
-if !is_null(val) {
-	.write_index = val
-} else {
-	.write_index = ""
-}
-'''
-`
-				splunkSinkIndexName = `
-source = '''
-	.write_index = "custom-index"
-'''
-`
-			)
-
-			BeforeEach(func() {
-				splunkOutputSpec = loggingv1.OutputSpec{
-					Type: loggingv1.OutputTypeSplunk,
-					Name: "splunk_hec",
-					URL:  "https://splunk-web:8088/endpoint",
-					OutputTypeSpec: loggingv1.OutputTypeSpec{
-						Splunk: &loggingv1.Splunk{},
-					},
-					Secret: &loggingv1.OutputSecretSpec{
-						Name: "vector-splunk-secret",
-					},
-				}
-			})
-
-			It("should provide a valid config with indexKey specified", func() {
-				splunkOutputSpec.Splunk.IndexKey = "kubernetes.namespace_name"
-				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
-				results, err := g.GenerateConf(element...)
-				Expect(err).To(BeNil())
-				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexKey + splunkWithIndexDedot))
-			})
-
-			It("should provide a valid config with indexName specified", func() {
-				splunkOutputSpec.Splunk.IndexName = "custom-index"
-				element := New(vectorhelpers.FormatComponentID(output.Name), splunkOutputSpec, []string{"pipelineName"}, secrets[output.Secret.Name], nil, nil)
-				results, err := g.GenerateConf(element...)
-				Expect(err).To(BeNil())
-				Expect(results).To(EqualTrimLines(splunkIndexRemap + splunkSinkIndexName + splunkWithIndexDedot))
-			})
-		})
-	})
+	DescribeTable("#New", func(expFile string, op framework.Options, visit func(spec *obs.OutputSpec)) {
+		exp, err := tomlContent.ReadFile(expFile)
+		if err != nil {
+			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
+		}
+		outputSpec := initOutput()
+		if visit != nil {
+			visit(&outputSpec)
+		}
+		conf := splunk.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, nil, op)
+		Expect(string(exp)).To(EqualConfigFrom(conf))
+	},
+		Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, nil),
+		Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.TLS = tlsSpec
+		}),
+		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.TLS = tlsSpec
+			spec.Splunk.Index = "foo"
+		}),
+	)
 })
-
-func TestVectorConfGenerator(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vector for Splunk Conf Generation")
-}

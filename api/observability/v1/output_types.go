@@ -690,9 +690,21 @@ type Splunk struct {
 	IndexSpec `json:",inline"`
 }
 
+type SyslogRFCType string
+
+const (
+	SyslogRFC3164 SyslogRFCType = "RFC3164"
+	SyslogRFC5424 SyslogRFCType = "RFC5424"
+)
+
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
 	URLSpec `json:",inline"`
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum:=RFC3164;RFC5424
+	// +kubebuilder:default:=RFC5424
+	RFC SyslogRFCType `json:"rfc,omitempty"`
 
 	// Severity to set on outgoing syslog records.
 	//
@@ -702,7 +714,7 @@ type Syslog struct {
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
 	// +kubebuilder:validation:Optional
-	// TODO: Add regex validation
+	// +kubebuilder:default:=informational
 	Severity string `json:"severity,omitempty"`
 
 	// Facility to set on outgoing syslog records.
@@ -717,48 +729,32 @@ type Syslog struct {
 	//     local0 local1 local2 local3 local4 local5 local6 local7
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:=user
 	Facility string `json:"facility,omitempty"`
-
-	// TrimPrefix is a prefix to trim from the tag.
-	//
-	// +kubebuilder:validation:Optional
-	TrimPrefix string `json:"trimPrefix,omitempty"`
-
-	// Tag specifies a record field to use as tag.
-	//
-	// +kubebuilder:validation:Optional
-	Tag string `json:"tag,omitempty"`
 
 	// PayloadKey specifies record field to use as payload.
 	//
 	// +kubebuilder:validation:Optional
 	PayloadKey string `json:"payloadKey,omitempty"`
 
-	// AddLogSource adds log's source information to the log message
-	// If the logs are collected from a process; namespace_name, pod_name, container_name is added to the log
-	// In addition, it picks the originating process name and id(known as the `pid`) from the record
-	// and injects them into the header field."
-	//
-	// +kubebuilder:validation:Optional
-	AddLogSource bool `json:"addLogSource,omitempty"`
-
 	// AppName is APP-NAME part of the syslog-msg header
 	//
-	// AppName needs to be specified if using rfc5424
+	// AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
 	//
 	// +kubebuilder:validation:Optional
+	// TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of "tag" when this is empty
 	AppName string `json:"appName,omitempty"`
 
 	// ProcID is PROCID part of the syslog-msg header
 	//
-	// ProcID needs to be specified if using rfc5424
+	// ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 	//
 	// +kubebuilder:validation:Optional
 	ProcID string `json:"procID,omitempty"`
 
 	// MsgID is MSGID part of the syslog-msg header
 	//
-	// MsgID needs to be specified if using rfc5424
+	// MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 	//
 	// +kubebuilder:validation:Optional
 	MsgID string `json:"msgID,omitempty"`

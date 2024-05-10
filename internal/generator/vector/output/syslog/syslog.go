@@ -2,7 +2,8 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"net/url"
 	"regexp"
 	"strings"
@@ -10,18 +11,14 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	TCP     = `tcp`
-	TLS     = `tls`
-	RFC3164 = `rfc3164`
-	RFC5424 = `rfc5424`
+	TCP = `tcp`
+	TLS = `tls`
 )
 
 type Syslog struct {
@@ -90,31 +87,27 @@ func (s *Syslog) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	u, _ := url.Parse(o.URL)
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
-	sink := Output(id, o, []string{dedottedID}, secret, op, u.Scheme, u.Host)
+	u, _ := url.Parse(o.Syslog.URL)
+	sink := Output(id, o, inputs, secrets, op, u.Scheme, u.Host)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
-	return MergeElements(
-		[]Element{
-			viaq.DedotLabels(dedottedID, inputs),
-			sink,
-			Encoding(id, o),
-			common.NewAcknowledgments(id, strategy),
-			common.NewBuffer(id, strategy),
-		},
-		TLSConf(id, o, secret, op),
-	)
+	return []Element{
+		sink,
+		Encoding(id, o),
+		common.NewAcknowledgments(id, strategy),
+		common.NewBuffer(id, strategy),
+		tls.New(id, o.TLS, secrets, op),
+	}
 }
 
-func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) *Syslog {
+func Output(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options, urlScheme string, host string) *Syslog {
 	var mode = strings.ToLower(urlScheme)
 	if urlScheme == TLS {
 		mode = TCP
@@ -128,31 +121,20 @@ func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Sec
 	}
 }
 
-func Encoding(id string, o logging.OutputSpec) Element {
+func Encoding(id string, o obs.OutputSpec) Element {
 	return SyslogEncoding{
-		ComponentID:  id,
-		RFC:          RFC(o.Syslog),
-		Facility:     Facility(o.Syslog),
-		Severity:     Severity(o.Syslog),
-		AppName:      AppName(o.Syslog),
-		ProcID:       ProcID(o.Syslog),
-		MsgID:        MsgID(o.Syslog),
-		Tag:          Tag(o.Syslog),
-		AddLogSource: AddLogSource(o.Syslog),
-		PayloadKey:   PayloadKey(o.Syslog),
+		ComponentID: id,
+		RFC:         strings.ToLower(string(o.Syslog.RFC)),
+		Facility:    Facility(o.Syslog),
+		Severity:    Severity(o.Syslog),
+		AppName:     AppName(o.Syslog),
+		ProcID:      ProcID(o.Syslog),
+		MsgID:       MsgID(o.Syslog),
+		PayloadKey:  PayloadKey(o.Syslog),
 	}
 }
 
-func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
-		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, false); tlsConf != nil {
-			return []Element{tlsConf}
-		}
-	}
-	return []Element{}
-}
-
-func Facility(s *logging.Syslog) string {
+func Facility(s *obs.Syslog) string {
 	if s == nil || s.Facility == "" {
 		return "user"
 	}
@@ -162,7 +144,7 @@ func Facility(s *logging.Syslog) string {
 	return s.Facility
 }
 
-func Severity(s *logging.Syslog) string {
+func Severity(s *obs.Syslog) string {
 	if s == nil || s.Severity == "" {
 		return "informational"
 	}
@@ -172,20 +154,7 @@ func Severity(s *logging.Syslog) string {
 	return s.Severity
 }
 
-func RFC(s *logging.Syslog) string {
-	if s == nil || s.RFC == "" {
-		return RFC5424
-	}
-	switch strings.ToLower(s.RFC) {
-	case RFC3164:
-		return RFC3164
-	case RFC5424:
-		return RFC5424
-	}
-	return "Unknown RFC"
-}
-
-func AppName(s *logging.Syslog) Element {
+func AppName(s *obs.Syslog) Element {
 	if s == nil {
 		return Nil
 	}
@@ -202,18 +171,7 @@ func AppName(s *logging.Syslog) Element {
 	return KV(appname, fmt.Sprintf(`"%s"`, s.AppName))
 }
 
-func Tag(s *logging.Syslog) Element {
-	if s == nil || s.Tag == "" {
-		return Nil
-	}
-	tag := "tag"
-	if IsKeyExpr(s.Tag) {
-		return KV(tag, fmt.Sprintf(`"$%s"`, s.Tag))
-	}
-	return KV(tag, fmt.Sprintf(`"%s"`, s.Tag))
-}
-
-func MsgID(s *logging.Syslog) Element {
+func MsgID(s *obs.Syslog) Element {
 	if s == nil || s.MsgID == "" {
 		return Nil
 	}
@@ -224,7 +182,7 @@ func MsgID(s *logging.Syslog) Element {
 	return KV(msgid, fmt.Sprintf(`"%s"`, s.MsgID))
 }
 
-func ProcID(s *logging.Syslog) Element {
+func ProcID(s *obs.Syslog) Element {
 	if s == nil || s.ProcID == "" {
 		return Nil
 	}
@@ -235,18 +193,15 @@ func ProcID(s *logging.Syslog) Element {
 	return KV(procid, fmt.Sprintf(`"%s"`, s.ProcID))
 }
 
-func AddLogSource(s *logging.Syslog) Element {
-	if s == nil || !s.AddLogSource {
-		return Nil
-	}
-	return KV("add_log_source", "true")
-}
-
-func PayloadKey(s *logging.Syslog) Element {
+func PayloadKey(s *obs.Syslog) Element {
 	if s == nil || s.PayloadKey == "" {
 		return Nil
 	}
-	return KV("payload_key", fmt.Sprintf(`"%s"`, s.PayloadKey))
+	key := "payload_key"
+	if IsKeyExpr(s.PayloadKey) {
+		return KV(key, fmt.Sprintf(`"$%s"`, s.PayloadKey))
+	}
+	return KV(key, fmt.Sprintf(`"%s"`, s.PayloadKey))
 }
 
 // The Syslog output fields can be set to an expression of the form $.abc.xyz

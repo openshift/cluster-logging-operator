@@ -1,0 +1,28 @@
+[transforms.example_json]
+type = "remap"
+inputs = ["application"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+'''
+
+[sinks.example]
+type = "socket"
+inputs = ["example_json"]
+address = "logserver:6514"
+mode = "tcp"
+
+[sinks.example.encoding]
+codec = "syslog"
+rfc = "rfc5424"
+facility = "$$.message.facility"
+severity = "$$.message.severity"
+app_name = "$$.message.app_name"
+msg_id = "$$.message.msg_id"
+proc_id = "$$.message.proc_id"
+payload_key = "$$.message"
+
+[sinks.example.tls]
+key_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/syslog-tls/ca-bundle.crt"
+key_pass = "mysecretpassword"

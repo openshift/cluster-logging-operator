@@ -1,0 +1,21 @@
+[transforms.example_json]
+type = "remap"
+inputs = ["application"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+'''
+
+[sinks.example]
+type = "socket"
+inputs = ["example_json"]
+address = "logserver:514"
+mode = "udp"
+
+[sinks.example.encoding]
+codec = "syslog"
+rfc = "rfc3164"
+facility = "kern"
+severity = "critical"
+app_name = "appName"
+msg_id = "msgID"
+proc_id = "procID"

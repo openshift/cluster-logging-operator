@@ -1959,19 +1959,16 @@ spec:
                       description: Syslog provides optional extra properties for output
                         type `syslog`
                       properties:
-                        addLogSource:
-                          description: AddLogSource adds log's source information
-                            to the log message If the logs are collected from a process;
-                            namespace_name, pod_name, container_name is added to the
-                            log In addition, it picks the originating process name
-                            and id(known as the `pid`) from the record and injects
-                            them into the header field."
-                          type: boolean
                         appName:
                           description: "AppName is APP-NAME part of the syslog-msg
-                            header \n AppName needs to be specified if using rfc5424"
+                            header \n AppName needs to be specified if using rfc5424.
+                            The maximum length of the final values is truncated to
+                            48 \n TODO: DETERMIN HOW to default the app name that
+                            isnt based on fluentd assumptions of \"tag\" when this
+                            is empty"
                           type: string
                         facility:
+                          default: user
                           description: "Facility to set on outgoing syslog records.
                             \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
                             The value can be a decimal integer. Facility keywords
@@ -1983,7 +1980,8 @@ spec:
                           type: string
                         msgID:
                           description: "MsgID is MSGID part of the syslog-msg header
-                            \n MsgID needs to be specified if using rfc5424"
+                            \n MsgID needs to be specified if using rfc5424.  The
+                            maximum length of the final values is truncated to 32"
                           type: string
                         payloadKey:
                           description: PayloadKey specifies record field to use as
@@ -1991,20 +1989,22 @@ spec:
                           type: string
                         procID:
                           description: "ProcID is PROCID part of the syslog-msg header
-                            \n ProcID needs to be specified if using rfc5424"
+                            \n ProcID needs to be specified if using rfc5424. The
+                            maximum length of the final values is truncated to 128"
+                          type: string
+                        rfc:
+                          default: RFC5424
+                          enum:
+                          - RFC3164
+                          - RFC5424
                           type: string
                         severity:
+                          default: informational
                           description: "Severity to set on outgoing syslog records.
                             \n Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
                             The value can be a decimal integer or one of these case-insensitive
                             keywords: \n Emergency Alert Critical Error Warning Notice
-                            Informational Debug \n TODO: Add regex validation"
-                          type: string
-                        tag:
-                          description: Tag specifies a record field to use as tag.
-                          type: string
-                        trimPrefix:
-                          description: TrimPrefix is a prefix to trim from the tag.
+                            Informational Debug"
                           type: string
                         url:
                           description: "URL to send log records to. \n An absolute

@@ -44,3 +44,15 @@ func (s Secrets) AsString(key *v1.SecretKey) string {
 	}
 	return ""
 }
+
+// AsString returns the value of the BeearerToken if it exists or empty
+func (s Secrets) AsStringFromBearerToken(key *v1.BearerToken) string {
+	if key.Secret != nil {
+		return s.AsString(&v1.SecretKey{
+			Secret: key.Secret,
+			Key:    key.Key,
+		})
+	}
+	// TODO: find value when SA is defined
+	return ""
+}

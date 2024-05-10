@@ -1,0 +1,18 @@
+[sinks.http_receiver]
+type = "http"
+inputs = ["application"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+headers = {"h1"="v1","h2"="v2"}
+
+[sinks.http_receiver.tls]
+verify_certificate = false
+verify_hostname = false
+key_file = "/var/run/ocp-collector/secrets/http-receiver/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/http-receiver/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt"

@@ -65,6 +65,7 @@ spec:
       labels:
         service: storage
         severity: Warning
+        namespace: openshift-logging
     - alert: FluentdDeprecation
       annotations:
         message: "Fluentd is deprecated and is planned to be removed in a future release. Red Hat provides bug fixes and support for this feature during the current release lifecycle, but this feature no longer receives enhancements. As an alternative to Fluentd, you can use Vector instead."
@@ -75,6 +76,7 @@ spec:
       labels:
         service: collector
         severity: Warning
+        namespace: openshift-logging
     - alert: KibanaDeprecation
       annotations:
         message: "The Kibana web console is now deprecated and is planned to be removed in a future logging release."
@@ -85,6 +87,7 @@ spec:
       labels:
         service: visualization
         severity: Warning
+        namespace: openshift-logging
   - name: logging_clusterlogging_telemetry.rules
     rules:
     - expr: |

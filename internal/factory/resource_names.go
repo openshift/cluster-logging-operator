@@ -30,6 +30,7 @@ func (f *ForwarderResourceNames) GenerateInputServiceName(serviceName string) st
 	return fmt.Sprintf("%s-%s", f.CommonName, serviceName)
 }
 
+// TODO: Remove me once migrated to obs.clf
 // GenerateResourceNames is a factory for naming of objects based on ClusterLogForwarder namespace and name
 func GenerateResourceNames(clf logging.ClusterLogForwarder) *ForwarderResourceNames {
 	resBaseName := clf.Name

@@ -1,35 +1,38 @@
 package input
 
 import (
-	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 )
 
 const (
-	nsPodPathFmt       = "%s_%s-*/*/*.log"
-	nsContainerPathFmt = "%s_*/%s/*.log"
+	//nsPodPathFmt       = "%s_%s-*/*/*.log"
+	//nsContainerPathFmt = "%s_*/%s/*.log"
+
+	constainerSource   = string(obs.InfrastructureSourceContainer)
+	logTypeApplication = string(obs.InputTypeApplication)
 )
 
 var (
-	// TODO: Remove ES/Kibana from excludes
-	loggingExcludes = source.NewContainerPathGlobBuilder().
-			AddOther(
-			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.LogfilesmetricexporterName),
-			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.ElasticsearchName),
-			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.KibanaName),
-		).AddOther(
-		fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "loki*"),
-		fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "gateway"),
-		fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "opa"),
-	).AddExtensions(excludeExtensions...).
-		Build()
+	//// TODO: Remove ES/Kibana from excludes
+	//loggingExcludes = source.NewContainerPathGlobBuilder().
+	//		AddOther(
+	//		fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.LogfilesmetricexporterName),
+	//		fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.ElasticsearchName),
+	//		fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.KibanaName),
+	//	).AddOther(
+	//	fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "loki*"),
+	//	fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "gateway"),
+	//	fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "opa"),
+	//).AddExtensions(excludeExtensions...).
+	//	Build()
 	excludeExtensions = []string{"gz", "tmp"}
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
 	infraNSRegex      = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
@@ -41,37 +44,29 @@ var (
 
 // NewSource creates an input adapter to generate config for ViaQ sources to collect logs excluding the
 // collector container logs from the namespace where the collector is deployed
-func NewSource(input logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) ([]framework.Element, []string) {
+func NewSource(input obs.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
 	switch {
-	case input.Name == logging.InputNameApplication:
-		els, ids = NewContainerSource(input, collectorNS, "", infraExcludes, logging.InputNameApplication, logging.InfrastructureSourceContainer)
-	case input.Name == logging.InputNameInfrastructure:
-		infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-		cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer)
-		els = append(els, cels...)
-		ids = append(ids, cids...)
-		jels, jids := NewJournalSource(input)
-		els = append(els, jels...)
-		ids = append(ids, jids...)
-	case input.Name == logging.InputNameAudit:
-		els, ids = NewAuditSources(input, op)
+	case obs.InputTypeApplication == obs.InputType(input.Name):
+		els, ids = NewContainerSource(input, collectorNS, "", infraExcludes, logTypeApplication, constainerSource)
+	//TODO: ENABLE ME FOR OTHER SOURCES
+
+	//case obs.InputTypeInfrastructure == obs.InputType(input.Name):
+	//	infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
+	//	cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, constainerSource)
+	//	els = append(els, cels...)
+	//	ids = append(ids, cids...)
+	//jels, jids := NewJournalSource(input)
+	//els = append(els, jels...)
+	//ids = append(ids, jids...)
+	//case obs.InputNameAudit.IsSameAs(input.Name):
+	//	els, ids = NewAuditSources(input, op)
 	default:
 		if input.Application != nil {
 			ib := source.NewContainerPathGlobBuilder()
 			eb := source.NewContainerPathGlobBuilder()
 			appIncludes := []string{}
-			// Migrate existing namespaces
-			if len(input.Application.Namespaces) > 0 {
-				for _, ns := range input.Application.Namespaces {
-					ncs := source.NamespaceContainer{
-						Namespace: ns,
-					}
-					ib.AddCombined(ncs)
-					appIncludes = append(appIncludes, ncs.Namespace)
-				}
-			}
 			if len(input.Application.Includes) > 0 {
 				for _, in := range input.Application.Includes {
 					ncs := source.NamespaceContainer{
@@ -102,53 +97,54 @@ func NewSource(input logging.InputSpec, collectorNS string, resNames *factory.Fo
 			eb.AddExtensions(excludeExtensions...)
 			includes := ib.Build()
 			excludes := eb.Build(infraNamespaces...)
-			els, ids = NewContainerSource(input, collectorNS, includes, excludes, logging.InputNameApplication, logging.InfrastructureSourceContainer)
-		} else if input.Infrastructure != nil {
-			sources := sets.NewString(input.Infrastructure.Sources...)
-			if sources.Has(logging.InfrastructureSourceContainer) {
-				infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-				cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer)
-				els = append(els, cels...)
-				ids = append(ids, cids...)
-			}
-			if sources.Has(logging.InfrastructureSourceNode) {
-				jels, jids := NewJournalSource(input)
-				els = append(els, jels...)
-				ids = append(ids, jids...)
-			}
-		} else if input.Audit != nil {
-			sources := sets.NewString(input.Audit.Sources...)
-			if sources.Has(logging.AuditSourceAuditd) {
-				cels, cids := NewAuditAuditdSource(input, op)
-				els = append(els, cels...)
-				ids = append(ids, cids...)
-			}
-			if sources.Has(logging.AuditSourceKube) {
-				cels, cids := NewK8sAuditSource(input, op)
-				els = append(els, cels...)
-				ids = append(ids, cids...)
-			}
-			if sources.Has(logging.AuditSourceOpenShift) {
-				cels, cids := NewOpenshiftAuditSource(input, op)
-				els = append(els, cels...)
-				ids = append(ids, cids...)
-			}
-			if sources.Has(logging.AuditSourceOVN) {
-				cels, cids := NewOVNAuditSource(input, op)
-				els = append(els, cels...)
-				ids = append(ids, cids...)
-			}
-		} else if input.Receiver != nil {
-			els, ids = NewViaqReceiverSource(input, resNames, op)
+			els, ids = NewContainerSource(input, collectorNS, includes, excludes, logTypeApplication, constainerSource)
 		}
+		//	} else if input.Infrastructure != nil {
+		//		sources := sets.NewString(input.Infrastructure.Sources...)
+		//		if sources.Has(logging.InfrastructureSourceContainer) {
+		//			infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
+		//			cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer)
+		//			els = append(els, cels...)
+		//			ids = append(ids, cids...)
+		//		}
+		//		if sources.Has(logging.InfrastructureSourceNode) {
+		//			jels, jids := NewJournalSource(input)
+		//			els = append(els, jels...)
+		//			ids = append(ids, jids...)
+		//		}
+		//	} else if input.Audit != nil {
+		//		sources := sets.NewString(input.Audit.Sources...)
+		//		if sources.Has(logging.AuditSourceAuditd) {
+		//			cels, cids := NewAuditAuditdSource(input, op)
+		//			els = append(els, cels...)
+		//			ids = append(ids, cids...)
+		//		}
+		//		if sources.Has(logging.AuditSourceKube) {
+		//			cels, cids := NewK8sAuditSource(input, op)
+		//			els = append(els, cels...)
+		//			ids = append(ids, cids...)
+		//		}
+		//		if sources.Has(logging.AuditSourceOpenShift) {
+		//			cels, cids := NewOpenshiftAuditSource(input, op)
+		//			els = append(els, cels...)
+		//			ids = append(ids, cids...)
+		//		}
+		//		if sources.Has(logging.AuditSourceOVN) {
+		//			cels, cids := NewOVNAuditSource(input, op)
+		//			els = append(els, cels...)
+		//			ids = append(ids, cids...)
+		//		}
+		//	} else if input.Receiver != nil {
+		//		els, ids = NewViaqReceiverSource(input, resNames, op)
+		//	}
 	}
 	return els, ids
 }
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec logging.InputSpec, namespace, includes, excludes, logType, logSource string) ([]framework.Element, []string) {
+func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType, logSource string) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
-	var selector *logging.LabelSelector
+	var selector *metav1.LabelSelector
 	if spec.Application != nil {
 		selector = spec.Application.Selector
 	}
@@ -164,10 +160,11 @@ func NewContainerSource(spec logging.InputSpec, namespace, includes, excludes, l
 		NewLogSourceAndType(metaID, logSource, logType, base),
 	}
 	inputID := metaID
-	if spec.HasPolicy() {
+	//TODO: DETERMINE IF key field is correct and actually works
+	if threshold, hasPolicy := internalobs.MaxRecordsPerSecond(spec); hasPolicy {
 		throttleID := helpers.MakeID(base, "throttle")
 		inputID = throttleID
-		el = append(el, AddThrottleToInput(throttleID, metaID, spec)...)
+		el = append(el, AddThrottleToInput(throttleID, metaID, threshold)...)
 	}
 
 	return el, []string{inputID}

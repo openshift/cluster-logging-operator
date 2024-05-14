@@ -3,8 +3,8 @@ package forwarder
 import (
 	"errors"
 	"fmt"
-
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 

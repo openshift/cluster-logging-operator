@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// Initializer is a fuction that knows how to initialize a kubernetes runtime object
+// Initializer is a function that knows how to initialize a kubernetes runtime object
 type Initializer func(o runtime.Object, namespace, name string, visitors ...func(o runtime.Object))
 
 // NewClusterLogForwarder returns a ClusterLogForwarder with name and namespace.

@@ -105,7 +105,7 @@ const (
 	ApplicationSourceContainer ApplicationSource = "container"
 )
 
-// Application log selector.
+// Application workload log selector.
 // All conditions in the selector must be satisfied (logical AND) to select logs.
 type Application struct {
 	// Selector for logs from pods with matching labels.

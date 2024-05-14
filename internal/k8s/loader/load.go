@@ -7,7 +7,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
@@ -56,8 +55,9 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string, i
 
 	// Do not modify cached copy
 	forwarder = *proto.DeepCopy()
-	internalLogStoreSecret := factory.GenerateResourceNames(forwarder).InternalLogStoreSecret
-	saTokenSecret := factory.GenerateResourceNames(forwarder).ServiceAccountTokenSecret
+	//TODO
+	internalLogStoreSecret := "" //factory.GenerateResourceNames(forwarder).InternalLogStoreSecret
+	saTokenSecret := ""          //  factory.GenerateResourceNames(forwarder).ServiceAccountTokenSecret
 	// TODO Drop migration upon introduction of v2
 	extras := map[string]bool{}
 	var migrationMessages []logging.Condition

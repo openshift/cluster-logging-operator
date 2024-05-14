@@ -2,13 +2,12 @@ package source
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"strings"
 )
 
-func LabelSelectorFrom(selector *logging.LabelSelector) string {
+func LabelSelectorFrom(selector *metav1.LabelSelector) string {
 	if selector == nil {
 		return ""
 	}

@@ -1222,6 +1222,35 @@ spec:
                           type: string
                         projectId:
                           type: string
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          properties:
+                            delivery:
+                              description: DeliveryMode sets the delivery mode for
+                                log forwarding.
+                              enum:
+                              - atLeastOnce
+                              - atMostOnce
+                              type: string
+                            maxRetryDuration:
+                              description: MaxRetryDuration is the maximum time to
+                                wait between retry attempts after a delivery failure.
+                              format: int64
+                              type: integer
+                            maxWrite:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: MaxWrite limits the maximum payload in
+                                terms of bytes of a single "send" to the output.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            minRetryDuration:
+                              description: MinRetryDuration is the minimum time to
+                                wait between attempts to retry after delivery a failure.
+                              format: int64
+                              type: integer
+                          type: object
                       type: object
                     http:
                       description: HTTP provided configuration for sending json encoded
@@ -2237,37 +2266,6 @@ spec:
                               - Custom
                               type: string
                           type: object
-                      type: object
-                    tuning:
-                      description: Tuning parameters for the output.  Specifying these
-                        parameters will alter the characteristics of log forwarder
-                        which may be different from its behavior without the tuning.
-                      properties:
-                        delivery:
-                          description: DeliveryMode sets the delivery mode for log
-                            forwarding.
-                          enum:
-                          - atLeastOnce
-                          - atMostOnce
-                          type: string
-                        maxRetryDuration:
-                          description: MaxRetryDuration is the maximum time to wait
-                            between retry attempts after a delivery failure.
-                          format: int64
-                          type: integer
-                        maxWrite:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          description: MaxWrite limits the maximum payload in terms
-                            of bytes of a single "send" to the output.
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        minRetryDuration:
-                          description: MinRetryDuration is the minimum time to wait
-                            between attempts to retry after delivery a failure.
-                          format: int64
-                          type: integer
                       type: object
                     type:
                       description: Type of output sink.

@@ -32,7 +32,7 @@ const (
 	OutputTypeCloudwatch         OutputType = "cloudwatch"
 	OutputTypeElasticsearch      OutputType = "elasticsearch"
 	OutputTypeGoogleCloudLogging OutputType = "googleCloudLogging"
-	OutputTypeHttp               OutputType = "http"
+	OutputTypeHTTP               OutputType = "http"
 	OutputTypeKafka              OutputType = "kafka"
 	OutputTypeLoki               OutputType = "loki"
 	OutputTypeLokiStack          OutputType = "lokiStack"
@@ -47,7 +47,7 @@ var (
 		OutputTypeCloudwatch,
 		OutputTypeElasticsearch,
 		OutputTypeGoogleCloudLogging,
-		OutputTypeHttp,
+		OutputTypeHTTP,
 		OutputTypeKafka,
 		OutputTypeLoki,
 		OutputTypeLokiStack,
@@ -80,12 +80,6 @@ type OutputSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	Limit *LimitSpec `json:"rateLimit,omitempty"`
-
-	// Tuning parameters for the output.  Specifying these parameters will alter the characteristics
-	// of log forwarder which may be different from its behavior without the tuning.
-	//
-	// +kubebuilder:validation:Optional
-	Tuning *BaseOutputTuningSpec `json:"tuning,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	AzureMonitor *AzureMonitor `json:"azureMonitor,omitempty"`
@@ -187,15 +181,6 @@ type BaseOutputTuningSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`
-}
-
-type CompressionSpec struct {
-	// Compression causes data to be compressed before sending over the network.
-	// It is an error if the compression type is not supported by the  output.
-	//
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd;lz4
-	Compression string `json:"compression,omitempty"`
 }
 
 // DeliveryMode sets the delivery mode for log forwarding.
@@ -426,6 +411,10 @@ type GoogleCloudLoggingAuthentication struct {
 	Credentials *SecretKey `json:"credentials"`
 }
 
+type GoogleCloudLoggingTuningSpec struct {
+	BaseOutputTuningSpec `json:",inline"`
+}
+
 // GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging.
 // Exactly one of billingAccountID, organizationID, folderID, or projectID must be set.
 type GoogleCloudLogging struct {
@@ -448,6 +437,11 @@ type GoogleCloudLogging struct {
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	LogID string `json:"logId,omitempty"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	Tuning *GoogleCloudLoggingTuningSpec `json:"tuning,omitempty"`
 }
 
 type HttpTuningSpec struct {

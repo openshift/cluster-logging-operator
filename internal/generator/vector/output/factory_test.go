@@ -2,11 +2,11 @@ package output
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -17,7 +17,7 @@ var _ = Describe("output/factory.go", func() {
 	defer GinkgoRecover()
 	Skip("TODO: Enable me after rewire")
 	// TODO: I don't this these tests are relevant anymore/ or need to redo them
-	DescribeTable("#New", func(o logging.OutputSpec, secrets map[string]*corev1.Secret, expFile string) {
+	DescribeTable("#New", func(o obs.OutputSpec, secrets map[string]*corev1.Secret, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", exp, err))
@@ -26,10 +26,14 @@ var _ = Describe("output/factory.go", func() {
 
 	},
 		Entry("should honor global minTLSVersion & ciphers with loki as the default logstore regardless of the feature gate setting",
-			logging.OutputSpec{
-				Type: logging.OutputTypeLoki,
+			obs.OutputSpec{
+				Type: obs.OutputTypeLoki,
 				Name: "default-loki-apps",
-				URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+				Loki: &obs.Loki{
+					URLSpec: obs.URLSpec{
+						URL: "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+					},
+				},
 			},
 			map[string]*corev1.Secret{
 				constants.LogCollectorToken: {
@@ -41,11 +45,15 @@ var _ = Describe("output/factory.go", func() {
 			"factory_test_loki_no_throttle.toml",
 		),
 		Entry("should add output throttling when present",
-			logging.OutputSpec{
-				Type: logging.OutputTypeLoki,
+			obs.OutputSpec{
+				Type: obs.OutputTypeLoki,
 				Name: "default-loki-apps",
-				URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-				Limit: &logging.LimitSpec{
+				Loki: &obs.Loki{
+					URLSpec: obs.URLSpec{
+						URL: "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+					},
+				},
+				Limit: &obs.LimitSpec{
 					MaxRecordsPerSecond: 100,
 				},
 			},

@@ -1,10 +1,9 @@
 package output
 
 import (
-	"time"
-
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"time"
 )
 
 const (
@@ -13,12 +12,7 @@ const (
 )
 
 func (o Output) VisitSink(s common.SinkConfig) {
-	if o.spec.Tuning != nil {
-		comp := o.spec.Tuning.Compression
-		if comp != "" && comp != "none" {
-			s.SetCompression(comp)
-		}
-	}
+	s.SetCompression(o.tuning.Compression)
 }
 
 func (o Output) VisitAcknowledgements(a common.Acknowledgments) common.Acknowledgments {
@@ -26,24 +20,22 @@ func (o Output) VisitAcknowledgements(a common.Acknowledgments) common.Acknowled
 }
 
 func (o Output) VisitBatch(b common.Batch) common.Batch {
-	if o.spec.Tuning != nil && o.spec.Tuning.MaxWrite != nil && !o.spec.Tuning.MaxWrite.IsZero() {
-		b.MaxBytes.Value = o.spec.Tuning.MaxWrite.Value()
+	if o.tuning.MaxWrite != nil && !o.tuning.MaxWrite.IsZero() {
+		b.MaxBytes.Value = o.tuning.MaxWrite.Value()
 	}
 	return b
 }
 
 func (o Output) VisitRequest(r common.Request) common.Request {
-	if o.spec.Tuning != nil {
-		var duration time.Duration
-		if o.spec.Tuning.MinRetryDuration != nil && o.spec.Tuning.MinRetryDuration.Seconds() > 0 {
-			// time.Duration is default nanosecond. Convert to seconds first.
-			duration = *o.spec.Tuning.MinRetryDuration * time.Second
-			r.RetryInitialBackoffSec.Value = duration.Seconds()
-		}
-		if o.spec.Tuning.MaxRetryDuration != nil && o.spec.Tuning.MaxRetryDuration.Seconds() > 0 {
-			duration = *o.spec.Tuning.MaxRetryDuration * time.Second
-			r.RetryMaxDurationSec.Value = duration.Seconds()
-		}
+	var duration time.Duration
+	if o.tuning.MinRetryDuration != nil && o.tuning.MinRetryDuration.Seconds() > 0 {
+		// time.Duration is default nanosecond. Convert to seconds first.
+		duration = *o.tuning.MinRetryDuration * time.Second
+		r.RetryInitialBackoffSec.Value = duration.Seconds()
+	}
+	if o.tuning.MaxRetryDuration != nil && o.tuning.MaxRetryDuration.Seconds() > 0 {
+		duration = *o.tuning.MaxRetryDuration * time.Second
+		r.RetryMaxDurationSec.Value = duration.Seconds()
 	}
 
 	return r
@@ -52,15 +44,13 @@ func (o Output) VisitRequest(r common.Request) common.Request {
 // VisitBuffer modifies the buffer behavior depending upon the value
 // of the tuning.Delivery mode
 func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
-	if o.spec.Tuning != nil {
-		switch o.spec.Tuning.Delivery {
-		case logging.OutputDeliveryModeAtLeastOnce:
-			b.WhenFull.Value = common.BufferWhenFullBlock
-			b.Type.Value = buffertTypeDisk
-			b.MaxSize.Value = minBufferSize
-		case logging.OutputDeliveryModeAtMostOnce:
-			b.WhenFull.Value = common.BufferWhenFullDropNewest
-		}
+	switch o.tuning.Delivery {
+	case obs.DeliveryModeAtLeastOnce:
+		b.WhenFull.Value = common.BufferWhenFullBlock
+		b.Type.Value = buffertTypeDisk
+		b.MaxSize.Value = minBufferSize
+	case obs.DeliveryModeAtMostOnce:
+		b.WhenFull.Value = common.BufferWhenFullDropNewest
 	}
 	return b
 }

@@ -1,11 +1,11 @@
 package output
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -29,9 +29,12 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 
 	Context("Compression", func() {
 		It("should not set the compression when none", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					Compression: "none",
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						Compression: "none",
+					},
 				},
 			}, nil, framework.NoOptions)
 			sink := &fakeSink{}
@@ -39,9 +42,12 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 			Expect(sink.Compression).To(BeEmpty())
 		})
 		It("should not set the compression when empty", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					Compression: "",
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						Compression: "",
+					},
 				},
 			}, nil, framework.NoOptions)
 			sink := &fakeSink{}
@@ -49,9 +55,12 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 			Expect(sink.Compression).To(BeEmpty())
 		})
 		It("should set the compression when not empty or none", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					Compression: "gzip",
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						Compression: "gzip",
+					},
 				},
 			}, nil, framework.NoOptions)
 			sink := &fakeSink{}
@@ -62,15 +71,24 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 	Context("MaxRetryDuration", func() {
 
 		It("should rely upon the defaults and generate nothing when zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{}}, nil, nil)
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{},
+				},
+			}, nil, nil)
 			Expect(``).To(EqualConfigFrom(common.NewRequest(ID, output)))
 		})
 
 		It("should set request.retry_max_duration_secs for values greater then zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+						},
+					},
 				},
 			}, nil, nil)
 
@@ -84,15 +102,24 @@ retry_max_duration_secs = 35
 	Context("MinRetryDuration", func() {
 
 		It("should rely upon the defaults and generate nothing when zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{}}, nil, nil)
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{},
+				},
+			}, nil, nil)
 			Expect(``).To(EqualConfigFrom(common.NewRequest(ID, output)))
 		})
 
 		It("should set request.retry_initial_backoff_secs for values greater then zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					MinRetryDuration: utils.GetPtr(time.Duration(25)),
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							MinRetryDuration: utils.GetPtr(time.Duration(25)),
+						},
+					},
 				},
 			}, nil, nil)
 
@@ -106,15 +133,24 @@ retry_initial_backoff_secs = 25
 	Context("MaxWrite", func() {
 
 		It("should rely upon the defaults and generate nothing when zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{}}, nil, nil)
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{},
+				},
+			}, nil, nil)
 			Expect(``).To(EqualConfigFrom(common.NewBatch(ID, output)))
 		})
 
 		It("should set batch.max_bytes for values greater then zero", func() {
-			output := NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					MaxWrite: utils.GetPtr(resource.MustParse("1Ki")),
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							MaxWrite: utils.GetPtr(resource.MustParse("1Ki")),
+						},
+					},
 				},
 			}, nil, nil)
 
@@ -129,9 +165,14 @@ max_bytes = 1024
 	Context("when delivery is spec'd", func() {
 
 		Context("AtLeastOnce", func() {
-			var output = NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					Delivery: logging.OutputDeliveryModeAtLeastOnce,
+			var output = NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							Delivery: obs.DeliveryModeAtLeastOnce,
+						},
+					},
 				},
 			}, nil, nil)
 			It("should do nothing to enable acknowledgments", func() {
@@ -149,9 +190,14 @@ max_size = 268435488
 
 		Context("AtMostOnce", func() {
 
-			var output = NewOutput(logging.OutputSpec{
-				Tuning: &logging.OutputTuningSpec{
-					Delivery: logging.OutputDeliveryModeAtMostOnce,
+			var output = NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeElasticsearch,
+				Elasticsearch: &obs.Elasticsearch{
+					Tuning: &obs.ElasticsearchTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							Delivery: obs.DeliveryModeAtMostOnce,
+						},
+					},
 				},
 			}, nil, nil)
 

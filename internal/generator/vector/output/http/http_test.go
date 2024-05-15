@@ -57,7 +57,7 @@ var _ = Describe("Generate vector config", func() {
 			}
 			initOutput = func() obs.OutputSpec {
 				return obs.OutputSpec{
-					Type: obs.OutputTypeHttp,
+					Type: obs.OutputTypeHTTP,
 					Name: "http-receiver",
 					HTTP: &obs.HTTP{
 						URLSpec: obs.URLSpec{URL: "https://my-logstore.com"},

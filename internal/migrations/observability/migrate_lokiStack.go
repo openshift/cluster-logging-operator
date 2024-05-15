@@ -114,9 +114,8 @@ func processForwarderPipelines(spec obs.ClusterLogForwarderSpec) ([]obs.OutputSp
 						Authentication: outSpec.LokiStack.Authentication,
 						Tuning:         outSpec.LokiStack.Tuning,
 					},
-					Tuning: outSpec.Tuning,
-					TLS:    outSpec.TLS,
-					Limit:  outSpec.Limit,
+					TLS:   outSpec.TLS,
+					Limit: outSpec.Limit,
 				})
 			}
 		}

@@ -1,6 +1,7 @@
 package conf
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -68,10 +69,11 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 	}
 
 	outputMap := map[string]*output.Output{}
-	for _, spec := range clfspec.Outputs {
-		o := output.NewOutput(spec, secrets, op)
-		outputMap[spec.Name] = o
-	}
+	//TODO: ENABLE ME
+	//for _, spec := range clfspec.Outputs {
+	//	o := output.NewOutput(spec, secrets, op)
+	//	outputMap[spec.Name] = o
+	//}
 
 	filters := filter.NewInternalFilterMap(clfspec.FilterMap())
 	pipelineMap := map[string]*pipeline.Pipeline{}
@@ -92,7 +94,7 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 		sections.Elements = append(sections.Elements, o.Elements()...)
 	}
 
-	minTlsVersion, cipherSuites := op.TLSProfileInfo(logging.OutputSpec{}, ",")
+	minTlsVersion, cipherSuites := op.TLSProfileInfo(obs.OutputSpec{}, ",")
 	return []framework.Section{
 		{
 			Global(namespace, forwarderName),

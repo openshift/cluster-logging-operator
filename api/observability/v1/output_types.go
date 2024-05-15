@@ -125,12 +125,12 @@ type OutputTLSSpec struct {
 	// +kubebuilder:validation:Optional
 	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
 
-	// Certificate points to the client certificate to use.
+	// Certificate points to the public certificate to use.
 	//
 	// +kubebuilder:validation:Optional
 	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
 
-	// Key points to the private key of the client certificate.
+	// Key points to the private key certificate to use.
 	//
 	// +kubebuilder:validation:Optional
 	Key *SecretKey `json:"key,omitempty"`

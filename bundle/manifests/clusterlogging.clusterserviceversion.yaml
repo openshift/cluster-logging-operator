@@ -178,7 +178,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-05-09T20:49:52Z"
+    createdAt: "2024-05-15T13:22:39Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -312,28 +312,6 @@ spec:
         path: inputs[0].application.tuning.rateLimitPerContainer.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: Name of the key used to get the value in either the referenced
-          ConfigMap or Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.ca.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value in either the referenced
-          ConfigMap or Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.certificate.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.key.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.keyPassphrase.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Outputs are named destinations for log messages.
         displayName: Log Forwarder Outputs
         path: outputs

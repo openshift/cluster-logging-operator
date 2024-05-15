@@ -1,31 +1,20 @@
 package source
 
 import (
-	"strings"
-
-	configv1 "github.com/openshift/api/config/v1"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
-func NewHttpSource(id, inputName string, input logging.InputSpec, op framework.Options) (framework.Element, string) {
-	var minTlsVersion, cipherSuites string
-	if _, ok := op[framework.ClusterTLSProfileSpec]; ok {
-		tlsProfileSpec := op[framework.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
-		minTlsVersion = tls.MinTLSVersion(tlsProfileSpec)
-		cipherSuites = strings.Join(tls.TLSCiphers(tlsProfileSpec), `,`)
-	}
+func NewHttpSource(id, inputName string, input obs.InputSpec) (framework.Element, string) {
 	return HttpReceiver{
 		ID:            id,
 		InputName:     inputName,
 		ListenAddress: helpers.ListenOnAllLocalInterfacesAddress(),
-		ListenPort:    input.Receiver.GetHTTPPort(),
-		Format:        input.Receiver.GetHTTPFormat(),
-		TlsMinVersion: minTlsVersion,
-		CipherSuites:  cipherSuites,
-	}, helpers.MakeID(id, "items")
+		ListenPort:    input.Receiver.Port,
+		Format:        string(input.Receiver.HTTP.Format),
+	}, id
 }
 
 type HttpReceiver struct {
@@ -34,8 +23,6 @@ type HttpReceiver struct {
 	ListenAddress string
 	ListenPort    int32
 	Format        string
-	TlsMinVersion string
-	CipherSuites  string
 }
 
 func (HttpReceiver) Name() string {
@@ -49,31 +36,23 @@ func (i HttpReceiver) Template() string {
 type = "http_server"
 address = "{{.ListenAddress}}:{{.ListenPort}}"
 decoding.codec = "json"
-
-[sources.{{.ID}}.tls]
-enabled = true
-key_file = "/etc/collector/receiver/{{.InputName}}/tls.key"
-crt_file = "/etc/collector/receiver/{{.InputName}}/tls.crt"
-{{- if ne .TlsMinVersion "" }}
-min_tls_version = "{{ .TlsMinVersion }}"
-{{- end }}
-{{- if ne .CipherSuites "" }}
-ciphersuites = "{{ .CipherSuites }}"
-{{- end }}
-
-[transforms.{{.ID}}_split]
-type = "remap"
-inputs = ["{{.ID}}"]
-source = '''
-  if exists(.items) && is_array(.items) {. = unnest!(.items)} else {.}
-'''
-
-[transforms.{{.ID}}_items]
-type = "remap"
-inputs = ["{{.ID}}_split"]
-source = '''
-  if exists(.items) {. = .items} else {.}
-'''
 {{end}}
 `
+}
+
+func NewSplitTransform(id, inputs string) (framework.Element, string) {
+	splitID := helpers.MakeID(id, "split")
+	return elements.Remap{
+		ComponentID: splitID,
+		Inputs:      helpers.MakeInputs(inputs),
+		VRL:         `if exists(.items) && is_array(.items) {. = unnest!(.items)} else {.}`,
+	}, splitID
+}
+func NewItemsTransform(id, inputs string) (framework.Element, string) {
+	itemsID := helpers.MakeID(id, "items")
+	return elements.Remap{
+		ComponentID: itemsID,
+		Inputs:      helpers.MakeInputs(inputs),
+		VRL:         `if exists(.items) {. = .items} else {.}`,
+	}, itemsID
 }

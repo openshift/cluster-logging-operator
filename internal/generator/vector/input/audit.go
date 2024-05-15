@@ -1,13 +1,13 @@
 package input
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	sources "github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
-func NewAuditSources(input logging.InputSpec, op generator.Options) ([]generator.Element, []string) {
+func NewAuditSources(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 
 	adapter := &Input{}
 	adapter.Add(NewAuditAuditdSource(input, op)).
@@ -18,42 +18,42 @@ func NewAuditSources(input logging.InputSpec, op generator.Options) ([]generator
 	return adapter.Elements(), adapter.InputIDs()
 }
 
-func NewAuditAuditdSource(input logging.InputSpec, op generator.Options) ([]generator.Element, []string) {
+func NewAuditAuditdSource(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 	hostID := helpers.MakeInputID(input.Name, "host")
 	metaID := helpers.MakeID(hostID, "meta")
 	el := []generator.Element{
 		sources.NewHostAuditLog(hostID),
-		NewLogSourceAndType(metaID, logging.AuditSourceAuditd, logging.InputNameAudit, hostID),
+		NewLogSourceAndType(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID),
 	}
 	return el, []string{metaID}
 }
 
-func NewK8sAuditSource(input logging.InputSpec, op generator.Options) ([]generator.Element, []string) {
+func NewK8sAuditSource(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 	id := helpers.MakeInputID(input.Name, "kube")
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewK8sAuditLog(id),
-		NewLogSourceAndType(metaID, logging.AuditSourceKube, logging.InputNameAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id),
 	}
 	return el, []string{metaID}
 }
 
-func NewOpenshiftAuditSource(input logging.InputSpec, op generator.Options) ([]generator.Element, []string) {
+func NewOpenshiftAuditSource(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 	id := helpers.MakeInputID(input.Name, "openshift")
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOpenshiftAuditLog(id),
-		NewLogSourceAndType(metaID, logging.AuditSourceOpenShift, logging.InputNameAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id),
 	}
 	return el, []string{metaID}
 }
 
-func NewOVNAuditSource(input logging.InputSpec, op generator.Options) ([]generator.Element, []string) {
+func NewOVNAuditSource(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 	id := helpers.MakeInputID(input.Name, "ovn")
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOVNAuditLog(id),
-		NewLogSourceAndType(metaID, logging.AuditSourceOVN, logging.InputNameAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id),
 	}
 	return el, []string{metaID}
 }

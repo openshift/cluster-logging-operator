@@ -140,28 +140,6 @@ spec:
         path: inputs[0].application.tuning.rateLimitPerContainer.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - description: Name of the key used to get the value in either the referenced
-          ConfigMap or Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.ca.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value in either the referenced
-          ConfigMap or Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.certificate.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.key.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: inputs[0].receiver.tls.keyPassphrase.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Outputs are named destinations for log messages.
         displayName: Log Forwarder Outputs
         path: outputs

@@ -235,6 +235,8 @@ var (
 	}
 )
 
+type InputTLSSpec TLSSpec
+
 // ReceiverSpec is a union of input Receiver types.
 type ReceiverSpec struct {
 	// Type of Receiver plugin.
@@ -273,27 +275,4 @@ type HTTPReceiver struct {
 	//
 	// +kubebuilder:validation:Required
 	Format HTTPReceiverFormat `json:"format"`
-}
-
-// InputTLSSpec contains options for TLS connections that are agnostic to the input type.
-type InputTLSSpec struct {
-	// CA can be used to specify a custom list of trusted certificate authorities.
-	//
-	// +kubebuilder:validation:Optional
-	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
-
-	// Certificate points to the server certificate to use.
-	//
-	// +kubebuilder:validation:Optional
-	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
-
-	// Key points to the private key of the server certificate.
-	//
-	// +kubebuilder:validation:Optional
-	Key *SecretKey `json:"key,omitempty"`
-
-	// KeyPassphrase points to the passphrase used to unlock the private key.
-	//
-	// +kubebuilder:validation:Optional
-	KeyPassphrase *SecretKey `json:"keyPassphrase,omitempty"`
 }

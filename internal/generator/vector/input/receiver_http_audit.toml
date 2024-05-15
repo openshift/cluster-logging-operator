@@ -4,9 +4,8 @@ address = "[::]:12345"
 decoding.codec = "json"
 
 [sources.input_myreceiver.tls]
-enabled = true
-key_file = "/etc/collector/receiver/collector-myreceiver/tls.key"
-crt_file = "/etc/collector/receiver/collector-myreceiver/tls.crt"
+key_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.crt"
 
 [transforms.input_myreceiver_split]
 type = "remap"

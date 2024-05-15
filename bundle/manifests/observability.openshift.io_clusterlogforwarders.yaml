@@ -2057,7 +2057,7 @@ spec:
                           - key
                           type: object
                         certificate:
-                          description: Certificate points to the client certificate
+                          description: Certificate points to the public certificate
                             to use.
                           properties:
                             configMap:
@@ -2095,8 +2095,8 @@ spec:
                             \n This option is *not* recommended for production configurations."
                           type: boolean
                         key:
-                          description: Key points to the private key of the client
-                            certificate.
+                          description: Key points to the private key certificate to
+                            use.
                           properties:
                             key:
                               description: Name of the key used to get the value from

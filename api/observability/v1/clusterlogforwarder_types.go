@@ -189,6 +189,29 @@ type BearerToken struct {
 	ServiceAccount *corev1.LocalObjectReference `json:"serviceAccount,omitempty"`
 }
 
+// TLSSpec contains options for TLS connections.
+type TLSSpec struct {
+	// CA can be used to specify a custom list of trusted certificate authorities.
+	//
+	// +kubebuilder:validation:Optional
+	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
+
+	// Certificate points to the server certificate to use.
+	//
+	// +kubebuilder:validation:Optional
+	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
+
+	// Key points to the private key of the server certificate.
+	//
+	// +kubebuilder:validation:Optional
+	Key *SecretKey `json:"key,omitempty"`
+
+	// KeyPassphrase points to the passphrase used to unlock the private key.
+	//
+	// +kubebuilder:validation:Optional
+	KeyPassphrase *SecretKey `json:"keyPassphrase,omitempty"`
+}
+
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.

@@ -4,11 +4,11 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
 type TLSConf struct {
-	ComponentID        string
+	Component          string
+	ID                 string
 	NeedsEnabled       bool
 	InsecureSkipVerify bool
 	TlsMinVersion      string
@@ -19,9 +19,10 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options) common.TLSConf {
-	conf := common.TLSConf{
-		ComponentID: id,
+func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options) TLSConf {
+	conf := TLSConf{
+		Component: "sinks",
+		ID:        id,
 	}
 	if spec != nil {
 		conf.CAFilePath = ConfigMapOrSecretPath(spec.CA)
@@ -56,7 +57,7 @@ func SecretPath(resource *obs.SecretKey) string {
 	return helpers.SecretPath(resource.Secret.Name, resource.Key)
 }
 
-func setTLSProfileFromOptions(t *common.TLSConf, op framework.Options) {
+func setTLSProfileFromOptions(t *TLSConf, op framework.Options) {
 	if version, found := op[framework.MinTLSVersion]; found {
 		t.TlsMinVersion = version.(string)
 	}
@@ -75,7 +76,7 @@ func (t TLSConf) Template() string {
 	}
 	return `
 {{define "vectorTLS" -}}
-[sinks.{{.ComponentID}}.tls]
+[{{.Component}}.{{.ID}}.tls]
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

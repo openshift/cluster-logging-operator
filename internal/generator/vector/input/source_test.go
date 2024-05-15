@@ -3,6 +3,7 @@ package input
 import (
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +16,24 @@ import (
 )
 
 var _ = Describe("inputs", func() {
+
+	const (
+		secretName = "instance-myreceiver"
+	)
+
+	var (
+		secrets = map[string]*corev1.Secret{
+			secretName: {
+				Data: map[string][]byte{
+					constants.ClientCertKey:      []byte("-- crt-- "),
+					constants.ClientPrivateKey:   []byte("-- key-- "),
+					constants.TrustedCABundleKey: []byte("-- ca-bundle -- "),
+					constants.Passphrase:         []byte("foo"),
+				},
+			},
+		}
+	)
+
 	DescribeTable("#NewSource", func(input obs.InputSpec, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
@@ -26,17 +45,19 @@ var _ = Describe("inputs", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 		}
-		conf, _ := NewSource(input, constants.OpenshiftNS, factory.ResourceNames(clf), framework.NoOptions)
+		conf, _ := NewSource(input, constants.OpenshiftNS, factory.ResourceNames(clf), secrets, framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name:        string(obs.InputTypeApplication),
+			Type:        obs.InputTypeApplication,
 			Application: &obs.Application{},
 		},
 			"application.toml",
 		),
 		Entry("with a throttled application input should generate a container source with throttling", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Tuning: &obs.ContainerInputTuningSpec{
 					RateLimitPerContainer: &obs.LimitSpec{
@@ -49,6 +70,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs including a container from all namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Includes: []obs.NamespaceContainerSpec{
 					{
@@ -61,6 +83,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs excluding a container from all namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -73,6 +96,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs specific namespaces and exclude namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -98,6 +122,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs infra namespaces and exclude namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -124,6 +149,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that collects infra namespaces and excludes a container", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -142,6 +168,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs infra namespaces and excludes infra namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -168,6 +195,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs specific infra namespace and excludes infra namespaces", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Excludes: []obs.NamespaceContainerSpec{
 					{
@@ -194,6 +222,7 @@ var _ = Describe("inputs", func() {
 		),
 		Entry("with an application that specs specific match labels", obs.InputSpec{
 			Name: "my-app",
+			Type: obs.InputTypeApplication,
 			Application: &obs.Application{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -205,93 +234,136 @@ var _ = Describe("inputs", func() {
 		},
 			"application_with_matchLabels.toml",
 		),
-		// TODO: Enable me for with infra
-		//Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
-		//	Name:           obs.InputNameInfrastructure,
-		//	Infrastructure: &obs.Infrastructure{},
-		//},
-		//	"infrastructure.toml",
-		//),
-		//Entry("with an infrastructure input for containers should generate only a container source", obs.InputSpec{
-		//	Name: "myinfra",
-		//	Infrastructure: &obs.Infrastructure{
-		//		Sources: []string{obs.InfrastructureSourceContainer},
-		//	},
-		//},
-		//	"infrastructure_container.toml",
-		//),
-		//Entry("with an infrastructure input for node should generate only a journal source", obs.InputSpec{
-		//	Name: "myinfra",
-		//	Infrastructure: &obs.Infrastructure{
-		//		Sources: []string{obs.InfrastructureSourceNode},
-		//	},
-		//},
-		//	"infrastructure_journal.toml",
-		//),
-		//Entry("with an audit input should generate file sources", obs.InputSpec{
-		//	Name:  obs.InputNameAudit,
-		//	Audit: &obs.Audit{},
-		//},
-		//	"audit.toml",
-		//),
-		//Entry("with an audit input for auditd logs should generate auditd file source", obs.InputSpec{
-		//	Name: "myaudit",
-		//	Audit: &obs.Audit{
-		//		Sources: []string{obs.AuditSourceAuditd},
-		//	},
-		//},
-		//	"audit_host.toml",
-		//),
-		//Entry("with an audit input for kube logs should generate kube audit file source", obs.InputSpec{
-		//	Name: "myaudit",
-		//	Audit: &obs.Audit{
-		//		Sources: []string{obs.AuditSourceKube},
-		//	},
-		//},
-		//	"audit_kube.toml",
-		//),
-		//Entry("with an audit input for openshift logs should generate openshift audit file source", obs.InputSpec{
-		//	Name: "myaudit",
-		//	Audit: &obs.Audit{
-		//		Sources: []string{obs.AuditSourceOpenShift},
-		//	},
-		//},
-		//	"audit_openshift.toml",
-		//),
-		//Entry("with an audit input for OVN logs should generate OVN audit file source", obs.InputSpec{
-		//	Name: "myaudit",
-		//	Audit: &obs.Audit{
-		//		Sources: []string{obs.AuditSourceOVN},
-		//	},
-		//},
-		//	"audit_ovn.toml",
-		//),
-		//Entry("with an http audit receiver input should generate VIAQ http receiver audit source", obs.InputSpec{
-		//	Name: "myreceiver",
-		//	Receiver: &obs.ReceiverSpec{
-		//		Type: obs.ReceiverTypeHttp,
-		//		ReceiverTypeSpec: &obs.ReceiverTypeSpec{
-		//			HTTP: &obs.HTTPReceiver{
-		//				Port:   12345,
-		//				Format: obs.FormatKubeAPIAudit,
-		//			},
-		//		},
-		//	},
-		//},
-		//	"receiver_http_audit.toml",
-		//),
-		//Entry("with a syslog receiver input should generate VIAQ syslog receiver", obs.InputSpec{
-		//	Name: "myreceiver",
-		//	Receiver: &obs.ReceiverSpec{
-		//		Type: obs.ReceiverTypeSyslog,
-		//		ReceiverTypeSpec: &obs.ReceiverTypeSpec{
-		//			Syslog: &obs.SyslogReceiver{
-		//				Port: 12345,
-		//			},
-		//		},
-		//	},
-		//},
-		//	"receiver_syslog.toml",
-		//),
+		Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
+			Name:           string(obs.InputTypeInfrastructure),
+			Type:           obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{},
+		},
+			"infrastructure.toml",
+		),
+		Entry("with an infrastructure input for containers should generate only a container source", obs.InputSpec{
+			Name: "myinfra",
+			Type: obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{
+				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
+			},
+		},
+			"infrastructure_container.toml",
+		),
+		Entry("with an infrastructure input for node should generate only a journal source", obs.InputSpec{
+			Name: "myinfra",
+			Type: obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{
+				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceNode},
+			},
+		},
+			"infrastructure_journal.toml",
+		),
+		Entry("with an audit input should generate file sources", obs.InputSpec{
+			Name:  string(obs.InputTypeAudit),
+			Type:  obs.InputTypeAudit,
+			Audit: &obs.Audit{},
+		},
+			"audit.toml",
+		),
+		Entry("with an audit input for auditd logs should generate auditd file source", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceAuditd},
+			},
+		},
+			"audit_host.toml",
+		),
+		Entry("with an audit input for kube logs should generate kube audit file source", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceKube},
+			},
+		},
+			"audit_kube.toml",
+		),
+		Entry("with an audit input for openshift logs should generate openshift audit file source", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceOpenShift},
+			},
+		},
+			"audit_openshift.toml",
+		),
+		Entry("with an audit input for OVN logs should generate OVN audit file source", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceOVN},
+			},
+		},
+			"audit_ovn.toml",
+		),
+		Entry("with an http audit receiver input should generate an http receiver audit source", obs.InputSpec{
+			Type: obs.InputTypeReceiver,
+			Name: "myreceiver",
+			Receiver: &obs.ReceiverSpec{
+				Type: obs.ReceiverTypeHttp,
+				Port: 12345,
+				HTTP: &obs.HTTPReceiver{
+					Format: obs.HTTPReceiverFormatKubeAPIAudit,
+				},
+				TLS: &obs.InputTLSSpec{
+					Certificate: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientCertKey,
+					},
+					Key: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientPrivateKey,
+					},
+				},
+			},
+		},
+			"receiver_http_audit.toml",
+		),
+		Entry("with a syslog receiver input should generate VIAQ syslog receiver", obs.InputSpec{
+			Type: obs.InputTypeReceiver,
+			Name: "myreceiver",
+			Receiver: &obs.ReceiverSpec{
+				Type: obs.ReceiverTypeSyslog,
+				Port: 12345,
+				TLS: &obs.InputTLSSpec{
+					CA: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.TrustedCABundleKey,
+					},
+					Certificate: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientCertKey,
+					},
+					Key: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientPrivateKey,
+					},
+					KeyPassphrase: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.Passphrase,
+					},
+				},
+			},
+		},
+			"receiver_syslog.toml",
+		),
 	)
 })

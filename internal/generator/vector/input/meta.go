@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-func NewLogSourceAndType(id, logSource, logType string, inputs string) framework.Element {
+func NewLogSourceAndType(id string, logSource, logType interface{}, inputs string) framework.Element {
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs),

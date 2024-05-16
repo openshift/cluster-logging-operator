@@ -206,10 +206,10 @@ deploy-image: .target/image
 	hack/deploy-image.sh
 
 .PHONY: deploy
-deploy:  deploy-elasticsearch-operator deploy-cluster-logging-operator
+deploy: deploy-cluster-logging-operator
 
 .PHONY: deploy-cluster-logging-operator
-deploy-cluster-logging-operator:  deploy-image deploy-catalog install
+deploy-cluster-logging-operator: deploy-image deploy-catalog install
 
 .PHONY: install
 install:

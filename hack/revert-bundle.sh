@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-git diff --no-ext-diff --quiet -I'^    createdAt: ' bundle/manifests/clusterlogging.clusterserviceversion.yaml
+git diff --no-ext-diff --quiet -I'^    createdAt: ' bundle/manifests/cluster-logging.clusterserviceversion.yaml
 if ((! $?)) ; then
-    git checkout bundle/manifests/clusterlogging.clusterserviceversion.yaml
+    git checkout bundle/manifests/cluster-logging.clusterserviceversion.yaml
 fi

@@ -34,7 +34,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v0.0.0
+  name: cluster-logging.v0.0.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}

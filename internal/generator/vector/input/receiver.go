@@ -24,7 +24,7 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames *factory.ForwarderResour
 			tlsConfig,
 			NewLogSourceAndType(metaID, logging.InfrastructureSourceNode, logging.InputNameInfrastructure, base),
 		)
-	case obs.ReceiverTypeHttp:
+	case obs.ReceiverTypeHTTP:
 		el, id := source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec)
 		split, splitID := source.NewSplitTransform(base, id)
 		items, itemsID := source.NewItemsTransform(base, splitID)

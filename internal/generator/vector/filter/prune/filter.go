@@ -3,11 +3,10 @@ package prune
 import (
 	_ "embed"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"regexp"
 	"strings"
 	"text/template"
-
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 type Prune struct {
@@ -26,7 +25,7 @@ var (
 	dedottedFields = []string{".kubernetes.labels.", ".kubernetes.namespace_labels."}
 )
 
-func MakePruneFilter(pruneFilterSpec *loggingv1.PruneFilterSpec) (vrl string, err error) {
+func MakePruneFilter(pruneFilterSpec *obs.PruneFilterSpec) (vrl string, err error) {
 	Prune := Prune{}
 	if pruneFilterSpec.NotIn != nil {
 		Prune.NotIn = generateQuotedPathSegmentArrayStr(pruneFilterSpec.NotIn)

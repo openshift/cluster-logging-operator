@@ -3,11 +3,11 @@
 package apiaudit
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -256,7 +256,7 @@ var _ = Describe("splunk-exporter equivalent tests", func() {
 
 	Context("DefaultFilter", func() {
 		It("should filter events", func() {
-			filter := &loggingv1.KubeAPIAudit{}
+			filter := &obs.KubeAPIAudit{}
 			Expect(Filtered(filter, TestEvent1)).ShouldNot(BeNil())
 			Expect(Filtered(filter, TestEvent2)).ShouldNot(BeNil())
 			Expect(Filtered(filter, TestEventServiceAccountReadOnly)).Should(BeNil())
@@ -267,7 +267,7 @@ var _ = Describe("splunk-exporter equivalent tests", func() {
 
 	Context("DropResponseStatusCodes", func() {
 		It("should drop based on response codes", func() {
-			filter := &loggingv1.KubeAPIAudit{OmitResponseCodes: &[]int{429, 422}}
+			filter := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{429, 422}}
 			Expect(Filtered(filter, TestEventResponseTooManyRequests)).Should(BeNil())
 			Expect(Filtered(filter, TestEvent1)).ShouldNot(BeNil())
 		})

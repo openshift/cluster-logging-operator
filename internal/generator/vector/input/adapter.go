@@ -1,27 +1,26 @@
 package input
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 // Input is an adapter between CLF.input and any collector config segments
 type Input struct {
-	//spec     logging.InputSpec
+	spec     obs.InputSpec
 	ids      []string
 	elements []framework.Element
 }
 
-// TODO: Re-enable me
-func NewInput(spec logging.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) *Input {
-	return &Input{}
-	//elements, ids := NewSource(spec, collectorNS, resNames, op)
-	//return &Input{
-	//	spec:     spec,
-	//	ids:      ids,
-	//	elements: elements,
-	//}
+func NewInput(spec obs.InputSpec, secrets helpers.Secrets, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) *Input {
+	elements, ids := NewSource(spec, collectorNS, resNames, secrets, op)
+	return &Input{
+		spec:     spec,
+		ids:      ids,
+		elements: elements,
+	}
 }
 
 func (i Input) Elements() []framework.Element {

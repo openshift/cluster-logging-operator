@@ -206,7 +206,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v6.0.0
+  name: cluster-logging.v6.0.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
@@ -688,67 +688,19 @@ spec:
     spec:
       clusterPermissions:
       - rules:
-        - apiGroups:
-          - console.openshift.io
-          resources:
-          - consoleexternalloglinks
-          - consoleplugins
-          - consoleplugins/finalizers
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - '*'
-        - apiGroups:
-          - scheduling.k8s.io
-          resources:
-          - priorityclasses
-          verbs:
-          - '*'
-        - apiGroups:
-          - oauth.openshift.io
-          resources:
-          - oauthclients
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - clusterroles
-          - clusterrolebindings
-          verbs:
-          - '*'
-        - apiGroups:
-          - config.openshift.io
-          resources:
-          - apiservers
-          - clusterversions
-          - proxies
-          - infrastructures
+        - nonResourceURLs:
+          - /metrics
           verbs:
           - get
-          - list
-          - watch
         - apiGroups:
-          - security.openshift.io
+          - apps
           resources:
-          - securitycontextconstraints
+          - daemonsets
+          - deployments
+          - replicasets
+          - statefulsets
           verbs:
           - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - namespaces
-          - services
-          - services/finalizers
-          verbs:
-          - get
-          - list
-          - watch
         - apiGroups:
           - authentication.k8s.io
           resources:
@@ -761,6 +713,140 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
+        - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - '*'
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - apiservers
+          - clusterversions
+          verbs:
+          - get
+          - list
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - infrastructures
+          - proxies
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleexternalloglinks
+          - consolelinks
+          - consoleplugins
+          - consoleplugins/finalizers
+          verbs:
+          - create
+          - delete
+          - get
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          - endpoints
+          - events
+          - namespaces
+          - persistentvolumeclaims
+          - pods
+          - pods/exec
+          - secrets
+          - serviceaccounts
+          - serviceaccounts/finalizers
+          - services
+          - services/finalizers
+          verbs:
+          - '*'
+        - apiGroups:
+          - logging.openshift.io
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
+          - servicemonitors
+          verbs:
+          - '*'
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - networkpolicies
+          verbs:
+          - create
+          - delete
+        - apiGroups:
+          - oauth.openshift.io
+          resources:
+          - oauthclients
+          verbs:
+          - '*'
+        - apiGroups:
+          - observability.openshift.io
+          resources:
+          - clusterlogforwarders
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - observability.openshift.io
+          resources:
+          - clusterlogforwarders/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - observability.openshift.io
+          resources:
+          - clusterlogforwarders/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - clusterroles
+          - rolebindings
+          - roles
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          - routes/custom-host
+          verbs:
+          - '*'
+        - apiGroups:
+          - scheduling.k8s.io
+          resources:
+          - priorityclasses
+          verbs:
+          - '*'
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - create
+          - list
+          - use
         serviceAccountName: cluster-logging-operator
       deployments:
       - name: cluster-logging-operator
@@ -813,75 +899,6 @@ spec:
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: cluster-logging-operator
-      permissions:
-      - rules:
-        - apiGroups:
-          - logging.openshift.io
-          resources:
-          - '*'
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - services
-          - endpoints
-          - persistentvolumeclaims
-          - events
-          - configmaps
-          - secrets
-          - serviceaccounts
-          - serviceaccounts/finalizers
-          - services/finalizers
-          - namespaces
-          verbs:
-          - '*'
-        - apiGroups:
-          - apps
-          resources:
-          - deployments
-          - daemonsets
-          - replicasets
-          - statefulsets
-          verbs:
-          - '*'
-        - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
-          - routes/custom-host
-          verbs:
-          - '*'
-        - apiGroups:
-          - batch
-          resources:
-          - cronjobs
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - roles
-          - rolebindings
-          verbs:
-          - '*'
-        - apiGroups:
-          - monitoring.coreos.com
-          resources:
-          - servicemonitors
-          - prometheusrules
-          verbs:
-          - '*'
-        - apiGroups:
-          - apps
-          resourceNames:
-          - cluster-logging-operator
-          resources:
-          - deployments/finalizers
-          verbs:
-          - update
-        serviceAccountName: cluster-logging-operator
     strategy: deployment
   installModes:
   - supported: true

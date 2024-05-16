@@ -2,9 +2,9 @@ package conf
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"sort"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
@@ -57,25 +57,25 @@ import (
 */
 
 //nolint:govet // using declarative style
-func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) []framework.Section {
+func Conf(secrets map[string]*corev1.Secret, clfspec *obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) []framework.Section {
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*input.Input{}
 	inputCompMap := map[string]helpers.InputComponent{}
 	for _, i := range clfspec.Inputs {
-		a := input.NewInput(i, namespace, resNames, op)
+		a := input.NewInput(i, secrets, namespace, resNames, op)
 		inputMap[i.Name] = a
 		inputCompMap[i.Name] = a
 	}
 
 	outputMap := map[string]*output.Output{}
-	//TODO: ENABLE ME
+	// TODO: ENABLE ME
 	//for _, spec := range clfspec.Outputs {
 	//	o := output.NewOutput(spec, secrets, op)
 	//	outputMap[spec.Name] = o
 	//}
 
-	filters := filter.NewInternalFilterMap(clfspec.FilterMap())
+	filters := filter.NewInternalFilterMap(internalobs.FilterMap(*clfspec))
 	pipelineMap := map[string]*pipeline.Pipeline{}
 	for i, p := range clfspec.Pipelines {
 		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs)

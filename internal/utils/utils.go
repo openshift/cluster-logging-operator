@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -153,21 +152,6 @@ func GetComponentImage(component string) string {
 	}
 	log.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
 	return imageTag
-}
-
-func GetFileContents(filePath string) []byte {
-	if filePath == "" {
-		log.V(2).Info("Empty file path provided for retrieving file contents")
-		return nil
-	}
-
-	contents, err := os.ReadFile(filepath.Clean(filePath))
-	if err != nil {
-		log.Error(err, "Operator unable to read local file to get contents")
-		return nil
-	}
-
-	return contents
 }
 
 func GetPtr[T any](value T) *T {

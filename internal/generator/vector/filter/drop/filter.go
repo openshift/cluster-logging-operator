@@ -2,15 +2,14 @@ package drop
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
-
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 // MakeDropFilter returns a concatenated vrl string of tests and their conditions
-func MakeDropFilter(dropTestsSpec *[]loggingv1.DropTest) (string, error) {
+func MakeDropFilter(dropTestsSpec []obs.DropTest) (string, error) {
 	vrlTests := []string{}
-	for _, test := range *dropTestsSpec {
+	for _, test := range dropTestsSpec {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
 			if cond.Matches != "" {

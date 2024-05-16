@@ -4,19 +4,17 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 )
 
 var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 
-	It("should do nothing if the forwarder is nil", func() {
+	It("should do nothing if the annotations are nil", func() {
 		options := framework.Options{}
-		EvaluateAnnotationsForEnabledCapabilities(nil, options)
+		k8shandler.EvaluateAnnotationsForEnabledCapabilities(nil, options)
 		Expect(options).To(BeEmpty(), "Exp no entries added to the options")
 	})
 	DescribeTable("when forwarder is not nil", func(enabledOption, value string, pairs ...string) {
@@ -24,17 +22,13 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 			Fail("Annotations must be passed as pairs to the test table")
 		}
 		options := framework.Options{}
-		forwarder := &logging.ClusterLogForwarder{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{},
-			},
-		}
+		annotations := map[string]string{}
 		for i := 0; i < len(pairs); i = i + 2 {
 			key := pairs[i]
 			value := pairs[i+1]
-			forwarder.Annotations[key] = value
+			annotations[key] = value
 		}
-		EvaluateAnnotationsForEnabledCapabilities(forwarder, options)
+		k8shandler.EvaluateAnnotationsForEnabledCapabilities(annotations, options)
 		if enabledOption == "" {
 			Expect(options).To(BeEmpty(), "Exp. the option to be disabled")
 		} else {
@@ -42,9 +36,6 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		}
 
 	},
-		Entry("enables old remote syslog for enabled", UseOldRemoteSyslogPlugin, "", UseOldRemoteSyslogPlugin, "enabled"),
-		Entry("enables old remote syslog for enabled", UseOldRemoteSyslogPlugin, "", UseOldRemoteSyslogPlugin, "eNabled"),
-		Entry("disables old remote syslog for true", "", "", UseOldRemoteSyslogPlugin, "true"),
 		Entry("enables debug for true", helpers.EnableDebugOutput, "true", AnnotationDebugOutput, "true"),
 		Entry("enables debug for True", helpers.EnableDebugOutput, "true", AnnotationDebugOutput, "True"),
 		Entry("disables debug for anything else", "", "", AnnotationDebugOutput, "abcdef"),

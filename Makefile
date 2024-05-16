@@ -247,7 +247,7 @@ test-functional-vector: test-functional-benchmarker-vector
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator
-	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
+	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null
 
 test-functional-benchmarker-vector: bin/functional-benchmarker
 	@rm -rf /tmp/benchmark-test-vector

@@ -4,11 +4,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"net/http"
 	"strings"
 	"text/template"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -24,9 +24,9 @@ var DefaultOmitResponseCodes = []int{
 	http.StatusUnprocessableEntity,
 	http.StatusTooManyRequests}
 
-func PolicyToVRL(p *loggingv1.KubeAPIAudit) (string, error) {
+func PolicyToVRL(p *obs.KubeAPIAudit) (string, error) {
 	if p == nil {
-		p = &loggingv1.KubeAPIAudit{} // Treat missing as empty.
+		p = &obs.KubeAPIAudit{} // Treat missing as empty.
 	}
 	if p.OmitResponseCodes == nil {
 		p.OmitResponseCodes = &DefaultOmitResponseCodes

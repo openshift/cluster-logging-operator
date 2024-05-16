@@ -3,11 +3,11 @@ package viaq
 import (
 	"encoding/json"
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	"k8s.io/utils/set"
 	"strings"
 )
 
@@ -16,7 +16,7 @@ const (
 	ViaqJournal = "viaqjournal"
 )
 
-func New(id string, inputs []string, labels map[string]string, inputSpecs []logging.InputSpec) framework.Element {
+func New(id string, inputs []string, labels map[string]string, inputSpecs []obs.InputSpec) framework.Element {
 
 	vrls := auditHost([]string{}, inputSpecs)
 	vrls = auditKube(vrls, inputSpecs)
@@ -41,7 +41,7 @@ func containerLogs(labels map[string]string) string {
 if .log_source == "%s" {
   %s
 }
-`, logging.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
+`, obs.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
 		ClusterID,
 		FixLogLevel,
 		HandleEventRouterLog,
@@ -57,66 +57,74 @@ if .log_source == "%s" {
 	}), "\n"))
 }
 
-func auditKube(vrls []string, inputs []logging.InputSpec) []string {
-	if hasSource(inputs, logging.InputNameAudit, logging.AuditSourceKube) {
+func auditKube(vrls []string, inputs []obs.InputSpec) []string {
+	if hasAuditSource(inputs, obs.AuditSourceKube) {
 		vrls = append(vrls, auditK8sLogs())
 	}
 	return vrls
 }
 
-func auditOpenShift(vrls []string, inputs []logging.InputSpec) []string {
-	if hasSource(inputs, logging.InputNameAudit, logging.AuditSourceOpenShift) {
+func auditOpenShift(vrls []string, inputs []obs.InputSpec) []string {
+	if hasAuditSource(inputs, obs.AuditSourceOpenShift) {
 		vrls = append(vrls, auditOpenshiftLogs())
 	}
 	return vrls
 }
-func auditOVN(vrls []string, inputs []logging.InputSpec) []string {
-	if hasSource(inputs, logging.InputNameAudit, logging.AuditSourceOVN) {
+
+func auditOVN(vrls []string, inputs []obs.InputSpec) []string {
+	if hasAuditSource(inputs, obs.AuditSourceOVN) {
 		vrls = append(vrls, auditOVNLogs())
 	}
 	return vrls
 }
-func auditHost(vrls []string, inputs []logging.InputSpec) []string {
-	if hasSource(inputs, logging.InputNameAudit, logging.AuditSourceAuditd) {
+
+func auditHost(vrls []string, inputs []obs.InputSpec) []string {
+	if hasAuditSource(inputs, obs.AuditSourceAuditd) {
 		vrls = append(vrls, auditHostLogs())
 	}
 	return vrls
 }
-func containerSource(vrls []string, inputs []logging.InputSpec, labels map[string]string) []string {
-	if hasSource(inputs, logging.InputNameApplication, "") || hasSource(inputs, logging.InputNameInfrastructure, logging.InfrastructureSourceContainer) {
+
+func containerSource(vrls []string, inputs []obs.InputSpec, labels map[string]string) []string {
+	if hasContainerSource(inputs) {
 		vrls = append(vrls, containerLogs(labels))
 	}
 	return vrls
 }
 
-func journalSource(vrls []string, inputs []logging.InputSpec) []string {
+func journalSource(vrls []string, inputs []obs.InputSpec) []string {
 	if HasJournalSource(inputs) {
 		vrls = append(vrls, journalLogs())
 	}
 	return vrls
 }
 
-func HasJournalSource(inputs []logging.InputSpec) bool {
-	return hasSource(inputs, logging.InputNameInfrastructure, logging.InfrastructureSourceNode)
+func HasJournalSource(inputs []obs.InputSpec) bool {
+	for _, i := range inputs {
+		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceNode) || len(i.Infrastructure.Sources) == 0) {
+			return true
+		}
+	}
+	return false
 }
 
-func hasSource(inputSpecs []logging.InputSpec, logType, logSource string) bool {
+func hasContainerSource(inputSpecs []obs.InputSpec) bool {
 	for _, i := range inputSpecs {
-		switch logType {
-		case logging.InputNameApplication:
-			if i.Application != nil {
-				return true
-			}
-		case logging.InputNameAudit:
-			if i.Audit != nil && (sets.NewString(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) {
-				return true
-			}
-		case logging.InputNameInfrastructure:
-			if i.Infrastructure != nil && (sets.NewString(i.Infrastructure.Sources...).Has(logSource) || len(i.Infrastructure.Sources) == 0) {
-				return true
-			}
+		if i.Type == obs.InputTypeApplication {
+			return true
 		}
+		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer) || len(i.Infrastructure.Sources) == 0) {
+			return true
+		}
+	}
+	return false
+}
 
+func hasAuditSource(inputSpecs []obs.InputSpec, logSource obs.AuditSource) bool {
+	for _, i := range inputSpecs {
+		if i.Type == obs.InputTypeAudit && i.Audit != nil && (set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) {
+			return true
+		}
 	}
 	return false
 }

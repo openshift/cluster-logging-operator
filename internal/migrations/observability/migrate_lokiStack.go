@@ -143,7 +143,7 @@ func getInputTypeFromName(spec obs.ClusterLogForwarderSpec, inputName string) st
 			if input.Infrastructure != nil || input.Receiver.Type == obs.ReceiverTypeSyslog {
 				return string(obs.InputTypeInfrastructure)
 			}
-			if input.Audit != nil || (input.Receiver.Type == obs.ReceiverTypeHttp && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit) {
+			if input.Audit != nil || (input.Receiver.Type == obs.ReceiverTypeHTTP && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit) {
 				return string(obs.InputTypeAudit)
 			}
 		}

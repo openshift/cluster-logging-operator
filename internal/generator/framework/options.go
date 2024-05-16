@@ -1,9 +1,7 @@
 package framework
 
 const (
-	IncludeLegacyForwardConfig = "includeLegacyForwardConfig"
-	UseOldRemoteSyslogPlugin   = "useOldRemoteSyslogPlugin"
-	ClusterTLSProfileSpec      = "tlsProfileSpec"
+	ClusterTLSProfileSpec = "tlsProfileSpec"
 
 	MinTLSVersion = "minTLSVersion"
 	Ciphers       = "ciphers"

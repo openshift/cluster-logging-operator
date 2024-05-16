@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/spf13/pflag"
@@ -24,19 +23,12 @@ func main() {
 	utils.InitLogger("forwarder-generator")
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
-	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
 	debugOutput := flag.Bool("debug-output", false, "Generate config normally, but replace output plugins with @stdout plugin, so that records can be printed in collector logs.")
-	colltype := flag.String("collector", "fluentd", "collector type: fluentd or vector")
 	secretsFlag := flag.String("secrets", "", "colon delimited list of secrets in the form of name=key1,key1")
 	help := flag.Bool("help", false, "This message")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	if *help {
-		pflag.Usage()
-		os.Exit(1)
-	}
-	logCollectorType := logging.LogCollectionType(*colltype)
-	if !logCollectorType.IsSupportedCollector() {
 		pflag.Usage()
 		os.Exit(1)
 	}
@@ -95,7 +87,7 @@ func main() {
 		clientBuilder.WithRuntimeObjects(entry)
 	}
 	client := clientBuilder.Build()
-	generatedConfig, err := forwarder.Generate(logCollectorType, clfYaml, *includeDefaultLogStore, *debugOutput, client)
+	generatedConfig, err := forwarder.Generate(clfYaml, *debugOutput, client)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

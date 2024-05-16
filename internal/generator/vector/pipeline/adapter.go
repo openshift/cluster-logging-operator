@@ -1,16 +1,15 @@
 package pipeline
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"os"
 	"strconv"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
-	openshiftfilter "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -18,11 +17,11 @@ import (
 
 // Pipeline is an adapter between logging API and config generation
 type Pipeline struct {
-	logging.PipelineSpec
+	obs.PipelineSpec
 	index      int
 	filterMap  map[string]filter.InternalFilterSpec
 	Filters    []*PipelineFilter
-	inputSpecs []logging.InputSpec
+	inputSpecs []obs.InputSpec
 }
 
 func (o *Pipeline) Elements() []framework.Element {
@@ -33,12 +32,12 @@ func (o *Pipeline) Elements() []framework.Element {
 	return elements
 }
 
-func NewPipeline(index int, p logging.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec, inputSpecs []logging.InputSpec) *Pipeline {
+func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec, inputSpecs []obs.InputSpec) *Pipeline {
 	pipeline := &Pipeline{
 		PipelineSpec: p,
 		index:        index,
 		filterMap:    map[string]filter.InternalFilterSpec{},
-		inputSpecs:   []logging.InputSpec{},
+		inputSpecs:   []obs.InputSpec{},
 	}
 	for _, is := range inputSpecs {
 		for _, ref := range p.InputRefs {
@@ -72,10 +71,12 @@ func NewPipeline(index int, p logging.PipelineSpec, inputs map[string]helpers.In
 		}
 	} else {
 		for _, outputRef := range pipeline.OutputRefs {
-			output := outputs[outputRef]
-			for _, inputRefs := range pipeline.InputRefs {
-				output.AddInputFrom(inputs[inputRefs])
+			if output, found := outputs[outputRef]; found {
+				for _, inputRefs := range pipeline.InputRefs {
+					output.AddInputFrom(inputs[inputRefs])
+				}
 			}
+
 		}
 	}
 	return pipeline
@@ -88,7 +89,7 @@ func addPrefilters(p *Pipeline) {
 	if viaq.HasJournalSource(p.inputSpecs) {
 		prefilters = append(prefilters, viaq.ViaqJournal)
 		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
-			FilterSpec:        &logging.FilterSpec{Type: viaq.ViaqJournal},
+			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
 			SuppliesTransform: true,
 			TranformFactory: func(id string, inputs ...string) framework.Element {
 				return viaq.NewJournal(id, inputs...)
@@ -96,28 +97,29 @@ func addPrefilters(p *Pipeline) {
 		}
 	}
 
-	prefilters = append(prefilters, viaq.Viaq)
-	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
-		FilterSpec:        &logging.FilterSpec{Type: viaq.Viaq},
-		SuppliesTransform: true,
-		TranformFactory: func(id string, inputs ...string) framework.Element {
-			return viaq.New(id, inputs, p.Labels, p.inputSpecs)
-		},
-		Labels: p.Labels,
-	}
-	if p.DetectMultilineErrors {
-		p.filterMap[openshiftfilter.DetectMultilineException] = filter.InternalFilterSpec{
-			FilterSpec:        &logging.FilterSpec{Type: openshiftfilter.DetectMultilineException},
-			SuppliesTransform: true,
-			TranformFactory:   openshiftfilter.NewDetectException,
-		}
-		prefilters = append(prefilters, openshiftfilter.DetectMultilineException)
-	}
-	if p.Parse == openshiftfilter.ParseTypeJson {
-		p.filterMap[openshiftfilter.ParseJson] = filter.InternalFilterSpec{
-			FilterSpec: &logging.FilterSpec{Type: openshiftfilter.ParseJson}}
-		prefilters = append(prefilters, openshiftfilter.ParseJson)
-	}
+	//TODO: ENABLE ME
+	//prefilters = append(prefilters, viaq.Viaq)
+	//p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
+	//	FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
+	//	SuppliesTransform: true,
+	//	TranformFactory: func(id string, inputs ...string) framework.Element {
+	//		return viaq.New(id, inputs, p.Labels, p.inputSpecs)
+	//	},
+	//	Labels: p.Labels,
+	//}
+	//if p.DetectMultilineErrors {
+	//	p.filterMap[openshiftfilter.DetectMultilineException] = filter.InternalFilterSpec{
+	//		FilterSpec:        &logging.FilterSpec{Type: openshiftfilter.DetectMultilineException},
+	//		SuppliesTransform: true,
+	//		TranformFactory:   openshiftfilter.NewDetectException,
+	//	}
+	//	prefilters = append(prefilters, openshiftfilter.DetectMultilineException)
+	//}
+	//if p.Parse == openshiftfilter.ParseTypeJson {
+	//	p.filterMap[openshiftfilter.ParseJson] = filter.InternalFilterSpec{
+	//		FilterSpec: &logging.FilterSpec{Type: openshiftfilter.ParseJson}}
+	//	prefilters = append(prefilters, openshiftfilter.ParseJson)
+	//}
 	p.FilterRefs = append(prefilters, p.FilterRefs...)
 }
 
@@ -145,7 +147,7 @@ func (p *Pipeline) initFilter(index int, filterRef string) {
 
 // PipelineFilter is an adapter between CLF pipeline filter instance and config generation
 type PipelineFilter struct {
-	pipeline logging.PipelineSpec
+	pipeline obs.PipelineSpec
 	ids      []string
 	Next     []helpers.InputComponent
 	vrl      string
@@ -167,7 +169,7 @@ func (pf *PipelineFilter) AddInputFrom(n helpers.InputComponent) {
 	pf.Next = append(pf.Next, n)
 }
 
-func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilterSpec, pipeline logging.PipelineSpec) *PipelineFilter {
+func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilterSpec, pipeline obs.PipelineSpec) *PipelineFilter {
 	ids := []string{helpers.MakePipelineID(pipelineName, filterRef)}
 	if spec.SuppliesTransform {
 		return &PipelineFilter{
@@ -187,7 +189,7 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 			ids:      ids,
 			vrl:      vrl,
 			isFilterElement: func() bool {
-				return spec.Type == logging.FilterDrop
+				return spec.Type == obs.FilterTypeDrop
 			}(),
 		}
 	}

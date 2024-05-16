@@ -1,13 +1,19 @@
 package conf
 
 import (
+	"embed"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-func TestVectorConfGenerator(t *testing.T) {
+var (
+	//go:embed *.toml
+	tomlContent embed.FS
+)
+
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vector Conf Generation")
+	RunSpecs(t, "[internal][generator][vector][conf] Suite")
 }

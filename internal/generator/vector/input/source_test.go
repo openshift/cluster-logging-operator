@@ -306,7 +306,7 @@ var _ = Describe("inputs", func() {
 			Type: obs.InputTypeReceiver,
 			Name: "myreceiver",
 			Receiver: &obs.ReceiverSpec{
-				Type: obs.ReceiverTypeHttp,
+				Type: obs.ReceiverTypeHTTP,
 				Port: 12345,
 				HTTP: &obs.HTTPReceiver{
 					Format: obs.HTTPReceiverFormatKubeAPIAudit,

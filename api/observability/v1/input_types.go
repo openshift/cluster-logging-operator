@@ -224,13 +224,13 @@ type Audit struct {
 type ReceiverType string
 
 const (
-	ReceiverTypeHttp   ReceiverType = "http"
+	ReceiverTypeHTTP   ReceiverType = "http"
 	ReceiverTypeSyslog ReceiverType = "syslog"
 )
 
 var (
 	ReceiverTypes = []ReceiverType{
-		ReceiverTypeHttp,
+		ReceiverTypeHTTP,
 		ReceiverTypeSyslog,
 	}
 )

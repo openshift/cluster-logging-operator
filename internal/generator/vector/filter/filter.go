@@ -2,19 +2,19 @@ package filter
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/drop"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/prune"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/apiaudit"
 )
 
 // RemapVRL returns a VRL expression to add to the remap program of a pipeline containing this filter.
 // Can be used for validation as well as execution of the filter.
-func RemapVRL(filterSpec *loggingv1.FilterSpec) (vrl string, err error) {
+func RemapVRL(filterSpec *obs.FilterSpec) (vrl string, err error) {
 	iSpec := &InternalFilterSpec{FilterSpec: filterSpec}
 	return VRLFrom(iSpec)
 }
@@ -26,13 +26,13 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 		}
 	}()
 	switch filterSpec.Type {
-	case loggingv1.FilterDrop:
+	case obs.FilterTypeDrop:
 		return drop.MakeDropFilter(filterSpec.DropTestsSpec)
-	case loggingv1.FilterPrune:
+	case obs.FilterTypePrune:
 		return prune.MakePruneFilter(filterSpec.PruneFilterSpec)
-	case loggingv1.FilterKubeAPIAudit:
+	case obs.FilterTypeKubeAPIAudit:
 		return apiaudit.PolicyToVRL(filterSpec.KubeAPIAudit)
-	case openshift.ParseJson:
+	case obs.FilterTypeParse:
 		return openshift.NewParseJSON()
 	case "":
 		return "", fmt.Errorf("missing filter type")
@@ -43,7 +43,7 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 
 // InternalFilterSpec is a wrapper to allow separation of public and internal filters
 type InternalFilterSpec struct {
-	*loggingv1.FilterSpec
+	*obs.FilterSpec
 	Labels            map[string]string
 	SuppliesTransform bool
 
@@ -51,7 +51,7 @@ type InternalFilterSpec struct {
 	TranformFactory func(id string, inputs ...string) framework.Element
 }
 
-func NewInternalFilterMap(filters map[string]*loggingv1.FilterSpec) map[string]*InternalFilterSpec {
+func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*InternalFilterSpec {
 	internalFilters := map[string]*InternalFilterSpec{}
 	for _, f := range filters {
 		internalFilters[f.Name] = &InternalFilterSpec{FilterSpec: f}

@@ -3,7 +3,7 @@ package apiaudit
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	authv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -13,17 +13,17 @@ var _ = Describe("Policy to VRL Filter", func() {
 
 	Context("omit response codes", func() {
 		It("should omit specified codes", func() {
-			p := &loggingv1.KubeAPIAudit{OmitResponseCodes: &[]int{1234}}
+			p := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{1234}}
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 1234}})).To(BeNil())
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 5678}})).NotTo(BeNil())
 		})
 		It("should omit default codes if missing", func() {
-			p := &loggingv1.KubeAPIAudit{}
+			p := &obs.KubeAPIAudit{}
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 409}})).To(BeNil())
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 200}})).NotTo(BeNil())
 		})
 		It("should not omit by code if explictly empty", func() {
-			p := &loggingv1.KubeAPIAudit{OmitResponseCodes: &[]int{}} // Explictly Empty
+			p := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{}} // Explictly Empty
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 409}})).NotTo(BeNil())
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 200}})).NotTo(BeNil())
 		})
@@ -31,19 +31,19 @@ var _ = Describe("Policy to VRL Filter", func() {
 
 	Context("omit stages", func() {
 		It("omits using policy setting", func() {
-			p := &loggingv1.KubeAPIAudit{OmitStages: []Stage{StageRequestReceived}}
+			p := &obs.KubeAPIAudit{OmitStages: []Stage{StageRequestReceived}}
 			Expect(Filtered(p, Event{Stage: StageRequestReceived})).To(BeNil())
 			Expect(Filtered(p, Event{Stage: StageResponseStarted})).NotTo(BeNil())
 		})
 		It("omits using rule setting", func() {
-			p := &loggingv1.KubeAPIAudit{Rules: []PolicyRule{
+			p := &obs.KubeAPIAudit{Rules: []PolicyRule{
 				{Verbs: []string{"update"}, OmitStages: []Stage{StagePanic}},
 			}}
 			Expect(Filtered(p, Event{Verb: "update", Stage: StagePanic})).To(BeNil())
 			Expect(Filtered(p, Event{Verb: "create", Stage: StagePanic})).NotTo(BeNil())
 		})
 		It("omits using rule and policy setting", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				OmitStages: []Stage{StageRequestReceived},
 				Rules:      []PolicyRule{{Verbs: []string{"update"}, OmitStages: []Stage{StagePanic}}}}
 			Expect(Filtered(p, Event{Verb: "create", Stage: StageRequestReceived})).To(BeNil())
@@ -55,7 +55,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 
 	Context("policy rules", func() {
 		It("matches by verb", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelNone, Verbs: []string{"watch", "patch"}},
 					{Level: LevelRequest, Verbs: []string{"update", "delete"}},
@@ -70,7 +70,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches by user", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelNone, Users: []string{"barney"}},
 					{Level: LevelRequestResponse, Users: []string{"fred"}},
@@ -86,7 +86,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("stops on first match", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelRequest, Users: []string{"barney"}},
 					{Level: LevelNone, Verbs: []string{"get"}},
@@ -97,7 +97,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches by group", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelMetadata, UserGroups: []string{"flint*", "*sons"}},
 					{Level: LevelRequest, UserGroups: []string{"muppets"}},
@@ -111,7 +111,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches by namespace", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelMetadata, Namespaces: []string{"flintstones", "jetsons"}},
 					{Level: LevelRequest, Namespaces: []string{"muppets"}},
@@ -124,7 +124,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches by resource", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{
 						Level: LevelMetadata,
@@ -156,7 +156,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches by non-resource", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelMetadata, NonResourceURLs: []string{"/metrics", "/health*"}},
 					{Level: LevelRequest, NonResourceURLs: []string{"/muppets"}},
@@ -171,7 +171,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 		})
 
 		It("matches multiple criteria", func() {
-			p := &loggingv1.KubeAPIAudit{
+			p := &obs.KubeAPIAudit{
 				Rules: []PolicyRule{
 					{Level: LevelRequestResponse, Verbs: []string{"get"}, Users: []string{"nobody"}},
 					{Level: LevelRequest, UserGroups: []string{"flintstones"}},
@@ -189,7 +189,7 @@ var _ = Describe("Policy to VRL Filter", func() {
 
 	Context("no rules", func() {
 		It("applies default rules", func() {
-			p := &loggingv1.KubeAPIAudit{}
+			p := &obs.KubeAPIAudit{}
 			// User events
 			Expect(Filtered(p, Event{Verb: "get", User: authv1.UserInfo{Username: "fred"}})).To(HaveLevel(LevelRequestResponse))
 			Expect(Filtered(p, Event{Verb: "put", User: authv1.UserInfo{Username: "fred", Groups: []string{"flintstones"}}})).To(HaveLevel(LevelRequestResponse))

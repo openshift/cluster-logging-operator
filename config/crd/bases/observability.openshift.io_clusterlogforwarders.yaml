@@ -373,6 +373,13 @@ spec:
                     name:
                       description: Name used to refer to the filter from a `pipeline`.
                       type: string
+                    openShiftLabels:
+                      additionalProperties:
+                        type: string
+                      description: Labels applied to log records passing through a
+                        pipeline. These labels appear in the `openshift.labels` map
+                        in the log record.
+                      type: object
                     prune:
                       description: The PruneFilterSpec consists of two arrays, namely
                         in and notIn, which dictate the fields to be pruned.
@@ -415,8 +422,8 @@ spec:
                     type:
                       description: Type of filter.
                       enum:
-                      - addLabels
-                      - detectMultiline
+                      - openShiftLabels
+                      - detectMultilineException
                       - drop
                       - kubeAPIAudit
                       - parse

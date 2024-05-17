@@ -109,7 +109,6 @@ if .log_source == "container" {
   del(.kubernetes.node_labels)
   del(.timestamp_end)
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
-  .openshift.labels = {"key1":"value1","key2":"value2"}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
   if exists(.kubernetes.namespace_labels) {
 	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
@@ -132,10 +131,16 @@ if .log_source == "container" {
 }
 '''
 
-# Kafka config
+[transforms.pipeline_mypipeline_my_labels_1]
+type = "remap"
+inputs = ["pipeline_mypipeline_viaq_0"]
+source = '''
+.openshift.labels = {"key1":"value1","key2":"value2"}
+'''
+
 [sinks.output_kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_mypipeline_viaq_0"]
+inputs = ["pipeline_mypipeline_my_labels_1"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -144,7 +149,6 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.output_kafka_receiver.tls]
-enabled = true
 min_tls_version = "VersionTLS12"
 ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -165,7 +169,6 @@ address = "[::]:24231"
 default_namespace = "collector"
 
 [sinks.prometheus_output.tls]
-enabled = true
 key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
 min_tls_version = "VersionTLS12"

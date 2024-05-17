@@ -1,7 +1,7 @@
 {{- if .NotIn}}
 notIn = {{.NotIn}}
 
-# Prune keys not in `notIn` list
+# Prune keys not in notIn list
 new_object = {}
 for_each(notIn) -> |_index, pathSeg| {
     val = get(., pathSeg) ?? null
@@ -15,7 +15,7 @@ for_each(notIn) -> |_index, pathSeg| {
 {{- if .In}}
 in = {{.In}}
 
-# Remove keys from `in` list
+# Remove keys from in list
 for_each(in) -> |_index, val| {
     . = remove!(., val)
 }

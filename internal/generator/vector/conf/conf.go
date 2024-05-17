@@ -69,11 +69,10 @@ func Conf(secrets map[string]*corev1.Secret, clfspec *obs.ClusterLogForwarderSpe
 	}
 
 	outputMap := map[string]*output.Output{}
-	// TODO: ENABLE ME
-	//for _, spec := range clfspec.Outputs {
-	//	o := output.NewOutput(spec, secrets, op)
-	//	outputMap[spec.Name] = o
-	//}
+	for _, spec := range clfspec.Outputs {
+		o := output.NewOutput(spec, secrets, op)
+		outputMap[spec.Name] = o
+	}
 
 	filters := filter.NewInternalFilterMap(internalobs.FilterMap(*clfspec))
 	pipelineMap := map[string]*pipeline.Pipeline{}

@@ -80,7 +80,7 @@ inputs = ["pipeline_mypipeline_viaq_0"]
 source = '''
 in = [["foo","test"],["bar"],["foo","@some","d.f.g.o111-22/333","foo_bar"],["foo","labels","test.dot-with/slashes888"]]
 
-# Remove keys from `in` list
+# Remove keys from in list
 for_each(in) -> |_index, val| {
     . = remove!(., val)
 }

@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("prune functions", func() {
@@ -47,6 +49,34 @@ var _ = Describe("prune functions", func() {
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 		})
 
+	})
+
+	Context("#VRL", func() {
+		It("should generate valid VRL for pruning", func() {
+			spec := &obs.PruneFilterSpec{
+				In:    []string{".log_type", ".message", ".kubernetes.container_name"},
+				NotIn: []string{`.kubernetes.labels."foo-bar/baz"`, ".level"},
+			}
+			Expect(NewFilter(spec).VRL()).To(matchers.EqualTrimLines(`
+notIn = [["kubernetes","labels","foo-bar/baz"],["kubernetes","labels","foo-bar_baz"],["level"]]
+
+# Prune keys not in notIn list
+new_object = {}
+for_each(notIn) -> |_index, pathSeg| {
+    val = get(., pathSeg) ?? null
+    if !is_null(val) {
+        new_object = set!(new_object, pathSeg, val)
+    }
+}
+. = new_object
+in = [["log_type"],["message"],["kubernetes","container_name"]]
+
+# Remove keys from in list
+for_each(in) -> |_index, val| {
+    . = remove!(., val)
+}
+`))
+		})
 	})
 
 })

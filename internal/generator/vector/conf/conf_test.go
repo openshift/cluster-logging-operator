@@ -22,17 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//go:embed complex_drop_filter.toml
-var ExpectedComplexDropFilterToml string
-
-//go:embed complex_prune_filter.toml
-var ExpectedComplexPruneFilterTOML string
-
-// TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	defer GinkgoRecover()
-	Skip("TODO: enable me after re-wire")
-
 	var (
 		clusterOptions = framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		secretName     = "kafka-receiver-1"
@@ -45,8 +35,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 		}
+		outputName  = "kafka-receiver"
 		kafkaOutput = obs.OutputSpec{Type: obs.OutputTypeKafka,
-			Name: "kafka-receiver",
+			Name: outputName,
 			Kafka: &obs.Kafka{
 				URLSpec: obs.URLSpec{
 					URL: "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
@@ -112,14 +103,20 @@ var _ = Describe("Testing Complete Config Generation", func() {
 							"myinfra",
 							"mytestapp",
 						},
-						OutputRefs: []string{"kafka-receiver"},
+						OutputRefs: []string{outputName},
 						Name:       "mypipeline",
-						//TODO: enable pipeline filter
-						//Labels:     map[string]string{"key1": "value1", "key2": "value2"},
+						FilterRefs: []string{"my-labels"},
 					},
 				},
 				Outputs: []obs.OutputSpec{
 					kafkaOutput,
+				},
+				Filters: []obs.FilterSpec{
+					{
+						Name:            "my-labels",
+						Type:            obs.FilterTypeOpenshiftLabels,
+						OpenShiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
+					},
 				},
 			}),
 		Entry("with complex spec", "complex.toml", nil,
@@ -154,6 +151,14 @@ var _ = Describe("Testing Complete Config Generation", func() {
 						},
 						OutputRefs: []string{"kafka-receiver"},
 						Name:       "pipeline",
+						FilterRefs: []string{"my-labels"},
+					},
+				},
+				Filters: []obs.FilterSpec{
+					{
+						Name:            "my-labels",
+						Type:            obs.FilterTypeOpenshiftLabels,
+						OpenShiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
 					},
 				},
 				Outputs: []obs.OutputSpec{
@@ -185,11 +190,26 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					},
 					{
 						Name: "myreceiver",
+						Type: obs.InputTypeReceiver,
 						Receiver: &obs.ReceiverSpec{
 							Type: obs.ReceiverTypeHTTP,
 							Port: 7777,
 							HTTP: &obs.HTTPReceiver{
 								Format: obs.HTTPReceiverFormatKubeAPIAudit,
+							},
+							TLS: &obs.InputTLSSpec{
+								Certificate: &obs.ConfigMapOrSecretKey{
+									Secret: &corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: constants.ClientCertKey,
+								},
+								Key: &obs.SecretKey{
+									Secret: &corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: constants.ClientPrivateKey,
+								},
 							},
 						},
 					},
@@ -210,173 +230,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					kafkaOutput,
 				},
 			}),
-		//TODO: MOVE INTO UNIT TEST
-		//Entry("with drop filters", testhelpers.ConfGenerateTest{
-		//	Options: framework.Options{
-		//		framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
-		//	},
-		//	CLFSpec: logging.ClusterLogForwarderSpec{
-		//		Inputs: []logging.InputSpec{
-		//			{
-		//				Name: "mytestapp",
-		//				Application: &logging.Application{
-		//					Namespaces: []string{"test-ns"},
-		//				},
-		//			},
-		//			{
-		//				Name:           logging.InputNameInfrastructure,
-		//				Infrastructure: &logging.Infrastructure{},
-		//			},
-		//			{
-		//				Name:  logging.InputNameAudit,
-		//				Audit: &logging.Audit{},
-		//			},
-		//		},
-		//		Filters: []logging.FilterSpec{
-		//			{
-		//				Name: "drop-test",
-		//				Type: logging.FilterDrop,
-		//				FilterTypeSpec: logging.FilterTypeSpec{
-		//					DropTestsSpec: &[]logging.DropTest{
-		//						{
-		//							DropConditions: []logging.DropCondition{
-		//								{
-		//									Field:   ".kubernetes.namespace_name",
-		//									Matches: "busybox",
-		//								},
-		//								{
-		//									Field:      ".level",
-		//									NotMatches: "d.+",
-		//								},
-		//							},
-		//						},
-		//						{
-		//							DropConditions: []logging.DropCondition{
-		//								{
-		//									Field:   ".log_type",
-		//									Matches: "application",
-		//								},
-		//							},
-		//						},
-		//						{
-		//							DropConditions: []logging.DropCondition{
-		//								{
-		//									Field:   ".kubernetes.container_name",
-		//									Matches: "error|warning",
-		//								},
-		//								{
-		//									Field:      ".kubernetes.labels.test",
-		//									NotMatches: "foo",
-		//								},
-		//							},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//		Pipelines: []logging.PipelineSpec{
-		//			{
-		//				InputRefs: []string{
-		//					"mytestapp",
-		//					logging.InputNameInfrastructure,
-		//					logging.InputNameAudit},
-		//				OutputRefs: []string{"kafka-receiver"},
-		//				Name:       "pipeline",
-		//				Labels:     map[string]string{"key1": "value1", "key2": "value2"},
-		//				FilterRefs: []string{"drop-test"},
-		//			},
-		//		},
-		//		Outputs: []logging.OutputSpec{
-		//			{
-		//				Type: logging.OutputTypeKafka,
-		//				Name: "kafka-receiver",
-		//				URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
-		//				Secret: &logging.OutputSecretSpec{
-		//					Name: "kafka-receiver-1",
-		//				},
-		//			},
-		//		},
-		//	},
-		//	Secrets: map[string]*corev1.Secret{
-		//		"kafka-receiver": {
-		//			Data: map[string][]byte{
-		//				"tls.key":       []byte("junk"),
-		//				"tls.crt":       []byte("junk"),
-		//				"ca-bundle.crt": []byte("junk"),
-		//			},
-		//		},
-		//	},
-		//	ExpectedConf: ExpectedComplexDropFilterToml,
-		//}),
-
-		// TODO: move into unit test
-		//Entry("with complex spec with prune filter", testhelpers.ConfGenerateTest{
-		//	Options: framework.Options{
-		//		framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
-		//	},
-		//	CLFSpec: logging.ClusterLogForwarderSpec{
-		//		Filters: []logging.FilterSpec{
-		//			{
-		//				Name: "my-prune",
-		//				Type: logging.FilterPrune,
-		//				FilterTypeSpec: logging.FilterTypeSpec{
-		//					PruneFilterSpec: &logging.PruneFilterSpec{
-		//						In:    []string{".log_type", ".message", ".kubernetes.container_name"},
-		//						NotIn: []string{`.kubernetes.labels."foo-bar/baz"`, ".level"},
-		//					},
-		//				},
-		//			},
-		//		},
-		//		Inputs: []logging.InputSpec{
-		//			{
-		//				Name: "mytestapp",
-		//				Application: &logging.Application{
-		//					Namespaces: []string{"test-ns"},
-		//				},
-		//			},
-		//			{
-		//				Name:           logging.InputNameInfrastructure,
-		//				Infrastructure: &logging.Infrastructure{},
-		//			},
-		//			{
-		//				Name:  logging.InputNameAudit,
-		//				Audit: &logging.Audit{},
-		//			},
-		//		},
-		//		Pipelines: []logging.PipelineSpec{
-		//			{
-		//				InputRefs: []string{
-		//					"mytestapp",
-		//					logging.InputNameInfrastructure,
-		//					logging.InputNameAudit},
-		//				OutputRefs: []string{"kafka-receiver"},
-		//				Name:       "pipeline",
-		//				Labels:     map[string]string{"key1": "value1", "key2": "value2"},
-		//				FilterRefs: []string{"my-prune"},
-		//			},
-		//		},
-		//		Outputs: []logging.OutputSpec{
-		//			{
-		//				Type: logging.OutputTypeKafka,
-		//				Name: "kafka-receiver",
-		//				URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
-		//				Secret: &logging.OutputSecretSpec{
-		//					Name: "kafka-receiver-1",
-		//				},
-		//			},
-		//		},
-		//	},
-		//	Secrets: map[string]*corev1.Secret{
-		//		"kafka-receiver": {
-		//			Data: map[string][]byte{
-		//				"tls.key":       []byte("junk"),
-		//				"tls.crt":       []byte("junk"),
-		//				"ca-bundle.crt": []byte("junk"),
-		//			},
-		//		},
-		//	},
-		//	ExpectedConf: ExpectedComplexPruneFilterTOML,
-		//}),
 	)
 
 	Describe("test helper functions", func() {

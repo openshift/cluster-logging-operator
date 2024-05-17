@@ -80,7 +80,7 @@ inputs = ["pipeline_mypipeline_viaq_0"]
 source = '''
 notIn = [["kubernetes","labels"],["message"],["foo"]]
 
-# Prune keys not in `notIn` list
+# Prune keys not in notIn list
 new_object = {}
 for_each(notIn) -> |_index, pathSeg| {
     val = get(., pathSeg) ?? null

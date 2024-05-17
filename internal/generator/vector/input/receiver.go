@@ -28,13 +28,13 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames *factory.ForwarderResour
 		el, id := source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec)
 		split, splitID := source.NewSplitTransform(base, id)
 		items, itemsID := source.NewItemsTransform(base, splitID)
-		return []generator.Element{
+		els = append(els,
 			el,
 			tlsConfig,
 			split,
 			items,
 			NewLogSourceAndType(metaID, logging.AuditSourceKube, logging.InputNameAudit, itemsID),
-		}, []string{id}
+		)
 	}
 	return els, []string{metaID}
 }

@@ -57,20 +57,18 @@ var _ = Describe("pipeline/adapter.go", func() {
 				}, map[string]helpers.InputComponent{
 					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
-					map[string]*filter.InternalFilterSpec{
+					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
-							FilterSpec: &obs.FilterSpec{
-								Name: "my-prune",
-								Type: obs.FilterTypePrune,
-								PruneFilterSpec: &obs.PruneFilterSpec{
-									In: []string{".foo.test",
-										".bar",
-										`.foo."@some"."d.f.g.o111-22/333".foo_bar`,
-										`.foo.labels."test.dot-with/slashes888"`},
-								},
+							Name: "my-prune",
+							Type: obs.FilterTypePrune,
+							PruneFilterSpec: &obs.PruneFilterSpec{
+								In: []string{".foo.test",
+									".bar",
+									`.foo."@some"."d.f.g.o111-22/333".foo_bar`,
+									`.foo.labels."test.dot-with/slashes888"`},
 							},
 						},
-					},
+					}),
 					inputSpecs,
 				)
 				Expect(adapter.Filters).To(HaveLen(2), "expected a VIAQ and prune filter to be added to the pipeline")
@@ -84,17 +82,15 @@ var _ = Describe("pipeline/adapter.go", func() {
 				}, map[string]helpers.InputComponent{
 					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
-					map[string]*filter.InternalFilterSpec{
+					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
-							FilterSpec: &obs.FilterSpec{
-								Name: "my-prune",
-								Type: obs.FilterTypePrune,
-								PruneFilterSpec: &obs.PruneFilterSpec{
-									NotIn: []string{".kubernetes.labels", ".message", ".foo"},
-								},
+							Name: "my-prune",
+							Type: obs.FilterTypePrune,
+							PruneFilterSpec: &obs.PruneFilterSpec{
+								NotIn: []string{".kubernetes.labels", ".message", ".foo"},
 							},
 						},
-					},
+					}),
 					inputSpecs,
 				)
 				Expect(adapter.Filters).To(HaveLen(2), "expected VIA and prune filter to be added to the pipeline")
@@ -108,18 +104,16 @@ var _ = Describe("pipeline/adapter.go", func() {
 				}, map[string]helpers.InputComponent{
 					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
-					map[string]*filter.InternalFilterSpec{
+					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
-							FilterSpec: &obs.FilterSpec{
-								Name: "my-prune",
-								Type: obs.FilterTypePrune,
-								PruneFilterSpec: &obs.PruneFilterSpec{
-									In:    []string{".kubernetes.labels.foo", ".log_type", ".message"},
-									NotIn: []string{".kubernetes.container_name", `.foo.bar."baz/bar"`, `.foo`},
-								},
+							Name: "my-prune",
+							Type: obs.FilterTypePrune,
+							PruneFilterSpec: &obs.PruneFilterSpec{
+								In:    []string{".kubernetes.labels.foo", ".log_type", ".message"},
+								NotIn: []string{".kubernetes.container_name", `.foo.bar."baz/bar"`, `.foo`},
 							},
 						},
-					},
+					}),
 					inputSpecs,
 				)
 				Expect(adapter.Filters).To(HaveLen(2), "expected a VIA and prune filter to be added to the pipeline")
@@ -140,21 +134,19 @@ var _ = Describe("pipeline/adapter.go", func() {
 			}, map[string]helpers.InputComponent{
 				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
-				map[string]*filter.InternalFilterSpec{
+				filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 					"my-audit": {
-						FilterSpec: &obs.FilterSpec{
-							Name: "my-audit",
-							Type: obs.FilterTypeKubeAPIAudit,
-							KubeAPIAudit: &obs.KubeAPIAudit{
-								Rules: []auditv1.PolicyRule{
-									{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
-									{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other GET requests
-									{Level: auditv1.LevelMetadata},                                       // Metadata for everything else.
-								},
+						Name: "my-audit",
+						Type: obs.FilterTypeKubeAPIAudit,
+						KubeAPIAudit: &obs.KubeAPIAudit{
+							Rules: []auditv1.PolicyRule{
+								{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
+								{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other GET requests
+								{Level: auditv1.LevelMetadata},                                       // Metadata for everything else.
 							},
 						},
 					},
-				},
+				}),
 				inputSpecs,
 			)
 			Expect(adapter.Filters).To(HaveLen(2), "expected VIAQ and kubeapi filter to be added to the pipeline")
@@ -176,40 +168,38 @@ var _ = Describe("pipeline/adapter.go", func() {
 				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				inputSpecs[1].Name: input.NewInput(inputSpecs[1], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
-				map[string]*filter.InternalFilterSpec{
+				filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 					"my-drop-filter": {
-						FilterSpec: &obs.FilterSpec{
-							Name: "my-drop-filter",
-							Type: obs.FilterTypeDrop,
-							DropTestsSpec: []obs.DropTest{
-								{
-									DropConditions: []obs.DropCondition{
-										{
-											Field:      ".kubernetes.namespace_name",
-											NotMatches: "very-important",
-										},
-										{
-											Field:   ".level",
-											Matches: "warning|error|critical",
-										},
+						Name: "my-drop-filter",
+						Type: obs.FilterTypeDrop,
+						DropTestsSpec: []obs.DropTest{
+							{
+								DropConditions: []obs.DropCondition{
+									{
+										Field:      ".kubernetes.namespace_name",
+										NotMatches: "very-important",
+									},
+									{
+										Field:   ".level",
+										Matches: "warning|error|critical",
 									},
 								},
-								{
-									DropConditions: []obs.DropCondition{
-										{
-											Field:   ".message",
-											Matches: "foobar",
-										},
-										{
-											Field:      `.kubernetes.namespace_labels."test-dashes/slashes"`,
-											NotMatches: "true",
-										},
+							},
+							{
+								DropConditions: []obs.DropCondition{
+									{
+										Field:   ".message",
+										Matches: "foobar",
+									},
+									{
+										Field:      `.kubernetes.namespace_labels."test-dashes/slashes"`,
+										NotMatches: "true",
 									},
 								},
 							},
 						},
 					},
-				},
+				}),
 				inputSpecs,
 			)
 			Expect(adapter.Filters).To(HaveLen(3), "expected VIAQ and drop filter to be added to the pipeline")

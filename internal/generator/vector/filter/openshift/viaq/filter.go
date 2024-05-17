@@ -94,7 +94,7 @@ func journalSource(vrls []string, inputs []obs.InputSpec) []string {
 
 func HasJournalSource(inputs []obs.InputSpec) bool {
 	for _, i := range inputs {
-		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceNode) || len(i.Infrastructure.Sources) == 0) {
+		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (len(i.Infrastructure.Sources) == 0 || set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceNode)) {
 			return true
 		}
 	}
@@ -106,7 +106,7 @@ func hasContainerSource(inputSpecs []obs.InputSpec) bool {
 		if i.Type == obs.InputTypeApplication {
 			return true
 		}
-		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer) || len(i.Infrastructure.Sources) == 0) {
+		if i.Type == obs.InputTypeInfrastructure && i.Infrastructure != nil && (len(i.Infrastructure.Sources) == 0 || set.New(i.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer)) {
 			return true
 		}
 	}

@@ -83,7 +83,7 @@ func FilteredBytes(policy *obs.KubeAPIAudit, b []byte) []byte {
 }
 
 func vectorCmd(p *obs.KubeAPIAudit) *exec.Cmd {
-	vrl, err := apiaudit.PolicyToVRL(p)
+	vrl, err := apiaudit.NewFilter(p).VRL()
 	Expect(err).NotTo(HaveOccurred(), "%#v", *p)
 	conf := fmt.Sprintf(`
 # Vector config for tests that read from stdin and print filtered events to stdout

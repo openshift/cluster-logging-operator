@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
@@ -21,8 +22,7 @@ import (
 )
 
 func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
-	//secret := helpers.GetOutputSecret(o, secrets)
-	helpers.SetTLSProfileOptions(o, op)
+	op.SetTLSProfileOptionsFrom(o)
 
 	var els []Element
 	baseID := helpers.MakeOutputID(o.Name)

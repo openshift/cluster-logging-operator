@@ -14,9 +14,7 @@ import (
 )
 
 var _ = Describe("output/factory.go", func() {
-	defer GinkgoRecover()
-	Skip("TODO: Enable me after rewire")
-	// TODO: I don't this these tests are relevant anymore/ or need to redo them
+
 	DescribeTable("#New", func(o obs.OutputSpec, secrets map[string]*corev1.Secret, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
@@ -25,25 +23,6 @@ var _ = Describe("output/factory.go", func() {
 		Expect(string(exp)).To(EqualConfigFrom(New(o, []string{"application"}, secrets, &Output{}, framework.Options{})))
 
 	},
-		Entry("should honor global minTLSVersion & ciphers with loki as the default logstore regardless of the feature gate setting",
-			obs.OutputSpec{
-				Type: obs.OutputTypeLoki,
-				Name: "default-loki-apps",
-				Loki: &obs.Loki{
-					URLSpec: obs.URLSpec{
-						URL: "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
-					},
-				},
-			},
-			map[string]*corev1.Secret{
-				constants.LogCollectorToken: {
-					Data: map[string][]byte{
-						"token": []byte("token-for-loki"),
-					},
-				},
-			},
-			"factory_test_loki_no_throttle.toml",
-		),
 		Entry("should add output throttling when present",
 			obs.OutputSpec{
 				Type: obs.OutputTypeLoki,
@@ -52,9 +31,25 @@ var _ = Describe("output/factory.go", func() {
 					URLSpec: obs.URLSpec{
 						URL: "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
 					},
+					Authentication: &obs.HTTPAuthentication{
+						Token: &obs.BearerToken{
+							Key: constants.TokenKey,
+							Secret: &corev1.LocalObjectReference{
+								Name: constants.LogCollectorToken,
+							},
+						},
+					},
 				},
 				Limit: &obs.LimitSpec{
 					MaxRecordsPerSecond: 100,
+				},
+				TLS: &obs.OutputTLSSpec{
+					CA: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: constants.LogCollectorToken,
+						},
+						Key: "service-ca.crt",
+					},
 				},
 			},
 			map[string]*corev1.Secret{

@@ -12,7 +12,9 @@ const (
 )
 
 func (o Output) VisitSink(s common.SinkConfig) {
-	s.SetCompression(o.tuning.Compression)
+	if o.tuning.Compression != "" {
+		s.SetCompression(o.tuning.Compression)
+	}
 }
 
 func (o Output) VisitAcknowledgements(a common.Acknowledgments) common.Acknowledgments {

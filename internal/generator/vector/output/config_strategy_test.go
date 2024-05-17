@@ -28,19 +28,6 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 	)
 
 	Context("Compression", func() {
-		It("should not set the compression when none", func() {
-			output := NewOutput(obs.OutputSpec{
-				Type: obs.OutputTypeElasticsearch,
-				Elasticsearch: &obs.Elasticsearch{
-					Tuning: &obs.ElasticsearchTuningSpec{
-						Compression: "none",
-					},
-				},
-			}, nil, framework.NoOptions)
-			sink := &fakeSink{}
-			output.VisitSink(sink)
-			Expect(sink.Compression).To(BeEmpty())
-		})
 		It("should not set the compression when empty", func() {
 			output := NewOutput(obs.OutputSpec{
 				Type: obs.OutputTypeElasticsearch,

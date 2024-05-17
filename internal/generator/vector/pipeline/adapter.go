@@ -97,16 +97,15 @@ func addPrefilters(p *Pipeline) {
 		}
 	}
 
+	prefilters = append(prefilters, viaq.Viaq)
+	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
+		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
+		SuppliesTransform: true,
+		TranformFactory: func(id string, inputs ...string) framework.Element {
+			return viaq.New(id, inputs, p.inputSpecs)
+		},
+	}
 	//TODO: ENABLE ME
-	//prefilters = append(prefilters, viaq.Viaq)
-	//p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
-	//	FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
-	//	SuppliesTransform: true,
-	//	TranformFactory: func(id string, inputs ...string) framework.Element {
-	//		return viaq.New(id, inputs, p.Labels, p.inputSpecs)
-	//	},
-	//	Labels: p.Labels,
-	//}
 	//if p.DetectMultilineErrors {
 	//	p.filterMap[openshiftfilter.DetectMultilineException] = filter.InternalFilterSpec{
 	//		FilterSpec:        &logging.FilterSpec{Type: openshiftfilter.DetectMultilineException},
@@ -198,7 +197,9 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 func (o *PipelineFilter) Element() framework.Element {
 	inputs := []string{}
 	for _, n := range o.Next {
-		inputs = append(inputs, n.InputIDs()...)
+		if n != nil {
+			inputs = append(inputs, n.InputIDs()...)
+		}
 	}
 	if o.transformFactory != nil {
 		return o.transformFactory(inputs...)

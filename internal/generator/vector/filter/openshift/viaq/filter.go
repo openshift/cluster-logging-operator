@@ -1,7 +1,6 @@
 package viaq
 
 import (
-	"encoding/json"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -16,13 +15,13 @@ const (
 	ViaqJournal = "viaqjournal"
 )
 
-func New(id string, inputs []string, labels map[string]string, inputSpecs []obs.InputSpec) framework.Element {
+func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
 
 	vrls := auditHost([]string{}, inputSpecs)
 	vrls = auditKube(vrls, inputSpecs)
 	vrls = auditOpenShift(vrls, inputSpecs)
 	vrls = auditOVN(vrls, inputSpecs)
-	vrls = containerSource(vrls, inputSpecs, labels)
+	vrls = containerSource(vrls, inputSpecs)
 	vrls = journalSource(vrls, inputSpecs)
 	return elements.Remap{
 		ComponentID: id,
@@ -31,12 +30,7 @@ func New(id string, inputs []string, labels map[string]string, inputSpecs []obs.
 	}
 }
 
-func containerLogs(labels map[string]string) string {
-	labelsVRL := ""
-	if len(labels) != 0 {
-		s, _ := json.Marshal(labels)
-		labelsVRL = fmt.Sprintf(".openshift.labels = %s", s)
-	}
+func containerLogs() string {
 	return fmt.Sprintf(`
 if .log_source == "%s" {
   %s
@@ -51,7 +45,6 @@ if .log_source == "%s" {
 		RemoveNodeLabels,
 		RemoveTimestampEnd,
 		FixTimestampField,
-		labelsVRL,
 		VRLOpenShiftSequence,
 		VRLDedotLabels,
 	}), "\n"))
@@ -85,9 +78,9 @@ func auditHost(vrls []string, inputs []obs.InputSpec) []string {
 	return vrls
 }
 
-func containerSource(vrls []string, inputs []obs.InputSpec, labels map[string]string) []string {
+func containerSource(vrls []string, inputs []obs.InputSpec) []string {
 	if hasContainerSource(inputs) {
-		vrls = append(vrls, containerLogs(labels))
+		vrls = append(vrls, containerLogs())
 	}
 	return vrls
 }

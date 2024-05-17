@@ -26,8 +26,6 @@ func (m FakeInputAdapter) InputIDs() []string {
 }
 
 var _ = Describe("pipeline/adapter.go", func() {
-	defer GinkgoRecover()
-	Skip("TODO: ENABLE ME")
 	var (
 		mustLoad = func(expFile string) string {
 

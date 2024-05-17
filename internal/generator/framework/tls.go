@@ -21,3 +21,8 @@ func (op Options) TLSProfileInfo(outputSpec obs.OutputSpec, separator string) (s
 	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), separator)
 	return minTlsVersion, cipherSuites
 }
+
+// SetTLSProfileOptionsFrom updates options to set the TLS profile based upon the output spec
+func (op Options) SetTLSProfileOptionsFrom(o obs.OutputSpec) {
+	op[MinTLSVersion], op[Ciphers] = op.TLSProfileInfo(o, ",")
+}

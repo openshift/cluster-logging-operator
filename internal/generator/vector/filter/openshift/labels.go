@@ -3,15 +3,16 @@ package openshift
 import (
 	"encoding/json"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
-const (
-	Labels = string(obs.FilterTypeOpenshiftLabels)
-)
+type LabelsFilter map[string]string
 
-func NewLabels(labels map[string]string) (string, error) {
-	if labels != nil && len(labels) != 0 {
+func NewLabelsFilter(labels map[string]string) LabelsFilter {
+	return labels
+}
+
+func (labels LabelsFilter) VRL() (string, error) {
+	if len(labels) != 0 {
 		s, _ := json.Marshal(labels)
 		return fmt.Sprintf(".openshift.labels = %s", s), nil
 	}

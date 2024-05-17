@@ -25,18 +25,24 @@ var (
 	dedottedFields = []string{".kubernetes.labels.", ".kubernetes.namespace_labels."}
 )
 
-func MakePruneFilter(pruneFilterSpec *obs.PruneFilterSpec) (vrl string, err error) {
+type PruneFilter obs.PruneFilterSpec
+
+func NewFilter(pruneFilterSpec *obs.PruneFilterSpec) PruneFilter {
+	return PruneFilter(*pruneFilterSpec)
+}
+
+func (f PruneFilter) VRL() (string, error) {
 	Prune := Prune{}
-	if pruneFilterSpec.NotIn != nil {
-		Prune.NotIn = generateQuotedPathSegmentArrayStr(pruneFilterSpec.NotIn)
+	if f.NotIn != nil {
+		Prune.NotIn = generateQuotedPathSegmentArrayStr(f.NotIn)
 	}
-	if pruneFilterSpec.In != nil {
-		Prune.In = generateQuotedPathSegmentArrayStr(pruneFilterSpec.In)
+	if f.In != nil {
+		Prune.In = generateQuotedPathSegmentArrayStr(f.In)
 	}
 
 	// Execute Go template to generate VRL
 	w := &strings.Builder{}
-	err = PruneVRLTemplate.Execute(w, Prune)
+	err := PruneVRLTemplate.Execute(w, Prune)
 	return w.String(), err
 }
 

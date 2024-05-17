@@ -24,9 +24,17 @@ var DefaultOmitResponseCodes = []int{
 	http.StatusUnprocessableEntity,
 	http.StatusTooManyRequests}
 
-func PolicyToVRL(p *obs.KubeAPIAudit) (string, error) {
-	if p == nil {
-		p = &obs.KubeAPIAudit{} // Treat missing as empty.
+type Filter struct {
+	*obs.KubeAPIAudit
+}
+
+func NewFilter(p *obs.KubeAPIAudit) Filter {
+	return Filter{p}
+}
+
+func (p Filter) VRL() (string, error) {
+	if p.KubeAPIAudit == nil {
+		p.KubeAPIAudit = &obs.KubeAPIAudit{} // Treat missing as empty.
 	}
 	if p.OmitResponseCodes == nil {
 		p.OmitResponseCodes = &DefaultOmitResponseCodes

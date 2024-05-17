@@ -105,20 +105,6 @@ func addPrefilters(p *Pipeline) {
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
-	//TODO: ENABLE ME
-	//if p.DetectMultilineErrors {
-	//	p.filterMap[openshiftfilter.DetectMultilineException] = filter.InternalFilterSpec{
-	//		FilterSpec:        &logging.FilterSpec{Type: openshiftfilter.DetectMultilineException},
-	//		SuppliesTransform: true,
-	//		TranformFactory:   openshiftfilter.NewDetectException,
-	//	}
-	//	prefilters = append(prefilters, openshiftfilter.DetectMultilineException)
-	//}
-	//if p.Parse == openshiftfilter.ParseTypeJson {
-	//	p.filterMap[openshiftfilter.ParseJson] = filter.InternalFilterSpec{
-	//		FilterSpec: &logging.FilterSpec{Type: openshiftfilter.ParseJson}}
-	//	prefilters = append(prefilters, openshiftfilter.ParseJson)
-	//}
 	p.FilterRefs = append(prefilters, p.FilterRefs...)
 }
 
@@ -179,7 +165,7 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 		}
 	}
 
-	if vrl, err := filter.VRLFrom(&spec); err != nil {
+	if vrl, err := spec.RemapFilter.VRL(); err != nil {
 		log.Error(err, "bad filter", "filterRef", filterRef, "spec.type", spec.Type, "spec.Name", spec.Name)
 		return nil
 	} else {

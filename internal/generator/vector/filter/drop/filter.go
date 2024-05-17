@@ -6,10 +6,18 @@ import (
 	"strings"
 )
 
-// MakeDropFilter returns a concatenated vrl string of tests and their conditions
-func MakeDropFilter(dropTestsSpec []obs.DropTest) (string, error) {
+type Filter struct {
+	tests []obs.DropTest
+}
+
+// NewFilter returns a drop filter
+func NewFilter(dropTestsSpec []obs.DropTest) *Filter {
+	return &Filter{dropTestsSpec}
+}
+
+func (f *Filter) VRL() (string, error) {
 	vrlTests := []string{}
-	for _, test := range dropTestsSpec {
+	for _, test := range f.tests {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
 			if cond.Matches != "" {

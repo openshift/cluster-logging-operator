@@ -16,12 +16,12 @@ package v1
 
 // FilterType specifies the type of filter used in a pipeline
 //
-// +kubebuilder:validation:Enum:=addLabels;detectMultiline;drop;kubeAPIAudit;parse;prune
+// +kubebuilder:validation:Enum:=openShiftLabels;detectMultilineException;drop;kubeAPIAudit;parse;prune
 type FilterType string
 
 // Filter type constants, must match JSON tags of FilterTypeSpec fields.
 const (
-	FilterTypeAddLabels       FilterType = "addLabels"
+	FilterTypeOpenshiftLabels FilterType = "openShiftLabels"
 	FilterTypeDetectMultiline FilterType = "detectMultiline"
 	FilterTypeDrop            FilterType = "drop"
 	FilterTypeKubeAPIAudit    FilterType = "kubeAPIAudit"
@@ -31,7 +31,7 @@ const (
 
 var (
 	FilterTypes = []FilterType{
-		FilterTypeAddLabels,
+		FilterTypeOpenshiftLabels,
 		FilterTypeDetectMultiline,
 		FilterTypeDrop,
 		FilterTypeKubeAPIAudit,
@@ -66,6 +66,12 @@ type FilterSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	PruneFilterSpec *PruneFilterSpec `json:"prune,omitempty"`
+
+	// Labels applied to log records passing through a pipeline.
+	// These labels appear in the `openshift.labels` map in the log record.
+	//
+	// +kubebuilder:validation:Optional
+	OpenShiftLabels map[string]string `json:"openShiftLabels,omitempty"`
 }
 
 type DropTest struct {

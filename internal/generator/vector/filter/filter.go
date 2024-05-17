@@ -26,6 +26,8 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 		}
 	}()
 	switch filterSpec.Type {
+	case obs.FilterTypeOpenshiftLabels:
+		return openshift.NewLabels(filterSpec.OpenShiftLabels)
 	case obs.FilterTypeDrop:
 		return drop.MakeDropFilter(filterSpec.DropTestsSpec)
 	case obs.FilterTypePrune:
@@ -44,7 +46,6 @@ func VRLFrom(filterSpec *InternalFilterSpec) (vrl string, err error) {
 // InternalFilterSpec is a wrapper to allow separation of public and internal filters
 type InternalFilterSpec struct {
 	*obs.FilterSpec
-	Labels            map[string]string
 	SuppliesTransform bool
 
 	//TranformFactory takes an id, inputs and returns an Element

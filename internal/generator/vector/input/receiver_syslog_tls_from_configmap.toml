@@ -1,0 +1,17 @@
+[sources.input_myreceiver]
+type = "syslog"
+address = "[::]:12345"
+mode = "tcp"
+
+[sources.input_myreceiver.tls]
+key_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.key"
+crt_file = "/var/run/ocp-collector/config/instance-myreceiver/my.crt"
+ca_file = "/var/run/ocp-collector/config/instance-myreceiver/ca.crt"
+
+[transforms.input_myreceiver_meta]
+type = "remap"
+inputs = ["input_myreceiver"]
+source = '''
+  .log_source = "node"
+  .log_type = "infrastructure"
+'''

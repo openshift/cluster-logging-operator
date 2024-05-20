@@ -45,7 +45,7 @@ func ConfigMapOrSecretPath(resource *obs.ConfigMapOrSecretKey) string {
 	if resource.Secret != nil {
 		return helpers.SecretPath(resource.Secret.Name, resource.Key)
 	} else if resource.ConfigMap != nil {
-		return helpers.AuthPath(resource.ConfigMap.Name, resource.Key)
+		return helpers.ConfigPath(resource.ConfigMap.Name, resource.Key)
 	}
 	return ""
 }

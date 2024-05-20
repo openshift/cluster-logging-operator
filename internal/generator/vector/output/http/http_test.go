@@ -110,6 +110,29 @@ var _ = Describe("Generate vector config", func() {
 				spec.HTTP.Authentication = nil
 				spec.TLS = tlsSpec
 			}, secrets, framework.NoOptions, "http_with_tls.toml"),
+			Entry("with token auth", func(spec *obs.OutputSpec) {
+				spec.HTTP.Authentication = nil
+				spec.TLS = &obs.OutputTLSSpec{
+					CA: &obs.ConfigMapOrSecretKey{
+						ConfigMap: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: "ca.crt",
+					},
+					Certificate: &obs.ConfigMapOrSecretKey{
+						ConfigMap: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: "my.crt",
+					},
+					Key: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientPrivateKey,
+					},
+				}
+			}, secrets, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
 		)
 	})
 

@@ -56,8 +56,8 @@ func ListenOnAllLocalInterfacesAddress() string {
 	return listenAllAddress
 }
 
-func AuthPath(name string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/auth", name, file))
+func ConfigPath(name string, file string) string {
+	return fmt.Sprintf("%q", filepath.Join("/var/run/ocp-collector/config", name, file))
 }
 
 func SecretPath(secretName string, file string) string {

@@ -365,5 +365,35 @@ var _ = Describe("inputs", func() {
 		},
 			"receiver_syslog.toml",
 		),
+		Entry("with a syslog receiver and tls from configmaps", obs.InputSpec{
+			Type: obs.InputTypeReceiver,
+			Name: "myreceiver",
+			Receiver: &obs.ReceiverSpec{
+				Type: obs.ReceiverTypeSyslog,
+				Port: 12345,
+				TLS: &obs.InputTLSSpec{
+					CA: &obs.ConfigMapOrSecretKey{
+						ConfigMap: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: "ca.crt",
+					},
+					Certificate: &obs.ConfigMapOrSecretKey{
+						ConfigMap: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: "my.crt",
+					},
+					Key: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.ClientPrivateKey,
+					},
+				},
+			},
+		},
+			"receiver_syslog_tls_from_configmap.toml",
+		),
 	)
 })

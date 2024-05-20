@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-05-16T15:26:45Z"
+    createdAt: "2024-01-09T03:03:58Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -135,7 +135,6 @@ metadata:
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
-    operators.openshift.io/must-gather-image: quay.io/openshift-logging/cluster-logging-operator:5.9
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift
       Container Platform", "OpenShift Platform Plus"]'
     operators.operatorframework.io/builder: operator-sdk-unknown

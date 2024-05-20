@@ -39,31 +39,33 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		}
 
 		tlsSpec = &obs.OutputTLSSpec{
-			CA: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretTlsName,
-				},
-				Key: constants.TrustedCABundleKey,
-			},
-			Certificate: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretTlsName,
-				},
-				Key: constants.ClientCertKey,
-			},
-			Key: &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretTlsName,
-				},
-				Key: constants.ClientPrivateKey,
-			},
-			KeyPassphrase: &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
-				},
-				Key: constants.Passphrase,
-			},
 			InsecureSkipVerify: true,
+			TLSSpec: obs.TLSSpec{
+				CA: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretTlsName,
+					},
+					Key: constants.TrustedCABundleKey,
+				},
+				Certificate: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretTlsName,
+					},
+					Key: constants.ClientCertKey,
+				},
+				Key: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretTlsName,
+					},
+					Key: constants.ClientPrivateKey,
+				},
+				KeyPassphrase: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.Passphrase,
+				},
+			},
 		}
 		outputCommon = obs.OutputSpec{
 			Type: loggingv1.OutputTypeAzureMonitor,

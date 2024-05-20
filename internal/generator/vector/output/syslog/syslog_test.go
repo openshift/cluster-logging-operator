@@ -21,29 +21,31 @@ var _ = Describe("vector syslog clf output", func() {
 
 	var (
 		tlsSpec = &obs.OutputTLSSpec{
-			CA: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+			TLSSpec: obs.TLSSpec{
+				CA: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.TrustedCABundleKey,
 				},
-				Key: constants.TrustedCABundleKey,
-			},
-			Certificate: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+				Certificate: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.ClientCertKey,
 				},
-				Key: constants.ClientCertKey,
-			},
-			Key: &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+				Key: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.ClientPrivateKey,
 				},
-				Key: constants.ClientPrivateKey,
-			},
-			KeyPassphrase: &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+				KeyPassphrase: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.Passphrase,
 				},
-				Key: constants.Passphrase,
 			},
 		}
 		initOutput = func() obs.OutputSpec {

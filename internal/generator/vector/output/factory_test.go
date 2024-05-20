@@ -44,11 +44,13 @@ var _ = Describe("output/factory.go", func() {
 					MaxRecordsPerSecond: 100,
 				},
 				TLS: &obs.OutputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: constants.LogCollectorToken,
+					TLSSpec: obs.TLSSpec{
+						CA: &obs.ConfigMapOrSecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: constants.LogCollectorToken,
+							},
+							Key: "service-ca.crt",
 						},
-						Key: "service-ca.crt",
 					},
 				},
 			},

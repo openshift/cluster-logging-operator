@@ -34,25 +34,27 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 		var (
 			tlsSpec = &obs.OutputTLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: vectorTLSSecret,
-					},
-					Key: constants.TrustedCABundleKey,
-				},
-				Certificate: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: vectorTLSSecret,
-					},
-					Key: constants.ClientCertKey,
-				},
-				Key: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: vectorTLSSecret,
-					},
-					Key: constants.ClientPrivateKey,
-				},
 				InsecureSkipVerify: false,
+				TLSSpec: obs.TLSSpec{
+					CA: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: vectorTLSSecret,
+						},
+						Key: constants.TrustedCABundleKey,
+					},
+					Certificate: &obs.ConfigMapOrSecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: vectorTLSSecret,
+						},
+						Key: constants.ClientCertKey,
+					},
+					Key: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: vectorTLSSecret,
+						},
+						Key: constants.ClientPrivateKey,
+					},
+				},
 			}
 
 			initOutput = func() obs.OutputSpec {

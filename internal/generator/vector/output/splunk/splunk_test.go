@@ -34,23 +34,25 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 			},
 		}
 		tlsSpec = &obs.OutputTLSSpec{
-			CA: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+			TLSSpec: obs.TLSSpec{
+				CA: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.TrustedCABundleKey,
 				},
-				Key: constants.TrustedCABundleKey,
-			},
-			Certificate: &obs.ConfigMapOrSecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+				Certificate: &obs.ConfigMapOrSecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.ClientCertKey,
 				},
-				Key: constants.ClientCertKey,
-			},
-			Key: &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secretName,
+				Key: &obs.SecretKey{
+					Secret: &corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: constants.ClientPrivateKey,
 				},
-				Key: constants.ClientPrivateKey,
 			},
 		}
 		initOutput = func() obs.OutputSpec {

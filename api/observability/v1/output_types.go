@@ -114,26 +114,7 @@ type OutputSpec struct {
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
 type OutputTLSSpec struct {
-	// CA can be used to specify a custom list of trusted certificate authorities.
-	//
-	// +kubebuilder:validation:Optional
-	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
-
-	// Certificate points to the public certificate to use.
-	//
-	// +kubebuilder:validation:Optional
-	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
-
-	// Key points to the private key certificate to use.
-	//
-	// +kubebuilder:validation:Optional
-	Key *SecretKey `json:"key,omitempty"`
-
-	// KeyPassphrase points to the passphrase used to unlock the private key.
-	//
-	// +kubebuilder:validation:Optional
-	KeyPassphrase *SecretKey `json:"keyPassphrase,omitempty"`
-
+	TLSSpec `json:",inline"`
 	// If InsecureSkipVerify is true, then the TLS client will be configured to skip validating server certificates.
 	//
 	// This option is *not* recommended for production configurations.

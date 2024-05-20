@@ -44,10 +44,12 @@ func receiverTLS(id string, spec *obs.InputTLSSpec, secrets helpers.Secrets, op 
 		return generator.Nil
 	}
 	tlsSpec := &obs.OutputTLSSpec{
-		CA:            spec.CA,
-		Certificate:   spec.Certificate,
-		Key:           spec.Key,
-		KeyPassphrase: spec.KeyPassphrase,
+		TLSSpec: obs.TLSSpec{
+			CA:            spec.CA,
+			Certificate:   spec.Certificate,
+			Key:           spec.Key,
+			KeyPassphrase: spec.KeyPassphrase,
+		},
 	}
 	template := tls.New(id, tlsSpec, secrets, op)
 	template.Component = "sources"

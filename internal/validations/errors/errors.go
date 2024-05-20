@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	NotAuthorizedToCollect = "Not authorized to collect"
+	NotAuthorizedToCollect = "not authorized to collect"
 )
 
 type ValidationError struct {
@@ -32,5 +32,5 @@ func IsValidationError(err error) bool {
 }
 
 func MustUndeployCollector(err error) bool {
-	return strings.Contains(err.Error(), NotAuthorizedToCollect)
+	return strings.Contains(strings.ToLower(err.Error()), NotAuthorizedToCollect)
 }

@@ -6,14 +6,12 @@ import (
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/yaml"
-
-	log "github.com/ViaQ/logerr/v2/log/static"
-	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -26,6 +24,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/yaml"
 )
 
 func init() {
@@ -59,23 +58,39 @@ func NewReconciler(c client.Client, cf Config, visSpec *logging.VisualizationSpe
 	return r
 }
 
-func ConsoleCapabilityEnabled(c client.Client, plugin consolev1alpha1.ConsolePlugin) bool {
+// CapabilityEnabled can be used to check if ConsolePlugin is available as a resource in the Kubernetes cluster.
+func CapabilityEnabled(ctx context.Context, c client.Client) bool {
+	key := client.ObjectKey{
+		Name: Name,
+	}
+
 	current := &consolev1alpha1.ConsolePlugin{}
-	key := types.NamespacedName{Namespace: plugin.Namespace, Name: plugin.Name}
-	err := c.Get(context.TODO(), key, current)
+	err := c.Get(ctx, key, current)
 
 	return err == nil || !metaerrors.IsNoMatchError(err)
 }
 
 // Reconcile creates or updates cluster objects to match config.
 func (r *Reconciler) Reconcile(ctx context.Context) error {
-	if !ConsoleCapabilityEnabled(r.c, r.consolePlugin) {
+	if !CapabilityEnabled(ctx, r.c) {
 		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin reconciliation")
 		return nil
 	}
+
+	cooManaged, err := r.checkObservabilityOperator(ctx)
+	switch {
+	case err != nil:
+		return fmt.Errorf("error checking for observability operator managed ConsolePlugin: %w", err)
+	case cooManaged:
+		// ConsolePlugin is managed by COO -> we're done here
+		return nil
+	default:
+		// No error and not managed by COO -> continue normally
+	}
+
 	modified := false
 	// Call CreateOrUpdate for each object.
-	err := r.each(func(m mutable) error {
+	err = r.each(func(m mutable) error {
 		return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 			result, err := controllerutil.CreateOrUpdate(ctx, r.c, m.o, m.mutate)
 			if err == nil && result != controllerutil.OperationResultNone {
@@ -98,12 +113,25 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 
 // Delete the consoleplugin and related objects.
 func (r *Reconciler) Delete(ctx context.Context) error {
-	if !ConsoleCapabilityEnabled(r.c, r.consolePlugin) {
+	if !CapabilityEnabled(ctx, r.c) {
 		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin deletion")
 		return nil
 	}
 	var errs []error // Collect errors, don't stop on first.
 	_ = r.each(func(m mutable) error {
+		if m.o == &r.consolePlugin {
+			cooManaged, err := r.isManagedByObservabilityOperator(ctx)
+			if err != nil {
+				errs = append(errs, err)
+				return nil
+			}
+
+			if cooManaged {
+				// Skip removing ConsolePlugin when managed by COO
+				return nil
+			}
+		}
+
 		err := r.c.Delete(ctx, m.o)
 		if err != nil && !apierrors.IsNotFound(err) {
 			errs = append(errs, err)

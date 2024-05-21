@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -189,6 +191,25 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 				}
 				return nil
 			}))
+
+	// Only register Watcher for ConsolePlugin if it is available in cluster
+	if console.CapabilityEnabled(context.TODO(), mgr.GetClient()) {
+		controllerBuilder.Watches(&consolev1alpha1.ConsolePlugin{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
+				// Schedule a reconciliation for ClusterLogging if "our" ConsolePlugin was changed
+				if obj.GetName() == console.Name {
+					return []reconcile.Request{
+						{
+							NamespacedName: types.NamespacedName{
+								Namespace: constants.OpenshiftNS,
+								Name:      constants.SingletonName,
+							},
+						},
+					}
+				}
+				return nil
+			}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+	}
 
 	return controllerBuilder.Complete(r)
 }

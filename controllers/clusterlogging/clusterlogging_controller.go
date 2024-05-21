@@ -15,7 +15,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/consoleplugin"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
@@ -186,6 +188,25 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestsFromMapFunc(toElasticsearchRelatedObjRequestMapper),
 			builder.WithPredicates(onAllExceptGenericEventsPredicate),
 		)
+
+	// Only register Watcher for ConsolePlugin if it is available in cluster
+	if consoleplugin.CapabilityEnabled(context.TODO(), mgr.GetClient()) {
+		controllerBuilder.Watches(&source.Kind{Type: &consolev1alpha1.ConsolePlugin{}},
+			handler.EnqueueRequestsFromMapFunc(func(obj client.Object) []reconcile.Request {
+				// Schedule a reconciliation for ClusterLogging if "our" ConsolePlugin was changed
+				if obj.GetName() == consoleplugin.Name {
+					return []reconcile.Request{
+						{
+							NamespacedName: types.NamespacedName{
+								Namespace: constants.OpenshiftNS,
+								Name:      constants.SingletonName,
+							},
+						},
+					}
+				}
+				return nil
+			}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+	}
 
 	return controllerBuilder.
 		For(&loggingv1.ClusterLogging{}).

@@ -14,7 +14,7 @@ type Input struct {
 	elements []framework.Element
 }
 
-func NewInput(spec obs.InputSpec, secrets helpers.Secrets, collectorNS string, resNames *factory.ForwarderResourceNames, op framework.Options) *Input {
+func NewInput(spec obs.InputSpec, secrets helpers.Secrets, collectorNS string, resNames factory.ForwarderResourceNames, op framework.Options) *Input {
 	elements, ids := NewSource(spec, collectorNS, resNames, secrets, op)
 	return &Input{
 		spec:     spec,

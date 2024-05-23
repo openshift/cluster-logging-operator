@@ -2,35 +2,39 @@ package collector
 
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	v1 "k8s.io/api/core/v1"
 	"path"
 )
 
 // Add volumes and env vars if output type is cloudwatch and role is found in the secret
-func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret, collectorType logging.LogCollectionType) {
+func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec obs.ClusterLogForwarderSpec, secrets helpers.Secrets) {
 	if secrets == nil {
 		return
 	}
-	for _, o := range forwarderSpec.Outputs {
-		if o.Type == logging.OutputTypeCloudwatch {
-			secret := secrets[o.Name]
-			if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
-				log.V(3).Info("Found sts key in secret")
-				if !security.HasAWSWebIdentityTokenFilePath(secret) { //assume legacy case to use SA token
-					AddWebIdentityTokenVolumes(collector, podSpec)
-				}
-				// LOG-4084 fluentd no longer setting env vars
-				if collectorType == logging.LogCollectionTypeVector {
-					log.V(3).Info("Found vector collector")
-					AddWebIdentityTokenEnvVars(collector, o, secret)
-				}
-				return
-			}
-		}
-	}
+	//for _, o := range forwarderSpec.Outputs {
+	// TODO: fix me
+	//if o.Type == obs.OutputTypeCloudwatch && o.Cloudwatch.Authentication != nil {
+	//
+	//	auth := o.Cloudwatch.Authentication
+	//	if auth.Credentials != nil || auth.RoleARN != nil {
+	//		roleARN := cloudwatch.ParseRoleArn(auth, secrets)
+	//		AddWebIdentityTokenEnvVars(collector, o, roleARN)
+	//	}
+	//
+	//	secret := secrets[o.Name]
+	//	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
+	//		log.V(3).Info("Found sts key in secret")
+	//		if !security.HasAWSWebIdentityTokenFilePath(secret) { //assume legacy case to use SA token
+	//			AddWebIdentityTokenVolumes(collector, podSpec)
+	//		}
+	//		AddWebIdentityTokenEnvVars(collector, o, secret)
+	//		return
+	//	}
+	//}
+	//}
 }
 
 // AddWebIdentityTokenVolumes Appends web identity volumes based on attributes of the secret and forwarder spec
@@ -51,7 +55,7 @@ func AddWebIdentityTokenVolumes(collector *v1.Container, podSpec *v1.PodSpec) {
 						{
 							ServiceAccountToken: &v1.ServiceAccountTokenProjection{
 								Audience: "openshift",
-								Path:     constants.AWSWebIdentityTokenFilePath,
+								Path:     constants.TokenKey,
 							},
 						},
 					},
@@ -62,11 +66,12 @@ func AddWebIdentityTokenVolumes(collector *v1.Container, podSpec *v1.PodSpec) {
 }
 
 // AddWebIdentityTokenEnvVars Appends web identity env vars based on attributes of the secret and forwarder spec
-func AddWebIdentityTokenEnvVars(collector *v1.Container, output logging.OutputSpec, secret *v1.Secret) {
-	tokenPath := path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath)
-	if security.HasAWSWebIdentityTokenFilePath(secret) {
-		tokenPath = path.Join(OutputSecretPath(secret.Name), constants.AWSWebIdentityTokenFilePath)
-	}
+func AddWebIdentityTokenEnvVars(collector *v1.Container, output obs.OutputSpec, roleARN string) {
+	tokenPath := path.Join(constants.AWSWebIdentityTokenMount, constants.TokenKey)
+	// TODO: fix me or delete me
+	//if security.HasAWSWebIdentityTokenFilePath(secret) {
+	//	tokenPath = common.SecretPath(secret.Name, constants.TokenKey)
+	//}
 
 	// Necessary for vector to use sts
 	log.V(3).Info("Adding env vars for vector sts Cloudwatch")
@@ -75,11 +80,10 @@ func AddWebIdentityTokenEnvVars(collector *v1.Container, output logging.OutputSp
 			Name:  constants.AWSRegionEnvVarKey,
 			Value: output.Cloudwatch.Region,
 		},
-		// TODO: FIX ME
-		//v1.EnvVar{
-		//	Name:  constants.AWSRoleArnEnvVarKey,
-		//	Value: cloudwatch.ParseRoleArn(secret),
-		//},
+		v1.EnvVar{
+			Name:  constants.AWSRoleArnEnvVarKey,
+			Value: roleARN,
+		},
 		v1.EnvVar{
 			Name:  constants.AWSRoleSessionEnvVarKey,
 			Value: constants.AWSRoleSessionName,

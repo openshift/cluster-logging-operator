@@ -282,7 +282,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 
 	addSecretVolumeMountsToCollector(&f.Pod.Spec, f.Secrets)
-	collector.AddSecretVolumes(&f.Pod.Spec, f.Forwarder.Spec)
+	// TODO: FIX ME FOR FUNCTIONAL TESTS
+	//collector.AddSecretVolumes(&f.Pod.Spec, f.Forwarder.Spec.Inputs, f.Forwarder.Spec.Outputs)
 
 	log.V(2).Info("Creating pod", "pod", f.Pod)
 	if err = f.Test.Client.Create(f.Pod); err != nil {

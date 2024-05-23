@@ -33,9 +33,11 @@ var _ = Describe("output/factory.go", func() {
 					},
 					Authentication: &obs.HTTPAuthentication{
 						Token: &obs.BearerToken{
-							Key: constants.TokenKey,
-							Secret: &corev1.LocalObjectReference{
-								Name: constants.LogCollectorToken,
+							Secret: &obs.SecretKey{
+								Key: constants.TokenKey,
+								Secret: &corev1.LocalObjectReference{
+									Name: constants.LogCollectorToken,
+								},
 							},
 						},
 					},

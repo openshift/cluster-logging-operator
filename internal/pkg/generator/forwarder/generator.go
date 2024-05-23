@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -14,7 +13,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
@@ -61,12 +59,12 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	secrets := map[string]*corev1.Secret{}
 
 	op := framework.Options{}
-	k8shandler.EvaluateAnnotationsForEnabledCapabilities(forwarder.Annotations, op)
+	//k8shandler.EvaluateAnnotationsForEnabledCapabilities(forwarder.Annotations, op)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(nil)
 
-	configGenerator := forwardergenerator.New(internalobs.LogCollectorTypeVector)
+	configGenerator := forwardergenerator.New()
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")
 	}
-	return configGenerator.GenerateConf(secrets, &forwarder.Spec, forwarder.Namespace, forwarder.Name, factory.ResourceNames(*forwarder), op)
+	return configGenerator.GenerateConf(secrets, forwarder.Spec, forwarder.Namespace, forwarder.Name, *factory.ResourceNames(*forwarder), op)
 }

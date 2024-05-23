@@ -55,7 +55,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
@@ -80,7 +80,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
@@ -102,7 +102,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					InputRefs:  []string{"app-in"},
 					FilterRefs: []string{"my-prune"},
 				}, map[string]helpers.InputComponent{
-					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+					inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 				}, map[string]*output.Output{},
 					filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 						"my-prune": {
@@ -132,7 +132,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 				InputRefs:  []string{inputSpecs[0].Name},
 				FilterRefs: []string{"my-audit"},
 			}, map[string]helpers.InputComponent{
-				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
 				filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 					"my-audit": {
@@ -165,8 +165,8 @@ var _ = Describe("pipeline/adapter.go", func() {
 				InputRefs:  []string{inputSpecs[0].Name, inputSpecs[1].Name},
 				FilterRefs: []string{"my-drop-filter"},
 			}, map[string]helpers.InputComponent{
-				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
-				inputSpecs[1].Name: input.NewInput(inputSpecs[1], secrets, "", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[0].Name: input.NewInput(inputSpecs[0], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
+				inputSpecs[1].Name: input.NewInput(inputSpecs[1], secrets, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
 			}, map[string]*output.Output{},
 				filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 					"my-drop-filter": {

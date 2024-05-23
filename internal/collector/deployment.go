@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -16,9 +17,7 @@ import (
 )
 
 // ReconcileDeployment reconciles a deployment specifically for the collector defined by the factory
-func (f *Factory) ReconcileDeployment(er record.EventRecorder, k8sClient client.Client, namespace string, owner metav1.OwnerReference) error {
-	trustedCABundle, trustHash := GetTrustedCABundle(k8sClient, namespace, f.ResourceNames.CaTrustBundle)
-	f.TrustedCAHash = trustHash
+func (f *Factory) ReconcileDeployment(er record.EventRecorder, k8sClient client.Client, namespace string, trustedCABundle *corev1.ConfigMap, owner metav1.OwnerReference) error {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
 
 	var receiverInputs []string

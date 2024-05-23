@@ -1,42 +1,9 @@
 package security
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
-
-type HostnameVerify bool
-
-type TLSCertKey struct {
-	CertPath string
-	KeyPath  string
-}
-
-type UserNamePass struct {
-	UsernamePath string
-	PasswordPath string
-}
-
-type SharedKey struct {
-	Key string
-}
-
-type CAFile struct {
-	CAFilePath string
-}
-
-type Passphrase struct {
-	PassphrasePath string
-}
-
-type BearerTokenFile struct {
-	BearerTokenFilePath string
-}
-
-var NoSecrets = map[string]*corev1.Secret{}
 
 func HasUsernamePassword(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.ClientUsername, constants.ClientPassword)
@@ -63,7 +30,7 @@ func HasBearerTokenFileKey(secret *corev1.Secret) bool {
 }
 
 func HasAWSWebIdentityTokenFilePath(secret *corev1.Secret) bool {
-	return HasKeys(secret, constants.AWSWebIdentityTokenFilePath)
+	return HasKeys(secret, constants.TokenKey)
 }
 
 func HasAwsRoleArnKey(secret *corev1.Secret) bool {
@@ -94,10 +61,6 @@ func HasKeys(secret *corev1.Secret, keys ...string) bool {
 	return true
 }
 
-func SecretPath(name string, file string) string {
-	return fmt.Sprintf("'%s'", filepath.Join("/var/run/ocp-collector/secrets", name, file))
-}
-
 // TryKeys try keys in turn return data for fist one present with ok=true.
 // If none present return ok=false.
 func TryKeys(secret *corev1.Secret, keys ...string) (data []byte, ok bool) {
@@ -108,11 +71,4 @@ func TryKeys(secret *corev1.Secret, keys ...string) (data []byte, ok bool) {
 		}
 	}
 	return nil, false
-}
-
-func GetFromSecret(secret *corev1.Secret, name string) string {
-	if secret != nil {
-		return string(secret.Data[name])
-	}
-	return ""
 }

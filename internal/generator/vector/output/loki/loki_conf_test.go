@@ -131,10 +131,12 @@ var _ = Describe("Generate vector config", func() {
 		Entry("with custom bearer token", "with_custom_bearer_token.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
 				Token: &obs.BearerToken{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretName,
+					Secret: &obs.SecretKey{
+						Secret: &corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: constants.TokenKey,
 					},
-					Key: constants.TokenKey,
 				},
 			}
 		}),

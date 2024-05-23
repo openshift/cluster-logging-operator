@@ -149,8 +149,8 @@ func (in *BearerToken) DeepCopyInto(out *BearerToken) {
 	*out = *in
 	if in.Secret != nil {
 		in, out := &in.Secret, &out.Secret
-		*out = new(corev1.LocalObjectReference)
-		**out = **in
+		*out = new(SecretKey)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.ServiceAccount != nil {
 		in, out := &in.ServiceAccount, &out.ServiceAccount

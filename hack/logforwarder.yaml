@@ -1,12 +1,23 @@
-apiVersion: "logging.openshift.io/v1"
+apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
-  name: instance 
+  name: mine
   namespace: openshift-logging 
 spec:
+  serviceAccount:
+    name: foo
+  inputs:
+    - name: infrastructure
+      type: infrastructure
+      infrastructure: {}
+  outputs:
+    - name: myhttp
+      type: http
+      http:
+        url: http://http-receiver.openshift-logging.svc:8090
   pipelines:
    - name: application-logs 
      inputRefs: 
      - application
      outputRefs:
-     - default 
+     - myhttp

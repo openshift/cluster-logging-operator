@@ -1,7 +1,6 @@
 package k8shandler
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	core "k8s.io/api/core/v1"
@@ -18,11 +17,6 @@ func NewPodSpec(serviceAccountName string, containers []core.Container, volumes 
 		NodeSelector:       utils.EnsureLinuxNodeSelector(nodeSelector),
 		Tolerations:        tolerations,
 	}
-}
-
-// NewContainer stubs an instance of a Container
-func NewContainer(containerName string, imageName string, pullPolicy core.PullPolicy, resources core.ResourceRequirements) core.Container {
-	return factory.NewContainer(containerName, imageName, pullPolicy, resources)
 }
 
 // GetPodList for a given selector and namespace

@@ -77,51 +77,23 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 	return nil
 }
 
-func GetTrustedCABundle(k8sClient client.Client, namespace, name string) (*corev1.ConfigMap, string) {
-
+// WaitForTrustedCAToBePopulated polls for the given configmap to
+func WaitForTrustedCAToBePopulated(k8sClient client.Client, namespace, name string) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
-	trustedCAHash := ""
 	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := k8sClient.Get(context.TODO(), key, cm); err != nil {
 			log.Error(err, "Error retrieving the Trusted CA Bundle")
 			return false, nil
 		}
-		trustedCAHash, err = CalcTrustedCAHashValue(cm)
-		if err != nil {
-			log.V(1).Info("Error trying to calculate the Trusted CA Hash value", "configmapName", name, "key", constants.TrustedCABundleKey, "err", err)
-			return false, nil
+		if caBundle, ok := cm.Data[constants.TrustedCABundleKey]; ok && caBundle != "" {
+			return true, nil
 		}
-		return true, nil
+		log.V(4).Info("Configmap does not include the injected CA", "configmap", cm)
+		return false, nil
 	})
 	if err != nil {
-		log.Error(err, "Error polling for a populated Trusted CA bundle")
+		log.V(4).Error(err, "Error polling for a populated Trusted CA bundle")
 	}
-
-	if trustedCAHash == "" {
-		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", name, "key", constants.TrustedCABundleKey, "err", err)
-	}
-	return cm, trustedCAHash
-}
-
-func CalcTrustedCAHashValue(configMap *corev1.ConfigMap) (string, error) {
-	hashValue := ""
-	var err error
-
-	if configMap == nil {
-		return hashValue, nil
-	}
-	caBundle, ok := configMap.Data[constants.TrustedCABundleKey]
-	if ok && caBundle != "" {
-		hashValue, err = utils.CalculateMD5Hash(caBundle)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if !ok {
-		return "", fmt.Errorf("Expected key %v does not exist in %v", constants.TrustedCABundleKey, configMap.Name)
-	}
-
-	return hashValue, nil
+	return cm
 }

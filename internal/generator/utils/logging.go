@@ -2,12 +2,11 @@ package utils
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 // GatherSources collects the set of unique source types and namespaces
-func GatherSources(forwarder *logging.ClusterLogForwarderSpec, op framework.Options) sets.String {
+func GatherSources(forwarder *logging.ClusterLogForwarderSpec) sets.String {
 	types := sets.NewString()
 	specs := forwarder.InputMap()
 	for inputName := range logging.NewRoutes(forwarder.Pipelines).ByInput {

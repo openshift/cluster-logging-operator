@@ -2,6 +2,7 @@ package tls
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -43,9 +44,9 @@ func ConfigMapOrSecretPath(resource *obs.ConfigMapOrSecretKey) string {
 		return ""
 	}
 	if resource.Secret != nil {
-		return helpers.SecretPath(resource.Secret.Name, resource.Key)
+		return common.SecretPath(resource.Secret.Name, resource.Key)
 	} else if resource.ConfigMap != nil {
-		return helpers.ConfigPath(resource.ConfigMap.Name, resource.Key)
+		return common.ConfigmapPath(resource.ConfigMap.Name, resource.Key)
 	}
 	return ""
 }
@@ -54,7 +55,7 @@ func SecretPath(resource *obs.SecretKey) string {
 	if resource == nil || resource.Secret == nil {
 		return ""
 	}
-	return helpers.SecretPath(resource.Secret.Name, resource.Key)
+	return common.SecretPath(resource.Secret.Name, resource.Key)
 }
 
 func setTLSProfileFromOptions(t *TLSConf, op framework.Options) {

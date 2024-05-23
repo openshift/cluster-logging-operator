@@ -765,6 +765,14 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+              managementState:
+                default: Managed
+                description: Indicator if the resource is 'Managed' or 'Unmanaged'
+                  by the operator
+                enum:
+                - Managed
+                - Unmanaged
+                type: string
               outputs:
                 description: Outputs are named destinations for log messages.
                 items:

@@ -19,11 +19,9 @@ var _ = Describe("#NewDeployment", func() {
 			constants.CollectorDeploymentKind: constants.DeploymentType,
 		}
 		expLabels = map[string]string{
-			"provider":                           "openshift",
-			"component":                          "thecomponent",
-			"logging-infra":                      "thecomponent",
-			"pod-security.kubernetes.io/enforce": "privileged",
-			"security.openshift.io/scc.podSecurityLabelSync": "false",
+			"provider":                        "openshift",
+			"component":                       "thecomponent",
+			"logging-infra":                   "thecomponent",
 			"implementation":                  "collectorImpl",
 			constants.CollectorDeploymentKind: constants.DeploymentType,
 		}

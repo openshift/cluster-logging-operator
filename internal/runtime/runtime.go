@@ -114,10 +114,6 @@ func Initialize(o runtime.Object, namespace, name string, visitors ...func(o run
 	m.SetNamespace(namespace)
 	m.SetName(name)
 	o.GetObjectKind().SetGroupVersionKind(GroupVersionKind(o))
-	m.SetLabels(map[string]string{
-		"pod-security.kubernetes.io/enforce":             "privileged",
-		"security.openshift.io/scc.podSecurityLabelSync": "false",
-	})
 	for _, visitor := range visitors {
 		visitor(o)
 	}

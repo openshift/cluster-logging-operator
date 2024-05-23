@@ -196,7 +196,7 @@ type BearerToken struct {
 	// Use Secret if the value should be sourced from a Secret in the same namespace.
 	//
 	// +kubebuilder:validation:Optional
-	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+	Secret *SecretKey `json:"secret,omitempty"`
 
 	// ServiceAccount contains the name of the Kubernetes ServiceAccount that should be used for getting
 	// a token for authenticating requests.

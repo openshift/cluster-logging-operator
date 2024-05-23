@@ -40,7 +40,7 @@ var (
 
 // NewSource creates an input adapter to generate config for ViaQ sources to collect logs excluding the
 // collector container logs from the namespace where the collector is deployed
-func NewSource(input obs.InputSpec, collectorNS string, resNames *factory.ForwarderResourceNames, secrets helpers.Secrets, op framework.Options) ([]framework.Element, []string) {
+func NewSource(input obs.InputSpec, collectorNS string, resNames factory.ForwarderResourceNames, secrets helpers.Secrets, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
 	switch input.Type {

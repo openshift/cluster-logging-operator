@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
-func NewViaqReceiverSource(spec obs.InputSpec, resNames *factory.ForwarderResourceNames, secrets helpers.Secrets, op generator.Options) ([]generator.Element, []string) {
+func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourceNames, secrets helpers.Secrets, op generator.Options) ([]generator.Element, []string) {
 	base := helpers.MakeInputID(spec.Name)
 	tlsConfig := receiverTLS(base, spec.Receiver.TLS, secrets, op)
 

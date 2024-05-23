@@ -35,14 +35,23 @@ var (
 type ClusterLogForwarderReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	// Reader is a read only client for retrieving kubernetes resources. This
+	// client hits the API server directly, by-passing the controller cache
+	Reader client.Reader
+
+	// ClusterID is the unique ID of the cluster on which the operator is deployed
+	ClusterID string
+
+	// ClusterVersion is the version of the clustesr on which the operator is deployed
+	ClusterVersion string
 }
 
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders/finalizers,verbs=update
 func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	//TODO: this was stubbed. Replace with needed with project log abstraction
-	//_ = log.FromContext(ctx)
+	log := log.WithName("ClusterLogForwarderReconciler.reconcile")
 	log.V(3).Info("obs.clf controller reconciling resource", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
 
 	//TODO: enable telemetry
@@ -50,20 +59,28 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	//defer func() { telemetry.SetCLFMetrics(1) }()
 
 	// Fetch the ClusterLogForwarder instance
-	instance, err, status := obsload.FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name)
-	if status != nil {
-		//if err := instance.Status.Synchronize(status); err != nil {
-		return defaultRequeue, err
-		//}
+	instance, err := obsload.FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name)
+	if instance.Spec.ManagementState == observabilityv1.ManagementStateUnmanaged {
+		return defaultRequeue, nil
 	}
 
-	if result, err := processFetchError(err, r.Client, req, &instance); err != nil {
+	// Process after checking management state because we don't care if its unmanaged
+	if result, err := processFetchError(err, r.Client, req, instance); err != nil {
 		return result, err
 	}
 
-	// TODO: Deploy Collector
+	//TODO: Remove deployment if unready?
+	//TODO: Remove existing deployment/daemonset
+	//TODO: Remove stale input services
 
-	return periodicRequeue, nil
+	reconcileErr := ReconcileCollector(r.Client, r.Reader, *instance, r.ClusterID)
+	if reconcileErr != nil {
+		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
+		//} else {
+		//	//TODO: Update conditions
+	}
+
+	return periodicRequeue, reconcileErr
 }
 
 // SetupWithManager sets up the controller with the Manager.

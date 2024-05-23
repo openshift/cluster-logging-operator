@@ -15,21 +15,22 @@ import (
 )
 
 // FetchClusterLogForwarder, migrate and validate
-func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string) (forwarder obs.ClusterLogForwarder, err error, status *obs.ClusterLogForwarderStatus) {
+func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string) (forwarder *obs.ClusterLogForwarder, err error) {
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	proto := obsruntime.NewClusterLogForwarder(namespace, name, runtime.Initialize)
 	if err = k8sClient.Get(context.TODO(), key, proto); err != nil {
 		if !apierrors.IsNotFound(err) {
 			log.Error(err, "Encountered unexpected error getting", "forwarder", key)
-			return obs.ClusterLogForwarder{}, err, nil
+			return proto, err
 		}
 	}
 	// Do not modify cached copy
-	forwarder = *proto.DeepCopy()
+	forwarder = proto.DeepCopy()
 	var migrationConds []metav1.Condition
 	forwarder.Spec, migrationConds = obsmigrate.MigrateClusterLogForwarder(forwarder.Spec)
 
+	// TODO: This is where we need to use the synchronized status from v1?
 	forwarder.Status.Conditions = append(forwarder.Status.Conditions, migrationConds...)
 	// TODO Integrate validate if needed
-	return forwarder, nil, status
+	return forwarder, nil
 }

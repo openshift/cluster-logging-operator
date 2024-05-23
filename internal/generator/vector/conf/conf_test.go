@@ -76,7 +76,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		if op == nil {
 			op = clusterOptions
 		}
-		conf := Conf(secrets, &spec, constants.OpenshiftNS, "my-forwarder", &factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
+		conf := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with spec for containers", "container.toml", nil,

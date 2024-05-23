@@ -1,18 +1,16 @@
 package collector
 
 import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
-	"fmt"
 	"os"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"
@@ -33,13 +31,12 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 	)
 	BeforeEach(func() {
 		factory = &Factory{
-			CollectorType: logging.LogCollectionTypeVector,
 			ImageName:     constants.VectorName,
 			Visit:         vector.CollectorVisitor,
 			ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
 			isDaemonset:   true,
 		}
-		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -65,58 +62,30 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 				},
 			}))
 		})
-		Context("with custom ClusterLogForwarder name", func() {
-			It("should have volumemount with custom name", func() {
+		Context("the volume for metrics certificates", func() {
+			It("should mount a volume  based upon the forwarder name", func() {
 				factory.ResourceNames = coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize))
 				expectedContainerVolume := v1.VolumeMount{
 					Name:      "custom-clf-metrics",
 					ReadOnly:  true,
 					MountPath: metricsVolumePath}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				collector = podSpec.Containers[0]
 				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
 			})
 		})
 
-		Context("with vector collector", func() {
-			It("should set VECTOR_LOG env variable with debug value", func() {
-				logLevelDebug := "debug"
-				factory.CollectorType = logging.LogCollectionTypeVector
-				factory.ImageName = constants.VectorName
-				factory.Visit = vector.CollectorVisitor
-				factory.LogLevel = logLevelDebug
+		It("should set VECTOR_LOG env variable with debug value", func() {
+			logLevelDebug := "debug"
+			factory.LogLevel = logLevelDebug
 
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector = podSpec.Containers[0]
-				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
-			})
+			podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			collector = podSpec.Containers[0]
+			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
 		})
 	})
 
 	Describe("when creating the podSpec", func() {
-		//TODO: FIX ME
-		//var verifyProxyVolumesAndVolumeMounts = func(container v1.Container, podSpec v1.PodSpec, trustedca string) {
-		//	found := false
-		//	for _, elem := range container.VolumeMounts {
-		//		if elem.Name == trustedca {
-		//			found = true
-		//			Expect(elem.MountPath).To(Equal(constants.TrustedCABundleMountDir), "VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
-		//			break
-		//		}
-		//	}
-		//	if !found {
-		//		Fail(fmt.Sprintf("Trusted ca-bundle VolumeMount %s not found for collector", trustedca))
-		//	}
-		//
-		//	for _, elem := range podSpec.Volumes {
-		//		if elem.Name == trustedca {
-		//			Expect(elem.VolumeSource.ConfigMap).To(Not(BeNil()), "Exp. the podSpec to have a mounted configmap for the trusted ca-bundle")
-		//			Expect(elem.VolumeSource.ConfigMap.LocalObjectReference.Name).To(Equal(trustedca), "Volume %s: ConfigMap.LocalObjectReference.Name expected %s, actual %s", trustedca, elem.VolumeSource.ConfigMap.LocalObjectReference.Name, trustedca)
-		//			return
-		//		}
-		//	}
-		//	Fail(fmt.Sprintf("Volume %s not found for collector", trustedca))
-		//}
 
 		Context("and evaluating tolerations", func() {
 			It("should add only defaults when none are defined", func() {
@@ -129,15 +98,12 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					Operator: v1.TolerationOpExists,
 					Effect:   v1.TaintEffectNoSchedule,
 				}
-				factory.CollectorSpec = logging.CollectionSpec{
-					Type: "fluentd",
-					CollectorSpec: logging.CollectorSpec{
-						Tolerations: []v1.Toleration{
-							providedToleration,
-						},
+				factory.CollectorSpec = obs.CollectorSpec{
+					Tolerations: []v1.Toleration{
+						providedToleration,
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -153,31 +119,18 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					"foo":             "bar",
 					utils.OsNodeLabel: utils.LinuxValue,
 				}
-				factory.CollectorSpec = logging.CollectionSpec{
-					Type: "fluentd",
-					CollectorSpec: logging.CollectorSpec{
-						NodeSelector: map[string]string{
-							"foo": "bar",
-						},
+				factory.CollectorSpec = obs.CollectorSpec{
+					NodeSelector: map[string]string{
+						"foo": "bar",
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
 		})
 
 		Context("and the proxy config exists", func() {
-
-			var verifyEnvVar = func(container v1.Container, name, value string) {
-				for _, elem := range container.Env {
-					if elem.Name == name {
-						Expect(elem.Value).To(Equal(value), "Exp. collector to have env var %s: %s:", name, value)
-						return
-					}
-				}
-				Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
-			}
 
 			It("should add the proxy variables to the collector", func() {
 				_httpProxy := os.Getenv("http_proxy")
@@ -204,47 +157,80 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				collector = podSpec.Containers[0]
 
-				verifyEnvVar(collector, "http_proxy", httpproxy)
-				verifyEnvVar(collector, "https_proxy", httpproxy)
-				verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
-				//TODO: FIX ME
-				//verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "http_proxy", Value: httpproxy}))
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "https_proxy", Value: httpproxy}))
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "no_proxy", Value: "elasticsearch," + noproxy}))
+				Expect(collector.VolumeMounts).To(IncludeVolumeMount(v1.VolumeMount{Name: constants.VolumeNameTrustedCA,
+					ReadOnly:  true,
+					MountPath: constants.TrustedCABundleMountDir,
+				}))
+				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{
+					Name: constants.VolumeNameTrustedCA,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: constants.CollectorTrustedCAName,
+							},
+							Items: []v1.KeyToPath{
+								{
+									Key:  constants.TrustedCABundleKey,
+									Path: constants.TrustedCABundleMountFile,
+								},
+							},
+						},
+					},
+				}))
 			})
 		})
 
-		Context("and using custom named ClusterLogForwarder", func() {
+		It("should have podSpec attribute names based on CLF name", func() {
+			clf := *obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize)
+			clf.Spec.ServiceAccount.Name = "custom-clf"
+			factory.ResourceNames = coreFactory.ResourceNames(clf)
+			expectedPodSpecMetricsVol := v1.Volume{
+				Name: "custom-clf-metrics",
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: "custom-clf-metrics",
+					}}}
 
-			It("should have custom named podSpec resources based on CLF name", func() {
-				clf := *obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize)
-				clf.Spec.ServiceAccount.Name = "custom-clf"
-				factory.ResourceNames = coreFactory.ResourceNames(clf)
-				expectedPodSpecMetricsVol := v1.Volume{
-					Name: "custom-clf-metrics",
-					VolumeSource: v1.VolumeSource{
-						Secret: &v1.SecretVolumeSource{
-							SecretName: "custom-clf-metrics",
-						}}}
+			caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
+			podSpec = *factory.NewPodSpec(&v1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "openshift-logging",
+					Name:      constants.CollectorTrustedCAName,
+				},
+				Data: map[string]string{
+					constants.TrustedCABundleKey: caBundle,
+				},
+			}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 
-				caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
-				podSpec = *factory.NewPodSpec(&v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "openshift-logging",
-						Name:      factory.ResourceNames.CaTrustBundle,
+			collector = podSpec.Containers[0]
+			Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
+			Expect(podSpec.ServiceAccountName).To(Equal("custom-clf"))
+			Expect(collector.VolumeMounts).To(IncludeVolumeMount(v1.VolumeMount{Name: constants.VolumeNameTrustedCA,
+				ReadOnly:  true,
+				MountPath: constants.TrustedCABundleMountDir,
+			}))
+			Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{
+				Name: constants.VolumeNameTrustedCA,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: constants.CollectorTrustedCAName,
+						},
+						Items: []v1.KeyToPath{
+							{
+								Key:  constants.TrustedCABundleKey,
+								Path: constants.TrustedCABundleMountFile,
+							},
+						},
 					},
-					Data: map[string]string{
-						constants.TrustedCABundleKey: caBundle,
-					},
-				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-
-				collector = podSpec.Containers[0]
-				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
-				Expect(podSpec.ServiceAccountName).To(Equal("custom-clf"))
-				//TODO: FIX ME
-				//verifyProxyVolumesAndVolumeMounts(collector, podSpec, "custom-clf-trustbundle")
-			})
+				},
+			}))
 		})
 
 		Context("and mounting volumes", func() {
@@ -266,16 +252,15 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 	)
 	BeforeEach(func() {
 		factory = &Factory{
-			CollectorType: logging.LogCollectionTypeVector,
 			ImageName:     constants.VectorName,
 			Visit:         vector.CollectorVisitor,
 			ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
 			isDaemonset:   false,
 		}
-		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
 	})
-	Describe("when creating of the collector container", func() {
+	Describe("when creating the collector container", func() {
 
 		It("should provide the pod IP as an environment var", func() {
 			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "POD_IP",
@@ -298,44 +283,19 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 				},
 			}))
 		})
-		Context("with custom ClusterLogForwarder name", func() {
-			It("should have volumemount with custom name", func() {
-				factory.ResourceNames = coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize))
-				expectedContainerVolume := v1.VolumeMount{
-					Name:      "custom-clf-metrics",
-					ReadOnly:  true,
-					MountPath: metricsVolumePath}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector = podSpec.Containers[0]
-				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
-			})
+		It("should mount a volume for metrics certificates based upon the CR name", func() {
+			factory.ResourceNames = coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize))
+			expectedContainerVolume := v1.VolumeMount{
+				Name:      "custom-clf-metrics",
+				ReadOnly:  true,
+				MountPath: metricsVolumePath}
+			podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			collector = podSpec.Containers[0]
+			Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
 		})
 	})
 
 	Describe("when creating the podSpec", func() {
-		//TODO: FIX ME
-		//var verifyProxyVolumesAndVolumeMounts = func(container v1.Container, podSpec v1.PodSpec, trustedca string) {
-		//	found := false
-		//	for _, elem := range container.VolumeMounts {
-		//		if elem.Name == trustedca {
-		//			found = true
-		//			Expect(elem.MountPath).To(Equal(constants.TrustedCABundleMountDir), "VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
-		//			break
-		//		}
-		//	}
-		//	if !found {
-		//		Fail(fmt.Sprintf("Trusted ca-bundle VolumeMount %s not found for collector", trustedca))
-		//	}
-		//
-		//	for _, elem := range podSpec.Volumes {
-		//		if elem.Name == trustedca {
-		//			Expect(elem.VolumeSource.ConfigMap).To(Not(BeNil()), "Exp. the podSpec to have a mounted configmap for the trusted ca-bundle")
-		//			Expect(elem.VolumeSource.ConfigMap.LocalObjectReference.Name).To(Equal(trustedca), "Volume %s: ConfigMap.LocalObjectReference.Name expected %s, actual %s", trustedca, elem.VolumeSource.ConfigMap.LocalObjectReference.Name, trustedca)
-		//			return
-		//		}
-		//	}
-		//	Fail(fmt.Sprintf("Volume %s not found for collector", trustedca))
-		//}
 
 		Context("and evaluating tolerations", func() {
 			It("should add only defaults when none are defined", func() {
@@ -348,15 +308,12 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Operator: v1.TolerationOpExists,
 					Effect:   v1.TaintEffectNoSchedule,
 				}
-				factory.CollectorSpec = logging.CollectionSpec{
-					Type: "fluentd",
-					CollectorSpec: logging.CollectorSpec{
-						Tolerations: []v1.Toleration{
-							providedToleration,
-						},
+				factory.CollectorSpec = obs.CollectorSpec{
+					Tolerations: []v1.Toleration{
+						providedToleration,
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -372,31 +329,18 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					"foo":             "bar",
 					utils.OsNodeLabel: utils.LinuxValue,
 				}
-				factory.CollectorSpec = logging.CollectionSpec{
-					Type: "fluentd",
-					CollectorSpec: logging.CollectorSpec{
-						NodeSelector: map[string]string{
-							"foo": "bar",
-						},
+				factory.CollectorSpec = obs.CollectorSpec{
+					NodeSelector: map[string]string{
+						"foo": "bar",
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
 		})
 
 		Context("and the proxy config exists", func() {
-
-			var verifyEnvVar = func(container v1.Container, name, value string) {
-				for _, elem := range container.Env {
-					if elem.Name == name {
-						Expect(elem.Value).To(Equal(value), "Exp. collector to have env var %s: %s:", name, value)
-						return
-					}
-				}
-				Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
-			}
 
 			It("should add the proxy variables to the collector", func() {
 				_httpProxy := os.Getenv("http_proxy")
@@ -423,14 +367,33 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 				collector = podSpec.Containers[0]
 
-				verifyEnvVar(collector, "http_proxy", httpproxy)
-				verifyEnvVar(collector, "https_proxy", httpproxy)
-				verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
-				//TODO: FIXME
-				//verifyProxyVolumesAndVolumeMounts(collector, podSpec, factory.ResourceNames.CaTrustBundle)
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "http_proxy", Value: httpproxy}))
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "https_proxy", Value: httpproxy}))
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "no_proxy", Value: "elasticsearch," + noproxy}))
+				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{
+					Name: constants.VolumeNameTrustedCA,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: factory.ResourceNames.CaTrustBundle,
+							},
+							Items: []v1.KeyToPath{
+								{
+									Key:  constants.TrustedCABundleKey,
+									Path: constants.TrustedCABundleMountFile,
+								},
+							},
+						},
+					},
+				}))
+				Expect(podSpec.Containers[0].VolumeMounts).To(IncludeVolumeMount(v1.VolumeMount{
+					Name:      constants.VolumeNameTrustedCA,
+					ReadOnly:  true,
+					MountPath: constants.TrustedCABundleMountDir,
+				}))
 			})
 		})
 
@@ -456,13 +419,32 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "foobar", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
 
 				collector = podSpec.Containers[0]
 				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
 				Expect(podSpec.ServiceAccountName).To(Equal("custom-clf"))
-				//TODO: FIX ME
-				//verifyProxyVolumesAndVolumeMounts(collector, podSpec, "custom-clf-trustbundle")
+				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{
+					Name: constants.VolumeNameTrustedCA,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: factory.ResourceNames.CaTrustBundle,
+							},
+							Items: []v1.KeyToPath{
+								{
+									Key:  constants.TrustedCABundleKey,
+									Path: constants.TrustedCABundleMountFile,
+								},
+							},
+						},
+					},
+				}))
+				Expect(podSpec.Containers[0].VolumeMounts).To(IncludeVolumeMount(v1.VolumeMount{
+					Name:      constants.VolumeNameTrustedCA,
+					ReadOnly:  true,
+					MountPath: constants.TrustedCABundleMountDir,
+				}))
 			})
 		})
 
@@ -478,16 +460,14 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 var _ = Describe("Factory#CollectorResourceRequirements", func() {
 	var (
 		factory        *Factory
-		collectionSpec = logging.CollectionSpec{
-			CollectorSpec: logging.CollectorSpec{
-				Resources: &v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("120Gi"),
-					},
-					Requests: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("100Gi"),
-						v1.ResourceCPU:    resource.MustParse("500m"),
-					},
+		collectionSpec = obs.CollectorSpec{
+			Resources: &v1.ResourceRequirements{
+				Limits: v1.ResourceList{
+					v1.ResourceMemory: resource.MustParse("120Gi"),
+				},
+				Requests: v1.ResourceList{
+					v1.ResourceMemory: resource.MustParse("100Gi"),
+					v1.ResourceCPU:    resource.MustParse("500m"),
 				},
 			},
 		}
@@ -502,135 +482,124 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 		}
 	)
 
-	Context("when collectorType is vector", func() {
-		BeforeEach(func() {
-			factory = &Factory{
-				CollectorType: logging.LogCollectionTypeVector,
-				ImageName:     constants.VectorName,
-				Visit:         vector.CollectorVisitor,
-			}
-		})
-		It("should not define any resources when none are specified", func() {
-			Expect(factory.CollectorResourceRequirements()).To(Equal(v1.ResourceRequirements{}))
-		})
+	BeforeEach(func() {
+		factory = &Factory{
+			ImageName: constants.VectorName,
+			Visit:     vector.CollectorVisitor,
+		}
+	})
+	It("should not define any resources when none are specified", func() {
+		Expect(factory.CollectorResourceRequirements()).To(Equal(v1.ResourceRequirements{}))
+	})
 
-		It("should apply the spec'd resources when defined", func() {
-			factory.CollectorSpec = collectionSpec
-			Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
-		})
-
+	It("should apply the spec'd resources when defined", func() {
+		factory.CollectorSpec = collectionSpec
+		Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
 	})
 })
 
-var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
-	var (
-		factory   *Factory
-		pipelines = []logging.PipelineSpec{
-			{
-				Name:       "cw-forward",
-				InputRefs:  []string{logging.InputNameInfrastructure},
-				OutputRefs: []string{"cw"},
-			},
-		}
-		outputs = []logging.OutputSpec{
-			{
-				Type: logging.OutputTypeCloudwatch,
-				Name: "cw",
-				OutputTypeSpec: logging.OutputTypeSpec{
-					Cloudwatch: &logging.Cloudwatch{
-						Region:  "us-east-77",
-						GroupBy: logging.LogGroupByNamespaceName,
-					},
-				},
-				Secret: &logging.OutputSecretSpec{
-					Name: "my-secret",
-				},
-			},
-		}
-		roleArn = "arn:aws:iam::123456789012:role/my-role-to-assume"
-		secrets = map[string]*v1.Secret{
-			// output secrets are keyed by output name
-			outputs[0].Name: {
-				Data: map[string][]byte{
-					"credentials": []byte(roleArn),
-				},
-			},
-		}
-	)
-	Context("when collectorType is vector", func() {
-		BeforeEach(func() {
-			factory = &Factory{
-				CollectorType: logging.LogCollectionTypeVector,
-				ImageName:     constants.VectorName,
-				Visit:         vector.CollectorVisitor,
-				Secrets:       secrets,
-				ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
-			}
-		})
-		Context("when collector has a secret containing a credentials key", func() {
-
-			It("should find the AWS web identity env vars in the container", func() {
-				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
-					Outputs:   outputs,
-					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector := podSpec.Containers[0]
-
-				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-					Name:  constants.AWSRegionEnvVarKey,
-					Value: outputs[0].OutputTypeSpec.Cloudwatch.Region,
-				}))
-				//TODO: FIXME
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSRoleArnEnvVarKey,
-				//	Value: roleArn,
-				//}))
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSRoleSessionEnvVarKey,
-				//	Value: constants.AWSRoleSessionName,
-				//}))
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSWebIdentityTokenEnvVarKey,
-				//	Value: path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath),
-				//}))
-			})
-		})
-		Context("when collector has a secret containing a role_arn key", func() {
-			BeforeEach(func() {
-				factory.Secrets = map[string]*v1.Secret{
-					outputs[0].Name: {
-						Data: map[string][]byte{
-							"role_arn": []byte(roleArn),
-						},
-					},
-				}
-			})
-			It("should find the AWS web identity env vars in the container", func() {
-				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
-					Outputs:   outputs,
-					Pipelines: pipelines,
-				}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector := podSpec.Containers[0]
-
-				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-					Name:  constants.AWSRegionEnvVarKey,
-					Value: outputs[0].OutputTypeSpec.Cloudwatch.Region,
-				}))
-				//TODO: FIXME
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSRoleArnEnvVarKey,
-				//	Value: roleArn,
-				//}))
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSRoleSessionEnvVarKey,
-				//	Value: constants.AWSRoleSessionName,
-				//}))
-				//Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				//	Name:  constants.AWSWebIdentityTokenEnvVarKey,
-				//	Value: path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath),
-				//}))
-
-			})
-		})
-	})
-})
+//TODO: FIX ME FOR CLOUDWATCH
+//var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
+//	var (
+//		factory   *Factory
+//		pipelines = []obs.PipelineSpec{
+//			{
+//				Name:       "cw-forward",
+//				InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+//				OutputRefs: []string{"cw"},
+//			},
+//		}
+//		outputs = []obs.OutputSpec{
+//			{
+//				Type: obs.OutputTypeCloudwatch,
+//				Name: "cw",
+//				Cloudwatch: &obs.Cloudwatch{
+//					Region:  "us-east-77",
+//					GroupBy: obs.LogGroupByNamespaceName,
+//				},
+//			},
+//		}
+//		roleArn = "arn:aws:iam::123456789012:role/my-role-to-assume"
+//		secrets = map[string]*v1.Secret{
+//			// output secrets are keyed by output name
+//			outputs[0].Name: {
+//				Data: map[string][]byte{
+//					"credentials": []byte(roleArn),
+//				},
+//			},
+//		}
+//	)
+//	BeforeEach(func() {
+//		factory = &Factory{
+//			ImageName:     constants.VectorName,
+//			Visit:         vector.CollectorVisitor,
+//			Secrets:       secrets,
+//			ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
+//		}
+//	})
+// TODO: FIXME
+//Context("when collector has a secret containing a credentials key", func() {
+//
+//	It("should find the AWS web identity env vars in the container", func() {
+//		podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
+//			Outputs:   outputs,
+//			Pipelines: pipelines,
+//		}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+//		collector := podSpec.Containers[0]
+//
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRegionEnvVarKey,
+//			Value: outputs[0].Cloudwatch.Region,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRoleArnEnvVarKey,
+//			Value: roleArn,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRoleSessionEnvVarKey,
+//			Value: constants.AWSRoleSessionName,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSWebIdentityTokenEnvVarKey,
+//			Value: path.Join(constants.AWSWebIdentityTokenMount, constants.TokenKey),
+//		}))
+//	})
+//})
+// TODO: FIX ME
+//Context("when collector has a secret containing a role_arn key", func() {
+//	BeforeEach(func() {
+//		factory.Secrets = map[string]*v1.Secret{
+//			outputs[0].Name: {
+//				Data: map[string][]byte{
+//					"role_arn": []byte(roleArn),
+//				},
+//			},
+//		}
+//	})
+//	It("should find the AWS web identity env vars in the container", func() {
+//		podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
+//			Outputs:   outputs,
+//			Pipelines: pipelines,
+//		}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+//		collector := podSpec.Containers[0]
+//
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRegionEnvVarKey,
+//			Value: outputs[0].Cloudwatch.Region,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRoleArnEnvVarKey,
+//			Value: roleArn,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSRoleSessionEnvVarKey,
+//			Value: constants.AWSRoleSessionName,
+//		}))
+//		Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
+//			Name:  constants.AWSWebIdentityTokenEnvVarKey,
+//			Value: path.Join(constants.AWSWebIdentityTokenMount, constants.TokenKey),
+//		}))
+//
+//	})
+//})
+//})

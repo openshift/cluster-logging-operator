@@ -2,30 +2,24 @@ package k8shandler
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// EvaluateAnnotationsForEnabledCapabilities populates generator options with capabilities enabled by the ClusterLogForwarder
-func EvaluateAnnotationsForEnabledCapabilities(annotations map[string]string, options framework.Options) {
-	if annotations == nil {
-		return
-	}
-	for key, value := range annotations {
-		switch key {
-		case constants.AnnotationDebugOutput:
-			if strings.ToLower(value) == "true" {
-				options[helpers.EnableDebugOutput] = "true"
-			}
-		}
-	}
-}
+//// EvaluateAnnotationsForEnabledCapabilities populates generator options with capabilities enabled by the ClusterLogForwarder
+//func EvaluateAnnotationsForEnabledCapabilities(annotations map[string]string, options framework.Options) {
+//	if annotations == nil {
+//		return
+//	}
+//	for key, value := range annotations {
+//		switch key {
+//		case constants.AnnotationDebugOutput:
+//			if strings.ToLower(value) == "true" {
+//				options[helpers.EnableDebugOutput] = "true"
+//			}
+//		}
+//	}
+//}
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 	if clusterRequest.Cluster.Spec.Collection == nil {

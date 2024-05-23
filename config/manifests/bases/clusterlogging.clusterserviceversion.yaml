@@ -180,6 +180,11 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
         path: outputs[0].elasticsearch.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
@@ -196,6 +201,11 @@ spec:
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
         path: outputs[0].http.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.token.secret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
@@ -225,6 +235,11 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
+        path: outputs[0].loki.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
         path: outputs[0].loki.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
@@ -236,6 +251,11 @@ spec:
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
         path: outputs[0].lokiStack.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.token.secret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.

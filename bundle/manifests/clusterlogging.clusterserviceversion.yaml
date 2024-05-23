@@ -178,7 +178,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-05-15T13:22:39Z"
+    createdAt: "2024-05-23T19:05:09Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -352,6 +352,11 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
         path: outputs[0].elasticsearch.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
@@ -368,6 +373,11 @@ spec:
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
         path: outputs[0].http.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.token.secret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
@@ -397,6 +407,11 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
+        path: outputs[0].loki.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
         path: outputs[0].loki.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
@@ -408,6 +423,11 @@ spec:
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
         path: outputs[0].lokiStack.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.token.secret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.

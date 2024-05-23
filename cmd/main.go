@@ -180,8 +180,11 @@ func main() {
 	}
 
 	if err = (&observabilitycontroller.ClusterLogForwarderReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		Reader:         mgr.GetAPIReader(),
+		ClusterVersion: clusterVersion,
+		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
 		os.Exit(1)

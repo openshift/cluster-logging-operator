@@ -57,7 +57,7 @@ import (
 */
 
 //nolint:govet // using declarative style
-func Conf(secrets map[string]*corev1.Secret, clfspec *obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames *factory.ForwarderResourceNames, op framework.Options) []framework.Section {
+func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op framework.Options) []framework.Section {
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*input.Input{}
@@ -74,7 +74,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec *obs.ClusterLogForwarderSpe
 		outputMap[spec.Name] = o
 	}
 
-	filters := filter.NewInternalFilterMap(internalobs.FilterMap(*clfspec))
+	filters := filter.NewInternalFilterMap(internalobs.FilterMap(clfspec))
 	pipelineMap := map[string]*pipeline.Pipeline{}
 	for i, p := range clfspec.Pipelines {
 		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs)

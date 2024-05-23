@@ -32,11 +32,11 @@ const (
 
 // resourceRequirements returns the resource requirements for a given metric-exporter implementation
 // or it's default if none are specified
-func resourceRequirements(exporter loggingv1a1.LogFileMetricExporter) v1.ResourceRequirements {
+func resourceRequirements(exporter loggingv1a1.LogFileMetricExporter) *v1.ResourceRequirements {
 	if exporter.Spec.Resources == nil {
-		return v1.ResourceRequirements{}
+		return &v1.ResourceRequirements{}
 	}
-	return *exporter.Spec.Resources
+	return exporter.Spec.Resources
 }
 
 func nodeSelector(exporter loggingv1a1.LogFileMetricExporter) map[string]string {
@@ -97,7 +97,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 }
 
 func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
-	exporterContainer := coreFactory.NewContainer(constants.LogfilesmetricexporterName,
+	exporterContainer := runtime.NewContainer(constants.LogfilesmetricexporterName,
 		constants.LogfilesmetricexporterName,
 		v1.PullIfNotPresent, resourceRequirements(exporter))
 
@@ -119,6 +119,6 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 		{Name: exporterMetricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
 	}
 
-	collector.AddSecurityContextTo(&exporterContainer)
-	return &exporterContainer
+	collector.AddSecurityContextTo(exporterContainer)
+	return exporterContainer
 }

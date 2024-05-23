@@ -32,16 +32,15 @@ const (
 
 	// Output-specific keys
 
-	SharedKey                   = "shared_key"            // fluent forward
-	DeprecatedSaslOverSSL       = "sasl_over_ssl"         // Kafka
-	AWSSecretAccessKey          = "aws_secret_access_key" //nolint:gosec
-	AWSAccessKeyID              = "aws_access_key_id"
-	AWSRoleSessionName          = "cluster-logging" // identifier for role logging session
-	AWSCredentialsKey           = "credentials"     // credrequest key to check for sts-formatted secret
-	AWSWebIdentityRoleKey       = "role_arn"        // manual key to check for sts-formatted secret
-	AWSWebIdentityTokenName     = "collector-sts-token"
-	AWSWebIdentityTokenMount    = "/var/run/secrets/openshift/serviceaccount" //nolint:gosec // default location for volume mount
-	AWSWebIdentityTokenFilePath = "token"                                     // file containing token relative to mount
+	SharedKey                = "shared_key"            // fluent forward
+	DeprecatedSaslOverSSL    = "sasl_over_ssl"         // Kafka
+	AWSSecretAccessKey       = "aws_secret_access_key" //nolint:gosec
+	AWSAccessKeyID           = "aws_access_key_id"
+	AWSRoleSessionName       = "cluster-logging" // identifier for role logging session
+	AWSCredentialsKey        = "credentials"     // credrequest key to check for sts-formatted secret
+	AWSWebIdentityRoleKey    = "role_arn"        // manual key to check for sts-formatted secret
+	AWSWebIdentityTokenName  = "collector-sts-token"
+	AWSWebIdentityTokenMount = "/var/run/secrets/openshift/serviceaccount" //nolint:gosec // default location for volume mount
 
 	AWSRegionEnvVarKey           = "AWS_REGION"
 	AWSRoleArnEnvVarKey          = "AWS_ROLE_ARN"
@@ -80,8 +79,6 @@ const (
 	PodSecurityLabelWarn       = "pod-security.kubernetes.io/warn"
 	PodSecurityLabelValue      = "privileged"
 	PodSecuritySyncLabel       = "security.openshift.io/scc.podSecurityLabelSync"
-	// Disable gosec linter, complains "possible hard-coded secret"
-	CollectorSecretsDir = "/var/run/ocp-collector/secrets" //nolint:gosec
 
 	CollectorName               = "collector"
 	CollectorConfigSecretName   = "collector-config"
@@ -112,8 +109,8 @@ const (
 
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"
+
 	// Commonly-used label names.
-	LabelApp       = "app"
 	LabelComponent = "component"
 
 	EventReasonReconcilingLoggingCR = "ReconcilingLoggingCR"
@@ -138,9 +135,6 @@ const (
 
 	LabelHTTPInputService   = "http-input-service"
 	LabelSyslogInputService = "syslog-input-service"
-
-	Korrel8rName      = "korrel8r"
-	Korrel8rNamespace = "korrel8r"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}
@@ -160,3 +154,5 @@ func DefaultTolerations() []v1.Toleration {
 		},
 	}
 }
+
+const VolumeNameTrustedCA = "trusted-ca"

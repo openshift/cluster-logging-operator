@@ -30,6 +30,20 @@ func NewPod(namespace, name string, containers ...corev1.Container) *corev1.Pod 
 	return pod
 }
 
+// NewContainer stubs an instance of a corev1.Container
+func NewContainer(name string, image string, pullPolicy corev1.PullPolicy, resources *corev1.ResourceRequirements) *corev1.Container {
+
+	container := &corev1.Container{
+		Name:            name,
+		Image:           image,
+		ImagePullPolicy: pullPolicy,
+	}
+	if resources != nil {
+		container.Resources = *resources
+	}
+	return container
+}
+
 // NewService returns a corev1.Service with namespace and name.
 func NewService(namespace, name string, visitors ...func(o runtime.Object)) *corev1.Service {
 	svc := &corev1.Service{}

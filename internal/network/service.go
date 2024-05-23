@@ -1,7 +1,8 @@
 package network
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -38,7 +39,7 @@ func ReconcileService(er record.EventRecorder, k8sClient client.Client, namespac
 	return reconcile.Service(er, k8sClient, desired)
 }
 
-func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, namespace, name, instance, certSecretName string, port int32, targetPort int32, receiverType string, isDaemonset bool, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, namespace, name, instance, certSecretName string, port, targetPort int32, receiverType obs.ReceiverType, isDaemonset bool, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
 		name,
 		namespace,
@@ -65,12 +66,7 @@ func ReconcileInputService(er record.EventRecorder, k8sClient client.Client, nam
 		constants.AnnotationServingCertSecretName: certSecretName,
 	}
 
-	switch receiverType {
-	case logging.ReceiverTypeHttp:
-		desired.Labels[constants.LabelComponent] = constants.LabelHTTPInputService
-	case logging.ReceiverTypeSyslog:
-		desired.Labels[constants.LabelComponent] = constants.LabelSyslogInputService
-	}
+	desired.Labels[constants.LabelComponent] = fmt.Sprintf("%s-input-service", receiverType)
 
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.Service(er, k8sClient, desired)

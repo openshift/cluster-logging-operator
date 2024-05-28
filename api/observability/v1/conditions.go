@@ -14,10 +14,6 @@ limitations under the License.
 
 package v1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
 const (
 	// Ready indicates the service is ready.
 	//
@@ -53,6 +49,3 @@ const (
 
 	ReasonMigrateOutput string = "Migrate"
 )
-
-// ConditionMap contains a map of resource names to a list of their conditions.
-type ConditionMap map[string][]metav1.Condition

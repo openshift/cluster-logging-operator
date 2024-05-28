@@ -45,46 +45,39 @@ spec:
       labels:
         service: collector
         severity: critical
-    - alert: FluentdQueueLengthIncreasing
-      annotations:
-        message: "For the last hour, fluentd {{ $labels.pod }} output '{{ $labels.plugin_id }}' average buffer queue length has increased continuously."
-        summary: "Fluentd pod {{ $labels.pod }} is unable to keep up with traffic over time for forwarder output {{ $labels.plugin_id }}."
-      expr: |
-        sum by (pod,plugin_id) ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
-      for: 1h
-      labels:
-        service: collector
-        severity: Warning
     - alert: ElasticsearchDeprecation
       annotations:
-        message: "The OpenShift Elasticsearch Operator is deprecated and is planned to be removed in a future release. Red Hat provides bug fixes and support for this feature during the current release lifecycle, but this feature no longer receives enhancements. As an alternative to using the OpenShift Elasticsearch Operator to manage the default log storage, you can use the Loki Operator."
-        summary: "Detected Elasticsearch as the in-cluster storage which is deprecated and will be removed in a future release."
+        message: "In Red Hat OpenShift Logging Operator 6.0, support for the Red Hat Elasticsearch Operator has been removed. Bug fixes and support are provided only through the end of the 5.9 lifecycle. As an alternative to the Elasticsearch Operator, you can use the Loki Operator instead."
+        summary: "Detected Elasticsearch as the in-cluster storage, which has been removed in 6.0 release"
       expr: |
         sum(kube_pod_labels{namespace="openshift-logging",label_component='elasticsearch'}) > 0
       for: 5m
       labels:
         service: storage
         severity: Warning
+        namespace: openshift-logging
     - alert: FluentdDeprecation
       annotations:
-        message: "Fluentd is deprecated and is planned to be removed in a future release. Red Hat provides bug fixes and support for this feature during the current release lifecycle, but this feature no longer receives enhancements. As an alternative to Fluentd, you can use Vector instead."
-        summary: "Detected Fluentd as the collector which is deprecated and will be removed in a future release."
+        message: "In Red Hat OpenShift Logging Operator 6.0, support for Fluentd as a collector has been removed. Bug fixes and support are provided only through the end of the 5.9 lifecycle. As an alternative to Fluentd, you can use the Vector collector instead."
+        summary: "Detected Fluentd as the collector, which has been removed in a 6.0 release"
       expr: |
         sum(kube_pod_labels{namespace="openshift-logging", label_implementation='fluentd', label_app_kubernetes_io_managed_by="cluster-logging-operator"}) > 0
       for: 5m
       labels:
         service: collector
         severity: Warning
+        namespace: openshift-logging
     - alert: KibanaDeprecation
       annotations:
-        message: "The Kibana web console is now deprecated and is planned to be removed in a future logging release."
-        summary: "Detected Kibana as the visualization which is deprecated and will be removed in a future release."
+        message: "In Red Hat OpenShift Logging Operator 6.0, support for Kibana as a data visualization dashboard has been removed. Bug fixes and support are provided only through the end of the 5.9 lifecycle. As an alternative to Kibana, you can use the Grafana Dashboard instead."
+        summary: "Detected Kibana as the log data visualization, which has been removed in the 6.0 release"
       expr: |
         sum(kube_pod_labels{namespace="openshift-logging",label_component='kibana'}) > 0
       for: 5m
       labels:
         service: visualization
         severity: Warning
+        namespace: openshift-logging
     - alert: DiskBufferUsage
       annotations:
         message: "Collectors potentially consuming too much node disk, {{ $value }}% "
@@ -99,14 +92,15 @@ spec:
   - name: logging_clusterlogging_telemetry.rules
     rules:
     - expr: |
-        sum by(cluster)(log_collected_bytes_total)
-      record: cluster:log_collected_bytes_total:sum
-    - expr: |
         sum by(cluster)(log_logged_bytes_total)
       record: cluster:log_logged_bytes_total:sum
     - expr: |
-        sum by(pod, namespace, app_kubernetes_io_part_of)(rate(vector_component_errors_total[2m])) or sum by(pod, namespace, app_kubernetes_io_part_of)(rate(fluentd_output_status_num_errors[2m]))
+        sum by(pod, namespace, app_kubernetes_io_instance)(rate(vector_component_errors_total[2m]))
       record: collector:log_num_errors:sum_rate
     - expr: |
-        sum by(pod, namespace, app_kubernetes_io_part_of)(rate(vector_component_received_events_total[2m])) or sum by(pod, namespace, app_kubernetes_io_part_of)(rate(fluentd_output_status_emit_records[2m]))
+        sum by(pod, namespace, app_kubernetes_io_instance)(rate(vector_component_received_events_total[2m]))
       record: collector:received_events:sum_rate
+
+
+
+

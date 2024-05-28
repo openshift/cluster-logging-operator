@@ -64,24 +64,14 @@
           },
           "targets": [
             {
-              "expr": "sum by(job, namespace, app_kubernetes_io_name) (increase(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[24h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
+              "expr": "sum by(namespace, app_kubernetes_io_instance) (increase(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[24h]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}}",
               "interval": "",
               "exemplar": true,
               "datasource": "${datasource}",
               "editorMode": "builder",
               "range": true,
               "refId": "A"
-            },
-            {
-              "expr": "sum by(job, namespace, app_kubernetes_io_name)(increase(log_collected_bytes_total[24h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
-              "interval": "",
-              "exemplar": true,
-              "datasource": "${datasource}",
-              "editorMode": "builder",
-              "range": true,
-              "refId": "B"
             }
           ],
           "title": "Log bytes collected (24h avg)",
@@ -183,20 +173,10 @@
             {
               "datasource": "${datasource}",
               "editorMode": "builder",
-              "expr": "sum by (app_kubernetes_io_name, job, namespace) (increase(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[24h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
+              "expr": "sum by (app_kubernetes_io_instance, namespace) (increase(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[24h]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}}",
               "range": true,
               "refId": "A"
-            },
-            {
-              "expr": "sum by(app_kubernetes_io_name, job, namespace) (increase(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[24h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
-              "interval": "",
-              "exemplar": true,
-              "datasource": "${datasource}",
-              "editorMode": "builder",
-              "range": true,
-              "refId": "B"
             }
           ],
           "title": "Log bytes sent (24h avg)",
@@ -317,21 +297,14 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
+              "expr": "sum by(namespace, app_kubernetes_io_instance) (rate(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}}",
               "interval": "",
               "exemplar": true,
               "datasource": "${datasource}",
               "editorMode": "builder",
               "range": true,
               "refId": "A"
-            },
-            {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(log_collected_bytes_total[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
-              "interval": "",
-              "exemplar": true,
-              "refId": "B"
             }
           ],
           "title": "Log collection rate (5m avg)",
@@ -452,21 +425,14 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by (app_kubernetes_io_name, namespace, job) (rate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
+              "expr": "sum by (namespace, app_kubernetes_io_instance) (rate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}}",
               "interval": "",
               "exemplar": true,
               "datasource": "${datasource}",
               "editorMode": "builder",
               "range": true,
               "refId": "A"
-            },
-            {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (rate(fluentd_output_status_emit_count{plugin_id!~'object:.+'}[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
-              "interval": "",
-              "exemplar": true,
-              "refId": "B"
             }
           ],
           "title": "Log send rate (5m avg)",
@@ -587,21 +553,14 @@
           "pluginVersion": "8.5.0",
           "targets": [
             {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (increase(vector_component_errors_total[1h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
+              "expr": "sum by(namespace, app_kubernetes_io_instance) (increase(vector_component_errors_total[1h]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}}",
               "interval": "",
               "exemplar": true,
               "datasource": "${datasource}",
               "editorMode": "builder",
               "range": true,
               "refId": "A"
-            },
-            {
-              "expr": "sum by(app_kubernetes_io_name, namespace, job) (increase(fluentd_output_status_num_errors[1h]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}}",
-              "interval": "",
-              "exemplar": true,
-              "refId": "B"
             }
           ],
           "title": "Total errors last 60m",
@@ -741,16 +700,8 @@
             {
               "datasource": "${datasource}",
               "editorMode": "code",
-              "expr": "sum by (job, namespace, app_kubernetes_io_name, component_id, component_type)(irate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}} | Output: {{component_type}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": "${datasource}",
-              "editorMode": "code",
-              "expr": "sum by (job, namespace, app_kubernetes_io_name, type)(irate(fluentd_output_status_emit_records{type=~\"elasticsearch|cloudwatch_logs|forward|http|kafka2|loki|remote_syslog\"}[5m]))",
-              "legendFormat": "{{namespace}}/{{job}}/{{app_kubernetes_io_name}} | Output: {{type}}",
+              "expr": "sum by (app_kubernetes_io_instance, namespace, component_id, component_type)(irate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))",
+              "legendFormat": "{{namespace}}/{{app_kubernetes_io_instance}} | Output: {{component_type}}",
               "range": true,
               "refId": "A"
             }
@@ -1084,12 +1035,6 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "topk(10, round(rate(log_collected_bytes_total[5m])))",
-              "interval": "",
-              "legendFormat": "{{exported_namespace}}/{{podname}}/{{containername}}",
-              "refId": "A"
-            },
-            {
               "expr": "topk(10, round(rate(vector_component_received_event_bytes_total{component_type = \"kubernetes_logs\"}[5m])))",
               "interval": "",
               "legendFormat": "{{pod_namespace}}/{{pod_name}}/{{container_name}}",
@@ -1165,7 +1110,7 @@
           },
           "targets": [
             {
-              "expr": "topk(10, sum by (container_name, pod_name, pod_namespace) (label_replace(label_replace(label_replace(increase(log_collected_bytes_total[24h]), \"container_name\", \"$1\",\"containername\", \"(.*)\"),\"pod_name\", \"$1\",\"podname\", \"(.*)\"), \"pod_namespace\", \"$1\",\"exported_namespace\", \"(.*)\") or increase(vector_component_received_event_bytes_total{component_type=\"kubernetes_logs\"}[24h]))) / 1024 / 1024",
+              "expr": "topk(10, sum by (container_name, pod_name, pod_namespace) (increase(vector_component_received_event_bytes_total{component_type=\"kubernetes_logs\"}[24h]))) / 1024 / 1024",
               "format": "table",
               "instant": true,
               "refId": "A",

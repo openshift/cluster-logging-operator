@@ -1,15 +1,129 @@
-= Collector Metrics and Alerts
+== Collector Metrics
 
-== Vector output buffer alert
-In logging 6.0 (5.9.x) and later versions, added alerts for the Vector collector potentially consuming excessive node disk space.
-You can view this alerts in the OpenShift Container Platform web console.
+=== Log bytes collected (24h avg)
+The number of raw bytes accepted by collector from origin over 24-hour period.
+Summarized by  namespace an instance name.
+Metric source: Vector observability data
+[source]
+----
+sum by(namespace, app_kubernetes_io_instance) (increase(vector_component_received_bytes_total{component_kind=\"source\",
+component_type!=\"internal_metrics\"}[24h]))
+----
 
-image::buffer-alert.png[Fired allert]
+=== Log bytes sent (24h avg)
+The number of raw bytes sent by collector to the sinks over 24-hour period.
+Summarized by  namespace an instance name.
+Metric source: Vector observability data
+[source]
+----
+sum by (app_kubernetes_io_instance, namespace) (increase(vector_component_sent_bytes_total{component_kind=\"sink\",
+component_type!=\"prometheus_exporter\"}[24h]))
+
+----
+
+=== Log collection rate (5m avg)
+Calculates the rate of received bytes by collector over a 5-minute period.
+Organizes it by namespaces and instance names.
+Metric source: Vector observability data
+[source]
+----
+sum by(namespace, app_kubernetes_io_instance) (rate(vector_component_received_bytes_total{component_kind=\"source\", component_type!=\"internal_metrics\"}[5m]))",
+----
+
+=== Log send rate (5m avg)
+Calculates the rate of sent bytes by collector to the output  over a 5-minute period, organizes the data based on namespaces and instance names.
+Metric source: Vector observability data
+[source]
+----
+sum by (namespace, app_kubernetes_io_instance) (rate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))
+----
+
+=== Total errors last 60m
+Monitor the total number of errors encountered by collector in last hour.
+Summarized the data based on namespaces and instance names.
+Metric source: Vector observability data
+[source]
+----
+sum by(namespace, app_kubernetes_io_instance) (increase(vector_component_errors_total[1h]))
+----
+
+=== Rate log bytes sent per output
+Showing how many bytes are being sent every second over a 5-minute period.
+The data is organized based on instance names, namespaces, component IDs, and types.
+Metric source: Vector observability data
+[source]
+----
+sum by (app_kubernetes_io_instance, namespace, component_id, component_type)(irate(vector_component_sent_bytes_total{component_kind=\"sink\", component_type!=\"prometheus_exporter\"}[5m]))
+----
+
+=== Top producing containers
+Query helps identify the top 10 containers that are generating the most log data in your system
+Metric source: Log File Metric Exporter
+[source]
+----
+topk(10, round(rate(log_logged_bytes_total[5m])))
+----
+
+=== Top producing containers in last 24 hours
+Selects the top 10 based on these aggregated values of total number of bytes
+Metric source: Log File Metric Exporter
+[source]
+----
+topk(10, sum(increase(log_logged_bytes_total[24h])) by (exported_namespace,  podname, containername))
+----
+
+=== Top collected containers - Bytes/Second
+Displays the top 10 containers with the highest rates
+Metric source: Vector observability data
+[source]
+----
+topk(10, round(rate(vector_component_received_event_bytes_total{component_type = \"kubernetes_logs\"}[5m])))
+----
+
+=== CPU
+CPU usage of "collector" containers on each node, namespace, and pod
+Metrics source: Kubernetes Metrics
+[source]
+----
+sum by(node,namespace,pod)(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{container='collector'})",
+----
+
+=== Memory
+Memory usage of "collector" containers on each node, namespace, and pod
+Metrics source: Kubernetes Metrics
+[source]
+----
+sum by(node,namespace,pod)(node_namespace_pod_container:container_memory_rss{container=\"collector\"})
+----
+
+=== Running containers
+Running containers on each node
+Metrics source: Kubernetes Metrics
+[source]
+----
+sum by (node)(kubelet_running_containers{container_state="running"})
+----
+
+=== Open files for container logs
+Files reading by Vector collector summarized by hostname,namespace and pod
+Metric source: Vector observability data
+[source]
+----
+sum by(hostname,namespace,pod)(vector_open_files{component_kind=\"source\", component_type=\"kubernetes_logs\"})
+----
+
+=== File Descriptors In Use
+[source]
+----
+sum by(namespace, forwarder)(label_replace(container_file_descriptors{container=~'collector'}, 'forwarder', '$1', 'pod', '(.*).{6}'))
+----
 
 === Vector output buffer metrics
 Along with new alert was added 2 metrics dashboards which allow monitoring state of output buffer.
 
 - panel showing the absolute size of the Vector buffer via a graph by instance, namespace and instance name:
+
+Metric source: Vector observability data
 
 image::buffer-metric-1.png[]
 
@@ -26,6 +140,23 @@ image::buffer-metric-2.png[]
 ----
 100 * (label_replace(sum by(hostname) (vector_buffer_byte_size{component_kind='sink', buffer_type='disk'}), 'instance', '$1', 'hostname', '(.*)') / on(instance) group_left() sum by(instance) (node_filesystem_size_bytes{mountpoint='/var'}))
 ----
+
+== Collector Alerts
+
+=== DiskBufferUsage
+In logging 6.0 (5.9.x) and later versions, added alerts for the Vector collector potentially consuming excessive node disk space.
+You can view this alerts in the OpenShift Container Platform web console.
+
+image::buffer-alert.png[Fired allert]
+
+=== CollectorNodeDown
+
+Will be fired if collector component was offline for more than 10m
+
+=== CollectorVeryHighErrorRate
+
+Will be fired if collector component errors are very high, will contain namespace and pod name
+
 == Enabling ability to collect metrics from non infrastructure namespaces
 
 To make it possible for collecting Collector metrics in namespace different from "openshift-logging"
@@ -34,7 +165,7 @@ need to:
 - add label _openshift.io/cluster-monitoring: "true"_ to your namespace
 [source]
 ----
-oc label namespace {your-logging-ns} "openshift.io/cluster-monitoring='true'"
+oc label namespace {your-logging-ns} openshift.io/cluster-monitoring='true'
 ----
  - add role _prometheus-k8s_ to your namespace
 [source]

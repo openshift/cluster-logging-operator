@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	obsload "github.com/openshift/cluster-logging-operator/internal/k8s/observability"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -53,10 +52,6 @@ type ClusterLogForwarderReconciler struct {
 func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.WithName("ClusterLogForwarderReconciler.reconcile")
 	log.V(3).Info("obs.clf controller reconciling resource", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
-
-	//TODO: enable telemetry
-	//telemetry.SetCLFMetrics(0) // Cancel previous info metric
-	//defer func() { telemetry.SetCLFMetrics(1) }()
 
 	// Fetch the ClusterLogForwarder instance
 	instance, err := obsload.FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name)
@@ -106,7 +101,6 @@ func processFetchError(err error, k8Client client.Client, req ctrl.Request, inst
 		//instance.Status.Conditions.SetCondition(logging.CondNotReady(logging.ValidationFailureReason, ""))
 		// TODO: Add in event recording?
 		//r.Recorder.Event(&instance, "Warning", string(logging.ReasonInvalid), condition.Message)
-		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		return updateStatus(k8Client, instance)
 	} else if !errors.IsNotFound(err) {
 		// Error reading - requeue the request.

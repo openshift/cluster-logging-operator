@@ -14,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/dashboard"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -154,7 +152,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.Set("healthStatus", UnHealthyStatus)
 		os.Exit(1)
 	}
 
@@ -167,7 +164,6 @@ func main() {
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
-		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, UnHealthyStatus)
 		os.Exit(1)
 	}
 
@@ -200,18 +196,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// updating clo Telemetry Data - to be published by prometheus
-	cloversion, err := version.OperatorVersion()
-	if err != nil {
-		cloversion = version.Version
-		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
-	}
-	telemetry.Data.CLInfo.Set("version", cloversion)
-
-	errr := telemetry.RegisterMetrics()
-	if errr != nil {
-		log.Error(err, "Error in registering clo metrics for telemetry")
-	}
+	// TODO initialize new telemetry implementation here
 
 	log.Info("Starting the Cmd.")
 	// Start the Cmd

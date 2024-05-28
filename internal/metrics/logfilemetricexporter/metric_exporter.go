@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -71,12 +70,9 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		owner,
 		commonLabels); err != nil {
 		msg := fmt.Sprintf("Unable to reconcile LogFileMetricExporter: %v", err)
-		telemetry.Data.LFMEInfo.Set(telemetry.HealthStatus, constants.UnHealthyStatus)
 		log.Error(err, msg)
 		return errors.New(msg)
 	}
-
-	telemetry.Data.LFMEInfo.Set(telemetry.Deployed, telemetry.IsPresent)
 
 	return nil
 }

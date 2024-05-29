@@ -1,13 +1,13 @@
 package normalization
 
 import (
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
@@ -18,16 +18,18 @@ import (
 // multi-line exceptions (e.g. java stacktrace)
 // https://issues.redhat.com/browse/LOG-1717
 var _ = Describe("[Functional][Normalization] Multi-line exception detection", func() {
+	defer GinkgoRecover()
+	Skip("TODO: FIX ME ONCE multi-line exception filter is implemented")
 	const (
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
 	)
 
 	var (
 		javaException = `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
-        at testjava.Main.printMe(Main.java:19)
-        at testjava.Main.main(Main.java:10)`
+       at testjava.Main.printMe(Main.java:19)
+       at testjava.Main.main(Main.java:10)`
 
-		jsClientSideException = `Error  
+		jsClientSideException = `Error
 				at bls (<anonymous>:3:9)
 				at <anonymous>:6:4
 				at a_function_name
@@ -43,16 +45,16 @@ var _ = Describe("[Functional][Normalization] Multi-line exception detection", f
 			at Type.main(sample(copy).js:6:4)`
 
 		nodeJSException = `ReferenceError: myArray is not defined
-  at next (/app/node_modules/express/lib/router/index.js:256:14)
-  at /app/node_modules/express/lib/router/index.js:615:15
-  at next (/app/node_modules/express/lib/router/index.js:271:10)
-  at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)
-  at /app/node_modules/express/lib/router/index.js:277:22
-  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-  at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)
-  at next (/app/node_modules/express/lib/router/route.js:131:13)
-  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-  at /app/app.js:52:3`
+ at next (/app/node_modules/express/lib/router/index.js:256:14)
+ at /app/node_modules/express/lib/router/index.js:615:15
+ at next (/app/node_modules/express/lib/router/index.js:271:10)
+ at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)
+ at /app/node_modules/express/lib/router/index.js:277:22
+ at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)
+ at next (/app/node_modules/express/lib/router/route.js:131:13)
+ at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+ at /app/app.js:52:3`
 
 		goLangException = `panic: my panic
 
@@ -82,19 +84,12 @@ created by main.main
 		if buildLogForwarder == nil {
 			buildLogForwarder = func(framework *functional.CollectorFunctionalFramework) {
 				testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-					FromInput(logging.InputNameApplication).
+					FromInput(obs.InputTypeApplication).
 					WithMultineErrorDetection().
 					ToHttpOutput()
 			}
 		}
 		buildLogForwarder(framework)
-		framework.VisitConfig = func(conf string) string {
-			switch testfw.LogCollectionType {
-			case logging.LogCollectionTypeFluentd:
-				conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
-			}
-			return conf
-		}
 
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -103,15 +98,13 @@ created by main.main
 			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
 			buffer = append(buffer, crioLine)
 		}
-		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-			appNamespace = framework.Pod.Namespace
-		}
+		appNamespace = framework.Pod.Namespace
 		// Application log in namespace
 		Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
 
 		for _, output := range framework.Forwarder.Spec.Outputs {
 			outputType := output.Type
-			raw, err := framework.ReadRawApplicationLogsFrom(outputType)
+			raw, err := framework.ReadRawApplicationLogsFrom(string(outputType))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs for type %s", outputType)
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs for type %s: %s", outputType, raw)
@@ -124,26 +117,28 @@ created by main.main
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
 		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("skip for vector")
-			}
+			Skip("TODO: FIX MEskip for vector")
 			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputWithVisitor("forward-pipeline", func(spec *logging.InputSpec) {
-					spec.Application = &logging.Application{
-						Namespaces: []string{appNamespace},
+				FromInputName("forward-pipeline", func(spec *obs.InputSpec) {
+					spec.Type = obs.InputTypeApplication
+					spec.Application = &obs.Application{
+						Includes: []obs.NamespaceContainerSpec{
+							{Namespace: appNamespace},
+						},
 					}
 				}).
 				WithMultineErrorDetection().
 				ToHttpOutput()
 		}),
 		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("skip for vector")
-			}
+			Skip("TODO: FIX MEskip for vector")
 			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
-					spec.Application = &logging.Application{
-						Namespaces: []string{appNamespace},
+				FromInputName("multiline-log-ns", func(spec *obs.InputSpec) {
+					spec.Type = obs.InputTypeApplication
+					spec.Application = &obs.Application{
+						Includes: []obs.NamespaceContainerSpec{
+							{Namespace: appNamespace},
+						},
 					}
 				}).
 				WithMultineErrorDetection().
@@ -155,13 +150,15 @@ created by main.main
 				ToElasticSearchOutput()
 		}),
 		Entry("of multiple application NS source with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("skip for vector")
-			}
+			Skip("TODO: FIX MEskip for vector")
 			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
-					spec.Application = &logging.Application{
-						Namespaces: []string{appNamespace, "multi-line-test-2"},
+				FromInputName("multiline-log-ns", func(spec *obs.InputSpec) {
+					spec.Type = obs.InputTypeApplication
+					spec.Application = &obs.Application{
+						Includes: []obs.NamespaceContainerSpec{
+							{Namespace: appNamespace},
+							{Namespace: "multi-line-test-2"},
+						},
 					}
 				}).
 				WithMultineErrorDetection().

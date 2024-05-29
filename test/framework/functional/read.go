@@ -3,6 +3,8 @@ package functional
 import (
 	"context"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"strings"
@@ -87,22 +89,20 @@ func (f *CollectorFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) (
 }
 
 func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType string) (results []string, err error) {
-	outputSpecs := f.Forwarder.Spec.OutputMap()
-	outputType := outputName
-	var outputSpec *logging.OutputSpec
+	outputSpecs := internalobs.Outputs(f.Forwarder.Spec.Outputs).Map()
+	var outputSpec obs.OutputSpec
 	if output, found := outputSpecs[outputName]; found {
-		outputType = output.Type
 		outputSpec = output
 	}
 	var readLogs func() ([]string, error)
 
-	switch outputType {
-	case logging.OutputTypeKafka:
+	switch outputSpec.Type {
+	case obs.OutputTypeKafka:
 		readLogs = func() ([]string, error) {
 			switch sourceType {
-			case logging.InputNameAudit:
+			case string(obs.InputTypeAudit):
 				sourceType = kafka.AuditLogsTopic
-			case logging.InputNameInfrastructure:
+			case string(obs.InputTypeInfrastructure):
 				sourceType = kafka.InfraLogsTopic
 			default:
 				sourceType = kafka.AppLogsTopic
@@ -110,11 +110,11 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			container := kafka.ConsumerNameForTopic(sourceType)
 			return f.ReadApplicationLogsFromKafka(sourceType, "localhost:9092", container)
 		}
-	case logging.OutputTypeElasticsearch:
+	case obs.OutputTypeElasticsearch:
 		readLogs = func() ([]string, error) {
 			option := Option{"port", "9200"}
-			if outputSpec != nil {
-				if esurl, err := url.Parse(outputSpec.URL); err == nil {
+			if outputSpec.Elasticsearch != nil {
+				if esurl, err := url.Parse(outputSpec.Elasticsearch.URL); err == nil {
 					option.Value = esurl.Port()
 				}
 			}
@@ -123,7 +123,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 	default:
 		readLogs = func() ([]string, error) {
 			var result string
-			outputFiles, ok := outputLogFile[outputType]
+			outputFiles, ok := outputLogFile[string(outputSpec.Type)]
 			if !ok {
 				return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
 			}

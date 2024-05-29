@@ -2,6 +2,7 @@ package functional
 
 import (
 	"bytes"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	"os"
 	"strings"
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	VectorHttpSourceConfTemplate = "" +
+	VectorHttpSourceBenchmarkConfTemplate = "" +
 		`[sources.my_source]
 type = "http_server"
 address = "127.0.0.1:8090"
@@ -63,6 +64,43 @@ path = "{{.Path}}"
 [sinks.my_sink.encoding]
 codec = "json"
 `
+	VectorHttpSourceConfTemplate = "" +
+		`[sources.my_source]
+type = "http_server"
+address = "127.0.0.1:8090"
+decoding.codec = "json"
+framing.method = "newline_delimited"
+
+{{ if ne .MinTLS "" }}
+[sources.my_source.tls]
+enabled = true
+{{ if ne .MinTLS "" }}
+min_tls_version = "{{.MinTLS}}"
+{{ end }}
+{{ if ne .Ciphers "" }}
+ciphersuites = "{{.Ciphers}}"
+{{ end }}
+key_file = "/tmp/secrets/http/tls.key"
+crt_file = "/tmp/secrets/http/tls.crt"
+{{ end }}
+
+[transforms.app_logs]
+type = "remap"
+inputs = ["my_source"]
+source = '''
+  del(.source_type)
+  del(.timestamp)
+'''
+
+[sinks.my_sink]
+inputs = ["app_logs"]
+type = "file"
+path = "{{.Path}}"
+
+[sinks.my_sink.encoding]
+codec = "json"
+except_fields = ["path"]
+`
 	FluentdHttpSourceConf = `
 <system>
   log_level debug
@@ -90,9 +128,14 @@ codec = "json"
 `
 )
 
-func VectorConfFactory(profile configv1.TLSProfileType, path string) string {
-	if path == "" {
-		path = "/tmp/app-logs"
+func VectorConfFactory(profile configv1.TLSProfileType, options ...Option) string {
+	confTemplate := VectorHttpSourceConfTemplate
+	if found, o := OptionsInclude("template", options); found {
+		confTemplate = o.Value
+	}
+	path := "/tmp/app-logs"
+	if found, o := OptionsInclude("path", options); found {
+		path = o.Value
 	}
 	minTLS := ""
 	ciphers := ""
@@ -103,7 +146,7 @@ func VectorConfFactory(profile configv1.TLSProfileType, path string) string {
 		}
 
 	}
-	tmpl, err := template.New("").Parse(VectorHttpSourceConfTemplate)
+	tmpl, err := template.New("").Parse(confTemplate)
 	if err != nil {
 		log.V(0).Error(err, "Unable to parse the vector http conf template")
 		os.Exit(1)
@@ -124,15 +167,15 @@ func VectorConfFactory(profile configv1.TLSProfileType, path string) string {
 	return b.String()
 }
 
-func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.AddVectorHttpOutputWithConfig(b, output, "", nil, "")
+func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
+	return f.AddVectorHttpOutputWithConfig(b, output, "", nil)
 }
 
-func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output logging.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, path string) error {
+func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output obs.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, options ...Option) error {
 	log.V(2).Info("Adding vector http output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	toml := VectorConfFactory(profile, path)
+	toml := VectorConfFactory(profile, options...)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"vector.toml": toml,
 	})
@@ -177,8 +220,8 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 	return nil
 }
 
-func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec, image string) error {
-	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, "/tmp/{{kubernetes.container_name}}.log"); err != nil {
+func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output obs.OutputSpec, image string) error {
+	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, Option{"path", "/tmp/{{kubernetes.container_name}}.log"}, Option{"template", VectorHttpSourceBenchmarkConfTemplate}); err != nil {
 		return err
 	}
 	b.GetContainer(logging.OutputTypeHttp).WithImage(image).Update()

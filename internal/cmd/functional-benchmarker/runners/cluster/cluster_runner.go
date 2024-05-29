@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"path"
 	"strings"
@@ -60,16 +59,17 @@ func (r *ClusterRunner) Deploy() {
 			testclient.Close()
 		}
 	}
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, cleanup, r.Verbosity, logging.LogCollectionTypeVector)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, cleanup, r.Verbosity)
 	r.framework.Conf = r.CollectorConfig
 
-	testruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
-		FromInputWithVisitor("benchmark", func(spec *logging.InputSpec) {
-			spec.Application = &logging.Application{
-				Namespaces: []string{r.Namespace()},
-			}
-		}).
-		ToHttpOutput()
+	//TODO: FIX ME
+	//testruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
+	//	FromInputWithVisitor("benchmark", func(spec *logging.InputSpec) {
+	//		spec.Application = &logging.Application{
+	//			Namespaces: []string{r.Namespace()},
+	//		}
+	//	}).
+	//	ToHttpOutput()
 
 	//modify config to only collect loader containers
 	r.framework.VisitConfig = func(conf string) string {

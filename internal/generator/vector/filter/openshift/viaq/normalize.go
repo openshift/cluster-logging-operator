@@ -23,7 +23,11 @@ if !exists(.level) {
 	}
 }
 `
-	RemoveSourceType     = `del(.source_type)`
+	RemovePartial    = `del(._partial)`
+	RemoveFile       = `del(.file)`
+	RemoveSourceType = `del(.source_type)`
+	//TODO: Remove me for v2 ViaQ
+	RemoveLogSource      = `del(.log_source)`
 	HandleEventRouterLog = `
 pod_name = string!(.kubernetes.pod_name)
 if starts_with(pod_name, "eventrouter-") {

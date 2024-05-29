@@ -4,7 +4,12 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+)
+
+const (
+	Component = "component"
 )
 
 type TLSConf struct {
@@ -20,11 +25,20 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options) TLSConf {
+func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options, options ...framework.Option) framework.Element {
+	if outURL, found := framework.HasOption(framework.URL, options); found {
+		if !url.IsSecure(outURL.(string)) {
+			return framework.Nil
+		}
+	}
 	conf := TLSConf{
 		Component: "sinks",
 		ID:        id,
 	}
+	if comp, found := framework.HasOption(Component, options); found {
+		conf.Component = comp.(string)
+	}
+
 	if spec != nil {
 		conf.CAFilePath = ConfigMapOrSecretPath(spec.CA)
 		conf.CertPath = ConfigMapOrSecretPath(spec.Certificate)

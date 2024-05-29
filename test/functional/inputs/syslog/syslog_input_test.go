@@ -67,7 +67,7 @@ var _ = Describe("[Functional][Inputs][SysLog] Functional tests", func() {
 				func(b *runtime.PodBuilder) error {
 					err := syslog.AddSenderContainer(b)
 					Expect(err).To(BeNil(), "Expected no errors deploying syslog sender")
-					return framework.AddVectorHttpOutputWithConfig(b, framework.Forwarder.Spec.Outputs[0], "", nil, functional.InfrastructureLogFile)
+					return framework.AddVectorHttpOutputWithConfig(b, framework.Forwarder.Spec.Outputs[0], "", nil, functional.Option{"path": functional.InfrastructureLogFile})
 				}),
 			).To(BeNil())
 

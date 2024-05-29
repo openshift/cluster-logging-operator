@@ -1,6 +1,7 @@
 package functional
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"net/url"
 	"strings"
 
@@ -8,16 +9,15 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 const IncreaseRsyslogMaxMessageSize = "$MaxMessageSize 50000"
 
-func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
 	log.V(2).Info("Adding syslog output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	var baseRsyslogConfig string
-	u, _ := url.Parse(output.URL)
+	u, _ := url.Parse(output.Syslog.URL)
 	if strings.ToLower(u.Scheme) == "udp" {
 		baseRsyslogConfig = e2e.UdpSyslogInput
 	} else {
@@ -26,7 +26,7 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 	// using unsecure rsyslog conf
 	rfc := e2e.RFC5424
 	if output.Syslog != nil && output.Syslog.RFC != "" {
-		rfc = e2e.MustParseRFC(output.Syslog.RFC)
+		rfc = e2e.MustParseRFC(string(output.Syslog.RFC))
 	}
 	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, rfc)
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")

@@ -10,7 +10,7 @@ import (
 var clfMigrations = []func(spec obs.ClusterLogForwarderSpec) (obs.ClusterLogForwarderSpec, []metav1.Condition){
 	// clusterlogforwarder.EnsureInputsHasType,
 	MigrateLokiStack,
-	// clusterlogforwarder.MigrateInputs,
+	MigrateInputs,
 	// clusterlogforwarder.DropUnreferencedOutputs,
 }
 

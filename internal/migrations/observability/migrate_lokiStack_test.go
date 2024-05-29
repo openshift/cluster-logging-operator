@@ -58,7 +58,7 @@ var _ = Describe("MigrateLokiStack", func() {
 			visit(&clfSpec)
 		}
 
-		spec, conditions = MigrateClusterLogForwarder(clfSpec)
+		spec, conditions = MigrateLokiStack(clfSpec)
 		Expect(spec).To(Equal(expSpec))
 		Expect(conditions).To(ContainElement(
 			metav1.Condition{

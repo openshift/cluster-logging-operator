@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"net/http"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -29,7 +30,7 @@ var (
 	route     *openshiftv1.Route
 )
 
-func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder, obs obs.OutputSpec) error {
 	if err := f.createCloudWatchService(); err != nil {
 		return err
 	}

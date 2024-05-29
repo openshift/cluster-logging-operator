@@ -16,6 +16,15 @@ func OutputTypeUnknown(t obsv1.OutputType) error {
 
 type Outputs []obsv1.OutputSpec
 
+// Map returns a map of output name to output spec
+func (outputs Outputs) Map() map[string]obsv1.OutputSpec {
+	m := map[string]obsv1.OutputSpec{}
+	for _, o := range outputs {
+		m[o.Name] = o
+	}
+	return m
+}
+
 // ConfigmapNames returns a unique set of unordered configmap names
 func (outputs Outputs) ConfigmapNames() []string {
 	names := set.New[string]()

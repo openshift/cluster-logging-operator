@@ -1,16 +1,13 @@
 package normalization
 
 import (
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	"strings"
 )
 
 // Fast test for checking reassembly logic for split log by CRI-O.
@@ -30,11 +27,10 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 	)
 
 	BeforeEach(func() {
-		Skip("fix me for vector")
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput()
+			FromInput(obs.InputTypeApplication).
+			ToHttpOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {
@@ -58,7 +54,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 		msg = functional.NewCRIOLogMessage(timestamp, "you", false)
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
-		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs[0].Message).Should(Equal("May the force be with you"))
 	})
@@ -81,7 +77,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
 
-		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(len(logs)).To(Equal(2))
 		Expect(logs[0].Message).Should(Equal("Run, Forest, Run!"))
@@ -107,7 +103,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 			}
 			message := strings.Join(messages, "\n")
 			Expect(framework.WriteMessagesToApplicationLog(message, 1)).To(Succeed())
-			logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(logs[0].Message).Should(Equal(stack))
 		})
@@ -314,5 +310,5 @@ const JsonJavaStackTrace = `{"instant":{"epochSecond":1617711572,"nanoOfSecond":
 "method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
 {"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},
 {"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,"exact":true,
-"location":"idea_rt.jar","version":"?"}]},"endOfBatch":false,"loggerFqcn":"org.apache.logging.log4j.spi.AbstractLogger",
+"location":"idea_rt.jar","version":"?"}]},"endOfBatch":false,"loggerFqcn":"org.apache.obs.log4j.spi.AbstractLogger",
 "threadId":1,"threadPriority":5,"service":"java-app"}`

@@ -2,7 +2,7 @@ package normalization
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -24,9 +24,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 
 	Context("with vector", func() {
 		BeforeEach(func() {
-			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+			framework = functional.NewCollectorFunctionalFramework()
 			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
+				FromInput(obs.InputTypeAudit).
 				ToElasticSearchOutput()
 			Expect(framework.Deploy()).To(BeNil())
 		})
@@ -55,7 +55,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"Metadata"}`, functional.CRIOTime(nanoTime))
 			Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 			// Read line from Log Forward output
-			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			raw, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			var logs []types.K8sAuditLog
 			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
@@ -92,7 +92,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			Expect(framework.WriteMessagesToOpenshiftAuditLog(auditLogLine, 10)).To(BeNil())
 			Expect(framework.WriteMessagesToOAuthAuditLog(auditLogLine, 10)).To(BeNil())
 			// Read line from Log Forward output
-			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			raw, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			var logs []types.OpenshiftAuditLog
 			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
@@ -128,7 +128,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			// Write log line as input to fluentd
 			Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
 			// Read line from Log Forward output
-			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			raw, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			var logs []types.LinuxAuditLog
 			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
@@ -161,7 +161,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			// Write log line as input to fluentd
 			Expect(framework.WriteMessagesToOVNAuditLog(ovnLogLine, 10)).To(BeNil())
 			// Read line from Log Forward output
-			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			raw, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			var logs []types.OVNAuditLog
 			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)

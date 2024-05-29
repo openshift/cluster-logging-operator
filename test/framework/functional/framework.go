@@ -3,14 +3,15 @@ package functional
 import (
 	"context"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"net"
 	"os"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogforwarder"
+	obsmigrations "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -59,7 +60,7 @@ type CollectorFunctionalFramework struct {
 	Conf              string
 	image             string
 	Labels            map[string]string
-	Forwarder         *logging.ClusterLogForwarder
+	Forwarder         *obs.ClusterLogForwarder
 	Test              *client.Test
 	Pod               *corev1.Pod
 	fluentContainerId string
@@ -78,21 +79,17 @@ type CollectorFunctionalFramework struct {
 	delayedWriter *commonlog.BufferedLogWriter
 }
 
-func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
-	test := client.NewTest()
-	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logging.LogCollectionTypeFluentd)
-}
-
+// TODO: REMOVE ME
 func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType, testOptions ...client.TestOption) *CollectorFunctionalFramework {
+	return nil
+}
+
+func NewCollectorFunctionalFramework(testOptions ...client.TestOption) *CollectorFunctionalFramework {
 	test := client.NewTest(testOptions...)
-	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logCollectorType)
+	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0)
 }
 
-func NewFluentdFunctionalFrameworkForTest(t *testing.T) *CollectorFunctionalFramework {
-	return NewCollectorFunctionalFrameworkUsing(client.ForTest(t), func() {}, 0, logging.LogCollectionTypeFluentd)
-}
-
-func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int, collectorType logging.LogCollectionType) *CollectorFunctionalFramework {
+func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *CollectorFunctionalFramework {
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
 			verbosity = i
@@ -117,7 +114,7 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 			"testname": testName,
 		},
 		Test:          t,
-		Forwarder:     testruntime.NewClusterLogForwarder(),
+		Forwarder:     obsruntime.NewClusterLogForwarder(t.NS.Name, testName, runtime.Initialize),
 		closeClient:   fnClose,
 		collector:     collectorImpl,
 		delayedWriter: delayedWriter,
@@ -188,7 +185,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
-	f.Forwarder.Spec, _, _ = clusterlogforwarder.MigrateClusterLogForwarderSpec(f.Namespace, f.Name, f.Forwarder.Spec, nil, map[string]bool{}, "", "")
+	f.Forwarder.Spec, _ = obsmigrations.MigrateClusterLogForwarder(f.Forwarder.Spec)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
@@ -374,14 +371,10 @@ func (f *CollectorFunctionalFramework) deploySecrets() error {
 	return nil
 }
 
-func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, outputs []logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, outputs []obs.OutputSpec) error {
 	log.V(2).Info("Adding outputs", "outputs", outputs)
 	for _, output := range outputs {
 		switch output.Type {
-		case logging.OutputTypeFluentdForward:
-			if err := f.AddForwardOutput(b, output); err != nil {
-				return err
-			}
 		case logging.OutputTypeSyslog:
 			if err := f.AddSyslogOutput(b, output); err != nil {
 				return err
@@ -395,7 +388,7 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 				return err
 			}
 		case logging.OutputTypeHttp:
-			if err := f.AddFluentdHttpOutput(b, output); err != nil {
+			if err := f.AddVectorHttpOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeSplunk:

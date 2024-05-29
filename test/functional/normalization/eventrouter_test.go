@@ -2,10 +2,8 @@ package normalization
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
 
@@ -13,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
@@ -27,7 +25,6 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 	const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 	var (
 		framework                          *functional.CollectorFunctionalFramework
-		containerPath                      string
 		writeMsg                           func(msg string) error
 		templateForAnyKubernetesWithEvents = types.KubernetesWithEvent{
 			Kubernetes: functional.TemplateForAnyKubernetes,
@@ -49,11 +46,9 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 					Message:          event.Message,
 					Level:            types.AnyString,
 					Hostname:         types.AnyString,
-					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+					PipelineMetadata: types.PipelineMetadata{},
 					Timestamp:        time.Time{},
-					LogSource:        logging.InfrastructureSourceContainer,
-					LogType:          logging.InputNameApplication,
-					ViaqMsgID:        types.AnyString,
+					LogType:          string(obs.InputTypeApplication),
 					Openshift: types.OpenshiftMeta{
 						ClusterID: types.AnyString,
 						Sequence:  types.NewOptionalInt(""),
@@ -64,7 +59,6 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 			tmpl.Kubernetes.ContainerImage = types.OptionalString
 			tmpl.Kubernetes.ContainerImageID = types.OptionalString
 			tmpl.Kubernetes.PodID = types.OptionalString
-			tmpl.PipelineMetadata.Collector.OriginalRawMessage = types.AnyString
 			tmpl.Kubernetes.Event = types.ViaqEventRouterEvent{
 				Event: *event,
 				Verb:  types.AnyString,
@@ -73,38 +67,22 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 			if oldEvent != nil {
 				tmpl.OldEvent = oldEvent
 			}
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				tmpl.ViaQCommon.PipelineMetadata = types.PipelineMetadata{}
-				tmpl.ViaQCommon.ViaqMsgID = types.OptionalString
-			}
 
 			return tmpl
 		}
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToHttpOutput()
-
-		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
-			Skip("fluentd is not supported")
-			containerPath = fmt.Sprintf("/var/log/pods/%s_eventrouter-123_12345/eventrouter/0.log", framework.Namespace)
-			framework.VisitConfig = func(conf string) string {
-				return strings.Replace(conf, "/var/log/pods/*/*/*.log", containerPath, 1)
-			}
-			writeMsg = func(msg string) error {
-				return framework.WriteMessagesToLog(msg, 1, containerPath)
-			}
-		} else {
-			// vector only collects logs using pods, namespaces, containers it knows about.
-			writeMsg = func(msg string) error {
-				return framework.WriteMessagesToApplicationLog(msg, 1)
-			}
-			framework.VisitConfig = func(conf string) string {
-				return strings.Replace(conf, `pod_name, "eventrouter-"`, `pod_name, "functional"`, 1)
-			}
+		// vector only collects logs using pods, namespaces, containers it knows about.
+		writeMsg = func(msg string) error {
+			return framework.WriteMessagesToApplicationLog(msg, 1)
+		}
+		framework.VisitConfig = func(conf string) string {
+			return strings.Replace(conf, `pod_name, "eventrouter-"`, `pod_name, "functional"`, 1)
 		}
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -123,7 +101,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		err = writeMsg(msg)
 		Expect(err).To(BeNil())
 
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.EventRouterLog
 		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)

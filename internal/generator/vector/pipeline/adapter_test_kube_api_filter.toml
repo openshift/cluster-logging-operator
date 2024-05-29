@@ -4,7 +4,9 @@ inputs = ["input_audit_in_kube_meta"]
 source = '''
 if .log_type == "audit" && .log_source == "kubeAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  .tag = ".k8s-audit.log"
+  del(.file)
+  del(.source_type)
+  del(.log_source)
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .k8s_audit_level = .level

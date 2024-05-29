@@ -2,7 +2,7 @@ package viaq
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -30,17 +30,9 @@ if err == null {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
 }
 `
-	HostAuditLogTag = ".linux-audit.log"
-	K8sAuditLogTag  = ".k8s-audit.log"
-	OpenAuditLogTag = ".openshift-audit.log"
-	OvnAuditLogTag  = ".ovn-audit.log"
 )
 
 var (
-	AddHostAuditTag        = fmt.Sprintf(".tag = %q", HostAuditLogTag)
-	AddK8sAuditTag         = fmt.Sprintf(".tag = %q", K8sAuditLogTag)
-	AddOpenAuditTag        = fmt.Sprintf(".tag = %q", OpenAuditLogTag)
-	AddOvnAuditTag         = fmt.Sprintf(".tag = %q", OvnAuditLogTag)
 	FixK8sAuditLevel       = `.k8s_audit_level = .level`
 	FixOpenshiftAuditLevel = `.openshift_audit_level = .level`
 )
@@ -50,10 +42,12 @@ func auditHostLogs() string {
 if .log_type == "%s" && .log_source == "%s" {
 %s
 }
-`, logging.InputNameAudit, logging.AuditSourceAuditd,
+`, string(obs.InputTypeAudit), obs.AuditSourceAuditd,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			AddHostAuditTag,
+			RemoveFile,
+			RemoveSourceType,
+			RemoveLogSource,
 			ParseHostAuditLogs,
 			AddDefaultLogLevel,
 			FixHostname,
@@ -66,10 +60,12 @@ func auditK8sLogs() string {
 if .log_type == "%s" && .log_source == "%s" {
 %s
 }
-`, logging.InputNameAudit, logging.AuditSourceKube,
+`, string(obs.InputTypeAudit), obs.AuditSourceKube,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			AddK8sAuditTag,
+			RemoveFile,
+			RemoveSourceType,
+			RemoveLogSource,
 			ParseAndFlatten,
 			FixK8sAuditLevel,
 			FixHostname,
@@ -82,10 +78,12 @@ func auditOpenshiftLogs() string {
 if .log_type == "%s" && .log_source == "%s" {
 %s
 }
-`, logging.InputNameAudit, logging.AuditSourceOpenShift,
+`, string(obs.InputTypeAudit), obs.AuditSourceOpenShift,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			AddOpenAuditTag,
+			RemoveFile,
+			RemoveSourceType,
+			RemoveLogSource,
 			ParseAndFlatten,
 			FixOpenshiftAuditLevel,
 			FixHostname,
@@ -98,10 +96,12 @@ func auditOVNLogs() string {
 if .log_type == "%s" && .log_source == "%s" {
 %s
 }
-`, logging.InputNameAudit, logging.AuditSourceOVN,
+`, string(obs.InputTypeAudit), obs.AuditSourceOVN,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			AddOvnAuditTag,
+			RemoveFile,
+			RemoveSourceType,
+			RemoveLogSource,
 			FixLogLevel,
 			FixHostname,
 			FixTimestampField,

@@ -23,6 +23,15 @@ func Threshold(ls *obs.LimitSpec) (int64, bool) {
 
 type Inputs []obs.InputSpec
 
+// Map returns a map of input name to input spec
+func (inputs Inputs) Map() map[string]obs.InputSpec {
+	m := map[string]obs.InputSpec{}
+	for _, i := range inputs {
+		m[i.Name] = i
+	}
+	return m
+}
+
 // ConfigmapNames returns a unique set of unordered configmap names
 func (inputs Inputs) ConfigmapNames() []string {
 	names := set.New[string]()

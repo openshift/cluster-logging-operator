@@ -35,7 +35,6 @@ inputs = {{.Inputs}}
 endpoints = ["{{.Endpoint}}"]
 bulk.index = "{{ .Index }}"
 bulk.action = "create"
-id_key = "_id"
 {{.Compression}}
 {{- if ne .Version 0 }}
 api_version = "v{{ .Version }}"
@@ -63,7 +62,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
 		common.NewRequest(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
+		tls.New(id, o.TLS, secrets, op, Option{URL, o.Elasticsearch.URL}),
 		auth.HTTPAuth(id, o.Elasticsearch.Authentication, secrets),
 	}
 

@@ -3,6 +3,7 @@ package url
 
 import (
 	"fmt"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"net/url"
 	"strings"
 )
@@ -25,6 +26,16 @@ var secureSchemes = map[string]string{
 	"udps":  "udp",
 	"tls":   "tcp",
 	"ssl":   "tcp",
+}
+
+// IsSecure determins if a URL specs a secure scheme
+func IsSecure(urlString string) bool {
+	if url, err := Parse(urlString); err == nil {
+		return IsTLSScheme(url.Scheme)
+	} else {
+		log.V(0).Error(err, "Unable to parse URL", "url", urlString)
+	}
+	return true
 }
 
 // IsTLSScheme returns true if scheme is recognized as needing TLS security,

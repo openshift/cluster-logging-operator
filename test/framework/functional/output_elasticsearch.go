@@ -1,6 +1,7 @@
 package functional
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,14 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
+type ElasticsearchVersion int
+
+const (
+	ElasticsearchVersion6 ElasticsearchVersion = 6
+	ElasticsearchVersion7 ElasticsearchVersion = 7
+	ElasticsearchVersion8 ElasticsearchVersion = 8
+)
+
 var (
 	esVersionToImage = map[ElasticsearchVersion]string{
 		ElasticsearchVersion6: "elasticsearch:6.8.23",
@@ -19,15 +28,15 @@ var (
 	}
 )
 
-func (f *CollectorFunctionalFramework) AddES7Output(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddES7Output(b *runtime.PodBuilder, output obs.OutputSpec) error {
 	return AddESOutput(ElasticsearchVersion7, b, output)
 }
 
-func AddESOutput(version ElasticsearchVersion, b *runtime.PodBuilder, output logging.OutputSpec) error {
+func AddESOutput(version ElasticsearchVersion, b *runtime.PodBuilder, output obs.OutputSpec) error {
 	log.V(2).Info("Adding elasticsearch output", "name", output.Name, "version", version)
 	name := strings.ToLower(output.Name)
 
-	esURL, err := url.Parse(output.URL)
+	esURL, err := url.Parse(output.Elasticsearch.URL)
 	if err != nil {
 		return err
 	}

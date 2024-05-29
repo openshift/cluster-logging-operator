@@ -54,7 +54,10 @@ if .log_source == "container" {
       }
     }
   }
+  del(._partial)
+  del(.file)
   del(.source_type)
+  del(.log_source)
   del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)

@@ -4,7 +4,6 @@ inputs = ["application"]
 endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "{{.log_type}}"
 bulk.action = "create"
-id_key = "_id"
 api_version = "v6"
 
 [sinks.es_1.tls]

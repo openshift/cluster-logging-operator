@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 	"text/template"
 
@@ -53,7 +54,7 @@ splunk:
 	SplunkEndpointHTTP = fmt.Sprintf("http://localhost:%d", SplunkHecPort)
 )
 
-func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
 	data, err := GenerateConfigmapData()
 	if err != nil {
 		return err

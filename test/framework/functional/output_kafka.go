@@ -2,11 +2,11 @@ package functional
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strconv"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 )
@@ -28,7 +28,7 @@ const (
 	zookeeperLeaderElectionPort = int32(3888)
 )
 
-func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
 	log.V(2).Info("Adding kafka output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 

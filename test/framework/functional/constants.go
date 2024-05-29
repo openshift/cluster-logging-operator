@@ -1,9 +1,8 @@
 package functional
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"time"
-
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 const (
@@ -29,7 +28,7 @@ var (
 	maxDuration          time.Duration
 	defaultRetryInterval time.Duration
 
-	fluentdLogPath = map[string]string{
+	fileLogPaths = map[string]string{
 		applicationLog:    ApplicationLogDir,
 		auditLog:          AuditLogDir,
 		ovnAuditLog:       OvnAuditLogDir,
@@ -38,26 +37,19 @@ var (
 		k8sAuditLog:       K8sAuditLogDir,
 	}
 	outputLogFile = map[string]map[string]string{
-		logging.OutputTypeHttp: {
-			logging.InputNameApplication:    ApplicationLogFile,
-			logging.InputNameAudit:          ApplicationLogFile,
-			logging.InputNameInfrastructure: ApplicationLogFile,
+		string(obs.OutputTypeHTTP): {
+			string(obs.InputTypeApplication):    ApplicationLogFile,
+			string(obs.InputTypeAudit):          ApplicationLogFile,
+			string(obs.InputTypeInfrastructure): ApplicationLogFile,
 		},
-		logging.OutputTypeFluentdForward: {
-			applicationLog:                  ApplicationLogFile,
-			auditLog:                        "/tmp/audit-logs",
-			ovnAuditLog:                     "/tmp/audit-logs",
-			k8sAuditLog:                     "/tmp/audit-logs",
-			logging.InputNameInfrastructure: "/tmp/infra-logs",
+		string(obs.OutputTypeSyslog): {
+			applicationLog:                      "/tmp/infra.log",
+			auditLog:                            "/tmp/infra.log",
+			k8sAuditLog:                         "/tmp/infra.log",
+			ovnAuditLog:                         "/tmp/infra.log",
+			string(obs.InputTypeInfrastructure): "/tmp/infra.log",
 		},
-		logging.OutputTypeSyslog: {
-			applicationLog:                  "/tmp/infra.log",
-			auditLog:                        "/tmp/infra.log",
-			k8sAuditLog:                     "/tmp/infra.log",
-			ovnAuditLog:                     "/tmp/infra.log",
-			logging.InputNameInfrastructure: "/tmp/infra.log",
-		},
-		logging.OutputTypeKafka: {
+		string(obs.OutputTypeKafka): {
 			applicationLog: "/var/log/app.log",
 			auditLog:       "/var/log/infra.log",
 			k8sAuditLog:    "/var/log/audit.log",

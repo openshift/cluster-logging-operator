@@ -5,18 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-var ElasticIndex = map[string]string{
-	logging.InputNameApplication:    "app-write",
-	logging.InputNameAudit:          "audit-write",
-	logging.InputNameInfrastructure: "infra-write",
+var (
+	logTypeIndexMap = map[string]string{}
+)
+
+func init() {
+
+	for _, t := range obs.InputTypes {
+		logTypeIndexMap[string(t)] = fmt.Sprintf("%v-write", t)
+	}
 }
 
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (results []string, err error) {
-	index, ok := ElasticIndex[outputLogType]
+	index, ok := logTypeIndexMap[outputLogType]
 	if !ok {
 		return []string{}, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
 	}

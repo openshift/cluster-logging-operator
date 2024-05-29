@@ -71,12 +71,12 @@ var _ = Describe("[functional][outputs][tlssecurityprofile] Functional tests ", 
 		},
 		Entry("to an HTTP output with matching profiles", logging.OutputTypeHttp, openshiftv1.TLSProfileIntermediateType, func(f *functional.CollectorFunctionalFramework, secret *corev1.Secret) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {
-				return f.AddVectorHttpOutputWithConfig(b, f.Forwarder.Spec.Outputs[0], openshiftv1.TLSProfileIntermediateType, secret, "")
+				return f.AddVectorHttpOutputWithConfig(b, f.Forwarder.Spec.Outputs[0], openshiftv1.TLSProfileIntermediateType, secret)
 			}
 		}),
 		Entry("to an HTTP output with different profiles", logging.OutputTypeHttp, openshiftv1.TLSProfileIntermediateType, func(f *functional.CollectorFunctionalFramework, secret *corev1.Secret) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {
-				return f.AddVectorHttpOutputWithConfig(b, f.Forwarder.Spec.Outputs[0], openshiftv1.TLSProfileOldType, secret, "")
+				return f.AddVectorHttpOutputWithConfig(b, f.Forwarder.Spec.Outputs[0], openshiftv1.TLSProfileOldType, secret)
 			}
 		}),
 	)

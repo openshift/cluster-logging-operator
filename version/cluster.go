@@ -2,31 +2,17 @@ package version
 
 import (
 	"context"
-	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	operatorConditionName = "OPERATOR_CONDITION_NAME"
 )
 
 var (
 	clusterVersion string
 	clusterID      string
 )
-
-// OperatorVersion get clo operator version from OPERATOR_CONDITION_NAME ENV variable
-func OperatorVersion() (string, error) {
-	operatorVersion, found := os.LookupEnv(operatorConditionName)
-	if !found {
-		return "", fmt.Errorf("%s must be set", operatorConditionName)
-	}
-	return operatorVersion, nil
-}
 
 // ClusterVersion retrieves the ClusterVersion spec
 func ClusterVersion(k8client client.Reader) (string, string, error) {

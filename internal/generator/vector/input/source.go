@@ -48,29 +48,40 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		ib := source.NewContainerPathGlobBuilder()
 		eb := source.NewContainerPathGlobBuilder()
 		appIncludes := []string{}
-		if len(input.Application.Includes) > 0 {
-			for _, in := range input.Application.Includes {
-				ncs := source.NamespaceContainer{
-					Namespace: in.Namespace,
-					Container: in.Container,
+		if input.Application != nil {
+			if len(input.Application.Includes) > 0 {
+				for _, in := range input.Application.Includes {
+					ncs := source.NamespaceContainer{
+						Namespace: in.Namespace,
+						Container: in.Container,
+					}
+					ib.AddCombined(ncs)
+					appIncludes = append(appIncludes, ncs.Namespace)
 				}
-				ib.AddCombined(ncs)
-				appIncludes = append(appIncludes, ncs.Namespace)
 			}
-		}
-		// Need to remove any of the default excluded infra namespaces if they are part of the includes
-		excludesList := pruneInfraNS(appIncludes)
-		for _, ns := range excludesList {
-			ncs := source.NamespaceContainer{
-				Namespace: ns,
-			}
-			eb.AddCombined(ncs)
-		}
-		if len(input.Application.Excludes) > 0 {
-			for _, ex := range input.Application.Excludes {
+			// Need to remove any of the default excluded infra namespaces if they are part of the includes
+			excludesList := pruneInfraNS(appIncludes)
+			for _, ns := range excludesList {
 				ncs := source.NamespaceContainer{
-					Namespace: ex.Namespace,
-					Container: ex.Container,
+					Namespace: ns,
+				}
+				eb.AddCombined(ncs)
+			}
+			if len(input.Application.Excludes) > 0 {
+				for _, ex := range input.Application.Excludes {
+					ncs := source.NamespaceContainer{
+						Namespace: ex.Namespace,
+						Container: ex.Container,
+					}
+					eb.AddCombined(ncs)
+				}
+			}
+		} else {
+			// Need to remove any of the default excluded infra namespaces if they are part of the includes
+			excludesList := pruneInfraNS(appIncludes)
+			for _, ns := range excludesList {
+				ncs := source.NamespaceContainer{
+					Namespace: ns,
 				}
 				eb.AddCombined(ncs)
 			}
@@ -80,9 +91,14 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		excludes := eb.Build(infraNamespaces...)
 		return NewContainerSource(input, collectorNS, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer)
 	case obs.InputTypeInfrastructure:
-		sources := set.New(input.Infrastructure.Sources...)
-		if sources.Len() == 0 {
+		sources := set.Set[obs.InfrastructureSource]{}
+		if input.Infrastructure == nil {
 			sources.Insert(obs.InfrastructureSources...)
+		} else {
+			sources = set.New(input.Infrastructure.Sources...)
+			if sources.Len() == 0 {
+				sources.Insert(obs.InfrastructureSources...)
+			}
 		}
 		if sources.Has(obs.InfrastructureSourceContainer) {
 			infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
@@ -97,9 +113,14 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		}
 		return els, ids
 	case obs.InputTypeAudit:
-		sources := set.New(input.Audit.Sources...)
-		if sources.Len() == 0 {
+		sources := set.Set[obs.AuditSource]{}
+		if input.Audit == nil || len(input.Audit.Sources) == 0 {
 			sources.Insert(obs.AuditSources...)
+		} else {
+			sources = set.New(input.Audit.Sources...)
+			if sources.Len() == 0 {
+				sources.Insert(obs.AuditSources...)
+			}
 		}
 		if sources.Has(obs.AuditSourceAuditd) {
 			cels, cids := NewAuditAuditdSource(input, op)

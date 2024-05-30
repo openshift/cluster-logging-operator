@@ -49,6 +49,12 @@ var _ = Describe("inputs", func() {
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
+			Name: string(obs.InputTypeApplication),
+			Type: obs.InputTypeApplication,
+		},
+			"application.toml",
+		),
+		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name:        string(obs.InputTypeApplication),
 			Type:        obs.InputTypeApplication,
 			Application: &obs.Application{},
@@ -235,6 +241,12 @@ var _ = Describe("inputs", func() {
 			"application_with_matchLabels.toml",
 		),
 		Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
+			Name: string(obs.InputTypeInfrastructure),
+			Type: obs.InputTypeInfrastructure,
+		},
+			"infrastructure.toml",
+		),
+		Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
 			Name:           string(obs.InputTypeInfrastructure),
 			Type:           obs.InputTypeInfrastructure,
 			Infrastructure: &obs.Infrastructure{},
@@ -263,6 +275,12 @@ var _ = Describe("inputs", func() {
 			Name:  string(obs.InputTypeAudit),
 			Type:  obs.InputTypeAudit,
 			Audit: &obs.Audit{},
+		},
+			"audit.toml",
+		),
+		Entry("with an audit input should generate file sources", obs.InputSpec{
+			Name: string(obs.InputTypeAudit),
+			Type: obs.InputTypeAudit,
 		},
 			"audit.toml",
 		),

@@ -56,5 +56,17 @@ const (
 	// ReasonInvalidGlob when a namespace or container include/exclude is spec'd with an invalid glob pattern
 	ReasonInvalidGlob = "InvalidGlob"
 
+	// ReasonSecretNotFound when a secret is spec'd for an input or output and was not found
+	ReasonSecretNotFound = "SecretNotFound"
+
+	// ReasonSecretKeyNotFound when the key for a secret is spec'd for an input or output and was not found as a key in the secret
+	ReasonSecretKeyNotFound = "SecretKeyNotFound"
+
+	// ReasonConfigMapNotFound when a configmap is spec'd for an input or output and was not found
+	ReasonConfigMapNotFound = "ConfigMapNotFound"
+
+	// ReasonConfigMapKeyNotFound when the key for a configmap is spec'd for an input or output and was not found as a key in the configmap
+	ReasonConfigMapKeyNotFound = "ConfigMapKeyNotFound"
+
 	ReasonMigrateOutput string = "Migrate"
 )

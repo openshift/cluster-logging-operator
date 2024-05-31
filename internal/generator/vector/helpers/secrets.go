@@ -41,7 +41,7 @@ func (s Secrets) AsString(key *obs.SecretKey) string {
 	return ""
 }
 
-// AsString returns the value of the BeearerToken if it exists or empty
+// AsString returns the value of the BearerToken if it exists or empty
 func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 	if key.Secret != nil {
 		return s.AsString(&obs.SecretKey{

@@ -34,3 +34,28 @@ func ConfigmapsForTLS(t obsv1.TLSSpec) []string {
 	}
 	return configmaps.UnsortedList()
 }
+
+// ConfigMapOrSecretKeys returns a list ConfigMapOrSecretKey, converting SecretKeys as necessary
+func ConfigMapOrSecretKeys(t obsv1.TLSSpec) []*obsv1.ConfigMapOrSecretKey {
+	results := []*obsv1.ConfigMapOrSecretKey{}
+	if t.CA != nil {
+		results = append(results, t.CA)
+	}
+	if t.Certificate != nil {
+		results = append(results, t.Certificate)
+	}
+	if t.Key != nil {
+		results = append(results, &obsv1.ConfigMapOrSecretKey{
+			Key:    t.Key.Key,
+			Secret: t.Key.Secret,
+		})
+	}
+	if t.KeyPassphrase != nil {
+		results = append(results, &obsv1.ConfigMapOrSecretKey{
+			Key:    t.KeyPassphrase.Key,
+			Secret: t.KeyPassphrase.Secret,
+		})
+	}
+
+	return results
+}

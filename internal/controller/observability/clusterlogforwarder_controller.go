@@ -4,9 +4,14 @@ import (
 	"context"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/set"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
 	"time"
@@ -30,18 +35,8 @@ var (
 
 // ClusterLogForwarderReconciler reconciles a ClusterLogForwarder object
 type ClusterLogForwarderReconciler struct {
-	client.Client
+	internalcontext.ForwarderContext
 	Scheme *runtime.Scheme
-
-	// Reader is a read only client for retrieving kubernetes resources. This
-	// client hits the API server directly, by-passing the controller cache
-	Reader client.Reader
-
-	// ClusterID is the unique ID of the cluster on which the operator is deployed
-	ClusterID string
-
-	// ClusterVersion is the version of the cluster on which the operator is deployed
-	ClusterVersion string
 }
 
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders,verbs=get;list;watch;create;update;patch;delete
@@ -51,19 +46,26 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	log := log.WithName("ClusterLogForwarderReconciler.reconcile")
 	log.V(3).Info("obs.clf controller reconciling resource", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
 
-	var instance *observabilityv1.ClusterLogForwarder
-	if instance, err = FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
+	if r.Forwarder, err = FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
 		return defaultRequeue, err
 	}
-	if instance.Spec.ManagementState == observabilityv1.ManagementStateUnmanaged {
+	if r.Forwarder.Spec.ManagementState == observabilityv1.ManagementStateUnmanaged {
 		return defaultRequeue, nil
 	}
 
-	if result, err = Initialize(r.Client, instance); err != nil {
+	if result, err = Initialize(r.Client, r.Forwarder); err != nil {
 		return result, err
 	}
 
-	if result, err = validateForwarder(r.Client, req, instance); err != nil {
+	if r.Secrets, err = MapSecrets(r.Client, req.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+		return defaultRequeue, err
+	}
+
+	if r.ConfigMaps, err = MapConfigMaps(r.Client, req.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+		return defaultRequeue, err
+	}
+
+	if result, err = validateForwarder(r.ForwarderContext); err != nil {
 		return result, err
 	}
 
@@ -71,7 +73,7 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	//TODO: Remove existing deployment/daemonset
 	//TODO: Remove stale input services
 
-	reconcileErr := ReconcileCollector(r.Client, r.Reader, *instance, r.ClusterID)
+	reconcileErr := ReconcileCollector(r.Client, r.Reader, *r.Forwarder, r.ClusterID)
 	if reconcileErr != nil {
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 		//} else {
@@ -79,6 +81,35 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	return periodicRequeue, reconcileErr
+}
+
+func MapSecrets(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (map[string]*corev1.Secret, error) {
+	names := set.New(inputs.SecretNames()...)
+	names.Insert(outputs.SecretNames()...)
+	secretMap := map[string]*corev1.Secret{}
+	if secrets, err := FetchSecrets(k8Client, namespace, names.UnsortedList()...); err != nil {
+		return nil, err
+	} else {
+		for _, s := range secrets {
+			secretMap[s.Name] = s
+		}
+	}
+
+	return secretMap, nil
+}
+
+func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (map[string]*corev1.ConfigMap, error) {
+	names := set.New(inputs.ConfigmapNames()...)
+	names.Insert(outputs.ConfigmapNames()...)
+	configMapMap := map[string]*corev1.ConfigMap{}
+	if configMaps, err := FetchConfigMaps(k8Client, namespace, names.UnsortedList()...); err != nil {
+		return nil, err
+	} else {
+		for _, cm := range configMaps {
+			configMapMap[cm.Name] = cm
+		}
+	}
+	return configMapMap, nil
 }
 
 // Initialize evaluates the spec and initializes any values that can not be enforced with annotations or are implied
@@ -99,9 +130,9 @@ func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Complete(r)
 }
 
-func validateForwarder(k8Client client.Client, req ctrl.Request, instance *obsv1.ClusterLogForwarder) (result ctrl.Result, err error) {
+func validateForwarder(forwarderContext internalcontext.ForwarderContext) (result ctrl.Result, err error) {
 	log.V(3).Info("obs-clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())
-	if failures := validations.ValidateClusterLogForwarder(k8Client, instance.Spec); len(failures) > 0 {
+	if failures := validations.ValidateClusterLogForwarder(forwarderContext); len(failures) > 0 {
 		// TODO: Evaluate failures
 		//if validationerrors.MustUndeployCollector(err) {
 		//	if deleteErr := collector.Remove(k8Client, req.Namespace, req.Name); deleteErr != nil {
@@ -111,19 +142,19 @@ func validateForwarder(k8Client client.Client, req ctrl.Request, instance *obsv1
 		// TODO: Determine if we need to "sync" conditions like in 5.9
 		for attributeType, conditions := range failures {
 			switch attributeType {
-			case validations.AttributeConditionConditions:
-				instance.Status.Conditions = conditions
-			case validations.AttributeConditionInputs:
-				instance.Status.Inputs = conditions
-			case validations.AttributeConditionOutputs:
-				instance.Status.Outputs = conditions
-			case validations.AttributeConditionPipelines:
-				instance.Status.Pipelines = conditions
-			case validations.AttributeConditionFilters:
-				instance.Status.Filters = conditions
+			case common.AttributeConditionConditions:
+				forwarderContext.Forwarder.Status.Conditions = conditions
+			case common.AttributeConditionInputs:
+				forwarderContext.Forwarder.Status.Inputs = conditions
+			case common.AttributeConditionOutputs:
+				forwarderContext.Forwarder.Status.Outputs = conditions
+			case common.AttributeConditionPipelines:
+				forwarderContext.Forwarder.Status.Pipelines = conditions
+			case common.AttributeConditionFilters:
+				forwarderContext.Forwarder.Status.Filters = conditions
 			}
 		}
-		return updateStatus(k8Client, instance)
+		return updateStatus(forwarderContext.Client, forwarderContext.Forwarder)
 	}
 	return defaultRequeue, err
 }

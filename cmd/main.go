@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"os"
 	"runtime"
 	"strings"
@@ -176,11 +177,13 @@ func main() {
 	}
 
 	if err = (&observabilitycontroller.ClusterLogForwarderReconciler{
-		Client:         mgr.GetClient(),
-		Scheme:         mgr.GetScheme(),
-		Reader:         mgr.GetAPIReader(),
-		ClusterVersion: clusterVersion,
-		ClusterID:      clusterID,
+		ForwarderContext: internalcontext.ForwarderContext{
+			Client:         mgr.GetClient(),
+			Reader:         mgr.GetAPIReader(),
+			ClusterVersion: clusterVersion,
+			ClusterID:      clusterID,
+		},
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
 		os.Exit(1)

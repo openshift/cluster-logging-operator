@@ -548,7 +548,9 @@ spec:
                                   description: MaxRecordsPerSecond is the maximum
                                     number of log records allowed per input/output
                                     in a pipeline
+                                  exclusiveMinimum: true
                                   format: int64
+                                  minimum: 0
                                   type: integer
                               required:
                               - maxRecordsPerSecond
@@ -1959,7 +1961,9 @@ spec:
                         maxRecordsPerSecond:
                           description: MaxRecordsPerSecond is the maximum number of
                             log records allowed per input/output in a pipeline
+                          exclusiveMinimum: true
                           format: int64
+                          minimum: 0
                           type: integer
                       required:
                       - maxRecordsPerSecond

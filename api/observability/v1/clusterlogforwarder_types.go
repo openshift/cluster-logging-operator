@@ -151,6 +151,8 @@ type LimitSpec struct {
 	// allowed per input/output in a pipeline
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:validation:ExclusiveMinimum:=true
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Records Per Second",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond"`
 }

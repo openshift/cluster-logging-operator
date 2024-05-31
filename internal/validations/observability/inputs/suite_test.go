@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "[internal][validations][clusterlogforwarder][inputs] Suite")
+	RunSpecs(t, "[internal][validations][observability][inputs] Suite")
 }

@@ -2,6 +2,7 @@ package observability
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/inputs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubernetes "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -26,13 +27,15 @@ const (
 )
 
 var (
-	clfMigrations = []func(client kubernetes.Client, spec obs.ClusterLogForwarderSpec) (AttributeConditionType, []metav1.Condition){}
+	clfValidators = []func(client kubernetes.Client, spec obs.ClusterLogForwarderSpec) (AttributeConditionType, []metav1.Condition){
+		validateInputs,
+	}
 )
 
 // ValidateClusterLogForwarder validates the forwarder spec that can not be accomplished using api attributes and returns a set of conditions that apply to the spec
 func ValidateClusterLogForwarder(client kubernetes.Client, spec obs.ClusterLogForwarderSpec) map[AttributeConditionType][]metav1.Condition {
 	conditionMap := map[AttributeConditionType][]metav1.Condition{}
-	for _, validate := range clfMigrations {
+	for _, validate := range clfValidators {
 		conditionType, failures := validate(client, spec)
 		if conditions, found := conditionMap[conditionType]; found {
 			conditionMap[conditionType] = append(conditions, failures...)
@@ -41,4 +44,23 @@ func ValidateClusterLogForwarder(client kubernetes.Client, spec obs.ClusterLogFo
 		}
 	}
 	return conditionMap
+}
+
+func validateInputs(client kubernetes.Client, spec obs.ClusterLogForwarderSpec) (AttributeConditionType, []metav1.Condition) {
+	results := []metav1.Condition{}
+	for _, i := range spec.Inputs {
+		var conditions []metav1.Condition
+		switch i.Type {
+		case obs.InputTypeApplication:
+			conditions = inputs.ValidateApplication(i)
+		case obs.InputTypeInfrastructure:
+			conditions = inputs.ValidateInfrastructure(i)
+		case obs.InputTypeAudit:
+			conditions = inputs.ValidateApplication(i)
+		case obs.InputTypeReceiver:
+			conditions = inputs.ValidateReceiver(i)
+		}
+		results = append(results, conditions...)
+	}
+	return AttributeConditionInputs, results
 }

@@ -47,5 +47,14 @@ const (
 	// ReasonValidationFailure is used when a validation failed.
 	ReasonValidationFailure string = "ValidationFailure"
 
+	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
+	ReasonMissingSpec = "MissingSpec"
+
+	// ReasonMissingSources applies when an input type is spec'd without sources
+	ReasonMissingSources = "MissingSources"
+
+	// ReasonInvalidGlob when a namespace or container include/exclude is spec'd with an invalid glob pattern
+	ReasonInvalidGlob = "InvalidGlob"
+
 	ReasonMigrateOutput string = "Migrate"
 )

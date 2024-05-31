@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/inputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,10 +35,6 @@ func ValidateInputsOutputsPipelines(clf loggingv1.ClusterLogForwarder, k8sClient
 		return errors.NewValidationError("ClusterLogForwarder disabled"), status
 	}
 
-	inputs.Verify(clf.Spec.Inputs, status, extras)
-	if !status.Inputs.IsAllReady() {
-		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
-	}
 	verifyOutputs(clf.Namespace, k8sClient, &clf.Spec, status, extras)
 	if !status.Outputs.IsAllReady() {
 		log.V(3).Info("sink not Ready", "outputs", status.Outputs)

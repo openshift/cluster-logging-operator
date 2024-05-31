@@ -5,13 +5,16 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("#ValidateReceiver", func() {
 
 	Context("when validating a receiver input", func() {
 		var (
-			spec obs.InputSpec
+			spec       obs.InputSpec
+			secrets    = map[string]*corev1.Secret{}
+			configMaps = map[string]*corev1.ConfigMap{}
 		)
 		BeforeEach(func() {
 			spec = obs.InputSpec{
@@ -22,23 +25,23 @@ var _ = Describe("#ValidateReceiver", func() {
 		})
 		It("should skip the validation when not a receiver type", func() {
 			spec.Type = obs.InputTypeApplication
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(BeEmpty())
 		})
 		It("should fail when a receiver type but has no receiver spec", func() {
 			spec.Receiver = nil
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonValidationFailure, "myreceiver has nil receiver spec"))
 		})
 		It("should fail when receiver type is HTTP but does not have http receiver spec", func() {
 			spec.Receiver.Type = obs.ReceiverTypeHTTP
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonValidationFailure, "myreceiver has nil HTTP receiver spec"))
 		})
 		It("should fail when receiver type is HTTP but does not specify an incoming format", func() {
 			spec.Receiver.Type = obs.ReceiverTypeHTTP
 			spec.Receiver.HTTP = &obs.HTTPReceiver{}
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonValidationFailure, "myreceiver does not specify a format"))
 		})
 		It("should pass for a valid HTTP receiver spec", func() {
@@ -46,13 +49,26 @@ var _ = Describe("#ValidateReceiver", func() {
 			spec.Receiver.HTTP = &obs.HTTPReceiver{
 				Format: obs.HTTPReceiverFormatKubeAPIAudit,
 			}
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(BeEmpty())
 		})
 		It("should pass for a valid syslog receiver spec", func() {
 			spec.Receiver.Type = obs.ReceiverTypeSyslog
-			conds := ValidateReceiver(spec)
+			conds := ValidateReceiver(spec, secrets, configMaps)
 			Expect(conds).To(BeEmpty())
+		})
+		It("validate secrets if spec'd", func() {
+			spec.Receiver.Type = obs.ReceiverTypeSyslog
+			spec.Receiver.TLS = &obs.InputTLSSpec{
+				CA: &obs.ConfigMapOrSecretKey{
+					Key: "foo",
+					ConfigMap: &corev1.LocalObjectReference{
+						Name: "immissing",
+					},
+				},
+			}
+			conds := ValidateReceiver(spec, secrets, configMaps)
+			Expect(conds).To(Not(BeEmpty()))
 		})
 	})
 })

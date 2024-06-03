@@ -4,12 +4,14 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/inputs"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/outputs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
 	clfValidators = []func(internalcontext.ForwarderContext) (common.AttributeConditionType, []metav1.Condition){
 		inputs.Validate,
+		outputs.Validate,
 	}
 )
 

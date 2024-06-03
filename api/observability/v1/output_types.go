@@ -207,7 +207,7 @@ type HTTPAuthentication struct {
 type AzureMonitorAuthentication struct {
 	// SharedKey points to the secret containing the shared key used for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	// +nullable
 	SharedKey *SecretKey `json:"sharedKey,omitempty"`
 }
@@ -215,16 +215,20 @@ type AzureMonitorAuthentication struct {
 type AzureMonitor struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Authentication *AzureMonitorAuthentication `json:"authentication,omitempty"`
 
 	// CustomerId che unique identifier for the Log Analytics workspace.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+	//
+	// +kubebuilder:validation:Required
 	CustomerId string `json:"customerId,omitempty"`
 
 	// LogType the record type of the data that is being submitted.
 	// Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+	//
+	// +kubebuilder:validation:Pattern:="^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$"
 	LogType string `json:"logType,omitempty"`
 
 	// AzureResourceId the Resource ID of the Azure resource the data should be associated with.

@@ -53,6 +53,19 @@ func (outputs Outputs) SecretNames() []string {
 	return secrets.UnsortedList()
 }
 
+// SecretKeysAsConfigMapOrSecretKeys
+func SecretKeysAsConfigMapOrSecretKeys(o obsv1.OutputSpec) (configs []*obsv1.ConfigMapOrSecretKey) {
+	for _, auth := range SecretKeys(o) {
+		if auth != nil {
+			configs = append(configs, &obsv1.ConfigMapOrSecretKey{
+				Key:    auth.Key,
+				Secret: auth.Secret,
+			})
+		}
+	}
+	return configs
+}
+
 // SecretKeys returns a list of the keys associated with an output.  It is possible for a list entry
 // to be nil if it was not specified for the output
 func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {

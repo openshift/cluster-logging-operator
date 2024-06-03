@@ -1238,17 +1238,25 @@ spec:
                           required:
                           - credentials
                           type: object
-                        billingAccountId:
-                          type: string
-                        folderId:
-                          type: string
+                        id:
+                          description: ID must be one of the required ID fields for
+                            the output
+                          properties:
+                            type:
+                              description: Type is the ID type provided
+                              enum:
+                              - billingAccount
+                              - folder
+                              - project
+                              - organization
+                              type: string
+                            value:
+                              description: Value is the value of the ID
+                              type: string
+                          type: object
                         logId:
                           description: LogID is the log ID to which to publish logs.
                             This identifies log stream.
-                          type: string
-                        organizationId:
-                          type: string
-                        projectId:
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output

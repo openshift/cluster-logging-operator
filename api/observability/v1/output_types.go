@@ -404,17 +404,10 @@ type GoogleCloudLogging struct {
 	// +kubebuilder:validation:Optional
 	Authentication *GoogleCloudLoggingAuthentication `json:"authentication,omitempty"`
 
-	// +kubebuilder:validation:Optional
-	BillingAccountID string `json:"billingAccountId,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	OrganizationID string `json:"organizationId,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	FolderID string `json:"folderId,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	ProjectID string `json:"projectId,omitempty"`
+	// ID must be one of the required ID fields for the output
+	//
+	// +kubebuilder:validation:Required
+	ID GoogleGloudLoggingID `json:"id,omitempty"`
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	LogID string `json:"logId,omitempty"`
@@ -424,6 +417,27 @@ type GoogleCloudLogging struct {
 	// +kubebuilder:validation:Optional
 	Tuning *GoogleCloudLoggingTuningSpec `json:"tuning,omitempty"`
 }
+
+type GoogleGloudLoggingID struct {
+	// Type is the ID type provided
+	//
+	// +kubebuilder:validation:Enum:=billingAccount;folder;project;organization
+	Type GoogleCloudLoggingIDType `json:"type,omitempty"`
+
+	// Value is the value of the ID
+	//
+	// +kubebuilder:validation:Required
+	Value string `json:"value,omitempty"`
+}
+
+type GoogleCloudLoggingIDType string
+
+const (
+	GoogleCloudLoggingIDTypeBillingAccount GoogleCloudLoggingIDType = "billingAccount"
+	GoogleCloudLoggingIDTypeFolder         GoogleCloudLoggingIDType = "folder"
+	GoogleCloudLoggingIDTypeProject        GoogleCloudLoggingIDType = "project"
+	GoogleCloudLoggingIDTypeOrganization   GoogleCloudLoggingIDType = "organization"
+)
 
 type HttpTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`

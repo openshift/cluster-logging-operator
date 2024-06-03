@@ -104,19 +104,18 @@ func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets helpers.Secrets) s
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order
 func LogDestination(g *obs.GoogleCloudLogging) Element {
-	if g.BillingAccountID != "" {
-		return KV(BillingAccountID, fmt.Sprintf("%q", g.BillingAccountID))
+	var key string
+	switch g.ID.Type {
+	case obs.GoogleCloudLoggingIDTypeFolder:
+		key = FolderID
+	case obs.GoogleCloudLoggingIDTypeProject:
+		key = ProjectID
+	case obs.GoogleCloudLoggingIDTypeBillingAccount:
+		key = BillingAccountID
+	case obs.GoogleCloudLoggingIDTypeOrganization:
+		key = OrganizationID
 	}
-	if g.OrganizationID != "" {
-		return KV(OrganizationID, fmt.Sprintf("%q", g.OrganizationID))
-	}
-	if g.FolderID != "" {
-		return KV(FolderID, fmt.Sprintf("%q", g.FolderID))
-	}
-	if g.ProjectID != "" {
-		return KV(ProjectID, fmt.Sprintf("%q", g.ProjectID))
-	}
-	return Nil
+	return KV(key, fmt.Sprintf("%q", g.ID.Value))
 }
 
 func SeverityKey(g *obs.GoogleCloudLogging) string {

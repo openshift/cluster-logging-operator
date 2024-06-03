@@ -45,8 +45,11 @@ var _ = Describe("Generate Vector config", func() {
 				Type: obs.OutputTypeGoogleCloudLogging,
 				Name: "gcl_1",
 				GoogleCloudLogging: &obs.GoogleCloudLogging{
-					BillingAccountID: "billing-1",
-					LogID:            "vector-1",
+					ID: obs.GoogleGloudLoggingID{
+						Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
+						Value: "billing-1",
+					},
+					LogID: "vector-1",
 					Authentication: &obs.GoogleCloudLoggingAuthentication{
 						Credentials: &obs.SecretKey{
 							Secret: &corev1.LocalObjectReference{

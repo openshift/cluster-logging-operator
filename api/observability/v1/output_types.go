@@ -220,6 +220,8 @@ type AzureMonitor struct {
 
 	// CustomerId che unique identifier for the Log Analytics workspace.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+	//
+	// +kubebuilder:validation:Required
 	CustomerId string `json:"customerId,omitempty"`
 
 	// LogType the record type of the data that is being submitted.

@@ -641,7 +641,7 @@ type SplunkTuningSpec struct {
 type SplunkAuthentication struct {
 	// Token points to the secret containing the Splunk HEC token used for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Token *SecretKey `json:"token,omitempty"`
 }
 
@@ -650,7 +650,7 @@ type SplunkAuthentication struct {
 type Splunk struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Authentication *SplunkAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output

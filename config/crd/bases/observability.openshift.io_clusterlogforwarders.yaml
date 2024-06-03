@@ -1034,7 +1034,6 @@ spec:
                           type: string
                       required:
                       - groupBy
-                      - region
                       type: object
                     elasticsearch:
                       properties:

@@ -305,7 +305,7 @@ type Cloudwatch struct {
 	// +nullable
 	Tuning *CloudwatchTuningSpec `json:"tuning,omitempty"`
 
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Region string `json:"region"`
 
 	// GroupBy defines the strategy for grouping logstreams

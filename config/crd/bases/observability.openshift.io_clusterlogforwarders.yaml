@@ -828,6 +828,7 @@ spec:
                           description: LogType the record type of the data that is
                             being submitted. Can only contain letters, numbers, and
                             underscores (_), and may not exceed 100 characters. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+                          pattern: ^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output

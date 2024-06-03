@@ -62,6 +62,9 @@ const (
 	// ReasonSecretKeyNotFound when the key for a secret is spec'd for an input or output and was not found as a key in the secret
 	ReasonSecretKeyNotFound = "SecretKeyNotFound"
 
+	// ReasonValueEmpty when the value of the key for a secret or configmap is empty
+	ReasonValueEmpty = "ValueEmpty"
+
 	// ReasonConfigMapNotFound when a configmap is spec'd for an input or output and was not found
 	ReasonConfigMapNotFound = "ConfigMapNotFound"
 

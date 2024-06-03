@@ -78,6 +78,16 @@ var _ = Describe("#ValidateConfigMapOrSecretKey", func() {
 			Expect(ValidateConfigMapOrSecretKey(name, secretKeys, secrets, configMaps)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonSecretKeyNotFound, `key ".*" not found in (secret|configmap) ".*" for "`+name))
 
 		})
+		It("should fail when the value identified by the key in the secret is empty", func() {
+			secretKeys = append(secretKeys, secretKey)
+			secrets[secretKey.Secret.Name] = &corev1.Secret{
+				Data: map[string][]byte{
+					keyName: []byte(""),
+				},
+			}
+			Expect(ValidateConfigMapOrSecretKey(name, secretKeys, secrets, configMaps)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonValueEmpty, `value is empty for key ".*" in (secret|configmap) ".*" for "`+name))
+
+		})
 		It("should pass when the secret and secretKey exist", func() {
 			secretKeys = append(secretKeys, secretKey)
 			secrets[secretKey.Secret.Name] = aSecret
@@ -102,7 +112,7 @@ var _ = Describe("#ValidateConfigMapOrSecretKey", func() {
 					Name: configmapName,
 				},
 			}
-			aSecret = &corev1.ConfigMap{
+			aConfigMap = &corev1.ConfigMap{
 				Data: map[string]string{
 					keyName: "somevalue",
 				},
@@ -131,13 +141,13 @@ var _ = Describe("#ValidateConfigMapOrSecretKey", func() {
 		})
 		It("should fail when the key is missing from the configmap", func() {
 			secretKeys = append(secretKeys, secretKeyWithKeyMissing)
-			configMaps[secretKey.ConfigMap.Name] = aSecret
+			configMaps[secretKey.ConfigMap.Name] = aConfigMap
 			Expect(ValidateConfigMapOrSecretKey(name, secretKeys, secrets, configMaps)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonConfigMapKeyNotFound, `key ".*" not found in (secret|configmap) ".*" for "`+name))
 
 		})
 		It("should pass when the configmap and key exist", func() {
 			secretKeys = append(secretKeys, secretKey)
-			configMaps[secretKey.ConfigMap.Name] = aSecret
+			configMaps[secretKey.ConfigMap.Name] = aConfigMap
 			Expect(ValidateConfigMapOrSecretKey(name, secretKeys, secrets, configMaps)).To(BeEmpty())
 		})
 		It("should pass when there are no secrets or configmaps are spec'd", func() {

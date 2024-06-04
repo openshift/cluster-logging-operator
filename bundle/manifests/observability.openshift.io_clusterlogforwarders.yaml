@@ -867,108 +867,137 @@ spec:
                           description: Authentication sets credentials for authenticating
                             the requests.
                           properties:
-                            accessKeyID:
-                              description: AccessKeyID points to the AWS access key
-                                id to be used for authentication.
+                            awsAccessKey:
+                              description: AWSAccessKey points to the AWS access key
+                                id and secret to be used for authentication.
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
+                                keyID:
+                                  description: AccessKeyID points to the AWS access
+                                    key id to be used for authentication.
+                                  nullable: true
                                   properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
+                                    key:
+                                      description: Name of the key used to get the
+                                        value from the referenced Secret.
                                       type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  required:
+                                  - key
+                                  - secret
                                   type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
+                                keySecret:
+                                  description: AccessKeySecret points to the AWS access
+                                    key secret to be used for authentication.
+                                  nullable: true
+                                  properties:
+                                    key:
+                                      description: Name of the key used to get the
+                                        value from the referenced Secret.
+                                      type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  required:
+                                  - key
+                                  - secret
+                                  type: object
                               type: object
-                            accessKeySecret:
-                              description: AccessKeySecret points to the AWS access
-                                key secret to be used for authentication.
+                            iamRole:
+                              description: IAMRole points to the secret containing
+                                the role ARN to be used for authentication. This can
+                                be used for authentication in STS-enabled clusters
+                                when additionally specifying a web identity token
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
+                                roleARN:
+                                  description: RoleARN points to the secret containing
+                                    the role ARN to be used for authentication. This
+                                    is used for authentication in STS-enabled clusters.
+                                  nullable: true
                                   properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
+                                    key:
+                                      description: Name of the key used to get the
+                                        value from the referenced Secret.
                                       type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  required:
+                                  - key
+                                  - secret
                                   type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
-                              type: object
-                            credentials:
-                              description: Credentials points to the secret containing
-                                the "credentials file" to be used for authentication.
-                                Mostly used for authentication in STS-enabled clusters.
-                              nullable: true
-                              properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
+                                token:
+                                  description: Token specifies a bearer token to be
+                                    used for authenticating requests.
+                                  nullable: true
                                   properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        key:
+                                          description: Name of the key used to get
+                                            the value from the referenced Secret.
+                                          type: string
+                                        name:
+                                          description: Name of secret
+                                          type: string
+                                      required:
+                                      - name
+                                      type: object
+                                    serviceAccount:
+                                      description: ServiceAccount contains the name
+                                        of the Kubernetes ServiceAccount that should
+                                        be used for getting a token for authenticating
+                                        requests.
+                                      properties:
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                      type: object
+                                      x-kubernetes-map-type: atomic
                                   type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
                               type: object
-                            roleARN:
-                              description: RoleARN points to the secret containing
-                                the role ARN to be used for authentication. This is
-                                used for authentication in STS-enabled clusters.
-                              nullable: true
-                              properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
-                              type: object
+                            type:
+                              description: Type is the type of cloudwatch authentication
+                                to configure
+                              enum:
+                              - accessKey
+                              - iamRole
+                              type: string
                           type: object
                         groupBy:
                           description: GroupBy defines the strategy for grouping logstreams

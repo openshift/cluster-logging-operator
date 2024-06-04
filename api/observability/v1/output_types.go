@@ -260,35 +260,6 @@ type CloudwatchTuningSpec struct {
 	Compression string `json:"compression,omitempty"`
 }
 
-// CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
-type CloudwatchAuthentication struct {
-	// AccessKeyID points to the AWS access key id to be used for authentication.
-	//
-	// +kubebuilder:validation:Optional
-	// +nullable
-	AccessKeyID *SecretKey `json:"accessKeyID,omitempty"`
-
-	// AccessKeySecret points to the AWS access key secret to be used for authentication.
-	//
-	// +kubebuilder:validation:Optional
-	// +nullable
-	AccessKeySecret *SecretKey `json:"accessKeySecret,omitempty"`
-
-	// Credentials points to the secret containing the "credentials file" to be used for authentication.
-	// Mostly used for authentication in STS-enabled clusters.
-	//
-	// +kubebuilder:validation:Optional
-	// +nullable
-	Credentials *SecretKey `json:"credentials,omitempty"`
-
-	// RoleARN points to the secret containing the role ARN to be used for authentication.
-	// This is used for authentication in STS-enabled clusters.
-	//
-	// +kubebuilder:validation:Optional
-	// +nullable
-	RoleARN *SecretKey `json:"roleARN,omitempty"`
-}
-
 // Cloudwatch provides configuration for the output type `cloudwatch`
 type Cloudwatch struct {
 	// URL to send log records to.
@@ -300,7 +271,7 @@ type Cloudwatch struct {
 
 	// Authentication sets credentials for authenticating the requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	Authentication *CloudwatchAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
@@ -324,6 +295,68 @@ type Cloudwatch struct {
 	//
 	// +kubebuilder:validation:Optional
 	GroupPrefix string `json:"groupPrefix,omitempty"`
+}
+
+type CloudwatchAuthType string
+
+const (
+	// CloudwatchAuthTypeAccessKey requires auth to use static keys
+	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "cloudwatchAuthTypeAccessKey"
+
+	// CloudwatchAuthTypeIAMRole requires auth to use IAM Role and optional token
+	CloudwatchAuthTypeIAMRole CloudwatchAuthType = "cloudwatchAuthTypeIAMRole"
+)
+
+// CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+type CloudwatchAuthentication struct {
+	// Type is the type of cloudwatch authentication to configure
+	//
+	// +kubebuilder:validation:Enum:=accessKey;iamRole
+	// +kubebuilder:validation:Required
+	Type CloudwatchAuthType `json:"type,omitempty"`
+
+	// AWSAccessKey points to the AWS access key id and secret to be used for authentication.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	AWSAccessKey *CloudwatchAWSAccessKey `json:"awsAccessKey,omitempty"`
+
+	// IAMRole points to the secret containing the role ARN to be used for authentication.
+	// This can be used for authentication in STS-enabled clusters when additionally specifying
+	// a web identity token
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	IAMRole *CloudwatchIAMRole `json:"iamRole,omitempty"`
+}
+
+type CloudwatchIAMRole struct {
+	// RoleARN points to the secret containing the role ARN to be used for authentication.
+	// This is used for authentication in STS-enabled clusters.
+	//
+	// +kubebuilder:validation:Required
+	// +nullable
+	RoleARN *SecretKey `json:"roleARN,omitempty"`
+
+	// Token specifies a bearer token to be used for authenticating requests.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	Token *BearerToken `json:"token,omitempty"`
+}
+
+type CloudwatchAWSAccessKey struct {
+	// AccessKeyID points to the AWS access key id to be used for authentication.
+	//
+	// +kubebuilder:validation:Required
+	// +nullable
+	KeyID *SecretKey `json:"keyID,omitempty"`
+
+	// AccessKeySecret points to the AWS access key secret to be used for authentication.
+	//
+	// +kubebuilder:validation:Required
+	// +nullable
+	KeySecret *SecretKey `json:"keySecret,omitempty"`
 }
 
 // LogGroupByType defines a fixed strategy type

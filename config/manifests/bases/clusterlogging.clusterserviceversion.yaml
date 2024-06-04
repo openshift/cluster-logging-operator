@@ -150,22 +150,17 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.accessKeyID.key
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.accessKeySecret.key
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keySecret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.credentials.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.roleARN.key
+        path: outputs[0].cloudwatch.authentication.iamRole.roleARN.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.

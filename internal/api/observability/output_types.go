@@ -77,7 +77,7 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 	case obsv1.OutputTypeCloudwatch:
 		if o.Cloudwatch != nil && o.Cloudwatch.Authentication != nil {
 			a := o.Cloudwatch.Authentication
-			return []*obsv1.SecretKey{a.AccessKeyID, a.AccessKeySecret, a.Credentials, a.RoleARN}
+			return cloudwatchAuthKeys(a)
 		}
 	case obsv1.OutputTypeElasticsearch:
 		if o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil {
@@ -143,4 +143,34 @@ func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
 		return keys
 	}
 	return []*obsv1.SecretKey{}
+}
+
+func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretKey) {
+	if auth != nil {
+		if auth.AWSAccessKey != nil {
+			keys = append(keys, auth.AWSAccessKey.KeyID, auth.AWSAccessKey.KeySecret)
+		}
+		if auth.IAMRole != nil {
+			keys = append(keys, auth.IAMRole.RoleARN)
+			if auth.IAMRole.Token != nil {
+				if auth.IAMRole.Token.Secret != nil {
+					keys = append(keys, &obsv1.SecretKey{
+						Key: auth.IAMRole.Token.Secret.Key,
+						Secret: &v1.LocalObjectReference{
+							Name: auth.IAMRole.Token.Secret.Name,
+						},
+					})
+				} else if auth.IAMRole.Token.ServiceAccount != nil {
+					keys = append(keys, &obsv1.SecretKey{
+						Key: constants.TokenKey,
+						Secret: &v1.LocalObjectReference{
+							Name: fmt.Sprintf("%v-token", auth.IAMRole.Token.ServiceAccount.Name),
+						},
+					})
+				}
+			}
+		}
+		return keys
+	}
+	return keys
 }

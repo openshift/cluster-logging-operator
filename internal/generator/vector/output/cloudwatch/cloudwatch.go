@@ -112,13 +112,9 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 
 func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) Element {
 	authConfig := NewAuth()
-	if auth != nil {
-		if auth.RoleARN != nil || auth.Credentials != nil {
-			return authConfig
-		}
-		// Otherwise use ID and Secret
-		authConfig.KeyID.Value = strings.TrimSpace(secrets.AsString(auth.AccessKeyID))
-		authConfig.KeySecret.Value = strings.TrimSpace(secrets.AsString(auth.AccessKeySecret))
+	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
+		authConfig.KeyID.Value = strings.TrimSpace(secrets.AsString(auth.AWSAccessKey.KeyID))
+		authConfig.KeySecret.Value = strings.TrimSpace(secrets.AsString(auth.AWSAccessKey.KeySecret))
 	}
 	return authConfig
 }
@@ -198,18 +194,17 @@ func LogGroupNameField(o obs.OutputSpec) string {
 	return ""
 }
 
-// ParseRoleArn search for matching valid arn within the 'credentials' or 'role_arn' key
+// ParseRoleArn search for matching valid ARN
 func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) string {
-	roleArnString := secrets.AsString(auth.Credentials)
-	if roleArnString == "" {
-		roleArnString = secrets.AsString(auth.RoleARN)
-	}
+	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
+		roleArnString := secrets.AsString(auth.IAMRole.RoleARN)
 
-	if roleArnString != "" {
-		reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
-		roleArn := reg.FindStringSubmatch(roleArnString)
-		if roleArn != nil {
-			return roleArn[1] // the capturing group is index 1
+		if roleArnString != "" {
+			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
+			roleArn := reg.FindStringSubmatch(roleArnString)
+			if roleArn != nil {
+				return roleArn[1] // the capturing group is index 1
+			}
 		}
 	}
 	return ""

@@ -64,17 +64,20 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					Cloudwatch: &obs.Cloudwatch{
 						Region: "us-east-test",
 						Authentication: &obs.CloudwatchAuthentication{
-							AccessKeyID: &obs.SecretKey{
-								Secret: &corev1.LocalObjectReference{
-									Name: secretName,
+							Type: obs.CloudwatchAuthTypeAccessKey,
+							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+								KeyID: &obs.SecretKey{
+									Secret: &corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: constants.AWSAccessKeyID,
 								},
-								Key: constants.AWSAccessKeyID,
-							},
-							AccessKeySecret: &obs.SecretKey{
-								Secret: &corev1.LocalObjectReference{
-									Name: secretName,
+								KeySecret: &obs.SecretKey{
+									Secret: &corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: constants.AWSSecretAccessKey,
 								},
-								Key: constants.AWSSecretAccessKey,
 							},
 						},
 					},
@@ -136,11 +139,14 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}, framework.NoOptions, "cw_with_tls_spec_insecure_verify.toml"),
 			Entry("when aws credentials are provided", groupPrefix, obs.LogGroupByLogType, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
-					Credentials: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretWithCredentials,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretWithCredentials,
+							},
+							Key: constants.AWSCredentialsKey,
 						},
-						Key: constants.AWSCredentialsKey,
 					},
 				}
 			}, framework.NoOptions, "cw_group_prefix_with_aws_credentials.toml"),
@@ -173,47 +179,62 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		},
 			Entry("should return the value explicity spec'd",
 				obs.CloudwatchAuthentication{
-					RoleARN: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: constants.AWSWebIdentityRoleKey,
 						},
-						Key: constants.AWSWebIdentityRoleKey,
 					},
 				}, roleArn),
 			Entry("should return a specified valid role_arn when the partition is more than 'aws'",
 				obs.CloudwatchAuthentication{
-					RoleARN: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: "altArn",
 						},
-						Key: "altArn",
 					},
 				}, altRoleArn),
 			Entry("should return a valid role_arn when using 'credentials' ",
 				obs.CloudwatchAuthentication{
-					Credentials: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: constants.AWSCredentialsKey,
 						},
-						Key: constants.AWSCredentialsKey,
 					},
 				}, credentialsRoleArn),
 			Entry("should return the value from the credentials string when specified as role_arn",
 				obs.CloudwatchAuthentication{
-					RoleARN: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: "role_arn_as_cred",
 						},
-						Key: "role_arn_as_cred",
 					},
 				}, credentialsRoleArn),
 			Entry("should return an empty string when value is incorrectly formatted",
 				obs.CloudwatchAuthentication{
-					Credentials: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: &obs.SecretKey{
+							Secret: &corev1.LocalObjectReference{
+								Name: secretName,
+							},
+							Key: "bad",
 						},
-						Key: "bad",
 					},
 				}, ""),
 		)

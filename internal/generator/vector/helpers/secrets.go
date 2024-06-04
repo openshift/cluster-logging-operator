@@ -45,8 +45,10 @@ func (s Secrets) AsString(key *obs.SecretKey) string {
 func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 	if key.Secret != nil {
 		return s.AsString(&obs.SecretKey{
-			Secret: key.Secret.Secret,
-			Key:    key.Secret.Key,
+			Secret: &corev1.LocalObjectReference{
+				Name: key.Secret.Name,
+			},
+			Key: key.Secret.Key,
 		})
 
 	}

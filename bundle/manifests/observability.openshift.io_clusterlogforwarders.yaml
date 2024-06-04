@@ -1071,10 +1071,6 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1083,21 +1079,11 @@ spec:
                                       description: Name of the key used to get the
                                         value from the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    name:
+                                      description: Name of secret
+                                      type: string
                                   required:
-                                  - key
-                                  - secret
+                                  - name
                                   type: object
                                 serviceAccount:
                                   description: ServiceAccount contains the name of
@@ -1326,10 +1312,6 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1338,21 +1320,11 @@ spec:
                                       description: Name of the key used to get the
                                         value from the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    name:
+                                      description: Name of secret
+                                      type: string
                                   required:
-                                  - key
-                                  - secret
+                                  - name
                                   type: object
                                 serviceAccount:
                                   description: ServiceAccount contains the name of
@@ -1631,10 +1603,6 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1643,21 +1611,11 @@ spec:
                                       description: Name of the key used to get the
                                         value from the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    name:
+                                      description: Name of secret
+                                      type: string
                                   required:
-                                  - key
-                                  - secret
+                                  - name
                                   type: object
                                 serviceAccount:
                                   description: ServiceAccount contains the name of
@@ -1814,10 +1772,6 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1826,21 +1780,11 @@ spec:
                                       description: Name of the key used to get the
                                         value from the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    name:
+                                      description: Name of secret
+                                      type: string
                                   required:
-                                  - key
-                                  - secret
+                                  - name
                                   type: object
                                 serviceAccount:
                                   description: ServiceAccount contains the name of

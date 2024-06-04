@@ -125,7 +125,12 @@ func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
 		}
 		if auth.Token != nil {
 			if auth.Token.Secret != nil {
-				keys = append(keys, auth.Token.Secret)
+				keys = append(keys, &obsv1.SecretKey{
+					Key: auth.Token.Secret.Key,
+					Secret: &v1.LocalObjectReference{
+						Name: auth.Token.Secret.Name,
+					},
+				})
 			} else if auth.Token.ServiceAccount != nil {
 				keys = append(keys, &obsv1.SecretKey{
 					Key: constants.TokenKey,

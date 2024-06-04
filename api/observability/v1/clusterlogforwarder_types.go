@@ -189,22 +189,29 @@ type SecretKey struct {
 // BearerToken allows configuring the source of a bearer token used for authentication.
 // The token can either be read from a secret or from a Kubernetes ServiceAccount.
 type BearerToken struct {
-	// Name of the key used to get the value from the referenced Secret.
-	//
-	// +kubebuilder:validation:Optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	Key string `json:"key,omitempty"`
 
 	// Use Secret if the value should be sourced from a Secret in the same namespace.
 	//
 	// +kubebuilder:validation:Optional
-	Secret *SecretKey `json:"secret,omitempty"`
+	Secret *BearerTokenSecretKey `json:"secret,omitempty"`
 
 	// ServiceAccount contains the name of the Kubernetes ServiceAccount that should be used for getting
 	// a token for authenticating requests.
 	//
 	// +kubebuilder:validation:Optional
 	ServiceAccount *corev1.LocalObjectReference `json:"serviceAccount,omitempty"`
+}
+
+type BearerTokenSecretKey struct {
+	// Name of the key used to get the value from the referenced Secret.
+	//
+	// +kubebuilder:validation:Required
+	Key string `json:"key,omitempty"`
+
+	// Name of secret
+	//
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 }
 
 // TLSSpec contains options for TLS connections.

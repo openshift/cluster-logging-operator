@@ -74,5 +74,12 @@ const (
 	// ReasonConfigMapKeyNotFound when the key for a configmap is spec'd for an input or output and was not found as a key in the configmap
 	ReasonConfigMapKeyNotFound = "ConfigMapKeyNotFound"
 
+	// ReasonFilterPruneHostname exists when a sink is referenced that does not allow pruning the hostname from the record (i.e. GCL)
+	ReasonFilterPruneHostname = "FilterPruneHostname"
+
+	ReasonPipelineInputRefNotFound  = "ReasonPipelineInputRefNotFound"
+	ReasonPipelineOutputRefNotFound = "ReasonPipelineOutputRefNotFound"
+	ReasonPipelineFilterRefNotFound = "ReasonPipelineFilterRefNotFound"
+
 	ReasonMigrateOutput string = "Migrate"
 )

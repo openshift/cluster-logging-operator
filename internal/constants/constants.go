@@ -99,6 +99,9 @@ const (
 
 	// Annotation Names
 	AnnotationServingCertSecretName = "service.beta.openshift.io/serving-cert-secret-name"
+	// AnnotationCRConverted is the annotation specifying whether a ClusterLogging and/or
+	// logging.ClusterLogForwarder has been converted to observability.ClusterLogForwarder
+	AnnotationCRConverted = "logging.openshift.io/converted"
 
 	// K8s recommended label names: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelK8sName      = "app.kubernetes.io/name"       // The name of the application (string)

@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"os"
 	"runtime"
 	"strings"
 	"time"
+
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -22,6 +23,7 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/controller/clusterlogging"
 	observabilitycontroller "github.com/openshift/cluster-logging-operator/internal/controller/observability"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -144,15 +146,21 @@ func main() {
 
 	log.Info("Registering Components.")
 
-	if err = (&forwarding.ReconcileForwarder{
-		Client:         mgr.GetClient(),
-		Reader:         mgr.GetAPIReader(),
-		Scheme:         mgr.GetScheme(),
-		Recorder:       mgr.GetEventRecorderFor("clusterlogforwarder"),
-		ClusterVersion: clusterVersion,
-		ClusterID:      clusterID,
+	if err = (&clusterlogging.ReconcileClusterLogging{
+		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
+		os.Exit(1)
+	}
+
+	if err = (&forwarding.ReconcileForwarder{
+		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "logging.ClusterLogForwarder")
 		os.Exit(1)
 	}
 

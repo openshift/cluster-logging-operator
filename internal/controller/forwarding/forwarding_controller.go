@@ -5,26 +5,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/controller"
+	obsMigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 
-	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	appsv1 "k8s.io/api/apps/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,111 +48,72 @@ type ReconcileForwarder struct {
 	// the deployed namespace (e.g. openshift-config-managed)
 	Reader client.Reader
 
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
-
-	//ClusterVersion is the semantic version of the cluster
-	ClusterVersion string
-	//ClusterID is the unique identifier of the cluster in which the operator is deployed
-	ClusterID string
+	Scheme *runtime.Scheme
 }
 
+// +kubebuilder:rbac:groups=logging.openshift.io,resources=clusterlogforwarders,verbs=get;list;create;watch;update;patch;delete
+// +kubebuilder:rbac:groups=logging.openshift.io,resources=clusterlogforwarders/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=logging.openshift.io,resources=clusterlogforwarders/finalizers,verbs=update
 // Reconcile reads that state of the cluster for a ClusterLogForwarder object and makes changes based on the state read
 // and what is in the Logging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
-	r.Recorder.Event(loggingruntime.NewClusterLogForwarder(request.NamespacedName.Namespace, request.NamespacedName.Name), corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 
-	cl, err := r.fetchOrStubClusterLogging(request)
+	// Fetch the logging.ClusterLogForwarder instance
+	instance, err := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			return ctrl.Result{}, nil
+		}
+		// Error reading - requeue the request.
+		return ctrl.Result{}, err
+	}
+
+	// Fetch ClusterLogging if there is one
+	clInstance, err := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name)
+
 	if err != nil && !errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
 
-	// Fetch the ClusterLogForwarder instance
-	instance, err, status := loader.FetchClusterLogForwarder(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, true, func() logging.ClusterLogging { return *cl })
-	if status != nil {
-		if syncErr := instance.Status.Synchronize(status); syncErr != nil {
-			return ctrl.Result{}, syncErr
-		}
-	}
+	// Check if fluentDForward is used & validates output secrets
+	outputSecrets, status, err := clusterlogforwarder.ValidateClusterLogForwarderForConversion(instance, r.Client)
 	if err != nil {
-		log.V(3).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())
-		if validationerrors.MustUndeployCollector(err) {
-			daemonSetName := ""
-			if errors.IsNotFound(err) {
-				daemonSetName = request.NamespacedName.Name
-				// legacy deployment
-				if request.NamespacedName.Namespace == constants.OpenshiftNS && request.NamespacedName.Name == constants.SingletonName {
-					daemonSetName = constants.CollectorName
-				}
-			} else {
-				daemonSetName = factory.GenerateResourceNames(instance).DaemonSetName()
-			}
-			if deleteErr := collector.Remove(r.Client, request.NamespacedName.Namespace, daemonSetName); deleteErr != nil {
-				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
-			}
+		instance.Status = *status
+		if result, err := r.updateStatus(instance); err != nil {
+			return result, err
 		}
-		if validationerrors.IsValidationError(err) {
-			condition := logging.NewCondition(logging.ValidationCondition, corev1.ConditionTrue, logging.ValidationFailureReason, "%v", err)
-			instance.Status.Conditions.SetCondition(condition)
-			instance.Status.Conditions.SetCondition(logging.CondNotReady(logging.ValidationFailureReason, ""))
-			r.Recorder.Event(&instance, "Warning", string(logging.ReasonInvalid), condition.Message)
-			return r.updateStatus(&instance)
-		} else if !errors.IsNotFound(err) {
-			// Error reading - requeue the request.
-			return ctrl.Result{}, err
-		}
-
-		// else the object is not found -- meaning it was removed so stop reconciliation
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
-	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
+	// Convert to observability.ClusterLogForwarder
+	obsClf := api.ConvertLoggingToObservability(r.Client, clInstance, instance, outputSecrets)
+	// Fix indices for default elasticsearch to be `app-write`, `infra-write`, `audit-write`
+	obsClf.Spec, _ = obsMigrate.MigrateDefaultElasticsearch(obsClf.Spec)
 
-	resourceNames := factory.GenerateResourceNames(instance)
-	reconcileErr := k8shandler.Reconcile(cl, &instance, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID, resourceNames)
-	if reconcileErr != nil {
-		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
-	} else {
-		if instance.Status.Conditions.IsTrueFor(logging.ConditionReady) {
-			// This returns False if SetCondition updates the condition instead of setting it.
-			// For condReady, it will always be updating the status.
-			if !instance.Status.Conditions.SetCondition(logging.CondReady) {
-				r.Recorder.Event(&instance, "Normal", string(logging.CondReady.Type), "ClusterLogForwarder is valid")
-			}
-		}
+	if err := r.Client.Create(context.TODO(), obsClf); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	if result, err := r.updateStatus(&instance); err != nil {
+	// Annotate logging.CLF with migrated
+	instance.Annotations[constants.AnnotationCRConverted] = "true"
+	if err = r.Client.Update(context.TODO(), instance); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Set CLF with status of ready with reason migrated
+	instance.Status = logging.ClusterLogForwarderStatus{}
+	instance.Status.Conditions.SetCondition(conditions.CondReadyWithMessage(logging.ReasonMigrated, "ClusterLogForwarder.logging.openshift.io migrated to ClusterLogForwarder.observability.openshift.io"))
+	if result, err := r.updateStatus(instance); err != nil {
 		return result, err
 	}
 
-	return periodicRequeue, reconcileErr
-}
-
-// fetchOrStubClusterLogging retrieves ClusterLogging as one of:
-// * ClusterLogging <Namespace>/<Name> for ClusterLogForwarder <Namespace>/<Name>
-// * ClusterLogging only providing spec.collection.type=vector  for ClusterLogForwarder <Namespace>/<Name> when CL NotFound
-func (r *ReconcileForwarder) fetchOrStubClusterLogging(request ctrl.Request) (*logging.ClusterLogging, error) {
-	cl, err, _ := loader.FetchClusterLogging(r.Client, request.NamespacedName.Namespace, request.NamespacedName.Name, false)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			return nil, err
-		}
-		if request.NamespacedName.Namespace != constants.OpenshiftNS || (request.NamespacedName.Namespace == constants.OpenshiftNS && request.NamespacedName.Name != constants.SingletonName) {
-			cl = *loggingruntime.NewClusterLogging(request.NamespacedName.Namespace, request.NamespacedName.Name)
-			cl.Spec = logging.ClusterLoggingSpec{
-				Collection: &logging.CollectionSpec{
-					Type: logging.LogCollectionTypeVector,
-				},
-			}
-		} else {
-			return &logging.ClusterLogging{}, err
-		}
-	}
-	return &cl, nil
+	return periodicRequeue, nil
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (ctrl.Result, error) {
@@ -181,15 +136,8 @@ func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder)
 func (r *ReconcileForwarder) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr)
 	return controllerBuilder.
-		For(&logging.ClusterLogForwarder{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&appsv1.DaemonSet{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&appsv1.Deployment{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Owns(&corev1.Secret{}).
-		Owns(&corev1.Service{}).
-		Owns(&corev1.ServiceAccount{}).
-		Owns(&v1.ServiceMonitor{}).
+		For(&logging.ClusterLogForwarder{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// Ignore create events as well as migrated resources
+		WithEventFilter(controller.IgnoreMigratedResources(constants.AnnotationCRConverted)).
 		Complete(r)
 }

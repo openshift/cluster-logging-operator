@@ -65,7 +65,7 @@ var _ = Describe("MigrateLokiStack", func() {
 				Type:    obs.ConditionTypeMigrated,
 				Status:  metav1.ConditionTrue,
 				Reason:  obs.ReasonMigrateOutput,
-				Message: fmt.Sprintf("lokistack: %q migrated to loki output/s", lokistackOut)},
+				Message: fmt.Sprintf("%s: %q migrated to appropriate output/s", obs.OutputTypeLokiStack, lokistackOut)},
 		))
 	},
 		Entry("single tenant, single lokistack output",

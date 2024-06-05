@@ -37,8 +37,7 @@ var _ = Describe("#FetchClusterLogForwarder", func() {
 
 		// https://issues.redhat.com/browse/LOG-4564
 		It("should return with validation errors", func() {
-			fetchCL := func() logging.ClusterLogging { return logging.ClusterLogging{} }
-			_, err, _ := FetchClusterLogForwarder(k8Client, clf.Namespace, clf.Name, false, fetchCL)
+			_, err := FetchClusterLogForwarder(k8Client, clf.Namespace, clf.Name)
 			Expect(err).ToNot(BeNil(), "legacy CLF without CL should fail with validation errors")
 		})
 	})

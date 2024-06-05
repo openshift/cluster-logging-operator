@@ -40,32 +40,6 @@ var _ = Describe("Helpers for outputLabelConf", func() {
 			Expect(HasKeys(&corev1.Secret{}, "a", "b", "c")).To(BeFalse())
 		})
 	})
-	Context("#TryKeys", func() {
-		It("should return first key present", func() {
-
-			secret.Data = map[string][]byte{"x": {1}, "y": {2}}
-			_, ok := TryKeys(secret, "a", "b", "c")
-			Expect(ok).To(BeFalse())
-
-			v, ok := TryKeys(secret, "a", "b", "x")
-			Expect(ok).To(BeTrue())
-			Expect(v).To(Equal([]byte{1}))
-
-			v, ok = TryKeys(secret, "x", "b", "c")
-			Expect(ok).To(BeTrue())
-			Expect(v).To(Equal([]byte{1}))
-
-			v, ok = TryKeys(secret, "y", "x")
-			Expect(ok).To(BeTrue())
-			Expect(v).To(Equal([]byte{2}))
-
-			// nil/empty cases.
-			_, ok = TryKeys(nil, "a", "b", "c")
-			Expect(ok).To(BeFalse())
-			_, ok = TryKeys(nil, "a", "b", "c")
-			Expect(ok).To(BeFalse())
-		})
-	})
 	Context("#HasCABundle", func() {
 		It("should recognize when the output secret is nil", func() {
 			secret = nil

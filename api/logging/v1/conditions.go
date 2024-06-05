@@ -59,6 +59,9 @@ const (
 	// Connecting object is unready because a connection is in progress.
 	ReasonConnecting status.ConditionReason = "Connecting"
 
+	// ClusterLogForwarder and/or ClusterLogging was migrated to observability API.
+	ReasonMigrated status.ConditionReason = "Migrated"
+
 	ValidationFailureReason status.ConditionReason = "ValidationFailure"
 )
 

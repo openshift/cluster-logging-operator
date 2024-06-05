@@ -301,10 +301,10 @@ type CloudwatchAuthType string
 
 const (
 	// CloudwatchAuthTypeAccessKey requires auth to use static keys
-	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "cloudwatchAuthTypeAccessKey"
+	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "accessKey"
 
 	// CloudwatchAuthTypeIAMRole requires auth to use IAM Role and optional token
-	CloudwatchAuthTypeIAMRole CloudwatchAuthType = "cloudwatchAuthTypeIAMRole"
+	CloudwatchAuthTypeIAMRole CloudwatchAuthType = "iamRole"
 )
 
 // CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
@@ -340,7 +340,7 @@ type CloudwatchIAMRole struct {
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	// +nullable
 	Token *BearerToken `json:"token,omitempty"`
 }

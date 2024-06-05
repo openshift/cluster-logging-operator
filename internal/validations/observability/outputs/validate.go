@@ -13,6 +13,7 @@ func Validate(context internalcontext.ForwarderContext) (_ common.AttributeCondi
 
 	for _, out := range context.Forwarder.Spec.Outputs {
 		results = append(results, ValidateSecretsAndConfigMaps(out, context.Secrets, context.ConfigMaps)...)
+		results = append(results, ValidateCloudWatchAuth(out, context.Secrets)...)
 	}
 
 	return common.AttributeConditionOutputs, results

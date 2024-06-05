@@ -56,6 +56,9 @@ const (
 	// ReasonInvalidGlob when a namespace or container include/exclude is spec'd with an invalid glob pattern
 	ReasonInvalidGlob = "InvalidGlob"
 
+	//ReasonMissingAuth ideentifies when authorization spec is required but missing
+	ReasonMissingAuth = "MissingAuth"
+
 	// ReasonSecretNotFound when a secret is spec'd for an input or output and was not found
 	ReasonSecretNotFound = "SecretNotFound"
 

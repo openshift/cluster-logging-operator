@@ -99,7 +99,7 @@ func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets helpers.Secrets) s
 	if spec == nil {
 		return ""
 	}
-	return secrets.Path(spec.Credentials)
+	return fmt.Sprintf("%q", secrets.Path(spec.Credentials))
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order

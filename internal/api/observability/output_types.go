@@ -35,6 +35,30 @@ func (outputs Outputs) ConfigmapNames() []string {
 	return names.UnsortedList()
 }
 
+// NeedServiceAccountToken returns true if any output needs to be configured to use the token associated with the service account
+func (outputs Outputs) NeedServiceAccountToken() bool {
+	var auths []*obsv1.BearerToken
+	for _, o := range outputs {
+		switch {
+		case o.Type == obsv1.OutputTypeLoki && o.Loki.Authentication != nil && o.Loki.Authentication.Token != nil:
+			auths = append(auths, o.Loki.Authentication.Token)
+		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
+			auths = append(auths, o.LokiStack.Authentication.Token)
+		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.CloudwatchAuthTypeIAMRole && o.Cloudwatch.Authentication.IAMRole.Token != nil:
+			auths = append(auths, o.Cloudwatch.Authentication.IAMRole.Token)
+		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
+			auths = append(auths, o.Elasticsearch.Authentication.Token)
+		}
+	}
+	for _, token := range auths {
+		if token.From == obsv1.BearerTokenFromServiceAccountToken {
+			return true
+		}
+	}
+
+	return false
+}
+
 // SecretNames returns a unique set of unordered secret names
 func (outputs Outputs) SecretNames() []string {
 	secrets := set.New[string]()

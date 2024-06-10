@@ -1,14 +1,15 @@
 package collector
 
 import (
+	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"k8s.io/utils/set"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"strings"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -25,6 +26,9 @@ import (
 )
 
 const (
+	defaultAudience                 = "openshift"
+	saTokenVolumeName               = "sa-token"
+	saTokenExpirationSecs           = 3600 //1 hour
 	clusterLoggingPriorityClassName = "system-node-critical"
 	MetricsPort                     = int32(24231)
 	MetricsPortName                 = "metrics"
@@ -47,6 +51,10 @@ const (
 	metricsVolumePath               = "/etc/collector/metrics"
 	tmpVolumeName                   = "tmp"
 	tmpPath                         = "/tmp"
+)
+
+var (
+	saTokenPath = common.ServiceAccountBasePath(saTokenVolumeName)
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -154,9 +162,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 	secretVolumes := AddSecretVolumes(podSpec, spec.Inputs, spec.Outputs)
 	configmapVolumes := AddConfigmapVolumes(podSpec, spec.Inputs, spec.Outputs)
+	addServiceAccountVolume := AddServiceAccountProjectedVolume(podSpec, spec.Inputs, spec.Outputs, defaultAudience)
 
-	// TODO: Handle secret/configmap name clash for volumemounts
-	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, clusterID)
+	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, addServiceAccountVolume, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
@@ -172,7 +180,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
+func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes, configmapVolumes []string, addServiceAccountVolume bool, clusterID string) *v1.Container {
 
 	collector := runtime.NewContainer(constants.CollectorName, utils.GetComponentImage(f.ImageName), v1.PullIfNotPresent, f.CollectorSpec.Resources)
 	collector.Ports = []v1.ContainerPort{
@@ -219,8 +227,13 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 		AddSecurityContextTo(collector)
 	}
 
-	AddSecretVolumeMounts(collector, secretVolumes)
-	AddConfigmapVolumeMounts(collector, configmapVolumes)
+	AddVolumeMounts(collector, secretVolumes, common.SecretBasePath)
+	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
+		return common.ConfigMapBasePath(strings.TrimPrefix(name, "config-"))
+	})
+	if addServiceAccountVolume {
+		AddVolumeMounts(collector, []string{saTokenVolumeName}, common.ServiceAccountBasePath)
+	}
 
 	return collector
 }
@@ -239,21 +252,10 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient clie
 	return nil
 }
 
-// AddSecretVolumeMounts to the collector container
-func AddSecretVolumeMounts(collector *v1.Container, secretNames []string) {
-	// List of _unique_ output secret names, several outputs may use the same secret.
-	for _, name := range secretNames {
-		path := common.SecretBasePath(name)
-		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
-	}
-}
-
-// AddConfigmapVolumeMounts to the collector container
-func AddConfigmapVolumeMounts(collector *v1.Container, names []string) {
-	// List of _unique_ output secret names, several outputs may use the same secret.
+// AddVolumeMounts to the collector container
+func AddVolumeMounts(collector *v1.Container, names []string, path func(string) string) {
 	for _, name := range names {
-		path := common.ConfigmapBasePath(name)
-		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
+		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path(name)})
 	}
 }
 
@@ -269,21 +271,48 @@ func AddSecretVolumes(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs in
 }
 
 // AddConfigmapVolumes adds configmap volumes to the pod spec for the unique set of configmaps and returns the list of
-// the names
-func AddConfigmapVolumes(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs) []string {
+// the named volumes where the names are of the format 'config-<ConfigMap.Name>'
+func AddConfigmapVolumes(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs) (results []string) {
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	names := set.New(outputs.ConfigmapNames()...).Insert(inputs.ConfigmapNames()...).UnsortedList()
 	for _, name := range names {
+		vName := fmt.Sprintf("config-%s", name)
+		results = append(results, vName)
 		podSpec.Volumes = append(podSpec.Volumes,
 			v1.Volume{
-				Name: name,
+				Name: vName,
 				VolumeSource: v1.VolumeSource{
 					ConfigMap: &v1.ConfigMapVolumeSource{
 						LocalObjectReference: v1.LocalObjectReference{
 							Name: name,
 						}}}})
 	}
-	return names
+	return results
+}
+
+// AddServiceAccountProjectedVolume adds ServiceAccountTokenProjection to the podspec and returns the named sa volume
+func AddServiceAccountProjectedVolume(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs, audience string) bool {
+	if outputs.NeedServiceAccountToken() {
+		podSpec.Volumes = append(podSpec.Volumes,
+			v1.Volume{
+				Name: saTokenVolumeName,
+				VolumeSource: v1.VolumeSource{
+					Projected: &v1.ProjectedVolumeSource{
+						Sources: []v1.VolumeProjection{
+							{
+								ServiceAccountToken: &v1.ServiceAccountTokenProjection{
+									Audience:          audience,
+									ExpirationSeconds: utils.GetPtr[int64](saTokenExpirationSecs),
+									Path:              constants.TokenKey,
+								},
+							},
+						},
+					},
+				},
+			})
+		return true
+	}
+	return false
 }
 
 func AddSecurityContextTo(container *v1.Container) *v1.Container {

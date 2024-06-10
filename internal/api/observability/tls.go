@@ -11,13 +11,13 @@ func SecretsForTLS(t obsv1.TLSSpec) []string {
 	if t.Key != nil {
 		secrets.Insert(t.Key.Secret.Name)
 	}
-	if t.CA.Secret != nil {
+	if t.CA != nil && t.CA.Secret != nil {
 		secrets.Insert(t.CA.Secret.Name)
 	}
-	if t.Certificate.Secret != nil {
+	if t.Certificate != nil && t.Certificate.Secret != nil {
 		secrets.Insert(t.Certificate.Secret.Name)
 	}
-	if t.KeyPassphrase.Secret != nil {
+	if t.KeyPassphrase != nil && t.KeyPassphrase.Secret != nil {
 		secrets.Insert(t.KeyPassphrase.Secret.Name)
 	}
 	return secrets.UnsortedList()
@@ -26,10 +26,10 @@ func SecretsForTLS(t obsv1.TLSSpec) []string {
 // ConfigmapsForTLS returns the unique set of configmap names for a TLS spec
 func ConfigmapsForTLS(t obsv1.TLSSpec) []string {
 	configmaps := set.New[string]()
-	if t.CA.Secret == nil && t.CA.ConfigMap != nil {
+	if t.CA != nil && t.CA.Secret == nil && t.CA.ConfigMap != nil {
 		configmaps.Insert(t.CA.ConfigMap.Name)
 	}
-	if t.Certificate.Secret == nil && t.Certificate.ConfigMap != nil {
+	if t.Certificate != nil && t.Certificate.Secret == nil && t.Certificate.ConfigMap != nil {
 		configmaps.Insert(t.Certificate.ConfigMap.Name)
 	}
 	return configmaps.UnsortedList()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"net"
 	"os"
@@ -353,7 +354,7 @@ func addSecretVolumeMountsToCollector(podSpec *corev1.PodSpec, secrets []*corev1
 	for i := range podSpec.Containers {
 		if podSpec.Containers[i].Name == constants.CollectorName {
 			log.V(3).Info("Adding secret volume mounts to collector container")
-			collector.AddSecretVolumeMounts(&podSpec.Containers[i], names.List())
+			collector.AddVolumeMounts(&podSpec.Containers[i], names.List(), common.SecretBasePath)
 		}
 		containers = append(containers, podSpec.Containers[i])
 	}

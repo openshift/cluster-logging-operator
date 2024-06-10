@@ -102,6 +102,7 @@ var _ = Describe("Generate vector config", func() {
 			Entry("with Basic auth", nil, secrets, framework.NoOptions, "http_with_auth_basic.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication.Token = &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{
 						Key:  constants.TokenKey,
 						Name: secretName,

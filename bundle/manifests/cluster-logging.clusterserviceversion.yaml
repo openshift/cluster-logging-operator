@@ -178,7 +178,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-06-04T20:52:59Z"
+    createdAt: "2024-06-06T15:14:59Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -430,6 +430,12 @@ spec:
       - description: Name of the pipeline
         displayName: Name
         path: pipelines[0].name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the ServiceAccount to use to deploy the Forwarder.  The
+          ServiceAccount is created by the administrator
+        displayName: Name
+        path: serviceAccount.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       statusDescriptors:

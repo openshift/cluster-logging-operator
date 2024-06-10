@@ -962,6 +962,13 @@ spec:
                                     used for authenticating requests.
                                   nullable: true
                                   properties:
+                                    from:
+                                      description: From is the source from where to
+                                        find the token
+                                      enum:
+                                      - secret
+                                      - serviceAccountToken
+                                      type: string
                                     secret:
                                       description: Use Secret if the value should
                                         be sourced from a Secret in the same namespace.
@@ -976,20 +983,8 @@ spec:
                                       required:
                                       - name
                                       type: object
-                                    serviceAccount:
-                                      description: ServiceAccount contains the name
-                                        of the Kubernetes ServiceAccount that should
-                                        be used for getting a token for authenticating
-                                        requests.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                  required:
+                                  - from
                                   type: object
                               type: object
                             type:
@@ -1101,6 +1096,13 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccountToken
+                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1115,19 +1117,8 @@ spec:
                                   required:
                                   - name
                                   type: object
-                                serviceAccount:
-                                  description: ServiceAccount contains the name of
-                                    the Kubernetes ServiceAccount that should be used
-                                    for getting a token for authenticating requests.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                              required:
+                              - from
                               type: object
                             username:
                               description: Username to use for authenticating requests.
@@ -1342,6 +1333,13 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccountToken
+                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1356,19 +1354,8 @@ spec:
                                   required:
                                   - name
                                   type: object
-                                serviceAccount:
-                                  description: ServiceAccount contains the name of
-                                    the Kubernetes ServiceAccount that should be used
-                                    for getting a token for authenticating requests.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                              required:
+                              - from
                               type: object
                             username:
                               description: Username to use for authenticating requests.
@@ -1633,6 +1620,13 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccountToken
+                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1647,19 +1641,8 @@ spec:
                                   required:
                                   - name
                                   type: object
-                                serviceAccount:
-                                  description: ServiceAccount contains the name of
-                                    the Kubernetes ServiceAccount that should be used
-                                    for getting a token for authenticating requests.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                              required:
+                              - from
                               type: object
                             username:
                               description: Username to use for authenticating requests.
@@ -1802,6 +1785,13 @@ spec:
                                 for authenticating requests.
                               nullable: true
                               properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccountToken
+                                  type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
                                     from a Secret in the same namespace.
@@ -1816,19 +1806,8 @@ spec:
                                   required:
                                   - name
                                   type: object
-                                serviceAccount:
-                                  description: ServiceAccount contains the name of
-                                    the Kubernetes ServiceAccount that should be used
-                                    for getting a token for authenticating requests.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                              required:
+                              - from
                               type: object
                             username:
                               description: Username to use for authenticating requests.
@@ -2385,12 +2364,19 @@ spec:
                 description: ServiceAccount points to the ServiceAccount resource
                   used by the collector pods.
                 properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                  audience:
+                    description: Audience allows the customization of the OAuth audience
+                      used for issuing the token.  Audience is applied when any output
+                      specs the use of a projected service accout token. If not set,
+                      "openshift" will be used as a default value.
                     type: string
+                  name:
+                    description: Name of the ServiceAccount to use to deploy the Forwarder.  The
+                      ServiceAccount is created by the administrator
+                    type: string
+                required:
+                - name
                 type: object
-                x-kubernetes-map-type: atomic
             required:
             - pipelines
             - serviceAccount

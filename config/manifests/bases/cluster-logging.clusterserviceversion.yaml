@@ -260,6 +260,12 @@ spec:
         path: pipelines[0].name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of the ServiceAccount to use to deploy the Forwarder.  The
+          ServiceAccount is created by the administrator
+        displayName: Name
+        path: serviceAccount.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       statusDescriptors:
       - description: Conditions of the log forwarder.
         displayName: Forwarder Conditions

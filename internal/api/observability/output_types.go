@@ -4,7 +4,6 @@ import (
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/utils/set"
 	"os"
@@ -123,22 +122,13 @@ func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
 			auth.Username,
 			auth.Password,
 		}
-		if auth.Token != nil {
-			if auth.Token.Secret != nil {
-				keys = append(keys, &obsv1.SecretKey{
-					Key: auth.Token.Secret.Key,
-					Secret: &v1.LocalObjectReference{
-						Name: auth.Token.Secret.Name,
-					},
-				})
-			} else if auth.Token.ServiceAccount != nil {
-				keys = append(keys, &obsv1.SecretKey{
-					Key: constants.TokenKey,
-					Secret: &v1.LocalObjectReference{
-						Name: fmt.Sprintf("%v-token", auth.Token.ServiceAccount.Name),
-					},
-				})
-			}
+		if auth.Token != nil && auth.Token.From == obsv1.BearerTokenFromSecret && auth.Token.Secret != nil {
+			keys = append(keys, &obsv1.SecretKey{
+				Key: auth.Token.Secret.Key,
+				Secret: &v1.LocalObjectReference{
+					Name: auth.Token.Secret.Name,
+				},
+			})
 		}
 		return keys
 	}
@@ -152,22 +142,13 @@ func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.Sec
 		}
 		if auth.IAMRole != nil {
 			keys = append(keys, auth.IAMRole.RoleARN)
-			if auth.IAMRole.Token != nil {
-				if auth.IAMRole.Token.Secret != nil {
-					keys = append(keys, &obsv1.SecretKey{
-						Key: auth.IAMRole.Token.Secret.Key,
-						Secret: &v1.LocalObjectReference{
-							Name: auth.IAMRole.Token.Secret.Name,
-						},
-					})
-				} else if auth.IAMRole.Token.ServiceAccount != nil {
-					keys = append(keys, &obsv1.SecretKey{
-						Key: constants.TokenKey,
-						Secret: &v1.LocalObjectReference{
-							Name: fmt.Sprintf("%v-token", auth.IAMRole.Token.ServiceAccount.Name),
-						},
-					})
-				}
+			if auth.IAMRole.Token != nil && auth.IAMRole.Token.From == obsv1.BearerTokenFromSecret && auth.IAMRole.Token.Secret != nil {
+				keys = append(keys, &obsv1.SecretKey{
+					Key: auth.IAMRole.Token.Secret.Key,
+					Secret: &v1.LocalObjectReference{
+						Name: auth.IAMRole.Token.Secret.Name,
+					},
+				})
 			}
 		}
 		return keys

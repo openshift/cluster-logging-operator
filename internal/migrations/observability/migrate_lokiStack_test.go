@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,9 +39,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -87,9 +84,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -135,9 +130,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -151,9 +144,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -167,9 +158,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -205,9 +194,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -253,9 +240,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -269,9 +254,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -285,9 +268,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -323,9 +304,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -339,9 +318,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -360,9 +337,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -405,9 +380,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -421,9 +394,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -437,9 +408,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -453,9 +422,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -469,9 +436,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -485,9 +450,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -506,9 +469,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -546,9 +507,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -562,9 +521,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -578,9 +535,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -594,9 +549,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -615,9 +568,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -632,9 +583,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -649,9 +598,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -705,9 +652,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -721,9 +666,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -737,9 +680,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -753,9 +694,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -769,9 +708,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -785,9 +722,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -801,9 +736,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -817,9 +750,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -838,9 +769,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -855,9 +784,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},
@@ -872,9 +799,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									ServiceAccount: &v1.LocalObjectReference{
-										Name: saName,
-									},
+									From: obs.BearerTokenFromServiceAccountToken,
 								},
 							},
 						},

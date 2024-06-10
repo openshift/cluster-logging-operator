@@ -5,7 +5,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -43,7 +42,7 @@ func (s Secrets) AsString(key *obs.SecretKey) string {
 
 // AsString returns the value of the BearerToken if it exists or empty
 func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
-	if key.Secret != nil {
+	if key.From == obs.BearerTokenFromSecret && key.Secret != nil {
 		return s.AsString(&obs.SecretKey{
 			Secret: &corev1.LocalObjectReference{
 				Name: key.Secret.Name,
@@ -52,13 +51,7 @@ func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 		})
 
 	}
-	// We reconcile SA token secret, so name and key will be known
-	return s.AsString(&obs.SecretKey{
-		Secret: &corev1.LocalObjectReference{
-			Name: key.ServiceAccount.Name + "-token",
-		},
-		Key: constants.TokenKey,
-	})
+	return ""
 }
 
 // Path returns the path to the given secret key if it exists or empty

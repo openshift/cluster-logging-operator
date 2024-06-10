@@ -75,7 +75,21 @@ type ClusterLogForwarderSpec struct {
 	// ServiceAccount points to the ServiceAccount resource used by the collector pods.
 	//
 	// +kubebuilder:validation:Required
-	ServiceAccount corev1.LocalObjectReference `json:"serviceAccount"`
+	ServiceAccount ServiceAccount `json:"serviceAccount"`
+}
+
+type ServiceAccount struct {
+	// Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Name string `json:"name"`
+
+	// Audience allows the customization of the OAuth audience used for issuing the token.  Audience is applied when any
+	// output specs the use of a projected service accout token. If not set, "openshift" will be used as a default value.
+	//
+	// +kubebuilder:validation:Optional
+	Audience string `json:"audience"`
 }
 
 type ManagementState string
@@ -190,17 +204,27 @@ type SecretKey struct {
 // The token can either be read from a secret or from a Kubernetes ServiceAccount.
 type BearerToken struct {
 
+	// From is the source from where to find the token
+	//
+	// +kubebuilder:validation:Enum:=secret;serviceAccountToken
+	// +kubebuilder:validation:Required
+	From BearerTokenFrom `json:"from"`
+
 	// Use Secret if the value should be sourced from a Secret in the same namespace.
 	//
 	// +kubebuilder:validation:Optional
 	Secret *BearerTokenSecretKey `json:"secret,omitempty"`
-
-	// ServiceAccount contains the name of the Kubernetes ServiceAccount that should be used for getting
-	// a token for authenticating requests.
-	//
-	// +kubebuilder:validation:Optional
-	ServiceAccount *corev1.LocalObjectReference `json:"serviceAccount,omitempty"`
 }
+
+type BearerTokenFrom string
+
+const (
+	// BearerTokenFromSecret specifies to use the token from the spec'd secret
+	BearerTokenFromSecret BearerTokenFrom = "secret"
+
+	//BearerTokenFromServiceAccountToken specifies to use the projected token associated with the forwarder service account
+	BearerTokenFromServiceAccountToken BearerTokenFrom = "serviceAccountToken"
+)
 
 type BearerTokenSecretKey struct {
 	// Name of the key used to get the value from the referenced Secret.

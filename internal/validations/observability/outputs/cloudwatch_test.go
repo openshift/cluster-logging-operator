@@ -73,20 +73,23 @@ var _ = Describe("validating CloudWatch auth", func() {
 			Entry("should fail when the token is not defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a token`)),
-			Entry("should fail when neither the token secret nor serviceaccount is not defined", &obs.CloudwatchIAMRole{
+			Entry("should fail when the token is sourced from a secret without the secreting being defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
-				Token:   &obs.BearerToken{},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a secret or serviceaccount token`)),
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
+				},
+			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth from "secret" requires a secret`)),
 			Entry("should pass when the token secret and role_arn are defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
+					From:   obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{},
 				},
 			}, secrets, BeEmpty()),
 			Entry("should pass when the token serviceaccount and role are defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
-					ServiceAccount: &corev1.LocalObjectReference{},
+					From: obs.BearerTokenFromServiceAccountToken,
 				},
 			}, secrets, BeEmpty()),
 		)

@@ -43,8 +43,8 @@ func ValidateCloudWatchAuth(spec obs.OutputSpec, secrets map[string]*corev1.Secr
 		if authSpec.IAMRole.Token == nil {
 			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a token", spec.Name))
 		}
-		if authSpec.IAMRole.Token.Secret == nil && authSpec.IAMRole.Token.ServiceAccount == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a secret or serviceaccount token", spec.Name))
+		if authSpec.IAMRole.Token.From == obs.BearerTokenFromSecret && authSpec.IAMRole.Token.Secret == nil {
+			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth from %q requires a secret", spec.Name, obs.BearerTokenFromSecret))
 		}
 	}
 	return nil

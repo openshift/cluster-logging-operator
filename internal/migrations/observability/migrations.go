@@ -9,6 +9,7 @@ import (
 // migrations are the set of rules for migrating a ClusterLogForwarder that modify the spec
 var clfMigrations = []func(spec obs.ClusterLogForwarderSpec) (obs.ClusterLogForwarderSpec, []metav1.Condition){
 	// clusterlogforwarder.EnsureInputsHasType,
+	InitServiceAccount,
 	MigrateLokiStack,
 	MigrateInputs,
 	// clusterlogforwarder.DropUnreferencedOutputs,

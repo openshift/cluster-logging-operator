@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() {
@@ -36,7 +35,7 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 		filters = map[string]*obs.FilterSpec{}
 	)
 
-	DescribeTable("valid prune and gcl pipeline", func(pruneSpec obs.PruneFilterSpec) {
+	DescribeTable("should return empty", func(pruneSpec obs.PruneFilterSpec) {
 		gclOutput := obs.OutputSpec{
 			Name: "gcl-out",
 			Type: obs.OutputTypeGoogleCloudLogging,
@@ -68,7 +67,22 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 		Entry("when `notIn` includes .hostname", obs.PruneFilterSpec{NotIn: []string{".hostname"}}),
 		Entry("when `in` does not include and `notIn` includes .hostname", obs.PruneFilterSpec{In: []string{".foo"}, NotIn: []string{".hostname"}}))
 
-	It("should pass validation when prune filters `.hostname` for pipeline without GCL output", func() {
+	It("should not return empty when prune filters `.hostname` for pipeline without GCL output", func() {
+		pruneHost := obs.FilterSpec{
+			Name: "prune",
+			Type: obs.FilterTypePrune,
+			PruneFilterSpec: &obs.PruneFilterSpec{
+				In:    []string{".foo, .hostname"},
+				NotIn: []string{".foo"},
+			},
+		}
+		filters[pruneHost.Name] = &pruneHost
+
+		cond := verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)
+		Expect(cond).To(Not(BeEmpty()))
+	})
+
+	It("should return empty when prune filters `.hostname` for pipeline without GCL output", func() {
 		esOutput := obs.OutputSpec{
 
 			Name:          "myOutput",
@@ -84,10 +98,12 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 				NotIn: []string{".foo"},
 			},
 		}
-		outputs[esOutput.Name] = esOutput
+		outputs = map[string]obs.OutputSpec{
+			esOutput.Name: esOutput,
+		}
 		filters[pruneHost.Name] = &pruneHost
 
 		cond := verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)
-		Expect(cond).To(matchers.HaveCondition(obs.ValidationCondition, true, obs.ReasonFilterPruneHostname, "prunes the.*hostname.*google.*"))
+		Expect(cond).To(BeEmpty())
 	})
 })

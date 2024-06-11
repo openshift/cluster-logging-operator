@@ -265,22 +265,22 @@ type ClusterLogForwarderStatus struct {
 	// Inputs maps input name to condition of the input.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Input Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Inputs []metav1.Condition `json:"inputs,omitempty"`
+	Inputs []metav1.Condition `json:"inputsStatus,omitempty"`
 
 	// Outputs maps output name to condition of the output.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Outputs []metav1.Condition `json:"outputs,omitempty"`
+	Outputs []metav1.Condition `json:"outputsStatus,omitempty"`
 
 	// Filters maps filter name to condition of the filter.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Filter Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Filters []metav1.Condition `json:"filters,omitempty"`
+	Filters []metav1.Condition `json:"filtersStatus,omitempty"`
 
 	// Pipelines maps pipeline name to condition of the pipeline.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Pipelines []metav1.Condition `json:"pipelines,omitempty"`
+	Pipelines []metav1.Condition `json:"pipelinesStatus,omitempty"`
 }
 
 // ClusterLogForwarder is an API to configure forwarding logs.

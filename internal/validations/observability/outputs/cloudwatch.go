@@ -1,51 +1,38 @@
 package outputs
 
 import (
-	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ValidateCloudWatchAuth(spec obs.OutputSpec, secrets map[string]*corev1.Secret) (results []metav1.Condition) {
-	conds := func(reason, msg string) []metav1.Condition {
-		return []metav1.Condition{
-			internalobs.NewCondition(obs.ValidationCondition, metav1.ConditionTrue, reason, msg),
-		}
-	}
-
+func ValidateCloudWatchAuth(spec obs.OutputSpec) (results []string) {
 	if spec.Type != obs.OutputTypeCloudwatch {
-		return nil
+		return results
 	}
 	authSpec := spec.Cloudwatch.Authentication
 	if authSpec == nil {
-		return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q requires auth configuration", spec.Name))
+		return []string{"auth missing"}
 	}
 	switch authSpec.Type {
 	case obs.CloudwatchAuthTypeAccessKey:
 		if authSpec.AWSAccessKey == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q requires auth configuration", spec.Name))
+			return []string{"AccessKey is nil"}
 		}
 		if authSpec.AWSAccessKey.KeySecret == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a KeySecret", spec.Name))
+			results = append(results, "KeySecret is missing")
 		}
 		if authSpec.AWSAccessKey.KeyID == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a KeyID", spec.Name))
+			results = append(results, "KeyID is missing")
 		}
 	case obs.CloudwatchAuthTypeIAMRole:
 		if authSpec.IAMRole == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q requires auth configuration", spec.Name))
+			return []string{"IAMRole is nil"}
 		}
 		if authSpec.IAMRole.RoleARN == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a RoleARN", spec.Name))
+			results = append(results, "RoleARN is missing")
 		}
-		if authSpec.IAMRole.Token == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth requires a token", spec.Name))
-		}
-		if authSpec.IAMRole.Token.From == obs.BearerTokenFromSecret && authSpec.IAMRole.Token.Secret == nil {
-			return conds(obs.ReasonMissingSpec, fmt.Sprintf("%q auth from %q requires a secret", spec.Name, obs.BearerTokenFromSecret))
+		if authSpec.IAMRole.Token != nil && authSpec.IAMRole.Token.From == obs.BearerTokenFromSecret && authSpec.IAMRole.Token.Secret == nil {
+			results = append(results, "Secret for token is missing")
 		}
 	}
-	return nil
+	return results
 }

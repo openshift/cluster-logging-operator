@@ -5,11 +5,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("Pipeline validation #validateRef", func() {
 
+	const (
+		expConditionTypeRE = obs.ConditionValidPipelinePrefix + "-.*"
+	)
 	var (
 		initSpec = func() obs.PipelineSpec {
 			return obs.PipelineSpec{
@@ -30,18 +32,18 @@ var _ = Describe("Pipeline validation #validateRef", func() {
 		}
 	)
 
-	DescribeTable("should fail", func(input, output, filter, reason string) {
+	DescribeTable("should fail", func(input, output, filter, messageRE string) {
 		pipelineSpec := initSpec()
 		pipelineSpec.InputRefs = append(pipelineSpec.InputRefs, input)
 		pipelineSpec.FilterRefs = append(pipelineSpec.FilterRefs, filter)
 		pipelineSpec.OutputRefs = append(pipelineSpec.OutputRefs, output)
 
 		cond := validateRef(pipelineSpec, inputMap, outputMap, filterMap)
-		Expect(cond).To(matchers.HaveCondition(obs.ValidationCondition, true, reason, `pipeline.* references (input|filter|output) ".*" not found`))
+		Expect(cond).To(ContainElement(MatchRegexp(messageRE)))
 	},
-		Entry("when an input does not exist", "missing", "", "", obs.ReasonPipelineInputRefNotFound),
-		Entry("when an output does not exist", "", "missing", "", obs.ReasonPipelineOutputRefNotFound),
-		Entry("when a filter does not exist", "", "", "missing", obs.ReasonPipelineFilterRefNotFound),
+		Entry("when an input does not exist", "missing", "", "", `^inputs\[.*\]$`),
+		Entry("when an output does not exist", "", "missing", "", `outputs\[.*\]`),
+		Entry("when a filter does not exist", "", "", "missing", `filters\[.*\]`),
 	)
 
 	It("should pass validation when all inputs, outputs and filters exist", func() {

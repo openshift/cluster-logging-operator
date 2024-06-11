@@ -20,7 +20,7 @@ func matchCondition(conditionType string, conditionStatus bool, reason string, m
 	} else {
 		status = metav1.ConditionFalse
 	}
-	fields := Fields{"Type": Equal(conditionType), "Status": Equal(status)}
+	fields := Fields{"Type": MatchRegexp(conditionType), "Status": Equal(status)}
 	if reason != "" {
 		fields["Reason"] = Equal(reason)
 	}
@@ -30,8 +30,8 @@ func matchCondition(conditionType string, conditionStatus bool, reason string, m
 	return MatchFields(IgnoreExtras, fields)
 }
 
-func HaveCondition(conditionType string, conditionTrue bool, reason string, messageRegex string) types.GomegaMatcher {
-	return ContainElement(matchCondition(conditionType, conditionTrue, reason, messageRegex))
+func HaveCondition(reConditionType string, conditionTrue bool, reason string, messageRegex string) types.GomegaMatcher {
+	return ContainElement(matchCondition(reConditionType, conditionTrue, reason, messageRegex))
 }
 
 func equalCondition(expected metav1.Condition) types.GomegaMatcher {

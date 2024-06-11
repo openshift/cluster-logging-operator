@@ -340,7 +340,7 @@ type CloudwatchIAMRole struct {
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	// +nullable
 	Token *BearerToken `json:"token,omitempty"`
 }

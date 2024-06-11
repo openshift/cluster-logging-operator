@@ -16,74 +16,56 @@ package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-type Condition metav1.Condition
-type ConditionStatus = metav1.ConditionStatus
-
 const (
-	ConditionTrue  = metav1.ConditionTrue
+
+	// ConditionTrue means the condition is met
+	ConditionTrue = metav1.ConditionTrue
+
+	// ConditionFalse means the condition is not met
 	ConditionFalse = metav1.ConditionFalse
 
-	// Ready indicates the service is ready.
-	//
-	// Ready=True means the operands are running and providing some service.
-	// See the Degraded condition to distinguish full service from partial service.
-	//
-	// Ready=False means the operands cannot provide any service, and
-	// the operator cannot recover without some external change. Either
-	// the spec is invalid, or there is some environmental problem that is
-	// outside of the the operator's control.
-	//
-	// Ready=Unknown means the operator is in transition.
-	//
-	ConditionReady string = "Ready"
-
-	ValidationCondition string = "Validation"
+	// ConditionAuthorized identifies the state of authorization for the service
+	ConditionAuthorized string = GroupName + "/Authorized"
 
 	ConditionMigrate string = "Migrate"
 
-	ConditionAuthorized string = GroupName + "/Authorized"
+	// ConditionReady indicates the service is ready.
+	//
+	// Ready=True means the operands are running and providing some service.
+	// Ready=False means the operands cannot provide any service, and
+	// the operator cannot recover without some external change. Either
+	// the spec is invalid, or there is some environmental problem that is
+	// outside of the operator's control.
+	ConditionReady string = "Ready"
 
-	ReasonServiceAccountDoesNotExist = "ServiceAccountDoesNotExist"
+	// ConditionValidInputPrefix prefixes a named input to identify its validation state
+	ConditionValidInputPrefix = GroupName + "/ValidInput"
 
-	// ReasonClusterRoleMissing means the collector serviceAccount is missing one or more clusterRoles needed to collect a log_type
-	ReasonClusterRoleMissing = "ClusterRoleMissing"
+	// ConditionValidOutputPrefix prefixes a named output to identify its validation state
+	ConditionValidOutputPrefix = GroupName + "/ValidOutput"
+
+	// ConditionValidPipelinePrefix prefixes a named pipeline to identify its validation state
+	ConditionValidPipelinePrefix = GroupName + "/ValidPipeline"
+
+	// ConditionValidFilterPrefix prefixes a named filter to identify its validation state
+	ConditionValidFilterPrefix = GroupName + "/ValidFilter"
 
 	// ReasonClusterRolesExist means the collector serviceAccount is bound to all the cluster roles needed to collect a log_type
 	ReasonClusterRolesExist = "ClusterRolesExist"
 
-	// ReasonValidationFailure is used when a validation failed.
-	ReasonValidationFailure string = "ValidationFailure"
+	// ReasonClusterRoleMissing means the collector serviceAccount is missing one or more clusterRoles needed to collect a log_type
+	ReasonClusterRoleMissing = "ClusterRoleMissing"
+
+	ReasonMigrateOutput string = "Migrate"
 
 	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
 	ReasonMissingSpec = "MissingSpec"
 
-	// ReasonMissingSources applies when an input type is spec'd without sources
-	ReasonMissingSources = "MissingSources"
+	ReasonServiceAccountDoesNotExist = "ServiceAccountDoesNotExist"
 
-	// ReasonInvalidGlob when a namespace or container include/exclude is spec'd with an invalid glob pattern
-	ReasonInvalidGlob = "InvalidGlob"
+	// ReasonValidationSuccess is used when validation succeeds.
+	ReasonValidationSuccess = "ValidationSuccess"
 
-	// ReasonSecretNotFound when a secret is spec'd for an input or output and was not found
-	ReasonSecretNotFound = "SecretNotFound"
-
-	// ReasonSecretKeyNotFound when the key for a secret is spec'd for an input or output and was not found as a key in the secret
-	ReasonSecretKeyNotFound = "SecretKeyNotFound"
-
-	// ReasonValueEmpty when the value of the key for a secret or configmap is empty
-	ReasonValueEmpty = "ValueEmpty"
-
-	// ReasonConfigMapNotFound when a configmap is spec'd for an input or output and was not found
-	ReasonConfigMapNotFound = "ConfigMapNotFound"
-
-	// ReasonConfigMapKeyNotFound when the key for a configmap is spec'd for an input or output and was not found as a key in the configmap
-	ReasonConfigMapKeyNotFound = "ConfigMapKeyNotFound"
-
-	// ReasonFilterPruneHostname exists when a sink is referenced that does not allow pruning the hostname from the record (i.e. GCL)
-	ReasonFilterPruneHostname = "FilterPruneHostname"
-
-	ReasonPipelineInputRefNotFound  = "ReasonPipelineInputRefNotFound"
-	ReasonPipelineOutputRefNotFound = "ReasonPipelineOutputRefNotFound"
-	ReasonPipelineFilterRefNotFound = "ReasonPipelineFilterRefNotFound"
-
-	ReasonMigrateOutput string = "Migrate"
+	// ReasonValidationFailure is used when validation fails.
+	ReasonValidationFailure string = "ValidationFailure"
 )

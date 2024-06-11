@@ -84,12 +84,6 @@ type ServiceAccount struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
-
-	// Audience allows the customization of the OAuth audience used for issuing the token.  Audience is applied when any
-	// output specs the use of a projected service accout token. If not set, "openshift" will be used as a default value.
-	//
-	// +kubebuilder:validation:Optional
-	Audience string `json:"audience"`
 }
 
 type ManagementState string

@@ -48,7 +48,6 @@ pipelines:
   - elasticsearch
   - syslog
 serviceAccount:
-  audience: ""
   name: ""
 `))
 		})
@@ -141,7 +140,6 @@ pipelines:
   outputRefs:
   - other
 serviceAccount:
-  audience: ""
   name: ""
 `))
 		})
@@ -184,7 +182,6 @@ pipelines:
   outputRefs:
   - elasticsearch
 serviceAccount:
-  audience: ""
   name: ""
 `))
 		})

@@ -113,7 +113,7 @@ spec:
       expr: "(label_replace(sum by(hostname) (vector_buffer_byte_size{component_kind='sink',
         buffer_type='disk'}), 'instance', '$1', 'hostname', '(.*)') \n/ on(instance)
         group_left() sum by(instance) (node_filesystem_size_bytes{mountpoint='/var'}))
-        * 100  > 0.15\n"
+        * 100  > 15\n"
       for: 5m
       labels:
         service: collector

@@ -9,6 +9,9 @@ import (
 
 var _ = Describe("#ValidateApplication", func() {
 
+	const (
+		expConditionTypeRE = obs.ConditionValidInputPrefix + "-.*"
+	)
 	var (
 		input obs.InputSpec
 	)
@@ -27,11 +30,11 @@ var _ = Describe("#ValidateApplication", func() {
 	It("should fail when an application type but has no application input", func() {
 		input.Application = nil
 		conds := ValidateApplication(input)
-		Expect(conds).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, "myapp has nil application spec"))
+		Expect(conds).To(HaveCondition(expConditionTypeRE, false, obs.ReasonMissingSpec, "myapp has nil application spec"))
 	})
 	It("should pass for a valid application input", func() {
 		conds := ValidateApplication(input)
-		Expect(conds).To(BeEmpty())
+		Expect(conds).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 	})
 
 	Context("of includes and excludes", func() {
@@ -44,7 +47,20 @@ var _ = Describe("#ValidateApplication", func() {
 					Namespace: "bar",
 				},
 			}
-			Expect(ValidateApplication(input)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonInvalidGlob, `invalid glob for namespace excludes.*Must match`))
+			Expect(ValidateApplication(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, `globs.*match.*excludes.*namespace`))
+		})
+		It("should fail invalid container includes and excludes", func() {
+			input.Application.Includes = []obs.NamespaceContainerSpec{
+				{
+					Container: "$my-namespace123_",
+				},
+			}
+			input.Application.Excludes = []obs.NamespaceContainerSpec{
+				{
+					Container: "$my!123",
+				},
+			}
+			Expect(ValidateApplication(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, `globs.*match.*excludes.*container.*includes.*container`))
 		})
 		It("should fail invalid container includes", func() {
 			input.Application.Includes = []obs.NamespaceContainerSpec{
@@ -55,7 +71,7 @@ var _ = Describe("#ValidateApplication", func() {
 					Container: "bar",
 				},
 			}
-			Expect(ValidateApplication(input)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonInvalidGlob, `invalid glob for container includes.*Must match`))
+			Expect(ValidateApplication(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, `globs.*match.*includes.*container`))
 		})
 		It("should fail invalid container excludes", func() {
 			input.Application.Excludes = []obs.NamespaceContainerSpec{
@@ -66,7 +82,7 @@ var _ = Describe("#ValidateApplication", func() {
 					Container: "bar",
 				},
 			}
-			Expect(ValidateApplication(input)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonInvalidGlob, `invalid glob for container excludes.*Must match`))
+			Expect(ValidateApplication(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, `globs.*match.*excludes.*container`))
 		})
 		It("should pass when valid", func() {
 			input.Application.Excludes = []obs.NamespaceContainerSpec{
@@ -97,7 +113,7 @@ var _ = Describe("#ValidateApplication", func() {
 					Container: "my-namespace123",
 				},
 			}
-			Expect(ValidateApplication(input)).To(BeEmpty())
+			Expect(ValidateApplication(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 		})
 	})
 })

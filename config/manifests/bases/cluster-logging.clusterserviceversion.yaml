@@ -274,22 +274,22 @@ spec:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Filters maps filter name to condition of the filter.
         displayName: Filter Conditions
-        path: filters
+        path: filtersStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Inputs maps input name to condition of the input.
         displayName: Input Conditions
-        path: inputs
+        path: inputsStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Outputs maps output name to condition of the output.
         displayName: Output Conditions
-        path: outputs
+        path: outputsStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Pipelines maps pipeline name to condition of the pipeline.
         displayName: Pipeline Conditions
-        path: pipelines
+        path: pipelinesStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       version: v1

@@ -6,14 +6,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("validating CloudWatch auth", func() {
-	var (
-		secrets map[string]*corev1.Secret
-	)
 	Context("#ValidateCloudWatchAuth", func() {
 
 		It("should skip validation when not CloudWatch", func() {
@@ -21,10 +16,10 @@ var _ = Describe("validating CloudWatch auth", func() {
 				Name: "myoutput",
 				Type: obs.OutputTypeLoki,
 			}
-			Expect(ValidateCloudWatchAuth(spec, secrets)).To(BeEmpty())
+			Expect(ValidateCloudWatchAuth(spec)).To(BeEmpty())
 		})
 
-		DescribeTable("when using accessKey", func(auth *obs.CloudwatchAWSAccessKey, secrets map[string]*corev1.Secret, match types.GomegaMatcher) {
+		DescribeTable("when using accessKey", func(auth *obs.CloudwatchAWSAccessKey, match types.GomegaMatcher) {
 			spec := obs.OutputSpec{
 				Name: "myoutput",
 				Type: obs.OutputTypeCloudwatch,
@@ -35,24 +30,24 @@ var _ = Describe("validating CloudWatch auth", func() {
 					},
 				},
 			}
-			cond := ValidateCloudWatchAuth(spec, secrets)
+			cond := ValidateCloudWatchAuth(spec)
 			Expect(cond).To(match)
 		},
-			Entry("should fail when not defined", nil, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" requires auth configuration`)),
+			Entry("should fail when not defined", nil, ContainElement(MatchRegexp(`AccessKey is nil`))),
 			Entry("should fail when the KeyID is not defined", &obs.CloudwatchAWSAccessKey{
 				KeySecret: &obs.SecretKey{},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a KeyID`)),
+			}, ContainElement(MatchRegexp(`KeyID.*`))),
 			Entry("should fail when the KeySecret is not defined", &obs.CloudwatchAWSAccessKey{
 				KeyID: &obs.SecretKey{},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a KeySecret`)),
+			}, ContainElement(MatchRegexp(`KeySecret.*`))),
 			Entry("should pass when all required fields are defined",
 				&obs.CloudwatchAWSAccessKey{
 					KeyID:     &obs.SecretKey{},
 					KeySecret: &obs.SecretKey{},
 				},
-				secrets, BeEmpty()),
+				BeEmpty()),
 		)
-		DescribeTable("when using IAMRole", func(auth *obs.CloudwatchIAMRole, secrets map[string]*corev1.Secret, match types.GomegaMatcher) {
+		DescribeTable("when using IAMRole", func(auth *obs.CloudwatchIAMRole, match types.GomegaMatcher) {
 			spec := obs.OutputSpec{
 				Name: "myoutput",
 				Type: obs.OutputTypeCloudwatch,
@@ -63,35 +58,35 @@ var _ = Describe("validating CloudWatch auth", func() {
 					},
 				},
 			}
-			cond := ValidateCloudWatchAuth(spec, secrets)
+			cond := ValidateCloudWatchAuth(spec)
 			Expect(cond).To(match)
 		},
-			Entry("should fail when not defined", nil, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" requires auth configuration`)),
+			Entry("should fail when not defined", nil, ContainElement(MatchRegexp(`IAMRole is nil`))),
 			Entry("should fail when the role_arn is not defined", &obs.CloudwatchIAMRole{
 				Token: &obs.BearerToken{},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a RoleARN`)),
-			Entry("should fail when the token is not defined", &obs.CloudwatchIAMRole{
+			}, ContainElement(MatchRegexp(`RoleARN.*`))),
+			Entry("should pass when the role_arn is defined without a token", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth requires a token`)),
+			}, BeEmpty()),
 			Entry("should fail when the token is sourced from a secret without the secreting being defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
 				},
-			}, secrets, HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, `".*" auth from "secret" requires a secret`)),
-			Entry("should pass when the token secret and role_arn are defined", &obs.CloudwatchIAMRole{
+			}, ContainElement(MatchRegexp(`Secret for token.*`))),
+			Entry("should pass when the token is from a secret and role_arn are defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
 					From:   obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{},
 				},
-			}, secrets, BeEmpty()),
-			Entry("should pass when the token serviceaccount and role are defined", &obs.CloudwatchIAMRole{
+			}, BeEmpty()),
+			Entry("should pass when the token is from a serviceaccount and role are defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromServiceAccountToken,
 				},
-			}, secrets, BeEmpty()),
+			}, BeEmpty()),
 		)
 	})
 })

@@ -2447,7 +2447,7 @@ spec:
                   - type
                   type: object
                 type: array
-              filters:
+              filtersStatus:
                 description: Filters maps filter name to condition of the filter.
                 items:
                   description: "Condition contains details for one aspect of the current
@@ -2516,7 +2516,7 @@ spec:
                   - type
                   type: object
                 type: array
-              inputs:
+              inputsStatus:
                 description: Inputs maps input name to condition of the input.
                 items:
                   description: "Condition contains details for one aspect of the current
@@ -2585,7 +2585,7 @@ spec:
                   - type
                   type: object
                 type: array
-              outputs:
+              outputsStatus:
                 description: Outputs maps output name to condition of the output.
                 items:
                   description: "Condition contains details for one aspect of the current
@@ -2654,7 +2654,7 @@ spec:
                   - type
                   type: object
                 type: array
-              pipelines:
+              pipelinesStatus:
                 description: Pipelines maps pipeline name to condition of the pipeline.
                 items:
                   description: "Condition contains details for one aspect of the current

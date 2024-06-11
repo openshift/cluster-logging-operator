@@ -7,51 +7,65 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 )
 
 func Validate(context internalcontext.ForwarderContext) (_ common.AttributeConditionType, results []metav1.Condition) {
 	inputs := internalobs.Inputs(context.Forwarder.Spec.Inputs).Map()
 	outputs := internalobs.Outputs(context.Forwarder.Spec.Outputs).Map()
 	filters := internalobs.FilterMap(context.Forwarder.Spec)
+	var messages []string
 	for _, pipelineSpec := range context.Forwarder.Spec.Pipelines {
-		results = append(results, validateRef(pipelineSpec, inputs, outputs, filters)...)
-		results = append(results, verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)...)
+		refMessages := validateRef(pipelineSpec, inputs, outputs, filters)
+		messages = append(messages, fmt.Sprintf("refs not found: %s", strings.Join(refMessages, ",")))
+		messages = append(messages, verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)...)
+		if len(messages) > 0 {
+			results = append(results, internalobs.NewConditionFromPrefix(obs.ConditionValidPipelinePrefix, pipelineSpec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
+		} else {
+			results = append(results, internalobs.NewConditionFromPrefix(obs.ConditionValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, "pipeline valid"))
+		}
 	}
 
 	return common.AttributeConditionPipelines, results
 }
 
 // validateRef validates the references defined for the pipeline actually reference a spec'd input,output, or filter
-func validateRef(pipeline obs.PipelineSpec, inputs map[string]obs.InputSpec, outputs map[string]obs.OutputSpec, filters map[string]*obs.FilterSpec) (results []metav1.Condition) {
+func validateRef(pipeline obs.PipelineSpec, inputs map[string]obs.InputSpec, outputs map[string]obs.OutputSpec, filters map[string]*obs.FilterSpec) (results []string) {
 
-	addCond := func(refType, ref, reason string) {
-		results = append(results, internalobs.NewCondition(obs.ValidationCondition,
-			metav1.ConditionTrue,
-			reason,
-			fmt.Sprintf(`pipeline %q references %s %q not found`, pipeline.Name, refType, ref),
-		))
-	}
-
+	var inputRefs []string
 	for _, ref := range pipeline.InputRefs {
 		if _, found := inputs[ref]; !found {
-			addCond("input", ref, obs.ReasonPipelineInputRefNotFound)
+			inputRefs = append(inputRefs, ref)
 		}
 	}
+	if len(inputRefs) > 0 {
+		results = append(results, fmt.Sprintf("inputs[%s]", strings.Join(inputRefs, ",")))
+	}
+
+	var outputRefs []string
 	for _, ref := range pipeline.OutputRefs {
 		if _, found := outputs[ref]; !found {
-			addCond("output", ref, obs.ReasonPipelineOutputRefNotFound)
+			outputRefs = append(outputRefs, ref)
 		}
 	}
+	if len(outputRefs) > 0 {
+		results = append(results, fmt.Sprintf("outputs[%s]", strings.Join(outputRefs, ",")))
+	}
+
+	var filterRefs []string
 	for _, ref := range pipeline.FilterRefs {
 		if _, found := filters[ref]; !found {
-			addCond("filter", ref, obs.ReasonPipelineFilterRefNotFound)
+			filterRefs = append(filterRefs, ref)
 		}
+	}
+	if len(filterRefs) > 0 {
+		results = append(results, fmt.Sprintf("filters[%s]", strings.Join(filterRefs, ",")))
 	}
 	return results
 }
 
 // verifyHostNameNotFilteredForGCL verifies that within a pipeline featuring a GCL sink and prune filters, the `.hostname` field is exempted from pruning.
-func verifyHostNameNotFilteredForGCL(pipeline obs.PipelineSpec, outputs map[string]obs.OutputSpec, filters map[string]*obs.FilterSpec) (results []metav1.Condition) {
+func verifyHostNameNotFilteredForGCL(pipeline obs.PipelineSpec, outputs map[string]obs.OutputSpec, filters map[string]*obs.FilterSpec) (results []string) {
 	if len(pipeline.FilterRefs) == 0 {
 		return nil
 	}
@@ -60,11 +74,7 @@ func verifyHostNameNotFilteredForGCL(pipeline obs.PipelineSpec, outputs map[stri
 		if output, exists := outputs[out]; exists && output.Type == obs.OutputTypeGoogleCloudLogging {
 			for _, f := range pipeline.FilterRefs {
 				if filterSpec, ok := filters[f]; ok && prunesHostName(*filterSpec) {
-					results = append(results, internalobs.NewCondition(obs.ValidationCondition,
-						metav1.ConditionTrue,
-						obs.ReasonFilterPruneHostname,
-						fmt.Sprintf("%q prunes the `.hostname` field which is required for output: %q of type %q.", filterSpec.Name, output.Name, output.Type),
-					))
+					results = append(results, fmt.Sprintf("%q prunes the `.hostname` field which is required for output: %q of type %q.", filterSpec.Name, output.Name, output.Type))
 				}
 			}
 		}

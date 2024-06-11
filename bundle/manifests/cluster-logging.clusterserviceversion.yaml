@@ -178,7 +178,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-06-06T15:14:59Z"
+    createdAt: "2024-06-12T18:30:24Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -446,22 +446,22 @@ spec:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Filters maps filter name to condition of the filter.
         displayName: Filter Conditions
-        path: filters
+        path: filtersStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Inputs maps input name to condition of the input.
         displayName: Input Conditions
-        path: inputs
+        path: inputsStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Outputs maps output name to condition of the output.
         displayName: Output Conditions
-        path: outputs
+        path: outputsStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       - description: Pipelines maps pipeline name to condition of the pipeline.
         displayName: Pipeline Conditions
-        path: pipelines
+        path: pipelinesStatus
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       version: v1

@@ -10,7 +10,8 @@ import (
 var _ = Describe("#ValidateInfrastructure", func() {
 
 	var (
-		input obs.InputSpec
+		input              obs.InputSpec
+		expConditionTypeRE = obs.ConditionValidInputPrefix + "-.*"
 	)
 	BeforeEach(func() {
 		input = obs.InputSpec{
@@ -29,14 +30,15 @@ var _ = Describe("#ValidateInfrastructure", func() {
 	It("should fail when an infrastructure type but has no infrastructure input", func() {
 		input.Infrastructure = nil
 		conds := ValidateInfrastructure(input)
-		Expect(conds).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSpec, "myapp has nil infrastructure spec"))
+		Expect(conds).To(HaveCondition(expConditionTypeRE, false, obs.ReasonMissingSpec, "myapp has nil infrastructure spec"))
 	})
 	It("should pass for a valid infrastructure input", func() {
 		conds := ValidateInfrastructure(input)
-		Expect(conds).To(BeEmpty())
+		Expect(conds).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
+
 	})
 	It("should fail when no sources are defined", func() {
 		input.Infrastructure.Sources = []obs.InfrastructureSource{}
-		Expect(ValidateInfrastructure(input)).To(HaveCondition(obs.ValidationCondition, true, obs.ReasonMissingSources, "must define at least one valid source"))
+		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, "must define at least one valid source"))
 	})
 })

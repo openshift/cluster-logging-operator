@@ -22,9 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"time"
 )
 
-func ReconcileCollector(k8Client client.Client, k8Reader client.Reader, clf obs.ClusterLogForwarder, clusterID string) (err error) {
+func ReconcileCollector(k8Client client.Client, k8Reader client.Reader, clf obs.ClusterLogForwarder, clusterID string, pollInterval, timeout time.Duration) (err error) {
 	// TODO LOG-2620: containers violate PodSecurity ? should we still do this or should this be
 	// a pre-req to multi CLF?
 	//// LOG-2620: containers violate PodSecurity
@@ -52,7 +53,7 @@ func ReconcileCollector(k8Client client.Client, k8Reader client.Reader, clf obs.
 		log.Error(err, "collector.ReconcileTrustedCABundleConfigMap")
 		return err
 	}
-	trustedCABundle := collector.WaitForTrustedCAToBePopulated(k8Client, clf.Namespace, resourceNames.CaTrustBundle)
+	trustedCABundle := collector.WaitForTrustedCAToBePopulated(k8Client, clf.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
 	secrets, err := LoadSecrets(k8Client, clf.Namespace, clf.Spec.Inputs, clf.Spec.Outputs)
 	if err != nil {

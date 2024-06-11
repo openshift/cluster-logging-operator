@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
@@ -143,7 +144,7 @@ var _ = Describe("Reconciling the Collector", func() {
 				)
 			}
 			reconcileCollector = func(clf *obs.ClusterLogForwarder) {
-				Expect(observability.ReconcileCollector(client, client, *clf, clusterID)).Should(Succeed())
+				Expect(observability.ReconcileCollector(client, client, *clf, clusterID, 1*time.Millisecond, 1*time.Millisecond)).Should(Succeed())
 			}
 			podTemplateSpecFromDeployment = func(obj cli.Object) corev1.PodTemplateSpec {
 				d := obj.(*appsv1.Deployment)

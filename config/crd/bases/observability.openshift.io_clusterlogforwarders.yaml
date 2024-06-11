@@ -2364,12 +2364,6 @@ spec:
                 description: ServiceAccount points to the ServiceAccount resource
                   used by the collector pods.
                 properties:
-                  audience:
-                    description: Audience allows the customization of the OAuth audience
-                      used for issuing the token.  Audience is applied when any output
-                      specs the use of a projected service accout token. If not set,
-                      "openshift" will be used as a default value.
-                    type: string
                   name:
                     description: Name of the ServiceAccount to use to deploy the Forwarder.  The
                       ServiceAccount is created by the administrator

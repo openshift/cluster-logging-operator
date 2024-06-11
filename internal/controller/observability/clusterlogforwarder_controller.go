@@ -6,6 +6,7 @@ import (
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
@@ -70,7 +71,7 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	//TODO: Remove existing deployment/daemonset
 	//TODO: Remove stale input services
 
-	reconcileErr := ReconcileCollector(r.Client, r.Reader, *r.Forwarder, r.ClusterID)
+	reconcileErr := ReconcileCollector(r.Client, r.Reader, *r.Forwarder, r.ClusterID, collector.DefaultPollInterval, collector.DefaultTimeOut)
 	if reconcileErr != nil {
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 		//} else {

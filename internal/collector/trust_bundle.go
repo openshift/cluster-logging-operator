@@ -18,6 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	DefaultPollInterval = 5 * time.Second
+	DefaultTimeOut      = 30 * time.Second
+)
+
 // ReconcileTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
 // By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
 func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
@@ -78,9 +83,9 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 }
 
 // WaitForTrustedCAToBePopulated polls for the given configmap to
-func WaitForTrustedCAToBePopulated(k8sClient client.Client, namespace, name string) *corev1.ConfigMap {
+func WaitForTrustedCAToBePopulated(k8sClient client.Client, namespace, name string, pollInterval, timeout time.Duration) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
-	err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollInterval, timeout, true, func(ctx context.Context) (done bool, err error) {
 		key := client.ObjectKey{Namespace: namespace, Name: name}
 		if err := k8sClient.Get(context.TODO(), key, cm); err != nil {
 			log.Error(err, "Error retrieving the Trusted CA Bundle")

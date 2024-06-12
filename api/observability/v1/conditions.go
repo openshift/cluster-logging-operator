@@ -14,7 +14,15 @@ limitations under the License.
 
 package v1
 
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+type Condition metav1.Condition
+type ConditionStatus = metav1.ConditionStatus
+
 const (
+	ConditionTrue  = metav1.ConditionTrue
+	ConditionFalse = metav1.ConditionFalse
+
 	// Ready indicates the service is ready.
 	//
 	// Ready=True means the operands are running and providing some service.
@@ -32,17 +40,16 @@ const (
 	ValidationCondition string = "Validation"
 
 	ConditionMigrate string = "Migrate"
-)
 
-const (
-	// ReasonInvalid is used when the spec is ill-formed in some way, or contains unknown references.
-	ReasonInvalid string = "Invalid"
+	ConditionAuthorized string = GroupName + "/Authorized"
 
-	// ReasonMissingResource is used when the spec refers to resources that can't be located.
-	ReasonMissingResource string = "MissingResource"
+	ReasonServiceAccountDoesNotExist = "ServiceAccountDoesNotExist"
 
-	// ReasonUnused is used when the spec defines a valid object, but it is never used.
-	ReasonUnused string = "Unused"
+	// ReasonClusterRoleMissing means the collector serviceAccount is missing one or more clusterRoles needed to collect a log_type
+	ReasonClusterRoleMissing = "ClusterRoleMissing"
+
+	// ReasonClusterRolesExist means the collector serviceAccount is bound to all the cluster roles needed to collect a log_type
+	ReasonClusterRolesExist = "ClusterRolesExist"
 
 	// ReasonValidationFailure is used when a validation failed.
 	ReasonValidationFailure string = "ValidationFailure"
@@ -55,9 +62,6 @@ const (
 
 	// ReasonInvalidGlob when a namespace or container include/exclude is spec'd with an invalid glob pattern
 	ReasonInvalidGlob = "InvalidGlob"
-
-	//ReasonMissingAuth ideentifies when authorization spec is required but missing
-	ReasonMissingAuth = "MissingAuth"
 
 	// ReasonSecretNotFound when a secret is spec'd for an input or output and was not found
 	ReasonSecretNotFound = "SecretNotFound"

@@ -255,7 +255,7 @@ test-forwarder-generator: bin/forwarder-generator
 
 test-functional-benchmarker-vector: bin/functional-benchmarker
 	@rm -rf /tmp/benchmark-test-vector
-	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --collector-impl=vector --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator

@@ -1,14 +1,17 @@
-package clusterlogforwarder
+package observability
 
 import (
 	"context"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
@@ -26,33 +29,28 @@ const (
 
 var infraNamespaces = regexp.MustCompile(`^default|openshift.*|kube.*$`)
 
-// ValidateServiceAcccount validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
-func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
-	// Do not need to validate SA if legacy forwarder
-	if clf.Name == constants.SingletonName && clf.Namespace == constants.OpenshiftNS {
-		log.V(3).Info("[ValidateServiceAccount] do not need to validate SA for legacy CL & CLF")
-		return nil, nil
-	}
-
-	if clf.Namespace == constants.OpenshiftNS && clf.Spec.ServiceAccountName == constants.CollectorServiceAccountName {
-		return errors.NewValidationError(constants.CollectorServiceAccountName + " is a reserved serviceaccount name for legacy ClusterLogForwarder(openshift-logging/instance)"), nil
-	}
-
-	if clf.Spec.ServiceAccountName == "" {
-		return errors.NewValidationError("custom clusterlogforwarders must specify a service account name"), nil
-	}
+// ValidatePermissions validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
+func ValidatePermissions(context internalcontext.ForwarderContext) (common.AttributeConditionType, []metav1.Condition) {
+	clf := context.Forwarder
+	k8sClient := context.Client
 
 	var err error
 	var serviceAccount *corev1.ServiceAccount
-	if serviceAccount, err = getServiceAccount(clf.Spec.ServiceAccountName, clf.Namespace, k8sClient); err != nil {
-		return err, nil
+	if serviceAccount, err = getServiceAccount(clf.Spec.ServiceAccount.Name, clf.Namespace, k8sClient); err != nil {
+		return common.AttributeConditionConditions, []metav1.Condition{
+			internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionFalse, obs.ReasonServiceAccountDoesNotExist, err.Error()),
+		}
 	}
 	// If SA present, validate permissions based off spec'd CLF inputs
-	clfInputs, hasReceiverInputs := gatherPipelineInputs(clf)
+	clfInputs, hasReceiverInputs := gatherPipelineInputs(*clf)
 	if err = validateServiceAccountPermissions(k8sClient, clfInputs, hasReceiverInputs, serviceAccount, clf.Namespace, clf.Name); err != nil {
-		return err, nil
+		return common.AttributeConditionConditions, []metav1.Condition{
+			internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionFalse, obs.ReasonClusterRoleMissing, err.Error()),
+		}
 	}
-	return nil, nil
+	return common.AttributeConditionConditions, []metav1.Condition{
+		internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionTrue, obs.ReasonClusterRolesExist, ""),
+	}
 }
 
 func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1.ServiceAccount, error) {
@@ -87,7 +85,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 	var failedInputs []string
 	for _, input := range inputs.List() {
 		log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] validating %q for user: %v", inputs, username))
-		sar := createSubjectAccessReview(username, allNamespaces, "collect", "logs", input, loggingv1.GroupVersion.Group)
+		sar := createSubjectAccessReview(username, allNamespaces, "collect", "logs", input, obs.GroupName)
 		if err = k8sClient.Create(context.TODO(), sar); err != nil {
 			return err
 		}
@@ -105,7 +103,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 	return nil
 }
 
-func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool) {
+func gatherPipelineInputs(clf obs.ClusterLogForwarder) (sets.String, bool) {
 	inputRefs := sets.NewString()
 	inputTypes := sets.NewString()
 
@@ -113,7 +111,7 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 	for _, pipeline := range clf.Spec.Pipelines {
 		for _, input := range pipeline.InputRefs {
 			inputRefs.Insert(input)
-			if loggingv1.ReservedInputNames.Has(input) {
+			if obs.ReservedInputTypes.Has(input) {
 				inputTypes.Insert(input)
 			}
 		}
@@ -123,32 +121,27 @@ func gatherPipelineInputs(clf loggingv1.ClusterLogForwarder) (sets.String, bool)
 	for _, input := range clf.Spec.Inputs {
 
 		if inputRefs.Has(input.Name) {
-			switch {
-			case input.Application != nil:
-				inputTypes.Insert(loggingv1.InputNameApplication)
+			switch input.Type {
+			case obs.InputTypeApplication:
+				inputTypes.Insert(string(obs.InputTypeApplication))
 				// Check if infra namespaces are spec'd
-				if hasInfraNamespaces(input.Application.Namespaces) {
-					inputTypes.Insert(loggingv1.InputNameInfrastructure)
-				}
 				if len(input.Application.Includes) > 0 {
 					for _, in := range input.Application.Includes {
 						if infraNamespaces.MatchString(in.Namespace) {
-							inputTypes.Insert(loggingv1.InputNameInfrastructure)
+							inputTypes.Insert(string(obs.InputTypeInfrastructure))
 						}
 					}
 				}
-			case input.Infrastructure != nil:
-				inputTypes.Insert(loggingv1.InputNameInfrastructure)
-			case input.Audit != nil:
-				inputTypes.Insert(loggingv1.InputNameAudit)
+			case obs.InputTypeInfrastructure:
+				inputTypes.Insert(string(obs.InputTypeInfrastructure))
+			case obs.InputTypeAudit:
+				inputTypes.Insert(string(obs.InputTypeAudit))
+			case obs.InputTypeReceiver:
+				noOfReceivers += 1
+				if input.Receiver.Type == obs.ReceiverTypeSyslog {
+					inputTypes.Insert(string(obs.InputTypeInfrastructure))
+				}
 			}
-		}
-
-		if input.Receiver.IsHttpReceiver() || input.Receiver.IsSyslogReceiver() {
-			noOfReceivers += 1
-		}
-		if input.Receiver.IsSyslogReceiver() {
-			inputTypes.Insert(loggingv1.InputNameInfrastructure)
 		}
 	}
 

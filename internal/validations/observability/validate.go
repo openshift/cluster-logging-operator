@@ -11,6 +11,7 @@ import (
 
 var (
 	clfValidators = []func(internalcontext.ForwarderContext) (common.AttributeConditionType, []metav1.Condition){
+		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,
 		pipelines.Validate,

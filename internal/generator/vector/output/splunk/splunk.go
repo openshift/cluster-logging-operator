@@ -97,8 +97,9 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 		Index:       o.Splunk.Index,
 		RootMixin:   common.NewRootMixin("none"),
 	}
-	if o.Splunk.Authentication != nil {
-		s.DefaultToken = secrets.AsString(o.Splunk.Authentication.Token)
+	authentication := o.Splunk.Authentication
+	if authentication != nil && authentication.Token != nil {
+		s.DefaultToken = vectorhelpers.SecretFrom(authentication.Token)
 	}
 	return s
 }

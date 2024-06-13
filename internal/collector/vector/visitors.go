@@ -25,6 +25,7 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 	dataPath := GetDataPath(namespace, resNames.ForwarderName)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		corev1.VolumeMount{Name: common.ConfigVolumeName, ReadOnly: true, MountPath: vectorConfigPath},
+		corev1.VolumeMount{Name: common.SecretDataReader, ReadOnly: true, MountPath: SecretDataReaderPath, SubPath: SecretDataReaderFile},
 		corev1.VolumeMount{Name: common.DataDir, ReadOnly: false, MountPath: dataPath},
 		corev1.VolumeMount{Name: common.EntrypointVolumeName, ReadOnly: true, MountPath: entrypointValue, SubPath: RunVectorFile},
 	)
@@ -33,17 +34,10 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 	collectorContainer.Args = []string{entrypointValue}
 
 	podSpec.Volumes = append(podSpec.Volumes,
-		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{
-			SecretName: resNames.ConfigMap,
-			Items:      []corev1.KeyToPath{{Key: ConfigFile, Path: ConfigFile}},
-			Optional:   utils.GetPtr(true),
-		}}},
+		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: resNames.ConfigMap}}}},
 		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: dataPath}}},
-		corev1.Volume{Name: common.EntrypointVolumeName, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{
-			SecretName: resNames.ConfigMap,
-			Items:      []corev1.KeyToPath{{Key: RunVectorFile, Path: RunVectorFile}},
-			Optional:   utils.GetPtr(true),
-		}}},
+		corev1.Volume{Name: common.EntrypointVolumeName, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: resNames.ConfigMap}}}},
+		corev1.Volume{Name: common.SecretDataReader, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: resNames.ConfigMap}}}},
 	)
 }
 

@@ -4,6 +4,11 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 [api]
 enabled = true
 
+# Load sensitive data from secret mount with script: /usr/bin/read_secret_data.sh
+[secret.from_secret]
+type = "exec"
+command = ["sh", "/usr/bin/read_secret_data.sh"]
+
 [sources.internal_metrics]
 type = "internal_metrics"
 

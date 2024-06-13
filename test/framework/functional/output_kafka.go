@@ -3,6 +3,8 @@ package functional
 import (
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -108,7 +110,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).
 		AddVolumeMount("brokerlogs", "/opt/kafka/logs", "", false).
-		AddVolumeMount("kafka", "/var/run/ocp-collector/secrets/kafka", "", false).
+		AddVolumeMount("kafka", filepath.Join(constants.CollectorSecretsDir, "kafka"), "", false).
 		AddEnvVar("extensions", "/opt/kafka/libs/extensions").
 		AddEnvVar("data", "/var/lib/kafka/data").
 		End().
@@ -136,7 +138,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		b.AddContainer(containername, ImageRemoteKafka).
 			WithCmd(cmdCreateTopicAndDeployConsumer).
 			AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
-			AddVolumeMount("kafka", "/var/run/ocp-collector/secrets/kafka", "", false).
+			AddVolumeMount("kafka", filepath.Join(constants.CollectorSecretsDir, "kafka"), "", false).
 			AddVolumeMount("shared", "/shared", "", false).
 			End().
 			AddEmptyDirVolume("shared")

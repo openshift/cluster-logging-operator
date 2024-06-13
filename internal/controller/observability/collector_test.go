@@ -5,11 +5,10 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/controller/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"time"
-
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"

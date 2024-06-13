@@ -19,6 +19,7 @@ type ForwarderResourceNames struct {
 	InternalLogStoreSecret           string
 	ServiceAccountTokenSecret        string
 	ForwarderName                    string
+	Secrets                          string
 }
 
 func (f *ForwarderResourceNames) DaemonSetName() string {
@@ -73,5 +74,6 @@ func ResourceNames(clf obsv1.ClusterLogForwarder) *ForwarderResourceNames {
 		ServiceAccount:                   clf.Spec.ServiceAccount.Name,
 		InternalLogStoreSecret:           clf.Spec.ServiceAccount.Name + "-default",
 		ServiceAccountTokenSecret:        clf.Spec.ServiceAccount.Name + "-token",
+		Secrets:                          resBaseName + "-secrets",
 	}
 }

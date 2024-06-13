@@ -50,4 +50,4 @@ ca_file = "/var/run/ocp-collector/secrets/logcollector-token/service-ca.crt"
 
 [sinks.output_default_loki_apps.auth]
 strategy = "bearer"
-token = "token-for-loki"
+token = "SECRET[from_secret.logcollector_token_token]"

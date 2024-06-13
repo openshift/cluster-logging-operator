@@ -9,8 +9,8 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.sasl]
-username = "testuser"
-password = "testpass"
+username = "SECRET[from_secret.kafka_receiver_1_username]"
+password = "SECRET[from_secret.kafka_receiver_1_password]"
 mechanism = "PLAIN"
 
 [sinks.kafka_receiver.tls]

@@ -44,4 +44,3 @@ log_type = "{{log_type}}"
 key_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/loki-receiver/ca-bundle.crt"
-

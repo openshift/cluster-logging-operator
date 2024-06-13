@@ -35,12 +35,8 @@ func NewBasic(id string, spec *obs.HTTPAuthentication, secrets helpers.Secrets) 
 	b := Basic{}
 	if spec != nil {
 		b.ID = id
-		if spec.Username != nil {
-			b.Username = secrets.AsString(spec.Username)
-		}
-		if spec.Password != nil {
-			b.Password = secrets.AsString(spec.Password)
-		}
+		b.Username = helpers.SecretFrom(spec.Username)
+		b.Password = helpers.SecretFrom(spec.Password)
 	}
 	return b
 }

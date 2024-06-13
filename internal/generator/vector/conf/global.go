@@ -3,6 +3,8 @@ package conf
 import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
 func Global(namespace, forwarderName string) []framework.Element {
@@ -15,6 +17,7 @@ func Global(namespace, forwarderName string) []framework.Element {
 			ExpireMetricsSecs: 60,
 			DataDir:           dataDir,
 		},
+		common.NewVectorSecret(helpers.VectorSecretID, vector.SecretDataReaderPath),
 	}
 }
 

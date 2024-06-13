@@ -4,7 +4,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -40,7 +39,7 @@ func (s Secrets) AsString(key *obs.SecretKey) string {
 	return ""
 }
 
-// AsString returns the value of the BearerToken if it exists or empty
+// AsStringFromBearerToken returns the value of the BearerToken if it exists or empty
 func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 	if key.From == obs.BearerTokenFromSecret && key.Secret != nil {
 		return s.AsString(&obs.SecretKey{
@@ -57,7 +56,7 @@ func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 // Path returns the path to the given secret key if it exists or empty
 func (s Secrets) Path(key *obs.SecretKey) string {
 	if s.Value(key) != nil {
-		return common.SecretPath(key.Secret.Name, key.Key)
+		return SecretPath(key.Secret.Name, key.Key)
 	}
 	return ""
 }

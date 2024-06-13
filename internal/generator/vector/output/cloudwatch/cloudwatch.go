@@ -113,8 +113,8 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
-		authConfig.KeyID.Value = strings.TrimSpace(secrets.AsString(auth.AWSAccessKey.KeyID))
-		authConfig.KeySecret.Value = strings.TrimSpace(secrets.AsString(auth.AWSAccessKey.KeySecret))
+		authConfig.KeyID.Value = vectorhelpers.SecretFrom(auth.AWSAccessKey.KeyID)
+		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(auth.AWSAccessKey.KeySecret)
 	}
 	return authConfig
 }

@@ -129,7 +129,6 @@ func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error
 }
 
 func validateForwarder(forwarderContext internalcontext.ForwarderContext) (result ctrl.Result, err error) {
-	log.V(3).Info("obs-clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err.Error())
 	if failures := validations.ValidateClusterLogForwarder(forwarderContext); len(failures) > 0 {
 		// TODO: Evaluate failures
 		//if validationerrors.MustUndeployCollector(err) {

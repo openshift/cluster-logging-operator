@@ -16,7 +16,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
+default_token = "SECRET[from_secret.vector_splunk_secret_hecToken]"
 index = "{{.log_type}}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]

@@ -31,17 +31,20 @@ mechanism = "{{.Mechanism}}"
 }
 
 func SASLConf(id string, spec *obs.KafkaAuthentication, secrets vectorhelpers.Secrets) Element {
-	if spec != nil && spec.SASL != nil {
-		sasl := SASL{
-			ComponentID: id,
-			Username:    secrets.AsString(spec.SASL.Username),
-			Password:    secrets.AsString(spec.SASL.Password),
-			Mechanism:   SASLMechanismPlain,
+	if spec != nil {
+		saslAuth := spec.SASL
+		if saslAuth != nil && saslAuth.Username != nil && saslAuth.Password != nil {
+			sasl := SASL{
+				ComponentID: id,
+				Username:    vectorhelpers.SecretFrom(saslAuth.Username),
+				Password:    vectorhelpers.SecretFrom(saslAuth.Password),
+				Mechanism:   SASLMechanismPlain,
+			}
+			if saslAuth.Mechanism != "" {
+				sasl.Mechanism = saslAuth.Mechanism
+			}
+			return sasl
 		}
-		if spec.SASL.Mechanism != "" {
-			sasl.Mechanism = spec.SASL.Mechanism
-		}
-		return sasl
 	}
 
 	return Nil

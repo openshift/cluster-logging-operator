@@ -59,8 +59,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		AzureResourceId: azm.AzureResourceId,
 		Host:            azm.Host,
 	}
-	if azm.Authentication != nil {
+	if azm.Authentication != nil && azm.Authentication.SharedKey != nil {
 		e.SharedKey = secrets.AsString(azm.Authentication.SharedKey)
+		e.SharedKey = vectorhelpers.SecretFrom(azm.Authentication.SharedKey)
 	}
 	confTLS := tls.New(id, o.TLS, secrets, op)
 	return []framework.Element{

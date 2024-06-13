@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	generatorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -74,10 +75,12 @@ func ReconcileCollector(k8Client client.Client, k8Reader client.Reader, clf obs.
 		log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 		return
 	}
+
+	secretReaderScript := common.GenerateSecretReaderScript(secrets)
 	isDaemonSet := ShouldDeployAsDaemonSet(clf.Annotations, clf.Spec.Inputs)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
 	factory := collector.New(collectorConfHash, clusterID, clf.Spec.Collector, secrets, clf.Spec, resourceNames, isDaemonSet, LogLevel(clf.Annotations))
-	if err = factory.ReconcileCollectorConfig(noOpEventRecorder, k8Client, k8Reader, clf.Namespace, collectorConfig, ownerRef); err != nil {
+	if err = factory.ReconcileCollectorConfig(noOpEventRecorder, k8Client, k8Reader, clf.Namespace, collectorConfig, secretReaderScript, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}
@@ -128,7 +131,9 @@ func GenerateConfig(k8Client client.Client, spec obs.ClusterLogForwarder, resour
 
 func LoadSecrets(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (secrets helpers.Secrets, err error) {
 	secrets = helpers.Secrets{}
-	for _, name := range inputs.SecretNames() {
+	names := inputs.SecretNames()
+	names = append(names, outputs.SecretNames()...)
+	for _, name := range names {
 		secret := &corev1.Secret{}
 		if err = k8Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, secret); err == nil {
 			secrets[name] = secret

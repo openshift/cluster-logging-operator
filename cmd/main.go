@@ -29,6 +29,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 
 	apis "github.com/openshift/cluster-logging-operator/api"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 
@@ -38,6 +39,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -53,13 +55,8 @@ import (
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 )
 
-// Change below variables to serve metrics on different host or port.
 var (
 	scheme = apiruntime.NewScheme()
-)
-
-const (
-	UnHealthyStatus = "0"
 )
 
 func init() {
@@ -221,7 +218,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO initialize new telemetry implementation here
+	if err := telemetry.Setup(context.TODO(), mgr.GetClient(), metrics.Registry, version.Version); err != nil {
+		log.Error(err, "Error registering telemetry metrics")
+	}
 
 	log.Info("Starting the Cmd.")
 	// Start the Cmd

@@ -44,6 +44,7 @@ rules:
   verbs:
   - get
   - list
+  - watch
 - apiGroups:
   - config.openshift.io
   resources:
@@ -162,5 +163,7 @@ rules:
   - securitycontextconstraints
   verbs:
   - create
+  - get
   - list
   - use
+  - watch

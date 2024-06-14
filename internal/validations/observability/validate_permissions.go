@@ -125,7 +125,7 @@ func gatherPipelineInputs(clf obs.ClusterLogForwarder) (sets.String, bool) {
 			case obs.InputTypeApplication:
 				inputTypes.Insert(string(obs.InputTypeApplication))
 				// Check if infra namespaces are spec'd
-				if len(input.Application.Includes) > 0 {
+				if input.Application != nil && len(input.Application.Includes) > 0 {
 					for _, in := range input.Application.Includes {
 						if infraNamespaces.MatchString(in.Namespace) {
 							inputTypes.Insert(string(obs.InputTypeInfrastructure))

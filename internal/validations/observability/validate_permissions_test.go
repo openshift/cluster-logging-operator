@@ -99,6 +99,30 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			}
 			expectValidateToSucceed(true, "")
 		})
+
+		It("should pass validation for application logs when missing spec", func() {
+			customClf.Spec = obs.ClusterLogForwarderSpec{
+				Inputs: []obs.InputSpec{
+					{
+						Name: string(obs.InputTypeApplication),
+						Type: obs.InputTypeApplication,
+					},
+				},
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name: "pipeline1",
+						InputRefs: []string{
+							string(obs.InputTypeApplication),
+						},
+					},
+				},
+				ServiceAccount: obs.ServiceAccount{
+					Name: clfServiceAccount.Name,
+				},
+			}
+			expectValidateToSucceed(true, "")
+		})
+
 		It("should pass validation when service account can collect specified inputs", func() {
 			inputName := "some-custom-namespace"
 			customClf.Spec = obs.ClusterLogForwarderSpec{

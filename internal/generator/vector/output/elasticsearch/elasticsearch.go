@@ -1,7 +1,9 @@
 package elasticsearch
 
 import (
+	"encoding/json"
 	"fmt"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"strings"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -76,13 +78,13 @@ if (.log_type == "audit"){
 		case es.StructuredTypeKey != "" && es.StructuredTypeName == "":
 			changeIndexName := `
 if .log_type == "application" && .structured != null {
-  val = .%s
+  val = %s
   if val != null {
     .write_index, err = "app-" + val + "-write"
   }
 }  
 `
-			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey))
+			vrls = append(vrls, fmt.Sprintf(changeIndexName, safePath(o.Elasticsearch.StructuredTypeKey)))
 		case es.StructuredTypeKey == "" && es.StructuredTypeName != "":
 			changeIndexName := `
 if .log_type == "application" && .structured != null {
@@ -93,7 +95,7 @@ if .log_type == "application" && .structured != null {
 		case es.StructuredTypeKey != "" && es.StructuredTypeName != "":
 			changeIndexName := `
 if .log_type == "application" && .structured != null {
-  val = .%s
+  val = %s
   if val != null {
     .write_index, err = "app-" + val + "-write"
   } else {
@@ -101,7 +103,7 @@ if .log_type == "application" && .structured != null {
   }
 }
 `
-			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey, o.Elasticsearch.StructuredTypeName))
+			vrls = append(vrls, fmt.Sprintf(changeIndexName, safePath(o.Elasticsearch.StructuredTypeKey), o.Elasticsearch.StructuredTypeName))
 		}
 		if es.EnableStructuredContainerLogs {
 			vrls = append(vrls, `
@@ -247,4 +249,13 @@ func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element
 	}
 
 	return conf
+}
+
+func safePath(path string) string {
+	split := strings.Split(path, ".")
+	pathJSON, err := json.Marshal(split)
+	if err != nil {
+		log.Error(err, "Fail transforming path", "path", path)
+	}
+	return fmt.Sprintf("get!(value: ., path: %s)", pathJSON)
 }

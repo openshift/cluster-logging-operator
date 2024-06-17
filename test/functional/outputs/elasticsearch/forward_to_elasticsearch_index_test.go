@@ -21,7 +21,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 	const (
 		elasticSearchTag   = "7.10.1"
 		LabelName          = "mytypekey"
+		DashLabelName      = "my-typekey"
 		LabelValue         = "myindex"
+		DashLabelValue     = "my-index"
 		StructuredTypeName = "mytypename"
 		AppIndex           = "app-write"
 		jsonLog            = `
@@ -64,6 +66,13 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				},
 			}
 		}
+		withDashK8sLabelsTypeKey := func(spec *logging.OutputSpec) {
+			spec.Elasticsearch = &logging.Elasticsearch{
+				ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+					StructuredTypeKey: fmt.Sprintf("kubernetes.labels.%s", DashLabelName),
+				},
+			}
+		}
 		withOpenshiftLabelsTypeKey := func(spec *logging.OutputSpec) {
 			spec.Elasticsearch = &logging.Elasticsearch{
 				ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
@@ -73,7 +82,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		}
 		setPodLabelsVisitor := func(pb *runtime.PodBuilder) error {
 			pb.AddLabels(map[string]string{
-				LabelName: LabelValue,
+				LabelName:     LabelValue,
+				DashLabelName: DashLabelValue,
 			})
 			return nil
 		}
@@ -171,6 +181,34 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			time.Sleep(5 * time.Second)
 
 			ESIndexName := fmt.Sprintf("app-%s-write", LabelValue)
+			logs := []types.ApplicationLog{}
+			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs).To(Not(BeEmpty()))
+
+			// Compare to expected template
+			outputTestLog := logs[0]
+			outputLogTemplate.ViaqIndexName = ""
+			outputLogTemplate.Message = ""
+			outputLogTemplate.Structured = map[string]interface{}{"*": "*"}
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		})
+		It("should send logs spec'd by k8s label structuredTypeKey contains '-' (dash)", func() {
+			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(withDashK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
+			clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+
+			visitors := append(framework.AddOutputContainersVisitors(), setPodLabelsVisitor)
+			Expect(framework.DeployWithVisitors(visitors)).To(BeNil())
+
+			applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+			time.Sleep(5 * time.Second)
+
+			ESIndexName := fmt.Sprintf("app-%s-write", DashLabelValue)
 			logs := []types.ApplicationLog{}
 			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")

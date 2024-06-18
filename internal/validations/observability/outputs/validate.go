@@ -6,11 +6,10 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 )
 
-func Validate(context internalcontext.ForwarderContext) (_ common.AttributeConditionType, results []metav1.Condition) {
+func Validate(context internalcontext.ForwarderContext) {
 
 	for _, out := range context.Forwarder.Spec.Outputs {
 		configs := internalobs.SecretKeysAsConfigMapOrSecretKeys(out)
@@ -22,13 +21,11 @@ func Validate(context internalcontext.ForwarderContext) (_ common.AttributeCondi
 			messages = append(messages, ValidateCloudWatchAuth(out)...)
 		}
 		if len(messages) > 0 {
-			results = append(results,
-				internalobs.NewConditionFromPrefix(obsv1.ConditionValidOutputPrefix, out.Name, false, obsv1.ReasonValidationFailure, strings.Join(messages, ",")))
+			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
+				internalobs.NewConditionFromPrefix(obsv1.ConditionTypeValidOutputPrefix, out.Name, false, obsv1.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
-			results = append(results,
-				internalobs.NewConditionFromPrefix(obsv1.ConditionValidOutputPrefix, out.Name, true, obsv1.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
+			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
+				internalobs.NewConditionFromPrefix(obsv1.ConditionTypeValidOutputPrefix, out.Name, true, obsv1.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}
-
-	return common.AttributeConditionOutputs, results
 }

@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
+	staticlog "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -28,10 +27,11 @@ const (
 	DashboardHashName = "contentHash"
 )
 
-//go:embed openshift-logging-dashboard.json
-var DashboardConfig string
-
-var _ ctrlruntime.Reconciler = &ReconcileDashboards{}
+var (
+	//go:embed openshift-logging-dashboard.json
+	DashboardConfig string
+	log             = staticlog.WithName("dashboard")
+)
 
 type ReconcileDashboards struct {
 	Client client.Client
@@ -43,7 +43,7 @@ type ReconcileDashboards struct {
 }
 
 func (r *ReconcileDashboards) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	log.V(3).Info("reconcile ", "ConfigMap", DashboardName)
+	log.V(4).Info("#Reconcile", "dashboard", DashboardName)
 	return ctrl.Result{}, ReconcileForDashboards(r.Client, r.Reader)
 }
 

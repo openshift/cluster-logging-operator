@@ -23,6 +23,15 @@ func Threshold(ls *obs.LimitSpec) (int64, bool) {
 
 type Inputs []obs.InputSpec
 
+// InputTypes returns a unique set of input types
+func (inputs Inputs) InputTypes() []obs.InputType {
+	types := set.New[obs.InputType]()
+	for _, i := range inputs {
+		types.Insert(i.Type)
+	}
+	return types.UnsortedList()
+}
+
 // Map returns a map of input name to input spec
 func (inputs Inputs) Map() map[string]obs.InputSpec {
 	m := map[string]obs.InputSpec{}

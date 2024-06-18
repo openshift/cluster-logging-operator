@@ -31,6 +31,9 @@ func (builder *ServiceBuilder) AddServicePort(port int32, targetPort int) *Servi
 }
 
 func (builder *ServiceBuilder) AddLabel(key, val string) *ServiceBuilder {
+	if builder.Service.Labels == nil {
+		builder.Service.Labels = map[string]string{}
+	}
 	builder.Service.Labels[key] = val
 	return builder
 }

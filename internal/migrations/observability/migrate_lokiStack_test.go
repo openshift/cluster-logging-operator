@@ -59,7 +59,7 @@ var _ = Describe("MigrateLokiStack", func() {
 		Expect(spec).To(Equal(expSpec))
 		Expect(conditions).To(ContainElement(
 			metav1.Condition{
-				Type:    obs.ConditionMigrate,
+				Type:    obs.ConditionTypeMigrated,
 				Status:  metav1.ConditionTrue,
 				Reason:  obs.ReasonMigrateOutput,
 				Message: fmt.Sprintf("lokistack: %q migrated to loki output/s", lokistackOut)},

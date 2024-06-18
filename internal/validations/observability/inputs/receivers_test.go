@@ -15,7 +15,7 @@ var _ = Describe("#ValidateReceiver", func() {
 			spec               obs.InputSpec
 			secrets            = map[string]*corev1.Secret{}
 			configMaps         = map[string]*corev1.ConfigMap{}
-			expConditionTypeRE = obs.ConditionValidInputPrefix + "-.*"
+			expConditionTypeRE = obs.ConditionTypeValidInputPrefix + "-.*"
 		)
 		BeforeEach(func() {
 			spec = obs.InputSpec{

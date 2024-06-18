@@ -19,6 +19,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	apicontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -62,8 +63,12 @@ var _ = Describe("Reconciling the Collector", func() {
 				Name:   namespaceName,
 			},
 		}
-		client            cli.Client
-		forwarder         = obsruntime.NewClusterLogForwarder(namespaceName, clfName, runtime.Initialize)
+		client    cli.Client
+		forwarder = obsruntime.NewClusterLogForwarder(namespaceName, clfName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
+			clf.Spec.ServiceAccount = obs.ServiceAccount{
+				Name: "my-sa",
+			}
+		})
 		receiverForwarder = obsruntime.NewClusterLogForwarder(namespaceName, clfName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
 			clf.Annotations = map[string]string{constants.AnnotationEnableCollectorAsDeployment: ""}
 			clf.Spec = obs.ClusterLogForwarderSpec{
@@ -73,6 +78,9 @@ var _ = Describe("Reconciling the Collector", func() {
 						Type:     obs.InputTypeReceiver,
 						Receiver: &obs.ReceiverSpec{},
 					},
+				},
+				ServiceAccount: obs.ServiceAccount{
+					Name: "my-sa",
 				},
 			}
 		})
@@ -143,7 +151,15 @@ var _ = Describe("Reconciling the Collector", func() {
 				)
 			}
 			reconcileCollector = func(clf *obs.ClusterLogForwarder) {
-				Expect(observability.ReconcileCollector(client, client, *clf, clusterID, 1*time.Millisecond, 1*time.Millisecond)).Should(Succeed())
+
+				context := apicontext.ForwarderContext{
+					Client:    client,
+					Reader:    client,
+					Forwarder: clf,
+					ClusterID: clusterID,
+				}
+
+				Expect(observability.ReconcileCollector(context, 1*time.Millisecond, 1*time.Millisecond)).Should(Succeed())
 			}
 			podTemplateSpecFromDeployment = func(obj cli.Object) corev1.PodTemplateSpec {
 				d := obj.(*appsv1.Deployment)
@@ -180,6 +196,9 @@ var _ = Describe("Reconciling the Collector", func() {
 								HTTP: &obs.HTTPReceiver{},
 							},
 						},
+					},
+					ServiceAccount: obs.ServiceAccount{
+						Name: "my-sa",
 					},
 				}
 			})

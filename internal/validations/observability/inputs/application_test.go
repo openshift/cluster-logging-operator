@@ -10,7 +10,7 @@ import (
 var _ = Describe("#ValidateApplication", func() {
 
 	const (
-		expConditionTypeRE = obs.ConditionValidInputPrefix + "-.*"
+		expConditionTypeRE = obs.ConditionTypeValidInputPrefix + "-.*"
 	)
 	var (
 		input obs.InputSpec

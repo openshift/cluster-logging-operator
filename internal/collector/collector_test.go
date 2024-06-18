@@ -35,6 +35,12 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 			Visit:         vector.CollectorVisitor,
 			ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
 			isDaemonset:   true,
+			ConfigMaps: map[string]*v1.ConfigMap{
+				"bar": {},
+			},
+			Secrets: map[string]*v1.Secret{
+				"bar": {},
+			},
 		}
 		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
 			Outputs: []obs.OutputSpec{

@@ -1,197 +1,103 @@
-package fluent
+package http
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	apps "k8s.io/api/apps/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-const (
-	fluentConf = `
-<system>
-  log_level info
-</system>
-<source>
-  @type http
-  port 24224
-  bind 0.0.0.0
-  body_size_limit 32m
-  keepalive_timeout 10s
-  # Headers are capitalized, and added with prefix "HTTP_"
-  add_http_headers true
-  add_remote_addr true
-  <parse>
-    @type json
-  </parse>
-  <transport tls>
-	  ca_path /etc/fluentd/secrets/ca-bundle.crt
-	  cert_path /etc/fluentd/secrets/tls.crt
-	  private_key_path /etc/fluentd/secrets/tls.key
-  </transport>
-</source>
-
-<match logs.app>
-  @type file
-  append true
-  path /tmp/app.logs
-  symlink_path /tmp/app-logs
-</match>
-<match logs.infra>
-  @type file
-  append true
-  path /tmp/infra.logs
-  symlink_path /tmp/infra-logs
-</match>
-<match logs.audit>
-  @type file
-  append true
-  path /tmp/audit.logs
-  symlink_path /tmp/audit-logs
-</match>
-<match **>
-	@type stdout
-</match>
-`
-)
-
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	var (
 		err              error
 		e2e              = framework.NewE2ETestFramework()
-		wd, _            = os.Getwd()
-		rootDir          = fmt.Sprintf("%s/../../../../", wd)
-		forwarder        *logging.ClusterLogForwarder
+		forwarder        *obs.ClusterLogForwarder
+		forwarderName    = "my-forwarder"
+		deployNS         string
 		logGenNS         string
 		fluentDeployment *apps.Deployment
 		headers          = map[string]string{"h1": "v1", "h2": "v2"}
-		fwdSpec          = logging.ClusterLogForwarderSpec{
-			Outputs: []logging.OutputSpec{
-				{
-					Name: "httpout-app",
-					Type: "http",
-					// Receiving fluentd instance will receive these logs under tag logs.app
-					URL: "https://fluent-receiver.openshift-logging.svc:24224/logs/app",
-					OutputTypeSpec: logging.OutputTypeSpec{
-						Http: &logging.Http{
-							Headers: headers,
-							Method:  "POST",
-						},
-					},
-					Secret: &logging.OutputSecretSpec{
-						Name: "fluent-receiver",
-					},
-					TLS: &logging.OutputTLSSpec{
-						InsecureSkipVerify: true,
-					},
-				},
-				{
-					Name: "httpout-infra",
-					Type: "http",
-					// Receiving fluentd instance will receive these logs under tag logs.infra
-					URL: "https://fluent-receiver.openshift-logging.svc:24224/logs/infra",
-					OutputTypeSpec: logging.OutputTypeSpec{
-						Http: &logging.Http{
-							Headers: headers,
-							Method:  "POST",
-						},
-					},
-					Secret: &logging.OutputSecretSpec{
-						Name: "fluent-receiver",
-					},
-					TLS: &logging.OutputTLSSpec{
-						InsecureSkipVerify: true,
-					},
-				},
-				{
-					Name: "httpout-audit",
-					Type: "http",
-					// Receiving fluentd instance will receive these logs under tag logs.audit
-					URL: "https://fluent-receiver.openshift-logging.svc:24224/logs/audit",
-					OutputTypeSpec: logging.OutputTypeSpec{
-						Http: &logging.Http{
-							Headers: headers,
-							Method:  "POST",
-						},
-					},
-					Secret: &logging.OutputSecretSpec{
-						Name: "fluent-receiver",
-					},
-					TLS: &logging.OutputTLSSpec{
-						InsecureSkipVerify: true,
-					},
-				},
-			},
-			Pipelines: []logging.PipelineSpec{
-				{
-					Name:       "app-logs",
-					OutputRefs: []string{"httpout-app"},
-					InputRefs:  []string{"application"},
-				},
-				{
-					Name:       "infra-logs",
-					OutputRefs: []string{"httpout-infra"},
-					InputRefs:  []string{"infrastructure"},
-				},
-				{
-					Name:       "audit-logs",
-					OutputRefs: []string{"httpout-audit"},
-					InputRefs:  []string{"audit"},
-				},
-			},
-		}
+		serviceAccount   *corev1.ServiceAccount
 	)
 	Describe("with vector collector", func() {
 		BeforeEach(func() {
-			cr := helpers.NewClusterLogging(helpers.ComponentTypeCollectorVector)
-			if err = e2e.CreateClusterLogging(cr); err != nil {
-				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
+			deployNS = e2e.CreateTestNamespace()
+
+			fluentDeployment, err = e2e.DeployFluentdReceiverWithConf(deployNS, true, framework.FluentConfHTTPWithTLS)
+			Expect(err).To(BeNil())
+			logStore := e2e.LogStores[fluentDeployment.GetName()]
+
+			if serviceAccount, err = e2e.BuildAuthorizationFor(deployNS, forwarderName).
+				AllowClusterRole(framework.ClusterRoleCollectApplicationLogs).
+				AllowClusterRole(framework.ClusterRoleCollectInfrastructureLogs).
+				AllowClusterRole(framework.ClusterRoleCollectAuditLogs).Create(); err != nil {
+				Fail(err.Error())
 			}
-			forwarder = testruntime.NewClusterLogForwarder()
-			forwarder.Spec = fwdSpec
-			if logGenNS, err = e2e.DeployLogGenerator(); err != nil {
+
+			forwarder = obsruntime.NewClusterLogForwarder(deployNS, "my-forwarder", runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
+				for _, input := range []obs.InputType{obs.InputTypeApplication, obs.InputTypeInfrastructure, obs.InputTypeAudit} {
+					clf.Spec.ServiceAccount.Name = serviceAccount.Name
+					outputName := fmt.Sprintf("http-%s", input)
+					clf.Spec.Outputs = append(clf.Spec.Outputs, obs.OutputSpec{
+						Name: outputName,
+						Type: obs.OutputTypeHTTP,
+						HTTP: &obs.HTTP{
+							URLSpec: obs.URLSpec{
+								URL: fmt.Sprintf("%s/logs/%s", logStore.ClusterLocalEndpoint(), input),
+							},
+							Headers: headers,
+							Method:  "POST",
+						},
+						TLS: &obs.OutputTLSSpec{
+							InsecureSkipVerify: true,
+							TLSSpec: obs.TLSSpec{
+								CA: &obs.ConfigMapOrSecretKey{
+									Key: constants.TrustedCABundleKey,
+									Secret: &corev1.LocalObjectReference{
+										Name: framework.FluentdSecretName,
+									},
+								},
+							},
+						},
+					})
+					clf.Spec.Pipelines = append(clf.Spec.Pipelines, obs.PipelineSpec{
+						Name:       fmt.Sprintf("%s-logs", input),
+						OutputRefs: []string{outputName},
+						InputRefs:  []string{string(input)},
+					})
+				}
+			})
+			logGenNS := e2e.CreateTestNamespaceWithPrefix("clo-test-loader")
+			if err = e2e.DeployLogGeneratorWithNamespaceName(logGenNS, "log-generator", framework.NewDefaultLogGeneratorOptions()); err != nil {
 				Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
 			}
 		})
-		It("send logs to fluentd http", func() {
-			fluentDeployment, err = e2e.DeployFluentdReceiverWithConf(rootDir, true, fluentConf)
-			Expect(err).To(BeNil())
-			if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+		It("should send logs to fluentd http", func() {
+			if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
 				Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 			}
-			components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
-			for _, component := range components {
-				if err := e2e.WaitFor(component); err != nil {
-					Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-				}
+			if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+				Fail(err.Error())
 			}
 
 			logStore := e2e.LogStores[fluentDeployment.GetName()]
-			has, err := logStore.HasApplicationLogs(framework.DefaultWaitForLogsTimeout)
-			Expect(err).To(BeNil())
-			Expect(has).To(BeTrue())
-
-			has, err = logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)
-			Expect(err).To(BeNil())
-			Expect(has).To(BeTrue())
-
-			has, err = logStore.HasAuditLogs(framework.DefaultWaitForLogsTimeout)
-			Expect(err).To(BeNil())
-			Expect(has).To(BeTrue())
+			Expect(logStore.HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "expected to collect application logs")
+			Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "expected to collect infrastructure logs")
+			Expect(logStore.HasAuditLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "expected to collect audit logs")
 
 			collectedLogs, err := logStore.RetrieveLogs()
 			Expect(err).To(BeNil())
 			appLogsStr, ok := collectedLogs["app"]
-			fmt.Printf("---- %s\n", appLogsStr)
 			Expect(ok).To(BeTrue())
 			appLogs := map[string]interface{}{}
 			err = json.Unmarshal([]byte(appLogsStr), &appLogs)

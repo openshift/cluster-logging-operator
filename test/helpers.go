@@ -20,6 +20,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
+	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
 	"golang.org/x/net/html"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -39,9 +40,7 @@ func marshalString(b []byte, err error) string {
 }
 
 // JSONString returns a JSON string of a value, or an error message.
-func JSONString(v interface{}) string {
-	return marshalString(json.MarshalIndent(v, "", "  "))
-}
+var JSONString = utilsjson.MustMarshal
 
 // JSONLine returns a one-line JSON string, or an error message.
 func JSONLine(v interface{}) string { return marshalString(json.Marshal(v)) }

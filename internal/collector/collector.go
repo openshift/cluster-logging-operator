@@ -5,16 +5,9 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	"github.com/openshift/cluster-logging-operator/internal/network"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"k8s.io/utils/set"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
-
-	apps "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 
 	configv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -23,6 +16,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -68,6 +63,7 @@ type Factory struct {
 	ImageName              string
 	Visit                  Visitor
 	Secrets                map[string]*v1.Secret
+	ConfigMaps             map[string]*v1.ConfigMap
 	ForwarderSpec          obs.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
 	PodLabelVisitor        PodLabelVisitor
@@ -92,7 +88,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets map[string]*v1.Secret, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets map[string]*v1.Secret, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -102,6 +98,7 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets m
 		CollectorSpec: *collectorSpec,
 		ImageName:     constants.VectorName,
 		Visit:         vector.CollectorVisitor,
+		ConfigMaps:    configMaps,
 		Secrets:       secrets,
 		ForwarderSpec: forwarderSpec,
 		CommonLabelInitializer: func(o runtime.Object) {
@@ -160,8 +157,8 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		)
 	}
 
-	secretVolumes := AddSecretVolumes(podSpec, spec.Inputs, spec.Outputs)
-	configmapVolumes := AddConfigmapVolumes(podSpec, spec.Inputs, spec.Outputs)
+	secretVolumes := AddSecretVolumes(podSpec, f.Secrets)
+	configmapVolumes := AddConfigmapVolumes(podSpec, f.ConfigMaps)
 	addServiceAccountVolume := AddServiceAccountProjectedVolume(podSpec, spec.Inputs, spec.Outputs, defaultAudience)
 
 	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, addServiceAccountVolume, clusterID)
@@ -238,45 +235,35 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	return collector
 }
 
-func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient client.Client, namespace, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
-	for _, input := range f.ForwarderSpec.Inputs {
-		var listenPort int32
-		serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
-		if input.Receiver != nil {
-			listenPort = input.Receiver.Port
-			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // AddVolumeMounts to the collector container
 func AddVolumeMounts(collector *v1.Container, names []string, path func(string) string) {
+	log.WithName("AddVolumeMounts").V(4).Info("volumeMounts", "names", names)
 	for _, name := range names {
+		log.WithName("volumeMount").V(4).Info("mount", "name", name)
 		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path(name)})
 	}
 }
 
 // AddSecretVolumes adds secret volumes to the pod spec for the unique set of output secrets and returns the list of
 // the names
-func AddSecretVolumes(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs) []string {
-	// List of _unique_ output secret names, several outputs may use the same secret.
-	secretNames := set.New(outputs.SecretNames()...).Insert(inputs.SecretNames()...).UnsortedList()
-	for _, name := range secretNames {
+func AddSecretVolumes(podSpec *v1.PodSpec, secrets vectorhelpers.Secrets) []string {
+	names := secrets.Names()
+	log.WithName("AddSecretVolumes").V(4).Info("volumes", "names", secrets.Names())
+	for _, name := range names {
+		log.WithName("AddSecretVolumes").V(4).Info("secret", "name", name)
 		podSpec.Volumes = append(podSpec.Volumes, v1.Volume{Name: name, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: name}}})
 	}
-	return secretNames
+	return names
 }
 
 // AddConfigmapVolumes adds configmap volumes to the pod spec for the unique set of configmaps and returns the list of
 // the named volumes where the names are of the format 'config-<ConfigMap.Name>'
-func AddConfigmapVolumes(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs) (results []string) {
-	// List of _unique_ output secret names, several outputs may use the same secret.
-	names := set.New(outputs.ConfigmapNames()...).Insert(inputs.ConfigmapNames()...).UnsortedList()
+func AddConfigmapVolumes(podSpec *v1.PodSpec, configMaps internalobs.ConfigMaps) (results []string) {
+	names := configMaps.Names()
+	log.WithName("AddConfigmapVolumes").V(4).Info("volumes", "names", names)
 	for _, name := range names {
 		vName := fmt.Sprintf("config-%s", name)
+		log.WithName("AddConfigmapVolumes").V(4).Info("configmap", "name", vName)
 		results = append(results, vName)
 		podSpec.Volumes = append(podSpec.Volumes,
 			v1.Volume{

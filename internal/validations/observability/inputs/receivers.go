@@ -24,29 +24,29 @@ func ValidateReceiver(spec obs.InputSpec, secrets map[string]*corev1.Secret, con
 
 	if spec.Receiver == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil receiver spec", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil receiver spec", spec.Name)),
 		}
 	}
 	if spec.Receiver.Type == obs.ReceiverTypeHTTP && spec.Receiver.HTTP == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil HTTP receiver spec", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil HTTP receiver spec", spec.Name)),
 		}
 	}
 	if spec.Receiver.Type == obs.ReceiverTypeHTTP && spec.Receiver.HTTP.Format == "" {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s does not specify a format", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s does not specify a format", spec.Name)),
 		}
 	}
 	if spec.Receiver.TLS != nil {
 		tlsSpec := obs.TLSSpec(*spec.Receiver.TLS)
 		if messages := common.ValidateConfigMapOrSecretKey(ConfigMapOrSecretKeys(tlsSpec), secrets, configMaps); len(messages) > 0 {
 			return []metav1.Condition{
-				NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")),
+				NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")),
 			}
 		}
 	}
 
 	return []metav1.Condition{
-		NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
+		NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
 	}
 }

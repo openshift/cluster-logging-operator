@@ -7,20 +7,20 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
-	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
 	"time"
 
-	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	loggerName = "controller.observability"
 )
 
 var (
@@ -41,133 +41,142 @@ type ClusterLogForwarderReconciler struct {
 }
 
 func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
-	log := log.WithName("ClusterLogForwarderReconciler.reconcile")
-	log.V(3).Info("obs.clf controller reconciling resource", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
+	log := log.WithName(loggerName)
+	log.V(3).Info("reconcile", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
 
 	if r.Forwarder, err = FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
 		return defaultRequeue, err
 	}
-	if r.Forwarder.Spec.ManagementState == observabilityv1.ManagementStateUnmanaged {
+
+	readyCond := internalobs.NewCondition(obsv1.ConditionTypeReady, obsv1.ConditionUnknown, obsv1.ReasonUnknownState, "")
+	defer func() {
+		updateStatus(r.Client, r.Forwarder, readyCond)
+	}()
+
+	if r.Forwarder.Spec.ManagementState == obsv1.ManagementStateUnmanaged {
+		readyCond.Reason = obsv1.ReasonManagementStateUnmanaged
+		readyCond.Message = "Updates are ignored when the managementState is Unmanaged"
 		return defaultRequeue, nil
 	}
 
-	if result, err = Initialize(r.Client, r.Forwarder); err != nil {
-		return result, err
+	readyCond.Status = obsv1.ConditionFalse
+	if err = r.Initialize(); err != nil {
+		readyCond.Reason = obsv1.ReasonInitializationFailed
+		readyCond.Message = err.Error()
+		return defaultRequeue, nil
 	}
 
-	if r.Secrets, err = MapSecrets(r.Client, req.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+	if !validateForwarder(r.ForwarderContext) {
+		readyCond.Reason = obsv1.ReasonValidationFailure
+		if validations.MustUndeployCollector(r.Forwarder.Status.Conditions) {
+			if deleteErr := collector.Remove(r.Client, r.Forwarder.Namespace, r.Forwarder.Name); deleteErr != nil {
+				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
+			}
+		}
 		return defaultRequeue, err
 	}
 
-	if r.ConfigMaps, err = MapConfigMaps(r.Client, req.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+	if err = RemoveStaleWorkload(r.Client, r.Forwarder); err != nil {
+		readyCond.Reason = obsv1.ReasonFailureToRemoveStaleWorkload
+		readyCond.Message = err.Error()
 		return defaultRequeue, err
 	}
 
-	if result, err = validateForwarder(r.ForwarderContext); err != nil {
-		return result, err
-	}
-
-	//TODO: Remove deployment if unready? - add to "validate" logic of 'must-undeploy'
-	//TODO: Remove existing deployment/daemonset
-	//TODO: Remove stale input services
-
-	reconcileErr := ReconcileCollector(r.Client, r.Reader, *r.Forwarder, r.ClusterID, collector.DefaultPollInterval, collector.DefaultTimeOut)
+	reconcileErr := ReconcileCollector(r.ForwarderContext, collector.DefaultPollInterval, collector.DefaultTimeOut)
 	if reconcileErr != nil {
-		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
-		//} else {
-		//	//TODO: Update conditions
+		log.V(2).Error(reconcileErr, "reconcile error")
+		readyCond.Reason = obsv1.ReasonDeploymentError
+		readyCond.Message = reconcileErr.Error()
+		return defaultRequeue, reconcileErr
 	}
+	readyCond.Reason = obsv1.ReasonReconciliationComplete
+	readyCond.Status = obsv1.ConditionTrue
 
-	return periodicRequeue, reconcileErr
+	return periodicRequeue, nil
 }
 
-func MapSecrets(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (map[string]*corev1.Secret, error) {
+// RemoveStaleWorkload removes existing workload if the ClusterLogForwarder was modified such that the deployment will change
+// from a daemonSet to a deployment or vise versa
+func RemoveStaleWorkload(k8Client client.Client, forwarder *obsv1.ClusterLogForwarder) error {
+	remove := collector.RemoveDeployment
+	if internalobs.DeployAsDeployment(*forwarder) {
+		remove = collector.Remove
+	}
+	return remove(k8Client, forwarder.Namespace, forwarder.Name)
+}
+
+func MapSecrets(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (secretMap map[string]*corev1.Secret, err error) {
 	names := set.New(inputs.SecretNames()...)
 	names.Insert(outputs.SecretNames()...)
-	secretMap := map[string]*corev1.Secret{}
-	if secrets, err := FetchSecrets(k8Client, namespace, names.UnsortedList()...); err != nil {
+	log.WithName(loggerName).V(4).Info("MapSecrets", "names", names.SortedList())
+	secretMap = map[string]*corev1.Secret{}
+	var secrets []*corev1.Secret
+	if secrets, err = FetchSecrets(k8Client, namespace, names.UnsortedList()...); err != nil {
 		return nil, err
-	} else {
-		for _, s := range secrets {
-			secretMap[s.Name] = s
-		}
 	}
-
+	for _, s := range secrets {
+		log.WithName(loggerName).V(4).Info("fetched", "name", s.Name)
+		secretMap[s.Name] = s
+	}
 	return secretMap, nil
 }
 
-func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (map[string]*corev1.ConfigMap, error) {
+func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (configMaps map[string]*corev1.ConfigMap, err error) {
 	names := set.New(inputs.ConfigmapNames()...)
 	names.Insert(outputs.ConfigmapNames()...)
-	configMapMap := map[string]*corev1.ConfigMap{}
-	if configMaps, err := FetchConfigMaps(k8Client, namespace, names.UnsortedList()...); err != nil {
+	log.WithName(loggerName).V(4).Info("MapConfigMaps", "names", names.SortedList())
+	configMaps = map[string]*corev1.ConfigMap{}
+	var configs []*corev1.ConfigMap
+	if configs, err = FetchConfigMaps(k8Client, namespace, names.UnsortedList()...); err != nil {
 		return nil, err
-	} else {
-		for _, cm := range configMaps {
-			configMapMap[cm.Name] = cm
-		}
 	}
-	return configMapMap, nil
+	for _, cm := range configs {
+		log.WithName(loggerName).V(4).Info("fetched", "name", cm.Name)
+		configMaps[cm.Name] = cm
+	}
+	return configMaps, nil
 }
 
 // Initialize evaluates the spec and initializes any values that can not be enforced with annotations or are implied
 // in their usage (i.e. reserved input names)
-func Initialize(k8Client client.Client, forwarder *observabilityv1.ClusterLogForwarder) (ctrl.Result, error) {
-	forwarder.Spec, _ = obsmigrate.MigrateClusterLogForwarder(forwarder.Spec)
-	//TODO: FIX Conditions
-	//condition := logging.NewCondition(logging.ValidationCondition, corev1.ConditionTrue, logging.ValidationFailureReason, "%v", err)
-	//instance.Status.Conditions.SetCondition(condition)
-	//instance.Status.Conditions.SetCondition(logging.CondNotReady(logging.ValidationFailureReason, ""))
-	return updateStatus(k8Client, forwarder)
+func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
+	log.V(4).Info("Initialize")
+	r.Forwarder.Spec, _ = obsmigrate.MigrateClusterLogForwarder(r.Forwarder.Spec)
+
+	if r.Secrets, err = MapSecrets(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+		return err
+	}
+
+	if r.ConfigMaps, err = MapConfigMaps(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&observabilityv1.ClusterLogForwarder{}).
+		For(&obsv1.ClusterLogForwarder{}).
 		Complete(r)
 }
 
-func validateForwarder(forwarderContext internalcontext.ForwarderContext) (result ctrl.Result, err error) {
-	if failures := validations.ValidateClusterLogForwarder(forwarderContext); len(failures) > 0 {
-		// TODO: Evaluate failures
-		//if validationerrors.MustUndeployCollector(err) {
-		//	if deleteErr := collector.Remove(k8Client, req.Namespace, req.Name); deleteErr != nil {
-		//		log.V(0).Error(deleteErr, "Unable to remove collector deployment")
-		//	}
-		//}
-		// TODO: Determine if we need to "sync" conditions like in 5.9
-		for attributeType, conditions := range failures {
-			switch attributeType {
-			case common.AttributeConditionConditions:
-				forwarderContext.Forwarder.Status.Conditions = conditions
-			case common.AttributeConditionInputs:
-				forwarderContext.Forwarder.Status.Inputs = conditions
-			case common.AttributeConditionOutputs:
-				forwarderContext.Forwarder.Status.Outputs = conditions
-			case common.AttributeConditionPipelines:
-				forwarderContext.Forwarder.Status.Pipelines = conditions
-			case common.AttributeConditionFilters:
-				forwarderContext.Forwarder.Status.Filters = conditions
-			}
-		}
-		return updateStatus(forwarderContext.Client, forwarderContext.Forwarder)
+func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {
+	validations.ValidateClusterLogForwarder(forwarderContext)
+	// TODO: Determine if we need to "sync" conditions like in 5.9
+
+	validCond := internalobs.NewCondition(obsv1.ConditionTypeValid, obsv1.ConditionTrue, obsv1.ReasonValidationSuccess, "")
+	if valid = internalobs.IsValid(*forwarderContext.Forwarder); !valid {
+		validCond.Status = obsv1.ConditionFalse
+		validCond.Reason = obsv1.ReasonValidationFailure
+		validCond.Message = "one or more of inputs, outputs, pipelines, filters have a validation failure"
 	}
-	return defaultRequeue, err
+	internalobs.SetCondition(&forwarderContext.Forwarder.Status.Conditions, validCond)
+	return valid
 }
 
-func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder) (ctrl.Result, error) {
+func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {
+	internalobs.SetCondition(&instance.Status.Conditions, ready)
 	if err := k8Client.Status().Update(context.TODO(), instance); err != nil {
-
-		if strings.Contains(err.Error(), constants.OptimisticLockErrorMsg) {
-			// do manual retry without error
-			// more information about this error here: https://github.com/kubernetes/kubernetes/issues/28149
-			return reconcile.Result{RequeueAfter: time.Second * 1}, nil
-		}
-
-		log.Error(err, "clusterlogforwarder-controller error updating status")
-		return ctrl.Result{}, err
+		log.Error(err, "clusterlogforwarder-controller error updating status", "status", instance.Status)
 	}
-
-	return periodicRequeue, nil
 }

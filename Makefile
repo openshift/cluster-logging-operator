@@ -329,13 +329,10 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
+E2E_TEST_INCLUDES=logforwarding
+CLF_TEST_INCLUDES=http
 .PHONY: test-e2e
-test-e2e:
-	exit 0
-
-.PHONY: test-e2e-olm
-# NOTE: This is the CI e2e entry point.
-test-e2e-olm: $(JUNITREPORT)
+test-e2e: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
 

@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
 	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +22,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/test"
@@ -56,8 +59,9 @@ func init() {
 
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterlogforwarders"
-	DefaultCleanUpTimeout  = 60.0 * 5
+	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterlogforwarders/%s"
+
+	DefaultCleanUpTimeout = 60.0 * 5
 
 	defaultRetryInterval      = 1 * time.Second
 	defaultTimeout            = 5 * time.Minute
@@ -66,6 +70,8 @@ const (
 
 var (
 	delayedLogWriter *commonlog.BufferedLogWriter
+
+	clusterLogForwarderURIFmt = path.Join("apis", obs.GroupVersion.Group, obs.GroupVersion.Version, "namespaces", "%s", "clusterlogforwarders", "%s")
 )
 
 type LogStore interface {
@@ -91,14 +97,16 @@ type E2ETestFramework struct {
 	ClusterLogging *cl.ClusterLogging
 	CleanupFns     []func() error
 	LogStores      map[string]LogStore
+	Test           *client.Test
 }
 
 func NewE2ETestFramework() *E2ETestFramework {
-	client, config := NewKubeClient()
+	kubeClient, config := NewKubeClient()
 	framework := &E2ETestFramework{
 		RestConfig: config,
-		KubeClient: client,
+		KubeClient: kubeClient,
 		LogStores:  make(map[string]LogStore, 4),
+		Test:       client.NewTest(),
 	}
 	return framework
 }
@@ -273,6 +281,7 @@ func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string) string 
 	if err != nil && !errors.IsAlreadyExists(err) {
 		clolog.Error(err, "Error:")
 	}
+	clolog.V(1).Info("Created namespace", "namespace", name)
 	return name
 }
 
@@ -350,36 +359,31 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	return err
 }
 
-func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
-	body, err := json.Marshal(forwarder)
+// Create (re)creates an object
+func (tc *E2ETestFramework) Create(obj crclient.Object) error {
+
+	// Test round trip serialization
+	body, err := yaml.Marshal(obj)
 	if err != nil {
 		return err
 	}
-	deleteCLF := func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", fmt.Sprintf(clusterlogforwarderURI, forwarder.Namespace))).
-			SetHeader("Content-Type", "application/json").
-			Do(context.TODO()).Error()
-	}
-	tc.AddCleanup(deleteCLF)
-	clolog.Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
-	createCLF := func() rest.Result {
-		return tc.KubeClient.RESTClient().Post().
-			RequestURI(fmt.Sprintf(clusterlogforwarderURI, forwarder.Namespace)).
-			SetHeader("Content-Type", "application/json").
-			Body(body).
-			Do(context.TODO())
-	}
-	result := createCLF()
-	if err := result.Error(); err != nil && apierrors.IsAlreadyExists(err) {
-		clolog.Info("clusterlogforwarder instance already exists. Removing and trying to recreate...")
-		if err := deleteCLF(); err != nil {
-			return err
-		}
-		result = createCLF()
+	if err := yaml.Unmarshal(body, obj); err != nil {
+		return err
 	}
 
-	return result.Error()
+	tc.AddCleanup(func() error {
+		return tc.Test.Delete(obj)
+	})
+	clolog.Info("Creating object", "obj", string(body))
+	return tc.Test.Recreate(obj)
+}
+
+func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
+	return tc.Create(forwarder)
+}
+
+func (tc *E2ETestFramework) CreateObservabilityClusterLogForwarder(forwarder *obs.ClusterLogForwarder) error {
+	return tc.Create(forwarder)
 }
 
 func DoCleanup() bool {
@@ -565,10 +569,9 @@ func (tc *E2ETestFramework) PodExec(namespace, pod, container string, command []
 	return oc.Exec().WithNamespace(namespace).Pod(pod).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
-	ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
-	serverCert := certificate.NewCert(ca, "", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, constants.OpenshiftNS))
-
+func (tc *E2ETestFramework) CreatePipelineSecret(namespace, logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
+	ca := certificate.NewCA(nil, "Self-signed Root CA") // Self-signed CA
+	serverCert := certificate.NewCert(ca, "Server Test CA", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, namespace))
 	data := map[string][]byte{
 		"tls.key":       serverCert.PrivateKeyPEM(),
 		"tls.crt":       serverCert.CertificatePEM(),
@@ -582,17 +585,17 @@ func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string
 	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
-		constants.OpenshiftNS,
+		namespace,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts)
+	newSecret, err := tc.KubeClient.CoreV1().Secrets(namespace).Create(context.TODO(), secret, sOpts)
 	if err == nil {
 		return newSecret, nil
 	}
 	if errors.IsAlreadyExists(err) {
 		sOpts := metav1.UpdateOptions{}
-		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), secret, sOpts)
+		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(namespace).Update(context.TODO(), secret, sOpts)
 		if err == nil {
 			return updatedSecret, nil
 		}

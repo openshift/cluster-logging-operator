@@ -2373,6 +2373,7 @@ spec:
                   name:
                     description: Name of the ServiceAccount to use to deploy the Forwarder.  The
                       ServiceAccount is created by the administrator
+                    pattern: ^[a-z][a-z0-9-]{2,62}[a-z]$
                     type: string
                 required:
                 - name

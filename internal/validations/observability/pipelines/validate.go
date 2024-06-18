@@ -5,28 +5,29 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 )
 
-func Validate(context internalcontext.ForwarderContext) (_ common.AttributeConditionType, results []metav1.Condition) {
+func Validate(context internalcontext.ForwarderContext) {
 	inputs := internalobs.Inputs(context.Forwarder.Spec.Inputs).Map()
 	outputs := internalobs.Outputs(context.Forwarder.Spec.Outputs).Map()
 	filters := internalobs.FilterMap(context.Forwarder.Spec)
 	var messages []string
 	for _, pipelineSpec := range context.Forwarder.Spec.Pipelines {
 		refMessages := validateRef(pipelineSpec, inputs, outputs, filters)
-		messages = append(messages, fmt.Sprintf("refs not found: %s", strings.Join(refMessages, ",")))
+		if len(refMessages) > 0 {
+			messages = append(messages, fmt.Sprintf("refs not found: %s", strings.Join(refMessages, ",")))
+		}
 		messages = append(messages, verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)...)
 		if len(messages) > 0 {
-			results = append(results, internalobs.NewConditionFromPrefix(obs.ConditionValidPipelinePrefix, pipelineSpec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
+			internalobs.SetCondition(&context.Forwarder.Status.Pipelines,
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
-			results = append(results, internalobs.NewConditionFromPrefix(obs.ConditionValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, "pipeline valid"))
+			internalobs.SetCondition(&context.Forwarder.Status.Pipelines,
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, "pipeline valid"))
 		}
 	}
 
-	return common.AttributeConditionPipelines, results
 }
 
 // validateRef validates the references defined for the pipeline actually reference a spec'd input,output, or filter
@@ -39,7 +40,7 @@ func validateRef(pipeline obs.PipelineSpec, inputs map[string]obs.InputSpec, out
 		}
 	}
 	if len(inputRefs) > 0 {
-		results = append(results, fmt.Sprintf("inputs[%s]", strings.Join(inputRefs, ",")))
+		results = append(results, fmt.Sprintf("inputs%v", inputRefs))
 	}
 
 	var outputRefs []string
@@ -49,7 +50,7 @@ func validateRef(pipeline obs.PipelineSpec, inputs map[string]obs.InputSpec, out
 		}
 	}
 	if len(outputRefs) > 0 {
-		results = append(results, fmt.Sprintf("outputs[%s]", strings.Join(outputRefs, ",")))
+		results = append(results, fmt.Sprintf("outputs%v", outputRefs))
 	}
 
 	var filterRefs []string
@@ -59,7 +60,7 @@ func validateRef(pipeline obs.PipelineSpec, inputs map[string]obs.InputSpec, out
 		}
 	}
 	if len(filterRefs) > 0 {
-		results = append(results, fmt.Sprintf("filters[%s]", strings.Join(filterRefs, ",")))
+		results = append(results, fmt.Sprintf("filters%v", filterRefs))
 	}
 	return results
 }

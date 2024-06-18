@@ -5,6 +5,7 @@ metadata:
 rules:
 - apiGroups:
   - logging.openshift.io
+  - observability.openshift.io
   resources:
   - logs
   verbs:

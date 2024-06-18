@@ -51,7 +51,7 @@ func processForwarderPipelines(spec obs.ClusterLogForwarderSpec) ([]obs.OutputSp
 		if o.Type == obs.OutputTypeLokiStack {
 			migratedLokiStackConditions = append(migratedLokiStackConditions,
 				metav1.Condition{
-					Type:    obs.ConditionMigrate,
+					Type:    obs.ConditionTypeMigrated,
 					Status:  metav1.ConditionTrue,
 					Reason:  obs.ReasonMigrateOutput,
 					Message: fmt.Sprintf("lokistack: %q migrated to loki output/s", o.Name),

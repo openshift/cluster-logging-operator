@@ -1,7 +1,6 @@
 package observability_test
 
 import (
-	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -25,7 +24,6 @@ var _ = Describe("helpers for output types", func() {
 				})
 				spec := &obsv1.OutputSpec{}
 				test.MustUnmarshal(yaml, spec)
-				fmt.Printf("%v", spec)
 				Expect(SecretKeys(*spec)).To(BeEmpty())
 			}
 		})

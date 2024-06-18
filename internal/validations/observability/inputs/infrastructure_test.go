@@ -11,7 +11,7 @@ var _ = Describe("#ValidateInfrastructure", func() {
 
 	var (
 		input              obs.InputSpec
-		expConditionTypeRE = obs.ConditionValidInputPrefix + "-.*"
+		expConditionTypeRE = obs.ConditionTypeValidInputPrefix + "-.*"
 	)
 	BeforeEach(func() {
 		input = obs.InputSpec{

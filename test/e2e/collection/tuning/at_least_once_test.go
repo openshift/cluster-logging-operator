@@ -50,7 +50,7 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 		receiver, err = e2e.DeployHttpReceiver(forwarder.Namespace)
 		Expect(err).To(BeNil())
 		sa, err := e2e.BuildAuthorizationFor(forwarder.Namespace, forwarder.Name).
-			AllowClusterRole("collect-application-logs").
+			AllowClusterRole(framework.ClusterRoleCollectApplicationLogs).
 			Create()
 		Expect(err).To(BeNil())
 		forwarder.Spec.ServiceAccountName = sa.Name

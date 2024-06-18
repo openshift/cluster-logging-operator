@@ -25,16 +25,19 @@ func FetchClusterLogForwarder(k8sClient client.Client, namespace, name string) (
 }
 
 // FetchSecrets from a list of names in a given namespace
-func FetchSecrets(k8sClient client.Client, namespace string, names ...string) ([]*corev1.Secret, error) {
-	secrets := []*corev1.Secret{}
+func FetchSecrets(k8sClient client.Client, namespace string, names ...string) (secrets []*corev1.Secret, err error) {
+	log := log.WithName("#FetchSecrets")
 	for _, name := range names {
 		key := types.NamespacedName{Name: name, Namespace: namespace}
 		proto := runtime.NewSecret(namespace, name, nil)
-		if err := k8sClient.Get(context.TODO(), key, proto); err != nil {
+		log.V(4).Info("loading secret", "key", key)
+		if err = k8sClient.Get(context.TODO(), key, proto); err == nil {
+			log.V(4).Info("found secret", "key", key)
 			secrets = append(secrets, proto)
 		} else if errors.IsNotFound(err) {
-			log.V(1).Info("Secret not found", "namespace", namespace, "name", name)
+			log.V(1).Info("secret not found", "key", key)
 		} else {
+			log.V(0).Error(err, "unable to fetch secret", "key", key)
 			return nil, err
 		}
 	}
@@ -42,16 +45,19 @@ func FetchSecrets(k8sClient client.Client, namespace string, names ...string) ([
 }
 
 // FetchConfigMaps from a list of names in a given namespace
-func FetchConfigMaps(k8sClient client.Client, namespace string, names ...string) ([]*corev1.ConfigMap, error) {
-	configMaps := []*corev1.ConfigMap{}
+func FetchConfigMaps(k8sClient client.Client, namespace string, names ...string) (configMaps []*corev1.ConfigMap, err error) {
+	log := log.WithName("#FetchConfigMaps")
 	for _, name := range names {
 		key := types.NamespacedName{Name: name, Namespace: namespace}
+		log.V(4).Info("loading configmap", "key", key)
 		proto := runtime.NewConfigMap(namespace, name, nil)
-		if err := k8sClient.Get(context.TODO(), key, proto); err != nil {
+		if err = k8sClient.Get(context.TODO(), key, proto); err == nil {
+			log.V(4).Info("found configmap", "key", key)
 			configMaps = append(configMaps, proto)
 		} else if errors.IsNotFound(err) {
-			log.V(1).Info("Secret not found", "namespace", namespace, "name", name)
+			log.V(1).Info("configmap not found", "key", key)
 		} else {
+			log.V(0).Error(err, "unable to fetch configmap", "key", key)
 			return nil, err
 		}
 	}

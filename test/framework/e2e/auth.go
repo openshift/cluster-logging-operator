@@ -1,17 +1,20 @@
 package e2e
 
 import (
-	"context"
 	"fmt"
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"math/rand"
-	"time"
+)
+
+var (
+	roleFmt                              = "collect-%s-logs"
+	ClusterRoleCollectApplicationLogs    = fmt.Sprintf(roleFmt, obsv1.InputTypeApplication)
+	ClusterRoleCollectInfrastructureLogs = fmt.Sprintf(roleFmt, obsv1.InputTypeInfrastructure)
+	ClusterRoleCollectAuditLogs          = fmt.Sprintf(roleFmt, obsv1.InputTypeAudit)
 )
 
 type AuthorizationBuilder struct {
@@ -41,7 +44,7 @@ func (b *AuthorizationBuilder) Create() (sa *corev1.ServiceAccount, err error) {
 	}
 
 	for _, role := range b.roleNames {
-		crb := runtime.NewClusterRoleBinding(fmt.Sprintf("%s-%s-%d%d", sa.Namespace, sa.Name, time.Now().Unix(), rand.Intn(100)),
+		crb := runtime.NewClusterRoleBinding(fmt.Sprintf("%s-%s-%s", role, sa.Namespace, sa.Name),
 			rbacv1.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
 				Kind:     "ClusterRole",
@@ -54,15 +57,10 @@ func (b *AuthorizationBuilder) Create() (sa *corev1.ServiceAccount, err error) {
 			},
 		)
 		b.tc.AddCleanup(func() error {
-			var zerograce int64
-			opts := metav1.DeleteOptions{
-				GracePeriodSeconds: &zerograce,
-			}
-			return b.tc.KubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), crb.GetName(), opts)
+			return b.tc.Test.Delete(crb)
 		})
-		opts := metav1.CreateOptions{}
-		clolog.V(3).Info("Creating", "clusterrolebinding", crb.Name, "namespace", sa.Namespace, "name", sa.Name)
-		if _, err = b.tc.KubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), crb, opts); err != nil && !errors.IsAlreadyExists(err) {
+		clolog.V(3).Info("Creating", "clusterrolebinding", crb.Name, "serviceaccount.namespace", sa.Namespace, "serviceaccount.name", sa.Name)
+		if err = b.tc.Test.Recreate(crb); err != nil {
 			return nil, err
 		}
 	}
@@ -71,23 +69,22 @@ func (b *AuthorizationBuilder) Create() (sa *corev1.ServiceAccount, err error) {
 }
 
 func (tc *E2ETestFramework) createServiceAccount(namespace, name string) (serviceAccount *corev1.ServiceAccount, err error) {
-	opts := metav1.CreateOptions{}
+
 	serviceAccount = runtime.NewServiceAccount(namespace, name)
 	clolog.V(3).Info("Creating serviceaccount", "serviceaccount", serviceAccount)
-	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(namespace).Create(context.TODO(), serviceAccount, opts); err != nil {
+	tc.AddCleanup(func() error {
+		return tc.Test.Delete(serviceAccount)
+	})
+
+	if err = tc.Test.Recreate(serviceAccount); err != nil {
 		return nil, err
 	}
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ServiceAccounts(namespace).Delete(context.TODO(), serviceAccount.Name, opts)
-	})
 	return serviceAccount, nil
 }
 
-func (tc *E2ETestFramework) createRbac(name string) (err error) {
-	opts := metav1.CreateOptions{}
+func (tc *E2ETestFramework) createRbac(namespace, name string) (err error) {
 	saRole := runtime.NewRole(
-		constants.OpenshiftNS,
+		namespace,
 		name,
 		runtime.NewPolicyRules(
 			runtime.NewPolicyRule(
@@ -98,20 +95,19 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			),
 		)...,
 	)
-	if _, err = tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Create(context.TODO(), saRole, opts); err != nil {
+	tc.AddCleanup(func() error {
+		return tc.Test.Delete(saRole)
+	})
+	if err = tc.Test.Recreate(saRole); err != nil {
 		return err
 	}
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
-	})
 	subject := runtime.NewSubject(
 		"ServiceAccount",
 		name,
 	)
 	subject.APIGroup = ""
 	roleBinding := runtime.NewRoleBinding(
-		constants.OpenshiftNS,
+		namespace,
 		name,
 		rbacv1.RoleRef{
 			Kind:     "Role",
@@ -121,12 +117,9 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			subject,
 		)...,
 	)
-	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Create(context.TODO(), roleBinding, opts); err != nil {
-		return err
-	}
 	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		return tc.Test.Delete(roleBinding)
 	})
-	return nil
+
+	return tc.Test.Recreate(roleBinding)
 }

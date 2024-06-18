@@ -25,6 +25,6 @@ func AreSame(actual *corev1.ConfigMap, desired *corev1.ConfigMap, options ...com
 			labelsAreEqual = reflect.DeepEqual(actual.Labels, desired.Labels)
 		}
 	}
-	log.V(3).Info("Compare configmaps", "dateAreEqual", dataAreEqual, "labelsAreEqual", labelsAreEqual, "annotationsAreEqual", annotationsAreEqual)
+	log.V(5).Info("Compare configmaps", "dateAreEqual", dataAreEqual, "labelsAreEqual", labelsAreEqual, "annotationsAreEqual", annotationsAreEqual)
 	return dataAreEqual && labelsAreEqual && annotationsAreEqual
 }

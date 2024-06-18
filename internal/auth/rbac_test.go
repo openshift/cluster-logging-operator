@@ -11,12 +11,12 @@ import (
 
 var _ = Describe("NewMetaDataReaderClusterRoleBinding", func() {
 	It("should stub a well-formed clusterrolebinding", func() {
-		Expect(test.YAMLString(auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "cluster-logging-metadata-reader", "logcollector", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "logcollector", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   creationTimestamp: null
-  name: cluster-logging-metadata-reader
+  name: metadata-reader-openshift-logging-logcollector
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -31,12 +31,12 @@ subjects:
 
 var _ = Describe("ServiceAccount SCC Role & RoleBinding", func() {
 	It("should stub a well-formed role", func() {
-		Expect(test.YAMLString(auth.NewServiceAccountSCCRole(constants.OpenshiftNS, "scc", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRole(constants.OpenshiftNS, "my-sa", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: scc
+  name: my-sa-scc
   namespace: openshift-logging
 rules:
 - apiGroups:
@@ -51,17 +51,17 @@ rules:
 	})
 
 	It("should stub a well-formed roleBinding", func() {
-		Expect(test.YAMLString(auth.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "scc", "customSA", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "my-sa", "customSA-scc", "customSA", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   creationTimestamp: null
-  name: scc
+  name: my-sa-scc
   namespace: openshift-logging
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: scc
+  name: customSA-scc
 subjects:
   - kind: ServiceAccount
     name: customSA

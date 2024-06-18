@@ -6,8 +6,8 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"regexp"
 	"strings"
 
@@ -17,40 +17,44 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	authorizationapi "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	//allNamesapces is used for determining cluster scoped bindings
+	//allNamespaces is used for determining cluster scoped bindings
 	allNamespaces = ""
 )
 
 var infraNamespaces = regexp.MustCompile(`^default|openshift.*|kube.*$`)
 
-// ValidatePermissions validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
-func ValidatePermissions(context internalcontext.ForwarderContext) (common.AttributeConditionType, []metav1.Condition) {
+// ValidatePermissions validates the serviceAccount for the CLF has the needed permissions to collect the desired inputs
+func ValidatePermissions(context internalcontext.ForwarderContext) {
 	clf := context.Forwarder
 	k8sClient := context.Client
 
 	var err error
 	var serviceAccount *corev1.ServiceAccount
 	if serviceAccount, err = getServiceAccount(clf.Spec.ServiceAccount.Name, clf.Namespace, k8sClient); err != nil {
-		return common.AttributeConditionConditions, []metav1.Condition{
-			internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionFalse, obs.ReasonServiceAccountDoesNotExist, err.Error()),
+		if apierrors.IsNotFound(err) {
+			internalobs.SetCondition(&clf.Status.Conditions,
+				internalobs.NewCondition(obs.ConditionTypeAuthorized, obs.ConditionFalse, obs.ReasonServiceAccountDoesNotExist, err.Error()))
+			return
 		}
+		internalobs.SetCondition(&clf.Status.Conditions,
+			internalobs.NewCondition(obs.ConditionTypeAuthorized, obs.ConditionFalse, obs.ReasonServiceAccountCheckFailure, err.Error()))
+		return
 	}
 	// If SA present, validate permissions based off spec'd CLF inputs
 	clfInputs, hasReceiverInputs := gatherPipelineInputs(*clf)
-	if err = validateServiceAccountPermissions(k8sClient, clfInputs, hasReceiverInputs, serviceAccount, clf.Namespace, clf.Name); err != nil {
-		return common.AttributeConditionConditions, []metav1.Condition{
-			internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionFalse, obs.ReasonClusterRoleMissing, err.Error()),
-		}
+	if err = validateServiceAccountPermissions(k8sClient, clfInputs, hasReceiverInputs, *serviceAccount, clf.Namespace, clf.Name); err != nil {
+		internalobs.SetCondition(&clf.Status.Conditions,
+			internalobs.NewCondition(obs.ConditionTypeAuthorized, obs.ConditionFalse, obs.ReasonClusterRoleMissing, err.Error()))
+		return
 	}
-	return common.AttributeConditionConditions, []metav1.Condition{
-		internalobs.NewCondition(obs.ConditionAuthorized, obs.ConditionTrue, obs.ReasonClusterRolesExist, ""),
-	}
+	internalobs.SetCondition(&clf.Status.Conditions,
+		internalobs.NewCondition(obs.ConditionTypeAuthorized, obs.ConditionTrue, obs.ReasonClusterRolesExist,
+			fmt.Sprintf("permitted to collect log types: %v", clfInputs.List())))
 }
 
 func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1.ServiceAccount, error) {
@@ -58,18 +62,15 @@ func getServiceAccount(name, namespace string, k8sClient client.Client) (*corev1
 	proto := runtime.NewServiceAccount(namespace, name)
 	// Check if service account specified exists
 	if err := k8sClient.Get(context.TODO(), key, proto); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return nil, err
-		}
-		return nil, errors.NewValidationError("service account not found: %s/%s", namespace, name)
+		return nil, err
 	}
 	return proto, nil
 }
 
 // ValidateServiceAccountPermissions validates a service account for permissions to collect
 // inputs specified by the CLF.
-// ie. collect-application-logs, collect-audit-logs, collect-infrastructure-logs
-func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, hasReceiverInputs bool, serviceAccount *corev1.ServiceAccount, clfNamespace, name string) error {
+// i.e. collect-application-logs, collect-audit-logs, collect-infrastructure-logs
+func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.String, hasReceiverInputs bool, serviceAccount corev1.ServiceAccount, clfNamespace, name string) error {
 	if inputs.Len() == 0 && hasReceiverInputs {
 		return nil
 	}
@@ -84,14 +85,15 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 	// Perform subject access reviews for each spec'd input
 	var failedInputs []string
 	for _, input := range inputs.List() {
-		log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] validating %q for user: %v", inputs, username))
+		log.V(3).Info("[ValidateServiceAccountPermissions]", "input", input, "username", username)
 		sar := createSubjectAccessReview(username, allNamespaces, "collect", "logs", input, obs.GroupName)
+		log.V(3).Info("SubjectAccessReview", "obj", utilsjson.MustMarshal(sar))
 		if err = k8sClient.Create(context.TODO(), sar); err != nil {
 			return err
 		}
 		// If input is spec'd but SA isn't authorized to collect it, fail validation
+		log.V(3).Info("[ValidateServiceAccountPermissions]", "allowed", sar.Status.Allowed, "input", input)
 		if !sar.Status.Allowed {
-			log.V(3).Info(fmt.Sprintf("[ValidateServiceAccountPermissions] %s %s-logs", errors.NotAuthorizedToCollect, input))
 			failedInputs = append(failedInputs, input)
 		}
 	}

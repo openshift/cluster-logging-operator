@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/controller/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -42,58 +41,4 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		Entry("disables debug for anything else", "", "", AnnotationDebugOutput, "abcdef"),
 	)
 
-})
-
-var _ = Describe("#ShouldDeployAsDaemonSet", func() {
-
-	var (
-		annotations = map[string]string{}
-		inputs      = []obs.InputSpec{}
-	)
-
-	Context("when the annotation is not present", func() {
-		It("should deploy as a DaemonSet", func() {
-			Expect(observability.ShouldDeployAsDaemonSet(annotations, inputs)).To(BeTrue())
-		})
-		It("should deploy as a DaemonSet even with only receiver sources", func() {
-			inputs = []obs.InputSpec{
-				{
-					Name:     "foo",
-					Type:     obs.InputTypeReceiver,
-					Receiver: &obs.ReceiverSpec{},
-				},
-			}
-			Expect(observability.ShouldDeployAsDaemonSet(annotations, inputs)).To(BeTrue())
-		})
-	})
-	Context("when the annotation is present", func() {
-		BeforeEach(func() {
-			annotations[AnnotationEnableCollectorAsDeployment] = ""
-		})
-		It("should deploy as a DaemonSet when there is at least one non-receiver source", func() {
-			inputs = []obs.InputSpec{
-				{
-					Name:     "foo",
-					Type:     obs.InputTypeReceiver,
-					Receiver: &obs.ReceiverSpec{},
-				},
-				{
-					Name:        "bar",
-					Type:        obs.InputTypeApplication,
-					Application: &obs.Application{},
-				},
-			}
-			Expect(observability.ShouldDeployAsDaemonSet(annotations, inputs)).To(BeTrue())
-		})
-		It("should deploy as a Deployment even with only receiver sources", func() {
-			inputs = []obs.InputSpec{
-				{
-					Name:     "foo",
-					Type:     obs.InputTypeReceiver,
-					Receiver: &obs.ReceiverSpec{},
-				},
-			}
-			Expect(observability.ShouldDeployAsDaemonSet(annotations, inputs)).To(BeFalse())
-		})
-	})
 })

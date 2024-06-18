@@ -47,7 +47,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := auth.ReconcileRBAC(er, requestClient, constants.OpenshiftNS, resNames, owner); err != nil {
+	if err := auth.ReconcileRBAC(er, requestClient, constants.OpenshiftNS, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileRBAC")
 		return err
 	}

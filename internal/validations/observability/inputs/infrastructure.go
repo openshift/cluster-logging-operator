@@ -14,15 +14,15 @@ func ValidateInfrastructure(spec obs.InputSpec) []metav1.Condition {
 
 	if spec.Infrastructure == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil infrastructure spec", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil infrastructure spec", spec.Name)),
 		}
 	}
 	if len(spec.Infrastructure.Sources) == 0 {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s must define at least one valid source", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s must define at least one valid source", spec.Name)),
 		}
 	}
 	return []metav1.Condition{
-		NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
+		NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
 	}
 }

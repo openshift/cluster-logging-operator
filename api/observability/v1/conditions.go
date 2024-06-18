@@ -24,31 +24,37 @@ const (
 	// ConditionFalse means the condition is not met
 	ConditionFalse = metav1.ConditionFalse
 
-	// ConditionAuthorized identifies the state of authorization for the service
-	ConditionAuthorized string = GroupName + "/Authorized"
+	// ConditionUnknown means unable to determine the condition
+	ConditionUnknown = metav1.ConditionUnknown
 
-	ConditionMigrate string = "Migrate"
+	// ConditionTypeAuthorized identifies the state of authorization for the service
+	ConditionTypeAuthorized string = GroupName + "/Authorized"
 
-	// ConditionReady indicates the service is ready.
+	ConditionTypeMigrated string = "Migrated"
+
+	// ConditionTypeReady indicates the service is ready.
 	//
 	// Ready=True means the operands are running and providing some service.
 	// Ready=False means the operands cannot provide any service, and
 	// the operator cannot recover without some external change. Either
 	// the spec is invalid, or there is some environmental problem that is
-	// outside of the operator's control.
-	ConditionReady string = "Ready"
+	// outside the operator's control.
+	ConditionTypeReady string = "Ready"
 
-	// ConditionValidInputPrefix prefixes a named input to identify its validation state
-	ConditionValidInputPrefix = GroupName + "/ValidInput"
+	// ConditionTypeValid identifies the state of validation for the service
+	ConditionTypeValid string = GroupName + "/Valid"
 
-	// ConditionValidOutputPrefix prefixes a named output to identify its validation state
-	ConditionValidOutputPrefix = GroupName + "/ValidOutput"
+	// ConditionTypeValidInputPrefix prefixes a named input to identify its validation state
+	ConditionTypeValidInputPrefix = GroupName + "/ValidInput"
 
-	// ConditionValidPipelinePrefix prefixes a named pipeline to identify its validation state
-	ConditionValidPipelinePrefix = GroupName + "/ValidPipeline"
+	// ConditionTypeValidOutputPrefix prefixes a named output to identify its validation state
+	ConditionTypeValidOutputPrefix = GroupName + "/ValidOutput"
 
-	// ConditionValidFilterPrefix prefixes a named filter to identify its validation state
-	ConditionValidFilterPrefix = GroupName + "/ValidFilter"
+	// ConditionTypeValidPipelinePrefix prefixes a named pipeline to identify its validation state
+	ConditionTypeValidPipelinePrefix = GroupName + "/ValidPipeline"
+
+	// ConditionTypeValidFilterPrefix prefixes a named filter to identify its validation state
+	ConditionTypeValidFilterPrefix = GroupName + "/ValidFilter"
 
 	// ReasonClusterRolesExist means the collector serviceAccount is bound to all the cluster roles needed to collect a log_type
 	ReasonClusterRolesExist = "ClusterRolesExist"
@@ -56,16 +62,38 @@ const (
 	// ReasonClusterRoleMissing means the collector serviceAccount is missing one or more clusterRoles needed to collect a log_type
 	ReasonClusterRoleMissing = "ClusterRoleMissing"
 
+	// ReasonDeploymentError means an error occurred trying to deploy the collector or some related component
+	ReasonDeploymentError = "DeploymentError"
+
+	// ReasonInitializationFailed indicates a failure initializing the reconciliation context
+	ReasonInitializationFailed string = "InitializationFailed"
+
+	// ReasonFailureToRemoveStaleWorkload indicates a failure removing a stale workload after the deployment type changes
+	ReasonFailureToRemoveStaleWorkload string = "FailureToRemoveStaleWorkload"
+
+	// ReasonManagementStateUnmanaged is used when the workload is in an Unmanaged state
+	ReasonManagementStateUnmanaged = "ManagementStateUnmanaged"
+
 	ReasonMigrateOutput string = "Migrate"
 
 	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
 	ReasonMissingSpec = "MissingSpec"
 
+	// ReasonReconciliationComplete when the operator has initialized, validated, and deployed the resources for the workload
+	ReasonReconciliationComplete = "ReconciliationComplete"
+
+	// ReasonServiceAccountDoesNotExist when the ServiceAccount is not found
 	ReasonServiceAccountDoesNotExist = "ServiceAccountDoesNotExist"
+
+	// ReasonServiceAccountCheckFailure when there is a failure retrieving the ServiceAccount
+	ReasonServiceAccountCheckFailure = "ServiceAccountCheckFailure"
 
 	// ReasonValidationSuccess is used when validation succeeds.
 	ReasonValidationSuccess = "ValidationSuccess"
 
 	// ReasonValidationFailure is used when validation fails.
 	ReasonValidationFailure string = "ValidationFailure"
+
+	// ReasonUnknownState is used when the operator can not determine the state of the deployment
+	ReasonUnknownState = "UnknownState"
 )

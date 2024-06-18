@@ -19,6 +19,13 @@ func GetOutputSecret(o logging.OutputSpec, secrets map[string]*corev1.Secret) *c
 // Secrets is a map of secrets
 type Secrets map[string]*corev1.Secret
 
+func (s Secrets) Names() (names []string) {
+	for name := range s {
+		names = append(names, name)
+	}
+	return names
+}
+
 // Value returns the content of the given secret with key if it exists or nil
 func (s Secrets) Value(key *obs.SecretKey) []byte {
 	if key != nil && key.Secret != nil {

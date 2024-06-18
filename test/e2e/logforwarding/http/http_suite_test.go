@@ -1,4 +1,4 @@
-package fluent_test
+package http
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestHttp(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Http Suite")
+	RunSpecs(t, "[e2e][logforwarding][http] Suite")
 }

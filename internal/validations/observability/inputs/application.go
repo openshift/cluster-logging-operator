@@ -22,7 +22,7 @@ func ValidateApplication(spec obs.InputSpec) (conditions []metav1.Condition) {
 
 	if spec.Application == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil application spec", spec.Name)),
+			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil application spec", spec.Name)),
 		}
 	}
 	var messages []string
@@ -48,9 +48,9 @@ func ValidateApplication(spec obs.InputSpec) (conditions []metav1.Condition) {
 	}
 	if len(messages) > 0 {
 		msg := fmt.Sprintf("globs must match %q for: %s", globRE, strings.Join(messages, ","))
-		conditions = append(conditions, NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, msg))
+		conditions = append(conditions, NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, msg))
 	} else {
-		conditions = append(conditions, NewConditionFromPrefix(obs.ConditionValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)))
+		conditions = append(conditions, NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)))
 	}
 
 	return conditions

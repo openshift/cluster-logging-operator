@@ -30,12 +30,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				Reader:    k8sClient,
 				Forwarder: &customClf,
 			}
-			_, cond := ValidatePermissions(context)
+			ValidatePermissions(context)
 			reason := obs.ReasonClusterRolesExist
 			if !success {
 				reason = obs.ReasonClusterRoleMissing
 			}
-			Expect(cond).To(HaveCondition(obs.ConditionAuthorized, success, reason, reMsg))
+			Expect(customClf.Status.Conditions).To(HaveCondition(obs.ConditionTypeAuthorized, success, reason, reMsg))
 		}
 	)
 
@@ -56,14 +56,29 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 	Context("service account existence", func() {
 
 		It("should fail when no service account found", func() {
+			customClf.Spec.Inputs = []obs.InputSpec{
+				{
+					Name:        "my-custom-input",
+					Type:        obs.InputTypeApplication,
+					Application: &obs.Application{},
+				},
+			}
+			customClf.Spec.Pipelines = []obs.PipelineSpec{
+				{
+					Name: "pipeline1",
+					InputRefs: []string{
+						string(obs.InputTypeApplication),
+					},
+				},
+			}
 			customClf.Spec.ServiceAccount.Name = providedSAName
 			k8sClient = fake.NewClientBuilder().Build()
-			_, cond := ValidatePermissions(internalcontext.ForwarderContext{
+			ValidatePermissions(internalcontext.ForwarderContext{
 				Client:    k8sClient,
 				Reader:    k8sClient,
 				Forwarder: &customClf,
 			})
-			Expect(cond).To(HaveCondition(obs.ConditionAuthorized, false, obs.ReasonServiceAccountDoesNotExist, ""))
+			Expect(customClf.Status.Conditions).To(HaveCondition(obs.ConditionTypeAuthorized, false, obs.ReasonServiceAccountDoesNotExist, ""))
 		})
 	})
 
@@ -215,12 +230,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 					},
 				},
 			}
-			_, cond := ValidatePermissions(internalcontext.ForwarderContext{
+			ValidatePermissions(internalcontext.ForwarderContext{
 				Client:    k8sAuditClient,
 				Reader:    k8sAuditClient,
 				Forwarder: &customClf,
 			})
-			Expect(cond).To(HaveCondition(obs.ConditionAuthorized, true, obs.ReasonClusterRolesExist, ""))
+			Expect(customClf.Status.Conditions).To(HaveCondition(obs.ConditionTypeAuthorized, true, obs.ReasonClusterRolesExist, ""))
 		})
 
 		It("should pass validation if service account can collect external logs and there is a Syslog receiver", func() {
@@ -288,12 +303,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 							},
 						},
 					}
-					_, cond := ValidatePermissions(internalcontext.ForwarderContext{
+					ValidatePermissions(internalcontext.ForwarderContext{
 						Client:    k8sAppClient,
 						Reader:    k8sAppClient,
 						Forwarder: &customClf,
 					})
-					Expect(cond).To(HaveCondition(obs.ConditionAuthorized, false, obs.ReasonClusterRoleMissing, ""))
+					Expect(customClf.Status.Conditions).To(HaveCondition(obs.ConditionTypeAuthorized, false, obs.ReasonClusterRoleMissing, ""))
 				},
 					Entry("with default namespace", []string{"default"}),
 					Entry("with openshift namespace", []string{"openshift"}),

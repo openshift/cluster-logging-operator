@@ -1,8 +1,8 @@
 package observability
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
-	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/inputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/outputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/pipelines"
@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	clfValidators = []func(internalcontext.ForwarderContext) (common.AttributeConditionType, []metav1.Condition){
+	clfValidators = []func(internalcontext.ForwarderContext){
 		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,
@@ -19,15 +19,17 @@ var (
 )
 
 // ValidateClusterLogForwarder validates the forwarder spec that can not be accomplished using api attributes and returns a set of conditions that apply to the spec
-func ValidateClusterLogForwarder(context internalcontext.ForwarderContext) map[common.AttributeConditionType][]metav1.Condition {
-	conditionMap := map[common.AttributeConditionType][]metav1.Condition{}
+func ValidateClusterLogForwarder(context internalcontext.ForwarderContext) {
 	for _, validate := range clfValidators {
-		conditionType, failures := validate(context)
-		if conditions, found := conditionMap[conditionType]; found {
-			conditionMap[conditionType] = append(conditions, failures...)
-		} else {
-			conditionMap[conditionType] = conditions
+		validate(context)
+	}
+}
+
+func MustUndeployCollector(conditions []metav1.Condition) bool {
+	for _, condition := range conditions {
+		if condition.Type == obs.ConditionTypeAuthorized && condition.Status == obs.ConditionFalse {
+			return true
 		}
 	}
-	return conditionMap
+	return false
 }

@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogging"
 	"strings"
 	"time"
 
@@ -143,6 +144,9 @@ func removeClusterLogging(k8Client client.Client) {
 }
 
 func setMigrationStatusConditions(cl *loggingv1.ClusterLogging, conditions []loggingv1.Condition) {
+	if len(conditions) == 0 { // cleanup previously set 'deprecated' status
+		cl.Status.Conditions.RemoveCondition(clusterlogging.DeprecatedCondition)
+	}
 	for _, cond := range conditions {
 		cl.Status.Conditions.SetCondition(cond)
 	}

@@ -283,18 +283,12 @@ type Cloudwatch struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 
-	// GroupBy defines the strategy for grouping logstreams
+	// GroupName defines the strategy for grouping logstreams
 	//
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
+	// +kubebuilder:default:="{{.log_type}}"
 	// +kubebuilder:validation:Required
-	GroupBy LogGroupByType `json:"groupBy"`
-
-	// GroupPrefix Add this prefix to all group names.
-	//
-	// Useful to avoid group name clashes if an AWS account is used for multiple clusters and
-	// used verbatim (e.g. "" means no prefix). The default prefix is cluster-name/log-type
-	//
-	// +kubebuilder:validation:Optional
-	GroupPrefix string `json:"groupPrefix,omitempty"`
+	GroupName string `json:"groupName"`
 }
 
 type CloudwatchAuthType string
@@ -359,28 +353,11 @@ type CloudwatchAWSAccessKey struct {
 	KeySecret *SecretKey `json:"keySecret,omitempty"`
 }
 
-// LogGroupByType defines a fixed strategy type
-//
-// +kubebuilder:validation:Enum:=logType;namespaceName;namespaceUUID
-type LogGroupByType string
-
-const (
-	// LogGroupByLogType is the strategy to group logs by source(e.g. app, infra)
-	LogGroupByLogType LogGroupByType = "logType"
-
-	// LogGroupByNamespaceName is the strategy to use for grouping logs by namespace. Infrastructure and
-	// audit logs are always grouped by "logType"
-	LogGroupByNamespaceName LogGroupByType = "namespaceName"
-
-	// LogGroupByNamespaceUUID  is the strategy to use for grouping logs by namespace UUID. Infrastructure and
-	// audit logs are always grouped by "logType"
-	LogGroupByNamespaceUUID LogGroupByType = "namespaceUUID"
-)
-
 type IndexSpec struct {
 	// Index is the tenant for the logs. This supports template syntax
 	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
 	//
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
 	Index string `json:"index,omitempty"`
@@ -447,6 +424,10 @@ type GoogleCloudLogging struct {
 	ID GoogleGloudLoggingID `json:"id,omitempty"`
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
+	//
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="{{.log_type}}"
 	LogID string `json:"logId,omitempty"`
 
 	// Tuning specs tuning for the output
@@ -575,7 +556,9 @@ type Kafka struct {
 
 	// Topic specifies the target topic to send logs to.
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="{{.log_type}}"
 	Topic string `json:"topic,omitempty"`
 
 	// Brokers specifies the list of broker endpoints of a Kafka cluster.
@@ -679,6 +662,7 @@ type Loki struct {
 	// TenantKey is the tenant for the logs. This supports vector's template syntax
 	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
 	//
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
 	TenantKey string `json:"tenantKey,omitempty"`

@@ -21,6 +21,22 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 			Expect(MigrateVisualizationSpec(spec)).To(Equal(ClusterLoggingSpec{Visualization: &VisualizationSpec{}}))
 		})
 
+		It("should return fixed OCP Plugin timeout format", func() {
+			spec := ClusterLoggingSpec{}
+			spec.Visualization = &VisualizationSpec{
+				Type: VisualizationTypeOCPConsole,
+				OCPConsole: &OCPConsoleSpec{
+					Timeout: "120",
+				},
+			}
+			Expect(MigrateVisualizationSpec(spec)).To(Equal(ClusterLoggingSpec{Visualization: &VisualizationSpec{
+				Type: VisualizationTypeOCPConsole,
+				OCPConsole: &OCPConsoleSpec{
+					Timeout: "120s",
+				},
+			}}))
+		})
+
 		It("should return clusterlogging with visualization as ocp-console when LogStore defined with lokistack and visualisation with nil", func() {
 			spec := ClusterLoggingSpec{}
 			spec.LogStore = &LogStoreSpec{

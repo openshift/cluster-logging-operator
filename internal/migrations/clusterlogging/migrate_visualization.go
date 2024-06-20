@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"fmt"
+	"regexp"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -21,6 +22,8 @@ func MigrateVisualizationSpec(spec logging.ClusterLoggingSpec) (logging.ClusterL
 		// Need to move to top level spec.Visualization.NodeSelector/Tolerations
 	} else if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeKibana {
 		spec.Visualization = MigrateKibanaSpec(spec.Visualization)
+	} else if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
+		spec.Visualization = MigrateOcpSpec(spec.Visualization)
 	}
 
 	log.V(3).Info("Migrated visualizationSpec for reconciliation", "spec", spec)
@@ -45,4 +48,17 @@ func MigrateKibanaSpec(visSpec *logging.VisualizationSpec) *logging.Visualizatio
 
 	return visSpec
 
+}
+
+func MigrateOcpSpec(visSpec *logging.VisualizationSpec) *logging.VisualizationSpec {
+
+	var pattern = regexp.MustCompile(`^[0-9]+$`)
+	log.V(3).Info("Migrating OCP visualization specs from spec.Visualization.OCPConsole")
+	// need to fix Timeout format, because OCP Plugin expect it in format: ^([0-9]+)([smhd])$
+	// in same time in our code base used validation in format: "^([0-9]+)([smhd]{0,1})$"
+	// set 's' because seconds is default value for OCP Plugin timeout
+	if visSpec.OCPConsole.Timeout != "" && pattern.MatchString(string(visSpec.OCPConsole.Timeout)) {
+		visSpec.OCPConsole.Timeout = visSpec.OCPConsole.Timeout + "s"
+	}
+	return visSpec
 }

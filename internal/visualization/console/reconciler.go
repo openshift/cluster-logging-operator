@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"sigs.k8s.io/yaml"
@@ -230,7 +231,14 @@ func (r *Reconciler) mutateConsolePlugin() error {
 
 func (r *Reconciler) mutateConfigMap() error {
 	var config string
+	var pattern = regexp.MustCompile(`^[0-9]+$`)
 	if r.visSpec != nil && r.visSpec.OCPConsole != nil {
+		// need to fix Timeout format, because OCP Plugin expect it in format: ^([0-9]+)([smhd])$
+		// in same time in our code base used validation in format: "^([0-9]+)([smhd]{0,1})$"
+		// set 's' because seconds is default value for OCP Plugin timeout
+		if pattern.MatchString(string(r.visSpec.OCPConsole.Timeout)) {
+			r.visSpec.OCPConsole.Timeout = r.visSpec.OCPConsole.Timeout + "s"
+		}
 		configYaml, err := yaml.Marshal(r.visSpec.OCPConsole)
 		if err != nil {
 			return err

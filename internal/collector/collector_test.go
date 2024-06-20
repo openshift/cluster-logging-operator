@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -14,7 +16,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"os"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -614,8 +615,8 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				Type: obs.OutputTypeCloudwatch,
 				Name: "cw",
 				Cloudwatch: &obs.Cloudwatch{
-					Region:  "us-east-77",
-					GroupBy: obs.LogGroupByNamespaceName,
+					Region:    "us-east-77",
+					GroupName: "{{.namespace_name}}",
 					Authentication: &obs.CloudwatchAuthentication{
 						Type: obs.CloudwatchAuthTypeIAMRole,
 						IAMRole: &obs.CloudwatchIAMRole{

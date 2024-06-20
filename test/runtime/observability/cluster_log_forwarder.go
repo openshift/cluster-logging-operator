@@ -1,12 +1,13 @@
 package observability
 
 import (
+	"os"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"os"
 )
 
 const (
@@ -164,10 +165,9 @@ func (p *PipelineBuilder) ToCloudwatchOutput(visitors ...func(output *obs.Output
 			InsecureSkipVerify: true,
 		}
 		output.Cloudwatch = &obs.Cloudwatch{
-			URL:         "https://localhost:5000",
-			Region:      "us-east-1",
-			GroupBy:     obs.LogGroupByLogType,
-			GroupPrefix: "group-prefix",
+			URL:       "https://localhost:5000",
+			Region:    "us-east-1",
+			GroupName: "group-prefix.{{.log_type}}",
 		}
 		for _, v := range visitors {
 			v(output)

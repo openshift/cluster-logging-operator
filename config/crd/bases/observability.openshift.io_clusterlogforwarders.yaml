@@ -995,18 +995,12 @@ spec:
                               - iamRole
                               type: string
                           type: object
-                        groupBy:
-                          description: GroupBy defines the strategy for grouping logstreams
-                          enum:
-                          - logType
-                          - namespaceName
-                          - namespaceUUID
-                          type: string
-                        groupPrefix:
-                          description: "GroupPrefix Add this prefix to all group names.
-                            \n Useful to avoid group name clashes if an AWS account
-                            is used for multiple clusters and used verbatim (e.g.
-                            \"\" means no prefix). The default prefix is cluster-name/log-type"
+                        groupName:
+                          default: '{{.log_type}}'
+                          description: GroupName defines the strategy for grouping
+                            logstreams
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         region:
                           type: string
@@ -1058,7 +1052,7 @@ spec:
                             part of `url` is ignored."
                           type: string
                       required:
-                      - groupBy
+                      - groupName
                       - region
                       type: object
                     elasticsearch:
@@ -1150,6 +1144,8 @@ spec:
                           description: Index is the tenant for the logs. This supports
                             template syntax to allow dynamic per-event values. Defaults
                             to the log type (i.e. application, audit, infrastructure)
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1263,8 +1259,11 @@ spec:
                               type: string
                           type: object
                         logId:
+                          default: '{{.log_type}}'
                           description: LogID is the log ID to which to publish logs.
                             This identifies log stream.
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1537,8 +1536,11 @@ spec:
                             type: string
                           type: array
                         topic:
+                          default: '{{.log_type}}'
                           description: Topic specifies the target topic to send logs
                             to.
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1695,6 +1697,8 @@ spec:
                             supports vector's template syntax to allow dynamic per-event
                             values. Defaults to the log type (i.e. application, audit,
                             infrastructure)
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1969,6 +1973,8 @@ spec:
                           description: Index is the tenant for the logs. This supports
                             template syntax to allow dynamic per-event values. Defaults
                             to the log type (i.e. application, audit, infrastructure)
+                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
+                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output

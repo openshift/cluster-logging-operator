@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"net/http"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/aws/aws-sdk-go-v2/aws"

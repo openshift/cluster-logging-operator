@@ -175,7 +175,8 @@ type OCPConsoleSpec struct {
 	//
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OCP Console Query Timeout",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout"}
-	Timeout FluentdTimeUnit `json:"timeout,omitempty"`
+	// +kubebuilder:validation:Pattern:="^([0-9]+)([smhd])$"
+	Timeout string `json:"timeout,omitempty"`
 }
 
 type ProxySpec struct {

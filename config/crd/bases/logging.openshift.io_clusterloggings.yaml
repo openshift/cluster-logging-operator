@@ -1131,7 +1131,7 @@ spec:
                         type: integer
                       timeout:
                         description: Timeout is the max duration before a query timeout
-                        pattern: ^([0-9]+)([smhd]{0,1})$
+                        pattern: ^([0-9]+)([smhd])$
                         type: string
                     type: object
                   tolerations:

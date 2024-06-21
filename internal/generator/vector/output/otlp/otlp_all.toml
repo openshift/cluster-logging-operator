@@ -1,0 +1,362 @@
+# Route container, journal, and audit logs separately
+[transforms.output_otel_collector_reroute]
+type = "route"
+inputs = ["pipeline_my_pipeline_viaq_0"]
+route.container = '.log_source == "container"'
+route.node = '.log_source == "node"'
+route.auditd = '.log_source == "auditd"'
+route.kubeapi = '.log_source == "kubeAPI"'
+route.openshiftapi = '.log_source == "openshiftAPI"'
+route.ovn = '.log_source == "ovn"'
+
+# Normalize container log records to OTLP semantic conventions
+[transforms.output_otel_collector_container]
+type = "remap"
+inputs = ["output_otel_collector_reroute.container"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Append container resource attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
+  	{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
+  	{"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
+  	{"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
+  	{"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+  )
+  # Append kube pod labels
+  if exists(.kubernetes.labels) {
+      for_each(object!(.kubernetes.labels)) -> |key,value| {
+  	    resource.attributes = append(resource.attributes,
+
+              [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
+  	    )
+      }
+  }
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Openshift and kubernetes objects for grouping containers (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  .kubernetes = {
+      "namespace_name": .kubernetes.namespace_name,
+      "pod_name": .kubernetes.pod_name,
+      "container_name": .kubernetes.container_name
+  }
+  . = {
+    "openshift": o,
+    "kubernetes": .kubernetes,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Merge container logs and group by namespace, pod and container
+[transforms.output_otel_collector_groupby_container]
+type = "reduce"
+inputs = ["output_otel_collector_container"]
+expire_after_ms = 10000
+max_events = 3
+group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name"]
+merge_strategies.resource = "retain"
+merge_strategies.logRecords = "array"
+
+# Normalize node log events to OTLP semantic conventions
+[transforms.output_otel_collector_node]
+type = "remap"
+inputs = ["output_otel_collector_reroute.node"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append log attributes for node logs
+  logAttribute = [
+    "systemd.t.BOOT_ID",
+    "systemd.t.CMDLINE",
+    "systemd.t.EXE",
+    "systemd.t.GID",
+    "systemd.t.MACHINE_ID",
+    "systemd.t.PID",
+    "systemd.u.SYSLOG_FACILITY",
+    "systemd.u.SYSLOG_IDENTIFIER",
+  ]
+  replacements = {
+    "SYSLOG.FACILITY": "syslog.facility",
+    "SYSLOG.IDENTIFIER": "syslog.identifier",
+    "PID": "syslog.procid"
+  }
+  for_each(logAttribute) -> |_,sub_key| {
+    path = split(sub_key,".")
+    if length(path) > 1 {
+  	sub_key = replace!(path[-1],"_",".")
+    }
+    if get!(replacements, [sub_key]) != null {
+  	sub_key = string!(get!(replacements, [sub_key]))
+    } else {
+  	sub_key = "system." + downcase(sub_key)
+    }
+    r.attributes = append(r.attributes,
+
+        [{"key": sub_key, "value": {"stringValue": get!(.,path)}}]
+    )
+  }
+  # Openshift object for grouping (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "hostname": .hostname,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  . = {
+    "openshift": o,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Normalize audit log record to OTLP semantic conventions
+[transforms.output_otel_collector_auditd]
+type = "remap"
+inputs = ["output_otel_collector_reroute.auditd"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Openshift object for grouping (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "hostname": .hostname,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  . = {
+    "openshift": o,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Normalize audit log kube record to OTLP semantic conventions
+[transforms.output_otel_collector_kubeapi]
+type = "remap"
+inputs = ["output_otel_collector_reroute.kubeapi"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
+  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
+  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
+  )
+  # Openshift object for grouping (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "hostname": .hostname,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  . = {
+    "openshift": o,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Normalize audit openshiftAPI record to OTLP semantic conventions
+[transforms.output_otel_collector_openshiftapi]
+type = "remap"
+inputs = ["output_otel_collector_reroute.openshiftapi"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
+  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
+  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
+  )
+  # Openshift object for grouping (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "hostname": .hostname,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  . = {
+    "openshift": o,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Normalize audit log ovn records to OTLP semantic conventions
+[transforms.output_otel_collector_ovn]
+type = "remap"
+inputs = ["output_otel_collector_reroute.ovn"]
+source = '''
+  # Create base resource attributes
+  resource.attributes = []
+  resource.attributes = append( resource.attributes,
+      [{"key": "node.name", "value": {"stringValue": .hostname}},
+      {"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}}]
+  )
+  # Create logRecord object
+  r = {}
+  r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+  r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+  # Convert syslog severity keyword to number, default to 9 (unknown)
+  r.severityNumber = to_syslog_severity(.level) ?? 9
+  r.body = {"stringValue": string!(.message)}
+  r.attributes = []
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+  	{"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append logRecord attributes
+  r.attributes = append(
+  	r.attributes,
+  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
+  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
+  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
+  )
+  # Openshift object for grouping (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "hostname": .hostname,
+      "cluster_id": get!(.,["openshift","cluster_id"])
+  }
+  . = {
+    "openshift": o,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Merge audit and node logs and group by hostname and log_type
+[transforms.output_otel_collector_groupby_source]
+type = "reduce"
+inputs = ["output_otel_collector_auditd","output_otel_collector_kubeapi","output_otel_collector_node","output_otel_collector_openshiftapi","output_otel_collector_ovn"]
+expire_after_ms = 10000
+max_events = 3
+group_by = [".openshift.cluster_id",".openshift.hostname",".openshift.log_type"]
+merge_strategies.resource = "retain"
+merge_strategies.logRecords = "array"
+
+# Create new resource object for OTLP JSON payload
+[transforms.output_otel_collector_resource_logs]
+type = "remap"
+inputs = ["output_otel_collector_groupby_container","output_otel_collector_groupby_source","output_otel_collector_reroute._unmatched"]
+source = '''
+  . = {
+        "resource": {
+           "attributes": .resource.attributes,
+        },
+        "scopeLogs": [
+          {"logRecords": .logRecords}
+        ]
+      }
+'''
+
+[sinks.output_otel_collector]
+type = "http"
+inputs = ["output_otel_collector_resource_logs"]
+uri = "http://localhost:4318/v1/logs"
+method = "post"
+payload_prefix = "{\"resourceLogs\":"
+payload_suffix = "}"
+encoding.codec = "json"

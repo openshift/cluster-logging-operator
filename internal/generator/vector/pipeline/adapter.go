@@ -84,14 +84,13 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 
 // TODO: add migration to treat like any other
 func addPrefilters(p *Pipeline) {
-
 	prefilters := []string{}
 	if viaq.HasJournalSource(p.inputSpecs) {
 		prefilters = append(prefilters, viaq.ViaqJournal)
 		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
 			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
 			SuppliesTransform: true,
-			TranformFactory: func(id string, inputs ...string) framework.Element {
+			TransformFactory: func(id string, inputs ...string) framework.Element {
 				return viaq.NewJournal(id, inputs...)
 			},
 		}
@@ -101,7 +100,7 @@ func addPrefilters(p *Pipeline) {
 	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
 		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
 		SuppliesTransform: true,
-		TranformFactory: func(id string, inputs ...string) framework.Element {
+		TransformFactory: func(id string, inputs ...string) framework.Element {
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
@@ -160,7 +159,7 @@ func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilte
 		return &PipelineFilter{
 			ids: ids,
 			transformFactory: func(inputs ...string) framework.Element {
-				return spec.TranformFactory(ids[0], inputs...)
+				return spec.TransformFactory(ids[0], inputs...)
 			},
 		}
 	}

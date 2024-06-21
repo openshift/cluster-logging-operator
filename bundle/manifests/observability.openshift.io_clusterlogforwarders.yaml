@@ -14,7 +14,7 @@ spec:
     listKind: ClusterLogForwarderList
     plural: clusterlogforwarders
     shortNames:
-    - clf
+    - lf
     singular: clusterlogforwarder
   scope: Namespaced
   versions:

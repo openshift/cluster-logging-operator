@@ -42,6 +42,11 @@ var (
 			string(obs.InputTypeAudit):          ApplicationLogFile,
 			string(obs.InputTypeInfrastructure): ApplicationLogFile,
 		},
+		string(obs.OutputTypeOTLP): {
+			string(obs.InputTypeApplication):    ApplicationLogFile,
+			string(obs.InputTypeAudit):          ApplicationLogFile,
+			string(obs.InputTypeInfrastructure): ApplicationLogFile,
+		},
 		string(obs.OutputTypeSyslog): {
 			applicationLog:                      "/tmp/infra.log",
 			auditLog:                            "/tmp/infra.log",

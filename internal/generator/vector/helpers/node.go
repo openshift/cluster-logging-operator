@@ -19,6 +19,11 @@ func MakeID(parts ...string) string {
 	return FormatComponentID(strings.Join(parts, "_"))
 }
 
+// MakeRouteInputID appends sourceType to rerouteId for input ids
+func MakeRouteInputID(rerouteId, sourceType string) string {
+	return strings.ToLower(strings.Join([]string{rerouteId, sourceType}, "."))
+}
+
 // MakeInputID for components that logically represent clf.input
 func MakeInputID(parts ...string) string {
 	parts = append([]string{"input"}, parts...)

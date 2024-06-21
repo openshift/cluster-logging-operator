@@ -277,6 +277,19 @@ func (p *PipelineBuilder) ToHttpOutput(visitors ...func(output *obs.OutputSpec))
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeHTTP))
 }
 
+func (p *PipelineBuilder) ToOtlpOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+	v := func(output *obs.OutputSpec) {
+		output.Name = string(obs.OutputTypeOTLP)
+		output.Type = obs.OutputTypeOTLP
+		output.OTLP = &obs.OTLP{
+			URL: "http://localhost:4318/v1/logs",
+		}
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(v, string(obs.OutputTypeOTLP))
+}
 func (p *PipelineBuilder) ToAzureMonitorOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeAzureMonitor)

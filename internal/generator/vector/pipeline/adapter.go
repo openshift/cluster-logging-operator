@@ -84,7 +84,6 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 
 // TODO: add migration to treat like any other
 func addPrefilters(p *Pipeline) {
-
 	prefilters := []string{}
 	if viaq.HasJournalSource(p.inputSpecs) {
 		prefilters = append(prefilters, viaq.ViaqJournal)

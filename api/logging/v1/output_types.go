@@ -15,6 +15,7 @@ const (
 	OutputTypeSplunk             = "splunk"
 	OutputTypeHttp               = "http"
 	OutputTypeAzureMonitor       = "azureMonitor"
+	OutputTypeOtlp               = "otlp" // Value used only as a constant in 6.0 for wiring together validation logic
 )
 
 // OutputTypeSpec is a union of optional additional configuration specific to an

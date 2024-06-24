@@ -17,12 +17,12 @@ require (
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.24.0
 	golang.org/x/sync v0.6.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
 	k8s.io/client-go v0.29.1
@@ -33,7 +33,6 @@ require (
 require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/openshift/api v0.0.0-20240212125214-04ea3891d9cb
-	golang.org/x/mod v0.14.0
 	golang.org/x/sys v0.19.0
 	k8s.io/apiserver v0.29.1
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
@@ -60,7 +59,6 @@ require (
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
-	github.com/inhies/go-bytesize v0.0.0-20151001220322-5990f52c6ad6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

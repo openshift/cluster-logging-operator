@@ -96,7 +96,7 @@ func RemoveDashboardConfigMap(c client.Client) (err error) {
 // SetupWithManager sets up the controller with the Manager
 func (r *ReconcileDashboards) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1.ConfigMap{}).
+		Named("logging_dashboard_controller").
 		Watches(&corev1.ConfigMap{},
 			handler.EnqueueRequestsFromMapFunc(func(cxt context.Context, obj client.Object) []ctrl.Request {
 				if obj.GetName() == DashboardName && obj.GetNamespace() == DashboardNS {

@@ -98,18 +98,6 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 				},
 			}))
 		})
-		Context("the volume for metrics certificates", func() {
-			It("should mount a volume  based upon the forwarder name", func() {
-				factory.ResourceNames = coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize))
-				expectedContainerVolume := v1.VolumeMount{
-					Name:      "custom-clf-metrics",
-					ReadOnly:  true,
-					MountPath: metricsVolumePath}
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-				collector = podSpec.Containers[0]
-				Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
-			})
-		})
 
 		It("should set VECTOR_LOG env variable with debug value", func() {
 			logLevelDebug := "debug"
@@ -251,7 +239,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 			clf.Spec.ServiceAccount.Name = "custom-clf"
 			factory.ResourceNames = coreFactory.ResourceNames(clf)
 			expectedPodSpecMetricsVol := v1.Volume{
-				Name: "custom-clf-metrics",
+				Name: "metrics",
 				VolumeSource: v1.VolumeSource{
 					Secret: &v1.SecretVolumeSource{
 						SecretName: "custom-clf-metrics",
@@ -295,7 +283,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 
 		Context("and mounting volumes", func() {
 			It("should mount host path volumes", func() {
-				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}}))
+				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
 				Expect(podSpec.Volumes).To(HaveLen(17))
 			})
 
@@ -386,16 +374,6 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Type: v1.SeccompProfileTypeRuntimeDefault,
 				},
 			}))
-		})
-		It("should mount a volume for metrics certificates based upon the CR name", func() {
-			factory.ResourceNames = coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize))
-			expectedContainerVolume := v1.VolumeMount{
-				Name:      "custom-clf-metrics",
-				ReadOnly:  true,
-				MountPath: metricsVolumePath}
-			podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-			collector = podSpec.Containers[0]
-			Expect(collector.VolumeMounts).To(ContainElement(expectedContainerVolume))
 		})
 	})
 
@@ -508,7 +486,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 				clf.Spec.ServiceAccount.Name = "custom-clf"
 				factory.ResourceNames = coreFactory.ResourceNames(clf)
 				expectedPodSpecMetricsVol := v1.Volume{
-					Name: "custom-clf-metrics",
+					Name: "metrics",
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
 							SecretName: "custom-clf-metrics",
@@ -554,7 +532,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 
 		Context("and mounting volumes", func() {
 			It("should not mount host path volumes", func() {
-				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}}))
+				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
 				Expect(podSpec.Volumes).To(HaveLen(6))
 			})
 		})

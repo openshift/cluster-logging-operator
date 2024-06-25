@@ -239,6 +239,7 @@ test-functional:
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/normalization \
+		./test/functional/outputs/azuremonitor \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector

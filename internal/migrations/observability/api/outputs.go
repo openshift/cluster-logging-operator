@@ -126,7 +126,7 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 					Name:      logStoreSpec.LokiStack.Name,
 					Namespace: constants.OpenshiftNS,
 				},
-				Authentication: &obs.HTTPAuthentication{
+				Authentication: &obs.LokiStackAuthentication{
 					Token: &obs.BearerToken{
 						Secret: &obs.BearerTokenSecretKey{
 							Name: constants.LogCollectorToken,

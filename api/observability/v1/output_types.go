@@ -594,12 +594,21 @@ type LokiStackTarget struct {
 	Name string `json:"name"`
 }
 
+// LokiStackAuthentication is the authentication for LokiStack
+type LokiStackAuthentication struct {
+	// Token specifies a bearer token to be used for authenticating requests.
+	//
+	// +kubebuilder:validation:Required
+	// +nullable
+	Token *BearerToken `json:"token,omitempty"`
+}
+
 // LokiStack provides optional extra properties for `type: lokistack`
 type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
-	// +kubebuilder:validation:Optional
-	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
+	// +kubebuilder:validation:Required
+	Authentication *LokiStackAuthentication `json:"authentication,omitempty"`
 
 	// Target points to the LokiStack resources that should be used as a target for the output.
 	//

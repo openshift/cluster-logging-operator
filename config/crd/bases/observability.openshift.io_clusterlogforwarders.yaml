@@ -1763,30 +1763,6 @@ spec:
                           description: Authentication sets credentials for authenticating
                             the requests.
                           properties:
-                            password:
-                              description: Password to use for authenticating requests.
-                              nullable: true
-                              properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
-                              type: object
                             token:
                               description: Token specifies a bearer token to be used
                                 for authenticating requests.
@@ -1815,30 +1791,6 @@ spec:
                                   type: object
                               required:
                               - from
-                              type: object
-                            username:
-                              description: Username to use for authenticating requests.
-                              nullable: true
-                              properties:
-                                key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
-                                  type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
-                              required:
-                              - key
-                              - secret
                               type: object
                           type: object
                         labelKeys:

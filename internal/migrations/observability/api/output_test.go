@@ -78,7 +78,7 @@ var _ = Describe("#ConvertOutputs", func() {
 						Name:      "my-lokistack",
 						Namespace: constants.OpenshiftNS,
 					},
-					Authentication: &obs.HTTPAuthentication{
+					Authentication: &obs.LokiStackAuthentication{
 						Token: &obs.BearerToken{
 							Secret: &obs.BearerTokenSecretKey{
 								Name: constants.LogCollectorToken,

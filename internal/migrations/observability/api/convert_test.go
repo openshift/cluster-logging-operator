@@ -107,7 +107,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								Namespace: constants.OpenshiftNS,
 								Name:      "my-lokistack",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									Secret: &obs.BearerTokenSecretKey{
 										Name: constants.LogCollectorToken,

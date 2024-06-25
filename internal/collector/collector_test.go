@@ -58,15 +58,9 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 						},
 					},
 					LokiStack: &obs.LokiStack{
-						Authentication: &obs.HTTPAuthentication{
+						Authentication: &obs.LokiStackAuthentication{
 							Token: &obs.BearerToken{
 								From: obs.BearerTokenFromServiceAccountToken,
-							},
-							Username: &obs.SecretKey{
-								Key: "foo",
-								Secret: &v1.LocalObjectReference{
-									Name: "bar",
-								},
 							},
 						},
 					},

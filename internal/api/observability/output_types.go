@@ -126,7 +126,7 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 		}
 	case obsv1.OutputTypeLokiStack:
 		if o.LokiStack != nil {
-			return httpAuthKeys(o.LokiStack.Authentication)
+			return lokiStackKeys(o.LokiStack.Authentication)
 		}
 	case obsv1.OutputTypeSplunk:
 		if o.Splunk != nil && o.Splunk.Authentication != nil {
@@ -159,6 +159,20 @@ func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
 	return []*obsv1.SecretKey{}
 }
 
+func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretKey) {
+	if auth != nil {
+		if auth.Token != nil && auth.Token.From == obsv1.BearerTokenFromSecret && auth.Token.Secret != nil {
+			keys = append(keys, &obsv1.SecretKey{
+				Key: auth.Token.Secret.Key,
+				Secret: &v1.LocalObjectReference{
+					Name: auth.Token.Secret.Name,
+				},
+			})
+		}
+	}
+	return keys
+}
+
 func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretKey) {
 	if auth != nil {
 		if auth.AWSAccessKey != nil {
@@ -175,7 +189,6 @@ func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.Sec
 				})
 			}
 		}
-		return keys
 	}
 	return keys
 }

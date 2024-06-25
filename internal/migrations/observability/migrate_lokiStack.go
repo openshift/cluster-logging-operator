@@ -29,8 +29,10 @@ func GenerateLokiOutput(outSpec obs.OutputSpec, input, tenant string) obs.Output
 			URLSpec: obs.URLSpec{
 				URL: lokiStackURL(outSpec.LokiStack, tenant),
 			},
-			Authentication: outSpec.LokiStack.Authentication,
-			Tuning:         outSpec.LokiStack.Tuning,
+			Authentication: &obs.HTTPAuthentication{
+				Token: outSpec.LokiStack.Authentication.Token,
+			},
+			Tuning: outSpec.LokiStack.Tuning,
 		},
 		TLS:   outSpec.TLS,
 		Limit: outSpec.Limit,

@@ -39,7 +39,7 @@ var _ = Describe("MigrateLokiStack", func() {
 									Name:      lokistackTarget,
 									Namespace: constants.OpenshiftNS,
 								},
-								Authentication: &obs.HTTPAuthentication{
+								Authentication: &obs.LokiStackAuthentication{
 									Token: &obs.BearerToken{
 										From: obs.BearerTokenFromServiceAccountToken,
 									},
@@ -338,7 +338,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "another-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -470,7 +470,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "another-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -569,7 +569,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "another-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -584,7 +584,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "foo-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -599,7 +599,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "bar-" + lokistackTarget,
 								Namespace: "bar-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -770,7 +770,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "another-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -785,7 +785,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "foo-" + lokistackTarget,
 								Namespace: "foo-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},
@@ -800,7 +800,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								Name:      "bar-" + lokistackTarget,
 								Namespace: "bar-namespace",
 							},
-							Authentication: &obs.HTTPAuthentication{
+							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
 									From: obs.BearerTokenFromServiceAccountToken,
 								},

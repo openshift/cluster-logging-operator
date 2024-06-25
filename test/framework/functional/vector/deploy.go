@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	collectorcommon "github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -23,13 +24,14 @@ func (c *VectorCollector) String() string {
 	return constants.VectorName
 }
 
-func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYaml string) error {
+func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYaml, secretDataReaderScript string) error {
 	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add(vector.ConfigFile, config).
 		Add("clfyaml", clfYaml).
-		Add("run.sh", fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(c.NS.Name, clfName)))
+		Add("run.sh", fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(c.NS.Name, clfName))).
+		Add(vector.SecretDataReaderFile, secretDataReaderScript)
 	if err := c.Create(configmap); err != nil {
 		return err
 	}
@@ -44,6 +46,7 @@ func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, n
 		AddEnvVarFromFieldRef("VECTOR_SELF_NODE_NAME", "spec.nodeName").
 		AddVolumeMount("config", "/etc/vector", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
+		AddVolumeMount(collectorcommon.SecretDataReader, vector.SecretDataReaderPath, vector.SecretDataReaderFile, true).
 		AddVolumeMount("certs", "/etc/collector/metrics", "", true).
 		WithCmd([]string{"/opt/app-root/src/run.sh"})
 }

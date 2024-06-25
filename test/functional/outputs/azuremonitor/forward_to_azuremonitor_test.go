@@ -2,13 +2,14 @@ package azuremonitor
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -30,7 +31,7 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 
 	BeforeEach(func() {
 
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		framework = functional.NewCollectorFunctionalFramework()
 		secret := runtime.NewSecret(framework.Namespace, azuremonitor.AzureSecretName,
 			map[string][]byte{
 				constants.SharedKey: sharedKey,
@@ -38,12 +39,11 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		)
 		framework.Secrets = append(framework.Secrets, secret)
 
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInputWithVisitor("custom-app",
-				func(spec *logging.InputSpec) {
-					spec.Application = &logging.Application{}
-				}).ToAzureMonitorOutputWithCuId(customerId)
-
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToAzureMonitorOutput(func(output *obs.OutputSpec) {
+				output.AzureMonitor.CustomerId = customerId
+			})
 		Expect(framework.DeployWithVisitor(func(b *runtime.PodBuilder) error {
 			altHost := fmt.Sprintf("%s.%s", customerId, azuremonitor.AzureDomain)
 			return azuremonitor.NewMockoonVisitor(b, altHost, framework)
@@ -60,7 +60,6 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 		message := "This is my new test message"
 		var appLogTemplate = functional.NewApplicationLogTemplate()
-		appLogTemplate.LogSource = logging.InfrastructureSourceContainer
 		appLogTemplate.Timestamp = nanoTime
 		appLogTemplate.Message = message
 		appLogTemplate.Level = "default"

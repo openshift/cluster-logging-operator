@@ -3,14 +3,17 @@ package functional
 import (
 	"context"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	vectorcommon "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 
 	obsmigrations "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 
@@ -46,7 +49,7 @@ var TestAPIAdapterConfigVisitor = func(conf string) string {
 }
 
 type CollectorFramework interface {
-	DeployConfigMapForConfig(name, config, clfName, clfYaml string) error
+	DeployConfigMapForConfig(name, config, clfName, clfYaml, secretDataReaderScript string) error
 	BuildCollectorContainer(*runtime.ContainerBuilder, string) *runtime.ContainerBuilder
 	IsStarted(string) bool
 	Image() string
@@ -182,9 +185,11 @@ func (f *CollectorFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuil
 
 // Deploy the objects needed to functional Test
 func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
+	log.V(2).Info("Deploying functional framework", "namespace", f.Namespace, "name", f.Name)
 	if err := f.deploySecrets(); err != nil {
 		return err
 	}
+	secretMap := f.mapSecrets()
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	f.Forwarder.Spec, _ = obsmigrations.MigrateClusterLogForwarder(f.Forwarder.Spec)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
@@ -203,8 +208,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		log.V(2).Info("Modifying config using provided config visitor")
 		f.Conf = f.VisitConfig(f.Conf)
 	}
-
-	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, f.Forwarder.Name, string(clfYaml)); err != nil {
+	secretDataReaderScript := vectorcommon.GenerateSecretReaderScript(secretMap)
+	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, f.Forwarder.Name, string(clfYaml), secretDataReaderScript); err != nil {
 		return err
 	}
 
@@ -266,7 +271,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		WithLabels(f.Labels).
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolumeWithPermissions("entrypoint", f.Name, utils.GetPtr[int32](0755)).
-		AddConfigMapVolume("certs", certsName)
+		AddConfigMapVolume("certs", certsName).
+		AddConfigMapVolume(common.SecretDataReader, f.Name)
 	b = f.collector.BuildCollectorContainer(
 		b.AddContainer(constants.CollectorName, f.image).
 			AddEnvVar("OPENSHIFT_CLUSTER_ID", f.Name).
@@ -280,8 +286,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 
 	addSecretVolumeMountsToCollector(&f.Pod.Spec, f.Secrets)
-	// TODO: FIX ME FOR FUNCTIONAL TESTS
-	//collector.AddSecretVolumes(&f.Pod.Spec, f.Forwarder.Spec.Inputs, f.Forwarder.Spec.Outputs)
+	collector.AddSecretVolumes(&f.Pod.Spec, secretMap)
 
 	log.V(2).Info("Creating pod", "pod", f.Pod)
 	if err = f.Test.Client.Create(f.Pod); err != nil {
@@ -370,6 +375,14 @@ func (f *CollectorFunctionalFramework) deploySecrets() error {
 		}
 	}
 	return nil
+}
+
+func (f *CollectorFunctionalFramework) mapSecrets() map[string]*corev1.Secret {
+	secretMap := map[string]*corev1.Secret{}
+	for _, s := range f.Secrets {
+		secretMap[s.Name] = s
+	}
+	return secretMap
 }
 
 func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, outputs []obs.OutputSpec) error {

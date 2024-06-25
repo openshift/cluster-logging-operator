@@ -6,7 +6,9 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -239,6 +241,14 @@ func (p *PipelineBuilder) ToAzureMonitorOutput(visitors ...func(output *obs.Outp
 		output.AzureMonitor = &obs.AzureMonitor{
 			LogType: "myLogType",
 			Host:    "acme.com:3000",
+			Authentication: &obs.AzureMonitorAuthentication{
+				SharedKey: &obs.SecretKey{
+					Secret: &v1.LocalObjectReference{
+						Name: "azure-secret",
+					},
+					Key: constants.SharedKey,
+				},
+			},
 		}
 		for _, v := range visitors {
 			v(output)

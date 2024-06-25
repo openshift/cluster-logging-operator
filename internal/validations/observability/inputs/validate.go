@@ -18,7 +18,7 @@ func Validate(context internalcontext.ForwarderContext) {
 		case obs.InputTypeAudit:
 			conditions = ValidateAudit(i)
 		case obs.InputTypeReceiver:
-			conditions = ValidateReceiver(i, context.Secrets, context.ConfigMaps)
+			conditions = ValidateReceiver(i, context.Secrets, context.ConfigMaps, context.AdditionalContext)
 		}
 		results = append(results, conditions...)
 	}

@@ -19,15 +19,7 @@ import (
 // ReconcileDaemonset reconciles a daemonset specifically for the collector defined by the factory
 func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.Client, namespace string, trustedCABundle *corev1.ConfigMap, owner metav1.OwnerReference) error {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
-
-	var receiverInputs []string
-	for _, input := range f.ForwarderSpec.Inputs {
-		if input.Receiver != nil {
-			receiverInputs = append(receiverInputs, f.ResourceNames.GenerateInputServiceName(input.Name))
-		}
-	}
-
-	desired := f.NewDaemonSet(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), receiverInputs)
+	desired := f.NewDaemonSet(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile))
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.DaemonSet(er, k8sClient, desired)
 }

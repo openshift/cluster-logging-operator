@@ -113,19 +113,19 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets m
 	return factory
 }
 
-func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, receiverInputs, namespace)
+func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return ds
 }
 
-func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.Deployment {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, receiverInputs, namespace)
+func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.Deployment {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, f.ResourceNames.CommonName, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	return dpl
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID string, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string, namespace string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID string, tlsProfileSpec configv1.TLSProfileSpec, namespace string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -152,12 +152,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		)
 	}
 
-	for _, receiverInput := range receiverInputs {
-		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{Name: receiverInput, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: receiverInput}}},
-		)
-	}
-
 	secretVolumes := AddSecretVolumes(podSpec, f.Secrets)
 	configmapVolumes := AddConfigmapVolumes(podSpec, f.ConfigMaps)
 	addServiceAccountVolume := AddServiceAccountProjectedVolume(podSpec, spec.Inputs, spec.Outputs, defaultAudience)
@@ -167,7 +161,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
 	f.Visit(collector, podSpec, f.ResourceNames, namespace, f.LogLevel)
-
 	addWebIdentityForCloudwatch(collector, podSpec, spec, f.Secrets)
 
 	podSpec.Containers = []v1.Container{

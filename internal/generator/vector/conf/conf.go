@@ -93,7 +93,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		sections.Elements = append(sections.Elements, o.Elements()...)
 	}
 
-	minTlsVersion, cipherSuites := op.TLSProfileInfo(obs.OutputSpec{}, ",")
+	minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
 	return []framework.Section{
 		{
 			Global(namespace, forwarderName),

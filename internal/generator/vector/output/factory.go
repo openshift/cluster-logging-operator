@@ -22,7 +22,7 @@ import (
 )
 
 func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
-	op.SetTLSProfileOptionsFrom(o)
+	SetTLSProfileOptionsFrom(op, o)
 
 	var els []Element
 	baseID := helpers.MakeOutputID(o.Name)

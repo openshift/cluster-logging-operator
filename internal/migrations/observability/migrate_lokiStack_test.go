@@ -2,6 +2,7 @@ package observability
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -24,22 +25,24 @@ var _ = Describe("MigrateLokiStack", func() {
 	)
 
 	var (
-		spec       obs.ClusterLogForwarderSpec
+		spec       obs.ClusterLogForwarder
 		conditions []metav1.Condition
-		initClf    = func() obs.ClusterLogForwarderSpec {
-			return obs.ClusterLogForwarderSpec{
-				Outputs: []obs.OutputSpec{
-					{
-						Name: lokistackOut,
-						Type: obs.OutputTypeLokiStack,
-						LokiStack: &obs.LokiStack{
-							Target: obs.LokiStackTarget{
-								Name:      lokistackTarget,
-								Namespace: constants.OpenshiftNS,
-							},
-							Authentication: &obs.HTTPAuthentication{
-								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+		initClf    = func() obs.ClusterLogForwarder {
+			return obs.ClusterLogForwarder{
+				Spec: obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{
+						{
+							Name: lokistackOut,
+							Type: obs.OutputTypeLokiStack,
+							LokiStack: &obs.LokiStack{
+								Target: obs.LokiStackTarget{
+									Name:      lokistackTarget,
+									Namespace: constants.OpenshiftNS,
+								},
+								Authentication: &obs.HTTPAuthentication{
+									Token: &obs.BearerToken{
+										From: obs.BearerTokenFromServiceAccountToken,
+									},
 								},
 							},
 						},
@@ -52,11 +55,11 @@ var _ = Describe("MigrateLokiStack", func() {
 	DescribeTable("migrate lokistack to loki outputs/pipelines", func(expSpec obs.ClusterLogForwarderSpec, visit func(spec *obs.ClusterLogForwarderSpec)) {
 		clfSpec := initClf()
 		if visit != nil {
-			visit(&clfSpec)
+			visit(&clfSpec.Spec)
 		}
 
-		spec, conditions = MigrateLokiStack(clfSpec)
-		Expect(spec).To(Equal(expSpec))
+		spec, conditions = MigrateLokiStack(clfSpec, utils.NoOptions)
+		Expect(spec.Spec).To(Equal(expSpec))
 		Expect(conditions).To(ContainElement(
 			metav1.Condition{
 				Type:    obs.ConditionTypeMigrated,

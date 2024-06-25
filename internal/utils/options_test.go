@@ -1,4 +1,4 @@
-package framework_test
+package utils_test
 
 import (
 	. "github.com/onsi/ginkgo"

@@ -8,6 +8,7 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -141,10 +142,18 @@ func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.
 // in their usage (i.e. reserved input names)
 func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
 	log.V(4).Info("Initialize")
-	r.Forwarder.Spec, _ = obsmigrate.MigrateClusterLogForwarder(r.Forwarder.Spec)
+	r.AdditionalContext = utils.Options{}
+	migrated, _ := obsmigrate.MigrateClusterLogForwarder(*r.Forwarder, r.AdditionalContext)
+	r.Forwarder = &migrated
 
 	if r.Secrets, err = MapSecrets(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
 		return err
+	}
+
+	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](r.AdditionalContext, obsmigrate.GeneratedSecrets, []*corev1.Secret{}); found {
+		for _, secret := range generatedSecrets {
+			r.Secrets[secret.Name] = secret
+		}
 	}
 
 	if r.ConfigMaps, err = MapConfigMaps(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {

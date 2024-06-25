@@ -12,14 +12,14 @@ import (
 )
 
 // MigrateLokiStack migrates a lokistack output into appropriate loki outputs based on defined inputs
-func MigrateLokiStack(spec obs.ClusterLogForwarderSpec) (obs.ClusterLogForwarderSpec, []metav1.Condition) {
+func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) (obs.ClusterLogForwarder, []metav1.Condition) {
 	var outputs []obs.OutputSpec
 	var pipelines []obs.PipelineSpec
 	var migrationConditions []metav1.Condition
-	outputs, pipelines, migrationConditions = processForwarderPipelines(spec)
+	outputs, pipelines, migrationConditions = processForwarderPipelines(spec.Spec)
 
-	spec.Outputs = outputs
-	spec.Pipelines = pipelines
+	spec.Spec.Outputs = outputs
+	spec.Spec.Pipelines = pipelines
 
 	return spec, migrationConditions
 }

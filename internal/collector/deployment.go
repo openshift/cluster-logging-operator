@@ -19,15 +19,7 @@ import (
 // ReconcileDeployment reconciles a deployment specifically for the collector defined by the factory
 func (f *Factory) ReconcileDeployment(er record.EventRecorder, k8sClient client.Client, namespace string, trustedCABundle *corev1.ConfigMap, owner metav1.OwnerReference) error {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
-
-	var receiverInputs []string
-	for _, input := range f.ForwarderSpec.Inputs {
-		if input.Receiver != nil {
-			receiverInputs = append(receiverInputs, f.ResourceNames.GenerateInputServiceName(input.Name))
-		}
-	}
-
-	desired := f.NewDeployment(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile), receiverInputs)
+	desired := f.NewDeployment(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile))
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.Deployment(er, k8sClient, desired)
 }

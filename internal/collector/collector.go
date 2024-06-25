@@ -22,28 +22,29 @@ import (
 
 const (
 	defaultAudience                 = "openshift"
-	saTokenVolumeName               = "sa-token"
-	saTokenExpirationSecs           = 3600 //1 hour
 	clusterLoggingPriorityClassName = "system-node-critical"
 	MetricsPort                     = int32(24231)
 	MetricsPortName                 = "metrics"
-	logPods                         = "varlogpods"
-	logPodsValue                    = "/var/log/pods"
-	logJournal                      = "varlogjournal"
-	logJournalValue                 = "/var/log/journal"
-	logAudit                        = "varlogaudit"
-	logAuditValue                   = "/var/log/audit"
-	logOvn                          = "varlogovn"
-	logOvnValue                     = "/var/log/ovn"
-	logOauthapiserver               = "varlogoauthapiserver"
-	logOauthapiserverValue          = "/var/log/oauth-apiserver"
-	logOauthserver                  = "varlogoauthserver"
-	logOauthserverValue             = "/var/log/oauth-server"
-	logOpenshiftapiserver           = "varlogopenshiftapiserver"
-	logOpenshiftapiserverValue      = "/var/log/openshift-apiserver"
-	logKubeapiserver                = "varlogkubeapiserver"
-	logKubeapiserverValue           = "/var/log/kube-apiserver"
+	metricsVolumeName               = "metrics"
 	metricsVolumePath               = "/etc/collector/metrics"
+	saTokenVolumeName               = "sa-token"
+	saTokenExpirationSecs           = 3600 //1 hour
+	sourcePodsName                  = "varlogpods"
+	sourcePodsPath                  = "/var/log/pods"
+	sourceJournalName               = "varlogjournal"
+	sourceJournalPath               = "/var/log/journal"
+	sourceAuditdName                = "varlogaudit"
+	sourceAuditdPath                = "/var/log/audit"
+	sourceAuditOVNName              = "varlogovn"
+	sourceOVNPath                   = "/var/log/ovn"
+	sourceOAuthAPIServerName        = "varlogoauthapiserver"
+	sourceOAuthAPIServerPath        = "/var/log/oauth-apiserver"
+	sourceOAuthServerName           = "varlogoauthserver"
+	sourceOAuthServerPath           = "/var/log/oauth-server"
+	sourceOpenshiftAPIServerName    = "varlogopenshiftapiserver"
+	sourceOpenshiftAPIServerPath    = "/var/log/openshift-apiserver"
+	sourceKubeAPIServerName         = "varlogkubeapiserver"
+	sourceKubeAPIServerPath         = "/var/log/kube-apiserver"
 	tmpVolumeName                   = "tmp"
 	tmpPath                         = "/tmp"
 )
@@ -133,21 +134,21 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Volumes: []v1.Volume{
-			{Name: f.ResourceNames.SecretMetrics, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 	}
 
 	if f.isDaemonset {
 		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
-			v1.Volume{Name: logJournal, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logJournalValue}}},
-			v1.Volume{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
-			v1.Volume{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
-			v1.Volume{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
-			v1.Volume{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
-			v1.Volume{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
-			v1.Volume{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
+			v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}},
+			v1.Volume{Name: sourceJournalName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceJournalPath}}},
+			v1.Volume{Name: sourceAuditdName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceAuditdPath}}},
+			v1.Volume{Name: sourceAuditOVNName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOVNPath}}},
+			v1.Volume{Name: sourceOAuthAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthAPIServerPath}}},
+			v1.Volume{Name: sourceOAuthServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthServerPath}}},
+			v1.Volume{Name: sourceOpenshiftAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOpenshiftAPIServerPath}}},
+			v1.Volume{Name: sourceKubeAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceKubeAPIServerPath}}},
 		)
 	}
 
@@ -198,28 +199,28 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
 
 	collector.VolumeMounts = []v1.VolumeMount{
-		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},
+		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
 
 	if f.isDaemonset {
 		if inputs.HasContainerSource() {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logPods, ReadOnly: true, MountPath: logPodsValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourcePodsName, ReadOnly: true, MountPath: sourcePodsPath})
 		}
 		if inputs.HasJournalSource() {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logJournal, ReadOnly: true, MountPath: logJournalValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceJournalName, ReadOnly: true, MountPath: sourceJournalPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceAuditd) {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logAuditValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditdName, ReadOnly: true, MountPath: sourceAuditdPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceKube) {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logKubeapiserverValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceKubeAPIServerName, ReadOnly: true, MountPath: sourceKubeAPIServerPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceOpenShift) {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logOpenshiftapiserverValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOpenshiftAPIServerName, ReadOnly: true, MountPath: sourceOpenshiftAPIServerPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceOVN) {
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logOvnValue})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditOVNName, ReadOnly: true, MountPath: sourceOVNPath})
 		}
 		AddSecurityContextTo(collector)
 	}

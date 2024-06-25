@@ -19,7 +19,7 @@ var _ = Describe("Options#TLSProfileInfo", func() {
 	Context("when a cluster profile is absent", func() {
 
 		It("should use the defaults when clf profile is nil and output.TLS is nil", func() {
-			minTLS, ciphers := options.TLSProfileInfo(obs.OutputSpec{}, ",")
+			minTLS, ciphers := TLSProfileInfo(options, obs.OutputSpec{}, ",")
 			Expect(minTLS).To(BeEquivalentTo(tls.DefaultMinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(tls.DefaultTLSCiphers, ",")))
 		})
@@ -50,14 +50,14 @@ var _ = Describe("Options#TLSProfileInfo", func() {
 		})
 
 		It("should prefer the output profile over the cluster profile", func() {
-			minTLS, ciphers := options.TLSProfileInfo(outputSpec, ",")
+			minTLS, ciphers := TLSProfileInfo(options, outputSpec, ",")
 			spec := configv1.TLSProfiles[outputProfile.Type]
 			Expect(minTLS).To(BeEquivalentTo(spec.MinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(spec.Ciphers, ",")))
 		})
 
 		It("should prefer the cluster profile when the forwarder and output.TLS are nil", func() {
-			minTLS, ciphers := options.TLSProfileInfo(obs.OutputSpec{}, ",")
+			minTLS, ciphers := TLSProfileInfo(options, obs.OutputSpec{}, ",")
 			Expect(minTLS).To(BeEquivalentTo(clusterMinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(clusterCiphers, ",")))
 		})

@@ -191,7 +191,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 	secretMap := f.mapSecrets()
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
-	f.Forwarder.Spec, _ = obsmigrations.MigrateClusterLogForwarder(f.Forwarder.Spec)
+	migrated, _ := obsmigrations.MigrateClusterLogForwarder(*f.Forwarder, utils.NoOptions)
+	f.Forwarder = &migrated
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()

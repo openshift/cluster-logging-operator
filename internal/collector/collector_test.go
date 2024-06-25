@@ -72,7 +72,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					},
 				},
 			},
-		}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+		}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -103,7 +103,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 			logLevelDebug := "debug"
 			factory.LogLevel = logLevelDebug
 
-			podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 			collector = podSpec.Containers[0]
 			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
 		})
@@ -151,7 +151,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 						providedToleration,
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -172,7 +172,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 						"foo": "bar",
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
@@ -205,7 +205,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				collector = podSpec.Containers[0]
 
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "http_proxy", Value: httpproxy}))
@@ -254,7 +254,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 				Data: map[string]string{
 					constants.TrustedCABundleKey: caBundle,
 				},
-			}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 
 			collector = podSpec.Containers[0]
 			Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
@@ -349,7 +349,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 			ResourceNames: coreFactory.ResourceNames(*obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName, runtime.Initialize)),
 			isDaemonset:   false,
 		}
-		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
 	})
 	Describe("when creating the collector container", func() {
@@ -395,7 +395,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 						providedToleration,
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				expTolerations := append(constants.DefaultTolerations(), providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -416,7 +416,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 						"foo": "bar",
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
@@ -449,7 +449,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				collector = podSpec.Containers[0]
 
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "http_proxy", Value: httpproxy}))
@@ -501,7 +501,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+				}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 
 				collector = podSpec.Containers[0]
 				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
@@ -651,7 +651,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 			podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
 				Outputs:   outputs,
 				Pipelines: pipelines,
-			}, "1234", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 			collector := podSpec.Containers[0]
 
 			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{

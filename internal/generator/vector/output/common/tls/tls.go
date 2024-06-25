@@ -3,17 +3,21 @@ package tls
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	typehelpers "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 const (
-	Component = "component"
+	Component      = "component"
+	IncludeEnabled = "IncludeEnabled"
 )
 
 type TLSConf struct {
-	Component          string
-	ID                 string
+	Component string
+	ID        string
+	// Enabled add enabled config (not required for all conf)
+	Enabled            typehelpers.OptionalPair
 	NeedsEnabled       bool
 	InsecureSkipVerify bool
 	TlsMinVersion      string
@@ -36,6 +40,9 @@ func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framewo
 	}
 	if comp, found := framework.HasOption(Component, options); found {
 		conf.Component = comp.(string)
+	}
+	if _, found := framework.HasOption(IncludeEnabled, options); found && spec != nil {
+		conf.Enabled = typehelpers.NewOptionalPair("enabled", true)
 	}
 
 	if spec != nil {
@@ -91,6 +98,7 @@ func (t TLSConf) Template() string {
 	return `
 {{define "vectorTLS" -}}
 [{{.Component}}.{{.ID}}.tls]
+{{ .Enabled }}
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

@@ -2,6 +2,7 @@ package context
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	kubernetes "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -30,4 +31,7 @@ type ForwarderContext struct {
 
 	// ClusterVersion is the version of the cluster on which the operator is deployed
 	ClusterVersion string
+
+	// AdditionalContext are additional context options to take pass along during reconciliation
+	AdditionalContext utils.Options
 }

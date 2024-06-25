@@ -618,8 +618,12 @@ spec:
                           minimum: 1024
                           type: integer
                         tls:
-                          description: TLS contains settings for controlling options
-                            of TLS connections.
+                          description: "TLS contains settings for controlling options
+                            of TLS connections. \n The operator will request certificates
+                            from the cluster's cert signing service when TLS is not
+                            defined. The certificates are injected into a secret named
+                            \"<clusterlogforwarder.name>-<input.name>\" which is mounted
+                            into the collector."
                           properties:
                             ca:
                               description: CA can be used to specify a custom list

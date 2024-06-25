@@ -246,6 +246,10 @@ type ReceiverSpec struct {
 
 	// TLS contains settings for controlling options of TLS connections.
 	//
+	// The operator will request certificates from the cluster's cert signing service when TLS is not defined.
+	// The certificates are injected into a secret named "<clusterlogforwarder.name>-<input.name>" which is mounted into
+	// the collector. The collector is configured to use the public and private key provided by the service
+	//
 	// +kubebuilder:validation:Optional
 	TLS *InputTLSSpec `json:"tls,omitempty"`
 

@@ -20,6 +20,7 @@ func GetOutputSecret(o logging.OutputSpec, secrets map[string]*corev1.Secret) *c
 type Secrets map[string]*corev1.Secret
 
 func (s Secrets) Names() (names []string) {
+
 	for name := range s {
 		names = append(names, name)
 	}

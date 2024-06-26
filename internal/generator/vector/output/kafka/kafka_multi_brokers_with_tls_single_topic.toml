@@ -9,6 +9,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"

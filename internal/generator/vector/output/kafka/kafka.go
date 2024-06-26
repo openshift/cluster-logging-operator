@@ -64,7 +64,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	if o.TLS != nil {
 		skipVerify := o.TLS.InsecureSkipVerify
 		o.TLS.InsecureSkipVerify = false
-		tlsConfig = []Element{tls.New(id, o.TLS, secrets, op)}
+		tlsConfig = []Element{tls.New(id, o.TLS, secrets, op, Option{tls.IncludeEnabled, ""})}
 		if skipVerify {
 			tlsConfig = append(tlsConfig, InsecureTLS{
 				ComponentID: id,

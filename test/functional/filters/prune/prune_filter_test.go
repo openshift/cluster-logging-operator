@@ -2,7 +2,8 @@ package prune
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
@@ -35,19 +36,17 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 	Describe("when prune filter is spec'd", func() {
 		It("should prune logs of fields not defined in `NotIn` first and then prune fields defined in `In`", func() {
-			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+			f = functional.NewCollectorFunctionalFramework()
 			specialCharLabel := "foo-bar/baz"
 			f.Labels = map[string]string{specialCharLabel: "specialCharLabel"}
 
 			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
-				FromInput(logging.InputNameApplication).
-				WithFilterWithVisitor(pruneFilterName, func(spec *logging.FilterSpec) {
-					spec.Type = logging.FilterPrune
-					spec.FilterTypeSpec = logging.FilterTypeSpec{
-						PruneFilterSpec: &logging.PruneFilterSpec{
-							In:    []string{".kubernetes.namespace_name", ".kubernetes.container_name", `.kubernetes.labels."foo-bar/baz"`},
-							NotIn: []string{".log_type", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
-						},
+				FromInput(obs.InputTypeApplication).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						In:    []string{".kubernetes.namespace_name", ".kubernetes.container_name", `.kubernetes.labels."foo-bar/baz"`},
+						NotIn: []string{".log_type", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
 					}
 				}).
 				ToElasticSearchOutput()
@@ -56,9 +55,9 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			msg := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), "my error message")
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
-			logs, err := f.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeElasticsearch)
+			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
 
 			log := logs[0]
 
@@ -69,8 +68,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Timestamp).ToNot(BeNil())
 			Expect(log.Kubernetes.Annotations).ToNot(BeNil())
 			Expect(log.Kubernetes.PodName).ToNot(BeNil())
-			Expect(log.Kubernetes.FlatLabels).To(HaveLen(1))
-			Expect(log.Kubernetes.FlatLabels).ToNot(ContainElement("foo-bar_baz=specialCharLabel"))
+			Expect(log.Kubernetes.Labels).ToNot(ContainElement("foo-bar_baz"))
 
 			Expect(log.Kubernetes.ContainerName).To(BeEmpty())
 			Expect(log.Kubernetes.NamespaceName).To(BeEmpty())
@@ -80,23 +78,23 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 	})
 
 	Context("minimal set of fields for each output", func() {
+
 		var (
 			pipelineBuilder *testruntime.PipelineBuilder
 			secret          *v1.Secret
 
 			sharedKey  = rand.Word(16)
 			customerId = strings.ToLower(string(rand.Word(16)))
+			secretKey  = internalobs.NewSecretKey("hecToken", "do-not-tell")
 		)
 
 		BeforeEach(func() {
-			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+			f = functional.NewCollectorFunctionalFramework()
 			pipelineBuilder = testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
-				FromInput(logging.InputNameApplication).
-				WithFilterWithVisitor(pruneFilterName, func(spec *logging.FilterSpec) {
-					spec.Type = logging.FilterPrune
-					spec.FilterTypeSpec = logging.FilterTypeSpec{
-						PruneFilterSpec: &logging.PruneFilterSpec{NotIn: []string{".log_type", ".message"}},
-					}
+				FromInput(obs.InputTypeApplication).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []string{".log_type", ".message"}}
 				})
 		})
 
@@ -107,16 +105,16 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
-			logs, err := f.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeElasticsearch)
+			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
 		})
 
 		It("should send to Splunk with only .log_type and .message", func() {
-			pipelineBuilder.ToSplunkOutput()
-			secret = runtime.NewSecret(f.Namespace, "splunk-secret",
+			pipelineBuilder.ToSplunkOutput(*secretKey)
+			secret = runtime.NewSecret(f.Namespace, secretKey.Secret.Name,
 				map[string][]byte{
-					"hecToken": []byte(string(functional.HecToken)),
+					secretKey.Key: []byte(functional.HecToken),
 				},
 			)
 			f.Secrets = append(f.Secrets, secret)
@@ -136,10 +134,14 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 		It("should send to Loki with only .log_type and .message", func() {
 			l := loki.NewReceiver(f.Namespace, "loki-server")
 			Expect(l.Create(f.Test.Client)).To(Succeed())
-			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Type = logging.OutputTypeLoki
-				spec.URL = l.InternalURL("").String()
-			}, logging.OutputTypeLoki)
+			pipelineBuilder.ToOutputWithVisitor(func(spec *obs.OutputSpec) {
+				spec.Type = obs.OutputTypeLoki
+				spec.Loki = &obs.Loki{
+					URLSpec: obs.URLSpec{
+						l.InternalURL("").String(),
+					},
+				}
+			}, string(obs.OutputTypeLoki))
 
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
@@ -157,9 +159,9 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 			// Read line from Kafka output
-			logs, err := f.ReadApplicationLogsFrom(logging.OutputTypeKafka)
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeKafka, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeKafka)
+			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeKafka))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeKafka, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeKafka)
 		})
 
 		It("should send to HTTP with only .log_type and .message", func() {
@@ -169,23 +171,25 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
-			raw, err := f.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
+			raw, err := f.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs for type")
 			Expect(raw).ToNot(BeEmpty())
 		})
 
 		It("should send to Syslog with only .log_type and .message", func() {
-			pipelineBuilder.ToSyslogOutput()
+			pipelineBuilder.ToSyslogOutput(obs.SyslogRFC5424)
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
-			outputlogs, err := f.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := f.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 		})
 
 		It("should send to AzureMonitor with only .log_type and .message", func() {
-			pipelineBuilder.ToAzureMonitorOutputWithCuId(customerId)
+			pipelineBuilder.ToAzureMonitorOutput(func(output *obs.OutputSpec) {
+				output.AzureMonitor.CustomerId = customerId
+			})
 
 			secret := runtime.NewSecret(f.Namespace, azuremonitor.AzureSecretName,
 				map[string][]byte{
@@ -209,12 +213,28 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 		})
 
 		It("should send to CloudWatch with only .log_type and .message", func() {
-			pipelineBuilder.ToCloudwatchOutput()
+			pipelineBuilder.ToCloudwatchOutput(obs.CloudwatchAuthentication{
+				Type: obs.CloudwatchAuthTypeAccessKey,
+				AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+					KeyID: &obs.SecretKey{
+						Key: constants.AWSAccessKeyID,
+						Secret: &v1.LocalObjectReference{
+							Name: functional.CloudwatchSecret,
+						},
+					},
+					KeySecret: &obs.SecretKey{
+						Key: constants.AWSSecretAccessKey,
+						Secret: &v1.LocalObjectReference{
+							Name: functional.CloudwatchSecret,
+						},
+					},
+				},
+			})
 
 			secret = runtime.NewSecret(f.Namespace, functional.CloudwatchSecret,
 				map[string][]byte{
-					"aws_access_key_id":     []byte(functional.AwsAccessKeyID),
-					"aws_secret_access_key": []byte(functional.AwsSecretAccessKey),
+					constants.AWSAccessKeyID:     []byte(functional.AwsAccessKeyID),
+					constants.AWSSecretAccessKey: []byte(functional.AwsSecretAccessKey),
 				},
 			)
 
@@ -228,7 +248,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 			time.Sleep(10 * time.Second)
 
-			logs, err := f.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			logs, err := f.ReadLogsFromCloudwatch(string(obs.InputTypeApplication))
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(1))
 		})

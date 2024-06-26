@@ -4,13 +4,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -31,41 +31,25 @@ var _ = Describe("API audit filter", func() {
 	)
 
 	BeforeEach(func() {
-		f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		f = functional.NewCollectorFunctionalFramework()
 		l = loki.NewReceiver(f.Namespace, "loki-server")
 		Expect(l.Create(f.Test.Client)).To(Succeed())
 
 		// Set up the common template forwarder configuration.
-		f.Forwarder.Spec.Outputs = append(f.Forwarder.Spec.Outputs,
-			logging.OutputSpec{
-				Name:           logging.OutputTypeLoki,
-				Type:           logging.OutputTypeLoki,
-				URL:            l.InternalURL("").String(),
-				OutputTypeSpec: logging.OutputTypeSpec{Loki: &logging.Loki{}},
-			})
-		f.Forwarder.Spec.Filters = []logging.FilterSpec{
-			{
-				Name: "my-audit",
-				Type: loggingv1.FilterKubeAPIAudit,
-				FilterTypeSpec: loggingv1.FilterTypeSpec{
-					KubeAPIAudit: &loggingv1.KubeAPIAudit{
-						Rules: []auditv1.PolicyRule{
-							{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
-							{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other get requests
-							{Level: auditv1.LevelRequest, Verbs: []string{"patch"}},              // Request data for patch requests
-							{Level: auditv1.LevelMetadata},                                       // Metadata for everything else.
-						},
-					},
+		obstestruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+			FromInput(obs.InputTypeAudit, func(spec *obs.InputSpec) {
+				spec.Audit.Sources = []obs.AuditSource{obs.AuditSourceKube}
+			}).WithFilter("my-audit", func(spec *obs.FilterSpec) {
+			spec.Type = obs.FilterTypeKubeAPIAudit
+			spec.KubeAPIAudit = &obs.KubeAPIAudit{
+				Rules: []auditv1.PolicyRule{
+					{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
+					{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other get requests
+					{Level: auditv1.LevelRequest, Verbs: []string{"patch"}},              // Request data for patch requests
+					{Level: auditv1.LevelMetadata},                                       // Metadata for everything else.
 				},
-			},
-		}
-		f.Forwarder.Spec.Pipelines = append(f.Forwarder.Spec.Pipelines,
-			logging.PipelineSpec{
-				Name:       "functional-loki-pipeline_0_",
-				FilterRefs: []string{"my-audit"},
-				OutputRefs: []string{logging.OutputTypeLoki},
-				InputRefs:  []string{logging.InputNameAudit},
-			})
+			}
+		}).ToLokiOutput(*l.InternalURL(""))
 	})
 
 	AfterEach(func() {

@@ -240,6 +240,7 @@ test-functional:
 	go test -race \
 		./test/functional/filters/apiaudit/... \
 		./test/functional/filters/prune \
+		./test/functional/metrics \
 		./test/functional/normalization \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \

@@ -178,6 +178,7 @@ address = "[::]:24231"
 default_namespace = "collector"
 
 [sinks.prometheus_output.tls]
+enabled = true
 key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
 min_tls_version = "VersionTLS12"

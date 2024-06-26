@@ -238,6 +238,7 @@ test-functional:
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
+		./test/functional/filters/apiaudit/... \
 		./test/functional/filters/prune \
 		./test/functional/normalization \
 		./test/functional/outputs/azuremonitor \

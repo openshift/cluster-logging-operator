@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"net/url"
 	"os"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -178,6 +179,22 @@ func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.CloudwatchAuthentication, 
 		}
 	}
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeCloudwatch))
+}
+
+func (p *PipelineBuilder) ToLokiOutput(lokiURL url.URL, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+	v := func(output *obs.OutputSpec) {
+		output.Name = string(obs.OutputTypeLoki)
+		output.Type = obs.OutputTypeLoki
+		output.Loki = &obs.Loki{
+			URLSpec: obs.URLSpec{
+				URL: lokiURL.String(),
+			},
+		}
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(v, string(obs.OutputTypeLoki))
 }
 
 func (p *PipelineBuilder) ToSplunkOutput(hecTokenSecret obs.SecretKey, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {

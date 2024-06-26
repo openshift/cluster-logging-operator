@@ -1870,6 +1870,142 @@ spec:
                     name:
                       description: Name used to refer to the output from a `pipeline`.
                       type: string
+                    otlp:
+                      description: OTLP defines configuration for sending logs via
+                        OTLP using OTEL scemantic conventions https://opentelemetry.io/docs/specs/otlp/#otlphttp
+                      properties:
+                        authentication:
+                          description: Authentication sets credentials for authenticating
+                            the requests.
+                          properties:
+                            password:
+                              description: Password to use for authenticating requests.
+                              nullable: true
+                              properties:
+                                key:
+                                  description: Name of the key used to get the value
+                                    from the referenced Secret.
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              required:
+                              - key
+                              - secret
+                              type: object
+                            token:
+                              description: Token specifies a bearer token to be used
+                                for authenticating requests.
+                              nullable: true
+                              properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccountToken
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    key:
+                                      description: Name of the key used to get the
+                                        value from the referenced Secret.
+                                      type: string
+                                    name:
+                                      description: Name of secret
+                                      type: string
+                                  required:
+                                  - name
+                                  type: object
+                              required:
+                              - from
+                              type: object
+                            username:
+                              description: Username to use for authenticating requests.
+                              nullable: true
+                              properties:
+                                key:
+                                  description: Name of the key used to get the value
+                                    from the referenced Secret.
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    name:
+                                      description: 'Name of the referent. More info:
+                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                        TODO: Add other useful fields. apiVersion,
+                                        kind, uid?'
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              required:
+                              - key
+                              - secret
+                              type: object
+                          type: object
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          nullable: true
+                          properties:
+                            compression:
+                              default: gzip
+                              description: Compression causes data to be compressed
+                                before sending over the network. It is an error if
+                                the compression type is not supported by the output.
+                              enum:
+                              - gzip
+                              - none
+                              type: string
+                            delivery:
+                              description: DeliveryMode sets the delivery mode for
+                                log forwarding.
+                              enum:
+                              - atLeastOnce
+                              - atMostOnce
+                              type: string
+                            maxRetryDuration:
+                              description: MaxRetryDuration is the maximum time to
+                                wait between retry attempts after a delivery failure.
+                              format: int64
+                              type: integer
+                            maxWrite:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: MaxWrite limits the maximum payload in
+                                terms of bytes of a single "send" to the output.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            minRetryDuration:
+                              description: MinRetryDuration is the minimum time to
+                                wait between attempts to retry after delivery a failure.
+                              format: int64
+                              type: integer
+                          type: object
+                        url:
+                          description: "URL to send log records to. \n An absolute
+                            URL, with a valid http scheme. Must terminate with `/v1/logs`
+                            \n Basic TLS is enabled if the URL scheme requires it
+                            (for example 'https'). The 'username@password' part of
+                            `url` is ignored."
+                          pattern: ^(https?):\/\/\S+\/v1\/logs$
+                          type: string
+                      required:
+                      - url
+                      type: object
                     rateLimit:
                       description: Limit imposes a limit in records-per-second on
                         the total aggregate rate of logs forwarded to this output
@@ -2269,6 +2405,7 @@ spec:
                       - googleCloudLogging
                       - splunk
                       - syslog
+                      - otlp
                       type: string
                   required:
                   - name

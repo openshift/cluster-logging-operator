@@ -310,18 +310,6 @@ type Http struct {
 	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
 	// +optional
 	Method string `json:"method,omitempty"`
-
-	// Schema enables configuration of the way log records are normalized.
-	//
-	// Supported models: viaq(default), opentelemetry
-	//
-	// Logs are converted to the Open Telemetry specification according to schema value
-	//
-	// +kubebuilder:validation:Enum:=opentelemetry;viaq
-	// +kubebuilder:default:viaq
-	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
-	Schema string `json:"-"`
 }
 
 type AzureMonitor struct {

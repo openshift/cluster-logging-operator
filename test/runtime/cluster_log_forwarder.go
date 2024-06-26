@@ -152,24 +152,6 @@ func (p *PipelineBuilder) ToHttpOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeHttp)
 }
 
-func (p *PipelineBuilder) ToHttpOutputWithSchema(schema string) *ClusterLogForwarderBuilder {
-	httpVisitor := func(output *logging.OutputSpec) {
-		output.Name = logging.OutputTypeHttp
-		output.Type = logging.OutputTypeHttp
-		output.URL = "http://localhost:8090"
-		output.OutputTypeSpec = logging.OutputTypeSpec{
-			Http: &logging.Http{
-				Headers: map[string]string{
-					"k1": "v1",
-				},
-				Method: "POST",
-				Schema: schema,
-			},
-		}
-	}
-	return p.ToOutputWithVisitor(httpVisitor, logging.OutputTypeHttp)
-}
-
 func (p *PipelineBuilder) ToAzureMonitorOutputWithCuId(cuId string) *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
 		output.AzureMonitor.CustomerId = cuId

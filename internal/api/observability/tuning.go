@@ -31,6 +31,11 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 			t.BaseOutputTuningSpec = spec.HTTP.Tuning.BaseOutputTuningSpec
 			t.Compression = spec.HTTP.Tuning.Compression
 		}
+	case obs.OutputTypeOTLP:
+		if spec.OTLP != nil && spec.OTLP.Tuning != nil {
+			t.BaseOutputTuningSpec = spec.OTLP.Tuning.BaseOutputTuningSpec // TODO: test
+			t.Compression = spec.OTLP.Tuning.Compression
+		}
 	case obs.OutputTypeKafka:
 		if spec.Kafka != nil && spec.Kafka.Tuning != nil {
 			t.Compression = spec.Kafka.Tuning.Compression

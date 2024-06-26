@@ -5,10 +5,6 @@ const (
 
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 
-	// AnnotationEnableSchema is the annotation to enable alternate output formats of logs.
-	// Currently only viaq & opentelemetry are supported
-	AnnotationEnableSchema = "logging.openshift.io/enableschema"
-
 	// AnnotationEnableCollectorAsDeployment is to enable deploying the collector as a deployment
 	// instead of a daemonset to support the HCP use case of using the collector for collecting
 	// audit logs via a webhook.

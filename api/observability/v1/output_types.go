@@ -23,7 +23,7 @@ import (
 
 // OutputType is used to define the type of output to be created.
 //
-// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog
+// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog;otlp
 type OutputType string
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
@@ -38,6 +38,7 @@ const (
 	OutputTypeLokiStack          OutputType = "lokiStack"
 	OutputTypeSplunk             OutputType = "splunk"
 	OutputTypeSyslog             OutputType = "syslog"
+	OutputTypeOTLP               OutputType = "otlp"
 )
 
 var (
@@ -53,6 +54,7 @@ var (
 		OutputTypeLokiStack,
 		OutputTypeSplunk,
 		OutputTypeSyslog,
+		OutputTypeOTLP,
 	}
 )
 
@@ -110,6 +112,9 @@ type OutputSpec struct {
 
 	// +kubebuilder:validation:Optional
 	Syslog *Syslog `json:"syslog,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	OTLP *OTLP `json:"otlp,omitempty"`
 }
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
@@ -777,4 +782,40 @@ type Syslog struct {
 	//
 	// +kubebuilder:validation:Optional
 	MsgID string `json:"msgID,omitempty"`
+}
+
+type OTLPTuningSpec struct {
+	BaseOutputTuningSpec `json:",inline"`
+
+	// Compression causes data to be compressed before sending over the network.
+	// It is an error if the compression type is not supported by the output.
+	//
+	// +kubebuilder:validation:Enum:=gzip;none
+	// +kubebuilder:default:=gzip
+	Compression string `json:"compression,omitempty"`
+}
+
+// OTLP defines configuration for sending logs via OTLP using OTEL semantic conventions
+// https://opentelemetry.io/docs/specs/otlp/#otlphttp
+type OTLP struct {
+	// URL to send log records to.
+	//
+	// An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+	//
+	// Basic TLS is enabled if the URL scheme requires it (for example 'https').
+	// The 'username@password' part of `url` is ignored.
+	//
+	// +kubebuilder:validation:Pattern:=`^(https?):\/\/\S+\/v1\/logs$`
+	URL string `json:"url"`
+
+	// Authentication sets credentials for authenticating the requests.
+	//
+	// +kubebuilder:validation:Optional
+	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	Tuning *OTLPTuningSpec `json:"tuning,omitempty"`
 }

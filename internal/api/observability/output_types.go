@@ -115,6 +115,10 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 		if o.HTTP != nil && o.HTTP.Authentication != nil {
 			return httpAuthKeys(o.HTTP.Authentication)
 		}
+	case obsv1.OutputTypeOTLP:
+		if o.OTLP != nil && o.OTLP.Authentication != nil {
+			return httpAuthKeys(o.OTLP.Authentication)
+		}
 	case obsv1.OutputTypeKafka:
 		if o.Kafka != nil && o.Kafka.Authentication != nil {
 			a := o.Kafka.Authentication

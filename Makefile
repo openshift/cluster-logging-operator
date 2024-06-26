@@ -242,6 +242,7 @@ test-functional:
 		./test/functional/filters/multilineexception \
 		./test/functional/filters/prune \
 		./test/functional/metrics \
+		./test/functional/filters/drop \
 		./test/functional/normalization \
 		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \

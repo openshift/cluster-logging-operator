@@ -1,14 +1,14 @@
 package drop
 
 import (
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
@@ -26,32 +26,30 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 
 	Describe("when drop filter is spec'd", func() {
 		It("should drop logs that have `error` in its message OR logs with messages that doesn't include `information` AND includes `debug`", func() {
-			f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+			f = functional.NewCollectorFunctionalFramework()
 
 			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
-				FromInput(logging.InputNameApplication).
-				WithFilterWithVisitor(dropFilterName, func(spec *logging.FilterSpec) {
-					spec.Type = logging.FilterDrop
-					spec.FilterTypeSpec = logging.FilterTypeSpec{
-						DropTestsSpec: &[]logging.DropTest{
-							{
-								DropConditions: []logging.DropCondition{
-									{
-										Field:   ".message",
-										Matches: "error",
-									},
+				FromInput(obs.InputTypeApplication).
+				WithFilter(dropFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypeDrop
+					spec.DropTestsSpec = []obs.DropTest{
+						{
+							DropConditions: []obs.DropCondition{
+								{
+									Field:   ".message",
+									Matches: "error",
 								},
 							},
-							{
-								DropConditions: []logging.DropCondition{
-									{
-										Field:      ".message",
-										NotMatches: "information",
-									},
-									{
-										Field:   ".message",
-										Matches: "debug",
-									},
+						},
+						{
+							DropConditions: []obs.DropCondition{
+								{
+									Field:      ".message",
+									NotMatches: "information",
+								},
+								{
+									Field:   ".message",
+									Matches: "debug",
 								},
 							},
 						},
@@ -68,9 +66,9 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			Expect(f.WriteMessagesToApplicationLog(msg3, 1)).To(BeNil())
 			Expect(f.WritesApplicationLogs(5)).To(Succeed())
 
-			logs, err := f.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeElasticsearch)
+			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
 			hasInfoMessage := false
 			for _, msg := range logs {
 				Expect(msg.ViaQCommon.Message).ToNot(Equal("my error message"))

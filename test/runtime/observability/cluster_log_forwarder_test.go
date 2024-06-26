@@ -24,7 +24,7 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
 			pipelineBuilder := NewClusterLogForwarderBuilder(forwarder).
 				FromInput(logging.InputTypeApplication)
 			pipelineBuilder.ToElasticSearchOutput()
-			pipelineBuilder.ToSyslogOutput()
+			pipelineBuilder.ToSyslogOutput(logging.SyslogRFC5424)
 
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
 - application: {}
@@ -38,6 +38,7 @@ outputs:
   type: elasticsearch
 - name: syslog
   syslog:
+    rfc: RFC5424
     url: tcp://0.0.0.0:24224
   type: syslog
 pipelines:

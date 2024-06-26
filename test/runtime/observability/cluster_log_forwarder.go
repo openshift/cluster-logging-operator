@@ -146,11 +146,12 @@ func (p *PipelineBuilder) ToElasticSearchOutput(visitors ...func(output *obs.Out
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeElasticsearch))
 }
 
-func (p *PipelineBuilder) ToSyslogOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToSyslogOutput(rfc obs.SyslogRFCType, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeSyslog)
 		output.Type = obs.OutputTypeSyslog
 		output.Syslog = &obs.Syslog{
+			RFC: rfc,
 			URLSpec: obs.URLSpec{
 				URL: "tcp://0.0.0.0:24224",
 			},
@@ -159,7 +160,7 @@ func (p *PipelineBuilder) ToSyslogOutput(visitors ...func(output *obs.OutputSpec
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeSyslog))
 }
 
-func (p *PipelineBuilder) ToCloudwatchOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.CloudwatchAuthentication, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeCloudwatch)
 		output.Type = obs.OutputTypeCloudwatch
@@ -167,9 +168,10 @@ func (p *PipelineBuilder) ToCloudwatchOutput(visitors ...func(output *obs.Output
 			InsecureSkipVerify: true,
 		}
 		output.Cloudwatch = &obs.Cloudwatch{
-			URL:       "https://localhost:5000",
-			Region:    "us-east-1",
-			GroupName: "group-prefix.{{.log_type}}",
+			URL:            "https://localhost:5000",
+			Region:         "us-east-1",
+			GroupName:      "group-prefix.{{.log_type}}",
+			Authentication: &auth,
 		}
 		for _, v := range visitors {
 			v(output)
@@ -178,7 +180,7 @@ func (p *PipelineBuilder) ToCloudwatchOutput(visitors ...func(output *obs.Output
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeCloudwatch))
 }
 
-func (p *PipelineBuilder) ToSplunkOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToSplunkOutput(hecTokenSecret obs.SecretKey, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeSplunk)
 		output.Type = obs.OutputTypeSplunk
@@ -188,6 +190,9 @@ func (p *PipelineBuilder) ToSplunkOutput(visitors ...func(output *obs.OutputSpec
 			},
 			IndexSpec: obs.IndexSpec{
 				Index: "{{.log_type}}",
+			},
+			Authentication: &obs.SplunkAuthentication{
+				Token: &hecTokenSecret,
 			},
 		}
 		for _, v := range visitors {
@@ -206,6 +211,28 @@ func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *obs.OutputSpec)
 				URL: "https://localhost:9093",
 			},
 			Topic: kafka.AppLogsTopic,
+		}
+		output.TLS = &obs.OutputTLSSpec{
+			TLSSpec: obs.TLSSpec{
+				Key: &obs.SecretKey{
+					Key: constants.ClientPrivateKey,
+					Secret: &v1.LocalObjectReference{
+						Name: kafka.DeploymentName,
+					},
+				},
+				Certificate: &obs.ConfigMapOrSecretKey{
+					Key: constants.ClientCertKey,
+					Secret: &v1.LocalObjectReference{
+						Name: kafka.DeploymentName,
+					},
+				},
+				CA: &obs.ConfigMapOrSecretKey{
+					Key: constants.TrustedCABundleKey,
+					Secret: &v1.LocalObjectReference{
+						Name: kafka.DeploymentName,
+					},
+				},
+			},
 		}
 		for _, v := range visitors {
 			v(output)

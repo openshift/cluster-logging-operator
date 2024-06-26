@@ -3,7 +3,7 @@ package observability_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,20 +11,54 @@ import (
 
 var _ = Describe("ClustLogForwarderBuilder", func() {
 	var (
-		forwarder *logging.ClusterLogForwarder
+		forwarder *obs.ClusterLogForwarder
 	)
 
 	BeforeEach(func() {
-		forwarder = &logging.ClusterLogForwarder{}
+		forwarder = &obs.ClusterLogForwarder{}
 	})
 
 	Context("#FromInput", func() {
 
+		It("should correctly build with visitors", func() {
+			NewClusterLogForwarderBuilder(forwarder).
+				FromInput(obs.InputTypeApplication, func(spec *obs.InputSpec) {
+					spec.Name = "custom-app"
+					spec.Application.Tuning = &obs.ContainerInputTuningSpec{
+						RateLimitPerContainer: &obs.LimitSpec{
+							MaxRecordsPerSecond: 10,
+						},
+					}
+				}).ToElasticSearchOutput()
+
+			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
+- application:
+    tuning:
+      rateLimitPerContainer:
+        maxRecordsPerSecond: 10
+  name: custom-app
+  type: application
+outputs:
+- name: elasticsearch
+  elasticsearch:
+    index: '{{.log_type}}-write'
+    url: http://0.0.0.0:9200
+  type: elasticsearch
+pipelines:
+- inputRefs:
+  - custom-app
+  name: forward-pipeline
+  outputRefs:
+  - elasticsearch
+serviceAccount:
+  name: ""
+`))
+		})
 		It("should correctly build to multiple outputs", func() {
 			pipelineBuilder := NewClusterLogForwarderBuilder(forwarder).
-				FromInput(logging.InputTypeApplication)
+				FromInput(obs.InputTypeApplication)
 			pipelineBuilder.ToElasticSearchOutput()
-			pipelineBuilder.ToSyslogOutput(logging.SyslogRFC5424)
+			pipelineBuilder.ToSyslogOutput(obs.SyslogRFC5424)
 
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
 - application: {}
@@ -61,15 +95,15 @@ serviceAccount:
 			appLabels2 := map[string]string{"name": "app1", "fallback": "env2"}
 			builder := NewClusterLogForwarderBuilder(forwarder).
 				FromInputName("application-logs1",
-					func(spec *logging.InputSpec) {
-						spec.Type = logging.InputTypeApplication
-						spec.Application = &logging.Application{
-							Includes: []logging.NamespaceContainerSpec{
+					func(spec *obs.InputSpec) {
+						spec.Type = obs.InputTypeApplication
+						spec.Application = &obs.Application{
+							Includes: []obs.NamespaceContainerSpec{
 								{
 									Namespace: "abc",
 								},
 							},
-							Excludes: []logging.NamespaceContainerSpec{
+							Excludes: []obs.NamespaceContainerSpec{
 								{
 									Namespace: "xyz",
 								},
@@ -82,9 +116,9 @@ serviceAccount:
 				).Named("app-1").
 				ToHttpOutput()
 			builder.FromInputName("application-logs2",
-				func(spec *logging.InputSpec) {
-					spec.Type = logging.InputTypeApplication
-					spec.Application = &logging.Application{
+				func(spec *obs.InputSpec) {
+					spec.Type = obs.InputTypeApplication
+					spec.Application = &obs.Application{
 						Selector: &v1.LabelSelector{
 							MatchLabels: appLabels2,
 						},
@@ -92,10 +126,10 @@ serviceAccount:
 				},
 			).Named("app-2").
 				ToOutputWithVisitor(
-					func(spec *logging.OutputSpec) {
-						spec.Type = logging.OutputTypeSyslog
-						spec.Syslog = &logging.Syslog{
-							URLSpec: logging.URLSpec{
+					func(spec *obs.OutputSpec) {
+						spec.Type = obs.OutputTypeSyslog
+						spec.Syslog = &obs.Syslog{
+							URLSpec: obs.URLSpec{
 								URL: "tcp://0.0.0.0:24225",
 							},
 						}
@@ -149,11 +183,11 @@ serviceAccount:
 	Context("#WithFilter", func() {
 		It("should correctly build to Elasticsearch with prune filter", func() {
 			builder := NewClusterLogForwarderBuilder(forwarder)
-			builder.FromInput(logging.InputTypeApplication).
+			builder.FromInput(obs.InputTypeApplication).
 				WithFilter("foo-prune",
-					func(spec *logging.FilterSpec) {
-						spec.Type = logging.FilterTypePrune
-						spec.PruneFilterSpec = &logging.PruneFilterSpec{
+					func(spec *obs.FilterSpec) {
+						spec.Type = obs.FilterTypePrune
+						spec.PruneFilterSpec = &obs.PruneFilterSpec{
 							NotIn: []string{".log_type"},
 						}
 					}).ToElasticSearchOutput()

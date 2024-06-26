@@ -243,6 +243,7 @@ test-functional:
 		./test/functional/filters/multilineexception \
 		./test/functional/filters/prune \
 		./test/functional/flowcontrol \
+		./test/functional/inputs/... \
 		./test/functional/metrics \
 		./test/functional/normalization \
 		./test/functional/normalization/loglevel \

@@ -255,7 +255,7 @@ type CloudwatchTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	// It is an error if the compression type is not supported by the output.
 	//
-	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd;lz4
+	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
 	// +kubebuilder:default:=none
 	Compression string `json:"compression,omitempty"`
 }

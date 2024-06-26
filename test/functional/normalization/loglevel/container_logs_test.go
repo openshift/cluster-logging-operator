@@ -2,13 +2,13 @@ package loglevel
 
 import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -21,11 +21,11 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToHttpOutput().
-			FromInput(logging.InputNameAudit).
+			FromInput(obs.InputTypeAudit).
 			ToHttpOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})
@@ -47,7 +47,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

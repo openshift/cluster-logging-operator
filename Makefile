@@ -242,6 +242,7 @@ test-functional:
 		./test/functional/filters/prune \
 		./test/functional/metrics \
 		./test/functional/normalization \
+		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \
 		./test/functional/outputs/http \

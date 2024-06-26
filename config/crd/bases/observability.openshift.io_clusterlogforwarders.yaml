@@ -1023,7 +1023,6 @@ spec:
                               - snappy
                               - zlib
                               - zstd
-                              - lz4
                               type: string
                             delivery:
                               description: DeliveryMode sets the delivery mode for

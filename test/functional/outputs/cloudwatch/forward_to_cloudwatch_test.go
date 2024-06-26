@@ -2,15 +2,19 @@ package cloudwatch
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -29,10 +33,11 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	var (
 		framework *functional.CollectorFunctionalFramework
 		secret    *v1.Secret
+		obsCwAuth *obs.CloudwatchAuthentication
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 
 		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
 		secret = runtime.NewSecret(framework.Namespace, functional.CloudwatchSecret,
@@ -41,6 +46,24 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				"aws_secret_access_key": []byte(functional.AwsSecretAccessKey),
 			},
 		)
+
+		obsCwAuth = &obs.CloudwatchAuthentication{
+			Type: obs.CloudwatchAuthTypeAccessKey,
+			AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+				KeySecret: &obs.SecretKey{
+					Secret: &v1.LocalObjectReference{
+						Name: functional.CloudwatchSecret,
+					},
+					Key: constants.AWSSecretAccessKey,
+				},
+				KeyID: &obs.SecretKey{
+					Secret: &v1.LocalObjectReference{
+						Name: functional.CloudwatchSecret,
+					},
+					Key: constants.AWSAccessKeyID,
+				},
+			},
+		}
 	})
 
 	AfterEach(func() {
@@ -49,9 +72,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 	Context("When sending a sequence of app log messages to CloudWatch", func() {
 		It("should be able to read messages from application log group", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToCloudwatchOutput()
+				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 
 			Expect(framework.Deploy()).To(BeNil())
@@ -73,18 +96,22 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			framework.Labels[labelKey] = labelValue
 
 			// testruntime a pod spec with a selector for labels and namespace
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputWithVisitor("app-logs",
-					func(spec *logging.InputSpec) {
-						spec.Application = &logging.Application{
-							Namespaces: []string{framework.Namespace},
-							Selector: &logging.LabelSelector{
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication,
+					func(spec *obs.InputSpec) {
+						spec.Application = &obs.Application{
+							Includes: []obs.NamespaceContainerSpec{
+								{
+									Namespace: framework.Namespace,
+								},
+							},
+							Selector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{labelKey: labelValue},
 							},
 						}
 					},
 				).
-				ToCloudwatchOutput()
+				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -103,14 +130,19 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				Skip("not supported for this vector release")
 			}
 			appNamespace := "multi-line-test"
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputWithVisitor("applogs-one", func(spec *logging.InputSpec) {
-					spec.Application = &logging.Application{
-						Namespaces: []string{appNamespace},
-					}
-				}).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication,
+					func(spec *obs.InputSpec) {
+						spec.Application = &obs.Application{
+							Includes: []obs.NamespaceContainerSpec{
+								{
+									Namespace: appNamespace,
+								},
+							},
+						}
+					}).
 				WithMultineErrorDetection().
-				ToCloudwatchOutput()
+				ToCloudwatchOutput(*obsCwAuth)
 			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
@@ -148,13 +180,13 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
 				Skip("not a valid test for vector since we route by namespace")
 			}
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToCloudwatchOutput().
+				ToCloudwatchOutput(*obsCwAuth).
 				FromInput(logging.InputNameAudit).
-				ToCloudwatchOutput().
+				ToCloudwatchOutput(*obsCwAuth).
 				FromInput(logging.InputNameInfrastructure).
-				ToCloudwatchOutput()
+				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -195,9 +227,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			readLogType = logging.InputNameAudit
 		)
 		It("should appear in the audit log group with audit log_type", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
-				ToCloudwatchOutput()
+				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -217,18 +249,14 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	})
 
 	Context("When setting tuning parameters", func() {
-		var (
-			compVisitFunc func(spec *logging.OutputSpec)
-		)
 		DescribeTable("with compression", func(compression string) {
-			compVisitFunc = func(spec *logging.OutputSpec) {
-				spec.Tuning = &logging.OutputTuningSpec{
-					Compression: compression,
-				}
-			}
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeCloudwatch)
+				ToCloudwatchOutput(*obsCwAuth, func(output *obs.OutputSpec) {
+					output.Cloudwatch.Tuning = &obs.CloudwatchTuningSpec{
+						Compression: compression,
+					}
+				})
 			framework.Secrets = append(framework.Secrets, secret)
 
 			Expect(framework.Deploy()).To(BeNil())
@@ -242,7 +270,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(logs).To(HaveLen(numOfLogs))
 
 		},
-			Entry("should pass with no compression", ""),
+			Entry("should pass with no compression", "none"),
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with snappy", "snappy"),
 			Entry("should pass with zlib", "zlib"),

@@ -7,5 +7,6 @@ bulk.action = "create"
 api_version = "v8"
 
 [sinks.es_1.tls]
+enabled = true
 verify_certificate = false
 verify_hostname = false

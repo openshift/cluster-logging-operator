@@ -62,6 +62,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"

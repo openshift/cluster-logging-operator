@@ -91,6 +91,7 @@ func (t TLSConf) Template() string {
 	return `
 {{define "vectorTLS" -}}
 [{{.Component}}.{{.ID}}.tls]
+enabled = true
 {{- if ne .TlsMinVersion "" }}
 min_tls_version = "{{ .TlsMinVersion }}"
 {{- end }}

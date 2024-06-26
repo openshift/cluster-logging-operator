@@ -4,6 +4,7 @@ address = "[::]:12345"
 mode = "tcp"
 
 [sources.input_myreceiver.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/instance-myreceiver/ca-bundle.crt"

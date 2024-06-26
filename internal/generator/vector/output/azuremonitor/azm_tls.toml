@@ -31,6 +31,7 @@ log_type = "myLogType"
 shared_key = "SECRET[from_secret.azure_monitor_secret_shared_key]"
 
 [sinks.output_azure_monitor_logs.tls]
+enabled = true
 verify_certificate = false
 verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/azure-monitor-secret-tls/tls.key"

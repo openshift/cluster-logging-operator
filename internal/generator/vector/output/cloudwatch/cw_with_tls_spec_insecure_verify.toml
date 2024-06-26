@@ -62,6 +62,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.tls]
+enabled = true
 verify_certificate = false
 verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"

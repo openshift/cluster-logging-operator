@@ -40,5 +40,6 @@ log_type = "{{log_type}}"
 
 
 [sinks.loki_receiver.tls]
+enabled = true
 verify_certificate = false
 verify_hostname = false

@@ -22,6 +22,7 @@ proc_id = "$$.message.proc_id"
 payload_key = "$$.message"
 
 [sinks.example.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/syslog-tls/ca-bundle.crt"

@@ -11,6 +11,7 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_1.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/gcl-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/gcl-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/gcl-1/ca-bundle.crt"

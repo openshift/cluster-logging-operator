@@ -11,6 +11,7 @@ codec = "json"
 headers = {"h1"="v1","h2"="v2"}
 
 [sinks.http_receiver.tls]
+enabled = true
 verify_certificate = false
 verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/http-receiver/tls.key"

@@ -199,8 +199,8 @@ var _ = Describe("migrateInputs", func() {
 			Expect(secrets).To(BeComparableTo([]*corev1.Secret{
 				runtime.NewSecret("", secretName,
 					map[string][]byte{
-						constants.ClientPrivateKey: []byte{},
-						constants.ClientCertKey:    []byte{},
+						constants.ClientPrivateKey: {},
+						constants.ClientCertKey:    {},
 					}),
 			}), "Exp. context to include the secrets to mount to the deployment")
 		})

@@ -75,8 +75,8 @@ func migrateInputReceiver(spec obs.InputSpec, forwarderName string, options util
 	}
 	secrets := []*corev1.Secret{
 		runtime.NewSecret("", secretName, map[string][]byte{
-			constants.ClientPrivateKey: []byte{},
-			constants.ClientCertKey:    []byte{},
+			constants.ClientPrivateKey: {},
+			constants.ClientCertKey:    {},
 		}),
 	}
 	utils.Update(options, GeneratedSecrets, secrets, func(existing []*corev1.Secret) []*corev1.Secret {

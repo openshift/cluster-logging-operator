@@ -245,6 +245,7 @@ test-functional:
 		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \
+		./test/functional/outputs/elasticsearch \
 		./test/functional/outputs/http \
 		./test/functional/pipelines \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0

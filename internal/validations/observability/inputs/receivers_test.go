@@ -81,8 +81,8 @@ var _ = Describe("#ValidateReceiver", func() {
 				context := utils.Options{
 					obsmigrate.GeneratedSecrets: []*corev1.Secret{
 						runtime.NewSecret("", "immissing", map[string][]byte{
-							"foo":                   []byte{},
-							constants.ClientCertKey: []byte{},
+							"foo":                   {},
+							constants.ClientCertKey: {},
 						}),
 					},
 				}

@@ -2,17 +2,17 @@ package functional
 
 import (
 	"bytes"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	"os"
 	"strings"
 	"text/template"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -199,7 +199,7 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.
 	return nil
 }
 
-func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
 	log.V(2).Info("Adding fluentd http output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
@@ -224,6 +224,6 @@ func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodB
 	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, Option{"path", "/tmp/{{kubernetes.container_name}}.log"}, Option{"template", VectorHttpSourceBenchmarkConfTemplate}); err != nil {
 		return err
 	}
-	b.GetContainer(logging.OutputTypeHttp).WithImage(image).Update()
+	b.GetContainer(string(obs.OutputTypeHTTP)).WithImage(image).Update()
 	return nil
 }

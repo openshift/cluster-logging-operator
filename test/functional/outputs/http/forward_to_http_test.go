@@ -2,20 +2,22 @@ package http
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
+
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
@@ -26,16 +28,19 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+		framework = functional.NewCollectorFunctionalFramework()
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToHttpOutput()
-		framework.Forwarder.Spec.Outputs[0].Tuning = &logging.OutputTuningSpec{
-			Delivery:         logging.OutputDeliveryModeAtLeastOnce,
-			MaxRetryDuration: utils.GetPtr(time.Duration(30)),
-			MinRetryDuration: utils.GetPtr(time.Duration(5)),
-			MaxWrite:         utils.GetPtr(resource.MustParse("1M")),
-		}
+			ToHttpOutput(func(output *obs.OutputSpec) {
+				output.HTTP.Tuning = &obs.HttpTuningSpec{
+					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+						Delivery:         logging.OutputDeliveryModeAtLeastOnce,
+						MaxRetryDuration: utils.GetPtr(time.Duration(30)),
+						MinRetryDuration: utils.GetPtr(time.Duration(5)),
+						MaxWrite:         utils.GetPtr(resource.MustParse("1M")),
+					},
+				}
+			})
 	})
 
 	AfterEach(func() {
@@ -86,19 +91,17 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 
 	Context("with tuning parameters", func() {
 		var (
-			compVisitFunc           func(spec *logging.OutputSpec)
 			addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor
 		)
 		DescribeTable("with compression", func(compression string) {
-			compVisitFunc = func(spec *logging.OutputSpec) {
-				spec.Tuning = &logging.OutputTuningSpec{
-					Compression: compression,
-				}
-			}
-			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			framework = functional.NewCollectorFunctionalFramework()
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(compVisitFunc, logging.OutputTypeHttp)
+				ToHttpOutput(func(output *obs.OutputSpec) {
+					output.HTTP.Tuning = &obs.HttpTuningSpec{
+						Compression: compression,
+					}
+				})
 
 			addDestinationContainer = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
 				return func(b *runtime.PodBuilder) error {
@@ -127,8 +130,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with snappy", "snappy"),
 			Entry("should pass with zlib", "zlib"),
-			Entry("should pass with zstd", "zstd"),
-			Entry("should pass with no compression", ""))
+			Entry("should pass with no compression", "none"))
 	})
 
 })

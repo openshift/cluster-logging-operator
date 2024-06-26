@@ -244,6 +244,7 @@ test-functional:
 		./test/functional/filters/prune \
 		./test/functional/flowcontrol \
 		./test/functional/metrics \
+		./test/functional/misc \
 		./test/functional/normalization \
 		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \

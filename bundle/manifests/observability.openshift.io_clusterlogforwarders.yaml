@@ -623,7 +623,8 @@ spec:
                             from the cluster's cert signing service when TLS is not
                             defined. The certificates are injected into a secret named
                             \"<clusterlogforwarder.name>-<input.name>\" which is mounted
-                            into the collector."
+                            into the collector. The collector is configured to use
+                            the public and private key provided by the service"
                           properties:
                             ca:
                               description: CA can be used to specify a custom list
@@ -1160,7 +1161,6 @@ spec:
                               - none
                               - gzip
                               - zlib
-                              - zstd
                               type: string
                             delivery:
                               description: DeliveryMode sets the delivery mode for

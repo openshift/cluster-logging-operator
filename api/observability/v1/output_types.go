@@ -368,7 +368,7 @@ type ElasticsearchTuningSpec struct {
 
 	// Compression causes data to be compressed before sending over the network.
 	//
-	// +kubebuilder:validation:Enum:=none;gzip;zlib;zstd
+	// +kubebuilder:validation:Enum:=none;gzip;zlib
 	// +kubebuilder:default:=none
 	Compression string `json:"compression,omitempty"`
 }

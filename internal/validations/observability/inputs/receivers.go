@@ -75,7 +75,7 @@ func extractSecretKeysAsSet(context utils.Options) *set.Set {
 	secretKeys := set.New()
 	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](context, obsmigrate.GeneratedSecrets, []*corev1.Secret{}); found {
 		for _, secret := range generatedSecrets {
-			for key, _ := range secret.Data {
+			for key := range secret.Data {
 				secretKeys.Insert(fmt.Sprintf("%s_%s", secret.Name, key))
 			}
 		}

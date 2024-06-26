@@ -2,10 +2,11 @@ package prune
 
 import (
 	"fmt"
-	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
+
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"

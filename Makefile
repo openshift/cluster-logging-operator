@@ -241,7 +241,9 @@ test-functional:
 		./test/functional/filters/apiaudit/... \
 		./test/functional/filters/prune \
 		./test/functional/metrics \
+		./test/functional/filters/drop \
 		./test/functional/normalization \
+		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \
 		./test/functional/outputs/http \

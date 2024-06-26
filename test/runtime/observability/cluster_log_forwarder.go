@@ -47,7 +47,7 @@ func NewClusterLogForwarderBuilder(clf *obs.ClusterLogForwarder) *ClusterLogForw
 }
 
 func (b *ClusterLogForwarderBuilder) FromInput(inputType obs.InputType, visitors ...InputSpecVisitor) *PipelineBuilder {
-	return b.FromInputName(string(inputType), func(spec *obs.InputSpec) {
+	visitors = append([]InputSpecVisitor{func(spec *obs.InputSpec) {
 		spec.Type = inputType
 		switch inputType {
 		case obs.InputTypeApplication:
@@ -61,7 +61,8 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputType obs.InputType, visitors
 				Sources: obs.AuditSources,
 			}
 		}
-	})
+	}}, visitors...)
+	return b.FromInputName(string(inputType), visitors...)
 }
 
 func (b *ClusterLogForwarderBuilder) FromInputName(inputName string, visitors ...InputSpecVisitor) *PipelineBuilder {
@@ -74,7 +75,7 @@ func (b *ClusterLogForwarderBuilder) FromInputName(inputName string, visitors ..
 	}
 	pipelineBuilder := &PipelineBuilder{
 		clfb:      b,
-		inputName: inputName,
+		inputName: inputSpec.Name,
 		input:     inputSpec,
 		inputRefs: []string{},
 	}

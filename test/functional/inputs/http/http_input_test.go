@@ -2,17 +2,16 @@ package http
 
 import (
 	"encoding/json"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -106,34 +105,27 @@ const (
 
 var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 
-	if testfw.LogCollectionType != logging.LogCollectionTypeVector {
-		defer GinkgoRecover()
-		Skip("skip for non-vector")
-	}
-
 	var (
-		framework *functional.CollectorFunctionalFramework
-		events    auditv1.EventList
+		framework   *functional.CollectorFunctionalFramework
+		events      auditv1.EventList
+		eventsBytes = []byte(strings.Replace(eventsString, "\n", "", -1))
 	)
-	eventsBytes := []byte(strings.Replace(eventsString, "\n", "", -1))
 
 	BeforeEach(func() {
 		Expect(json.Unmarshal(eventsBytes, &events)).To(Succeed())
-		Expect(testfw.LogCollectionType).To(Equal(logging.LogCollectionTypeVector))
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		framework = functional.NewCollectorFunctionalFramework()
 		framework.VisitConfig = func(conf string) string {
 			return strings.Replace(conf, "enabled = true", "enabled = false", 2) // turn off TLS for testing
 		}
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInputWithVisitor(httpInputName,
-				func(spec *logging.InputSpec) {
-					spec.Receiver = &logging.ReceiverSpec{
-						Type: logging.ReceiverTypeHttp,
-						ReceiverTypeSpec: &logging.ReceiverTypeSpec{
-							HTTP: &logging.HTTPReceiver{
-								Port:   servicePortNum,
-								Format: logging.FormatKubeAPIAudit,
-							},
+			FromInputName(httpInputName,
+				func(spec *obs.InputSpec) {
+					spec.Type = obs.InputTypeReceiver
+					spec.Receiver = &obs.ReceiverSpec{
+						Port: servicePortNum,
+						Type: obs.ReceiverTypeHTTP,
+						HTTP: &obs.HTTPReceiver{
+							Format: obs.HTTPReceiverFormatKubeAPIAudit,
 						},
 					}
 				}).ToHttpOutput()
@@ -187,14 +179,16 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 		It("should apply an audit filter", func() {
 			Expect(events.Items[0].Stage).To(Not(Equal(events.Items[1].Stage)))
 			filterName := "auditFilter"
-			framework.Forwarder.Spec.Filters = []logging.FilterSpec{{
-				Name: filterName,
-				Type: logging.FilterKubeAPIAudit,
-				FilterTypeSpec: logging.FilterTypeSpec{KubeAPIAudit: &logging.KubeAPIAudit{
-					OmitStages: []auditv1.Stage{events.Items[0].Stage},
-					Rules:      []auditv1.PolicyRule{{Level: auditv1.LevelMetadata}}, // Skip default rules.
-				}},
-			}}
+			framework.Forwarder.Spec.Filters = []obs.FilterSpec{
+				{
+					Name: filterName,
+					Type: obs.FilterTypeKubeAPIAudit,
+					KubeAPIAudit: &obs.KubeAPIAudit{
+						OmitStages: []auditv1.Stage{events.Items[0].Stage},
+						Rules:      []auditv1.PolicyRule{{Level: auditv1.LevelMetadata}}, // Skip default rules.
+					},
+				},
+			}
 			framework.Forwarder.Spec.Pipelines[0].FilterRefs = []string{filterName}
 
 			Expect(framework.DeployWithVisitor(
@@ -205,7 +199,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 
 			err := framework.WriteToHttpInputWithPortForwarder(httpInputName, eventsBytes)
 			Expect(err).To(BeNil(), "Expected no errors writing to HTTP input")
-			raw, err := framework.ReadFileFromWithRetryInterval("http", functional.ApplicationLogFile, time.Second)
+			raw, err := framework.ReadFileFromWithRetryInterval(string(obs.OutputTypeHTTP), functional.ApplicationLogFile, time.Second)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			lines := strings.Split(strings.TrimSpace(raw), "\n")
 			Expect(lines).To(HaveLen(1))

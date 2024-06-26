@@ -4,12 +4,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -23,11 +22,11 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameInfrastructure).
+			FromInput(obs.InputTypeInfrastructure).
 			ToHttpOutput().
-			FromInput(logging.InputNameAudit).
+			FromInput(obs.InputTypeAudit).
 			ToElasticSearchOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})
@@ -41,7 +40,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadInfrastructureLogsFrom(logging.OutputTypeElasticsearch)
+		raw, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeElasticsearch))
 		if sets.NewString(options...).Has(expReadFail) {
 			Expect(err).To(Not(BeNil()), "Exp. to not find any logs")
 			return

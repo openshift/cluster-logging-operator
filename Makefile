@@ -240,6 +240,7 @@ test-functional:
 	go test -race \
 		./test/functional/filters/prune \
 		./test/functional/normalization \
+		./test/functional/normalization/loglevel \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/http \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0

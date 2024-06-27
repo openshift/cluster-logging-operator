@@ -2,12 +2,15 @@ package loki
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
+
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
-	"time"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 )
 
 var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
@@ -17,28 +20,15 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	)
 
 	BeforeEach(func() {
-		f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		f = functional.NewCollectorFunctionalFramework()
 		// Start a Loki server
 		l = loki.NewReceiver(f.Namespace, "loki-server")
 		Expect(l.Create(f.Test.Client)).To(Succeed())
 
 		// Set up the common template forwarder configuration.
-		f.Forwarder.Spec.Outputs = append(f.Forwarder.Spec.Outputs,
-			logging.OutputSpec{
-				Name: logging.OutputTypeLoki,
-				Type: logging.OutputTypeLoki,
-				URL:  l.InternalURL("").String(),
-				OutputTypeSpec: logging.OutputTypeSpec{
-					Loki: &logging.Loki{},
-				},
-			})
-		f.Forwarder.Spec.Pipelines = append(f.Forwarder.Spec.Pipelines,
-			logging.PipelineSpec{
-				Name:       "functional-loki-pipeline_0_",
-				OutputRefs: []string{logging.OutputTypeLoki},
-				InputRefs:  []string{logging.InputNameAudit},
-				Labels:     map[string]string{"logging": "logging-value"},
-			})
+		obstestruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+			FromInput(obs.InputTypeAudit).
+			ToLokiOutput(*l.InternalURL(""))
 
 		Expect(f.Deploy()).To(BeNil())
 	})

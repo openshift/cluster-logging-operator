@@ -2,9 +2,7 @@ package observability
 
 import (
 	"net/url"
-	"os"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -117,9 +115,9 @@ func (p *PipelineBuilder) WithMultilineErrorDetectionFilter() *PipelineBuilder {
 }
 
 func (p *PipelineBuilder) WithParseJson() *PipelineBuilder {
-	// TODO: FIX ME
-	log.V(0).Info("Implement me as a filter")
-	os.Exit(0)
+	p.WithFilter(string(obs.FilterTypeParse), func(spec *obs.FilterSpec) {
+		spec.Type = obs.FilterTypeParse
+	})
 	return p
 }
 

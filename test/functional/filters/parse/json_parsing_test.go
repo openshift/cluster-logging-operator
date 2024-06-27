@@ -1,8 +1,9 @@
-package normalization
+package parse
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 
@@ -12,8 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -56,10 +55,9 @@ const (
    `
 )
 
-var _ = Describe("[Functional][Normalization] Json log parsing", func() {
+var _ = Describe("[functional][filters][parse] Json log parsing", func() {
 	var (
 		framework       *functional.CollectorFunctionalFramework
-		clfb            *testruntime.ClusterLogForwarderBuilder
 		expected        map[string]interface{}
 		empty           map[string]interface{}
 		expectedMessage string
@@ -70,18 +68,13 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		}
 	)
 
-	const IndexName = "app-foo-write"
-
 	BeforeEach(func() {
-		defer GinkgoRecover()
-		Skip("TODO: FIX ME ONCE parse filter is implemented")
 		empty = map[string]interface{}{}
 		framework = functional.NewCollectorFunctionalFramework()
-		clfb = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
-			ToElasticSearchOutput(func(output *obs.OutputSpec) {
-				output.Elasticsearch.Index = "foo"
-			})
+			WithParseJson().
+			ToHttpOutput()
 
 		expectedMessage = normalizeJson(Json)
 	})
@@ -90,26 +83,13 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	})
 	It("should parse json message into structured", func() {
 		ExpectOK(json.Unmarshal([]byte(Json), &expected))
-
-		readLogs := func() ([]types.ApplicationLog, error) {
-			raw, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), IndexName)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-
-			// Parse log line
-			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogsFromSlice(raw, &logs)
-			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-			return logs, err
-		}
-		//TODO FIX ME
-		//clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		ExpectOK(framework.Deploy())
 
 		// Log message data
 		applicationLogLine := functional.CreateAppLogFromJson(Json)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		logs, err := readLogs()
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		log.V(2).Info("Received", "Message", logs[0].Message)
@@ -124,8 +104,6 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	})
 
 	It("should not parse non json message into structured", func() {
-		//TODO: FIXME
-		//clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Log message data
@@ -135,7 +113,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		same := cmp.Equal(logs[0].Structured, empty)
@@ -147,22 +125,22 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		Expect(logs[0].Message).To(Equal(message), "received message not matching")
 	})
 	It("should not parse json if not configured", func() {
-		// Pipeline.Parse is not set
+		framework = functional.NewCollectorFunctionalFramework()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToHttpOutput()
 		ExpectOK(framework.Deploy())
 
 		applicationLogLine := functional.CreateAppLogFromJson(expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		Expect(logs[0].Structured).To(BeNil(), "expected nil structured field")
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
 	It("should not parse invalid json message into structured", func() {
-		// This test case is disabled to fix the behavior of invalid json parsing
-		// TODO: FIX ME
-		//clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Log message data
@@ -173,7 +151,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		same := cmp.Equal(logs[0].Structured, empty)
@@ -185,19 +163,13 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	})
 
 	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
-		clfb = testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+		framework = functional.NewCollectorFunctionalFramework()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
-			ToElasticSearchOutput()
-
-		structuredTypeName := "kubernetes.namespace_name"
-		// TOD
-		//clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-		clfb.Forwarder.Spec.Outputs[0].Elasticsearch = &obs.Elasticsearch{
-			IndexSpec: obs.IndexSpec{
-				Index: structuredTypeName,
-			},
-		}
+			WithParseJson().
+			ToElasticSearchOutput(func(spec *obs.OutputSpec) {
+				spec.Elasticsearch.Index = "{{kubernetes.namespace_name}}-write"
+			})
 
 		ExpectOK(framework.Deploy())
 
@@ -211,7 +183,7 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), fmt.Sprintf("app-%s-write", structuredTypeName))
+		raw, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), fmt.Sprintf("%s-write", framework.Namespace))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(raw).To(Not(BeEmpty()))
 
@@ -223,29 +195,5 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		Expect(logs[0].Structured).To(Equal(expected), "structured field with parsed json message not matching")
 		log.V(2).Info("Received", "Message", logs[0])
 		Expect(logs[0].Message).To(BeEmpty())
-	})
-
-	It("should not parse raise warn message in collector container : LOG-1806", func() {
-		// This test case is disabled to fix the behavior of invalid json parsing
-		// TODO: FIXME
-		//clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-		Expect(framework.Deploy()).To(BeNil())
-
-		// Log message data
-		invalidJson := `{"key":"v}`
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
-
-		// Write log line as input
-		expectedMessage := invalidJson
-		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
-
-		// Read line from Log Forward output
-		_, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-
-		output, err := framework.GetLogsFromCollector()
-		Expect(err).To(BeNil(), "Expected no errors reading the logs from collector")
-		Expect(strings.Contains(output, "class=Fluent::Plugin::Parser::ParserError error=\"pattern not matched with data")).To(BeFalse())
 	})
 })

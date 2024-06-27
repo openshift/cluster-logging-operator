@@ -141,7 +141,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 							},
 						}
 					}).
-				WithMultineErrorDetection().
+				WithMultilineErrorDetectionFilter().
 				ToCloudwatchOutput(*obsCwAuth)
 			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
 			framework.Secrets = append(framework.Secrets, secret)

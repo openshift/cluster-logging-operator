@@ -1,4 +1,16 @@
-package normalize
+package multilineexception
+
+import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+)
+
+func NewDetectException(id string, inputs ...string) framework.Element {
+	return DetectExceptions{
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+	}
+}
 
 type DetectExceptions struct {
 	ComponentID string

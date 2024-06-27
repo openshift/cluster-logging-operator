@@ -239,6 +239,7 @@ test-functional:
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/filters/apiaudit/... \
+		./test/functional/filters/multilineexception \
 		./test/functional/filters/prune \
 		./test/functional/metrics \
 		./test/functional/normalization \

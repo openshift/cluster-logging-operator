@@ -1,4 +1,4 @@
-package normalization
+package multilineexception
 
 import (
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -10,16 +10,13 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
 // Multiline Detect Exception test to verify proper re-assembly of
 // multi-line exceptions (e.g. java stacktrace)
 // https://issues.redhat.com/browse/LOG-1717
-var _ = Describe("[Functional][Normalization] Multi-line exception detection", func() {
-	defer GinkgoRecover()
-	Skip("TODO: FIX ME ONCE multi-line exception filter is implemented")
+var _ = Describe("[Functional][Filters][MultilineException] Multi-line exception detection", func() {
 	const (
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
 	)
@@ -73,7 +70,7 @@ created by main.main
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
 		framework.Cleanup()
@@ -85,7 +82,7 @@ created by main.main
 			buildLogForwarder = func(framework *functional.CollectorFunctionalFramework) {
 				testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(obs.InputTypeApplication).
-					WithMultineErrorDetection().
+					WithMultilineErrorDetectionFilter().
 					ToHttpOutput()
 			}
 		}
@@ -116,57 +113,18 @@ created by main.main
 		Entry("of V8 errors stack trace", jsV8Exception, nil),
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
-		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			Skip("TODO: FIX MEskip for vector")
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputName("forward-pipeline", func(spec *obs.InputSpec) {
-					spec.Type = obs.InputTypeApplication
-					spec.Application = &obs.Application{
-						Includes: []obs.NamespaceContainerSpec{
-							{Namespace: appNamespace},
-						},
-					}
-				}).
-				WithMultineErrorDetection().
-				ToHttpOutput()
-		}),
 		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			Skip("TODO: FIX MEskip for vector")
 			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputName("multiline-log-ns", func(spec *obs.InputSpec) {
 					spec.Type = obs.InputTypeApplication
-					spec.Application = &obs.Application{
-						Includes: []obs.NamespaceContainerSpec{
-							{Namespace: appNamespace},
-						},
-					}
+					spec.Application = &obs.Application{}
 				}).
-				WithMultineErrorDetection().
+				WithMultilineErrorDetectionFilter().
 				ToHttpOutput()
 			//LOG-2241
 			b.FromInput("multiline-log-ns").
 				Named("other").
-				WithMultineErrorDetection().
-				ToElasticSearchOutput()
-		}),
-		Entry("of multiple application NS source with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
-			Skip("TODO: FIX MEskip for vector")
-			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInputName("multiline-log-ns", func(spec *obs.InputSpec) {
-					spec.Type = obs.InputTypeApplication
-					spec.Application = &obs.Application{
-						Includes: []obs.NamespaceContainerSpec{
-							{Namespace: appNamespace},
-							{Namespace: "multi-line-test-2"},
-						},
-					}
-				}).
-				WithMultineErrorDetection().
-				ToHttpOutput()
-			//LOG-2241
-			b.FromInput("multiline-log-ns").
-				Named("other").
-				WithMultineErrorDetection().
+				WithMultilineErrorDetectionFilter().
 				ToElasticSearchOutput()
 		}),
 	)

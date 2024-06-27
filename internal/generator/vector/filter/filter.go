@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/multilineexception"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/drop"
@@ -51,7 +52,7 @@ func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*Intern
 			internalFilter.RemapFilter = openshift.NewParseFilter()
 		case obs.FilterTypeDetectMultiline:
 			internalFilter.SuppliesTransform = true
-			internalFilter.TranformFactory = openshift.NewDetectException
+			internalFilter.TranformFactory = multilineexception.NewDetectException
 		default:
 			log.V(0).Error(fmt.Errorf("unknown filter type: %v", f.Type), "This should have been caught by declarative API validation")
 		}

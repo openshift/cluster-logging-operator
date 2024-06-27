@@ -108,10 +108,10 @@ func (p *PipelineBuilder) WithFilter(filterName string, visitors ...FilterSpecVi
 	return p
 }
 
-func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
-	// TODO: FIX ME
-	log.V(0).Info("Implement me as a filter")
-	os.Exit(0)
+func (p *PipelineBuilder) WithMultilineErrorDetectionFilter() *PipelineBuilder {
+	p.WithFilter(string(obs.FilterTypeDetectMultiline), func(spec *obs.FilterSpec) {
+		spec.Type = obs.FilterTypeDetectMultiline
+	})
 	return p
 }
 

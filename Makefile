@@ -246,6 +246,7 @@ test-functional:
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \
 		./test/functional/outputs/http \
+		./test/functional/pipelines \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector

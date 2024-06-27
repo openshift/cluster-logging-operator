@@ -5,12 +5,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-	"k8s.io/utils/strings/slices"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	"k8s.io/utils/set"
 )
 
 var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", func() {
@@ -23,46 +22,44 @@ var _ = Describe("[Functional][Pipelines] when there are multiple pipelines", fu
 		framework.Cleanup()
 	})
 
-	DescribeTable("should send logs to the forward.Output logstore", func(sources ...string) {
+	DescribeTable("should send logs to the forward.Output logstore", func(inputTypes ...obs.InputType) {
 		var option client.TestOption
-		if slices.Contains(sources, logging.InputNameInfrastructure) {
+		sources := set.New(inputTypes...)
+		if sources.Has(obs.InputTypeInfrastructure) {
 			option = client.UseInfraNamespaceTestOption
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("Skipping test with vector because functional framework does not mock journal")
-			}
 		}
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, option)
+		framework = functional.NewCollectorFunctionalFramework(option)
 
-		writers := map[string]func(int) error{
-			logging.InputNameAudit:          framework.WriteK8sAuditLog,
-			logging.InputNameInfrastructure: framework.WritesInfraContainerLogs,
-			logging.InputNameApplication:    framework.WritesApplicationLogs,
+		writers := map[obs.InputType]func(int) error{
+			obs.InputTypeAudit:          framework.WriteK8sAuditLog,
+			obs.InputTypeInfrastructure: framework.WritesInfraContainerLogs,
+			obs.InputTypeApplication:    framework.WritesApplicationLogs,
 		}
-		readers := map[string]func(string) ([]string, error){
-			logging.InputNameAudit:          framework.ReadAuditLogsFrom,
-			logging.InputNameInfrastructure: framework.ReadInfrastructureLogsFrom,
-			logging.InputNameApplication:    framework.ReadRawApplicationLogsFrom,
+		readers := map[obs.InputType]func(string) ([]string, error){
+			obs.InputTypeAudit:          framework.ReadAuditLogsFrom,
+			obs.InputTypeInfrastructure: framework.ReadInfrastructureLogsFrom,
+			obs.InputTypeApplication:    framework.ReadRawApplicationLogsFrom,
 		}
 
 		builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder)
-		for _, source := range sources {
-			builder.FromInput(source).Named("test-" + source).ToElasticSearchOutput()
+		for _, source := range sources.SortedList() {
+			builder.FromInput(source).Named("test-" + string(source)).ToElasticSearchOutput()
 		}
 
 		Expect(framework.Deploy()).To(BeNil())
 
-		for _, source := range sources {
+		for _, source := range sources.SortedList() {
 			log.V(1).Info("Writing log", "source", source)
 			Expect(writers[source](1)).To(Succeed(), "Exp. to be able to write %s logs", source)
 
-			logs, err := readers[source](logging.OutputTypeElasticsearch)
+			logs, err := readers[source](string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Exp. no errors reading %s logs", source)
 			Expect(logs).To(HaveLen(1), "Exp. to find logs")
-			Expect(logs[0]).To(MatchRegexp(`log_type\"\:.*`+source), "Exp. to find a log of type %s", source)
+			Expect(logs[0]).To(MatchRegexp(`log_type\"\:.*`+string(source)), "Exp. to find a log of type %s", source)
 		}
 
 	},
-		Entry("when configured with audit and application sources", logging.InputNameAudit, logging.InputNameApplication),
-		Entry("when configured with audit and infrastructure sources", logging.InputNameAudit, logging.InputNameInfrastructure),
+		Entry("when configured with audit and application sources", obs.InputTypeAudit, obs.InputTypeApplication),
+		Entry("when configured with audit and infrastructure sources", obs.InputTypeAudit, obs.InputTypeInfrastructure),
 	)
 })

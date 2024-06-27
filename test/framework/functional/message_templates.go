@@ -57,6 +57,7 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 			Timestamp: time.Time{},
 			Message:   "*",
 			LogType:   "application",
+			LogSource: "container",
 			Level:     "*",
 			Hostname:  "*",
 			ViaqMsgID: "**optional**",
@@ -81,6 +82,7 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 			Timestamp: time.Time{},
 			Message:   "*",
 			LogType:   "infrastructure",
+			LogSource: "container",
 			Level:     "*",
 			Hostname:  "*",
 			ViaqMsgID: "**optional**",
@@ -105,6 +107,7 @@ func NewJournalInfrastructureLogTemplate() types.JournalLog {
 
 			Timestamp:        time.Time{},
 			Message:          "*",
+			LogSource:        "node",
 			LogType:          "infrastructure",
 			Level:            "*",
 			Hostname:         "*",

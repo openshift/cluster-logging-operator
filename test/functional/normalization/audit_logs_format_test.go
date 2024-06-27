@@ -41,6 +41,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				AuditLogCommon: types.AuditLogCommon{
 					Kind:             "Event",
 					Hostname:         framework.Pod.Spec.NodeName,
+					LogSource:        "*",
 					LogType:          "audit",
 					Level:            "Metadata",
 					Timestamp:        time.Time{},
@@ -77,6 +78,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				AuditLogCommon: types.AuditLogCommon{
 					Kind:             "Event",
 					Hostname:         framework.Pod.Spec.NodeName,
+					LogSource:        "*",
 					LogType:          "audit",
 					Level:            "Metadata",
 					Timestamp:        time.Time{},
@@ -111,10 +113,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			auditLogLine := functional.NewAuditHostLog(testTime)
 			// Template expected as output Log
 			var outputLogTemplate = types.LinuxAuditLog{
-				Message:  auditLogLine,
-				LogType:  "audit",
-				Level:    "default",
-				Hostname: framework.Pod.Spec.NodeName,
+				Message:   auditLogLine,
+				LogSource: "*",
+				LogType:   "audit",
+				Level:     "default",
+				Hostname:  framework.Pod.Spec.NodeName,
 				AuditLinux: types.AuditLinux{
 					Type:     "DAEMON_START",
 					RecordID: "*",
@@ -150,6 +153,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				Level:     level,
 				Hostname:  framework.Pod.Spec.NodeName,
 				Timestamp: time.Time{},
+				LogSource: "*",
 				LogType:   "audit",
 				Openshift: types.OpenshiftMeta{
 					Sequence:  types.NewOptionalInt(""),

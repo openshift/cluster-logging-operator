@@ -229,12 +229,11 @@ type ViaQCommon struct {
 	// +optional
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata,omitempty"`
 
-	// TODO: Reenable me for v2 Viaq
-	//// LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-	//// Application logs are always source from containers
-	//// Infrastructure logs are sourced from containers or journal logs from the node
-	//// Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-	//LogSource string `json:"log_source,omitempty"`
+	// LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
+	// Application logs are always sourced from containers
+	// Infrastructure logs are sourced from containers or journal logs from the node
+	// Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
+	LogSource string `json:"log_source,omitempty"`
 
 	//The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example "infrastructure.container" or "infrastructure.node".
 	//
@@ -388,6 +387,7 @@ type AuditLogCommon struct {
 	Hostname                 string           `json:"hostname,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata,omitempty"`
 	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	LogSource                string           `json:"log_source,omitempty"`
 	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`

@@ -21,10 +21,10 @@ type FilterType string
 
 // Filter type constants, must match JSON tags of FilterTypeSpec fields.
 const (
-	FilterTypeOpenshiftLabels FilterType = "openShiftLabels"
-	FilterTypeDetectMultiline FilterType = "detectMultiline"
+	FilterTypeDetectMultiline FilterType = "detectMultilineException"
 	FilterTypeDrop            FilterType = "drop"
 	FilterTypeKubeAPIAudit    FilterType = "kubeAPIAudit"
+	FilterTypeOpenshiftLabels FilterType = "openShiftLabels"
 	FilterTypeParse           FilterType = "parse"
 	FilterTypePrune           FilterType = "prune"
 )

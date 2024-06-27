@@ -48,6 +48,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 					Hostname:         types.AnyString,
 					PipelineMetadata: types.PipelineMetadata{},
 					Timestamp:        time.Time{},
+					LogSource:        string(obs.InfrastructureSourceContainer),
 					LogType:          string(obs.InputTypeApplication),
 					Openshift: types.OpenshiftMeta{
 						ClusterID: types.AnyString,

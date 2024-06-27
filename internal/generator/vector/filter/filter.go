@@ -5,6 +5,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/multilineexception"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/parse"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/drop"
@@ -49,7 +50,7 @@ func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*Intern
 		case obs.FilterTypeKubeAPIAudit:
 			internalFilter.RemapFilter = apiaudit.NewFilter(f.KubeAPIAudit)
 		case obs.FilterTypeParse:
-			internalFilter.RemapFilter = openshift.NewParseFilter()
+			internalFilter.RemapFilter = parse.NewParseFilter()
 		case obs.FilterTypeDetectMultiline:
 			internalFilter.SuppliesTransform = true
 			internalFilter.TranformFactory = multilineexception.NewDetectException

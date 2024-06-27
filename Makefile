@@ -238,16 +238,12 @@ test-functional:
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
-		./test/functional/filters/apiaudit/... \
-		./test/functional/filters/drop \
-		./test/functional/filters/multilineexception \
-		./test/functional/filters/prune \
+		./test/functional/filters/... \
 		./test/functional/flowcontrol \
 		./test/functional/inputs/... \
 		./test/functional/metrics \
 		./test/functional/misc \
-		./test/functional/normalization \
-		./test/functional/normalization/loglevel \
+		./test/functional/normalization/... \
 		./test/functional/outputs/azuremonitor \
 		./test/functional/outputs/cloudwatch \
 		./test/functional/outputs/elasticsearch \

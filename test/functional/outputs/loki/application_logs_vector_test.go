@@ -8,7 +8,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 )
@@ -21,29 +23,15 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	)
 
 	BeforeEach(func() {
-		f = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		f = functional.NewCollectorFunctionalFramework()
 		// Start a Loki server
 		l = loki.NewReceiver(f.Namespace, "loki-server")
 		Expect(l.Create(f.Test.Client)).To(Succeed())
 
 		// Set up the common template forwarder configuration.
-		f.Forwarder.Spec.Outputs = append(f.Forwarder.Spec.Outputs,
-			logging.OutputSpec{
-				Name: logging.OutputTypeLoki,
-				Type: logging.OutputTypeLoki,
-				URL:  l.InternalURL("").String(),
-				OutputTypeSpec: logging.OutputTypeSpec{
-					Loki: &logging.Loki{},
-				},
-			})
-		f.Forwarder.Spec.Pipelines = append(f.Forwarder.Spec.Pipelines,
-			logging.PipelineSpec{
-				Name:       "functional-loki-pipeline_0_",
-				OutputRefs: []string{logging.OutputTypeLoki},
-				InputRefs:  []string{logging.InputNameApplication},
-				Labels:     map[string]string{"logging": "logging-value"},
-			})
-
+		obstestruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToLokiOutput(*l.InternalURL(""))
 	})
 
 	AfterEach(func() {
@@ -105,12 +93,22 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(len(result)).To(Equal(1))
 			lines := result[0].Lines()
 			Expect(len(lines)).To(Equal(1))
+
+			want := map[string]string{
+				"kubernetes_namespace_name":                         f.Namespace,
+				"kubernetes_pod_name":                               f.Pod.Name,
+				"kubernetes_labels_app_kubernetes_io_name":          myValue,
+				"kubernetes_labels_prefix_cloud_com_platform_stage": "dev",
+				"kubernetes_host":                                   f.Pod.Spec.NodeName,
+			}
+			labels := result[0].Stream
+			Expect(labels).To(BeEquivalentTo(want))
 		})
 	})
 
 	Context("with tuning parameters", func() {
 		DescribeTable("with compression", func(compression string) {
-			f.Forwarder.Spec.Outputs[0].Tuning = &logging.OutputTuningSpec{
+			f.Forwarder.Spec.Outputs[0].Loki.Tuning = &obs.LokiTuningSpec{
 				Compression: compression,
 			}
 
@@ -125,7 +123,20 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 		},
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with snappy", "snappy"),
-			Entry("should pass with none", ""))
+			Entry("should pass with none", "none"))
+	})
+
+	It("should forward logs to custom tenant", func() {
+		customTenant := "myapp-{{.log_type}}"
+		f.Forwarder.Spec.Outputs[0].Loki.TenantKey = customTenant
+		Expect(f.Deploy()).To(BeNil())
+		msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+		Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+		query := fmt.Sprintf(`{kubernetes_namespace_name=%q, kubernetes_pod_name=%q}`, f.Namespace, f.Name)
+		result, err := l.QueryUntil(query, customTenant, 1)
+		Expect(err).To(BeNil())
+		Expect(result).NotTo(BeNil())
+		Expect(len(result)).To(Equal(1))
 	})
 
 })

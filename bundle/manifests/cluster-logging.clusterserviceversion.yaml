@@ -178,7 +178,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-06-26T14:26:26Z"
+    createdAt: "2024-06-28T16:27:28Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -378,16 +378,6 @@ spec:
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
         path: outputs[0].loki.authentication.username.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: outputs[0].lokiStack.authentication.password.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: outputs[0].lokiStack.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.

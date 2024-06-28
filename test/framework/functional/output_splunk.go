@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 	"text/template"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"

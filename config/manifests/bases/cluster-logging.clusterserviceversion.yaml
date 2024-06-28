@@ -210,16 +210,6 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value from the referenced Secret.
         displayName: Key Name
-        path: outputs[0].lokiStack.authentication.password.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
-        path: outputs[0].lokiStack.authentication.username.key
-        x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Name of the key used to get the value from the referenced Secret.
-        displayName: Key Name
         path: outputs[0].otlp.authentication.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text

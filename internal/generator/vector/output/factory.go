@@ -1,7 +1,6 @@
 package output
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -35,23 +34,23 @@ func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, s
 	}
 
 	switch o.Type {
-	case logging.OutputTypeKafka:
+	case obs.OutputTypeKafka:
 		els = append(els, kafka.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeLoki:
+	case obs.OutputTypeLoki:
 		els = append(els, loki.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeElasticsearch:
+	case obs.OutputTypeElasticsearch:
 		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeCloudwatch:
+	case obs.OutputTypeCloudwatch:
 		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeGoogleCloudLogging:
+	case obs.OutputTypeGoogleCloudLogging:
 		els = append(els, gcl.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeSplunk:
+	case obs.OutputTypeSplunk:
 		els = append(els, splunk.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeHttp:
+	case obs.OutputTypeHTTP:
 		els = append(els, http.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeSyslog:
+	case obs.OutputTypeSyslog:
 		els = append(els, syslog.New(baseID, o, inputs, secrets, strategy, op)...)
-	case logging.OutputTypeAzureMonitor:
+	case obs.OutputTypeAzureMonitor:
 		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, strategy, op)...)
 	}
 	return els

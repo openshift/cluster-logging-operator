@@ -684,6 +684,12 @@ type Loki struct {
 
 type SplunkTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
+
+	// Compression causes data to be compressed before sending over the network.
+	//
+	// +kubebuilder:validation:Enum:=none;gzip
+	// +kubebuilder:default:=none
+	Compression string `json:"compression,omitempty"`
 }
 
 // SplunkAuthentication contains configuration for authenticating requests to a Splunk output.

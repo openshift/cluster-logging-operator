@@ -1872,7 +1872,7 @@ spec:
                       type: string
                     otlp:
                       description: OTLP defines configuration for sending logs via
-                        OTLP using OTEL scemantic conventions https://opentelemetry.io/docs/specs/otlp/#otlphttp
+                        OTLP using OTEL semantic conventions https://opentelemetry.io/docs/specs/otlp/#otlphttp
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -2071,6 +2071,14 @@ spec:
                           description: Tuning specs tuning for the output
                           nullable: true
                           properties:
+                            compression:
+                              default: none
+                              description: Compression causes data to be compressed
+                                before sending over the network.
+                              enum:
+                              - none
+                              - gzip
+                              type: string
                             delivery:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.

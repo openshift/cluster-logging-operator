@@ -1,14 +1,16 @@
 package multiple
 
 import (
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"sort"
+
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 )
 
@@ -17,8 +19,6 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 	var (
 		framework *functional.CollectorFunctionalFramework
 	)
-
-	const SYSLOG_NAME = "asyslog"
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
@@ -30,18 +30,12 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 	Context("LOG-1575", func() {
 		It("should fix sending JSON logs to syslog and elasticsearch without error", func() {
 			pipelineBuilder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication)
+				FromInput(obs.InputTypeApplication)
 			pipelineBuilder.ToElasticSearchOutput()
-			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Name = SYSLOG_NAME
-				spec.Syslog = &logging.Syslog{
-					Severity: "informational",
-					AppName:  "myapp",
-					RFC:      "RFC5424",
-				}
-			},
-				logging.OutputTypeSyslog,
-			)
+			pipelineBuilder.ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				output.Syslog.Severity = "informational"
+				output.Syslog.AppName = "myapp"
+			})
 			Expect(framework.Deploy()).To(BeNil())
 
 			//seed ES logstore to have non-structured message entry
@@ -54,11 +48,11 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			Expect(framework.WriteMessagesToApplicationLog(crioMsg, 1)).To(BeNil())
 
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(SYSLOG_NAME)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).To(HaveLen(2), "Expected syslog to have received all the records")
 
-			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
+			raw, err := framework.GetLogsFromElasticSearch(string(obs.OutputTypeElasticsearch), string(obs.InputTypeApplication))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 
@@ -78,28 +72,26 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 	Context("LOG-3640", func() {
 		It("should send parsed JSON logs to different outputs when using multiple pipelines", func() {
 			builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder)
-			pipelineBuilder := builder.FromInput(logging.InputNameApplication).WithParseJson().Named("one")
-			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.URL = "http://0.0.0.0:9200"
-				spec.Elasticsearch = &logging.Elasticsearch{
-					ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
-						StructuredTypeName: "foo",
-					},
-				}
-			}, logging.OutputTypeElasticsearch)
+			builder.FromInput(obs.InputTypeApplication).WithParseJson().Named("one").
+				ToElasticSearchOutput(func(output *obs.OutputSpec) {
+					output.Elasticsearch.URL = "http://0.0.0.0:9200"
+					output.Elasticsearch.Index = "foo"
+				})
 
-			builder.FromInput(logging.InputNameApplication).WithParseJson().Named("two").
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-					spec.Type = logging.OutputTypeElasticsearch
-					spec.URL = "http://0.0.0.0:9800"
-					spec.Elasticsearch = &logging.Elasticsearch{
-						ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
-							StructuredTypeName: "foo",
+			builder.FromInput(obs.InputTypeApplication).WithParseJson().Named("two").
+				ToOutputWithVisitor(func(output *obs.OutputSpec) {
+					output.Type = obs.OutputTypeElasticsearch
+					output.Elasticsearch = &obs.Elasticsearch{
+						URLSpec: obs.URLSpec{
+							URL: "http://0.0.0.0:9800",
+						},
+						IndexSpec: obs.IndexSpec{
+							Index: "foo",
 						},
 					}
 				}, "other-es")
 
-			builder.FromInput(logging.InputNameApplication).WithParseJson().Named("three").
+			builder.FromInput(obs.InputTypeApplication).WithParseJson().Named("three").
 				ToHttpOutput()
 
 			Expect(framework.Deploy()).To(BeNil())
@@ -108,15 +100,20 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			crioMsg := functional.NewCRIOLogMessage("2013-04-28T14:36:03.243000+00:00", appMsg, false)
 			Expect(framework.WriteMessagesToApplicationLog(crioMsg, 1)).To(BeNil())
 
-			otherLogs, err := framework.GetLogsFromElasticSearchIndex("other-es", "app-foo-write")
+			otherLogs, err := framework.GetLogsFromElasticSearchIndex("other-es", "foo",
+				functional.Option{
+					Name:  "port",
+					Value: "9800",
+				},
+			)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(otherLogs).To(HaveLen(1), "Expected syslog to have received all the records")
 
-			esLogs, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, "app-foo-write")
+			esLogs, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), "foo")
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(esLogs).To(HaveLen(1))
 
-			httpLogs, err := framework.ReadLogsFrom(logging.OutputTypeHttp, logging.InputNameApplication)
+			httpLogs, err := framework.ReadLogsFrom(string(obs.OutputTypeHTTP), string(obs.InputTypeApplication))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(httpLogs).To(HaveLen(1))
 
@@ -128,6 +125,5 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 				Expect(logs[0].Structured).To(Not(BeEmpty()), "Expected structured logs for", output)
 			}
 		})
-
 	})
 })

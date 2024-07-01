@@ -256,6 +256,7 @@ test-functional:
 		./test/functional/outputs/kafka \
 		./test/functional/outputs/loki \
 		./test/functional/outputs/splunk \
+		./test/functional/outputs/logstash \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector

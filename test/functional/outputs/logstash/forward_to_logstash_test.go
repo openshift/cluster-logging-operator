@@ -1,31 +1,33 @@
-package outputs
+package logstash
 
 import (
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"path"
 
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logstash", func() {
+var _ = Describe("[Functional][Outputs][Logstash] Output to Logstash", func() {
 
 	//LogstashApplicationLog is the log format as received by
-	//Logstash over fluentd forward protocol
+	//Logstash over http
 	type LogstashApplicationLog struct {
 		types.ApplicationLog
-		Tags    []string `json:"tags"`
-		Version string   `json:"@version"`
-		Host    string   `json:"host"`
-		Port    int      `json:"port"`
+		Tags    []string          `json:"tags"`
+		Version string            `json:"@version"`
+		Host    string            `json:"host"`
+		Port    int               `json:"port"`
+		Headers map[string]string `json:"headers"`
 	}
 
 	const (
@@ -37,10 +39,8 @@ var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logst
 		//replace tabs with spaces
 		pipelineConf = `
 input {
-  tcp {
-    codec => fluent{
-      nanosecond_precision => true
-    }
+  http {
+	additional_codecs => { "application/json" => "json_lines" }
     port => 24224
   }
 }
@@ -57,7 +57,7 @@ output {
 
 		newVisitor = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {
-				log.V(2).Info("Adding forward output to logstash", "name", logging.OutputTypeFluentdForward)
+				log.V(2).Info("Adding forward output to logstash", "name", obs.OutputTypeHTTP)
 				configName := "logstash-config"
 				log.V(2).Info("Creating configmap", "name", configName)
 				config := runtime.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
@@ -68,8 +68,8 @@ output {
 					return err
 				}
 
-				log.V(2).Info("Adding container", "name", logging.OutputTypeFluentdForward)
-				b.AddContainer(logging.OutputTypeFluentdForward, logStashImage).
+				log.V(2).Info("Adding container", "name", obs.OutputTypeHTTP)
+				b.AddContainer(string(obs.OutputTypeHTTP), logStashImage).
 					AddVolumeMount("logstash-config", path.Join("/usr/share/logstash/pipeline", pipelineConfFileName), pipelineConfFileName, true).
 					AddVolumeMount("logstash-config", path.Join("/usr/share/logstash/config", logstashConfFileName), logstashConfFileName, true).
 					End().
@@ -89,12 +89,17 @@ output {
 	)
 
 	BeforeEach(func() {
-		Skip("Enable me for vector?  Over http?")
 		framework = functional.NewCollectorFunctionalFramework()
 		addLogStashContainer := newVisitor(framework)
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput()
+			FromInput(obs.InputTypeApplication).
+			ToHttpOutput(func(output *obs.OutputSpec) {
+				output.HTTP = &obs.HTTP{
+					URLSpec: obs.URLSpec{
+						URL: "http://0.0.0.0:24224",
+					},
+				}
+			})
 		Expect(framework.DeployWithVisitor(addLogStashContainer)).To(BeNil())
 		Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 	})
@@ -102,9 +107,9 @@ output {
 		framework.Cleanup()
 	})
 
-	Context("when sending to Logstash using fluent's forward protocol", func() {
+	Context("when sending to Logstash using HTTP", func() {
 		It("should  be compatible", func() {
-			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 

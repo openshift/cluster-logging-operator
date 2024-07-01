@@ -254,6 +254,7 @@ test-functional:
 		./test/functional/outputs/splunk \
 		./test/functional/outputs/logstash \
 		./test/functional/outputs/syslog \
+		./test/functional/outputs/multiple \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector

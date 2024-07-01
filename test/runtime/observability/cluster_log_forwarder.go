@@ -158,6 +158,9 @@ func (p *PipelineBuilder) ToSyslogOutput(rfc obs.SyslogRFCType, visitors ...func
 				URL: "tcp://0.0.0.0:24224",
 			},
 		}
+		for _, v := range visitors {
+			v(output)
+		}
 	}
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeSyslog))
 }

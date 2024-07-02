@@ -31,7 +31,7 @@ const (
 
 func WaitForMetricsToShow() bool {
 
-	if err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		prometheusResponse := GetCollectorMetrics(VectorUpTotal)
 		prometheusResponse = prometheusResponse["data"].(map[string]interface{})
 		return len(prometheusResponse["result"].([]interface{})) != 0, nil

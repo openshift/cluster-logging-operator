@@ -126,6 +126,7 @@ type PipelineSpec struct {
 	// Name of the pipeline
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 
@@ -140,11 +141,13 @@ type PipelineSpec struct {
 	// `audit` selects node logs related to security audits.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems:=1
 	InputRefs []string `json:"inputRefs"`
 
 	// OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems:=1
 	OutputRefs []string `json:"outputRefs"`
 
 	// Filters lists the names of filters to be applied to records going through this pipeline.
@@ -198,6 +201,7 @@ type SecretKey struct {
 
 // BearerToken allows configuring the source of a bearer token used for authentication.
 // The token can either be read from a secret or from a Kubernetes ServiceAccount.
+// +kubebuilder:validation:XValidation:rule="self.from == 'secret' && has(self.secret)", message="Additional secret spec is required when bearer token is sourced from a secret"
 type BearerToken struct {
 
 	// From is the source from where to find the token

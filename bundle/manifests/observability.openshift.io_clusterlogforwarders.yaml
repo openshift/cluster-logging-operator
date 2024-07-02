@@ -371,6 +371,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the filter from a `pipeline`.
+                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                       type: string
                     openShiftLabels:
                       additionalProperties:
@@ -432,6 +433,19 @@ spec:
                   - name
                   - type
                   type: object
+                  x-kubernetes-validations:
+                  - message: Additional type specific spec is required for the filter
+                      type
+                    rule: self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)
+                  - message: Additional type specific spec is required for the filter
+                      type
+                    rule: self.type != 'drop' || has(self.drop)
+                  - message: Additional type specific spec is required for the filter
+                      type
+                    rule: self.type != 'prune' || has(self.prune)
+                  - message: Additional type specific spec is required for the filter
+                      type
+                    rule: self.type != 'openShiftLabels' || has(self.openShiftLabels)
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
@@ -593,6 +607,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.
+                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                       type: string
                     receiver:
                       description: Receiver to receive logs from non-cluster sources.
@@ -767,6 +782,19 @@ spec:
                   - name
                   - type
                   type: object
+                  x-kubernetes-validations:
+                  - message: Additional type specific spec is required for the input
+                      type
+                    rule: self.type != 'application' || has(self.application)
+                  - message: Additional type specific spec is required for the input
+                      type
+                    rule: self.type != 'infrastructure' || has(self.infrastructure)
+                  - message: Additional type specific spec is required for the input
+                      type
+                    rule: self.type != 'audit' || has(self.audit)
+                  - message: Additional type specific spec is required for the input
+                      type
+                    rule: self.type != 'receiver' || has(self.receiver)
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
@@ -999,6 +1027,10 @@ spec:
                                   required:
                                   - from
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: Additional secret spec is required when
+                                      bearer token is sourced from a secret
+                                    rule: self.from == 'secret' && has(self.secret)
                               required:
                               - roleARN
                               type: object
@@ -1132,6 +1164,10 @@ spec:
                               required:
                               - from
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from == 'secret' && has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1381,6 +1417,10 @@ spec:
                               required:
                               - from
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from == 'secret' && has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1673,6 +1713,10 @@ spec:
                               required:
                               - from
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from == 'secret' && has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1818,6 +1862,10 @@ spec:
                               required:
                               - from
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from == 'secret' && has(self.secret)
                           required:
                           - token
                           type: object
@@ -1847,6 +1895,7 @@ spec:
                           properties:
                             name:
                               description: Name of the in-cluster LokiStack resource.
+                              pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                               type: string
                             namespace:
                               description: Namespace of the in-cluster LokiStack resource.
@@ -1898,6 +1947,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the output from a `pipeline`.
+                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                       type: string
                     otlp:
                       description: OTLP defines configuration for sending logs via
@@ -1961,6 +2011,10 @@ spec:
                               required:
                               - from
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from == 'secret' && has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -2456,6 +2510,40 @@ spec:
                   - name
                   - type
                   type: object
+                  x-kubernetes-validations:
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'azureMonitor' || has(self.azureMonitor)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'cloudwatch' || has(self.cloudwatch)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'elasticsearch' || has(self.elasticsearch)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'googleCloudLogging' || has(self.googleCloudLogging)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'http' || has(self.http)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'kafka' || has(self.kafka)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'loki' || has(self.loki)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'lokiStack' || has(self.lokiStack)
+                  - message: Additional type specific spec is required the for output
+                      type
+                    rule: self.type != 'splunk' || has(self.splunk)
+                  - message: Additional type specific spec is required the for output
+                      type
+                    rule: self.type != 'syslog' || has(self.syslog)
+                  - message: Additional type specific spec is required the for output
+                      type
+                    rule: self.type != 'otlp' || has(self.otlp)
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
@@ -2484,15 +2572,18 @@ spec:
                         logs related to security audits."
                       items:
                         type: string
+                      minItems: 1
                       type: array
                     name:
                       description: Name of the pipeline
+                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                       type: string
                     outputRefs:
                       description: OutputRefs lists the names (`output.name`) of outputs
                         from this pipeline.
                       items:
                         type: string
+                      minItems: 1
                       type: array
                   required:
                   - inputRefs

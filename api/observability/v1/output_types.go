@@ -36,9 +36,9 @@ const (
 	OutputTypeKafka              OutputType = "kafka"
 	OutputTypeLoki               OutputType = "loki"
 	OutputTypeLokiStack          OutputType = "lokiStack"
+	OutputTypeOTLP               OutputType = "otlp"
 	OutputTypeSplunk             OutputType = "splunk"
 	OutputTypeSyslog             OutputType = "syslog"
-	OutputTypeOTLP               OutputType = "otlp"
 )
 
 var (
@@ -59,10 +59,22 @@ var (
 )
 
 // OutputSpec defines a destination for log messages.
+// +kubebuilder:validation:XValidation:rule="self.type != 'azureMonitor' || has(self.azureMonitor)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'cloudwatch' || has(self.cloudwatch)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'elasticsearch' || has(self.elasticsearch)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'googleCloudLogging' || has(self.googleCloudLogging)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'http' || has(self.http)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'kafka' || has(self.kafka)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'loki' || has(self.loki)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'lokiStack' || has(self.lokiStack)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'splunk' || has(self.splunk)", message="Additional type specific spec is required the for output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'syslog' || has(self.syslog)", message="Additional type specific spec is required the for output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'otlp' || has(self.otlp)", message="Additional type specific spec is required the for output type"
 type OutputSpec struct {
 	// Name used to refer to the output from a `pipeline`.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	Name string `json:"name"`
 
 	// Type of output sink.
@@ -600,6 +612,7 @@ type LokiStackTarget struct {
 	// Name of the in-cluster LokiStack resource.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	Name string `json:"name"`
 }
 

@@ -50,10 +50,15 @@ var (
 )
 
 // InputSpec defines a selector of log messages for a given log type.
+// +kubebuilder:validation:XValidation:rule="self.type != 'application' || has(self.application)", message="Additional type specific spec is required for the input type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'infrastructure' || has(self.infrastructure)", message="Additional type specific spec is required for the input type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'audit' || has(self.audit)", message="Additional type specific spec is required for the input type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'receiver' || has(self.receiver)", message="Additional type specific spec is required for the input type"
 type InputSpec struct {
 	// Name used to refer to the input of a `pipeline`.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	Name string `json:"name"`
 
 	// Type of output sink.

@@ -41,10 +41,15 @@ var (
 )
 
 // FilterSpec defines a filter for log messages.
+// +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'drop' || has(self.drop)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'prune' || has(self.prune)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'openShiftLabels' || has(self.openShiftLabels)", message="Additional type specific spec is required for the filter type"
 type FilterSpec struct {
 	// Name used to refer to the filter from a `pipeline`.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	Name string `json:"name"`
 
 	// Type of filter.

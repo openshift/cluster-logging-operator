@@ -1,0 +1,155 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "node.name",
+            "value": {
+              "stringValue": "ip-10-0-37-62.ec2.internal"
+            }
+          },
+          {
+            "key": "cluster.id",
+            "value": {
+              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {},
+          "logRecords": [
+            {
+              "timeUnixNano": "1719846785642900347",
+              "observedTimeUnixNano": "1719846785643873091",
+              "severityNumber": 9,
+              "body": {
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"bdcd3e33-88ca-4150-b3f4-5afc8aaf875c\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/metrics\",\"verb\":\"get\",\"user\":{\"username\":\"system:serviceaccount:openshift-monitoring:prometheus-k8s\",\"groups\":[\"system:authenticated\"]},\"sourceIPs\":[\"10.128.2.16\"],\"userAgent\":\"Prometheus/2.46.0\",\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-01T15:12:56.407763Z\",\"stageTimestamp\":\"2024-07-01T15:12:56.433612Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"prometheus-k8s\\\" of ClusterRole \\\"prometheus-k8s\\\" to ServiceAccount \\\"prometheus-k8s/openshift-monitoring\\\"\"}}"
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "audit"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "openshiftAPI"
+                  }
+                },
+                {
+                  "key": "url.full",
+                  "value": {
+                    "stringValue": "/metrics"
+                  }
+                },
+                {
+                  "key": "http.response.status.code",
+                  "value": {
+                    "stringValue": "200"
+                  }
+                },
+                {
+                  "key": "http.request.method",
+                  "value": {
+                    "stringValue": "get"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            },
+            {
+              "timeUnixNano": "1719846785642918983",
+              "observedTimeUnixNano": "1719846785643954489",
+              "severityNumber": 9,
+              "body": {
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"517a9699-0830-428e-86ce-c17f1ce5121e\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/route.openshift.io/v1/namespaces/openshift-console/routes/downloads-custom\",\"verb\":\"delete\",\"user\":{\"username\":\"system:serviceaccount:openshift-console-operator:console-operator\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-console-operator\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"console-operator-7fdf955f78-j2mwj\"],\"authentication.kubernetes.io/pod-uid\":[\"c373480d-f0f6-4ba7-82e7-c5ffc8980479\"]}},\"sourceIPs\":[\"10.0.22.41\",\"10.130.0.1\"],\"userAgent\":\"console/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"routes\",\"namespace\":\"openshift-console\",\"name\":\"downloads-custom\",\"apiGroup\":\"route.openshift.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"status\":\"Failure\",\"message\":\"routes.route.openshift.io \\\"downloads-custom\\\" not found\",\"reason\":\"NotFound\",\"details\":{\"name\":\"downloads-custom\",\"group\":\"route.openshift.io\",\"kind\":\"routes\"},\"code\":404},\"requestReceivedTimestamp\":\"2024-07-01T15:12:59.006568Z\",\"stageTimestamp\":\"2024-07-01T15:12:59.013538Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by RoleBinding \\\"console-operator/openshift-console\\\" of Role \\\"console-operator\\\" to ServiceAccount \\\"console-operator/openshift-console-operator\\\"\"}}"
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "audit"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "openshiftAPI"
+                  }
+                },
+                {
+                  "key": "url.full",
+                  "value": {
+                    "stringValue": "/apis/route.openshift.io/v1/namespaces/openshift-console/routes/downloads-custom"
+                  }
+                },
+                {
+                  "key": "http.response.status.code",
+                  "value": {
+                    "stringValue": "404"
+                  }
+                },
+                {
+                  "key": "http.request.method",
+                  "value": {
+                    "stringValue": "delete"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            },
+            {
+              "timeUnixNano": "1719846785642935013",
+              "observedTimeUnixNano": "1719846785644024330",
+              "severityNumber": 9,
+              "body": {
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"6743ec8b-8e47-41e5-a90b-7024888130bc\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/route.openshift.io/v1/namespaces/openshift-console/routes/console-custom\",\"verb\":\"delete\",\"user\":{\"username\":\"system:serviceaccount:openshift-console-operator:console-operator\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-console-operator\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"console-operator-7fdf955f78-j2mwj\"],\"authentication.kubernetes.io/pod-uid\":[\"c373480d-f0f6-4ba7-82e7-c5ffc8980479\"]}},\"sourceIPs\":[\"10.0.22.41\",\"10.130.0.1\"],\"userAgent\":\"console/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"routes\",\"namespace\":\"openshift-console\",\"name\":\"console-custom\",\"apiGroup\":\"route.openshift.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"status\":\"Failure\",\"message\":\"routes.route.openshift.io \\\"console-custom\\\" not found\",\"reason\":\"NotFound\",\"details\":{\"name\":\"console-custom\",\"group\":\"route.openshift.io\",\"kind\":\"routes\"},\"code\":404},\"requestReceivedTimestamp\":\"2024-07-01T15:12:59.006732Z\",\"stageTimestamp\":\"2024-07-01T15:12:59.014343Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by RoleBinding \\\"console-operator/openshift-console\\\" of Role \\\"console-operator\\\" to ServiceAccount \\\"console-operator/openshift-console-operator\\\"\"}}"
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "audit"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "openshiftAPI"
+                  }
+                },
+                {
+                  "key": "url.full",
+                  "value": {
+                    "stringValue": "/apis/route.openshift.io/v1/namespaces/openshift-console/routes/console-custom"
+                  }
+                },
+                {
+                  "key": "http.response.status.code",
+                  "value": {
+                    "stringValue": "404"
+                  }
+                },
+                {
+                  "key": "http.request.method",
+                  "value": {
+                    "stringValue": "delete"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

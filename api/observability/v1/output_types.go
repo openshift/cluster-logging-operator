@@ -462,7 +462,7 @@ const (
 	GoogleCloudLoggingIDTypeOrganization   GoogleCloudLoggingIDType = "organization"
 )
 
-type HttpTuningSpec struct {
+type HTTPTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
 
 	// Compression causes data to be compressed before sending over the network.
@@ -485,7 +485,7 @@ type HTTP struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
-	Tuning *HttpTuningSpec `json:"tuning,omitempty"`
+	Tuning *HTTPTuningSpec `json:"tuning,omitempty"`
 
 	// Headers specify optional headers to be sent with the request
 	//

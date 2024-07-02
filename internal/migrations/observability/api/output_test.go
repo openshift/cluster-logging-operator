@@ -504,7 +504,7 @@ var _ = Describe("#ConvertOutputs", func() {
 						Key: constants.ClientPassword,
 					},
 				},
-				Tuning: &obs.HttpTuningSpec{
+				Tuning: &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
 						Delivery:         obs.DeliveryModeAtLeastOnce,
 						MaxWrite:         utils.GetPtr(resource.MustParse("100m")),

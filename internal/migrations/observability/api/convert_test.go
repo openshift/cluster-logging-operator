@@ -383,7 +383,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								},
 								Method:  "POST",
 								Headers: map[string]string{"foo": "bar"},
-								Tuning: &obs.HttpTuningSpec{
+								Tuning: &obs.HTTPTuningSpec{
 									BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
 										Delivery: obs.DeliveryModeAtLeastOnce,
 									},

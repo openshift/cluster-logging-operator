@@ -7,15 +7,14 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	runtime "github.com/openshift/cluster-logging-operator/internal/runtime"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"math"
 	"time"
@@ -30,6 +29,7 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 		memRequest     = "64Mi"
 		linesPerSec    = 500.0
 		msgSize        = 256
+		forwarderName  = "my-logcollector"
 	)
 
 	var (
@@ -37,59 +37,45 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 		receiver    *framework.VectorHttpReceiverLogStore
 		err         error
 		generatorNS string
-		forwarder   *logging.ClusterLogForwarder
+		forwarder   *obs.ClusterLogForwarder
 	)
 	BeforeEach(func() {
 		// init the framework
 		e2e = framework.NewE2ETestFramework()
-		forwarder = testruntime.NewClusterLogForwarder()
-		forwarder.Namespace = e2e.CreateTestNamespace()
-		forwarder.Name = "my-log-collector"
+		generatorNS = e2e.CreateTestNamespace()
+		deployNS := e2e.CreateTestNamespace()
 
 		// deploy receiver
-		receiver, err = e2e.DeployHttpReceiver(forwarder.Namespace)
+		receiver, err = e2e.DeployHttpReceiver(deployNS)
 		Expect(err).To(BeNil())
-		sa, err := e2e.BuildAuthorizationFor(forwarder.Namespace, forwarder.Name).
+
+		sa, err := e2e.BuildAuthorizationFor(deployNS, forwarderName).
 			AllowClusterRole(framework.ClusterRoleCollectApplicationLogs).
 			Create()
 		Expect(err).To(BeNil())
-		forwarder.Spec.ServiceAccountName = sa.Name
 
-		cl := runtime.NewClusterLogging(forwarder.Namespace, forwarder.Name)
-		cl.Spec = logging.ClusterLoggingSpec{
-			Collection: &logging.CollectionSpec{
-				Type: logging.LogCollectionTypeVector,
-				CollectorSpec: logging.CollectorSpec{
-					Resources: &v1.ResourceRequirements{
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse(memRequest),
-							v1.ResourceCPU:    resource.MustParse(cpuRequest),
-						},
-					},
-				},
-			},
-		}
-		if err := e2e.CreateClusterLogging(cl); err != nil {
-			Fail(fmt.Sprintf("Unable to create an instance of clusterlogging: %v", err))
-		}
+		forwarder = obsruntime.NewClusterLogForwarder(deployNS, forwarderName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
+			clf.Spec.ServiceAccount.Name = sa.Name
+		})
 
-		//deploy forwarder
-		generatorNS = e2e.CreateTestNamespace()
 		testruntime.NewClusterLogForwarderBuilder(forwarder).
-			FromInputWithVisitor("myinput", func(spec *logging.InputSpec) {
-				spec.Application = &logging.Application{
-					Includes: []logging.NamespaceContainerSpec{
+			FromInputName("myinput", func(spec *obs.InputSpec) {
+				spec.Type = obs.InputTypeApplication
+				spec.Application = &obs.Application{
+					Includes: []obs.NamespaceContainerSpec{
 						{Namespace: generatorNS, Container: "log-generator*"},
 					},
 				}
-			}).ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-			spec.Type = logging.OutputTypeHttp
-			spec.URL = receiver.ClusterLocalEndpoint()
-			spec.Tuning = &logging.OutputTuningSpec{
-				Delivery: logging.OutputDeliveryModeAtLeastOnce,
+			}).ToHttpOutput(func(spec *obs.OutputSpec) {
+			spec.HTTP.URL = receiver.ClusterLocalEndpoint()
+			spec.HTTP.Tuning = &obs.HTTPTuningSpec{
+				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+					Delivery: obs.DeliveryModeAtLeastOnce,
+				},
 			}
-		}, "my-output")
-		if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+		})
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 		}
 		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {

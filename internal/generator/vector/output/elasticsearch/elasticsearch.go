@@ -13,7 +13,7 @@ import (
 )
 
 type Elasticsearch struct {
-	ID_Key      string
+	IDKey       genhelper.OptionalPair
 	Desc        string
 	ComponentID string
 	Inputs      string
@@ -33,6 +33,7 @@ func (e Elasticsearch) Template() string {
 type = "elasticsearch"
 inputs = {{.Inputs}}
 endpoints = ["{{.Endpoint}}"]
+{{.IDKey}}
 bulk.index = "{{ .Index }}"
 bulk.action = "create"
 {{.Compression}}
@@ -52,11 +53,25 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 			Debug(id, helpers.MakeInputs(inputs...)),
 		}
 	}
+	outputs := []Element{}
+	if o.Elasticsearch.Version == 6 {
+		addID := helpers.MakeID(id, "add_id")
+		outputs = append(outputs, Remap{
+			ComponentID: addID,
+			Inputs:      helpers.MakeInputs(inputs...),
+			VRL: `._id = encode_base64(uuid_v4())
+if exists(.kubernetes.event.metadata.uid) {
+  ._id = .kubernetes.event.metadata.uid
+}`,
+		})
+		inputs = []string{addID}
+	}
 	sink := Output(id, o, inputs, secrets, op)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
-	outputs := []Element{
+
+	outputs = append(outputs,
 		sink,
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
@@ -64,14 +79,19 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 		common.NewRequest(id, strategy),
 		tls.New(id, o.TLS, secrets, op, Option{URL, o.Elasticsearch.URL}),
 		auth.HTTPAuth(id, o.Elasticsearch.Authentication, secrets),
-	}
+	)
 
 	return outputs
 }
 
 func Output(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, op Options) *Elasticsearch {
+	idKey := genhelper.NewOptionalPair("id_key", nil)
+	if o.Elasticsearch.Version == 6 {
+		idKey.Value = "_id"
+	}
 	es := Elasticsearch{
 		ComponentID: id,
+		IDKey:       idKey,
 		Endpoint:    o.Elasticsearch.URL,
 		Inputs:      helpers.MakeInputs(inputs...),
 		Index:       o.Elasticsearch.Index,

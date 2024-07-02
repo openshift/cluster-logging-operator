@@ -1,7 +1,18 @@
+[transforms.es_1_add_id]
+type = "remap"
+inputs = ["application"]
+source = '''
+  ._id = encode_base64(uuid_v4())
+  if exists(.kubernetes.event.metadata.uid) {
+    ._id = .kubernetes.event.metadata.uid
+  }
+'''
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["application"]
+inputs = ["es_1_add_id"]
 endpoints = ["https://es.svc.infra.cluster:9200"]
+id_key = "_id"
 bulk.index = "{{.log_type}}"
 bulk.action = "create"
 api_version = "v6"

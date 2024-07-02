@@ -76,10 +76,18 @@ wait_elasticsearch() {
 }
 
 reset_logging(){
-    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
-      oc -n $LOGGING_NS delete $r --ignore-not-found --force --grace-period=0||:
-      os::cmd::try_until_failure "oc -n $LOGGING_NS get $r" "$((1 * $minute))"
-    done
+  local resources=$(cat <<EOL
+    elasticsearch.logging.openshift.io/elasticsearch
+    clusterlogforwarder.observability.openshift.io/instance
+    serviceaccount/my-forwarder
+    serviceaccount/eventrouter
+    clusterrole/event-reader
+    clusterrolebinding/event-reader-binding
+    configmap/eventrouter
+    deployment/eventrouter
+EOL
+)
+    oc -n $LOGGING_NS delete $resources --ignore-not-found --force --grace-period=0||:
 }
 
 cleanup() {
@@ -88,7 +96,7 @@ cleanup() {
 
     os::test::junit::declare_suite_end
     set +e
-    if [ "true" == "${DO_CLEANUP:-"false"}" ] ; then
+    if [ "true" == "${DO_CLEANUP:-"true"}" ] ; then
       os::log::info "Running cleanup"
       if [ "$return_code" != "0" ] ; then
 	      gather_logging_resources ${LOGGING_NS} $test_artifactdir
@@ -100,10 +108,11 @@ cleanup() {
       oc process -p SA_NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
          -f $EVENT_ROUTER_TEMPLATE | oc -n ${LOGGING_NS} delete -f -
 
+      reset_logging
+
       os::cleanup::all "${return_code}"
     fi
 
-    reset_logging
     set -e
     exit $return_code
 }
@@ -111,38 +120,87 @@ trap "cleanup" EXIT
 
 function warn_nonformatted() {
     local index=$1
-    # check if eventrouter and fluentd with correct ViaQ plugin are deployed
     local non_formatted_event_count=$(oc -n $LOGGING_NS exec -c elasticsearch $espod -- es_util --query="$index/_count?q=verb:*" | jq .count )
     if [ "$non_formatted_event_count" != 0 ]; then
-        os::log::warning "$non_formatted_event_count events from eventrouter in index $index were not processed by ViaQ fluentd plugin"
+        os::log::warning "$non_formatted_event_count events from eventrouter in index $index were not processed by collector"
     else
-        os::log::info "good - looks like all eventrouter events were processed by fluentd"
+        os::log::info "good - looks like all eventrouter events were processed by collector"
     fi
 }
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
 reset_logging
+
 cat <<EOL | oc -n ${LOGGING_NS} create -f -
 apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
+kind: "Elasticsearch"
 metadata:
-  name: "instance"
+  name: "elasticsearch"
+  annotations:
+      logging.openshift.io/elasticsearch-cert-management: "true"
+      logging.openshift.io/elasticsearch-cert.fluentd: "system.logging.fluentd"
 spec:
   managementState: "Managed"
-  logStore:
-    type: "elasticsearch"
-    elasticsearch:
-      nodeCount: 1
-      redundancyPolicy: "ZeroRedundancy"
-      resources:
-        request:
-          memory: 1Gi
-          cpu: 100m
-  collection:
-    type: "fluentd"
+  nodeSpec:
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 1Gi
+  nodes:
+  - nodeCount: 1
+    roles:
+    - client
+    - data
+    - master
+  redundancyPolicy: ZeroRedundancy
 EOL
 
+os::cmd::expect_success "oc -n ${LOGGING_NS} create serviceaccount my-forwarder"
+os::cmd::expect_success "oc adm policy add-cluster-role-to-user -n ${LOGGING_NS} collect-infrastructure-logs -z my-forwarder"
+
+cat <<'EOL' | oc -n ${LOGGING_NS} create -f -
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  managementState: Managed
+  outputs:
+  - name: rh-es
+    type: elasticsearch
+    elasticsearch:
+      url: https://elasticsearch.openshift-logging.svc:9200
+      index: infrastructure
+      version: 6
+    authentication:
+      token:
+        from: serviceAccountToken
+    tls:
+      ca:
+        key: ca-bundle.crt
+        secret:
+          name: fluentd
+      certificate:
+        key: tls.crt
+        secret:
+          name: fluentd
+      key:
+        key: tls.key
+        secret:
+          name: fluentd
+  pipelines:
+  - inputRefs:
+    - infrastructure
+    name: eventrouter
+    outputRefs:
+    - rh-es
+  serviceAccount:
+    name: my-forwarder
+EOL
 
 deploy_eventrouter
 wait_elasticsearch

@@ -1,22 +1,26 @@
 package flowcontrol
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	log "github.com/ViaQ/logerr/v2/log/static"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"io"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os/exec"
 	"strconv"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"strings"
+	"time"
 )
 
 const (
-	SecretName = "oc get secret -n openshift-monitoring | grep  prometheus-k8s-token* | head -n 1 | awk '{print $1}'" //nolint:gosec
-	Token      = "echo $(oc get secret %s -n openshift-monitoring -o json | jq -r '.data.token') | base64 -d"         //nolint:gosec
-	ThanosHost = "oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'"
+	SecretName = `oc get secret -n openshift-monitoring -o name | grep  prometheus-k8s-token* | head -n 1 | grep -o prometheus-k8s.*` //nolint:gosec
+	Token      = `oc get secret %s -n openshift-monitoring -o jsonpath={.data.token} | base64 -d`                                     //nolint:gosec
+	ThanosHost = `oc get route thanos-querier -n openshift-monitoring -o jsonpath={.spec.host}`
 
 	VectorCompSentEvents = `rate(vector_component_sent_events_total{component_name="%s"}[30s])`
 	SumMetric            = `sum(%s)`
@@ -26,21 +30,16 @@ const (
 )
 
 func WaitForMetricsToShow() bool {
-	for i := 0; i < maxRetries; i++ {
+
+	if err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
 		prometheusResponse := GetCollectorMetrics(VectorUpTotal)
 		prometheusResponse = prometheusResponse["data"].(map[string]interface{})
-
-		if len(prometheusResponse["result"].([]interface{})) != 0 {
-			return true
-		}
-
+		return len(prometheusResponse["result"].([]interface{})) != 0, nil
+	}); err != nil {
+		log.V(0).Error(err, "Error waiting for metrics to be available")
+		return false
 	}
-	return false
-}
-
-func ExpectMetricsNotFound(prometheusResponse map[string]interface{}) {
-	prometheusResponse = prometheusResponse["data"].(map[string]interface{})
-	Expect(len(prometheusResponse["result"].([]interface{})) == 0).To(BeTrue())
+	return true
 }
 
 func ExpectMetricsWithinRange(prometheusResponse map[string]interface{}, lower, upper float64) {
@@ -58,24 +57,28 @@ func ExpectMetricsWithinRange(prometheusResponse map[string]interface{}, lower, 
 }
 
 func GetCollectorMetrics(metric string) map[string]interface{} {
-	secret := ExecuteCmd(SecretName)
-	secret = secret[:len(secret)-1] // remove newline character
-	token := ExecuteCmd(fmt.Sprintf(Token, secret))
+	var err error
+	var secret string
+	secret, err = ExecuteCmd(SecretName)
+	Expect(err).To(Succeed(), secret)
+	secret = strings.TrimSpace(secret)
 
-	thanos_host := ExecuteCmd(ThanosHost) // remove newline character
-	thanos_host = thanos_host[:len(thanos_host)-1]
+	secret, err = ExecuteCmd(fmt.Sprintf(Token, secret))
+	Expect(err).To(Succeed(), secret)
+	secret = strings.TrimSpace(secret)
 
-	return QueryPrometheus(thanos_host, token, metric)
+	var thanosHost string
+	thanosHost, err = ExecuteCmd(ThanosHost)
+	Expect(err).To(Succeed(), thanosHost)
+	thanosHost = strings.TrimSpace(thanosHost)
+
+	return QueryPrometheus(thanosHost, secret, metric)
 }
 
-func ExecuteCmd(cmd string) string {
-	result, err := exec.Command("bash", "-c", cmd).Output()
-
-	if err != nil {
-		Fail(fmt.Sprintf("Command Failed: %s with error %v", cmd, err))
-	}
-	return string(result)
-
+func ExecuteCmd(cmd string) (_ string, err error) {
+	var result []byte
+	result, err = exec.Command("bash", "-c", cmd).Output()
+	return string(result), err
 }
 
 func QueryPrometheus(host, token, query string) map[string]interface{} {

@@ -3,15 +3,16 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
+
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
@@ -21,28 +22,25 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 
 	})
 	AfterEach(func() {
 		framework.Cleanup()
 	})
 
-	setSyslogSpecValues := func(outspec *logging.OutputSpec) {
-		outspec.Syslog = &logging.Syslog{
-			Facility: "user",
-			Severity: "debug",
-			AppName:  "myapp",
-			ProcID:   "myproc",
-			MsgID:    "mymsg",
-			RFC:      "RFC5424",
-		}
+	setSyslogSpecValues := func(outspec *obs.OutputSpec) {
+		outspec.Syslog.Facility = "user"
+		outspec.Syslog.Severity = "debug"
+		outspec.Syslog.AppName = "myapp"
+		outspec.Syslog.ProcID = "myproc"
+		outspec.Syslog.MsgID = "mymsg"
 	}
 
 	join := func(
-		f1 func(spec *logging.OutputSpec),
-		f2 func(spec *logging.OutputSpec)) func(*logging.OutputSpec) {
-		return func(s *logging.OutputSpec) {
+		f1 func(spec *obs.OutputSpec),
+		f2 func(spec *obs.OutputSpec)) func(*obs.OutputSpec) {
+		return func(s *obs.OutputSpec) {
 			f1(s)
 			f2(s)
 		}
@@ -62,17 +60,17 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 
 	Context("Application Logs", func() {
 		It("should send large message over UDP", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
-					spec.URL = "udp://0.0.0.0:24224"
-				}), logging.OutputTypeSyslog)
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(output *obs.OutputSpec) {
+					output.Syslog.URL = "udp://0.0.0.0:24224"
+				}))
 			Expect(framework.Deploy()).To(BeNil())
 
 			var MaxLen int = 30000
 			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen, 0)).To(BeNil())
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " - ")
@@ -87,9 +85,9 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
 		It("should send NonJson App logs to syslog", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSyslogOutput(obs.SyslogRFC5424, setSyslogSpecValues)
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Log message data
@@ -98,7 +96,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")
@@ -107,13 +105,13 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
 		It("should take values of appname, procid, messageid from record", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
+				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = "$.message.appname_key"
 					spec.Syslog.ProcID = "$.message.procid_key"
 					spec.Syslog.MsgID = "$.message.msgid_key"
-				}), logging.OutputTypeSyslog)
+				}))
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Log message data
@@ -122,7 +120,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")
@@ -130,43 +128,43 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getProcID(fields)).To(Equal("rec_procid"))
 			Expect(getMsgID(fields)).To(Equal("rec_msgid"))
 		})
-		It("should take values from fluent tag", func() {
-			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
-				Skip("Test requires fluentd; Can this be enabled for the new API")
-			}
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
-					spec.Syslog.AppName = "tag"
-				}), logging.OutputTypeSyslog)
-			Expect(framework.Deploy()).To(BeNil())
+		// It("should take values from fluent tag", func() {
+		// 	if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
+		// 		Skip("Test requires fluentd; Can this be enabled for the new API")
+		// 	}
+		// 	testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+		// 		FromInput(logging.InputNameApplication).
+		// 		ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
+		// 			spec.Syslog.AppName = "tag"
+		// 		}), logging.OutputTypeSyslog)
+		// 	Expect(framework.Deploy()).To(BeNil())
 
-			// Log message data
-			for _, log := range JSONApplicationLogs {
-				log = test.Escapelines(log)
-				log = functional.NewFullCRIOLogMessage(timestamp, log)
-				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
-			}
-			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).ToNot(BeEmpty())
-			fields := strings.Split(outputlogs[0], " ")
-			Expect(getAppName(fields)).To(HavePrefix("kubernetes."))
-		})
+		// 	// Log message data
+		// 	for _, log := range JSONApplicationLogs {
+		// 		log = test.Escapelines(log)
+		// 		log = functional.NewFullCRIOLogMessage(timestamp, log)
+		// 		Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
+		// 	}
+		// 	// Read line from Syslog output
+		// 	outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+		// 	Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		// 	Expect(outputlogs).ToNot(BeEmpty())
+		// 	fields := strings.Split(outputlogs[0], " ")
+		// 	Expect(getAppName(fields)).To(HavePrefix("kubernetes."))
+		// })
 	})
 	Context("Audit logs", func() {
 		It("should send kubernetes audit logs", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
-				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				ToSyslogOutput(obs.SyslogRFC5424, setSyslogSpecValues)
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Log message data
 			Expect(framework.WriteK8sAuditLog(1)).To(BeNil())
 
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadAuditLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			for _, o := range outputlogs {
@@ -178,16 +176,16 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
 		It("should send openshift audit logs", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
-				ToOutputWithVisitor(setSyslogSpecValues, logging.OutputTypeSyslog)
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				ToSyslogOutput(obs.SyslogRFC5424, setSyslogSpecValues)
 			Expect(framework.Deploy()).To(Succeed())
 
 			// Log message data
 			Expect(framework.WriteOpenshiftAuditLog(1)).To(Succeed())
 
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadAuditLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")

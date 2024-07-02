@@ -2,17 +2,17 @@ package syslog
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
@@ -23,28 +23,25 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		framework.MaxReadDuration = &maxReadDuration
 	})
 
 	AfterEach(func() {
 		framework.Cleanup()
 	})
-	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, expInfo string, requiresFluentd bool) {
-		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
-			Skip("Test requires fluentd")
-		}
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+
+	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, expInfo string) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Syslog.Facility = "user"
-				spec.Syslog.Severity = "debug"
-				spec.Syslog.AppName = appName
-				spec.Syslog.ProcID = procId
-				spec.Syslog.MsgID = msgId
-				spec.Syslog.RFC = e2e.RFC5424.String()
-				spec.Syslog.PayloadKey = "message"
-			}, logging.OutputTypeSyslog)
+			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				output.Syslog.Facility = "user"
+				output.Syslog.Severity = "debug"
+				output.Syslog.AppName = appName
+				output.Syslog.ProcID = procId
+				output.Syslog.MsgID = msgId
+				output.Syslog.PayloadKey = "message"
+			})
 		Expect(framework.Deploy()).To(BeNil())
 
 		record := `{"index":1,"appname_key":"rec_appname","msgid_key":"rec_msgid","procid_key":"rec_procid"}`
@@ -59,19 +56,17 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
 	},
 
-		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid", false),
-		Entry("should use the value from the complete tag and include the message", "tag", "mymsg", "myproc", `kubernetes\.var\.log.pods\..*myproc mymsg`, true),
-		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", "mymsg", "myproc", `kubernetes#.*myproc mymsg`, true),
+		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid"),
 	)
+
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
-			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+				ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
 					spec.Syslog.Severity = "$.message.severity_key"
-					spec.Syslog.RFC = e2e.RFC5424.String()
-				}, logging.OutputTypeSyslog)
+				})
 			Expect(framework.Deploy()).To(BeNil())
 
 			record := `{"index":1,"timestamp":1,"facility_key":"local0","severity_key":"Informational"}`
@@ -89,18 +84,16 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		})
 	})
 	It("should be able to send a large payload", func() {
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Syslog.RFC = e2e.RFC5424.String()
-			}, logging.OutputTypeSyslog)
+			ToSyslogOutput(obs.SyslogRFC5424)
 		Expect(framework.Deploy()).To(BeNil())
 
 		record := strings.ReplaceAll(largeStackTrace, "\n", "    ")
 		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
 		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-		outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		Expect(outputlogs[0]).To(MatchRegexp(`java\.lang.*GroovyStarter.*131`), "Exp to find tag in received message")

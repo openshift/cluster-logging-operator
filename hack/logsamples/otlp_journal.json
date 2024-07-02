@@ -1,0 +1,443 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "node.name",
+            "value": {
+              "stringValue": "ip-10-0-15-214"
+            }
+          },
+          {
+            "key": "cluster.id",
+            "value": {
+              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {},
+          "logRecords": [
+            {
+              "timeUnixNano": "1719841845617463000",
+              "observedTimeUnixNano": "1719841845891172507",
+              "severityNumber": 6,
+              "body": {
+                "stringValue": "run-runc-84f4764734c40a81f715eb12fdf69172df3947b25a345c444c1932ad5bad3e7c-runc.ovbeed.mount: Deactivated successfully."
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "infrastructure"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "node"
+                  }
+                },
+                {
+                  "key": "system.boot.id",
+                  "value": {
+                    "stringValue": "112939b0f0f141b9bdd13c9b8261a82e"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                },
+                {
+                  "key": "system.cap.effective",
+                  "value": {
+                    "stringValue": "1ffffffffff"
+                  }
+                },
+                {
+                  "key": "system.cmdline",
+                  "value": {
+                    "stringValue": "/usr/lib/systemd/systemd --switched-root --system --deserialize 28"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                },
+                {
+                  "key": "system.exe",
+                  "value": {
+                    "stringValue": "/usr/lib/systemd/systemd"
+                  }
+                },
+                {
+                  "key": "system.gid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "system.machine.id",
+                  "value": {
+                    "stringValue": "e7b1c718d9494280b7a1e774d0fb0272"
+                  }
+                },
+                {
+                  "key": "syslog.procid",
+                  "value": {
+                    "stringValue": "1"
+                  }
+                },
+                {
+                  "key": "system.selinux.context",
+                  "value": {
+                    "stringValue": "system_u:system_r:init_t:s0"
+                  }
+                },
+                {
+                  "key": "system.stream.id",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "system.cgroup",
+                  "value": {
+                    "stringValue": "/init.scope"
+                  }
+                },
+                {
+                  "key": "system.invocation.id",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "system.slice",
+                  "value": {
+                    "stringValue": "-.slice"
+                  }
+                },
+                {
+                  "key": "system.unit",
+                  "value": {
+                    "stringValue": "init.scope"
+                  }
+                },
+                {
+                  "key": "system.transport",
+                  "value": {
+                    "stringValue": "journal"
+                  }
+                },
+                {
+                  "key": "system.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "syslog.facility",
+                  "value": {
+                    "stringValue": "3"
+                  }
+                },
+                {
+                  "key": "syslog.identifier",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            },
+            {
+              "timeUnixNano": "1719841854859075000",
+              "observedTimeUnixNano": "1719841855141195991",
+              "severityNumber": 6,
+              "body": {
+                "stringValue": "run-runc-3765ea283eb521363185563d888a9be106bdfd025e34d89e2cfd191621e68da7-runc.a0LYGy.mount: Deactivated successfully."
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "infrastructure"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "node"
+                  }
+                },
+                {
+                  "key": "system.boot.id",
+                  "value": {
+                    "stringValue": "112939b0f0f141b9bdd13c9b8261a82e"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                },
+                {
+                  "key": "system.cap.effective",
+                  "value": {
+                    "stringValue": "1ffffffffff"
+                  }
+                },
+                {
+                  "key": "system.cmdline",
+                  "value": {
+                    "stringValue": "/usr/lib/systemd/systemd --switched-root --system --deserialize 28"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                },
+                {
+                  "key": "system.exe",
+                  "value": {
+                    "stringValue": "/usr/lib/systemd/systemd"
+                  }
+                },
+                {
+                  "key": "system.gid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "system.machine.id",
+                  "value": {
+                    "stringValue": "e7b1c718d9494280b7a1e774d0fb0272"
+                  }
+                },
+                {
+                  "key": "syslog.procid",
+                  "value": {
+                    "stringValue": "1"
+                  }
+                },
+                {
+                  "key": "system.selinux.context",
+                  "value": {
+                    "stringValue": "system_u:system_r:init_t:s0"
+                  }
+                },
+                {
+                  "key": "system.stream.id",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "system.cgroup",
+                  "value": {
+                    "stringValue": "/init.scope"
+                  }
+                },
+                {
+                  "key": "system.invocation.id",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "system.slice",
+                  "value": {
+                    "stringValue": "-.slice"
+                  }
+                },
+                {
+                  "key": "system.unit",
+                  "value": {
+                    "stringValue": "init.scope"
+                  }
+                },
+                {
+                  "key": "system.transport",
+                  "value": {
+                    "stringValue": "journal"
+                  }
+                },
+                {
+                  "key": "system.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "syslog.facility",
+                  "value": {
+                    "stringValue": "3"
+                  }
+                },
+                {
+                  "key": "syslog.identifier",
+                  "value": {
+                    "stringValue": "systemd"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            },
+            {
+              "timeUnixNano": "1719841863172818000",
+              "observedTimeUnixNano": "1719841863641702121",
+              "severityNumber": 6,
+              "body": {
+                "stringValue": "I0701 13:51:03.172692    1329 kubelet_getters.go:187] \"Pod status updated\" pod=\"openshift-kube-controller-manager/kube-controller-manager-ip-10-0-15-214.ec2.internal\" status=Running"
+              },
+              "attributes": [
+                {
+                  "key": "openshift.log.type",
+                  "value": {
+                    "stringValue": "infrastructure"
+                  }
+                },
+                {
+                  "key": "openshift.log.source",
+                  "value": {
+                    "stringValue": "node"
+                  }
+                },
+                {
+                  "key": "system.boot.id",
+                  "value": {
+                    "stringValue": "112939b0f0f141b9bdd13c9b8261a82e"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "kubelet"
+                  }
+                },
+                {
+                  "key": "system.cap.effective",
+                  "value": {
+                    "stringValue": "1ffffffffff"
+                  }
+                },
+                {
+                  "key": "system.cmdline",
+                  "value": {
+                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip= --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --hostname-override=ip-10-0-15-214.ec2.internal --provider-id=aws:///us-east-1a/i-070f86cf2e34793ad --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:44cf90fa2c8a7fcf25cda5280b6aabac79e66f434e33f5341fe868db3d0c779c --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
+                  }
+                },
+                {
+                  "key": "system.comm",
+                  "value": {
+                    "stringValue": "kubelet"
+                  }
+                },
+                {
+                  "key": "system.exe",
+                  "value": {
+                    "stringValue": "/usr/bin/kubelet"
+                  }
+                },
+                {
+                  "key": "system.gid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "system.machine.id",
+                  "value": {
+                    "stringValue": "e7b1c718d9494280b7a1e774d0fb0272"
+                  }
+                },
+                {
+                  "key": "syslog.procid",
+                  "value": {
+                    "stringValue": "1329"
+                  }
+                },
+                {
+                  "key": "system.selinux.context",
+                  "value": {
+                    "stringValue": "system_u:system_r:unconfined_service_t:s0"
+                  }
+                },
+                {
+                  "key": "system.stream.id",
+                  "value": {
+                    "stringValue": "0f53d36150094e939121735ef3926674"
+                  }
+                },
+                {
+                  "key": "system.cgroup",
+                  "value": {
+                    "stringValue": "/system.slice/kubelet.service"
+                  }
+                },
+                {
+                  "key": "system.invocation.id",
+                  "value": {
+                    "stringValue": "9af893eaf2c143639911e3fc47872d2e"
+                  }
+                },
+                {
+                  "key": "system.slice",
+                  "value": {
+                    "stringValue": "system.slice"
+                  }
+                },
+                {
+                  "key": "system.unit",
+                  "value": {
+                    "stringValue": "kubelet.service"
+                  }
+                },
+                {
+                  "key": "system.transport",
+                  "value": {
+                    "stringValue": "stdout"
+                  }
+                },
+                {
+                  "key": "system.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "syslog.facility",
+                  "value": {
+                    "stringValue": "3"
+                  }
+                },
+                {
+                  "key": "syslog.identifier",
+                  "value": {
+                    "stringValue": "kubenswrapper"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

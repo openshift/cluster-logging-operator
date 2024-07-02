@@ -1,0 +1,46 @@
+{
+  "kind": "Event",
+  "apiVersion": "audit.k8s.io/v1",
+  "level": "Metadata",
+  "auditID": "ba8076fa-6f45-4392-bceb-7de0e9eaafe5",
+  "stage": "ResponseComplete",
+  "requestURI": "/apis/operator.openshift.io/v1/kubecontrollermanagers/cluster",
+  "verb": "get",
+  "user": {
+    "username": "system:serviceaccount:openshift-cluster-version:default",
+    "uid": "4009fcd2-4a0e-4b14-b772-4ec81f87d4d8",
+    "groups": [
+      "system:serviceaccounts",
+      "system:serviceaccounts:openshift-cluster-version",
+      "system:authenticated"
+    ],
+    "extra": {
+      "authentication.kubernetes.io/pod-name": [
+        "cluster-version-operator-5dc6bfb55d-bddj4"
+      ],
+      "authentication.kubernetes.io/pod-uid": [
+        "d3ca1217-ec1d-4ed2-8b8d-404de41d48cd"
+      ]
+    }
+  },
+  "sourceIPs": [
+    "10.0.6.44"
+  ],
+  "userAgent": "cluster-version-operator/v0.0.0 (linux/amd64) kubernetes/$Format",
+  "objectRef": {
+    "resource": "kubecontrollermanagers",
+    "name": "cluster",
+    "apiGroup": "operator.openshift.io",
+    "apiVersion": "v1"
+  },
+  "responseStatus": {
+    "metadata": {},
+    "code": 200
+  },
+  "requestReceivedTimestamp": "2024-07-02T17:01:26.365713Z",
+  "stageTimestamp": "2024-07-02T17:01:26.370651Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding \"cluster-version-operator\" of ClusterRole \"cluster-admin\" to ServiceAccount \"default/openshift-cluster-version\""
+  }
+}

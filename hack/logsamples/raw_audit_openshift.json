@@ -1,0 +1,28 @@
+{
+  "kind": "Event",
+  "apiVersion": "audit.k8s.io/v1",
+  "level": "Metadata",
+  "auditID": "e1ef9db4-29ae-49a0-ac52-09acf126ac6f",
+  "stage": "ResponseComplete",
+  "requestURI": "/openapi/v2",
+  "verb": "get",
+  "user": {
+    "username": "system:aggregator",
+    "groups": [
+      "system:authenticated"
+    ]
+  },
+  "sourceIPs": [
+    "10.130.0.2"
+  ],
+  "responseStatus": {
+    "metadata": {},
+    "code": 304
+  },
+  "requestReceivedTimestamp": "2024-07-02T17:02:26.406288Z",
+  "stageTimestamp": "2024-07-02T17:02:26.406826Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding \"system:openshift:discovery\" of ClusterRole \"system:openshift:discovery\" to Group \"system:authenticated\""
+  }
+}

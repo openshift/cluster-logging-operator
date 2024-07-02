@@ -1,0 +1,33 @@
+{
+  "kind": "Event",
+  "apiVersion": "audit.k8s.io/v1",
+  "level": "Metadata",
+  "auditID": "cebbfb7d-eeb1-4b57-8726-97b4da435600",
+  "stage": "ResponseComplete",
+  "requestURI": "/",
+  "verb": "head",
+  "user": {
+    "username": "system:anonymous",
+    "groups": [
+      "system:unauthenticated"
+    ]
+  },
+  "sourceIPs": [
+    "10.131.0.5"
+  ],
+  "userAgent": "Go-http-client/1.1",
+  "responseStatus": {
+    "metadata": {},
+    "status": "Failure",
+    "message": "forbidden: User \"system:anonymous\" cannot head path \"/\"",
+    "reason": "Forbidden",
+    "details": {},
+    "code": 403
+  },
+  "requestReceivedTimestamp": "2024-07-02T17:03:43.017443Z",
+  "stageTimestamp": "2024-07-02T17:03:43.020987Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "forbid",
+    "authorization.k8s.io/reason": ""
+  }
+}

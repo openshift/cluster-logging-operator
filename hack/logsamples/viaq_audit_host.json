@@ -1,0 +1,17 @@
+{
+  "@timestamp": "2024-07-01T15:53:19.623+00:00",
+  "audit.linux": {
+    "record_id": "5654",
+    "type": "BPF"
+  },
+  "hostname": "ip-10-0-15-214.ec2.internal",
+  "level": "default",
+  "log_source": "auditd",
+  "log_type": "audit",
+  "message": "type=BPF msg=audit(1719849199.623:5654): prog-id=2886 op=LOAD",
+  "openshift": {
+    "cluster_id": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f",
+    "sequence": 1719849205586504717
+  },
+  "stream_name": "ip-10-0-15-214.ec2.internal.linux-audit.log",
+}

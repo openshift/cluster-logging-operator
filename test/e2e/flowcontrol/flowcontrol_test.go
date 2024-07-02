@@ -115,7 +115,7 @@ var _ = Describe("[E2E] FlowControl", func() {
 
 		DeployLoggingComponents()
 
-		if WaitForMetricsToShow() == false {
+		if !WaitForMetricsToShow() {
 			Fail("Metrics not showing up in Prometheus")
 		}
 		// sleeping for 1 minute to ensure rate of metrics is stable

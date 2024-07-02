@@ -2,14 +2,15 @@ package outputs
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -22,7 +23,7 @@ var _ = Describe("[Functional][Outputs][Unavailable] Output", func() {
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToHttpOutput()
 	})
 	AfterEach(func() {

@@ -26,8 +26,8 @@ type InternalFilterSpec struct {
 	// RemapFilter is a filter that uses a remap transformation
 	RemapFilter RemapFilter
 
-	//TranformFactory takes an id, inputs and returns an Element
-	TranformFactory func(id string, inputs ...string) framework.Element
+	//TransformFactory takes an id, inputs and returns an Element
+	TransformFactory func(id string, inputs ...string) framework.Element
 }
 
 // RemapFilter is a remap transform that provides VRL script
@@ -53,7 +53,7 @@ func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*Intern
 			internalFilter.RemapFilter = parse.NewParseFilter()
 		case obs.FilterTypeDetectMultiline:
 			internalFilter.SuppliesTransform = true
-			internalFilter.TranformFactory = multilineexception.NewDetectException
+			internalFilter.TransformFactory = multilineexception.NewDetectException
 		default:
 			log.V(0).Error(fmt.Errorf("unknown filter type: %v", f.Type), "This should have been caught by declarative API validation")
 		}

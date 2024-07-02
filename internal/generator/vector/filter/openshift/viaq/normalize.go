@@ -56,7 +56,7 @@ if starts_with(pod_name, "eventrouter-") {
 	RemoveTimestampEnd = `del(.timestamp_end)`
 
 	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
-del(.message)
+# del(.message)
 `
 	FixHostname = `.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
 )

@@ -32,7 +32,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput(func(output *obs.OutputSpec) {
-				output.HTTP.Tuning = &obs.HttpTuningSpec{
+				output.HTTP.Tuning = &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
 						Delivery:         logging.OutputDeliveryModeAtLeastOnce,
 						MaxRetryDuration: utils.GetPtr(time.Duration(30)),
@@ -98,7 +98,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToHttpOutput(func(output *obs.OutputSpec) {
-					output.HTTP.Tuning = &obs.HttpTuningSpec{
+					output.HTTP.Tuning = &obs.HTTPTuningSpec{
 						Compression: compression,
 					}
 				})

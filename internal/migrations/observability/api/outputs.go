@@ -461,7 +461,7 @@ func mapHTTP(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.HTTP
 	}
 
 	if loggingOutSpec.Tuning != nil {
-		obsHTTP.Tuning = &obs.HttpTuningSpec{
+		obsHTTP.Tuning = &obs.HTTPTuningSpec{
 			BaseOutputTuningSpec: *mapBaseOutputTuning(*loggingOutSpec.Tuning),
 			Compression:          loggingOutSpec.Tuning.Compression,
 		}

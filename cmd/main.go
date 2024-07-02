@@ -184,6 +184,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Create initial dashboard config map on CLO install
+	if err = dashboard.ReconcileForDashboards(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
+		log.Error(err, "unable to seed the initial dashboard")
+		os.Exit(1)
+	}
+
 	if err = (&observabilitycontroller.ClusterLogForwarderReconciler{
 		ForwarderContext: internalcontext.ForwarderContext{
 			Client:         mgr.GetClient(),

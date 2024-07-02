@@ -11,6 +11,7 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	vectorcommon "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
@@ -21,6 +22,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/set"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -189,7 +191,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	if err := f.deploySecrets(); err != nil {
 		return err
 	}
-	secretMap := f.mapSecrets()
+	secretMap := f.mapOutputSecrets()
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	migrated, _ := obsmigrations.MigrateClusterLogForwarder(*f.Forwarder, utils.NoOptions)
 	f.Forwarder = &migrated
@@ -378,8 +380,25 @@ func (f *CollectorFunctionalFramework) deploySecrets() error {
 	return nil
 }
 
-func (f *CollectorFunctionalFramework) mapSecrets() map[string]*corev1.Secret {
+func (f *CollectorFunctionalFramework) mapOutputSecrets() map[string]*corev1.Secret {
+	// Gather output secrets
+	outputs := internalobs.Outputs(f.Forwarder.Spec.Outputs)
+	names := set.New(outputs.SecretNames()...)
+	frameworkSecrets := f.mapFrameworkSecrets()
+
+	outputSecretMap := map[string]*corev1.Secret{}
+	for secretName := range names {
+		if secret, ok := frameworkSecrets[secretName]; ok {
+			outputSecretMap[secretName] = secret
+		}
+
+	}
+	return outputSecretMap
+}
+
+func (f *CollectorFunctionalFramework) mapFrameworkSecrets() map[string]*corev1.Secret {
 	secretMap := map[string]*corev1.Secret{}
+
 	for _, s := range f.Secrets {
 		secretMap[s.Name] = s
 	}

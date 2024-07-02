@@ -9,7 +9,8 @@ os::test::junit::declare_suite_start "[ClusterLogging] Collection"
 
 start_seconds=$(date +%s)
 
-TEST_DIR=${TEST_DIR:-'./test/e2e/collection/deployment/'}
+TEST_DIR=${TEST_DIR:-'./test/e2e/collection/*/'}
+INCLUDES="(deployment|tuning)"
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
@@ -46,7 +47,7 @@ if [ "${DO_SETUP:-false}" == "true" ] ; then
 fi
 
 failed=0
-for dir in $(ls -d $TEST_DIR); do
+for dir in $(ls -d $TEST_DIR| grep -E "'${INCLUDES}'"); do
   os::log::info "=========================================================="
   os::log::info "Starting test of collection $dir"
   os::log::info "=========================================================="

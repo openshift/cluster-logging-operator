@@ -52,6 +52,9 @@ func NewMultiContainerLogGenerator(namespace, name string, msgCount int, delay t
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},
 	}
+	if l.Labels == nil {
+		l.Labels = map[string]string{}
+	}
 	for k, v := range labels {
 		l.Labels[k] = v
 	}

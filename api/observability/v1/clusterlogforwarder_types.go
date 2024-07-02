@@ -81,7 +81,7 @@ type ClusterLogForwarderSpec struct {
 type ServiceAccount struct {
 	// Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
 	//
-	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z]$"
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 }

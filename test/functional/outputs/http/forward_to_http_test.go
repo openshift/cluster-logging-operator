@@ -78,8 +78,26 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		Expect(logs[0].Kubernetes.Labels).To(HaveKey(MatchRegexp("foo")))
 	},
 		Entry("should send message over http to vector", func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
+			userName := "imauser"
+			password := "iwonttell"
+			secretName := "mysecrets"
+			framework.Forwarder.Spec.Outputs[0].HTTP.Authentication = &obs.HTTPAuthentication{
+				Username: &obs.SecretReference{
+					Key:        "username",
+					SecretName: secretName,
+				},
+				Password: &obs.SecretReference{
+					Key:        "password",
+					SecretName: secretName,
+				},
+			}
+			framework.Secrets = append(framework.Secrets, runtime.NewSecret(framework.Namespace, secretName, map[string][]byte{
+				"username": []byte(userName),
+				"password": []byte(password),
+			}))
+
 			return func(b *runtime.PodBuilder) error {
-				return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0])
+				return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0], functional.Option{Name: "username", Value: userName}, functional.Option{Name: "password", Value: password})
 			}
 		}),
 		Entry("should send message over http to fluentd", func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {

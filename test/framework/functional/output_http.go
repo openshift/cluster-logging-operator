@@ -2,6 +2,7 @@ package functional
 
 import (
 	"bytes"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"os"
 	"strings"
 	"text/template"
@@ -70,6 +71,8 @@ type = "http_server"
 address = "127.0.0.1:8090"
 decoding.codec = "json"
 framing.method = "newline_delimited"
+{{ .Username }}
+{{ .Password }}
 
 {{ if ne .MinTLS "" }}
 [sources.my_source.tls]
@@ -153,13 +156,17 @@ func VectorConfFactory(profile configv1.TLSProfileType, options ...Option) strin
 	}
 	b := &bytes.Buffer{}
 	if err := tmpl.ExecuteTemplate(b, "", struct {
-		MinTLS  string
-		Ciphers string
-		Path    string
+		MinTLS   string
+		Ciphers  string
+		Path     string
+		Username helpers.OptionalPair
+		Password helpers.OptionalPair
 	}{
-		MinTLS:  minTLS,
-		Ciphers: ciphers,
-		Path:    path,
+		MinTLS:   minTLS,
+		Ciphers:  ciphers,
+		Path:     path,
+		Username: helpers.NewOptionalPair("auth.username", OptionsValue(options, "username", nil)),
+		Password: helpers.NewOptionalPair("auth.password", OptionsValue(options, "password", nil)),
 	}); err != nil {
 		log.V(0).Error(err, "Unable execute vector http conf template")
 		os.Exit(1)
@@ -167,8 +174,8 @@ func VectorConfFactory(profile configv1.TLSProfileType, options ...Option) strin
 	return b.String()
 }
 
-func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder, output obs.OutputSpec) error {
-	return f.AddVectorHttpOutputWithConfig(b, output, "", nil)
+func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder, output obs.OutputSpec, options ...Option) error {
+	return f.AddVectorHttpOutputWithConfig(b, output, "", nil, options...)
 }
 
 func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.PodBuilder, output obs.OutputSpec, profile configv1.TLSProfileType, secret *corev1.Secret, options ...Option) error {

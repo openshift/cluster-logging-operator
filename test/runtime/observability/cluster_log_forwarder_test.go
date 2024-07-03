@@ -129,6 +129,7 @@ serviceAccount:
 					func(spec *obs.OutputSpec) {
 						spec.Type = obs.OutputTypeSyslog
 						spec.Syslog = &obs.Syslog{
+							RFC: obs.SyslogRFC5424,
 							URLSpec: obs.URLSpec{
 								URL: "tcp://0.0.0.0:24225",
 							},
@@ -162,6 +163,7 @@ outputs:
 - name: other
   type: syslog
   syslog:
+    rfc: RFC5424
     url: tcp://0.0.0.0:24225
 pipelines:
 - inputRefs:

@@ -815,6 +815,8 @@ spec:
                               - key
                               - secret
                               type: object
+                          required:
+                          - sharedKey
                           type: object
                         azureResourceId:
                           description: AzureResourceId the Resource ID of the Azure
@@ -863,6 +865,9 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                      required:
+                      - authentication
+                      - customerId
                       type: object
                     cloudwatch:
                       description: Cloudwatch provides configuration for the output
@@ -927,6 +932,9 @@ spec:
                                   - key
                                   - secret
                                   type: object
+                              required:
+                              - keyID
+                              - keySecret
                               type: object
                             iamRole:
                               description: IAMRole points to the secret containing
@@ -985,11 +993,14 @@ spec:
                                           description: Name of secret
                                           type: string
                                       required:
+                                      - key
                                       - name
                                       type: object
                                   required:
                                   - from
                                   type: object
+                              required:
+                              - roleARN
                               type: object
                             type:
                               description: Type is the type of cloudwatch authentication
@@ -998,6 +1009,8 @@ spec:
                               - accessKey
                               - iamRole
                               type: string
+                          required:
+                          - type
                           type: object
                         groupName:
                           default: '{{.log_type}}'
@@ -1055,6 +1068,7 @@ spec:
                             part of `url` is ignored."
                           type: string
                       required:
+                      - authentication
                       - groupName
                       - region
                       type: object
@@ -1112,6 +1126,7 @@ spec:
                                       description: Name of secret
                                       type: string
                                   required:
+                                  - key
                                   - name
                                   type: object
                               required:
@@ -1206,6 +1221,7 @@ spec:
                           minimum: 6
                           type: integer
                       required:
+                      - index
                       - url
                       type: object
                     googleCloudLogging:
@@ -1259,6 +1275,9 @@ spec:
                             value:
                               description: Value is the value of the ID
                               type: string
+                          required:
+                          - type
+                          - value
                           type: object
                         logId:
                           default: '{{.log_type}}'
@@ -1296,6 +1315,9 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                      required:
+                      - id
+                      - logId
                       type: object
                     http:
                       description: HTTP provided configuration for sending json encoded
@@ -1353,6 +1375,7 @@ spec:
                                       description: Name of secret
                                       type: string
                                   required:
+                                  - key
                                   - name
                                   type: object
                               required:
@@ -1585,6 +1608,7 @@ spec:
                             'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
+                      - topic
                       - url
                       type: object
                     loki:
@@ -1643,6 +1667,7 @@ spec:
                                       description: Name of secret
                                       type: string
                                   required:
+                                  - key
                                   - name
                                   type: object
                               required:
@@ -1752,6 +1777,7 @@ spec:
                             'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
+                      - tenantKey
                       - url
                       type: object
                     lokiStack:
@@ -1786,11 +1812,14 @@ spec:
                                       description: Name of secret
                                       type: string
                                   required:
+                                  - key
                                   - name
                                   type: object
                               required:
                               - from
                               type: object
+                          required:
+                          - token
                           type: object
                         labelKeys:
                           description: "LabelKeys is a list of log record keys that
@@ -1864,6 +1893,7 @@ spec:
                               type: integer
                           type: object
                       required:
+                      - authentication
                       - target
                       type: object
                     name:
@@ -1925,6 +1955,7 @@ spec:
                                       description: Name of secret
                                       type: string
                                   required:
+                                  - key
                                   - name
                                   type: object
                               required:
@@ -2057,6 +2088,8 @@ spec:
                               - key
                               - secret
                               type: object
+                          required:
+                          - token
                           type: object
                         index:
                           default: '{{.log_type}}'
@@ -2115,6 +2148,8 @@ spec:
                             'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
+                      - authentication
+                      - index
                       - url
                       type: object
                     syslog:
@@ -2179,6 +2214,7 @@ spec:
                             'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
+                      - rfc
                       - url
                       type: object
                     tls:
@@ -2478,6 +2514,7 @@ spec:
                 - name
                 type: object
             required:
+            - outputs
             - pipelines
             - serviceAccount
             type: object

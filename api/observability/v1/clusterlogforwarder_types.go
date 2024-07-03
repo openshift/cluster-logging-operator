@@ -52,7 +52,7 @@ type ClusterLogForwarderSpec struct {
 	// +listType:=map
 	// +listMapKey:=name
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Forwarder Outputs"
-	Outputs []OutputSpec `json:"outputs,omitempty"`
+	Outputs []OutputSpec `json:"outputs"`
 
 	// Filters are applied to log records passing through a pipeline.
 	// There are different types of filter that can select and modify log records in different ways.
@@ -216,7 +216,7 @@ const (
 	// BearerTokenFromSecret specifies to use the token from the spec'd secret
 	BearerTokenFromSecret BearerTokenFrom = "secret"
 
-	//BearerTokenFromServiceAccountToken specifies to use the projected token associated with the forwarder service account
+	// BearerTokenFromServiceAccountToken specifies to use the projected token associated with the forwarder service account
 	BearerTokenFromServiceAccountToken BearerTokenFrom = "serviceAccountToken"
 )
 
@@ -224,7 +224,7 @@ type BearerTokenSecretKey struct {
 	// Name of the key used to get the value from the referenced Secret.
 	//
 	// +kubebuilder:validation:Required
-	Key string `json:"key,omitempty"`
+	Key string `json:"key"`
 
 	// Name of secret
 	//

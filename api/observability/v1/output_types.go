@@ -214,20 +214,20 @@ type AzureMonitorAuthentication struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	SharedKey *SecretKey `json:"sharedKey,omitempty"`
+	SharedKey *SecretKey `json:"sharedKey"`
 }
 
 type AzureMonitor struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
-	Authentication *AzureMonitorAuthentication `json:"authentication,omitempty"`
+	Authentication *AzureMonitorAuthentication `json:"authentication"`
 
 	// CustomerId che unique identifier for the Log Analytics workspace.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
 	//
 	// +kubebuilder:validation:Required
-	CustomerId string `json:"customerId,omitempty"`
+	CustomerId string `json:"customerId"`
 
 	// LogType the record type of the data that is being submitted.
 	// Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
@@ -277,7 +277,7 @@ type Cloudwatch struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
-	Authentication *CloudwatchAuthentication `json:"authentication,omitempty"`
+	Authentication *CloudwatchAuthentication `json:"authentication"`
 
 	// Tuning specs tuning for the output
 	//
@@ -312,7 +312,7 @@ type CloudwatchAuthentication struct {
 	//
 	// +kubebuilder:validation:Enum:=accessKey;iamRole
 	// +kubebuilder:validation:Required
-	Type CloudwatchAuthType `json:"type,omitempty"`
+	Type CloudwatchAuthType `json:"type"`
 
 	// AWSAccessKey points to the AWS access key id and secret to be used for authentication.
 	//
@@ -335,7 +335,7 @@ type CloudwatchIAMRole struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	RoleARN *SecretKey `json:"roleARN,omitempty"`
+	RoleARN *SecretKey `json:"roleARN"`
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
@@ -349,13 +349,13 @@ type CloudwatchAWSAccessKey struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	KeyID *SecretKey `json:"keyID,omitempty"`
+	KeyID *SecretKey `json:"keyID"`
 
 	// AccessKeySecret points to the AWS access key secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	KeySecret *SecretKey `json:"keySecret,omitempty"`
+	KeySecret *SecretKey `json:"keySecret"`
 }
 
 type IndexSpec struct {
@@ -365,7 +365,7 @@ type IndexSpec struct {
 	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
-	Index string `json:"index,omitempty"`
+	Index string `json:"index"`
 }
 
 type ElasticsearchTuningSpec struct {
@@ -426,14 +426,14 @@ type GoogleCloudLogging struct {
 	// ID must be one of the required ID fields for the output
 	//
 	// +kubebuilder:validation:Required
-	ID GoogleGloudLoggingID `json:"id,omitempty"`
+	ID GoogleGloudLoggingID `json:"id"`
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	//
 	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
-	LogID string `json:"logId,omitempty"`
+	LogID string `json:"logId"`
 
 	// Tuning specs tuning for the output
 	//
@@ -444,13 +444,14 @@ type GoogleCloudLogging struct {
 type GoogleGloudLoggingID struct {
 	// Type is the ID type provided
 	//
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=billingAccount;folder;project;organization
-	Type GoogleCloudLoggingIDType `json:"type,omitempty"`
+	Type GoogleCloudLoggingIDType `json:"type"`
 
 	// Value is the value of the ID
 	//
 	// +kubebuilder:validation:Required
-	Value string `json:"value,omitempty"`
+	Value string `json:"value"`
 }
 
 type GoogleCloudLoggingIDType string
@@ -564,7 +565,7 @@ type Kafka struct {
 	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
-	Topic string `json:"topic,omitempty"`
+	Topic string `json:"topic"`
 
 	// Brokers specifies the list of broker endpoints of a Kafka cluster.
 	// The list represents only the initial set used by the collector's Kafka client for the
@@ -605,7 +606,7 @@ type LokiStackAuthentication struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	Token *BearerToken `json:"token,omitempty"`
+	Token *BearerToken `json:"token"`
 }
 
 // LokiStack provides optional extra properties for `type: lokistack`
@@ -613,7 +614,7 @@ type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
-	Authentication *LokiStackAuthentication `json:"authentication,omitempty"`
+	Authentication *LokiStackAuthentication `json:"authentication"`
 
 	// Target points to the LokiStack resources that should be used as a target for the output.
 	//
@@ -679,7 +680,7 @@ type Loki struct {
 	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:="{{.log_type}}"
-	TenantKey string `json:"tenantKey,omitempty"`
+	TenantKey string `json:"tenantKey"`
 }
 
 type SplunkTuningSpec struct {
@@ -697,7 +698,7 @@ type SplunkAuthentication struct {
 	// Token points to the secret containing the Splunk HEC token used for authenticating requests.
 	//
 	// +kubebuilder:validation:Required
-	Token *SecretKey `json:"token,omitempty"`
+	Token *SecretKey `json:"token"`
 }
 
 // Splunk Deliver log data to Splunk’s HTTP Event Collector
@@ -706,7 +707,7 @@ type Splunk struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
-	Authentication *SplunkAuthentication `json:"authentication,omitempty"`
+	Authentication *SplunkAuthentication `json:"authentication"`
 
 	// Tuning specs tuning for the output
 	//
@@ -734,7 +735,7 @@ type Syslog struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=RFC3164;RFC5424
 	// +kubebuilder:default:=RFC5424
-	RFC SyslogRFCType `json:"rfc,omitempty"`
+	RFC SyslogRFCType `json:"rfc"`
 
 	// Severity to set on outgoing syslog records.
 	//

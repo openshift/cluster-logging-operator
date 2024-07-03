@@ -180,7 +180,11 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", "GrafanaDashboard")
 		os.Exit(1)
 	}
-
+	// Create initial dashboard config map on CLO install
+	if err = dashboard.ReconcileForDashboards(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
+		log.Error(err, "unable to seed the initial dashboard")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

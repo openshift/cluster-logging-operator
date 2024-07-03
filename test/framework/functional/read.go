@@ -26,6 +26,14 @@ type Option struct {
 	Value string
 }
 
+// OptionsValue returns the value if found or the default
+func OptionsValue(options []Option, name string, notFound any) any {
+	if found, op := OptionsInclude(name, options); found {
+		return op.Value
+	}
+	return notFound
+}
+
 func OptionsInclude(name string, options []Option) (bool, Option) {
 	for _, o := range options {
 		if o.Name == name {

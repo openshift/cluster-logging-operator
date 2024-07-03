@@ -10,7 +10,7 @@ os::test::junit::declare_suite_start "[ClusterLogging] Collection"
 start_seconds=$(date +%s)
 
 TEST_DIR=${TEST_DIR:-'./test/e2e/collection/*/'}
-INCLUDES="(deployment|tuning)"
+INCLUDES="*"
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR

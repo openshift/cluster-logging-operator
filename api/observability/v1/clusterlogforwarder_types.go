@@ -23,7 +23,6 @@ import (
 type ClusterLogForwarderSpec struct {
 	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator
 	//
-	// +kubebuilder:validation:Enum:=Managed;Unmanaged
 	// +kubebuilder:default:=Managed
 	ManagementState ManagementState `json:"managementState,omitempty"`
 
@@ -86,6 +85,9 @@ type ServiceAccount struct {
 	Name string `json:"name"`
 }
 
+// ManagementState controls whether the operator's reconciliation is active for the given resource.
+//
+// +kubebuilder:validation:Enum:=Managed;Unmanaged
 type ManagementState string
 
 const (
@@ -200,7 +202,6 @@ type BearerToken struct {
 
 	// From is the source from where to find the token
 	//
-	// +kubebuilder:validation:Enum:=secret;serviceAccountToken
 	// +kubebuilder:validation:Required
 	From BearerTokenFrom `json:"from"`
 
@@ -210,6 +211,9 @@ type BearerToken struct {
 	Secret *BearerTokenSecretKey `json:"secret,omitempty"`
 }
 
+// BearerTokenFrom specifies the source used for the bearer token.
+//
+// +kubebuilder:validation:Enum:=secret;serviceAccountToken
 type BearerTokenFrom string
 
 const (

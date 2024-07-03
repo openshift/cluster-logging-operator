@@ -296,6 +296,9 @@ type Cloudwatch struct {
 	GroupName string `json:"groupName"`
 }
 
+// CloudwatchAuthType sets the authentication type used for CloudWatch.
+//
+// +kubebuilder:validation:Enum:=accessKey;iamRole
 type CloudwatchAuthType string
 
 const (
@@ -310,7 +313,6 @@ const (
 type CloudwatchAuthentication struct {
 	// Type is the type of cloudwatch authentication to configure
 	//
-	// +kubebuilder:validation:Enum:=accessKey;iamRole
 	// +kubebuilder:validation:Required
 	Type CloudwatchAuthType `json:"type"`
 
@@ -443,9 +445,7 @@ type GoogleCloudLogging struct {
 
 type GoogleGloudLoggingID struct {
 	// Type is the ID type provided
-	//
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:=billingAccount;folder;project;organization
 	Type GoogleCloudLoggingIDType `json:"type"`
 
 	// Value is the value of the ID
@@ -454,6 +454,9 @@ type GoogleGloudLoggingID struct {
 	Value string `json:"value"`
 }
 
+// GoogleCloudLoggingIDType specifies the type of the provided ID value.
+//
+// +kubebuilder:validation:Enum:=billingAccount;folder;project;organization
 type GoogleCloudLoggingIDType string
 
 const (
@@ -721,6 +724,9 @@ type Splunk struct {
 	IndexSpec `json:",inline"`
 }
 
+// SyslogRFCType sets which RFC the generated messages conform to.
+//
+// +kubebuilder:validation:Enum:=RFC3164;RFC5424
 type SyslogRFCType string
 
 const (
@@ -733,7 +739,6 @@ type Syslog struct {
 	URLSpec `json:",inline"`
 
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:=RFC3164;RFC5424
 	// +kubebuilder:default:=RFC5424
 	RFC SyslogRFCType `json:"rfc"`
 

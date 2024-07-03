@@ -2192,6 +2192,8 @@ spec:
                           type: string
                         rfc:
                           default: RFC5424
+                          description: SyslogRFCType sets which RFC the generated
+                            messages conform to.
                           enum:
                           - RFC3164
                           - RFC5424

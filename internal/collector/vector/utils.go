@@ -1,8 +1,11 @@
 package vector
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
+	_ "embed"
 )
 
 const (
@@ -14,6 +17,12 @@ const (
 	SecretDataReaderFile = "read_secret_data.sh"
 	SecretDataReaderPath = "/usr/bin/" + "read_secret_data.sh"
 )
+
+// RunVectorScript is the run-vector.sh script for launching the Vector container process
+// will override content of /scripts/run-vector.sh in https://github.com/ViaQ/vector
+//
+//go:embed run-vector.sh
+var RunVectorScript string
 
 func GetDataPath(namespace, forwarderName string) string {
 	//legacy installation

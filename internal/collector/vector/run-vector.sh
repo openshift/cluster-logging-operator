@@ -1,8 +1,4 @@
-package vector
-
-// RunVectorScript is the run-vector.sh script for launching the Vector container process
-// will override content of /scripts/run-vector.sh in https://github.com/ViaQ/vector
-const RunVectorScript = `#!/bin/bash
+#!/bin/bash
 
 set -uo pipefail
 
@@ -32,4 +28,3 @@ popd
 
 echo "Starting Vector process..."
 exec /usr/bin/vector --config-toml /etc/vector/vector.toml
-`

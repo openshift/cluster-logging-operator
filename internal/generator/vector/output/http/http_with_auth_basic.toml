@@ -12,5 +12,5 @@ headers = {"h1"="v1","h2"="v2"}
 
 [sinks.http_receiver.auth]
 strategy = "basic"
-user = "SECRET[from_secret.http_receiver_username]"
-password = "SECRET[from_secret.http_receiver_password]"
+user = "SECRET[kubernetes_secret.http-receiver/username]"
+password = "SECRET[kubernetes_secret.http-receiver/password]"

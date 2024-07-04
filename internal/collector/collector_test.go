@@ -278,7 +278,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 		Context("and mounting volumes", func() {
 			It("should mount host path volumes", func() {
 				Expect(podSpec.Volumes).To(IncludeVolume(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
-				Expect(podSpec.Volumes).To(HaveLen(16))
+				Expect(podSpec.Volumes).To(HaveLen(15))
 			})
 
 			It("should mount all volumes for output configmaps", func() {
@@ -527,7 +527,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 		Context("and mounting volumes", func() {
 			It("should not mount host path volumes", func() {
 				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
-				Expect(podSpec.Volumes).To(HaveLen(6))
+				Expect(podSpec.Volumes).To(HaveLen(5))
 			})
 		})
 	})

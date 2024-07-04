@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	generatorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -68,11 +67,10 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return
 	}
 
-	secretReaderScript := common.GenerateSecretReaderScript(context.Secrets)
 	isDaemonSet := !internalobs.DeployAsDeployment(*context.Forwarder)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
 	factory := collector.New(collectorConfHash, context.ClusterID, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
-	if err = factory.ReconcileCollectorConfig(noOpEventRecorder, context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, secretReaderScript, ownerRef); err != nil {
+	if err = factory.ReconcileCollectorConfig(noOpEventRecorder, context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}

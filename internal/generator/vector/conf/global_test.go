@@ -19,10 +19,10 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 [api]
 enabled = true
 
-# Load sensitive data from secret mount with script: /usr/bin/read_secret_data.sh
-[secret.from_secret]
-type = "exec"
-command = ["sh", "/usr/bin/read_secret_data.sh"]
+# Load sensitive data from files
+[secret.kubernetes_secret]
+type = "file"
+base_path = "/var/run/ocp-collector/secrets"
 `,
 			).To(EqualConfigFrom(Global(constants.OpenshiftNS, "my-forwarder")))
 		})
@@ -35,10 +35,10 @@ expire_metrics_secs = 60
 [api]
 enabled = true
 
-# Load sensitive data from secret mount with script: /usr/bin/read_secret_data.sh
-[secret.from_secret]
-type = "exec"
-command = ["sh", "/usr/bin/read_secret_data.sh"]
+# Load sensitive data from files
+[secret.kubernetes_secret]
+type = "file"
+base_path = "/var/run/ocp-collector/secrets"
 `,
 			).To(EqualConfigFrom(Global(constants.OpenshiftNS, constants.SingletonName)))
 

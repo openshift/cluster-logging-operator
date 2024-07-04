@@ -13,7 +13,6 @@ import (
 
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	vectorcommon "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 
 	obsmigrations "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
@@ -51,7 +50,7 @@ var TestAPIAdapterConfigVisitor = func(conf string) string {
 }
 
 type CollectorFramework interface {
-	DeployConfigMapForConfig(name, config, clfName, clfYaml, secretDataReaderScript string) error
+	DeployConfigMapForConfig(name, config, clfName, clfYaml string) error
 	BuildCollectorContainer(*runtime.ContainerBuilder, string) *runtime.ContainerBuilder
 	IsStarted(string) bool
 	Image() string
@@ -211,8 +210,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		log.V(2).Info("Modifying config using provided config visitor")
 		f.Conf = f.VisitConfig(f.Conf)
 	}
-	secretDataReaderScript := vectorcommon.GenerateSecretReaderScript(secretMap)
-	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, f.Forwarder.Name, string(clfYaml), secretDataReaderScript); err != nil {
+	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, f.Forwarder.Name, string(clfYaml)); err != nil {
 		return err
 	}
 

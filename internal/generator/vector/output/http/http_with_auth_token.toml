@@ -12,4 +12,4 @@ headers = {"h1"="v1","h2"="v2"}
 
 [sinks.http_receiver.auth]
 strategy = "bearer"
-token = "SECRET[from_secret.http_receiver_token]"
+token = "SECRET[kubernetes_secret.http-receiver/token]"

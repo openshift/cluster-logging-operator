@@ -30,4 +30,4 @@ azure_resource_id = "/subscriptions/11111111-1111-1111-1111-111111111111/resourc
 customer_id = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
 host = "ods.opinsights.azure.cn"
 log_type = "myLogType"
-shared_key = "SECRET[from_secret.azure_monitor_secret_shared_key]"
+shared_key = "SECRET[kubernetes_secret.azure-monitor-secret/shared_key]"

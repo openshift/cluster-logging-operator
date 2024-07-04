@@ -1,15 +1,15 @@
 package common
 
 import (
-	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 type VectorSecret struct {
 	framework.ComponentID
-	Desc    string
-	Command string
-	Timeout int
+	Desc     string
+	BasePath string
 }
 
 func (sec VectorSecret) Name() string {
@@ -20,17 +20,16 @@ func (sec VectorSecret) Template() string {
 	return `{{define "` + sec.Name() + `" -}}
 # {{.Desc}}
 [secret.{{.ComponentID}}]
-type = "exec"
-command = ["sh", "{{.Command}}"]
+type = "file"
+base_path = "{{.BasePath}}"
 {{end}}`
 }
 
-func NewVectorSecret(id, command string) VectorSecret {
-
+func NewVectorSecret() VectorSecret {
 	secret := VectorSecret{
-		ComponentID: id,
-		Desc:        fmt.Sprintf("Load sensitive data from secret mount with script: %s", command),
-		Command:     command,
+		ComponentID: helpers.VectorSecretID,
+		Desc:        "Load sensitive data from files",
+		BasePath:    constants.CollectorSecretsDir,
 	}
 	return secret
 }

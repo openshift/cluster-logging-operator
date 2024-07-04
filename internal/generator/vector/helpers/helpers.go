@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const VectorSecretID = "from_secret"
+const VectorSecretID = "kubernetes_secret"
 
 var (
 	Replacer         = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
@@ -70,17 +70,13 @@ func SecretPath(secretName string, file string) string {
 	return fmt.Sprintf("%q", filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }
 
-// SecretFrom formated string SECRET[<secret_component_id>.<secret_name>_<secret_key>]
+// SecretFrom formated string SECRET[<secret_component_id>.<secret_name>#<secret_key>]
 func SecretFrom(secretKey *v1.SecretKey) string {
 	if secretKey != nil && secretKey.Secret != nil && secretKey.Key != "" {
-		return fmt.Sprintf("SECRET[%s.%s_%s]",
+		return fmt.Sprintf("SECRET[%s.%s/%s]",
 			VectorSecretID,
-			MakeSecretPath(secretKey.Secret.Name),
-			MakeSecretPath(secretKey.Key))
+			secretKey.Secret.Name,
+			secretKey.Key)
 	}
 	return ""
-}
-
-func MakeSecretPath(path string) string {
-	return Replacer.Replace(path)
 }

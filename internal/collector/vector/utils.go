@@ -9,13 +9,11 @@ import (
 )
 
 const (
-	RunVectorFile        = "run-vector.sh"
-	DefaultDataPath      = "/var/lib/vector"
-	ConfigFile           = "vector.toml"
-	vectorConfigPath     = "/etc/vector"
-	entrypointValue      = "/usr/bin/run-vector.sh"
-	SecretDataReaderFile = "read_secret_data.sh"
-	SecretDataReaderPath = "/usr/bin/" + "read_secret_data.sh"
+	RunVectorFile    = "run-vector.sh"
+	DefaultDataPath  = "/var/lib/vector"
+	ConfigFile       = "vector.toml"
+	vectorConfigPath = "/etc/vector"
+	entrypointValue  = "/usr/bin/run-vector.sh"
 )
 
 // RunVectorScript is the run-vector.sh script for launching the Vector container process

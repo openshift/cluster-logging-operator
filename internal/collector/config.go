@@ -14,15 +14,14 @@ import (
 )
 
 // ReconcileCollectorConfig reconciles a collector config specifically for the collector defined by the factory
-func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, reader client.Reader, namespace, collectorConfig, script string, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, reader client.Reader, namespace, collectorConfig string, owner metav1.OwnerReference) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
 	configMap := runtime.NewConfigMap(
 		namespace,
 		f.ResourceNames.ConfigMap,
 		map[string]string{
-			vector.ConfigFile:           collectorConfig,
-			vector.RunVectorFile:        fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)),
-			vector.SecretDataReaderFile: script,
+			vector.ConfigFile:    collectorConfig,
+			vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)),
 		},
 		f.CommonLabelInitializer)
 

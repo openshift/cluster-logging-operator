@@ -227,12 +227,20 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	return collector
 }
 
+func sanitizeVolumeName(input string) string {
+	return strings.ReplaceAll(input, ".", "")
+}
+
 // AddVolumeMounts to the collector container
 func AddVolumeMounts(collector *v1.Container, names []string, path func(string) string) {
 	log.WithName("AddVolumeMounts").V(4).Info("volumeMounts", "names", names)
 	for _, name := range names {
 		log.WithName("volumeMount").V(4).Info("mount", "name", name)
-		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path(name)})
+		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{
+			Name:      sanitizeVolumeName(name),
+			ReadOnly:  true,
+			MountPath: path(name),
+		})
 	}
 }
 
@@ -243,7 +251,14 @@ func AddSecretVolumes(podSpec *v1.PodSpec, secrets vectorhelpers.Secrets) []stri
 	log.WithName("AddSecretVolumes").V(4).Info("volumes", "names", secrets.Names())
 	for _, name := range names {
 		log.WithName("AddSecretVolumes").V(4).Info("secret", "name", name)
-		podSpec.Volumes = append(podSpec.Volumes, v1.Volume{Name: name, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: name}}})
+		podSpec.Volumes = append(podSpec.Volumes, v1.Volume{
+			Name: sanitizeVolumeName(name),
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: name,
+				},
+			},
+		})
 	}
 	return names
 }
@@ -257,14 +272,16 @@ func AddConfigmapVolumes(podSpec *v1.PodSpec, configMaps internalobs.ConfigMaps)
 		vName := fmt.Sprintf("config-%s", name)
 		log.WithName("AddConfigmapVolumes").V(4).Info("configmap", "name", vName)
 		results = append(results, vName)
-		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{
-				Name: vName,
-				VolumeSource: v1.VolumeSource{
-					ConfigMap: &v1.ConfigMapVolumeSource{
-						LocalObjectReference: v1.LocalObjectReference{
-							Name: name,
-						}}}})
+		podSpec.Volumes = append(podSpec.Volumes, v1.Volume{
+			Name: sanitizeVolumeName(vName),
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: name,
+					},
+				},
+			},
+		})
 	}
 	return results
 }

@@ -16,7 +16,7 @@ if [ ! -d $ARTIFACT_DIR ] ; then
 fi
 
 reset_logging(){
-    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+    for r in "clusterlogforwarder.observability.openshift.io/instance"; do
       oc delete -n ${LOGGING_NS} $r --ignore-not-found --force --grace-period=0||:
       os::cmd::try_until_failure "oc -n ${LOGGING_NS} get $r" "$((1 * $minute))"
     done

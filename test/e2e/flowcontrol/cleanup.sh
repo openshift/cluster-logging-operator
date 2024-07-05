@@ -5,8 +5,6 @@ runtime=$(date +%s)
 mkdir -p "$artifact_dir/$runtime" ||:
 gather_logging_resources $LOGGING_NS "$artifact_dir" "$runtime"
 
-name=logging-view-plugin
-
 get_describe() {
     kind=$1; shift
     oc describe $kind/$name $*  > "$artifact_dir/$runtime/$name.$kind.describe" ||:
@@ -16,7 +14,6 @@ get_describe() {
 for kind in configmap service deployment; do
     get_describe $kind -n $LOGGING_NS
 done
-get_describe consoleplugin
 
 kind=deployment
 oc -n $LOGGING_NS logs $kind/$name  > "$artifact_dir/$runtime/$name.logs" ||:

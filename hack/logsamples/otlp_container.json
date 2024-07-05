@@ -4,27 +4,27 @@
       "resource": {
         "attributes": [
           {
-            "key": "node.name",
+            "key": "cluster.id",
             "value": {
-              "stringValue": "ip-10-0-37-62.ec2.internal"
+              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
             }
           },
           {
-            "key": "cluster.id",
+            "key": "openshift.log.source",
             "value": {
-              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+              "stringValue": "container"
             }
           },
           {
             "key": "k8s.pod.name",
             "value": {
-              "stringValue": "network-operator-67845fb87b-h4rgr"
+              "stringValue": "network-operator-67845fb87b-qgmlm"
             }
           },
           {
             "key": "k8s.pod.uid",
             "value": {
-              "stringValue": "b935caa5-4788-409d-b7b5-17330289d485"
+              "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
             }
           },
           {
@@ -36,7 +36,7 @@
           {
             "key": "k8s.container.id",
             "value": {
-              "stringValue": "cri-o://f50788652140f7a4c4dc722ae9c6139fc787d95930bd92e1f1059f1ee11359a2"
+              "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
             }
           },
           {
@@ -64,23 +64,17 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1719843648281140478",
-              "observedTimeUnixNano": "1719843648354508089",
+              "timeUnixNano": "1720030236198577105",
+              "observedTimeUnixNano": "1720030236205386392",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.281079       1 log.go:194] Apply / Create of (/v1, Kind=ConfigMap) openshift-sdn/sdn-config was successful"
+                "stringValue": "I0703 18:10:36.198521       1 log.go:194] Apply / Create of (apps/v1, Kind=DaemonSet) openshift-multus/network-metrics-daemon was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -88,23 +82,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843648281140478",
-              "observedTimeUnixNano": "1719843648354620507",
+              "timeUnixNano": "1720030236198752971",
+              "observedTimeUnixNano": "1720030236205482536",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.281123       1 log.go:194] reconciling (apps/v1, Kind=DaemonSet) openshift-sdn/sdn"
+                "stringValue": "I0703 18:10:36.198574       1 log.go:194] reconciling (monitoring.coreos.com/v1, Kind=ServiceMonitor) openshift-multus/monitor-network"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -112,23 +100,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843648492079175",
-              "observedTimeUnixNano": "1719843648616904139",
+              "timeUnixNano": "1720030236402214183",
+              "observedTimeUnixNano": "1720030236468017294",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.492027       1 log.go:194] Apply / Create of (apps/v1, Kind=DaemonSet) openshift-sdn/sdn was successful"
+                "stringValue": "I0703 18:10:36.402167       1 log.go:194] Apply / Create of (monitoring.coreos.com/v1, Kind=ServiceMonitor) openshift-multus/monitor-network was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -143,27 +125,27 @@
       "resource": {
         "attributes": [
           {
-            "key": "node.name",
+            "key": "cluster.id",
             "value": {
-              "stringValue": "ip-10-0-37-62.ec2.internal"
+              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
             }
           },
           {
-            "key": "cluster.id",
+            "key": "openshift.log.source",
             "value": {
-              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+              "stringValue": "container"
             }
           },
           {
             "key": "k8s.pod.name",
             "value": {
-              "stringValue": "network-operator-67845fb87b-h4rgr"
+              "stringValue": "network-operator-67845fb87b-qgmlm"
             }
           },
           {
             "key": "k8s.pod.uid",
             "value": {
-              "stringValue": "b935caa5-4788-409d-b7b5-17330289d485"
+              "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
             }
           },
           {
@@ -175,7 +157,7 @@
           {
             "key": "k8s.container.id",
             "value": {
-              "stringValue": "cri-o://f50788652140f7a4c4dc722ae9c6139fc787d95930bd92e1f1059f1ee11359a2"
+              "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
             }
           },
           {
@@ -203,23 +185,17 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1719843648492119314",
-              "observedTimeUnixNano": "1719843648617012130",
+              "timeUnixNano": "1720030236402312046",
+              "observedTimeUnixNano": "1720030236468105238",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.492076       1 log.go:194] reconciling (/v1, Kind=Namespace) /openshift-network-diagnostics"
+                "stringValue": "I0703 18:10:36.402210       1 log.go:194] reconciling (/v1, Kind=Service) openshift-multus/network-metrics-service"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -227,23 +203,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843648679246212",
-              "observedTimeUnixNano": "1719843648685037772",
+              "timeUnixNano": "1720030236597079971",
+              "observedTimeUnixNano": "1720030236601803858",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.679178       1 log.go:194] Apply / Create of (/v1, Kind=Namespace) /openshift-network-diagnostics was successful"
+                "stringValue": "I0703 18:10:36.597037       1 log.go:194] Apply / Create of (/v1, Kind=Service) openshift-multus/network-metrics-service was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -251,23 +221,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843648679246212",
-              "observedTimeUnixNano": "1719843648685112138",
+              "timeUnixNano": "1720030236597210806",
+              "observedTimeUnixNano": "1720030236601893384",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.679223       1 log.go:194] reconciling (/v1, Kind=ServiceAccount) openshift-network-diagnostics/network-diagnostics"
+                "stringValue": "I0703 18:10:36.597177       1 log.go:194] reconciling (rbac.authorization.k8s.io/v1, Kind=Role) openshift-multus/prometheus-k8s"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -282,27 +246,27 @@
       "resource": {
         "attributes": [
           {
-            "key": "node.name",
+            "key": "cluster.id",
             "value": {
-              "stringValue": "ip-10-0-37-62.ec2.internal"
+              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
             }
           },
           {
-            "key": "cluster.id",
+            "key": "openshift.log.source",
             "value": {
-              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+              "stringValue": "container"
             }
           },
           {
             "key": "k8s.pod.name",
             "value": {
-              "stringValue": "network-operator-67845fb87b-h4rgr"
+              "stringValue": "network-operator-67845fb87b-qgmlm"
             }
           },
           {
             "key": "k8s.pod.uid",
             "value": {
-              "stringValue": "b935caa5-4788-409d-b7b5-17330289d485"
+              "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
             }
           },
           {
@@ -314,7 +278,7 @@
           {
             "key": "k8s.container.id",
             "value": {
-              "stringValue": "cri-o://f50788652140f7a4c4dc722ae9c6139fc787d95930bd92e1f1059f1ee11359a2"
+              "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
             }
           },
           {
@@ -342,23 +306,17 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1719843648881647903",
-              "observedTimeUnixNano": "1719843648950294794",
+              "timeUnixNano": "1720030236797754825",
+              "observedTimeUnixNano": "1720030236865685308",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.881576       1 log.go:194] Apply / Create of (/v1, Kind=ServiceAccount) openshift-network-diagnostics/network-diagnostics was successful"
+                "stringValue": "I0703 18:10:36.797712       1 log.go:194] Apply / Create of (rbac.authorization.k8s.io/v1, Kind=Role) openshift-multus/prometheus-k8s was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -366,23 +324,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843648881647903",
-              "observedTimeUnixNano": "1719843648950485049",
+              "timeUnixNano": "1720030236797793506",
+              "observedTimeUnixNano": "1720030236865764402",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:48.881624       1 log.go:194] reconciling (rbac.authorization.k8s.io/v1, Kind=Role) openshift-network-diagnostics/network-diagnostics"
+                "stringValue": "I0703 18:10:36.797760       1 log.go:194] reconciling (rbac.authorization.k8s.io/v1, Kind=RoleBinding) openshift-multus/prometheus-k8s"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -390,23 +342,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843649084805668",
-              "observedTimeUnixNano": "1719843649213637395",
+              "timeUnixNano": "1720030236999078911",
+              "observedTimeUnixNano": "1720030237129324480",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:49.084721       1 log.go:194] Apply / Create of (rbac.authorization.k8s.io/v1, Kind=Role) openshift-network-diagnostics/network-diagnostics was successful"
+                "stringValue": "I0703 18:10:36.999037       1 log.go:194] Apply / Create of (rbac.authorization.k8s.io/v1, Kind=RoleBinding) openshift-multus/prometheus-k8s was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -421,27 +367,27 @@
       "resource": {
         "attributes": [
           {
-            "key": "node.name",
+            "key": "cluster.id",
             "value": {
-              "stringValue": "ip-10-0-37-62.ec2.internal"
+              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
             }
           },
           {
-            "key": "cluster.id",
+            "key": "openshift.log.source",
             "value": {
-              "stringValue": "77d5a27f-d90f-4a9b-8a96-8fac0e309d9f"
+              "stringValue": "container"
             }
           },
           {
             "key": "k8s.pod.name",
             "value": {
-              "stringValue": "network-operator-67845fb87b-h4rgr"
+              "stringValue": "network-operator-67845fb87b-qgmlm"
             }
           },
           {
             "key": "k8s.pod.uid",
             "value": {
-              "stringValue": "b935caa5-4788-409d-b7b5-17330289d485"
+              "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
             }
           },
           {
@@ -453,7 +399,7 @@
           {
             "key": "k8s.container.id",
             "value": {
-              "stringValue": "cri-o://f50788652140f7a4c4dc722ae9c6139fc787d95930bd92e1f1059f1ee11359a2"
+              "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
             }
           },
           {
@@ -481,23 +427,17 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1719843649084805668",
-              "observedTimeUnixNano": "1719843649213742202",
+              "timeUnixNano": "1720030236999140594",
+              "observedTimeUnixNano": "1720030237129439946",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:49.084759       1 log.go:194] reconciling (rbac.authorization.k8s.io/v1, Kind=RoleBinding) openshift-network-diagnostics/network-diagnostics"
+                "stringValue": "I0703 18:10:36.999076       1 log.go:194] reconciling (/v1, Kind=Service) openshift-multus/multus-admission-controller"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -505,23 +445,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843649280841105",
-              "observedTimeUnixNano": "1719843649283540793",
+              "timeUnixNano": "1720030237200149178",
+              "observedTimeUnixNano": "1720030237263570286",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:49.280768       1 log.go:194] Apply / Create of (rbac.authorization.k8s.io/v1, Kind=RoleBinding) openshift-network-diagnostics/network-diagnostics was successful"
+                "stringValue": "I0703 18:10:37.200094       1 log.go:194] Apply / Create of (/v1, Kind=Service) openshift-multus/multus-admission-controller was successful"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],
@@ -529,23 +463,17 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1719843649280841105",
-              "observedTimeUnixNano": "1719843649283911594",
+              "timeUnixNano": "1720030237200149178",
+              "observedTimeUnixNano": "1720030237263674607",
               "severityNumber": 6,
               "body": {
-                "stringValue": "I0701 14:20:49.280809       1 log.go:194] reconciling (rbac.authorization.k8s.io/v1, Kind=ClusterRole) /network-diagnostics"
+                "stringValue": "I0703 18:10:37.200133       1 log.go:194] reconciling (/v1, Kind=ServiceAccount) openshift-multus/multus-ac"
               },
               "attributes": [
                 {
                   "key": "openshift.log.type",
                   "value": {
                     "stringValue": "infrastructure"
-                  }
-                },
-                {
-                  "key": "openshift.log.source",
-                  "value": {
-                    "stringValue": "container"
                   }
                 }
               ],

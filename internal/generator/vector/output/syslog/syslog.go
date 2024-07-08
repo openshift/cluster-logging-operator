@@ -103,7 +103,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		Encoding(id, o),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBuffer(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
+		tls.New(id, o.TLS, secrets, op, tls.IncludeEnabledOption),
 	}
 }
 

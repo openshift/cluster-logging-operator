@@ -2,6 +2,7 @@ package functional
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"net/url"
 	"strings"
 
@@ -20,9 +21,16 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 	u, _ := url.Parse(output.Syslog.URL)
 	if strings.ToLower(u.Scheme) == "udp" {
 		baseRsyslogConfig = e2e.UdpSyslogInput
+		if output.TLS != nil {
+			baseRsyslogConfig = e2e.UdpSyslogInputWithTLS
+		}
 	} else {
 		baseRsyslogConfig = e2e.TcpSyslogInput
+		if output.TLS != nil {
+			baseRsyslogConfig = e2e.TcpSyslogInputWithTLS
+		}
 	}
+
 	// using unsecure rsyslog conf
 	rfc := e2e.RFC5424
 	if output.Syslog != nil && output.Syslog.RFC != "" {
@@ -39,11 +47,16 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 	}
 
 	log.V(2).Info("Adding container", "name", name)
-	b.AddContainer(name, e2e.ImageRemoteSyslog).
+	containerBuilder := b.AddContainer(name, e2e.ImageRemoteSyslog).
 		AddVolumeMount(config.Name, "/rsyslog/etc", "", false).
 		WithCmdArgs([]string{"rsyslogd", "-n", "-f", "/rsyslog/etc/rsyslog.conf"}).
-		WithPrivilege().
-		End().
+		WithPrivilege()
+	if output.TLS != nil {
+		for _, name := range internalobs.SecretsForTLS(output.TLS.TLSSpec) {
+			containerBuilder.AddVolumeMount(name, "/rsyslog/etc/secrets", "", true)
+		}
+	}
+	containerBuilder.End().
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil
 }

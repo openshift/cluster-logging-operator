@@ -73,7 +73,7 @@ outputs:
 - name: syslog
   syslog:
     rfc: RFC5424
-    url: tcp://0.0.0.0:24224
+    url: tcp://127.0.0.1:24224
   type: syslog
 pipelines:
 - inputRefs:

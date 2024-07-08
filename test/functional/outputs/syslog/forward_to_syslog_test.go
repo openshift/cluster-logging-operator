@@ -3,7 +3,9 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 	"strings"
+	"time"
 
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -19,51 +21,73 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework
+
+		setSyslogSpecValues = func(outspec *obs.OutputSpec) {
+			outspec.Syslog.Facility = "user"
+			outspec.Syslog.Severity = "debug"
+			outspec.Syslog.AppName = "myapp"
+			outspec.Syslog.ProcID = "myproc"
+			outspec.Syslog.MsgID = "mymsg"
+		}
+
+		join = func(
+			f1 func(spec *obs.OutputSpec),
+			f2 func(spec *obs.OutputSpec)) func(*obs.OutputSpec) {
+			return func(s *obs.OutputSpec) {
+				f1(s)
+				f2(s)
+			}
+		}
+
+		getAppName = func(fields []string) string {
+			return fields[3]
+		}
+		getProcID = func(fields []string) string {
+			return fields[4]
+		}
+		getMsgID = func(fields []string) string {
+			return fields[5]
+		}
+
+		timestamp = "2013-03-28T14:36:03.243000+00:00"
 	)
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
 
 	})
+
 	AfterEach(func() {
 		framework.Cleanup()
 	})
 
-	setSyslogSpecValues := func(outspec *obs.OutputSpec) {
-		outspec.Syslog.Facility = "user"
-		outspec.Syslog.Severity = "debug"
-		outspec.Syslog.AppName = "myapp"
-		outspec.Syslog.ProcID = "myproc"
-		outspec.Syslog.MsgID = "mymsg"
-	}
+	It("should be configurable to use TLS", func() {
+		secret, tlsSpec := secrets.NewTLSSecret(framework.Forwarder.Namespace, "syslog-tls", framework.Namespace, "syslogreceiver")
+		framework.Secrets = append(framework.Secrets, secret)
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(logging.InputNameApplication).
+			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				if output.TLS == nil {
+					output.TLS = &obs.OutputTLSSpec{}
+				}
+				output.TLS.TLSSpec = tlsSpec
+			})
+		Expect(framework.Deploy()).To(BeNil())
 
-	join := func(
-		f1 func(spec *obs.OutputSpec),
-		f2 func(spec *obs.OutputSpec)) func(*obs.OutputSpec) {
-		return func(s *obs.OutputSpec) {
-			f1(s)
-			f2(s)
-		}
-	}
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), NonJsonAppLogs[0])
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-	getAppName := func(fields []string) string {
-		return fields[3]
-	}
-	getProcID := func(fields []string) string {
-		return fields[4]
-	}
-	getMsgID := func(fields []string) string {
-		return fields[5]
-	}
-
-	timestamp := "2013-03-28T14:36:03.243000+00:00"
-
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(Not(BeEmpty()), "Expected the receiver to receive the message")
+		Expect(outputlogs[0]).To(MatchRegexp(`^<[0-9]*>[0-9]* ([0-9T:.Z\-]*) ([a-z0-9-.]*) (.*) -(.*)-(.*)- (.*)$`), "Exp a syslog formatted message")
+	})
 	Context("Application Logs", func() {
 		It("should send large message over UDP", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(output *obs.OutputSpec) {
-					output.Syslog.URL = "udp://0.0.0.0:24224"
+					output.Syslog.URL = "udp://127.0.0.1:24224"
 				}))
 			Expect(framework.Deploy()).To(BeNil())
 

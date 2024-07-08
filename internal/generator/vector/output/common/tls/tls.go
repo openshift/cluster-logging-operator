@@ -13,6 +13,10 @@ const (
 	IncludeEnabled = "IncludeEnabled"
 )
 
+var (
+	IncludeEnabledOption = framework.Option{IncludeEnabled, ""}
+)
+
 type TLSConf struct {
 	Component string
 	ID        string

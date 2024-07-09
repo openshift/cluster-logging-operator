@@ -2,21 +2,22 @@ package input_selection
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 )
 
 // These tests exist as e2e because vector interacts directly with the API server
 // and various bits of functionality are not testable using the functional
 // framework
-var _ = Describe("[InputSelection]", func() {
+var _ = Describe("[e2e][InputSelection]", func() {
 
 	const (
 		valueBackend  = "backend"
@@ -43,10 +44,9 @@ var _ = Describe("[InputSelection]", func() {
 		}
 	})
 
-	var _ = DescribeTable("filtering", func(input logging.InputSpec, generatorName func(string) string, verify func()) {
+	var _ = DescribeTable("filtering", func(input obs.InputSpec, generatorName func(string) string, verify func()) {
 		e2e = framework.NewE2ETestFramework()
-		forwarder := testruntime.NewClusterLogForwarder()
-		forwarder.Namespace = e2e.CreateTestNamespace()
+		forwarder := obsruntime.NewClusterLogForwarder(e2e.CreateTestNamespace(), "my-log-collector", runtime.Initialize)
 		forwarder.Name = "my-log-collector"
 		if generatorName == nil {
 			generatorName = func(component string) string {
@@ -54,10 +54,6 @@ var _ = Describe("[InputSelection]", func() {
 			}
 		}
 		valueFrontendNS = e2e.CreateTestNamespace()
-		// HACK
-		if input.Application != nil && len(input.Application.Namespaces) == 1 && input.Application.Namespaces[0] == "" {
-			input.Application.Namespaces[0] = valueFrontendNS
-		}
 		for componentName, namespace := range map[string]string{
 			valueFrontend: valueFrontendNS,
 			valueBackend:  e2e.CreateTestNamespace(),
@@ -80,31 +76,27 @@ var _ = Describe("[InputSelection]", func() {
 			AllowClusterRole("collect-audit-logs").
 			Create()
 		Expect(err).To(BeNil())
-		forwarder.Spec.ServiceAccountName = sa.Name
+		forwarder.Spec.ServiceAccount.Name = sa.Name
 		testruntime.NewClusterLogForwarderBuilder(forwarder).
-			FromInputWithVisitor("myinput", func(spec *logging.InputSpec) {
+			FromInputName("myinput", func(spec *obs.InputSpec) {
 				spec.Application = input.Application
 				spec.Infrastructure = input.Infrastructure
 				spec.Audit = input.Audit
-			}).ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-			spec.Type = logging.OutputTypeHttp
-			spec.URL = receiver.ClusterLocalEndpoint()
-		}, "my-output")
-		if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+			}).ToHttpOutput(func(spec *obs.OutputSpec) {
+			spec.HTTP.URL = receiver.ClusterLocalEndpoint()
+		})
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 		}
-		components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
-		for _, component := range components {
-			if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
-				Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-			}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 		}
 		verify()
 	},
 		Entry("infrastructure inputs should allow specifying only node logs",
-			logging.InputSpec{
-				Infrastructure: &logging.Infrastructure{
-					Sources: []string{logging.InfrastructureSourceNode},
+			obs.InputSpec{
+				Infrastructure: &obs.Infrastructure{
+					Sources: []obs.InfrastructureSource{obs.InfrastructureSourceNode},
 				},
 			},
 			nil,
@@ -113,9 +105,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(receiver.ListNamespaces()).To(HaveLen(0), "exp no containers logs to be collected")
 			}),
 		Entry("infrastructure inputs should allow specifying only container logs",
-			logging.InputSpec{
-				Infrastructure: &logging.Infrastructure{
-					Sources: []string{logging.InfrastructureSourceContainer},
+			obs.InputSpec{
+				Infrastructure: &obs.Infrastructure{
+					Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
 				},
 			},
 			nil,
@@ -124,9 +116,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(receiver.ListJournalLogs()).To(HaveLen(0), "exp no journal logs to be collected")
 			}),
 		Entry("application inputs should only collect from matching pod label 'notin' expressions",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Selector: &logging.LabelSelector{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Selector: &metav1.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
 							{
 								Key: component, Operator: metav1.LabelSelectorOpNotIn, Values: []string{valueFrontend},
@@ -141,9 +133,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(containers).To(Not(HaveEach(MatchRegexp(fmt.Sprintf("^(%s)$", valueFrontend)))))
 			}),
 		Entry("application inputs should only collect from matching pod label 'in' expressions",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Selector: &logging.LabelSelector{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Selector: &metav1.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
 							{
 								Key: component, Operator: metav1.LabelSelectorOpIn, Values: []string{valueFrontend},
@@ -158,9 +150,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(containers).To(HaveEach(MatchRegexp(fmt.Sprintf("^(%s)$", valueFrontend))))
 			}),
 		Entry("application inputs should only collect from matching pod labels",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Selector: &logging.LabelSelector{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							component: valueFrontend,
 						},
@@ -178,9 +170,13 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(containers).To(HaveEach(valueFrontend), "Expected to collect logs from only the the 'frontend' services")
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Namespaces: []string{"clo-test*"},
+			obs.InputSpec{
+				Application: &obs.Application{
+					Includes: []obs.NamespaceContainerSpec{
+						{
+							Namespace: "clo-test*",
+						},
+					},
 				}},
 			logGeneratorNameFn,
 			func() {
@@ -189,9 +185,13 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(namespaces).To(HaveEach(MatchRegexp("^clo-test.*$")))
 			}),
 		Entry("application inputs should only collect from explicit namespaces",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Namespaces: []string{valueFrontendNS},
+			obs.InputSpec{
+				Application: &obs.Application{
+					Includes: []obs.NamespaceContainerSpec{
+						{
+							Namespace: valueFrontendNS,
+						},
+					},
 				}},
 			logGeneratorNameFn,
 			func() {
@@ -200,9 +200,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(namespaces).To(HaveEach(Equal(valueFrontendNS)))
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Includes: []logging.NamespaceContainerSpec{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Includes: []obs.NamespaceContainerSpec{
 						{
 							Namespace: "clo-test*",
 						},
@@ -213,9 +213,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(receiver.ListNamespaces()).To(HaveEach(MatchRegexp("^clo-test.*$")))
 			}),
 		Entry("application inputs should not collect from excluded namespaces",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Excludes: []logging.NamespaceContainerSpec{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Excludes: []obs.NamespaceContainerSpec{
 						{
 							Namespace: "clo-test*",
 						},
@@ -226,9 +226,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(receiver.ListNamespaces()).To(HaveLen(0), "exp no logs to be collected")
 			}),
 		Entry("application inputs should collect from included containers",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Includes: []logging.NamespaceContainerSpec{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Includes: []obs.NamespaceContainerSpec{
 						{
 							Container: "log-*",
 						},
@@ -246,9 +246,9 @@ var _ = Describe("[InputSelection]", func() {
 				Expect(containers).To(HaveEach(MatchRegexp("^log-.*$")))
 			}),
 		Entry("should not collect from excluded containers",
-			logging.InputSpec{
-				Application: &logging.Application{
-					Excludes: []logging.NamespaceContainerSpec{
+			obs.InputSpec{
+				Application: &obs.Application{
+					Excludes: []obs.NamespaceContainerSpec{
 						{
 							Container: "log-*",
 						},

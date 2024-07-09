@@ -13,7 +13,8 @@ repo_dir="$(dirname $0)/.."
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
-INCLUDES=${INCLUDES:-}
+INCLUDES="${INCLUDES:-}"
+
 cleanup(){
   local return_code="$?"
   

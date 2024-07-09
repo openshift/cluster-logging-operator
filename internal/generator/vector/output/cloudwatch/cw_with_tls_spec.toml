@@ -58,8 +58,11 @@ group_name = "{{.log_type}}"
 stream_name = "{{ stream_name }}"
 auth.access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
 auth.secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"
-encoding.codec = "json"
 healthcheck.enabled = false
+
+[sinks.cw.encoding]
+codec = "json"
+except_fields = ["_internal"]
 
 [sinks.cw.tls]
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"

@@ -35,6 +35,7 @@ healthcheck.enabled = false
 
 [sinks.output_default_loki_apps.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.output_default_loki_apps.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"

@@ -30,6 +30,7 @@ tenant_id = "{{.log_type}}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"

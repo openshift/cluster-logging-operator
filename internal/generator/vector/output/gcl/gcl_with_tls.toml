@@ -10,6 +10,9 @@ severity_key = "level"
 type = "k8s_node"
 node_name = "{{hostname}}"
 
+[sinks.gcl_1.encoding]
+except_fields = ["_internal"]
+
 [sinks.gcl_1.tls]
 key_file = "/var/run/ocp-collector/secrets/gcl-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/gcl-1/tls.crt"

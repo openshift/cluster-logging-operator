@@ -67,6 +67,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	return []framework.Element{
 		viaq.DedotLabels(dedottedID, inputs),
 		e,
+		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),

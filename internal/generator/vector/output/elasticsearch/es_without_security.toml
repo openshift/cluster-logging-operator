@@ -5,3 +5,6 @@ endpoints = ["https://es.svc.infra.cluster:9200"]
 bulk.index = "foo"
 bulk.action = "create"
 api_version = "v8"
+
+[sinks.es_1.encoding]
+except_fields = ["_internal"]

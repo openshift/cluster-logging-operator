@@ -136,7 +136,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		CleanupFields(componentID, inputs),
 		RemapLabels(remapLabelID, o, []string{componentID}),
 		sink,
-		Encoding(id, o),
+		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
@@ -155,13 +155,6 @@ func Output(id string, o obs.OutputSpec, inputs []string) *Loki {
 		Endpoint:    o.Loki.URLSpec.URL,
 		TenantID:    Tenant(o.Loki),
 		RootMixin:   common.NewRootMixin(nil),
-	}
-}
-
-func Encoding(id string, o obs.OutputSpec) Element {
-	return LokiEncoding{
-		ComponentID: id,
-		Codec:       lokiEncodingJson,
 	}
 }
 

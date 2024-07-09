@@ -87,6 +87,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 	}
 	return []Element{
 		gcl,
+		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),

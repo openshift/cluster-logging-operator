@@ -61,7 +61,6 @@ region = "{{.Region}}"
 group_name = "{{.GroupName}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
-encoding.codec = "json"
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
 {{- end}}
@@ -90,6 +89,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		NormalizeStreamName(componentID, inputs),
 		viaq.DedotLabels(dedottedID, []string{componentID}),
 		sink,
+		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),

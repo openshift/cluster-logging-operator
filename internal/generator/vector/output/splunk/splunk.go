@@ -1,7 +1,6 @@
 package splunk
 
 import (
-	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -10,10 +9,6 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-)
-
-var (
-	splunkEncodingJson = fmt.Sprintf("%q", "json")
 )
 
 type Splunk struct {
@@ -42,24 +37,6 @@ timestamp_key = "@timestamp"
 {{end}}`
 }
 
-type SplunkEncoding struct {
-	ComponentID  string
-	Codec        string
-	ExceptFields Element
-}
-
-func (se SplunkEncoding) Name() string {
-	return "splunkEncoding"
-}
-
-func (se SplunkEncoding) Template() string {
-	return `{{define "` + se.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = {{.Codec}}
-{{kv .ExceptFields -}}
-{{end}}`
-}
-
 func (s *Splunk) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
@@ -80,7 +57,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	return []Element{
 		FixTimestampFormat(timestampID, inputs),
 		splunkSink,
-		Encoding(id, o),
+		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
@@ -102,13 +79,6 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 		s.DefaultToken = vectorhelpers.SecretFrom(authentication.Token)
 	}
 	return s
-}
-
-func Encoding(id string, o obs.OutputSpec) Element {
-	return SplunkEncoding{
-		ComponentID: id,
-		Codec:       splunkEncodingJson,
-	}
 }
 
 func FixTimestampFormat(componentID string, inputs []string) Element {

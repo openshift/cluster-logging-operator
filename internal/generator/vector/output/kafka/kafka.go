@@ -73,7 +73,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	}
 	elements := []Element{
 		sink,
-		Encoding(id, op),
+		common.NewEncoding(id, common.CodecJSON, func(e *common.Encoding) {
+			e.TimeStampFormat.Value = common.TimeStampFormatRFC3339
+		}),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
@@ -134,18 +136,4 @@ func Topics(o obs.OutputSpec) string {
 
 	// Fallback to default topic
 	return defaultKafkaTopic
-}
-
-func Encoding(id string, op Options) Element {
-	return ConfLiteral{
-		ComponentID:  id,
-		TemplateName: "kafkaEncoding",
-		TemplateStr: `
-{{define "kafkaEncoding" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = "json"
-timestamp_format = "rfc3339"
-{{end}}
-			`,
-	}
 }

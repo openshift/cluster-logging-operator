@@ -414,6 +414,7 @@ topic = "topic"
 [sinks.output_kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.output_kafka_receiver.tls]
 enabled = true

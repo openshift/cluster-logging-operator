@@ -13,6 +13,7 @@ mode = "udp"
 
 [sinks.example.encoding]
 codec = "syslog"
+except_fields = ["_internal"]
 rfc = "rfc3164"
 facility = "kern"
 severity = "critical"

@@ -13,6 +13,7 @@ mode = "tcp"
 
 [sinks.example.encoding]
 codec = "syslog"
+except_fields = ["_internal"]
 rfc = "rfc5424"
 facility = "user"
 severity = "informational"

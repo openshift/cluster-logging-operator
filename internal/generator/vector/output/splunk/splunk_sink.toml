@@ -21,3 +21,4 @@ index = "{{.log_type}}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+except_fields = ["_internal"]

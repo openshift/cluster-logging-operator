@@ -6,6 +6,9 @@ bulk.index = "{{.log_type}}"
 bulk.action = "create"
 api_version = "v8"
 
+[sinks.es_1.encoding]
+except_fields = ["_internal"]
+
 [sinks.es_1.tls]
 verify_certificate = false
 verify_hostname = false

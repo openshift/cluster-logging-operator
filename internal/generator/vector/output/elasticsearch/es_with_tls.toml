@@ -17,6 +17,9 @@ bulk.index = "{{.log_type}}"
 bulk.action = "create"
 api_version = "v6"
 
+[sinks.es_1.encoding]
+except_fields = ["_internal"]
+
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"

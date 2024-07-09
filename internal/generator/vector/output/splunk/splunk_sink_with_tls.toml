@@ -21,6 +21,7 @@ index = "{{.log_type}}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.splunk_hec.tls]
 key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/tls.key"

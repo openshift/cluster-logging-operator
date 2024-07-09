@@ -71,6 +71,7 @@ func (se SyslogEncoding) Template() string {
 	return `{{define "` + se.Name() + `" -}}
 [sinks.{{.ComponentID}}.encoding]
 codec = "syslog"
+except_fields = ["_internal"]
 rfc = "{{.RFC}}"
 facility = "{{.Facility}}"
 severity = "{{.Severity}}"

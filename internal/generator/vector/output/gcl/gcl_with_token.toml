@@ -9,3 +9,6 @@ severity_key = "level"
 [sinks.gcl_1.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+
+[sinks.gcl_1.encoding]
+except_fields = ["_internal"]

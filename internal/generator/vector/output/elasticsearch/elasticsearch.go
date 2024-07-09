@@ -73,6 +73,7 @@ if exists(.kubernetes.event.metadata.uid) {
 
 	outputs = append(outputs,
 		sink,
+		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),

@@ -45,22 +45,6 @@ func (h *Http) SetCompression(algo string) {
 	h.Compression.Value = algo
 }
 
-type HttpEncoding struct {
-	ComponentID string
-	Codec       string
-}
-
-func (h HttpEncoding) Name() string {
-	return "vectorHttpEncoding"
-}
-
-func (h HttpEncoding) Template() string {
-	return `{{define "` + h.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = {{.Codec}}
-{{end}}`
-}
-
 func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
@@ -77,7 +61,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		els,
 		[]Element{
 			sink,
-			Encoding(id),
+			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),
 			common.NewBuffer(id, strategy),
@@ -132,11 +116,4 @@ func Request(id string, o obs.OutputSpec, strategy common.ConfigStrategy) *commo
 		req.SetHeaders(o.HTTP.Headers)
 	}
 	return req
-}
-
-func Encoding(id string) Element {
-	return HttpEncoding{
-		ComponentID: id,
-		Codec:       httpEncodingJson,
-	}
 }

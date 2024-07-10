@@ -2,11 +2,11 @@ package clusterlogging
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"strings"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/controller"
-	obsMigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -85,7 +85,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	// Convert to observability.ClusterLogForwarder
 	obsClf := api.ConvertLoggingToObservability(r.Client, instance, clf, outputSecrets)
 	// Fix indices for default elasticsearch to be `app-write`, `infra-write`, `audit-write`
-	obsClf.Spec, _ = obsMigrate.MigrateDefaultElasticsearch(obsClf.Spec)
+	obsClf.Spec = initialize.DefaultElasticsearch(obsClf.Spec)
 
 	if err = r.Client.Create(context.TODO(), obsClf); err != nil {
 		return ctrl.Result{}, err

@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -79,7 +79,7 @@ var _ = Describe("#ValidateReceiver", func() {
 			It("should skip validation", func() {
 
 				context := utils.Options{
-					obsmigrate.GeneratedSecrets: []*corev1.Secret{
+					initialize.GeneratedSecrets: []*corev1.Secret{
 						runtime.NewSecret("", "immissing", map[string][]byte{
 							"foo":                   {},
 							constants.ClientCertKey: {},

@@ -1,4 +1,4 @@
-package observability
+package initialize
 
 import (
 	"fmt"
@@ -8,28 +8,18 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ProcessForwarderPipelines migrates the specified output type and name to appropriate outputs and pipelines
-func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputType obs.OutputType, wantedOutputName string, findByTypeAndName bool) ([]obs.OutputSpec, []obs.PipelineSpec, []metav1.Condition) {
+func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputType obs.OutputType, wantedOutputName string, findByTypeAndName bool) ([]obs.OutputSpec, []obs.PipelineSpec) {
 	inPipelines := spec.Pipelines
 	pipelines := []obs.PipelineSpec{}
 	outputMap := utils.OutputMap(&spec)
-	migratedConditions := []metav1.Condition{}
-
 	finalOutputs := []obs.OutputSpec{}
 
 	// Remove migrated outputs
 	for _, o := range spec.Outputs {
 		if o.Type == wantedOutputType && (!findByTypeAndName || o.Name == wantedOutputName) {
-			migratedConditions = append(migratedConditions,
-				metav1.Condition{
-					Type:    obs.ConditionTypeMigrated,
-					Status:  metav1.ConditionTrue,
-					Reason:  obs.ReasonMigrateOutput,
-					Message: fmt.Sprintf("%s: %q migrated to appropriate output/s", wantedOutputType, o.Name),
-				})
 			continue
 		}
 		finalOutputs = append(finalOutputs, o)
@@ -94,7 +84,7 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 		return strings.Compare(finalOutputs[i].Name, finalOutputs[j].Name) < 0
 	})
 
-	return finalOutputs, pipelines, migratedConditions
+	return finalOutputs, pipelines
 }
 
 func getInputTypeFromName(spec obs.ClusterLogForwarderSpec, inputName string) string {

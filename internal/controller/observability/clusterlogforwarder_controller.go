@@ -2,6 +2,7 @@ package observability
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -9,7 +10,6 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	corev1 "k8s.io/api/core/v1"
@@ -144,14 +144,14 @@ func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.
 func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
 	log.V(4).Info("Initialize")
 	r.AdditionalContext = utils.Options{}
-	migrated, _ := obsmigrate.MigrateClusterLogForwarder(*r.Forwarder, r.AdditionalContext)
+	migrated := initialize.ClusterLogForwarder(*r.Forwarder, r.AdditionalContext)
 	r.Forwarder = &migrated
 
 	if r.Secrets, err = MapSecrets(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
 		return err
 	}
 
-	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](r.AdditionalContext, obsmigrate.GeneratedSecrets, []*corev1.Secret{}); found {
+	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](r.AdditionalContext, initialize.GeneratedSecrets, []*corev1.Secret{}); found {
 		for _, secret := range generatedSecrets {
 			r.Secrets[secret.Name] = secret
 		}

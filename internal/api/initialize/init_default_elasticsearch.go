@@ -1,11 +1,10 @@
-package observability
+package initialize
 
 import (
 	"fmt"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -14,17 +13,16 @@ const (
 	AuditIndex = "audit-write"
 )
 
-// MigrateDefaultElasticsearch migrates a default ES output into appropriate ES outputs based on defined inputs
-func MigrateDefaultElasticsearch(spec obs.ClusterLogForwarderSpec) (obs.ClusterLogForwarderSpec, []metav1.Condition) {
+// DefaultElasticsearch migrates a default ES output into appropriate ES outputs based on defined inputs
+func DefaultElasticsearch(spec obs.ClusterLogForwarderSpec) obs.ClusterLogForwarderSpec {
 	var outputs []obs.OutputSpec
 	var pipelines []obs.PipelineSpec
-	var migrationConditions []metav1.Condition
-	outputs, pipelines, migrationConditions = ProcessForwarderPipelines(spec, obs.OutputTypeElasticsearch, api.DefaultEsName, true)
+	outputs, pipelines = ProcessForwarderPipelines(spec, obs.OutputTypeElasticsearch, api.DefaultEsName, true)
 
 	spec.Outputs = outputs
 	spec.Pipelines = pipelines
 
-	return spec, migrationConditions
+	return spec
 }
 
 func GenerateESOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec {

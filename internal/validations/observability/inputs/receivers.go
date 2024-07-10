@@ -5,8 +5,8 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/golang-collections/collections/set"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	. "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	obsmigrate "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	corev1 "k8s.io/api/core/v1"
@@ -73,7 +73,7 @@ func removeGeneratedSecrets(keys []*obs.ConfigMapOrSecretKey, skipKeys *set.Set)
 
 func extractSecretKeysAsSet(context utils.Options) *set.Set {
 	secretKeys := set.New()
-	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](context, obsmigrate.GeneratedSecrets, []*corev1.Secret{}); found {
+	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](context, initialize.GeneratedSecrets, []*corev1.Secret{}); found {
 		for _, secret := range generatedSecrets {
 			for key := range secret.Data {
 				secretKeys.Insert(fmt.Sprintf("%s_%s", secret.Name, key))

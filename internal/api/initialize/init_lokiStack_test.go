@@ -1,7 +1,6 @@
-package observability
+package initialize
 
 import (
-	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -9,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("MigrateLokiStack", func() {
@@ -25,9 +23,8 @@ var _ = Describe("MigrateLokiStack", func() {
 	)
 
 	var (
-		spec       obs.ClusterLogForwarder
-		conditions []metav1.Condition
-		initClf    = func() obs.ClusterLogForwarder {
+		spec    obs.ClusterLogForwarder
+		initClf = func() obs.ClusterLogForwarder {
 			return obs.ClusterLogForwarder{
 				Spec: obs.ClusterLogForwarderSpec{
 					Outputs: []obs.OutputSpec{
@@ -58,15 +55,8 @@ var _ = Describe("MigrateLokiStack", func() {
 			visit(&clfSpec.Spec)
 		}
 
-		spec, conditions = MigrateLokiStack(clfSpec, utils.NoOptions)
+		spec = MigrateLokiStack(clfSpec, utils.NoOptions)
 		Expect(spec.Spec).To(Equal(expSpec))
-		Expect(conditions).To(ContainElement(
-			metav1.Condition{
-				Type:    obs.ConditionTypeMigrated,
-				Status:  metav1.ConditionTrue,
-				Reason:  obs.ReasonMigrateOutput,
-				Message: fmt.Sprintf("%s: %q migrated to appropriate output/s", obs.OutputTypeLokiStack, lokistackOut)},
-		))
 	},
 		Entry("single tenant, single lokistack output",
 			obs.ClusterLogForwarderSpec{

@@ -1,4 +1,4 @@
-package observability
+package initialize
 
 import (
 	"fmt"
@@ -8,12 +8,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MigrateInputs creates instances of inputSpec when a pipeline references one of the reserved input names (e.g. application)
 // This function is destructive and replaces any inputs that use the reserved input names
-func MigrateInputs(spec obs.ClusterLogForwarder, options utils.Options) (obs.ClusterLogForwarder, []metav1.Condition) {
+func MigrateInputs(spec obs.ClusterLogForwarder, options utils.Options) obs.ClusterLogForwarder {
 	inputs := internalobs.Inputs(spec.Spec.Inputs).Map()
 	for _, p := range spec.Spec.Pipelines {
 		for _, i := range p.InputRefs {
@@ -48,7 +47,7 @@ func MigrateInputs(spec obs.ClusterLogForwarder, options utils.Options) (obs.Clu
 		i = migrateInputReceiver(i, spec.Name, options)
 		spec.Spec.Inputs = append(spec.Spec.Inputs, i)
 	}
-	return spec, nil
+	return spec
 }
 
 func migrateInputReceiver(spec obs.InputSpec, forwarderName string, options utils.Options) obs.InputSpec {

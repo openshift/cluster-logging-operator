@@ -1,24 +1,22 @@
-package observability
+package initialize
 
 import (
 	"fmt"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MigrateLokiStack migrates a lokistack output into appropriate loki outputs based on defined inputs
-func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) (obs.ClusterLogForwarder, []metav1.Condition) {
+func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) obs.ClusterLogForwarder {
 	var outputs []obs.OutputSpec
 	var pipelines []obs.PipelineSpec
-	var migrationConditions []metav1.Condition
-	outputs, pipelines, migrationConditions = ProcessForwarderPipelines(spec.Spec, obs.OutputTypeLokiStack, "", false)
+	outputs, pipelines = ProcessForwarderPipelines(spec.Spec, obs.OutputTypeLokiStack, "", false)
 
 	spec.Spec.Outputs = outputs
 	spec.Spec.Pipelines = pipelines
 
-	return spec, migrationConditions
+	return spec
 }
 
 func GenerateLokiOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec {

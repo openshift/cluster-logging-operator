@@ -1,4 +1,4 @@
-package observability
+package initialize
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("MigrateDefaultElasticsearch", func() {
+var _ = Describe("DefaultElasticsearch", func() {
 	const (
 		esOut             = "es-out"
 		defaultESOut      = api.DefaultEsName
@@ -75,7 +75,7 @@ var _ = Describe("MigrateDefaultElasticsearch", func() {
 			visit(&clfSpec)
 		}
 
-		spec, _ = MigrateDefaultElasticsearch(clfSpec)
+		spec = DefaultElasticsearch(clfSpec)
 		Expect(spec).To(Equal(expSpec))
 	},
 		Entry("single tenant, default es output",

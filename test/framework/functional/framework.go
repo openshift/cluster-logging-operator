@@ -3,6 +3,7 @@ package functional
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"net"
 	"os"
 	"strconv"
@@ -14,8 +15,6 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
-
-	obsmigrations "github.com/openshift/cluster-logging-operator/internal/migrations/observability"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -192,7 +191,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 	secretMap := f.mapOutputSecrets()
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
-	migrated, _ := obsmigrations.MigrateClusterLogForwarder(*f.Forwarder, utils.NoOptions)
+	migrated := initialize.ClusterLogForwarder(*f.Forwarder, utils.NoOptions)
 	f.Forwarder = &migrated
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false

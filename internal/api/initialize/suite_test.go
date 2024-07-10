@@ -1,4 +1,4 @@
-package observability_test
+package initialize_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "[internal][migrations][observability] suite")
+	RunSpecs(t, "[internal][api][initializers] suite")
 }

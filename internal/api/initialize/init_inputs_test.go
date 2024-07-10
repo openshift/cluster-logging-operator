@@ -1,4 +1,4 @@
-package observability
+package initialize
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ var _ = Describe("migrateInputs", func() {
 					},
 				},
 			}
-			result, _ := MigrateInputs(spec, initContext)
+			result := MigrateInputs(spec, initContext)
 			Expect(result.Spec.Inputs).To(HaveLen(1))
 			Expect(result.Spec.Inputs[0]).To(Equal(obs.InputSpec{Type: obs.InputTypeApplication, Name: string(obs.InputTypeApplication), Application: &obs.Application{}}))
 		})
@@ -42,7 +42,7 @@ var _ = Describe("migrateInputs", func() {
 					},
 				},
 			}
-			result, _ := MigrateInputs(spec, initContext)
+			result := MigrateInputs(spec, initContext)
 			Expect(result.Spec.Inputs).To(HaveLen(1))
 			Expect(result.Spec.Inputs[0]).To(Equal(obs.InputSpec{Type: obs.InputTypeInfrastructure, Name: string(obs.InputTypeInfrastructure),
 				Infrastructure: &obs.Infrastructure{
@@ -57,7 +57,7 @@ var _ = Describe("migrateInputs", func() {
 					},
 				},
 			}
-			result, _ := MigrateInputs(spec, initContext)
+			result := MigrateInputs(spec, initContext)
 			Expect(result.Spec.Inputs).To(HaveLen(1))
 			Expect(result.Spec.Inputs[0]).To(Equal(obs.InputSpec{Type: obs.InputTypeAudit, Name: string(obs.InputTypeAudit),
 				Audit: &obs.Audit{
@@ -98,7 +98,7 @@ var _ = Describe("migrateInputs", func() {
 					},
 				},
 			}
-			result, _ := MigrateInputs(spec, initContext)
+			result := MigrateInputs(spec, initContext)
 			Expect(result.Spec.Inputs).To(HaveLen(2))
 			inputs := internalobs.Inputs(result.Spec.Inputs).Map()
 			Expect(inputs[string(obs.InputTypeApplication)]).To(Equal(obs.InputSpec{Name: string(obs.InputTypeApplication), Application: &obs.Application{}, Type: obs.InputTypeApplication}))
@@ -111,7 +111,7 @@ var _ = Describe("migrateInputs", func() {
 			spec obs.ClusterLogForwarder
 
 			migrate = func(spec, exp obs.ClusterLogForwarder) obs.ClusterLogForwarder {
-				migratedSpec, _ := MigrateInputs(spec, initContext)
+				migratedSpec := MigrateInputs(spec, initContext)
 				sort.Slice(migratedSpec.Spec.Inputs, func(i, j int) bool {
 					return migratedSpec.Spec.Inputs[i].Name < migratedSpec.Spec.Inputs[j].Name
 				})

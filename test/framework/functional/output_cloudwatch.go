@@ -97,18 +97,25 @@ func (f *CollectorFunctionalFramework) createServiceRoute() error {
 	return nil
 }
 
-func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) ([]string, error) {
+func (f *CollectorFunctionalFramework) pollForCloudwatchGroups() (*cwl.DescribeLogGroupsOutput, error) {
 	var (
-		allGroups       []string
 		logGroupsOutput *cwl.DescribeLogGroupsOutput
 	)
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		logGroupsOutput, err = svc.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
+		logGroupsOutput, err = cwlClient.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
 		if err != nil || len(logGroupsOutput.LogGroups) == 0 {
 			return false, err
 		}
 		return true, nil
 	})
+	return logGroupsOutput, err
+}
+
+func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups() ([]string, error) {
+	var (
+		allGroups []string
+	)
+	logGroupsOutput, err := f.pollForCloudwatchGroups()
 
 	if err != nil {
 		return nil, err
@@ -123,16 +130,9 @@ func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) (
 
 func (f *CollectorFunctionalFramework) GetLogGroupByType(inputName string) ([]string, error) {
 	var (
-		myGroups        []string
-		logGroupsOutput *cwl.DescribeLogGroupsOutput
+		myGroups []string
 	)
-	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		logGroupsOutput, err = cwlClient.DescribeLogGroups(cxt, &cwl.DescribeLogGroupsInput{})
-		if err != nil || len(logGroupsOutput.LogGroups) == 0 {
-			return false, err
-		}
-		return true, nil
-	})
+	logGroupsOutput, err := f.pollForCloudwatchGroups()
 
 	if err != nil {
 		return nil, err
@@ -149,6 +149,31 @@ func (f *CollectorFunctionalFramework) GetLogGroupByType(inputName string) ([]st
 	}
 	if !found {
 		return nil, fmt.Errorf("%s log group not found", inputName)
+	}
+	return myGroups, nil
+}
+
+func (f *CollectorFunctionalFramework) GetLogGroupByName(groupName string) ([]string, error) {
+	var (
+		myGroups []string
+	)
+	logGroupsOutput, err := f.pollForCloudwatchGroups()
+
+	if err != nil {
+		return nil, err
+	}
+	log.V(3).Info("Results", "logGroups", logGroupsOutput.LogGroups)
+
+	found := false
+	for _, l := range logGroupsOutput.LogGroups {
+		// Filter by type and get all
+		if *l.LogGroupName == groupName {
+			found = true
+			myGroups = append(myGroups, *l.LogGroupName)
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("%s log group not found", groupName)
 	}
 	return myGroups, nil
 }
@@ -214,6 +239,30 @@ func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(inputName string) 
 		return nil, err
 	}
 	log.V(3).Info("GetLogGroupByType", "logGroupName", logGroupName)
+
+	log.V(3).Info("Reading cloudwatch log streams")
+	logStreams, e := f.GetLogStreamsByGroup(logGroupName[0])
+	if e != nil {
+		return nil, e
+	}
+	log.V(3).Info("GetLogStreamsByGroup", "logStreams", logStreams)
+
+	log.V(3).Info("Reading cloudwatch messages")
+	messages, er := f.GetLogMessagesByGroupAndStream(logGroupName[0], logStreams[0])
+	if er != nil {
+		return nil, er
+	}
+	log.V(3).Info("GetLogMessagesByGroupAndStream", "messages", messages)
+
+	return messages, nil
+}
+
+func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatchByGroupName(groupName string) ([]string, error) {
+	log.V(3).Info(fmt.Sprintf("Reading cloudwatch log groups by name: %q", groupName))
+	logGroupName, err := f.GetLogGroupByName(groupName)
+	if err != nil {
+		return nil, err
+	}
 
 	log.V(3).Info("Reading cloudwatch log streams")
 	logStreams, e := f.GetLogStreamsByGroup(logGroupName[0])

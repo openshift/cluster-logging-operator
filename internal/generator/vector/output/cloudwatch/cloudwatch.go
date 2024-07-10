@@ -1,6 +1,8 @@
 package cloudwatch
 
 import (
+	_ "embed"
+
 	"regexp"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
 
 type Endpoint struct {
@@ -58,7 +61,7 @@ type = "aws_cloudwatch_logs"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
 {{.Compression}}
-group_name = "{{.GroupName}}"
+group_name = "{{"{{ _internal.cw_groupname }}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 healthcheck.enabled = false
@@ -73,6 +76,7 @@ func (e *CloudWatch) SetCompression(algo string) {
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
+	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
@@ -87,7 +91,8 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 
 	return []Element{
 		NormalizeStreamName(componentID, inputs),
-		viaq.DedotLabels(dedottedID, []string{componentID}),
+		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, "cw_groupname", "Cloudwatch Groupname"),
+		viaq.DedotLabels(dedottedID, []string{groupNameID}),
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),

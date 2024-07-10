@@ -173,7 +173,7 @@ func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.CloudwatchAuthentication, 
 		output.Cloudwatch = &obs.Cloudwatch{
 			URL:            "https://localhost:5000",
 			Region:         "us-east-1",
-			GroupName:      "group-prefix.{{.log_type}}",
+			GroupName:      `group-prefix.{.log_type||"none"}`,
 			Authentication: &auth,
 		}
 		for _, v := range visitors {

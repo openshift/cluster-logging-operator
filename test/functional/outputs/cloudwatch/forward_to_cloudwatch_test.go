@@ -87,6 +87,44 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(logs).To(HaveLen(numOfLogs))
 		})
 
+		It("should be able to read messages from custom defined log group name", func() {
+			cwGroupName := `foo-{.log_type||"none"}`
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToCloudwatchOutput(*obsCwAuth, func(output *obs.OutputSpec) {
+					output.Cloudwatch.GroupName = cwGroupName
+				})
+			framework.Secrets = append(framework.Secrets, secret)
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
+			time.Sleep(10 * time.Second)
+
+			logs, err := framework.ReadLogsFromCloudwatchByGroupName("foo-application")
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
+		})
+
+		It("should be able to read messages from custom defined log group name with missing field", func() {
+			cwGroupName := `foo-{.fieldnotfound||"missing"}`
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToCloudwatchOutput(*obsCwAuth, func(output *obs.OutputSpec) {
+					output.Cloudwatch.GroupName = cwGroupName
+				})
+			framework.Secrets = append(framework.Secrets, secret)
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
+			time.Sleep(10 * time.Second)
+
+			logs, err := framework.ReadLogsFromCloudwatchByGroupName("foo-missing")
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
+		})
+
 		It("should be able to forward by user-defined pod labels", func() {
 			var (
 				labelKey   = "env1"

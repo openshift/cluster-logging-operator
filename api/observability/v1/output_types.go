@@ -302,8 +302,8 @@ type Cloudwatch struct {
 
 	// GroupName defines the strategy for grouping logstreams
 	//
-	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
-	// +kubebuilder:default:="{{.log_type}}"
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")*((\|\|)?(\.[a-zA-Z0-9_]+|\.?"[^"]+"))*\})*)*$`
+	// +kubebuilder:default:=`{.log_type||"none"}`
 	// +kubebuilder:validation:Required
 	GroupName string `json:"groupName"`
 }

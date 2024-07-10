@@ -122,20 +122,20 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, nil, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
-			Entry("when groupName is spec'd", "{{.log_type}}-foo", func(spec *obs.OutputSpec) {},
+			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {},
 				framework.NoOptions, "cw_with_groupname.toml"),
-			Entry("when URL is spec'd", "{{.log_type}}", func(spec *obs.OutputSpec) {
+			Entry("when URL is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.URL = "http://mylogreceiver"
 			}, framework.NoOptions, "cw_with_url.toml"),
-			Entry("when minTLS and ciphers is spec'd", "{{.log_type}}", nil, testhelpers.FrameworkOptionWithDefaultTLSCiphers, "cw_with_tls_and_default_mintls_ciphers.toml"),
-			Entry("when tls is spec'd", "{{.log_type}}", func(spec *obs.OutputSpec) {
+			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil, testhelpers.FrameworkOptionWithDefaultTLSCiphers, "cw_with_tls_and_default_mintls_ciphers.toml"),
+			Entry("when tls is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
 			}, framework.NoOptions, "cw_with_tls_spec.toml"),
-			Entry("when tls is spec'd with insecure verify", "{{.log_type}}", func(spec *obs.OutputSpec) {
+			Entry("when tls is spec'd with insecure verify", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
 				spec.TLS.InsecureSkipVerify = true
 			}, framework.NoOptions, "cw_with_tls_spec_insecure_verify.toml"),
-			Entry("when aws credentials are provided", "app-{{.log_type}}", func(spec *obs.OutputSpec) {
+			Entry("when aws credentials are provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
@@ -236,7 +236,5 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, ""),
 		)
-
 	})
-
 })

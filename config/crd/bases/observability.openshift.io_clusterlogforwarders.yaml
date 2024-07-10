@@ -1046,11 +1046,10 @@ spec:
                           - type
                           type: object
                         groupName:
-                          default: '{{.log_type}}'
+                          default: '{.log_type||"none"}'
                           description: GroupName defines the strategy for grouping
                             logstreams
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")*((\|\|)?(\.[a-zA-Z0-9_]+|\.?"[^"]+"))*\})*)*$
                           type: string
                         region:
                           type: string

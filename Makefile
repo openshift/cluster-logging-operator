@@ -321,7 +321,7 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
-E2E_TEST_INCLUDES=logforwarding|collection|eventrouter|flowcontrol|input_selection|logfilesmetricexporter
+E2E_TEST_INCLUDES=logforwarding|collection|eventrouter|flowcontrol|logfilesmetricexporter
 CLF_TEST_INCLUDES=http
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)

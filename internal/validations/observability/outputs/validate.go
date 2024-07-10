@@ -10,16 +10,20 @@ import (
 )
 
 func Validate(context internalcontext.ForwarderContext) {
-
 	for _, out := range context.Forwarder.Spec.Outputs {
 		configs := internalobs.SecretKeysAsConfigMapOrSecretKeys(out)
 		if out.TLS != nil {
 			configs = append(configs, internalobs.ConfigMapOrSecretKeys(out.TLS.TLSSpec)...)
 		}
 		messages := common.ValidateConfigMapOrSecretKey(configs, context.Secrets, context.ConfigMaps)
-		if out.Type == obsv1.OutputTypeCloudwatch {
+		// Validate by output type
+		switch out.Type {
+		case obsv1.OutputTypeCloudwatch:
 			messages = append(messages, ValidateCloudWatchAuth(out)...)
+		case obsv1.OutputTypeOTLP:
+			messages = append(messages, ValidateOtlpAnnotation(context)...)
 		}
+		// Set condition
 		if len(messages) > 0 {
 			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
 				internalobs.NewConditionFromPrefix(obsv1.ConditionTypeValidOutputPrefix, out.Name, false, obsv1.ReasonValidationFailure, strings.Join(messages, ",")))

@@ -14,4 +14,7 @@ const (
 	// Log level can be one of: trace, debug, info, warn, error, off.
 	// CLO's default log level for vector is `warn`: https://issues.redhat.com/browse/LOG-3435
 	AnnotationVectorLogLevel = "observability.openshift.io/log-level"
+
+	// AnnotationOtlpOutputTechPreview is the annotation to enable tech preview of output type otlp for forwarding logs.
+	AnnotationOtlpOutputTechPreview = "observability.openshift.io/tech-preview-otlp-output"
 )

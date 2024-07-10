@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 
@@ -89,7 +89,7 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 func fetchContainerLogs(runner runners.Runner, artifactDir string) {
 	var err error
 	var out string
-	for _, container := range []string{constants.CollectorName, logging.OutputTypeHttp} {
+	for _, container := range []string{constants.CollectorName, string(obs.OutputTypeHTTP)} {
 
 		if out, err = oc.Logs().WithNamespace(runner.Namespace()).WithPod(runner.Pod()).WithContainer(strings.ToLower(container)).Run(); err == nil {
 

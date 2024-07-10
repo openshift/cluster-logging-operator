@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"os"
 	"path"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -53,34 +54,25 @@ func (r *ClusterRunner) Pod() string {
 }
 
 func (r *ClusterRunner) Deploy() {
-	testclient := client.NewNamespaceClient()
+	testClient := client.NewNamespaceClient()
 	cleanup := func() {
 		if r.DoCleanup {
-			testclient.Close()
+			testClient.Close()
 		}
 	}
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, cleanup, r.Verbosity)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testClient.Test, cleanup, r.Verbosity)
 	r.framework.Conf = r.CollectorConfig
 
-	//TODO: FIX ME
-	//testruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
-	//	FromInputWithVisitor("benchmark", func(spec *logging.InputSpec) {
-	//		spec.Application = &logging.Application{
-	//			Namespaces: []string{r.Namespace()},
-	//		}
-	//	}).
-	//	ToHttpOutput()
-
-	//modify config to only collect loader containers
-	r.framework.VisitConfig = func(conf string) string {
-		pattern := `exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log"`
-		conf = strings.Replace(conf, `exclude_paths_glob_patterns = ["/var/log/pods/*/collector/*.log"`, pattern, 1)
-		n := strings.Index(conf, "[sinks.prometheus_output]")
-		if n == -1 {
-			return conf
-		}
-		return conf[0:n]
-	}
+	obsruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
+		FromInputName("benchmark", func(spec *obs.InputSpec) {
+			spec.Type = obs.InputTypeApplication
+			spec.Application = &obs.Application{
+				Includes: []obs.NamespaceContainerSpec{
+					{Namespace: r.Namespace()},
+				},
+			}
+		}).
+		ToHttpOutput()
 
 	err := r.framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 		func(b *runtime.PodBuilder) error {
@@ -192,7 +184,7 @@ func ReadAndParseFile(filePath string) (stats.PerfLogs, error) {
 
 func (r *ClusterRunner) FetchApplicationLogs() error {
 	log.V(3).Info("Fetching Application Logs ...")
-	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(logging.OutputTypeHttp).
+	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(string(obs.OutputTypeHTTP)).
 		WithCmd("ls", "/tmp").Run()
 	if err != nil {
 		return err
@@ -206,7 +198,7 @@ func (r *ClusterRunner) FetchApplicationLogs() error {
 	}
 	for _, file := range files {
 		cmd := fmt.Sprintf("oc cp %s/%s:/tmp/%s %s/%s -c %s  --request-timeout=3m", r.framework.Namespace, r.framework.Name, file,
-			r.ArtifactDir, file, strings.ToLower(logging.OutputTypeHttp))
+			r.ArtifactDir, file, strings.ToLower(string(obs.OutputTypeHTTP)))
 		log.V(2).Info("copy command", "cmd", cmd)
 		out, err := oc.Literal().From(cmd).Run()
 		if err != nil {

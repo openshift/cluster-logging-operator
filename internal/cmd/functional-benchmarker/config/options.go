@@ -55,7 +55,7 @@ func InitOptions() Options {
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
 	fs.IntVar(&options.Verbosity, "verbosity", 0, "The output log level")
 	fs.BoolVar(&options.DoCleanup, "do-cleanup", true, "set to false to preserve the namespace")
-	fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
+	//fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
 	//fs.StringVar(&options.Platform, "platform", "cluster", "The runtime environment: cluster, local. local requires podman")
 	fs.StringVar(&options.PayloadSource, "payload-source", "synthetic", "The load message profile: synthetic,application,simple")
 
@@ -95,7 +95,7 @@ func InitOptions() Options {
 func ReadConfig(configFile string, baseline bool) string {
 	if baseline {
 		log.V(0).Info("Using the baseline config. Modifying source to collect only loader")
-		return FluentdBaselineConf
+		return ""
 	}
 	var reader func() ([]byte, error)
 	switch configFile {

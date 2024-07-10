@@ -234,22 +234,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 
 .PHONY: test-functional
-test-functional:
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -race \
-		./test/functional/filters/... \
-		./test/functional/flowcontrol \
-		./test/functional/inputs/... \
-		./test/functional/metrics \
-		./test/functional/misc \
-		./test/functional/normalization/... \
-		./test/functional/outputs/... \
-		./test/functional/pipelines \
-		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
-
-.PHONY: test-functional-vector
-test-functional-vector: test-functional-benchmarker-vector
+test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \

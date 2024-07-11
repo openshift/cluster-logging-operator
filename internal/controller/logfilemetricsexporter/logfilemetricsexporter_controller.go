@@ -2,6 +2,7 @@ package logfilemetricsexporter
 
 import (
 	"context"
+	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -69,7 +69,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-	reconcileErr := k8shandler.ReconcileForLogFileMetricExporter(lfmeInstance, r.Client, r.Recorder, r.ClusterID, utils.AsOwner(lfmeInstance))
+	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.Recorder, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
 		lfmeInstance.Status.Conditions.SetCondition(

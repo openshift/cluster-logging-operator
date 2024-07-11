@@ -47,17 +47,17 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := auth.ReconcileRBAC(er, requestClient, constants.OpenshiftNS, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, owner); err != nil {
+	if err := auth.ReconcileRBAC(er, requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileRBAC")
 		return err
 	}
 
-	if err := network.ReconcileService(er, requestClient, lfmeInstance.Namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
+	if err := network.ReconcileService(er, requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
 		return err
 	}
 
-	if err := metrics.ReconcileServiceMonitor(er, requestClient, lfmeInstance.Namespace, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
+	if err := metrics.ReconcileServiceMonitor(er, requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
 		return err
 	}
@@ -66,7 +66,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		er,
 		requestClient,
 		lfmeInstance.Namespace,
-		constants.LogfilesmetricexporterName,
+		resNames.CommonName,
 		owner,
 		commonLabels); err != nil {
 		msg := fmt.Sprintf("Unable to reconcile LogFileMetricExporter: %v", err)

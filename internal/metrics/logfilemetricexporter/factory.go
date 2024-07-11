@@ -98,7 +98,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 
 func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
 	exporterContainer := runtime.NewContainer(constants.LogfilesmetricexporterName,
-		constants.LogfilesmetricexporterName,
+		utils.GetComponentImage(constants.LogfilesmetricexporterName),
 		v1.PullIfNotPresent, resourceRequirements(exporter))
 
 	exporterContainer.Ports = []v1.ContainerPort{

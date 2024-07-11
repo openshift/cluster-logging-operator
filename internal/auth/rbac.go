@@ -12,7 +12,7 @@ import (
 )
 
 // ReconcileRBAC reconciles the RBAC specifically for the service account and SCC
-func ReconcileRBAC(er record.EventRecorder, k8sClient client.Client, forwarderName, saNamespace, saName string, owner metav1.OwnerReference) error {
+func ReconcileRBAC(er record.EventRecorder, k8sClient client.Client, rbacName, saNamespace, saName string, owner metav1.OwnerReference) error {
 	desiredCRB := NewMetaDataReaderClusterRoleBinding(saNamespace, saName, owner)
 	if err := reconcile.ClusterRoleBinding(k8sClient, desiredCRB.Name, func() *rbacv1.ClusterRoleBinding { return desiredCRB }); err != nil {
 		return err
@@ -22,7 +22,7 @@ func ReconcileRBAC(er record.EventRecorder, k8sClient client.Client, forwarderNa
 		return err
 	}
 
-	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, forwarderName, desiredSCCRole.Name, saName, owner)
+	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, rbacName, desiredSCCRole.Name, saName, owner)
 	return reconcile.RoleBinding(er, k8sClient, desiredSCCRoleBinding)
 }
 

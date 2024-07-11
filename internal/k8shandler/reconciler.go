@@ -5,13 +5,11 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,18 +56,4 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	if err := clusterRequest.removeCollector(); err != nil {
 		log.Error(err, "Error removing collector")
 	}
-}
-
-func ReconcileForLogFileMetricExporter(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
-	requestClient client.Client,
-	er record.EventRecorder,
-	clusterID string,
-	owner metav1.OwnerReference) (err error) {
-
-	// Make the daemonset along with metric services for Log file metric exporter
-	if err := logmetricexporter.Reconcile(lfmeInstance, requestClient, er, owner); err != nil {
-		return err
-	}
-
-	return nil
 }

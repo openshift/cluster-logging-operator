@@ -17,9 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ReconcileServiceAccount reconciles the serviceaccount for collector or logfilemetricexporter
+// ReconcileServiceAccount reconciles the serviceaccount for logfilemetricexporter
 func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
-	if namespace == constants.OpenshiftNS && (resNames.ServiceAccount == constants.CollectorServiceAccountName || resNames.ServiceAccount == constants.LogfilesmetricexporterName) {
+	if namespace == constants.OpenshiftNS && resNames.ServiceAccount == constants.LogfilesmetricexporterName {
 		serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
 		utils.AddOwnerRefToObject(serviceAccount, owner)
 		serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)

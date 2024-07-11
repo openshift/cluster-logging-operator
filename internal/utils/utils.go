@@ -28,7 +28,7 @@ var (
 	DefaultNodeSelector = map[string]string{OsNodeLabel: LinuxValue}
 )
 
-// COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
+// COMPONENT_IMAGES are keys based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
 	constants.VectorName:                 constants.VectorImageEnvVar,
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,

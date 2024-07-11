@@ -20,10 +20,11 @@ import (
 var _ = Describe("[e2e][InputSelection]", func() {
 
 	const (
-		valueBackend  = "backend"
-		valueFrontend = "frontend"
-		valueMiddle   = "middle"
-		component     = "component"
+		valueBackend    = "backend"
+		valueFrontend   = "frontend"
+		valueMiddle     = "middle"
+		component       = "component"
+		valueFrontendNS = "clo-test-frontend"
 	)
 
 	var (
@@ -34,8 +35,6 @@ var _ = Describe("[e2e][InputSelection]", func() {
 		logGeneratorNameFn = func(name string) string {
 			return "log-generator"
 		}
-
-		valueFrontendNS string
 	)
 
 	AfterEach(func() {
@@ -53,7 +52,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 				return component
 			}
 		}
-		valueFrontendNS = e2e.CreateTestNamespace()
+		e2e.CreateNamespace(valueFrontendNS)
 		for componentName, namespace := range map[string]string{
 			valueFrontend: valueFrontendNS,
 			valueBackend:  e2e.CreateTestNamespace(),
@@ -79,6 +78,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 		forwarder.Spec.ServiceAccount.Name = sa.Name
 		testruntime.NewClusterLogForwarderBuilder(forwarder).
 			FromInputName("myinput", func(spec *obs.InputSpec) {
+				spec.Type = input.Type
 				spec.Application = input.Application
 				spec.Infrastructure = input.Infrastructure
 				spec.Audit = input.Audit
@@ -95,6 +95,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 	},
 		Entry("infrastructure inputs should allow specifying only node logs",
 			obs.InputSpec{
+				Type: obs.InputTypeInfrastructure,
 				Infrastructure: &obs.Infrastructure{
 					Sources: []obs.InfrastructureSource{obs.InfrastructureSourceNode},
 				},
@@ -106,6 +107,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("infrastructure inputs should allow specifying only container logs",
 			obs.InputSpec{
+				Type: obs.InputTypeInfrastructure,
 				Infrastructure: &obs.Infrastructure{
 					Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
 				},
@@ -117,6 +119,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from matching pod label 'notin' expressions",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Selector: &metav1.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -134,6 +137,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from matching pod label 'in' expressions",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Selector: &metav1.LabelSelector{
 						MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -151,6 +155,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from matching pod labels",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -171,6 +176,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Includes: []obs.NamespaceContainerSpec{
 						{
@@ -186,6 +192,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from explicit namespaces",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Includes: []obs.NamespaceContainerSpec{
 						{
@@ -201,6 +208,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should only collect from included namespaces with wildcards",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Includes: []obs.NamespaceContainerSpec{
 						{
@@ -214,6 +222,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should not collect from excluded namespaces",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Excludes: []obs.NamespaceContainerSpec{
 						{
@@ -227,6 +236,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("application inputs should collect from included containers",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Includes: []obs.NamespaceContainerSpec{
 						{
@@ -247,6 +257,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			}),
 		Entry("should not collect from excluded containers",
 			obs.InputSpec{
+				Type: obs.InputTypeApplication,
 				Application: &obs.Application{
 					Excludes: []obs.NamespaceContainerSpec{
 						{

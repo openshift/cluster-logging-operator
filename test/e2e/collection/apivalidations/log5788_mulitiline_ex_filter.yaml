@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: to-splunk-secret-54980
+data:
+  hecToken: dmFsdWUtMg0KDQo=
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  filters:
+    - name: detectmultiline
+      type: detectMultilineException
+  managementState: Managed
+  outputs:
+    - name: splunk-aosqe
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secret:
+              name: to-splunk-secret-54980
+        index: main
+        tuning:
+          compression: none
+        url: http://to-nowhere.svc:8088
+      type: splunk
+  pipelines:
+    - filterRefs:
+        - detectmultiline
+      inputRefs:
+        - infrastructure
+        - audit
+        - application
+      name: forward-log-splunk
+      outputRefs:
+        - splunk-aosqe
+  serviceAccount:
+    name: clf-validation-test

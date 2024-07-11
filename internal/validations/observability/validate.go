@@ -3,6 +3,7 @@ package observability
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/filters"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/inputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/outputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/pipelines"
@@ -14,6 +15,7 @@ var (
 		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,
+		filters.Validate,
 		pipelines.Validate,
 	}
 )

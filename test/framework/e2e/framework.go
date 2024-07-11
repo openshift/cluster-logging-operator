@@ -41,7 +41,7 @@ import (
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -262,8 +262,11 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 }
 
 func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string) string {
-	opts := metav1.CreateOptions{}
 	name := fmt.Sprintf("%s-%d", prefix, rand.Intn(10000)) //nolint:gosec
+	return tc.CreateNamespace(name)
+}
+
+func (tc *E2ETestFramework) CreateNamespace(name string) string {
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
 		name = value
 	} else {
@@ -277,9 +280,10 @@ func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string) string 
 			Name: name,
 		},
 	}
-	_, err := tc.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, opts)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		clolog.Error(err, "Error:")
+
+	if err := tc.Test.Recreate(namespace); err != nil {
+		clolog.Error(err, "Error")
+		os.Exit(1)
 	}
 	clolog.V(1).Info("Created namespace", "namespace", name)
 	return name

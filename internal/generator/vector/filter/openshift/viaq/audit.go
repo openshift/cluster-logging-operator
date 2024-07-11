@@ -45,6 +45,7 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceAuditd,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
+			InternalContext,
 			RemoveFile,
 			RemoveSourceType,
 			ParseHostAuditLogs,
@@ -62,6 +63,7 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceKube,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
+			InternalContext,
 			RemoveFile,
 			RemoveSourceType,
 			ParseAndFlatten,
@@ -79,6 +81,7 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceOpenShift,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
+			InternalContext,
 			RemoveFile,
 			RemoveSourceType,
 			ParseAndFlatten,
@@ -96,6 +99,7 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceOVN,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
+			InternalContext,
 			RemoveFile,
 			RemoveSourceType,
 			FixLogLevel,

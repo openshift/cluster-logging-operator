@@ -12,6 +12,7 @@ inputs = ["pipeline_mypipeline_viaqjournal_0"]
 source = '''
 if .log_source == "container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  ._internal.message = .message
    if !exists(.level) {
     .level = "default"
     if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
@@ -84,6 +85,7 @@ if .log_source == "container" {
 }
 if .log_source == "node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  ._internal.message = .message
   .tag = ".journal.system"
 
   del(.source_type)

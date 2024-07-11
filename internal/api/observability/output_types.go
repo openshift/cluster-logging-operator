@@ -51,7 +51,7 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 		}
 	}
 	for _, token := range auths {
-		if token.From == obsv1.BearerTokenFromServiceAccountToken {
+		if token.From == obsv1.BearerTokenFromServiceAccount {
 			return true
 		}
 	}

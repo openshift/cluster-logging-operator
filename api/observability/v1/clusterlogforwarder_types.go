@@ -217,15 +217,15 @@ type BearerToken struct {
 
 // BearerTokenFrom specifies the source used for the bearer token.
 //
-// +kubebuilder:validation:Enum:=secret;serviceAccountToken
+// +kubebuilder:validation:Enum:=secret;serviceAccount
 type BearerTokenFrom string
 
 const (
 	// BearerTokenFromSecret specifies to use the token from the spec'd secret
 	BearerTokenFromSecret BearerTokenFrom = "secret"
 
-	// BearerTokenFromServiceAccountToken specifies to use the projected token associated with the forwarder service account
-	BearerTokenFromServiceAccountToken BearerTokenFrom = "serviceAccountToken"
+	// BearerTokenFromServiceAccount specifies to use the token associated with the forwarder service account
+	BearerTokenFromServiceAccount BearerTokenFrom = "serviceAccount"
 )
 
 type BearerTokenSecretKey struct {

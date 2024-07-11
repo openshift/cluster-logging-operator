@@ -7,7 +7,6 @@ echo "cluster logging operator registry: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGIST
 echo "cluster logging operator: ${IMAGE_CLUSTER_LOGGING_OPERATOR}"
 echo "vector: ${IMAGE_LOGGING_VECTOR}"
 echo "log-file-metric-exporter: ${IMAGE_LOG_FILE_METRIC_EXPORTER}"
-echo "console-plugin: ${IMAGE_LOGGING_CONSOLE_PLUGIN}"
 
 echo "In namespace: ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
 

@@ -42,10 +42,10 @@ func ValidateReceiver(spec obs.InputSpec, secrets map[string]*corev1.Secret, con
 	}
 	if spec.Receiver.TLS != nil {
 		tlsSpec := obs.TLSSpec(*spec.Receiver.TLS)
-		keys := ConfigMapOrSecretKeys(tlsSpec)
+		keys := ConfigReferences(tlsSpec)
 		skipKeys := extractSecretKeysAsSet(context)
 		keys = removeGeneratedSecrets(keys, skipKeys)
-		if messages := common.ValidateConfigMapOrSecretKey(keys, secrets, configMaps); len(messages) > 0 {
+		if messages := common.ValidateConfigReferences(keys, secrets, configMaps); len(messages) > 0 {
 			return []metav1.Condition{
 				NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")),
 			}
@@ -57,7 +57,7 @@ func ValidateReceiver(spec obs.InputSpec, secrets map[string]*corev1.Secret, con
 	}
 }
 
-func removeGeneratedSecrets(keys []*obs.ConfigMapOrSecretKey, skipKeys *set.Set) (result []*obs.ConfigMapOrSecretKey) {
+func removeGeneratedSecrets(keys []*obs.ConfigReference, skipKeys *set.Set) (result []*obs.ConfigReference) {
 	for _, secretKey := range keys {
 		if secretKey.Secret != nil {
 			key := fmt.Sprintf("%v_%v", secretKey.Secret.Name, secretKey.Key)

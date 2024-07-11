@@ -27,19 +27,19 @@ var _ = Describe("MigrateDefaultElasticsearch", func() {
 		spec  obs.ClusterLogForwarderSpec
 		esTls = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
+				CA: &obs.ConfigReference{
 					Secret: &v1.LocalObjectReference{
 						Name: constants.CollectorName,
 					},
 					Key: constants.TrustedCABundleKey,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
+				Certificate: &obs.ConfigReference{
 					Secret: &v1.LocalObjectReference{
 						Name: constants.CollectorName,
 					},
 					Key: constants.ClientCertKey,
 				},
-				Key: &obs.SecretKey{
+				Key: &obs.SecretConfigReference{
 					Secret: &v1.LocalObjectReference{
 						Name: constants.CollectorName,
 					},

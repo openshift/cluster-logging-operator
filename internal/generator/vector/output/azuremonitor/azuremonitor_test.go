@@ -41,25 +41,25 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		tlsSpec = &obs.OutputTLSSpec{
 			InsecureSkipVerify: true,
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
+				CA: &obs.ConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretTlsName,
 					},
 					Key: constants.TrustedCABundleKey,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
+				Certificate: &obs.ConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretTlsName,
 					},
 					Key: constants.ClientCertKey,
 				},
-				Key: &obs.SecretKey{
+				Key: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretTlsName,
 					},
 					Key: constants.ClientPrivateKey,
 				},
-				KeyPassphrase: &obs.SecretKey{
+				KeyPassphrase: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
@@ -74,7 +74,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				CustomerId: customerId,
 				LogType:    logType,
 				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretKey{
+					SharedKey: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -93,7 +93,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				AzureResourceId: azureId,
 				Host:            hostCN,
 				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretKey{
+					SharedKey: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},

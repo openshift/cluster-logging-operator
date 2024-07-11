@@ -5,9 +5,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// NewSecretKey returns a SecretKey with the given key name and secret
-func NewSecretKey(keyName, secretName string) *obs.SecretKey {
-	return &obs.SecretKey{
+// NewSecretKey returns a SecretConfigReference with the given key name and secret
+func NewSecretKey(keyName, secretName string) *obs.SecretConfigReference {
+	return &obs.SecretConfigReference{
 		Key: keyName,
 		Secret: &corev1.LocalObjectReference{
 			Name: secretName,

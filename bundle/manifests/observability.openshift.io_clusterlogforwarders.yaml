@@ -657,6 +657,13 @@ spec:
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                from:
+                                  description: From is the source from where to find
+                                    config
+                                  enum:
+                                  - configMap
+                                  - secret
+                                  type: string
                                 key:
                                   description: Name of the key used to get the value
                                     in either the referenced ConfigMap or Secret.
@@ -674,8 +681,16 @@ spec:
                                   type: object
                                   x-kubernetes-map-type: atomic
                               required:
+                              - from
                               - key
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when config
+                                  reference is from a secret
+                                rule: self.from == 'secret' && has(self.secret)
+                              - message: Additional configMap spec is required when
+                                  config reference is from a configMap
+                                rule: self.from == 'configMap' && has(self.configMap)
                             certificate:
                               description: Certificate points to the server certificate
                                 to use.
@@ -692,6 +707,13 @@ spec:
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                from:
+                                  description: From is the source from where to find
+                                    config
+                                  enum:
+                                  - configMap
+                                  - secret
+                                  type: string
                                 key:
                                   description: Name of the key used to get the value
                                     in either the referenced ConfigMap or Secret.
@@ -709,8 +731,16 @@ spec:
                                   type: object
                                   x-kubernetes-map-type: atomic
                               required:
+                              - from
                               - key
                               type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when config
+                                  reference is from a secret
+                                rule: self.from == 'secret' && has(self.secret)
+                              - message: Additional configMap spec is required when
+                                  config reference is from a configMap
+                                rule: self.from == 'configMap' && has(self.configMap)
                             key:
                               description: Key points to the private key of the server
                                 certificate.
@@ -2292,6 +2322,12 @@ spec:
                                   type: string
                               type: object
                               x-kubernetes-map-type: atomic
+                            from:
+                              description: From is the source from where to find config
+                              enum:
+                              - configMap
+                              - secret
+                              type: string
                             key:
                               description: Name of the key used to get the value in
                                 either the referenced ConfigMap or Secret.
@@ -2308,8 +2344,16 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                           required:
+                          - from
                           - key
                           type: object
+                          x-kubernetes-validations:
+                          - message: Additional secret spec is required when config
+                              reference is from a secret
+                            rule: self.from == 'secret' && has(self.secret)
+                          - message: Additional configMap spec is required when config
+                              reference is from a configMap
+                            rule: self.from == 'configMap' && has(self.configMap)
                         certificate:
                           description: Certificate points to the server certificate
                             to use.
@@ -2325,6 +2369,12 @@ spec:
                                   type: string
                               type: object
                               x-kubernetes-map-type: atomic
+                            from:
+                              description: From is the source from where to find config
+                              enum:
+                              - configMap
+                              - secret
+                              type: string
                             key:
                               description: Name of the key used to get the value in
                                 either the referenced ConfigMap or Secret.
@@ -2341,8 +2391,16 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                           required:
+                          - from
                           - key
                           type: object
+                          x-kubernetes-validations:
+                          - message: Additional secret spec is required when config
+                              reference is from a secret
+                            rule: self.from == 'secret' && has(self.secret)
+                          - message: Additional configMap spec is required when config
+                              reference is from a configMap
+                            rule: self.from == 'configMap' && has(self.configMap)
                         insecureSkipVerify:
                           description: "If InsecureSkipVerify is true, then the TLS
                             client will be configured to skip validating server certificates.

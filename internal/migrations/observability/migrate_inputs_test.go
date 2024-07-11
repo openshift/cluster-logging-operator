@@ -174,13 +174,13 @@ var _ = Describe("migrateInputs", func() {
 						Type: obs.InputTypeReceiver,
 						Receiver: &obs.ReceiverSpec{
 							TLS: &obs.InputTLSSpec{
-								Key: &obs.SecretKey{
+								Key: &obs.SecretConfigReference{
 									Key: constants.ClientPrivateKey,
 									Secret: &corev1.LocalObjectReference{
 										Name: secretName,
 									},
 								},
-								Certificate: &obs.ConfigMapOrSecretKey{
+								Certificate: &obs.ConfigReference{
 									Key: constants.ClientCertKey,
 									Secret: &corev1.LocalObjectReference{
 										Name: secretName,

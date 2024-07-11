@@ -61,7 +61,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						TLS: &obs.OutputTLSSpec{
 							InsecureSkipVerify: true,
 							TLSSpec: obs.TLSSpec{
-								CA: &obs.ConfigMapOrSecretKey{
+								CA: &obs.ConfigReference{
 									Key: constants.TrustedCABundleKey,
 									Secret: &corev1.LocalObjectReference{
 										Name: framework.FluentdSecretName,

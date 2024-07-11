@@ -66,7 +66,7 @@ func (outputs Outputs) SecretNames() []string {
 		if o.TLS != nil {
 			secrets.Insert(SecretsForTLS(o.TLS.TLSSpec)...)
 		}
-		keys := SecretKeys(o)
+		keys := SecretConfigReferences(o)
 		for _, k := range keys {
 			if k != nil {
 				secrets.Insert(k.Secret.Name)
@@ -77,10 +77,10 @@ func (outputs Outputs) SecretNames() []string {
 }
 
 // SecretKeysAsConfigMapOrSecretKeys
-func SecretKeysAsConfigMapOrSecretKeys(o obsv1.OutputSpec) (configs []*obsv1.ConfigMapOrSecretKey) {
-	for _, auth := range SecretKeys(o) {
+func SecretKeysAsConfigMapOrSecretKeys(o obsv1.OutputSpec) (configs []*obsv1.ConfigReference) {
+	for _, auth := range SecretConfigReferences(o) {
 		if auth != nil {
-			configs = append(configs, &obsv1.ConfigMapOrSecretKey{
+			configs = append(configs, &obsv1.ConfigReference{
 				Key:    auth.Key,
 				Secret: auth.Secret,
 			})
@@ -89,13 +89,13 @@ func SecretKeysAsConfigMapOrSecretKeys(o obsv1.OutputSpec) (configs []*obsv1.Con
 	return configs
 }
 
-// SecretKeys returns a list of the keys associated with an output.  It is possible for a list entry
+// SecretConfigReferences returns a list of the keys associated with an output.  It is possible for a list entry
 // to be nil if it was not specified for the output
-func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
+func SecretConfigReferences(o obsv1.OutputSpec) []*obsv1.SecretConfigReference {
 	switch o.Type {
 	case obsv1.OutputTypeAzureMonitor:
 		if o.AzureMonitor != nil && o.AzureMonitor.Authentication != nil {
-			return []*obsv1.SecretKey{o.AzureMonitor.Authentication.SharedKey}
+			return []*obsv1.SecretConfigReference{o.AzureMonitor.Authentication.SharedKey}
 		}
 	case obsv1.OutputTypeCloudwatch:
 		if o.Cloudwatch != nil && o.Cloudwatch.Authentication != nil {
@@ -109,7 +109,7 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 	case obsv1.OutputTypeGoogleCloudLogging:
 		if o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
 			a := o.GoogleCloudLogging.Authentication
-			return []*obsv1.SecretKey{a.Credentials}
+			return []*obsv1.SecretConfigReference{a.Credentials}
 		}
 	case obsv1.OutputTypeHTTP:
 		if o.HTTP != nil && o.HTTP.Authentication != nil {
@@ -122,7 +122,7 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 	case obsv1.OutputTypeKafka:
 		if o.Kafka != nil && o.Kafka.Authentication != nil {
 			a := o.Kafka.Authentication
-			return []*obsv1.SecretKey{a.SASL.Password, a.SASL.Username}
+			return []*obsv1.SecretConfigReference{a.SASL.Password, a.SASL.Username}
 		}
 	case obsv1.OutputTypeLoki:
 		if o.Loki != nil {
@@ -134,24 +134,24 @@ func SecretKeys(o obsv1.OutputSpec) []*obsv1.SecretKey {
 		}
 	case obsv1.OutputTypeSplunk:
 		if o.Splunk != nil && o.Splunk.Authentication != nil {
-			return []*obsv1.SecretKey{o.Splunk.Authentication.Token}
+			return []*obsv1.SecretConfigReference{o.Splunk.Authentication.Token}
 		}
 	case obsv1.OutputTypeSyslog:
 	default:
 		log.V(0).Error(OutputTypeUnknown(o.Type), "Found unsupported output type while gathering secret names")
 		os.Exit(1)
 	}
-	return []*obsv1.SecretKey{}
+	return []*obsv1.SecretConfigReference{}
 }
 
-func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
+func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretConfigReference {
 	if auth != nil {
-		keys := []*obsv1.SecretKey{
+		keys := []*obsv1.SecretConfigReference{
 			auth.Username,
 			auth.Password,
 		}
 		if auth.Token != nil && auth.Token.From == obsv1.BearerTokenFromSecret && auth.Token.Secret != nil {
-			keys = append(keys, &obsv1.SecretKey{
+			keys = append(keys, &obsv1.SecretConfigReference{
 				Key: auth.Token.Secret.Key,
 				Secret: &v1.LocalObjectReference{
 					Name: auth.Token.Secret.Name,
@@ -160,13 +160,13 @@ func httpAuthKeys(auth *obsv1.HTTPAuthentication) []*obsv1.SecretKey {
 		}
 		return keys
 	}
-	return []*obsv1.SecretKey{}
+	return []*obsv1.SecretConfigReference{}
 }
 
-func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretKey) {
+func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretConfigReference) {
 	if auth != nil {
 		if auth.Token != nil && auth.Token.From == obsv1.BearerTokenFromSecret && auth.Token.Secret != nil {
-			keys = append(keys, &obsv1.SecretKey{
+			keys = append(keys, &obsv1.SecretConfigReference{
 				Key: auth.Token.Secret.Key,
 				Secret: &v1.LocalObjectReference{
 					Name: auth.Token.Secret.Name,
@@ -177,7 +177,7 @@ func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretKey
 	return keys
 }
 
-func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretKey) {
+func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretConfigReference) {
 	if auth != nil {
 		if auth.AWSAccessKey != nil {
 			keys = append(keys, auth.AWSAccessKey.KeyID, auth.AWSAccessKey.KeySecret)
@@ -185,7 +185,7 @@ func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.Sec
 		if auth.IAMRole != nil {
 			keys = append(keys, auth.IAMRole.RoleARN)
 			if auth.IAMRole.Token != nil && auth.IAMRole.Token.From == obsv1.BearerTokenFromSecret && auth.IAMRole.Token.Secret != nil {
-				keys = append(keys, &obsv1.SecretKey{
+				keys = append(keys, &obsv1.SecretConfigReference{
 					Key: auth.IAMRole.Token.Secret.Key,
 					Secret: &v1.LocalObjectReference{
 						Name: auth.IAMRole.Token.Secret.Name,

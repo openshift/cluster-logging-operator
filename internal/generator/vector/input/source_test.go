@@ -330,13 +330,13 @@ var _ = Describe("inputs", func() {
 					Format: obs.HTTPReceiverFormatKubeAPIAudit,
 				},
 				TLS: &obs.InputTLSSpec{
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientCertKey,
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -354,25 +354,25 @@ var _ = Describe("inputs", func() {
 				Type: obs.ReceiverTypeSyslog,
 				Port: 12345,
 				TLS: &obs.InputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.TrustedCABundleKey,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientCertKey,
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientPrivateKey,
 					},
-					KeyPassphrase: &obs.SecretKey{
+					KeyPassphrase: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -390,19 +390,19 @@ var _ = Describe("inputs", func() {
 				Type: obs.ReceiverTypeSyslog,
 				Port: 12345,
 				TLS: &obs.InputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						ConfigMap: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: "ca.crt",
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						ConfigMap: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: "my.crt",
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},

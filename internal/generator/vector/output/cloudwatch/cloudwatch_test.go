@@ -37,19 +37,19 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: vectorTLSSecret,
 						},
 						Key: constants.TrustedCABundleKey,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: vectorTLSSecret,
 						},
 						Key: constants.ClientCertKey,
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: vectorTLSSecret,
 						},
@@ -67,13 +67,13 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						Authentication: &obs.CloudwatchAuthentication{
 							Type: obs.CloudwatchAuthTypeAccessKey,
 							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-								KeyID: &obs.SecretKey{
+								KeyID: &obs.SecretConfigReference{
 									Secret: &corev1.LocalObjectReference{
 										Name: secretName,
 									},
 									Key: constants.AWSAccessKeyID,
 								},
-								KeySecret: &obs.SecretKey{
+								KeySecret: &obs.SecretConfigReference{
 									Secret: &corev1.LocalObjectReference{
 										Name: secretName,
 									},
@@ -139,7 +139,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretWithCredentials,
 							},
@@ -179,7 +179,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -191,7 +191,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -203,7 +203,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -215,7 +215,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -227,7 +227,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},

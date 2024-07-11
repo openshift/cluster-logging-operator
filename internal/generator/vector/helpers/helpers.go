@@ -71,7 +71,7 @@ func SecretPath(secretName string, file string) string {
 }
 
 // SecretFrom formated string SECRET[<secret_component_id>.<secret_name>#<secret_key>]
-func SecretFrom(secretKey *v1.SecretKey) string {
+func SecretFrom(secretKey *v1.SecretConfigReference) string {
 	if secretKey != nil && secretKey.Secret != nil && secretKey.Key != "" {
 		return fmt.Sprintf("SECRET[%s.%s/%s]",
 			VectorSecretID,

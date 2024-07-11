@@ -63,7 +63,7 @@ func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framewo
 	return conf
 }
 
-func ConfigMapOrSecretPath(resource *obs.ConfigMapOrSecretKey) string {
+func ConfigMapOrSecretPath(resource *obs.ConfigReference) string {
 	if resource == nil {
 		return ""
 	}
@@ -75,7 +75,7 @@ func ConfigMapOrSecretPath(resource *obs.ConfigMapOrSecretKey) string {
 	return ""
 }
 
-func SecretPath(resource *obs.SecretKey) string {
+func SecretPath(resource *obs.SecretConfigReference) string {
 	if resource == nil || resource.Secret == nil {
 		return ""
 	}

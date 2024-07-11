@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ValidateConfigMapOrSecretKey(configs []*obsv1.ConfigMapOrSecretKey, secrets map[string]*corev1.Secret, configMaps map[string]*corev1.ConfigMap) (messages []string) {
+func ValidateConfigReferences(configs []*obsv1.ConfigReference, secrets map[string]*corev1.Secret, configMaps map[string]*corev1.ConfigMap) (messages []string) {
 	if len(configs) == 0 {
 		return messages
 	}

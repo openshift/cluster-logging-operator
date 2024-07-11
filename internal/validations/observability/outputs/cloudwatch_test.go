@@ -35,15 +35,15 @@ var _ = Describe("validating CloudWatch auth", func() {
 		},
 			Entry("should fail when not defined", nil, ContainElement(MatchRegexp(`AccessKey is nil`))),
 			Entry("should fail when the KeyID is not defined", &obs.CloudwatchAWSAccessKey{
-				KeySecret: &obs.SecretKey{},
+				KeySecret: &obs.SecretConfigReference{},
 			}, ContainElement(MatchRegexp(`KeyID.*`))),
 			Entry("should fail when the KeySecret is not defined", &obs.CloudwatchAWSAccessKey{
-				KeyID: &obs.SecretKey{},
+				KeyID: &obs.SecretConfigReference{},
 			}, ContainElement(MatchRegexp(`KeySecret.*`))),
 			Entry("should pass when all required fields are defined",
 				&obs.CloudwatchAWSAccessKey{
-					KeyID:     &obs.SecretKey{},
-					KeySecret: &obs.SecretKey{},
+					KeyID:     &obs.SecretConfigReference{},
+					KeySecret: &obs.SecretConfigReference{},
 				},
 				BeEmpty()),
 		)
@@ -66,23 +66,23 @@ var _ = Describe("validating CloudWatch auth", func() {
 				Token: &obs.BearerToken{},
 			}, ContainElement(MatchRegexp(`RoleARN.*`))),
 			Entry("should pass when the role_arn is defined without a token", &obs.CloudwatchIAMRole{
-				RoleARN: &obs.SecretKey{},
+				RoleARN: &obs.SecretConfigReference{},
 			}, BeEmpty()),
 			Entry("should fail when the token is sourced from a secret without the secreting being defined", &obs.CloudwatchIAMRole{
-				RoleARN: &obs.SecretKey{},
+				RoleARN: &obs.SecretConfigReference{},
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
 				},
 			}, ContainElement(MatchRegexp(`Secret for token.*`))),
 			Entry("should pass when the token is from a secret and role_arn are defined", &obs.CloudwatchIAMRole{
-				RoleARN: &obs.SecretKey{},
+				RoleARN: &obs.SecretConfigReference{},
 				Token: &obs.BearerToken{
 					From:   obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{},
 				},
 			}, BeEmpty()),
 			Entry("should pass when the token is from a serviceaccount and role are defined", &obs.CloudwatchIAMRole{
-				RoleARN: &obs.SecretKey{},
+				RoleARN: &obs.SecretConfigReference{},
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromServiceAccountToken,
 				},

@@ -28,7 +28,7 @@ func (s Secrets) Names() (names []string) {
 }
 
 // Value returns the content of the given secret with key if it exists or nil
-func (s Secrets) Value(key *obs.SecretKey) []byte {
+func (s Secrets) Value(key *obs.SecretConfigReference) []byte {
 	if key != nil && key.Secret != nil {
 		if secret, exists := s[key.Secret.Name]; exists {
 			if value, exists := secret.Data[key.Key]; exists {
@@ -40,7 +40,7 @@ func (s Secrets) Value(key *obs.SecretKey) []byte {
 }
 
 // AsString returns the value of the given secret with key if it exists or empty
-func (s Secrets) AsString(key *obs.SecretKey) string {
+func (s Secrets) AsString(key *obs.SecretConfigReference) string {
 	if v := s.Value(key); v != nil {
 		return string(v)
 	}
@@ -50,7 +50,7 @@ func (s Secrets) AsString(key *obs.SecretKey) string {
 // AsStringFromBearerToken returns the value of the BearerToken if it exists or empty
 func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 	if key.From == obs.BearerTokenFromSecret && key.Secret != nil {
-		return s.AsString(&obs.SecretKey{
+		return s.AsString(&obs.SecretConfigReference{
 			Secret: &corev1.LocalObjectReference{
 				Name: key.Secret.Name,
 			},
@@ -62,7 +62,7 @@ func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 }
 
 // Path returns the path to the given secret key if it exists or empty
-func (s Secrets) Path(key *obs.SecretKey) string {
+func (s Secrets) Path(key *obs.SecretConfigReference) string {
 	if s.Value(key) != nil {
 		return SecretPath(key.Secret.Name, key.Key)
 	}

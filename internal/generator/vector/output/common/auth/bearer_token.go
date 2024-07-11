@@ -30,7 +30,7 @@ func NewBearerToken(id string, spec *obs.HTTPAuthentication, secrets helpers.Sec
 		key := spec.Token
 		bt.ID = id
 		if key.From == obs.BearerTokenFromSecret && key.Secret != nil {
-			bt.Token = helpers.SecretFrom(&obs.SecretKey{
+			bt.Token = helpers.SecretFrom(&obs.SecretConfigReference{
 				Secret: &corev1.LocalObjectReference{
 					Name: key.Secret.Name,
 				},

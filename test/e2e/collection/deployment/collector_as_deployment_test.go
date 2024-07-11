@@ -82,7 +82,7 @@ var _ = Describe("Test collector deployment type", func() {
 						TLS: &obs.OutputTLSSpec{
 							InsecureSkipVerify: true,
 							TLSSpec: obs.TLSSpec{
-								CA: &obs.ConfigMapOrSecretKey{
+								CA: &obs.ConfigReference{
 									Key: constants.TrustedCABundleKey,
 									Secret: &corev1.LocalObjectReference{
 										Name: framework.FluentdSecretName,

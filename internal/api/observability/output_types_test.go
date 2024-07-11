@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("helpers for output types", func() {
 
-	Context("#SecretKeys", func() {
+	Context("#SecretConfigReferences", func() {
 
 		It("should return an empty set of keys when authentication is not defined for an output", func() {
 			for _, t := range obsv1.OutputTypes {
@@ -24,7 +24,7 @@ var _ = Describe("helpers for output types", func() {
 				})
 				spec := &obsv1.OutputSpec{}
 				test.MustUnmarshal(yaml, spec)
-				Expect(SecretKeys(*spec)).To(BeEmpty())
+				Expect(SecretConfigReferences(*spec)).To(BeEmpty())
 			}
 		})
 

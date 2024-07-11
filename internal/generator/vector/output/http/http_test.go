@@ -37,19 +37,19 @@ var _ = Describe("Generate vector config", func() {
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.TrustedCABundleKey,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientCertKey,
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -69,13 +69,13 @@ var _ = Describe("Generate vector config", func() {
 						},
 						Method: "POST",
 						Authentication: &obs.HTTPAuthentication{
-							Username: &obs.SecretKey{
+							Username: &obs.SecretConfigReference{
 								Secret: &corev1.LocalObjectReference{
 									Name: secretName,
 								},
 								Key: constants.ClientUsername,
 							},
-							Password: &obs.SecretKey{
+							Password: &obs.SecretConfigReference{
 								Secret: &corev1.LocalObjectReference{
 									Name: secretName,
 								},
@@ -117,19 +117,19 @@ var _ = Describe("Generate vector config", func() {
 				spec.HTTP.Authentication = nil
 				spec.TLS = &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
-						CA: &obs.ConfigMapOrSecretKey{
+						CA: &obs.ConfigReference{
 							ConfigMap: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
 							Key: "ca.crt",
 						},
-						Certificate: &obs.ConfigMapOrSecretKey{
+						Certificate: &obs.ConfigReference{
 							ConfigMap: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
 							Key: "my.crt",
 						},
-						Key: &obs.SecretKey{
+						Key: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},

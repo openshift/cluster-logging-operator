@@ -14,9 +14,9 @@ func Validate(context internalcontext.ForwarderContext) {
 	for _, out := range context.Forwarder.Spec.Outputs {
 		configs := internalobs.SecretKeysAsConfigMapOrSecretKeys(out)
 		if out.TLS != nil {
-			configs = append(configs, internalobs.ConfigMapOrSecretKeys(out.TLS.TLSSpec)...)
+			configs = append(configs, internalobs.ConfigReferences(out.TLS.TLSSpec)...)
 		}
-		messages := common.ValidateConfigMapOrSecretKey(configs, context.Secrets, context.ConfigMaps)
+		messages := common.ValidateConfigReferences(configs, context.Secrets, context.ConfigMaps)
 		if out.Type == obsv1.OutputTypeCloudwatch {
 			messages = append(messages, ValidateCloudWatchAuth(out)...)
 		}

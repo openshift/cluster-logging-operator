@@ -60,13 +60,13 @@ func migrateInputReceiver(spec obs.InputSpec, forwarderName string, options util
 	}
 	secretName := fmt.Sprintf("%s-%s", forwarderName, spec.Name)
 	spec.Receiver.TLS = &obs.InputTLSSpec{
-		Key: &obs.SecretKey{
+		Key: &obs.SecretConfigReference{
 			Key: constants.ClientPrivateKey,
 			Secret: &corev1.LocalObjectReference{
 				Name: secretName,
 			},
 		},
-		Certificate: &obs.ConfigMapOrSecretKey{
+		Certificate: &obs.ConfigReference{
 			Key: constants.ClientCertKey,
 			Secret: &corev1.LocalObjectReference{
 				Name: secretName,

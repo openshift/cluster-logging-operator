@@ -76,19 +76,19 @@ var _ = Describe("Generate vector config", func() {
 		}
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
+				CA: &obs.ConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
 					Key: constants.TrustedCABundleKey,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
+				Certificate: &obs.ConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
 					Key: constants.ClientCertKey,
 				},
-				Key: &obs.SecretKey{
+				Key: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
@@ -141,13 +141,13 @@ var _ = Describe("Generate vector config", func() {
 		}),
 		Entry("with username/password token", "with_username_password.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
-				Username: &obs.SecretKey{
+				Username: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
 					Key: constants.ClientUsername,
 				},
-				Password: &obs.SecretKey{
+				Password: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
@@ -167,7 +167,7 @@ var _ = Describe("Generate vector config", func() {
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},

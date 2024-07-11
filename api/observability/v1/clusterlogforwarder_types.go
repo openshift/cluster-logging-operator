@@ -170,8 +170,29 @@ type LimitSpec struct {
 	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond"`
 }
 
-// ConfigMapOrSecretKey encodes a reference to a single field in either a ConfigMap or Secret in the same namespace.
-type ConfigMapOrSecretKey struct {
+// ConfigReferenceFrom specifies the source used for the config reference.
+//
+// +kubebuilder:validation:Enum:=configMap;secret;
+type ConfigReferenceFrom string
+
+const (
+	// ConfigReferenceFromSecret specifies to use config from the spec'd secret
+	ConfigReferenceFromSecret ConfigReferenceFrom = "secret"
+
+	// ConfigReferenceFromConfigMap specifies to use config from the spec'd configMap
+	ConfigReferenceFromConfigMap ConfigReferenceFrom = "serviceAccountToken"
+)
+
+// ConfigReference encodes a configuration reference to a single field in either a ConfigMap or Secret in the same namespace.
+// +kubebuilder:validation:XValidation:rule="self.from == 'secret' && has(self.secret)", message="Additional secret spec is required when config reference is from a secret"
+// +kubebuilder:validation:XValidation:rule="self.from == 'configMap' && has(self.configMap)", message="Additional configMap spec is required when config reference is from a configMap"
+type ConfigReference struct {
+
+	// From is the source from where to find config
+	//
+	// +kubebuilder:validation:Required
+	From ConfigReferenceFrom `json:"from"`
+
 	// Name of the key used to get the value in either the referenced ConfigMap or Secret.
 	//
 	// +kubebuilder:validation:Required
@@ -185,8 +206,8 @@ type ConfigMapOrSecretKey struct {
 	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
 }
 
-// SecretKey encodes a reference to a single key in a Secret in the same namespace.
-type SecretKey struct {
+// SecretConfigReference encodes a reference to a single key in a Secret in the same namespace.
+type SecretConfigReference struct {
 	// Name of the key used to get the value from the referenced Secret.
 	//
 	// +kubebuilder:validation:Required
@@ -245,22 +266,22 @@ type TLSSpec struct {
 	// CA can be used to specify a custom list of trusted certificate authorities.
 	//
 	// +kubebuilder:validation:Optional
-	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
+	CA *ConfigReference `json:"ca,omitempty"`
 
 	// Certificate points to the server certificate to use.
 	//
 	// +kubebuilder:validation:Optional
-	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
+	Certificate *ConfigReference `json:"certificate,omitempty"`
 
 	// Key points to the private key of the server certificate.
 	//
 	// +kubebuilder:validation:Optional
-	Key *SecretKey `json:"key,omitempty"`
+	Key *SecretConfigReference `json:"key,omitempty"`
 
 	// KeyPassphrase points to the passphrase used to unlock the private key.
 	//
 	// +kubebuilder:validation:Optional
-	KeyPassphrase *SecretKey `json:"keyPassphrase,omitempty"`
+	KeyPassphrase *SecretConfigReference `json:"keyPassphrase,omitempty"`
 }
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder

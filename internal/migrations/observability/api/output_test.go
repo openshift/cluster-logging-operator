@@ -39,19 +39,19 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 				TLS: &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
-						CA: &obs.ConfigMapOrSecretKey{
+						CA: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: constants.ElasticsearchName,
 							},
 							Key: constants.TrustedCABundleKey,
 						},
-						Certificate: &obs.ConfigMapOrSecretKey{
+						Certificate: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: constants.ElasticsearchName,
 							},
 							Key: constants.ClientCertKey,
 						},
-						Key: &obs.SecretKey{
+						Key: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: constants.ElasticsearchName,
 							},
@@ -89,7 +89,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 				TLS: &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
-						CA: &obs.ConfigMapOrSecretKey{
+						CA: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: constants.LogCollectorToken,
 							},
@@ -137,25 +137,25 @@ var _ = Describe("#ConvertOutputs", func() {
 					Modern: &openshiftv1.ModernTLSProfile{},
 				},
 				TLSSpec: obs.TLSSpec{
-					Certificate: &obs.ConfigMapOrSecretKey{
+					Certificate: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientCertKey,
 					},
-					Key: &obs.SecretKey{
+					Key: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientPrivateKey,
 					},
-					CA: &obs.ConfigMapOrSecretKey{
+					CA: &obs.ConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.TrustedCABundleKey,
 					},
-					KeyPassphrase: &obs.SecretKey{
+					KeyPassphrase: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -187,13 +187,13 @@ var _ = Describe("#ConvertOutputs", func() {
 
 		It("should map logging HTTPAuthentication to observability HTTPAuthentication", func() {
 			obsHttpAuth := &obs.HTTPAuthentication{
-				Username: &obs.SecretKey{
+				Username: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
 					Key: constants.ClientUsername,
 				},
-				Password: &obs.SecretKey{
+				Password: &obs.SecretConfigReference{
 					Secret: &corev1.LocalObjectReference{
 						Name: secretName,
 					},
@@ -252,7 +252,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				AzureResourceId: "my-id",
 				Host:            "my-host",
 				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretKey{
+					SharedKey: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -296,13 +296,13 @@ var _ = Describe("#ConvertOutputs", func() {
 				Authentication: &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeAccessKey,
 					AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-						KeyID: &obs.SecretKey{
+						KeyID: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
 							Key: constants.AWSAccessKeyID,
 						},
-						KeySecret: &obs.SecretKey{
+						KeySecret: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -343,7 +343,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				Authentication: &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretKey{
+						RoleARN: &obs.SecretConfigReference{
 							Key: constants.AWSWebIdentityRoleKey,
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
@@ -390,13 +390,13 @@ var _ = Describe("#ConvertOutputs", func() {
 					Index: ".namespace",
 				},
 				Authentication: &obs.HTTPAuthentication{
-					Username: &obs.SecretKey{
+					Username: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientUsername,
 					},
-					Password: &obs.SecretKey{
+					Password: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -439,7 +439,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 				LogID: "baz",
 				Authentication: &obs.GoogleCloudLoggingAuthentication{
-					Credentials: &obs.SecretKey{
+					Credentials: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -491,13 +491,13 @@ var _ = Describe("#ConvertOutputs", func() {
 				Method:  "POST",
 				Timeout: 100,
 				Authentication: &obs.HTTPAuthentication{
-					Username: &obs.SecretKey{
+					Username: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: constants.ClientUsername,
 					},
-					Password: &obs.SecretKey{
+					Password: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -545,13 +545,13 @@ var _ = Describe("#ConvertOutputs", func() {
 				Brokers: []string{"foo", "bar"},
 				Authentication: &obs.KafkaAuthentication{
 					SASL: &obs.SASLAuthentication{
-						Username: &obs.SecretKey{
+						Username: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
 							Key: constants.ClientUsername,
 						},
-						Password: &obs.SecretKey{
+						Password: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: secretName,
 							},
@@ -647,7 +647,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					},
 				},
 				Authentication: &obs.SplunkAuthentication{
-					Token: &obs.SecretKey{
+					Token: &obs.SecretConfigReference{
 						Secret: &corev1.LocalObjectReference{
 							Name: secretName,
 						},
@@ -829,13 +829,13 @@ var _ = Describe("#ConvertOutputs", func() {
 						Index: "{{.log_type}}",
 					},
 					Authentication: &obs.HTTPAuthentication{
-						Username: &obs.SecretKey{
+						Username: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: esSecret.Name,
 							},
 							Key: constants.ClientUsername,
 						},
-						Password: &obs.SecretKey{
+						Password: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: esSecret.Name,
 							},
@@ -863,7 +863,7 @@ var _ = Describe("#ConvertOutputs", func() {
 						},
 					},
 					Authentication: &obs.SplunkAuthentication{
-						Token: &obs.SecretKey{
+						Token: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: splunkSecret.Name,
 							},
@@ -896,19 +896,19 @@ var _ = Describe("#ConvertOutputs", func() {
 				TLS: &obs.OutputTLSSpec{
 					InsecureSkipVerify: true,
 					TLSSpec: obs.TLSSpec{
-						Certificate: &obs.ConfigMapOrSecretKey{
+						Certificate: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: lokiSecret.Name,
 							},
 							Key: constants.ClientCertKey,
 						},
-						Key: &obs.SecretKey{
+						Key: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: lokiSecret.Name,
 							},
 							Key: constants.ClientPrivateKey,
 						},
-						CA: &obs.ConfigMapOrSecretKey{
+						CA: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: lokiSecret.Name,
 							},
@@ -926,7 +926,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					CustomerId:      "bar",
 					AzureResourceId: "baz",
 					Authentication: &obs.AzureMonitorAuthentication{
-						SharedKey: &obs.SecretKey{
+						SharedKey: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: azureSecret.Name,
 							},
@@ -942,19 +942,19 @@ var _ = Describe("#ConvertOutputs", func() {
 						Old: &openshiftv1.OldTLSProfile{},
 					},
 					TLSSpec: obs.TLSSpec{
-						Certificate: &obs.ConfigMapOrSecretKey{
+						Certificate: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: azureSecret.Name,
 							},
 							Key: constants.ClientCertKey,
 						},
-						Key: &obs.SecretKey{
+						Key: &obs.SecretConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: azureSecret.Name,
 							},
 							Key: constants.ClientPrivateKey,
 						},
-						CA: &obs.ConfigMapOrSecretKey{
+						CA: &obs.ConfigReference{
 							Secret: &corev1.LocalObjectReference{
 								Name: azureSecret.Name,
 							},

@@ -1,0 +1,37 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  managementState: Managed
+  outputs:
+    - lokiStack:
+        authentication:
+          token:
+            from: serviceAccountToken
+        labelKeys:
+          - .hostname
+          - .log_type
+          - .kubernetes_container_name
+          - .kubernetes_namespace_name
+          - .kubernetes_pod_name
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+      name: lokistack
+      tls:
+        ca:
+          configMap:
+            name: logging-loki-gateway-ca-bundle
+          key: service-ca.crt
+      type: lokiStack
+  pipelines:
+    - inputRefs:
+        - infrastructure
+        - audit
+        - application
+      name: forward-to-lokistack
+      outputRefs:
+        - lokistack
+  serviceAccount:
+    name: clf-validation-test

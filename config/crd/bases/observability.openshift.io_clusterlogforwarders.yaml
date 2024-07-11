@@ -1008,7 +1008,7 @@ spec:
                                         find the token
                                       enum:
                                       - secret
-                                      - serviceAccountToken
+                                      - serviceAccount
                                       type: string
                                     secret:
                                       description: Use Secret if the value should
@@ -1145,7 +1145,7 @@ spec:
                                     the token
                                   enum:
                                   - secret
-                                  - serviceAccountToken
+                                  - serviceAccount
                                   type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
@@ -1399,7 +1399,7 @@ spec:
                                     the token
                                   enum:
                                   - secret
-                                  - serviceAccountToken
+                                  - serviceAccount
                                   type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
@@ -1696,7 +1696,7 @@ spec:
                                     the token
                                   enum:
                                   - secret
-                                  - serviceAccountToken
+                                  - serviceAccount
                                   type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
@@ -1846,7 +1846,7 @@ spec:
                                     the token
                                   enum:
                                   - secret
-                                  - serviceAccountToken
+                                  - serviceAccount
                                   type: string
                                 secret:
                                   description: Use Secret if the value should be sourced
@@ -1996,7 +1996,7 @@ spec:
                                     the token
                                   enum:
                                   - secret
-                                  - serviceAccountToken
+                                  - serviceAccount
                                   type: string
                                 secret:
                                   description: Use Secret if the value should be sourced

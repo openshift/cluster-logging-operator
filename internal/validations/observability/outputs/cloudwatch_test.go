@@ -84,7 +84,7 @@ var _ = Describe("validating CloudWatch auth", func() {
 			Entry("should pass when the token is from a serviceaccount and role are defined", &obs.CloudwatchIAMRole{
 				RoleARN: &obs.SecretKey{},
 				Token: &obs.BearerToken{
-					From: obs.BearerTokenFromServiceAccountToken,
+					From: obs.BearerTokenFromServiceAccount,
 				},
 			}, BeEmpty()),
 		)

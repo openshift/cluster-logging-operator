@@ -319,7 +319,7 @@ func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saN
 				}
 			} else {
 				obsCw.Authentication.IAMRole.Token = &obs.BearerToken{
-					From: obs.BearerTokenFromServiceAccountToken,
+					From: obs.BearerTokenFromServiceAccount,
 				}
 			}
 		}

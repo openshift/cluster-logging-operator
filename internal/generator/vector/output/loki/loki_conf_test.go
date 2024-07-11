@@ -159,7 +159,7 @@ var _ = Describe("Generate vector config", func() {
 		//Entry("with service account", "with_service_account.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 		//	spec.Loki.Authentication = &obs.HTTPAuthentication{
 		//		Token: &obs.BearerToken{
-		//			From: obs.BearerTokenFromServiceAccountToken,
+		//			From: obs.BearerTokenFromServiceAccount,
 		//		},
 		//	}
 		//}),

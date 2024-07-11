@@ -38,7 +38,7 @@ var _ = Describe("MigrateLokiStack", func() {
 								},
 								Authentication: &obs.LokiStackAuthentication{
 									Token: &obs.BearerToken{
-										From: obs.BearerTokenFromServiceAccountToken,
+										From: obs.BearerTokenFromServiceAccount,
 									},
 								},
 							},
@@ -77,7 +77,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -123,7 +123,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -137,7 +137,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -151,7 +151,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -187,7 +187,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -233,7 +233,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -247,7 +247,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -261,7 +261,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -297,7 +297,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -311,7 +311,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -330,7 +330,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -373,7 +373,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -387,7 +387,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -401,7 +401,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -415,7 +415,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -429,7 +429,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -443,7 +443,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -462,7 +462,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -500,7 +500,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -514,7 +514,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -528,7 +528,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -542,7 +542,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -561,7 +561,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -576,7 +576,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -591,7 +591,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -645,7 +645,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -659,7 +659,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -673,7 +673,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -687,7 +687,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -701,7 +701,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -715,7 +715,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -729,7 +729,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -743,7 +743,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.HTTPAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -762,7 +762,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -777,7 +777,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},
@@ -792,7 +792,7 @@ var _ = Describe("MigrateLokiStack", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
-									From: obs.BearerTokenFromServiceAccountToken,
+									From: obs.BearerTokenFromServiceAccount,
 								},
 							},
 						},

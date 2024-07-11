@@ -51,5 +51,9 @@ var _ = Describe("", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(MatchRegexp("clusterlogforwarder.*created"))
 		}),
+		Entry("LOG-5793: for lokiStack bearer token from SA should not fail", "log5793_bearer_token_from_sa.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(MatchRegexp("clusterlogforwarder.*created"))
+		}),
 	)
 })

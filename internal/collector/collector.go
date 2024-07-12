@@ -47,10 +47,6 @@ const (
 	tmpPath                         = "/tmp"
 )
 
-var (
-	saTokenPath = common.ServiceAccountBasePath(saTokenVolumeName)
-)
-
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
 type CommonLabelVisitor func(o runtime.Object)
 type PodLabelVisitor func(o runtime.Object)
@@ -151,14 +147,14 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 	secretVolumes := AddSecretVolumes(podSpec, f.Secrets)
 	configmapVolumes := AddConfigmapVolumes(podSpec, f.ConfigMaps)
-	addServiceAccountVolume := AddServiceAccountProjectedVolume(podSpec, spec.Inputs, spec.Outputs, defaultAudience)
+	AddServiceAccountProjectedVolume(podSpec, defaultAudience)
 
-	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, addServiceAccountVolume, clusterID)
+	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
 	f.Visit(collector, podSpec, f.ResourceNames, namespace, f.LogLevel)
-	addWebIdentityForCloudwatch(collector, podSpec, spec, f.Secrets)
+	addWebIdentityForCloudwatch(collector, spec, f.Secrets)
 
 	podSpec.Containers = []v1.Container{
 		*collector,
@@ -168,7 +164,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes, configmapVolumes []string, addServiceAccountVolume bool, clusterID string) *v1.Container {
+func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
 
 	collector := runtime.NewContainer(constants.CollectorName, utils.GetComponentImage(f.ImageName), v1.PullIfNotPresent, f.CollectorSpec.Resources)
 	collector.Ports = []v1.ContainerPort{
@@ -220,9 +216,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
 		return common.ConfigMapBasePath(strings.TrimPrefix(name, "config-"))
 	})
-	if addServiceAccountVolume {
-		AddVolumeMounts(collector, []string{saTokenVolumeName}, common.ServiceAccountBasePath)
-	}
+	AddVolumeMounts(collector, []string{saTokenVolumeName}, common.ServiceAccountBasePath)
 
 	return collector
 }
@@ -287,28 +281,24 @@ func AddConfigmapVolumes(podSpec *v1.PodSpec, configMaps internalobs.ConfigMaps)
 }
 
 // AddServiceAccountProjectedVolume adds ServiceAccountTokenProjection to the podspec and returns the named sa volume
-func AddServiceAccountProjectedVolume(podSpec *v1.PodSpec, inputs internalobs.Inputs, outputs internalobs.Outputs, audience string) bool {
-	if outputs.NeedServiceAccountToken() {
-		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{
-				Name: saTokenVolumeName,
-				VolumeSource: v1.VolumeSource{
-					Projected: &v1.ProjectedVolumeSource{
-						Sources: []v1.VolumeProjection{
-							{
-								ServiceAccountToken: &v1.ServiceAccountTokenProjection{
-									Audience:          audience,
-									ExpirationSeconds: utils.GetPtr[int64](saTokenExpirationSecs),
-									Path:              constants.TokenKey,
-								},
+func AddServiceAccountProjectedVolume(podSpec *v1.PodSpec, audience string) {
+	podSpec.Volumes = append(podSpec.Volumes,
+		v1.Volume{
+			Name: saTokenVolumeName,
+			VolumeSource: v1.VolumeSource{
+				Projected: &v1.ProjectedVolumeSource{
+					Sources: []v1.VolumeProjection{
+						{
+							ServiceAccountToken: &v1.ServiceAccountTokenProjection{
+								Audience:          audience,
+								ExpirationSeconds: utils.GetPtr[int64](saTokenExpirationSecs),
+								Path:              constants.TokenKey,
 							},
 						},
 					},
 				},
-			})
-		return true
-	}
-	return false
+			},
+		})
 }
 
 func AddSecurityContextTo(container *v1.Container) *v1.Container {

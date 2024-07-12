@@ -63,6 +63,9 @@ const (
 	OpenshiftNS   = "openshift-logging"
 
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
+
+	//ServiceAccountSecretPath is the path to find the projected serviceAccount token and other SA secrets
+	ServiceAccountSecretPath   = "/var/run/ocp-collector/serviceaccount"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
 	ElasticsearchFQDN          = "elasticsearch"

@@ -2,6 +2,7 @@ package collector
 
 import (
 	"os"
+	"path"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -525,7 +526,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 		Context("and mounting volumes", func() {
 			It("should not mount host path volumes", func() {
 				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
-				Expect(podSpec.Volumes).To(HaveLen(5))
+				Expect(podSpec.Volumes).To(HaveLen(6))
 			})
 		})
 	})
@@ -600,16 +601,16 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 								Key:        "credentials",
 								SecretName: "cw",
 							},
-							Token: &obs.BearerToken{
-								From: obs.BearerTokenFromSecret,
-								Secret: &obs.BearerTokenSecretKey{
-									Key:  constants.TokenKey,
-									Name: tokenSecretName,
-								},
-							},
 						},
 					},
 				},
+			},
+		}
+		bearerToken = &obs.BearerToken{
+			From: obs.BearerTokenFromSecret,
+			Secret: &obs.BearerTokenSecretKey{
+				Key:  constants.TokenKey,
+				Name: tokenSecretName,
 			},
 		}
 		roleArn = "arn:aws:iam::123456789012:role/my-role-to-assume"
@@ -658,8 +659,31 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 			}))
 			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
 				Name:  constants.AWSWebIdentityTokenEnvVarKey,
-				Value: common.SecretPath(tokenSecretName, constants.TokenKey),
+				Value: path.Join(constants.ServiceAccountSecretPath, constants.TokenKey),
 			}))
+		})
+
+		It("should mount the secret for the bearer token when spec'd", func() {
+			outputs[0].Cloudwatch.Authentication.IAMRole.Token = bearerToken
+			podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
+				Outputs:   outputs,
+				Pipelines: pipelines,
+			}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+			collector := podSpec.Containers[0]
+			Expect(podSpec.Volumes).To(IncludeVolume(
+				v1.Volume{
+					Name: bearerToken.Secret.Name,
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: bearerToken.Secret.Name,
+						},
+					},
+				}))
+			Expect(collector.VolumeMounts).To(IncludeVolumeMount(
+				v1.VolumeMount{
+					Name:      bearerToken.Secret.Name,
+					ReadOnly:  true,
+					MountPath: path.Join(constants.CollectorSecretsDir, bearerToken.Secret.Name)}))
 		})
 	})
 })

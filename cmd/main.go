@@ -202,6 +202,12 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
 		os.Exit(1)
 	}
+
+	// Annotate existing logging.openshift.io CLFs/CLs so they can be reconciled
+	if err := annotateExistingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
+		log.Error(err, "unable to annotate existing CRs")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -221,7 +227,6 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
-
 }
 
 // getWatchNS returns the namespaces being watched by the operator.  Empty means all
@@ -248,5 +253,23 @@ func cleanUpResources(k8sClient client.Client) error {
 	if err := dashboard.RemoveDashboardConfigMap(k8sClient); err != nil {
 		return err
 	}
+	return nil
+}
+
+// annotateExistingResources adds the "logging.openshift.io/needs-migrations" annotation to existing
+// clusterloggings.logging.openshift.io and clusterlogforwarders.logging.openshift.io
+// to mark them for migration on operator start
+func annotateExistingResources(k8sClient client.Client, reader client.Reader) error {
+	log.Info("marking existing clusterloggings.logging.openshift.io and clusterlogforwarders.logging.openshift.io for migration")
+	// Annotate existing clusterlogforwarders.logging.openshift.io
+	if err := forwarding.AnnotateLoggingClusterLogForwarders(k8sClient, reader); err != nil {
+		return err
+	}
+
+	// Annotate existing clusterloggings.logging.openshift.io
+	if err := clusterlogging.AnnotateLoggingClusterLoggings(k8sClient, reader); err != nil {
+		return err
+	}
+
 	return nil
 }

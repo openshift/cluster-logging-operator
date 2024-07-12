@@ -47,8 +47,10 @@ var _ = Describe("Reconciling the Collector", func() {
 		secretName    = "mysecrets"
 		clfName       = "mycollector"
 		clusterID     = "12345"
+		saName        = "my-sa"
 	)
 	var (
+		serviceAccount  = runtime.NewServiceAccount(namespaceName, "my-sa")
 		collectorSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      secretName,
@@ -66,7 +68,7 @@ var _ = Describe("Reconciling the Collector", func() {
 		client    cli.Client
 		forwarder = obsruntime.NewClusterLogForwarder(namespaceName, clfName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
 			clf.Spec.ServiceAccount = obs.ServiceAccount{
-				Name: "my-sa",
+				Name: saName,
 			}
 		})
 		receiverForwarder = obsruntime.NewClusterLogForwarder(namespaceName, clfName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
@@ -80,7 +82,7 @@ var _ = Describe("Reconciling the Collector", func() {
 					},
 				},
 				ServiceAccount: obs.ServiceAccount{
-					Name: "my-sa",
+					Name: saName,
 				},
 			}
 		})
@@ -148,6 +150,7 @@ var _ = Describe("Reconciling the Collector", func() {
 					collectorSecret,
 					collectorCABundle,
 					namespace,
+					serviceAccount,
 				)
 			}
 			reconcileCollector = func(clf *obs.ClusterLogForwarder) {
@@ -157,6 +160,7 @@ var _ = Describe("Reconciling the Collector", func() {
 					Reader:    client,
 					Forwarder: clf,
 					ClusterID: clusterID,
+					Secrets:   map[string]*corev1.Secret{},
 				}
 
 				Expect(observability.ReconcileCollector(context, 1*time.Millisecond, 1*time.Millisecond)).Should(Succeed())
@@ -198,7 +202,7 @@ var _ = Describe("Reconciling the Collector", func() {
 						},
 					},
 					ServiceAccount: obs.ServiceAccount{
-						Name: "my-sa",
+						Name: saName,
 					},
 				}
 			})

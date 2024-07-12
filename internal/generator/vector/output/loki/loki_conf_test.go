@@ -131,6 +131,15 @@ var _ = Describe("Generate vector config", func() {
 				},
 			}
 		}),
+		Entry("with custom bearer token", "with_sa_token.toml", framework.Options{
+			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
+		}, func(spec *obs.OutputSpec) {
+			spec.Loki.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				},
+			}
+		}),
 		Entry("with username/password token", "with_username_password.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
 				Username: &obs.SecretReference{
@@ -143,14 +152,6 @@ var _ = Describe("Generate vector config", func() {
 				},
 			}
 		}),
-		// TODO: ENABLE me once secret vault merges.
-		//Entry("with service account", "with_service_account.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
-		//	spec.Loki.Authentication = &obs.HTTPAuthentication{
-		//		Token: &obs.BearerToken{
-		//			From: obs.BearerTokenFromServiceAccount,
-		//		},
-		//	}
-		//}),
 		Entry("with TLS insecureSkipVerify=true", "with_insecure.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,

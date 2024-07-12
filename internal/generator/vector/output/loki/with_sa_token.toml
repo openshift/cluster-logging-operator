@@ -20,7 +20,6 @@ if !exists(.kubernetes.container_name) {
 }
 '''
 
-
 [sinks.loki_receiver]
 type = "loki"
 inputs = ["loki_receiver_remap_label"]
@@ -41,4 +40,4 @@ log_type = "{{log_type}}"
 
 [sinks.loki_receiver.auth]
 strategy = "bearer"
-token = "test-token"
+token = "SECRET[kubernetes_secret.my-service-account-token/token]"

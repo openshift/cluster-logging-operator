@@ -62,7 +62,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 			common.NewBuffer(id, strategy),
 			Request(id, o, strategy),
 			tls.New(id, o.TLS, secrets, op),
-			auth.HTTPAuth(id, o.HTTP.Authentication, secrets),
+			auth.HTTPAuth(id, o.HTTP.Authentication, secrets, op),
 		},
 	)
 }

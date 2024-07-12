@@ -16,21 +16,16 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/network"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
+	"github.com/openshift/cluster-logging-operator/internal/runtime/serviceaccount"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 )
 
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
-	// TODO LOG-2620: containers violate PodSecurity ? should we still do this or should this be
-	// a pre-req to multi CLF?
-	//// LOG-2620: containers violate PodSecurity
-	//if err = clusterRequest.addSecurityLabelsToNamespace(); err != nil {
-	//	log.Error(err, "Error adding labels to logging Namespace")
-	//	return
-	//}
 
 	if err = reconcile.SecurityContextConstraints(context.Client, auth.NewSCC()); err != nil {
 		log.V(3).Error(err, "reconcile.SecurityContextConstraints")
@@ -39,6 +34,24 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 
 	ownerRef := utils.AsOwner(context.Forwarder)
 	resourceNames := factory.ResourceNames(*context.Forwarder)
+
+	options := framework.Options{}
+	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
+		// temporarily create SA token until collector is capable of dynamically reloading a projected serviceaccount token
+		var sa *corev1.ServiceAccount
+		sa, err = serviceaccount.Get(context.Client, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name)
+		if err != nil {
+			log.V(3).Error(err, "serviceaccount.Get")
+			return err
+		}
+		var saTokenSecret *corev1.Secret
+		if saTokenSecret, err = auth.ReconcileServiceAccountTokenSecret(sa, context.Client, context.Forwarder.Namespace, resourceNames.ServiceAccountTokenSecret, ownerRef); err != nil {
+			log.V(3).Error(err, "auth.ReconcileServiceAccountTokenSecret")
+			return err
+		}
+		context.Secrets[saTokenSecret.Name] = saTokenSecret
+		options[framework.OptionServiceAccountTokenSecretName] = resourceNames.ServiceAccountTokenSecret
+	}
 
 	// Add roles to ServiceAccount to allow the collector to read from the node
 	if err = auth.ReconcileRBAC(noOpEventRecorder, context.Client, context.Forwarder.Name, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name, ownerRef); err != nil {
@@ -54,7 +67,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
 	var collectorConfig string
-	if collectorConfig, err = GenerateConfig(context.Client, *context.Forwarder, *resourceNames, context.Secrets); err != nil {
+	if collectorConfig, err = GenerateConfig(context.Client, *context.Forwarder, *resourceNames, context.Secrets, options); err != nil {
 		log.V(9).Error(err, "collector.GenerateConfig")
 		return err
 	}
@@ -102,8 +115,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	return nil
 }
 
-func GenerateConfig(k8Client client.Client, spec obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets helpers.Secrets) (config string, err error) {
-	op := framework.Options{}
+func GenerateConfig(k8Client client.Client, spec obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets helpers.Secrets, op framework.Options) (config string, err error) {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	//EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)

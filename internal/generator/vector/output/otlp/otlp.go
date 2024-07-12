@@ -122,7 +122,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
 			tls.New(id, o.TLS, secrets, op),
-			auth.HTTPAuth(id, o.OTLP.Authentication, secrets),
+			auth.HTTPAuth(id, o.OTLP.Authentication, secrets, op),
 		},
 	)
 }

@@ -152,7 +152,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		common.NewRequest(id, strategy),
 		Labels(id, o),
 		tls.New(id, o.TLS, secrets, op),
-		auth.HTTPAuth(id, o.Loki.Authentication, secrets),
+		auth.HTTPAuth(id, o.Loki.Authentication, secrets, op),
 	}
 }
 

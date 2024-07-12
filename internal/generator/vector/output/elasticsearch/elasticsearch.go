@@ -82,7 +82,7 @@ if exists(.kubernetes.event.metadata.uid) {
 		common.NewBuffer(id, strategy),
 		common.NewRequest(id, strategy),
 		tls.New(id, o.TLS, secrets, op, Option{Name: URL, Value: o.Elasticsearch.URL}),
-		auth.HTTPAuth(id, o.Elasticsearch.Authentication, secrets),
+		auth.HTTPAuth(id, o.Elasticsearch.Authentication, secrets, op),
 	)
 
 	return outputs

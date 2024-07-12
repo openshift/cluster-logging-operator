@@ -10,7 +10,8 @@ const (
 	MinTLSVersion = "minTLSVersion"
 	Ciphers       = "ciphers"
 
-	URL = "url"
+	URL                                 = "url"
+	OptionServiceAccountTokenSecretName = "serviceAccountTokenSecretName"
 )
 
 // Options is a map of Options used to customize the config generation. E.g. Debugging, legacy config generation

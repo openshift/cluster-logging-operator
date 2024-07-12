@@ -11,7 +11,7 @@ import (
 )
 
 // Add volumes and env vars if output type is cloudwatch and role is found in the secret
-func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec obs.ClusterLogForwarderSpec, secrets helpers.Secrets) {
+func addWebIdentityForCloudwatch(collector *v1.Container, forwarderSpec obs.ClusterLogForwarderSpec, secrets helpers.Secrets) {
 	if secrets == nil {
 		return
 	}
@@ -19,8 +19,8 @@ func addWebIdentityForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, f
 		if o.Type == obs.OutputTypeCloudwatch && o.Cloudwatch.Authentication != nil && o.Cloudwatch.Authentication.Type == obs.CloudwatchAuthTypeIAMRole {
 
 			if roleARN := cloudwatch.ParseRoleArn(o.Cloudwatch.Authentication, secrets); roleARN != "" {
-				tokenPath := saTokenPath
-				if o.Cloudwatch.Authentication.IAMRole.Token.From == obs.BearerTokenFromSecret {
+				tokenPath := common.ServiceAccountBasePath(constants.TokenKey)
+				if o.Cloudwatch.Authentication.IAMRole.Token != nil && o.Cloudwatch.Authentication.IAMRole.Token.From == obs.BearerTokenFromSecret {
 					secret := o.Cloudwatch.Authentication.IAMRole.Token.Secret
 					tokenPath = common.SecretPath(secret.Name, secret.Key)
 				}

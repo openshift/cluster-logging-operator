@@ -2,9 +2,10 @@ package clusterlogging
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
 	"github.com/openshift/cluster-logging-operator/internal/controller"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
@@ -123,12 +124,29 @@ func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLoggin
 	return ctrl.Result{}, nil
 }
 
+// AnnotateLoggingClusterLoggings gets a list of existing clusterloggings.logging.openshift.io
+// and annotates them with "logging.openshift.io/needs-migration"
+func AnnotateLoggingClusterLoggings(k8sClient client.Client, apiReader client.Reader) error {
+	var clList loggingv1.ClusterLoggingList
+	if err := apiReader.List(context.TODO(), &clList); err != nil {
+		return err
+	}
+	for _, cl := range clList.Items {
+		cl.Annotations[constants.AnnotationNeedsMigration] = "true"
+		if err := k8sClient.Update(context.TODO(), &cl); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&loggingv1.ClusterLogging{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// Ignore create events as well as migrated resources
-		WithEventFilter(controller.IgnoreMigratedResources(constants.AnnotationCRConverted))
+		WithEventFilter(controller.IgnoreMigratedResources())
 
 	return controllerBuilder.Complete(r)
 }

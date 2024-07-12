@@ -102,6 +102,8 @@ const (
 	// AnnotationCRConverted is the annotation specifying whether a ClusterLogging and/or
 	// logging.ClusterLogForwarder has been converted to observability.ClusterLogForwarder
 	AnnotationCRConverted = "logging.openshift.io/converted"
+	// AnnotationNeedsMigration is the annotation to mark an existing resource for migration
+	AnnotationNeedsMigration = "logging.openshift.io/needs-migrations"
 
 	// K8s recommended label names: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelK8sName      = "app.kubernetes.io/name"       // The name of the application (string)

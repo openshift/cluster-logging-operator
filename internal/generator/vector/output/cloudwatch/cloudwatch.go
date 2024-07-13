@@ -138,9 +138,8 @@ func NormalizeStreamName(componentID string, inputs []string) Element {
 	vrl := strings.TrimSpace(`
 .stream_name = "default"
 
-if (.file != null) {
- .file = "kubernetes" + replace!(.file, "/", ".")
- .stream_name = del(.file)
+if ( ._internal.file != null) {
+ .stream_name = "kubernetes" + replace!(._internal.file, "/", ".")
 }
 
 if ( .log_type == "audit" ) {

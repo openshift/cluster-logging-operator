@@ -1031,8 +1031,7 @@ spec:
                                   x-kubernetes-validations:
                                   - message: Additional secret spec is required when
                                       bearer token is sourced from a secret
-                                    rule: self.from == 'serviceAccountToken' || self.from
-                                      == 'secret' && has(self.secret)
+                                    rule: self.from != 'secret' || has(self.secret)
                               required:
                               - roleARN
                               type: object
@@ -1168,8 +1167,7 @@ spec:
                               x-kubernetes-validations:
                               - message: Additional secret spec is required when bearer
                                   token is sourced from a secret
-                                rule: self.from == 'serviceAccountToken' || self.from
-                                  == 'secret' && has(self.secret)
+                                rule: self.from != 'secret' || has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1422,8 +1420,7 @@ spec:
                               x-kubernetes-validations:
                               - message: Additional secret spec is required when bearer
                                   token is sourced from a secret
-                                rule: self.from == 'serviceAccountToken' || self.from
-                                  == 'secret' && has(self.secret)
+                                rule: self.from != 'secret' || has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1719,8 +1716,7 @@ spec:
                               x-kubernetes-validations:
                               - message: Additional secret spec is required when bearer
                                   token is sourced from a secret
-                                rule: self.from == 'serviceAccountToken' || self.from
-                                  == 'secret' && has(self.secret)
+                                rule: self.from != 'secret' || has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true
@@ -1869,8 +1865,7 @@ spec:
                               x-kubernetes-validations:
                               - message: Additional secret spec is required when bearer
                                   token is sourced from a secret
-                                rule: self.from == 'serviceAccountToken' || self.from
-                                  == 'secret' && has(self.secret)
+                                rule: self.from != 'secret' || has(self.secret)
                           required:
                           - token
                           type: object
@@ -2019,8 +2014,7 @@ spec:
                               x-kubernetes-validations:
                               - message: Additional secret spec is required when bearer
                                   token is sourced from a secret
-                                rule: self.from == 'serviceAccountToken' || self.from
-                                  == 'secret' && has(self.secret)
+                                rule: self.from != 'secret' || has(self.secret)
                             username:
                               description: Username to use for authenticating requests.
                               nullable: true

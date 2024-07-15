@@ -201,7 +201,7 @@ type SecretKey struct {
 
 // BearerToken allows configuring the source of a bearer token used for authentication.
 // The token can either be read from a secret or from a Kubernetes ServiceAccount.
-// +kubebuilder:validation:XValidation:rule="self.from == 'serviceAccountToken' || self.from == 'secret' && has(self.secret)", message="Additional secret spec is required when bearer token is sourced from a secret"
+// +kubebuilder:validation:XValidation:rule="self.from != 'secret' || has(self.secret)", message="Additional secret spec is required when bearer token is sourced from a secret"
 type BearerToken struct {
 
 	// From is the source from where to find the token

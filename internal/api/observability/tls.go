@@ -9,16 +9,16 @@ import (
 func SecretsForTLS(t obsv1.TLSSpec) []string {
 	secrets := set.New[string]()
 	if t.Key != nil {
-		secrets.Insert(t.Key.Secret.Name)
+		secrets.Insert(t.Key.SecretName)
 	}
-	if t.CA != nil && t.CA.Secret != nil {
-		secrets.Insert(t.CA.Secret.Name)
+	if t.CA != nil && t.CA.SecretName != "" {
+		secrets.Insert(t.CA.SecretName)
 	}
-	if t.Certificate != nil && t.Certificate.Secret != nil {
-		secrets.Insert(t.Certificate.Secret.Name)
+	if t.Certificate != nil && t.Certificate.SecretName != "" {
+		secrets.Insert(t.Certificate.SecretName)
 	}
-	if t.KeyPassphrase != nil && t.KeyPassphrase.Secret != nil {
-		secrets.Insert(t.KeyPassphrase.Secret.Name)
+	if t.KeyPassphrase != nil && t.KeyPassphrase.SecretName != "" {
+		secrets.Insert(t.KeyPassphrase.SecretName)
 	}
 	return secrets.UnsortedList()
 }
@@ -26,18 +26,18 @@ func SecretsForTLS(t obsv1.TLSSpec) []string {
 // ConfigmapsForTLS returns the unique set of configmap names for a TLS spec
 func ConfigmapsForTLS(t obsv1.TLSSpec) []string {
 	configmaps := set.New[string]()
-	if t.CA != nil && t.CA.Secret == nil && t.CA.ConfigMap != nil {
-		configmaps.Insert(t.CA.ConfigMap.Name)
+	if t.CA != nil && t.CA.SecretName == "" && t.CA.ConfigMapName != "" {
+		configmaps.Insert(t.CA.ConfigMapName)
 	}
-	if t.Certificate != nil && t.Certificate.Secret == nil && t.Certificate.ConfigMap != nil {
-		configmaps.Insert(t.Certificate.ConfigMap.Name)
+	if t.Certificate != nil && t.Certificate.SecretName == "" && t.Certificate.ConfigMapName != "" {
+		configmaps.Insert(t.Certificate.ConfigMapName)
 	}
 	return configmaps.UnsortedList()
 }
 
-// ConfigMapOrSecretKeys returns a list ConfigMapOrSecretKey, converting SecretKeys as necessary
-func ConfigMapOrSecretKeys(t obsv1.TLSSpec) []*obsv1.ConfigMapOrSecretKey {
-	results := []*obsv1.ConfigMapOrSecretKey{}
+// ValueReferences returns a slice of ValueReferences, converting SecretReferences as necessary
+func ValueReferences(t obsv1.TLSSpec) []*obsv1.ValueReference {
+	results := []*obsv1.ValueReference{}
 	if t.CA != nil {
 		results = append(results, t.CA)
 	}
@@ -45,15 +45,15 @@ func ConfigMapOrSecretKeys(t obsv1.TLSSpec) []*obsv1.ConfigMapOrSecretKey {
 		results = append(results, t.Certificate)
 	}
 	if t.Key != nil {
-		results = append(results, &obsv1.ConfigMapOrSecretKey{
-			Key:    t.Key.Key,
-			Secret: t.Key.Secret,
+		results = append(results, &obsv1.ValueReference{
+			Key:        t.Key.Key,
+			SecretName: t.Key.SecretName,
 		})
 	}
 	if t.KeyPassphrase != nil {
-		results = append(results, &obsv1.ConfigMapOrSecretKey{
-			Key:    t.KeyPassphrase.Key,
-			Secret: t.KeyPassphrase.Secret,
+		results = append(results, &obsv1.ValueReference{
+			Key:        t.KeyPassphrase.Key,
+			SecretName: t.KeyPassphrase.SecretName,
 		})
 	}
 

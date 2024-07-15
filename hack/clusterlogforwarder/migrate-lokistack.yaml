@@ -3,18 +3,18 @@ kind: ClusterLogForwarder
 metadata:
   name: my-collector
 spec:
-  serviceAccountName: test-sa
+  serviceAccount:
+    name: test-sa
   outputs:
     - name: lokistack-out
-      type: lokistack
+      type: lokiStack
       lokiStack:
         target:
           name: lokistack-test
           namespace: openshift-logging
         authentication:
           token:
-            serviceAccount:
-              name: lokistack-sa
+            from: serviceAccount
       tls:
         insecureSkipVerify: true
   pipelines:

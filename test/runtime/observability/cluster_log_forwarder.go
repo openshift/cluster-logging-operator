@@ -7,7 +7,6 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -199,7 +198,7 @@ func (p *PipelineBuilder) ToLokiOutput(lokiURL url.URL, visitors ...func(output 
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeLoki))
 }
 
-func (p *PipelineBuilder) ToSplunkOutput(hecTokenSecret obs.SecretKey, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToSplunkOutput(hecTokenSecret obs.SecretReference, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeSplunk)
 		output.Type = obs.OutputTypeSplunk
@@ -233,23 +232,17 @@ func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *obs.OutputSpec)
 		}
 		output.TLS = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
-				Key: &obs.SecretKey{
-					Key: constants.ClientPrivateKey,
-					Secret: &v1.LocalObjectReference{
-						Name: kafka.DeploymentName,
-					},
+				Key: &obs.SecretReference{
+					Key:        constants.ClientPrivateKey,
+					SecretName: kafka.DeploymentName,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
-					Key: constants.ClientCertKey,
-					Secret: &v1.LocalObjectReference{
-						Name: kafka.DeploymentName,
-					},
+				Certificate: &obs.ValueReference{
+					Key:        constants.ClientCertKey,
+					SecretName: kafka.DeploymentName,
 				},
-				CA: &obs.ConfigMapOrSecretKey{
-					Key: constants.TrustedCABundleKey,
-					Secret: &v1.LocalObjectReference{
-						Name: kafka.DeploymentName,
-					},
+				CA: &obs.ValueReference{
+					Key:        constants.TrustedCABundleKey,
+					SecretName: kafka.DeploymentName,
 				},
 			},
 		}
@@ -301,11 +294,9 @@ func (p *PipelineBuilder) ToAzureMonitorOutput(visitors ...func(output *obs.Outp
 			LogType: "myLogType",
 			Host:    "acme.com:3000",
 			Authentication: &obs.AzureMonitorAuthentication{
-				SharedKey: &obs.SecretKey{
-					Secret: &v1.LocalObjectReference{
-						Name: "azure-secret",
-					},
-					Key: constants.SharedKey,
+				SharedKey: &obs.SecretReference{
+					Key:        constants.SharedKey,
+					SecretName: "azure-secret",
 				},
 			},
 		}

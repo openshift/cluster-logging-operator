@@ -211,13 +211,13 @@ type HTTPAuthentication struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
-	Username *SecretKey `json:"username,omitempty"`
+	Username *SecretReference `json:"username,omitempty"`
 
 	// Password to use for authenticating requests.
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
-	Password *SecretKey `json:"password,omitempty"`
+	Password *SecretReference `json:"password,omitempty"`
 }
 
 // AzureMonitorAuthentication contains configuration for authenticating requests to a AzureMonitor output.
@@ -226,7 +226,7 @@ type AzureMonitorAuthentication struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	SharedKey *SecretKey `json:"sharedKey"`
+	SharedKey *SecretReference `json:"sharedKey"`
 }
 
 type AzureMonitor struct {
@@ -349,7 +349,7 @@ type CloudwatchIAMRole struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	RoleARN *SecretKey `json:"roleARN"`
+	RoleARN *SecretReference `json:"roleARN"`
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
@@ -363,13 +363,13 @@ type CloudwatchAWSAccessKey struct {
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	KeyID *SecretKey `json:"keyID"`
+	KeyID *SecretReference `json:"keyID"`
 
 	// AccessKeySecret points to the AWS access key secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
 	// +nullable
-	KeySecret *SecretKey `json:"keySecret"`
+	KeySecret *SecretReference `json:"keySecret"`
 }
 
 type IndexSpec struct {
@@ -422,7 +422,7 @@ type GoogleCloudLoggingAuthentication struct {
 	// Credentials points to the secret containing the `google-application-credentials.json`.
 	//
 	// +kubebuilder:validation:Required
-	Credentials *SecretKey `json:"credentials"`
+	Credentials *SecretReference `json:"credentials"`
 }
 
 type GoogleCloudLoggingTuningSpec struct {
@@ -547,12 +547,12 @@ type SASLAuthentication struct {
 	// Username points to the secret to be used as SASL username.
 	//
 	// +kubebuilder:validation:Optional
-	Username *SecretKey `json:"username,omitempty"`
+	Username *SecretReference `json:"username,omitempty"`
 
 	// Username points to the secret to be used as SASL password.
 	//
 	// +kubebuilder:validation:Optional
-	Password *SecretKey `json:"password,omitempty"`
+	Password *SecretReference `json:"password,omitempty"`
 
 	// Mechanism sets the SASL mechanism to use.
 	//
@@ -714,7 +714,7 @@ type SplunkAuthentication struct {
 	// Token points to the secret containing the Splunk HEC token used for authenticating requests.
 	//
 	// +kubebuilder:validation:Required
-	Token *SecretKey `json:"token"`
+	Token *SecretReference `json:"token"`
 }
 
 // Splunk Deliver log data to Splunk’s HTTP Event Collector

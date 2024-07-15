@@ -37,23 +37,17 @@ var _ = Describe("Generate vector config", func() {
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.TrustedCABundleKey,
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: secretName,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientCertKey,
+					Certificate: &obs.ValueReference{
+						Key:        constants.ClientCertKey,
+						SecretName: secretName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: secretName,
 					},
 				},
 			}
@@ -69,17 +63,13 @@ var _ = Describe("Generate vector config", func() {
 						},
 						Method: "POST",
 						Authentication: &obs.HTTPAuthentication{
-							Username: &obs.SecretKey{
-								Secret: &corev1.LocalObjectReference{
-									Name: secretName,
-								},
-								Key: constants.ClientUsername,
+							Username: &obs.SecretReference{
+								Key:        constants.ClientUsername,
+								SecretName: secretName,
 							},
-							Password: &obs.SecretKey{
-								Secret: &corev1.LocalObjectReference{
-									Name: secretName,
-								},
-								Key: constants.ClientPassword,
+							Password: &obs.SecretReference{
+								Key:        constants.ClientPassword,
+								SecretName: secretName,
 							},
 						},
 					},
@@ -117,23 +107,17 @@ var _ = Describe("Generate vector config", func() {
 				spec.HTTP.Authentication = nil
 				spec.TLS = &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
-						CA: &obs.ConfigMapOrSecretKey{
-							ConfigMap: &corev1.LocalObjectReference{
-								Name: secretName,
-							},
-							Key: "ca.crt",
+						CA: &obs.ValueReference{
+							Key:           "ca.crt",
+							ConfigMapName: secretName,
 						},
-						Certificate: &obs.ConfigMapOrSecretKey{
-							ConfigMap: &corev1.LocalObjectReference{
-								Name: secretName,
-							},
-							Key: "my.crt",
+						Certificate: &obs.ValueReference{
+							Key:           "my.crt",
+							ConfigMapName: secretName,
 						},
-						Key: &obs.SecretKey{
-							Secret: &corev1.LocalObjectReference{
-								Name: secretName,
-							},
-							Key: constants.ClientPrivateKey,
+						Key: &obs.SecretReference{
+							Key:        constants.ClientPrivateKey,
+							SecretName: secretName,
 						},
 					},
 				}

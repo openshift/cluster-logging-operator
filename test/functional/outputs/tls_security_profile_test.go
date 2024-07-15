@@ -55,11 +55,9 @@ var _ = Describe("[functional][outputs][tlssecurityprofile] Functional tests ", 
 					output.HTTP.URL = strings.Replace(output.HTTP.URL, "http://", "https://", 1)
 					output.TLS = &obs.OutputTLSSpec{
 						TLSSpec: obs.TLSSpec{
-							CA: &obs.ConfigMapOrSecretKey{
-								Secret: &corev1.LocalObjectReference{
-									Name: clientSecretName,
-								},
-								Key: constants.TrustedCABundleKey,
+							CA: &obs.ValueReference{
+								Key:        constants.TrustedCABundleKey,
+								SecretName: clientSecretName,
 							},
 						},
 						TLSSecurityProfile: &openshiftv1.TLSSecurityProfile{

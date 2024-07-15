@@ -95,23 +95,17 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: constants.ElasticsearchName,
-						},
-						Key: constants.TrustedCABundleKey,
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: constants.ElasticsearchName,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: constants.ElasticsearchName,
-						},
-						Key: constants.ClientCertKey,
+					Certificate: &obs.ValueReference{
+						Key:        constants.ClientCertKey,
+						SecretName: constants.ElasticsearchName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: constants.ElasticsearchName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: constants.ElasticsearchName,
 					},
 				},
 			},
@@ -137,11 +131,9 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: constants.LogCollectorToken,
-						},
-						Key: "service-ca.crt",
+					CA: &obs.ValueReference{
+						Key:        "service-ca.crt",
+						SecretName: constants.LogCollectorToken,
 					},
 				},
 			},
@@ -157,33 +149,25 @@ func mapOutputTls(loggingTls *logging.OutputTLSSpec, outputSecret *corev1.Secret
 	}
 
 	if security.HasTLSCertAndKey(outputSecret) {
-		obsTls.Certificate = &obs.ConfigMapOrSecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: outputSecret.Name,
-			},
-			Key: constants.ClientCertKey,
+		obsTls.Certificate = &obs.ValueReference{
+			Key:        constants.ClientCertKey,
+			SecretName: outputSecret.Name,
 		}
-		obsTls.Key = &obs.SecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: outputSecret.Name,
-			},
-			Key: constants.ClientPrivateKey,
+		obsTls.Key = &obs.SecretReference{
+			Key:        constants.ClientPrivateKey,
+			SecretName: outputSecret.Name,
 		}
 	}
 	if security.HasCABundle(outputSecret) {
-		obsTls.CA = &obs.ConfigMapOrSecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: outputSecret.Name,
-			},
-			Key: constants.TrustedCABundleKey,
+		obsTls.CA = &obs.ValueReference{
+			Key:        constants.TrustedCABundleKey,
+			SecretName: outputSecret.Name,
 		}
 	}
 	if security.HasPassphrase(outputSecret) {
-		obsTls.KeyPassphrase = &obs.SecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: outputSecret.Name,
-			},
-			Key: constants.Passphrase,
+		obsTls.KeyPassphrase = &obs.SecretReference{
+			Key:        constants.Passphrase,
+			SecretName: outputSecret.Name,
 		}
 	}
 
@@ -209,17 +193,13 @@ func mapBaseOutputTuning(outTuneSpec logging.OutputTuningSpec) *obs.BaseOutputTu
 func mapHTTPAuth(secret *corev1.Secret) *obs.HTTPAuthentication {
 	httpAuth := obs.HTTPAuthentication{}
 	if security.HasUsernamePassword(secret) {
-		httpAuth.Username = &obs.SecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: secret.Name,
-			},
-			Key: constants.ClientUsername,
+		httpAuth.Username = &obs.SecretReference{
+			Key:        constants.ClientUsername,
+			SecretName: secret.Name,
 		}
-		httpAuth.Password = &obs.SecretKey{
-			Secret: &corev1.LocalObjectReference{
-				Name: secret.Name,
-			},
-			Key: constants.ClientPassword,
+		httpAuth.Password = &obs.SecretReference{
+			Key:        constants.ClientPassword,
+			SecretName: secret.Name,
 		}
 	}
 	if security.HasBearerTokenFileKey(secret) {
@@ -240,11 +220,9 @@ func mapAzureMonitor(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *
 	if secret != nil {
 		obsAzMon.Authentication = &obs.AzureMonitorAuthentication{}
 		if security.HasSharedKey(secret) {
-			obsAzMon.Authentication.SharedKey = &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secret.Name,
-				},
-				Key: constants.SharedKey,
+			obsAzMon.Authentication.SharedKey = &obs.SecretReference{
+				Key:        constants.SharedKey,
+				SecretName: secret.Name,
 			}
 		}
 	}
@@ -278,17 +256,13 @@ func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saN
 		if security.HasAwsAccessKeyId(secret) && security.HasAwsSecretAccessKey(secret) {
 			obsCw.Authentication.Type = obs.CloudwatchAuthTypeAccessKey
 			obsCw.Authentication.AWSAccessKey = &obs.CloudwatchAWSAccessKey{
-				KeyID: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secret.Name,
-					},
-					Key: constants.AWSAccessKeyID,
+				KeyID: &obs.SecretReference{
+					Key:        constants.AWSAccessKeyID,
+					SecretName: secret.Name,
 				},
-				KeySecret: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secret.Name,
-					},
-					Key: constants.AWSSecretAccessKey,
+				KeySecret: &obs.SecretReference{
+					Key:        constants.AWSSecretAccessKey,
+					SecretName: secret.Name,
 				},
 			}
 		}
@@ -303,11 +277,9 @@ func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saN
 			}
 
 			obsCw.Authentication.IAMRole = &obs.CloudwatchIAMRole{
-				RoleARN: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secret.Name,
-					},
-					Key: roleArnKey,
+				RoleARN: &obs.SecretReference{
+					Key:        roleArnKey,
+					SecretName: secret.Name,
 				},
 			}
 			if security.HasBearerTokenFileKey(secret) {
@@ -404,11 +376,9 @@ func mapGoogleCloudLogging(loggingOutSpec logging.OutputSpec, secret *corev1.Sec
 	if secret != nil {
 		obsGcp.Authentication = &obs.GoogleCloudLoggingAuthentication{}
 		if security.HasGoogleApplicationCredentialsKey(secret) {
-			obsGcp.Authentication.Credentials = &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secret.Name,
-				},
-				Key: gcl.GoogleApplicationCredentialsKey,
+			obsGcp.Authentication.Credentials = &obs.SecretReference{
+				Key:        gcl.GoogleApplicationCredentialsKey,
+				SecretName: secret.Name,
 			}
 		}
 	}
@@ -491,17 +461,13 @@ func mapKafka(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Kaf
 			SASL: &obs.SASLAuthentication{Mechanism: "PLAIN"},
 		}
 		if security.HasUsernamePassword(secret) {
-			obsKafka.Authentication.SASL.Username = &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secret.Name,
-				},
-				Key: constants.ClientUsername,
+			obsKafka.Authentication.SASL.Username = &obs.SecretReference{
+				Key:        constants.ClientUsername,
+				SecretName: secret.Name,
 			}
-			obsKafka.Authentication.SASL.Password = &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secret.Name,
-				},
-				Key: constants.ClientPassword,
+			obsKafka.Authentication.SASL.Password = &obs.SecretReference{
+				Key:        constants.ClientPassword,
+				SecretName: secret.Name,
 			}
 		}
 		if security.HasSASLMechanism(secret) {
@@ -582,11 +548,9 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 	if secret != nil {
 		obsSplunk.Authentication = &obs.SplunkAuthentication{}
 		if security.HasSplunkHecToken(secret) {
-			obsSplunk.Authentication.Token = &obs.SecretKey{
-				Secret: &corev1.LocalObjectReference{
-					Name: secret.Name,
-				},
-				Key: constants.SplunkHECTokenKey,
+			obsSplunk.Authentication.Token = &obs.SecretReference{
+				Key:        constants.SplunkHECTokenKey,
+				SecretName: secret.Name,
 			}
 		}
 	}

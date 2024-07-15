@@ -46,11 +46,9 @@ var _ = Describe("output/factory.go", func() {
 				},
 				TLS: &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
-						CA: &obs.ConfigMapOrSecretKey{
-							Secret: &corev1.LocalObjectReference{
-								Name: constants.LogCollectorToken,
-							},
-							Key: "service-ca.crt",
+						CA: &obs.ValueReference{
+							Key:        "service-ca.crt",
+							SecretName: constants.LogCollectorToken,
 						},
 					},
 				},

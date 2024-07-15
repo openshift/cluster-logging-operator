@@ -330,17 +330,13 @@ var _ = Describe("inputs", func() {
 					Format: obs.HTTPReceiverFormatKubeAPIAudit,
 				},
 				TLS: &obs.InputTLSSpec{
-					Certificate: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientCertKey,
+					Certificate: &obs.ValueReference{
+						Key:        constants.ClientCertKey,
+						SecretName: secretName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: secretName,
 					},
 				},
 			},
@@ -354,29 +350,21 @@ var _ = Describe("inputs", func() {
 				Type: obs.ReceiverTypeSyslog,
 				Port: 12345,
 				TLS: &obs.InputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.TrustedCABundleKey,
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: secretName,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientCertKey,
+					Certificate: &obs.ValueReference{
+						Key:        constants.ClientCertKey,
+						SecretName: secretName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: secretName,
 					},
-					KeyPassphrase: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.Passphrase,
+					KeyPassphrase: &obs.SecretReference{
+						Key:        constants.Passphrase,
+						SecretName: secretName,
 					},
 				},
 			},
@@ -390,23 +378,17 @@ var _ = Describe("inputs", func() {
 				Type: obs.ReceiverTypeSyslog,
 				Port: 12345,
 				TLS: &obs.InputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						ConfigMap: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "ca.crt",
+					CA: &obs.ValueReference{
+						Key:           "ca.crt",
+						ConfigMapName: secretName,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
-						ConfigMap: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "my.crt",
+					Certificate: &obs.ValueReference{
+						Key:           "my.crt",
+						ConfigMapName: secretName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: secretName,
 					},
 				},
 			},

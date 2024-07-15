@@ -35,23 +35,17 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		}
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretName,
-					},
-					Key: constants.TrustedCABundleKey,
+				CA: &obs.ValueReference{
+					Key:        constants.TrustedCABundleKey,
+					SecretName: secretName,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretName,
-					},
-					Key: constants.ClientCertKey,
+				Certificate: &obs.ValueReference{
+					Key:        constants.ClientCertKey,
+					SecretName: secretName,
 				},
-				Key: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretName,
-					},
-					Key: constants.ClientPrivateKey,
+				Key: &obs.SecretReference{
+					Key:        constants.ClientPrivateKey,
+					SecretName: secretName,
 				},
 			},
 		}
@@ -62,11 +56,9 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 				Splunk: &obs.Splunk{
 					URLSpec: obs.URLSpec{URL: "https://splunk-web:8088/endpoint"},
 					Authentication: &obs.SplunkAuthentication{
-						Token: &obs.SecretKey{
-							Secret: &corev1.LocalObjectReference{
-								Name: secretName,
-							},
-							Key: constants.SplunkHECTokenKey,
+						Token: &obs.SecretReference{
+							Key:        constants.SplunkHECTokenKey,
+							SecretName: secretName,
 						},
 					},
 					IndexSpec: obs.IndexSpec{Index: "{{.log_type}}"},

@@ -50,8 +50,8 @@ func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framewo
 	}
 
 	if spec != nil {
-		conf.CAFilePath = ConfigMapOrSecretPath(spec.CA)
-		conf.CertPath = ConfigMapOrSecretPath(spec.Certificate)
+		conf.CAFilePath = ValuePath(spec.CA)
+		conf.CertPath = ValuePath(spec.Certificate)
 		conf.KeyPath = SecretPath(spec.Key)
 		conf.PassPhrase = secrets.AsString(spec.KeyPassphrase)
 		conf.InsecureSkipVerify = spec.InsecureSkipVerify
@@ -63,23 +63,23 @@ func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framewo
 	return conf
 }
 
-func ConfigMapOrSecretPath(resource *obs.ConfigMapOrSecretKey) string {
+func ValuePath(resource *obs.ValueReference) string {
 	if resource == nil {
 		return ""
 	}
-	if resource.Secret != nil {
-		return helpers.SecretPath(resource.Secret.Name, resource.Key)
-	} else if resource.ConfigMap != nil {
-		return helpers.ConfigPath(resource.ConfigMap.Name, resource.Key)
+	if resource.SecretName != "" {
+		return helpers.SecretPath(resource.SecretName, resource.Key)
+	} else if resource.ConfigMapName != "" {
+		return helpers.ConfigPath(resource.ConfigMapName, resource.Key)
 	}
 	return ""
 }
 
-func SecretPath(resource *obs.SecretKey) string {
-	if resource == nil || resource.Secret == nil {
+func SecretPath(resource *obs.SecretReference) string {
+	if resource == nil || resource.SecretName == "" {
 		return ""
 	}
-	return helpers.SecretPath(resource.Secret.Name, resource.Key)
+	return helpers.SecretPath(resource.SecretName, resource.Key)
 }
 
 func setTLSProfileFromOptions(t *TLSConf, op framework.Options) {

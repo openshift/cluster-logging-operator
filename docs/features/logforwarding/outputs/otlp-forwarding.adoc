@@ -1,0 +1,127 @@
+= OTLP Output
+
+The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Observability Framework.  This is a configuration guide for the `ClusterLogForwarder` spec introduced to send logs to OTLP receivers.
+
+
+*OTLP* describes the *protocol* for encoding, transporting, and delivering telemetry data between sources using the https://opentelemetry.io/docs/specs/otlp/[OpenTelemetry OTLP Specification]
+
+.Technical Preview
+This feature is currently in tech-preview and an annotation is required
+
+`observability.openshift.io/tech-preview-otlp-output: "enabled"`
+
+---
+== Configuring the Forwarder
+A new output type `otlp` has been defined in the `ClusterLogForwarder`
+
+.ClusterLogForwarder
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-logforwarder
+  namespace: my-app-namespace
+  annotations:
+    observability.openshift.io/tech-preview-otlp-output: "enabled"
+spec:
+  outputs:
+    - type: otlp  <1>
+      name: otel-collector
+      tls:
+        insecureSkipVerify: true  <2>
+      otlp:
+        url: 'http://my-otel-receiver-service:4318/v1/logs'  <3>
+        tuning:
+          compression: none  <4>
+        authentication:
+          token:
+            from: serviceAccount  <5>
+  pipelines:
+   - name: my-pipeline
+     inputRefs:
+     - application
+     - infrastructure
+     outputRefs:
+     - otel-collector
+  serviceAccount:
+    name: logger-admin
+----
+. Output `type` is '*otlp*'
+. `tls` includes the standard certificate configuration or specify `insecureSkipVerify`: '*true*'
+. `otlp` `url` specify a valid host:port of the otel receiver and *MUST* terminate with "*/v1/logs*"
+. `otlp` `tuning` `compression` default value is "*gzip*". Specify "*none*" to turn compression off.
+. `otlp` `authentication` is optional and specifies a `token` `from` and a value of "*serviceAccount*"
+.. The token can also be read from a secret
+.. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
+
+
+.TLS InsecureSkipVerify
+[NOTE]
+This option is *NOT* recommended for production configurations. If true, the client will be configured to skip validating server certificates.
+
+https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/clusterlogforwarder_types.go#L244[TLS Specification] for _observability.openshift.io/v1_
+
+https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L203[HTTP Auth Specification] for _observability.openshift.io/v1_
+
+
+https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L812[Tuning Specification] for _observability.openshift.io/v1_
+
+
+== Data Model
+
+=== Semantic Convention
+The Semantic Conventions in OpenTelemetry define a *Resource* as an immutable representation of the entity producing telemetry as *Attributes*.
+
+For example, a process producing telemetry that is running in a container has a container_name, a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
+
+All of these *Attributes* are included in the *Resource* object.  This grouping and reducing of common attributes is a powerful tool when sending logs as telemetry data.
+
+.OTEL References
+* https://opentelemetry.io/docs/specs/semconv/[Semantic Conventions]
+* https://opentelemetry.io/docs/specs/otel/logs/data-model/[Logs Data Model]
+* https://opentelemetry.io/docs/specs/semconv/general/logs/[General Logs Attributes]
+
+=== Data Mapping
+This document is not a complete spec and is mainly used as a guide.
+
+==== JSON Encoding
+OpenShift Logging uses Vector Remap Language https://vector.dev/docs/reference/vrl/[(VRL)] to map and enrich the logging data in order to the follow the semantic conventions of OpenTelemetry and its https://opentelemetry.io/docs/specs/otel/logs/data-model/[Logs Data Model]
+
+https://github.com/open-telemetry/opentelemetry-proto/blob/v1.3.1/examples/logs.json[Example JSON Encoded Logs] provide a visual representation of the data structure
+
+[%header,format=csv]
+|===
+ViaQ,OTEL
+@timestamp,	                timeUnixNano
+N/A,	                    observedTimeUnixNano
+level,	                    severityNumber
+message,                    body
+--,--
+openshift.cluster_id,             cluster.id
+hostname,	                      node.name
+kubernetes.namespace_name,	      k8s.namespace.name
+kubernetes.pod_name,	          k8s.pod.name
+kubernetes.pod_id,	              k8s.pod.uid
+kubernetes.container_name,	      k8s.container.name
+kubernetes.container_id,	      k8s.container.id
+log_source,	                      openshift.log.source
+log_type,	                      openshift.log.type
+url,                              url.full
+response.code,                    http.response.status.code
+verb,                             http.request.method
+systemd.t.PID,                    syslog.procid
+systemd.u.SYSLOG.FACILITY,        syslog.facility
+systemd.u.SYSLOG.IDENTIFIER,      syslog.identifier
+systemd.t.SYSTEMD.CGROUP,         system.cgroup
+systemd.t.SYSTEMD.INVOCATION.ID,  system.invocation.id
+systemd.t.SYSTEMD.SLICE,          system.slice
+systemd.t.SYSTEMD.UNIT,           system.unit
+systemd.t.CMDLINE,                system.cmdline
+|===
+
+Please note:  More work to refine this list is ongoing and it will likely change a few times.  This table does not represent a data model.
+
+
+.ViaQ Data Model
+* https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/datamodels/viaq/v1.adoc

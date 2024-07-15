@@ -16,6 +16,10 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 		if spec.AzureMonitor != nil && spec.AzureMonitor.Tuning != nil {
 			t.BaseOutputTuningSpec = *spec.AzureMonitor.Tuning
 		}
+	case obs.OutputTypeGoogleCloudLogging:
+		if spec.GoogleCloudLogging != nil && spec.GoogleCloudLogging.Tuning != nil {
+			t.BaseOutputTuningSpec = spec.GoogleCloudLogging.Tuning.BaseOutputTuningSpec
+		}
 	case obs.OutputTypeCloudwatch:
 		if spec.Cloudwatch != nil && spec.Cloudwatch.Tuning != nil {
 			t.BaseOutputTuningSpec = spec.Cloudwatch.Tuning.BaseOutputTuningSpec

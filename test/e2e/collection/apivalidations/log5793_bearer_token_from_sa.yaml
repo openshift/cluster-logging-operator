@@ -8,7 +8,7 @@ spec:
     - lokiStack:
         authentication:
           token:
-            from: serviceAccountToken
+            from: serviceAccount
         labelKeys:
           - .hostname
           - .log_type

@@ -2,7 +2,8 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+if exists(.message) { ._internal.message = .message }
+. = merge(., parse_json!(string!(._internal.message))) ?? .
 '''
 
 [sinks.example]

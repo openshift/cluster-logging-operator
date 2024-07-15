@@ -39,7 +39,8 @@ func (s Syslog) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+if exists(.message) { ._internal.message = .message }
+. = merge(., parse_json!(string!(._internal.message))) ?? .
 '''
 
 [sinks.{{.ComponentID}}]

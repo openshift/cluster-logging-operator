@@ -86,7 +86,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 			sharedKey  = rand.Word(16)
 			customerId = strings.ToLower(string(rand.Word(16)))
-			secretKey  = internalobs.NewSecretKey("hecToken", "do-not-tell")
+			secretKey  = internalobs.NewSecretReference("hecToken", "do-not-tell")
 		)
 
 		BeforeEach(func() {
@@ -113,9 +113,9 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 		It("should send to Splunk with only .log_type and .message", func() {
 			pipelineBuilder.ToSplunkOutput(*secretKey)
-			secret = runtime.NewSecret(f.Namespace, secretKey.Secret.Name,
+			secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,
 				map[string][]byte{
-					secretKey.Key: []byte(functional.HecToken),
+					secretKey.Key: functional.HecToken,
 				},
 			)
 			f.Secrets = append(f.Secrets, secret)
@@ -217,17 +217,13 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			pipelineBuilder.ToCloudwatchOutput(obs.CloudwatchAuthentication{
 				Type: obs.CloudwatchAuthTypeAccessKey,
 				AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-					KeyID: &obs.SecretKey{
-						Key: constants.AWSAccessKeyID,
-						Secret: &v1.LocalObjectReference{
-							Name: functional.CloudwatchSecret,
-						},
+					KeyID: &obs.SecretReference{
+						Key:        constants.AWSAccessKeyID,
+						SecretName: functional.CloudwatchSecret,
 					},
-					KeySecret: &obs.SecretKey{
-						Key: constants.AWSSecretAccessKey,
-						Secret: &v1.LocalObjectReference{
-							Name: functional.CloudwatchSecret,
-						},
+					KeySecret: &obs.SecretReference{
+						Key:        constants.AWSSecretAccessKey,
+						SecretName: functional.CloudwatchSecret,
 					},
 				},
 			})

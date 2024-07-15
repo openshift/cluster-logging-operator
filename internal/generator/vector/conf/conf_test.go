@@ -45,23 +45,17 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.TrustedCABundleKey,
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: secretName,
 					},
-					Certificate: &obs.ConfigMapOrSecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientCertKey,
+					Certificate: &obs.ValueReference{
+						Key:        constants.ClientCertKey,
+						SecretName: secretName,
 					},
-					Key: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: constants.ClientPrivateKey,
+					Key: &obs.SecretReference{
+						Key:        constants.ClientPrivateKey,
+						SecretName: secretName,
 					},
 				},
 			},
@@ -200,17 +194,13 @@ var _ = Describe("Testing Complete Config Generation", func() {
 								Format: obs.HTTPReceiverFormatKubeAPIAudit,
 							},
 							TLS: &obs.InputTLSSpec{
-								Certificate: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: secretName,
-									},
-									Key: constants.ClientCertKey,
+								Certificate: &obs.ValueReference{
+									Key:        constants.ClientCertKey,
+									SecretName: secretName,
 								},
-								Key: &obs.SecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: secretName,
-									},
-									Key: constants.ClientPrivateKey,
+								Key: &obs.SecretReference{
+									Key:        constants.ClientPrivateKey,
+									SecretName: secretName,
 								},
 							},
 						},

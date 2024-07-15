@@ -79,17 +79,13 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			})
 			framework.Secrets = append(framework.Secrets, secret)
 			auth = obs.HTTPAuthentication{
-				Username: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: "mysecret",
-					},
-					Key: constants.ClientUsername,
+				Username: &obs.SecretReference{
+					Key:        constants.ClientUsername,
+					SecretName: "mysecret",
 				},
-				Password: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: "mysecret",
-					},
-					Key: constants.ClientPassword,
+				Password: &obs.SecretReference{
+					Key:        constants.ClientPassword,
+					SecretName: "mysecret",
 				},
 			}
 		}

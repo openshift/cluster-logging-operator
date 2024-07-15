@@ -170,33 +170,36 @@ type LimitSpec struct {
 	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond"`
 }
 
-// ConfigMapOrSecretKey encodes a reference to a single field in either a ConfigMap or Secret in the same namespace.
-type ConfigMapOrSecretKey struct {
+// ValueReference encodes a reference to a single field in either a ConfigMap or Secret in the same namespace.
+//
+// +kubebuilder:validation:XValidation:rule="has(self.configMapName) || has(self.secretName)", message="Either configMapName or secretName needs to be set"
+// +kubebuilder:validation:XValidation:rule="!(has(self.configMapName) && has(self.secretName))", message="Only one of configMapName and secretName can be set"
+type ValueReference struct {
 	// Name of the key used to get the value in either the referenced ConfigMap or Secret.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Key string `json:"key"`
 
-	// Use ConfigMap if the value should be sourced from a ConfigMap in the same namespace.
-	ConfigMap *corev1.LocalObjectReference `json:"configMap,omitempty"`
+	// ConfigMapName contains the name of the ConfigMap containing the referenced value.
+	ConfigMapName string `json:"configMapName,omitempty"`
 
-	// Use Secret if the value should be sourced from a Secret in the same namespace.
-	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+	// SecretName contains the name of the Secret containing the referenced value.
+	SecretName string `json:"secretName,omitempty"`
 }
 
-// SecretKey encodes a reference to a single key in a Secret in the same namespace.
-type SecretKey struct {
-	// Name of the key used to get the value from the referenced Secret.
+// SecretReference encodes a reference to a single key in a Secret in the same namespace.
+type SecretReference struct {
+	// Key contains the name of the key inside the referenced Secret.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Key string `json:"key"`
 
-	// Use Secret if the value should be sourced from a Secret in the same namespace.
+	// SecretName contains the name of the Secret containing the referenced value.
 	//
 	// +kubebuilder:validation:Required
-	Secret *corev1.LocalObjectReference `json:"secret"`
+	SecretName string `json:"secretName"`
 }
 
 // BearerToken allows configuring the source of a bearer token used for authentication.
@@ -245,22 +248,22 @@ type TLSSpec struct {
 	// CA can be used to specify a custom list of trusted certificate authorities.
 	//
 	// +kubebuilder:validation:Optional
-	CA *ConfigMapOrSecretKey `json:"ca,omitempty"`
+	CA *ValueReference `json:"ca,omitempty"`
 
 	// Certificate points to the server certificate to use.
 	//
 	// +kubebuilder:validation:Optional
-	Certificate *ConfigMapOrSecretKey `json:"certificate,omitempty"`
+	Certificate *ValueReference `json:"certificate,omitempty"`
 
 	// Key points to the private key of the server certificate.
 	//
 	// +kubebuilder:validation:Optional
-	Key *SecretKey `json:"key,omitempty"`
+	Key *SecretReference `json:"key,omitempty"`
 
 	// KeyPassphrase points to the passphrase used to unlock the private key.
 	//
 	// +kubebuilder:validation:Optional
-	KeyPassphrase *SecretKey `json:"keyPassphrase,omitempty"`
+	KeyPassphrase *SecretReference `json:"keyPassphrase,omitempty"`
 }
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder

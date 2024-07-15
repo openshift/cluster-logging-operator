@@ -9,7 +9,6 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
-	v1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("DefaultElasticsearch", func() {
@@ -27,23 +26,17 @@ var _ = Describe("DefaultElasticsearch", func() {
 		spec  obs.ClusterLogForwarderSpec
 		esTls = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
-					Secret: &v1.LocalObjectReference{
-						Name: constants.CollectorName,
-					},
-					Key: constants.TrustedCABundleKey,
+				CA: &obs.ValueReference{
+					Key:        constants.TrustedCABundleKey,
+					SecretName: constants.CollectorName,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
-					Secret: &v1.LocalObjectReference{
-						Name: constants.CollectorName,
-					},
-					Key: constants.ClientCertKey,
+				Certificate: &obs.ValueReference{
+					Key:        constants.ClientCertKey,
+					SecretName: constants.CollectorName,
 				},
-				Key: &obs.SecretKey{
-					Secret: &v1.LocalObjectReference{
-						Name: constants.CollectorName,
-					},
-					Key: constants.ClientPrivateKey,
+				Key: &obs.SecretReference{
+					Key:        constants.ClientPrivateKey,
+					SecretName: constants.CollectorName,
 				},
 			},
 		}

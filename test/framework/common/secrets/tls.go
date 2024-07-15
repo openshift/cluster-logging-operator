@@ -28,23 +28,17 @@ func NewTLSSecret(namespace, name, serviceNamespace, serviceName string) (*corev
 	}
 	return runtime.NewSecret(namespace, name, data),
 		obs.TLSSpec{
-			CA: &obs.ConfigMapOrSecretKey{
-				Key: constants.TrustedCABundleKey,
-				Secret: &corev1.LocalObjectReference{
-					Name: name,
-				},
+			CA: &obs.ValueReference{
+				Key:        constants.TrustedCABundleKey,
+				SecretName: name,
 			},
-			Certificate: &obs.ConfigMapOrSecretKey{
-				Key: constants.ClientCertKey,
-				Secret: &corev1.LocalObjectReference{
-					Name: name,
-				},
+			Certificate: &obs.ValueReference{
+				Key:        constants.ClientCertKey,
+				SecretName: name,
 			},
-			Key: &obs.SecretKey{
-				Key: constants.ClientPrivateKey,
-				Secret: &corev1.LocalObjectReference{
-					Name: name,
-				},
+			Key: &obs.SecretReference{
+				Key:        constants.ClientPrivateKey,
+				SecretName: name,
 			},
 		}
 }

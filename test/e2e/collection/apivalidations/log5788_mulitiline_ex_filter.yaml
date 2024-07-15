@@ -20,8 +20,7 @@ spec:
         authentication:
           token:
             key: hecToken
-            secret:
-              name: to-splunk-secret-54980
+            secretName: to-splunk-secret-54980
         index: main
         tuning:
           compression: none

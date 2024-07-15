@@ -646,119 +646,85 @@ spec:
                               description: CA can be used to specify a custom list
                                 of trusted certificate authorities.
                               properties:
-                                configMap:
-                                  description: Use ConfigMap if the value should be
-                                    sourced from a ConfigMap in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                configMapName:
+                                  description: ConfigMapName contains the name of
+                                    the ConfigMap containing the referenced value.
+                                  type: string
                                 key:
                                   description: Name of the key used to get the value
                                     in either the referenced ConfigMap or Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
                               type: object
+                              x-kubernetes-validations:
+                              - message: Either configMapName or secretName needs
+                                  to be set
+                                rule: has(self.configMapName) || has(self.secretName)
+                              - message: Only one of configMapName and secretName
+                                  can be set
+                                rule: '!(has(self.configMapName) && has(self.secretName))'
                             certificate:
                               description: Certificate points to the server certificate
                                 to use.
                               properties:
-                                configMap:
-                                  description: Use ConfigMap if the value should be
-                                    sourced from a ConfigMap in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                configMapName:
+                                  description: ConfigMapName contains the name of
+                                    the ConfigMap containing the referenced value.
+                                  type: string
                                 key:
                                   description: Name of the key used to get the value
                                     in either the referenced ConfigMap or Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
                               type: object
+                              x-kubernetes-validations:
+                              - message: Either configMapName or secretName needs
+                                  to be set
+                                rule: has(self.configMapName) || has(self.secretName)
+                              - message: Only one of configMapName and secretName
+                                  can be set
+                                rule: '!(has(self.configMapName) && has(self.secretName))'
                             key:
                               description: Key points to the private key of the server
                                 certificate.
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                             keyPassphrase:
                               description: KeyPassphrase points to the passphrase
                                 used to unlock the private key.
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           type: object
                         type:
@@ -825,24 +791,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           required:
                           - sharedKey
@@ -917,24 +875,16 @@ spec:
                                   nullable: true
                                   properties:
                                     key:
-                                      description: Name of the key used to get the
-                                        value from the referenced Secret.
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
                                   required:
                                   - key
-                                  - secret
+                                  - secretName
                                   type: object
                                 keySecret:
                                   description: AccessKeySecret points to the AWS access
@@ -942,24 +892,16 @@ spec:
                                   nullable: true
                                   properties:
                                     key:
-                                      description: Name of the key used to get the
-                                        value from the referenced Secret.
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
                                   required:
                                   - key
-                                  - secret
+                                  - secretName
                                   type: object
                               required:
                               - keyID
@@ -979,24 +921,16 @@ spec:
                                   nullable: true
                                   properties:
                                     key:
-                                      description: Name of the key used to get the
-                                        value from the referenced Secret.
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
                                   required:
                                   - key
-                                  - secret
+                                  - secretName
                                   type: object
                                 token:
                                   description: Token specifies a bearer token to be
@@ -1122,24 +1056,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                             token:
                               description: Token specifies a bearer token to be used
@@ -1180,24 +1106,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           type: object
                         index:
@@ -1281,24 +1199,16 @@ spec:
                                 the `google-application-credentials.json`.
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           required:
                           - credentials
@@ -1375,24 +1285,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                             token:
                               description: Token specifies a bearer token to be used
@@ -1433,24 +1335,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           type: object
                         headers:
@@ -1550,48 +1444,32 @@ spec:
                                     used as SASL password.
                                   properties:
                                     key:
-                                      description: Name of the key used to get the
-                                        value from the referenced Secret.
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
                                   required:
                                   - key
-                                  - secret
+                                  - secretName
                                   type: object
                                 username:
                                   description: Username points to the secret to be
                                     used as SASL username.
                                   properties:
                                     key:
-                                      description: Name of the key used to get the
-                                        value from the referenced Secret.
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
                                       type: string
-                                    secret:
-                                      description: Use Secret if the value should
-                                        be sourced from a Secret in the same namespace.
-                                      properties:
-                                        name:
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                            TODO: Add other useful fields. apiVersion,
-                                            kind, uid?'
-                                          type: string
-                                      type: object
-                                      x-kubernetes-map-type: atomic
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
                                   required:
                                   - key
-                                  - secret
+                                  - secretName
                                   type: object
                               type: object
                           type: object
@@ -1671,24 +1549,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                             token:
                               description: Token specifies a bearer token to be used
@@ -1729,24 +1599,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           type: object
                         labelKeys:
@@ -1969,24 +1831,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                             token:
                               description: Token specifies a bearer token to be used
@@ -2027,24 +1881,16 @@ spec:
                               nullable: true
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           type: object
                         tuning:
@@ -2130,24 +1976,16 @@ spec:
                                 Splunk HEC token used for authenticating requests.
                               properties:
                                 key:
-                                  description: Name of the key used to get the value
-                                    from the referenced Secret.
+                                  description: Key contains the name of the key inside
+                                    the referenced Secret.
                                   type: string
-                                secret:
-                                  description: Use Secret if the value should be sourced
-                                    from a Secret in the same namespace.
-                                  properties:
-                                    name:
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                        TODO: Add other useful fields. apiVersion,
-                                        kind, uid?'
-                                      type: string
-                                  type: object
-                                  x-kubernetes-map-type: atomic
+                                secretName:
+                                  description: SecretName contains the name of the
+                                    Secret containing the referenced value.
+                                  type: string
                               required:
                               - key
-                              - secret
+                              - secretName
                               type: object
                           required:
                           - token
@@ -2288,68 +2126,54 @@ spec:
                           description: CA can be used to specify a custom list of
                             trusted certificate authorities.
                           properties:
-                            configMap:
-                              description: Use ConfigMap if the value should be sourced
-                                from a ConfigMap in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            configMapName:
+                              description: ConfigMapName contains the name of the
+                                ConfigMap containing the referenced value.
+                              type: string
                             key:
                               description: Name of the key used to get the value in
                                 either the referenced ConfigMap or Secret.
                               type: string
-                            secret:
-                              description: Use Secret if the value should be sourced
-                                from a Secret in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            secretName:
+                              description: SecretName contains the name of the Secret
+                                containing the referenced value.
+                              type: string
                           required:
                           - key
                           type: object
+                          x-kubernetes-validations:
+                          - message: Either configMapName or secretName needs to be
+                              set
+                            rule: has(self.configMapName) || has(self.secretName)
+                          - message: Only one of configMapName and secretName can
+                              be set
+                            rule: '!(has(self.configMapName) && has(self.secretName))'
                         certificate:
                           description: Certificate points to the server certificate
                             to use.
                           properties:
-                            configMap:
-                              description: Use ConfigMap if the value should be sourced
-                                from a ConfigMap in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            configMapName:
+                              description: ConfigMapName contains the name of the
+                                ConfigMap containing the referenced value.
+                              type: string
                             key:
                               description: Name of the key used to get the value in
                                 either the referenced ConfigMap or Secret.
                               type: string
-                            secret:
-                              description: Use Secret if the value should be sourced
-                                from a Secret in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            secretName:
+                              description: SecretName contains the name of the Secret
+                                containing the referenced value.
+                              type: string
                           required:
                           - key
                           type: object
+                          x-kubernetes-validations:
+                          - message: Either configMapName or secretName needs to be
+                              set
+                            rule: has(self.configMapName) || has(self.secretName)
+                          - message: Only one of configMapName and secretName can
+                              be set
+                            rule: '!(has(self.configMapName) && has(self.secretName))'
                         insecureSkipVerify:
                           description: "If InsecureSkipVerify is true, then the TLS
                             client will be configured to skip validating server certificates.
@@ -2360,46 +2184,32 @@ spec:
                             certificate.
                           properties:
                             key:
-                              description: Name of the key used to get the value from
+                              description: Key contains the name of the key inside
                                 the referenced Secret.
                               type: string
-                            secret:
-                              description: Use Secret if the value should be sourced
-                                from a Secret in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            secretName:
+                              description: SecretName contains the name of the Secret
+                                containing the referenced value.
+                              type: string
                           required:
                           - key
-                          - secret
+                          - secretName
                           type: object
                         keyPassphrase:
                           description: KeyPassphrase points to the passphrase used
                             to unlock the private key.
                           properties:
                             key:
-                              description: Name of the key used to get the value from
+                              description: Key contains the name of the key inside
                                 the referenced Secret.
                               type: string
-                            secret:
-                              description: Use Secret if the value should be sourced
-                                from a Secret in the same namespace.
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
+                            secretName:
+                              description: SecretName contains the name of the Secret
+                                containing the referenced value.
+                              type: string
                           required:
                           - key
-                          - secret
+                          - secretName
                           type: object
                         securityProfile:
                           description: TLSSecurityProfile is the security profile

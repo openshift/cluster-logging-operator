@@ -65,11 +65,9 @@ var _ = Describe("#ValidateReceiver", func() {
 		It("should fail validate secrets if spec'd", func() {
 			spec.Receiver.Type = obs.ReceiverTypeSyslog
 			spec.Receiver.TLS = &obs.InputTLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
-					Key: "foo",
-					ConfigMap: &corev1.LocalObjectReference{
-						Name: "immissing",
-					},
+				CA: &obs.ValueReference{
+					Key:           "foo",
+					ConfigMapName: "immissing",
 				},
 			}
 			conds := ValidateReceiver(spec, secrets, configMaps, utils.NoOptions)
@@ -89,11 +87,9 @@ var _ = Describe("#ValidateReceiver", func() {
 
 				spec.Receiver.Type = obs.ReceiverTypeSyslog
 				spec.Receiver.TLS = &obs.InputTLSSpec{
-					CA: &obs.ConfigMapOrSecretKey{
-						Key: "foo",
-						Secret: &corev1.LocalObjectReference{
-							Name: "immissing",
-						},
+					CA: &obs.ValueReference{
+						Key:        "foo",
+						SecretName: "immissing",
 					},
 				}
 				conds := ValidateReceiver(spec, secrets, configMaps, context)

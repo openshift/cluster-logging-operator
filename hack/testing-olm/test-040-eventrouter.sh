@@ -178,20 +178,17 @@ spec:
       version: 6
     authentication:
       token:
-        from: serviceAccountToken
+        from: serviceAccount
     tls:
       ca:
         key: ca-bundle.crt
-        secret:
-          name: fluentd
+        secretName: fluentd
       certificate:
         key: tls.crt
-        secret:
-          name: fluentd
+        secretName: fluentd
       key:
         key: tls.key
-        secret:
-          name: fluentd
+        secretName: fluentd
   pipelines:
   - inputRefs:
     - infrastructure

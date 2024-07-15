@@ -13,14 +13,16 @@ spec:
   outputs:
     - name: rh-loki
       type: lokiStack
-      service:
-        namespace: openshift-logging
-        name: rh-managed-loki
-        authorization:
-          secret:
-            name: audit-collector-sa-token
+      lokiStack:
+        authentication:
           token:
-            key: token
+            from: serviceAccount
+        target:
+          name: rh-managed-loki
+      tls:
+        ca:
+          key: service-ca.crt
+          configMapName: openshift-service-ca.crt
   inputs:
     - name: infra-container
       type: infrastructure
@@ -29,7 +31,8 @@ spec:
   serviceAccount:
     name: audit-collector-sa
   pipelines:
-    - inputRefs:
+    - name: logs-to-loki
+      inputRefs:
         - infra-container
         - audit
       outputRefs:

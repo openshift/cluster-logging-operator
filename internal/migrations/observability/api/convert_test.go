@@ -51,23 +51,17 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 						},
 						TLS: &obs.OutputTLSSpec{
 							TLSSpec: obs.TLSSpec{
-								CA: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.TrustedCABundleKey,
+								CA: &obs.ValueReference{
+									Key:        constants.TrustedCABundleKey,
+									SecretName: constants.ElasticsearchName,
 								},
-								Certificate: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.ClientCertKey,
+								Certificate: &obs.ValueReference{
+									Key:        constants.ClientCertKey,
+									SecretName: constants.ElasticsearchName,
 								},
-								Key: &obs.SecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.ClientPrivateKey,
+								Key: &obs.SecretReference{
+									Key:        constants.ClientPrivateKey,
+									SecretName: constants.ElasticsearchName,
 								},
 							},
 						},
@@ -118,11 +112,9 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 						},
 						TLS: &obs.OutputTLSSpec{
 							TLSSpec: obs.TLSSpec{
-								CA: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.LogCollectorToken,
-									},
-									Key: "service-ca.crt",
+								CA: &obs.ValueReference{
+									Key:        "service-ca.crt",
+									SecretName: constants.LogCollectorToken,
 								},
 							},
 						},
@@ -308,17 +300,13 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								},
 								Version: 8,
 								Authentication: &obs.HTTPAuthentication{
-									Username: &obs.SecretKey{
-										Secret: &corev1.LocalObjectReference{
-											Name: "es-secret",
-										},
-										Key: constants.ClientUsername,
+									Username: &obs.SecretReference{
+										Key:        constants.ClientUsername,
+										SecretName: "es-secret",
 									},
-									Password: &obs.SecretKey{
-										Secret: &corev1.LocalObjectReference{
-											Name: "es-secret",
-										},
-										Key: constants.ClientPassword,
+									Password: &obs.SecretReference{
+										Key:        constants.ClientPassword,
+										SecretName: "es-secret",
 									},
 								},
 								IndexSpec: obs.IndexSpec{
@@ -328,23 +316,17 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							TLS: &obs.OutputTLSSpec{
 								InsecureSkipVerify: true,
 								TLSSpec: obs.TLSSpec{
-									CA: &obs.ConfigMapOrSecretKey{
-										Secret: &corev1.LocalObjectReference{
-											Name: "es-secret",
-										},
-										Key: constants.TrustedCABundleKey,
+									CA: &obs.ValueReference{
+										Key:        constants.TrustedCABundleKey,
+										SecretName: "es-secret",
 									},
-									Certificate: &obs.ConfigMapOrSecretKey{
-										Secret: &corev1.LocalObjectReference{
-											Name: "es-secret",
-										},
-										Key: constants.ClientCertKey,
+									Certificate: &obs.ValueReference{
+										Key:        constants.ClientCertKey,
+										SecretName: "es-secret",
 									},
-									Key: &obs.SecretKey{
-										Secret: &corev1.LocalObjectReference{
-											Name: "es-secret",
-										},
-										Key: constants.ClientPrivateKey,
+									Key: &obs.SecretReference{
+										Key:        constants.ClientPrivateKey,
+										SecretName: "es-secret",
 									},
 								},
 							},
@@ -358,17 +340,13 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								Authentication: &obs.CloudwatchAuthentication{
 									Type: obs.CloudwatchAuthTypeAccessKey,
 									AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-										KeyID: &obs.SecretKey{
-											Secret: &corev1.LocalObjectReference{
-												Name: "cw-secret",
-											},
-											Key: constants.AWSAccessKeyID,
+										KeyID: &obs.SecretReference{
+											Key:        constants.AWSAccessKeyID,
+											SecretName: "cw-secret",
 										},
-										KeySecret: &obs.SecretKey{
-											Secret: &corev1.LocalObjectReference{
-												Name: "cw-secret",
-											},
-											Key: constants.AWSSecretAccessKey,
+										KeySecret: &obs.SecretReference{
+											Key:        constants.AWSSecretAccessKey,
+											SecretName: "cw-secret",
 										},
 									},
 								},
@@ -453,23 +431,17 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 						},
 						TLS: &obs.OutputTLSSpec{
 							TLSSpec: obs.TLSSpec{
-								CA: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.TrustedCABundleKey,
+								CA: &obs.ValueReference{
+									Key:        constants.TrustedCABundleKey,
+									SecretName: constants.ElasticsearchName,
 								},
-								Certificate: &obs.ConfigMapOrSecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.ClientCertKey,
+								Certificate: &obs.ValueReference{
+									Key:        constants.ClientCertKey,
+									SecretName: constants.ElasticsearchName,
 								},
-								Key: &obs.SecretKey{
-									Secret: &corev1.LocalObjectReference{
-										Name: constants.ElasticsearchName,
-									},
-									Key: constants.ClientPrivateKey,
+								Key: &obs.SecretReference{
+									Key:        constants.ClientPrivateKey,
+									SecretName: constants.ElasticsearchName,
 								},
 							},
 						},

@@ -24,7 +24,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 	var (
 		framework    *functional.CollectorFunctionalFramework
 		secret       *v1.Secret
-		hecSecretKey = *internalobs.NewSecretKey(constants.SplunkHECTokenKey, splunkSecretName)
+		hecSecretKey = *internalobs.NewSecretReference(constants.SplunkHECTokenKey, splunkSecretName)
 	)
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()

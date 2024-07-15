@@ -49,11 +49,9 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					Type: obs.OutputTypeLokiStack,
 					TLS: &obs.OutputTLSSpec{
 						TLSSpec: obs.TLSSpec{
-							CA: &obs.ConfigMapOrSecretKey{
-								Key: "myca",
-								ConfigMap: &v1.LocalObjectReference{
-									Name: "bar",
-								},
+							CA: &obs.ValueReference{
+								Key:           "myca",
+								ConfigMapName: "bar",
 							},
 						},
 					},
@@ -598,11 +596,9 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 					Authentication: &obs.CloudwatchAuthentication{
 						Type: obs.CloudwatchAuthTypeIAMRole,
 						IAMRole: &obs.CloudwatchIAMRole{
-							RoleARN: &obs.SecretKey{
-								Key: "credentials",
-								Secret: &v1.LocalObjectReference{
-									Name: "cw",
-								},
+							RoleARN: &obs.SecretReference{
+								Key:        "credentials",
+								SecretName: "cw",
 							},
 							Token: &obs.BearerToken{
 								From: obs.BearerTokenFromSecret,

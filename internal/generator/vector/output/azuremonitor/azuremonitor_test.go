@@ -41,29 +41,21 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		tlsSpec = &obs.OutputTLSSpec{
 			InsecureSkipVerify: true,
 			TLSSpec: obs.TLSSpec{
-				CA: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretTlsName,
-					},
-					Key: constants.TrustedCABundleKey,
+				CA: &obs.ValueReference{
+					Key:        constants.TrustedCABundleKey,
+					SecretName: secretTlsName,
 				},
-				Certificate: &obs.ConfigMapOrSecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretTlsName,
-					},
-					Key: constants.ClientCertKey,
+				Certificate: &obs.ValueReference{
+					Key:        constants.ClientCertKey,
+					SecretName: secretTlsName,
 				},
-				Key: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretTlsName,
-					},
-					Key: constants.ClientPrivateKey,
+				Key: &obs.SecretReference{
+					Key:        constants.ClientPrivateKey,
+					SecretName: secretTlsName,
 				},
-				KeyPassphrase: &obs.SecretKey{
-					Secret: &corev1.LocalObjectReference{
-						Name: secretName,
-					},
-					Key: constants.Passphrase,
+				KeyPassphrase: &obs.SecretReference{
+					Key:        constants.Passphrase,
+					SecretName: secretName,
 				},
 			},
 		}
@@ -74,11 +66,9 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				CustomerId: customerId,
 				LogType:    logType,
 				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "shared_key",
+					SharedKey: &obs.SecretReference{
+						Key:        "shared_key",
+						SecretName: secretName,
 					},
 				},
 			},
@@ -93,11 +83,9 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				AzureResourceId: azureId,
 				Host:            hostCN,
 				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretKey{
-						Secret: &corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "shared_key",
+					SharedKey: &obs.SecretReference{
+						Key:        "shared_key",
+						SecretName: secretName,
 					},
 				},
 			},

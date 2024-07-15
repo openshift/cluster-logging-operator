@@ -21,8 +21,7 @@ spec:
       name: lokistack
       tls:
         ca:
-          configMap:
-            name: logging-loki-gateway-ca-bundle
+          configMapName: logging-loki-gateway-ca-bundle
           key: service-ca.crt
       type: lokiStack
   pipelines:

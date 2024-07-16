@@ -20,6 +20,8 @@ func Validate(context internalcontext.ForwarderContext) {
 		switch out.Type {
 		case obsv1.OutputTypeCloudwatch:
 			messages = append(messages, ValidateCloudWatchAuth(out)...)
+		case obsv1.OutputTypeHTTP:
+			messages = append(messages, validateHttpContentTypeHeaders(out)...)
 		case obsv1.OutputTypeOTLP:
 			messages = append(messages, ValidateOtlpAnnotation(context)...)
 		}

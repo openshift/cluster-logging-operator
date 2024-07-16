@@ -27,6 +27,5 @@ var validations = []func(clf v1.ClusterLogForwarder, k8sClient client.Client, ex
 	ValidateInputsOutputsPipelines,
 	validateJsonParsingToElasticsearch,
 	validateUrlAccordingToTls,
-	validateHttpContentTypeHeaders,
 	validateAnnotations,
 }

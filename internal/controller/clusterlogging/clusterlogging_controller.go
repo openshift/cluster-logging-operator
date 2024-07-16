@@ -132,6 +132,9 @@ func AnnotateLoggingClusterLoggings(k8sClient client.Client, apiReader client.Re
 		return err
 	}
 	for _, cl := range clList.Items {
+		if cl.Annotations == nil {
+			cl.Annotations = map[string]string{}
+		}
 		cl.Annotations[constants.AnnotationNeedsMigration] = "true"
 		if err := k8sClient.Update(context.TODO(), &cl); err != nil {
 			return err

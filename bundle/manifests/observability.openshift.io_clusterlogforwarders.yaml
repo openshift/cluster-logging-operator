@@ -1044,6 +1044,13 @@ spec:
                           required:
                           - type
                           type: object
+                          x-kubernetes-validations:
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'awsAccessKey' || has(self.awsAccessKey)
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'iamRole' || has(self.iamRole)
                         groupName:
                           description: 'GroupName defines the strategy for grouping
                             logstreams The GroupName can be a combination of static

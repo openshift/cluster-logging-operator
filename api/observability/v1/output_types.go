@@ -321,13 +321,15 @@ type CloudwatchAuthType string
 
 const (
 	// CloudwatchAuthTypeAccessKey requires auth to use static keys
-	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "accessKey"
+	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "awsAccessKey"
 
 	// CloudwatchAuthTypeIAMRole requires auth to use IAM Role and optional token
 	CloudwatchAuthTypeIAMRole CloudwatchAuthType = "iamRole"
 )
 
 // CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+// +kubebuilder:validation:XValidation:rule="self.type != 'awsAccessKey' || has(self.awsAccessKey)", message="Additional type specific spec is required for authentication"
+// +kubebuilder:validation:XValidation:rule="self.type != 'iamRole' || has(self.iamRole)", message="Additional type specific spec is required for authentication"
 type CloudwatchAuthentication struct {
 	// Type is the type of cloudwatch authentication to configure
 	//

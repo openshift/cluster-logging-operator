@@ -109,7 +109,6 @@ if .log_source == "%s" {
 func journalLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
 		ClusterID,
-		InternalContext,
 		AddJournalLogTag,
 		DeleteJournalLogFields,
 		FixJournalLogLevel,

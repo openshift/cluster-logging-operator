@@ -4,8 +4,6 @@ inputs = ["input_app_in_container_meta"]
 source = '''
 if .log_source == "container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  ._internal.message = .message
-  ._internal.file = .file
    if !exists(.level) {
     .level = "default"
     if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {

@@ -5,7 +5,6 @@ source = '''
 if .log_type == "audit" && .log_source == "kubeAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   ._internal.message = .message
-  ._internal.file = .file
   del(.file)
   del(.source_type)
   . = merge(., parse_json!(string!(.message))) ?? .

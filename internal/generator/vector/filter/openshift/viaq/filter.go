@@ -37,7 +37,6 @@ if .log_source == "%s" {
 }
 `, obs.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
 		ClusterID,
-		InternalContext,
 		FixLogLevel,
 		HandleEventRouterLog,
 		RemovePartial,

@@ -146,7 +146,6 @@ source = '''
 if .log_type == "audit" && .log_source == "auditd" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   ._internal.message = .message
-  ._internal.file = .file
   del(.file)
   del(.source_type)
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -173,7 +172,6 @@ if .log_type == "audit" && .log_source == "auditd" {
 if .log_type == "audit" && .log_source == "kubeAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   ._internal.message = .message
-  ._internal.file = .file
   del(.file)
   del(.source_type)
   . = merge(., parse_json!(string!(.message))) ?? .
@@ -185,7 +183,6 @@ if .log_type == "audit" && .log_source == "kubeAPI" {
 if .log_type == "audit" && .log_source == "openshiftAPI" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   ._internal.message = .message
-  ._internal.file = .file
   del(.file)
   del(.source_type)
   . = merge(., parse_json!(string!(.message))) ?? .
@@ -196,8 +193,6 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
 }
 if .log_type == "audit" && .log_source == "ovn" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  ._internal.message = .message
-  ._internal.file = .file
   del(.file)
   del(.source_type)
   if !exists(.level) {
@@ -225,8 +220,6 @@ if .log_type == "audit" && .log_source == "ovn" {
 }
 if .log_source == "container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  ._internal.message = .message
-  ._internal.file = .file
    if !exists(.level) {
     .level = "default"
     if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
@@ -299,8 +292,6 @@ if .log_source == "container" {
 }
 if .log_source == "node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-  ._internal.message = .message
-  ._internal.file = .file
   .tag = ".journal.system"
 
   del(.source_type)

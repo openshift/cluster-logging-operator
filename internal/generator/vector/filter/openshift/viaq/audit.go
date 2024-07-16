@@ -99,7 +99,6 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceOVN,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			InternalContext,
 			RemoveFile,
 			RemoveSourceType,
 			FixLogLevel,

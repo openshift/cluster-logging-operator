@@ -9,7 +9,7 @@ import (
 
 // VRL for OTLP transforms by route
 const (
-	CreateResourceAttributes = `
+	BaseResourceAttributes = `
 # Create base resource attributes
 resource.attributes = []
 resource.attributes = append( resource.attributes, 
@@ -17,100 +17,76 @@ resource.attributes = append( resource.attributes,
     {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
 )
 `
-	AppendHostAttributes = `
+	HostResourceAttributes = `
 # Append auditd host attributes
 resource.attributes = append( resource.attributes,
     [{"key": "node.name", "value": {"stringValue": .hostname}}]
 )
 `
-	AppendContainerAttributes = `
+	ContainerResourceAttributes = `
 # Append container resource attributes
 resource.attributes = append( resource.attributes,
     [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
-    {"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
     {"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
-    {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
     {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
 )
-# Append kube pod labels
-if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {  
-	    resource.attributes = append(resource.attributes,
-            [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
-	    )
-    }
-}
 `
-	CreateLogRecord = `
+	LogRecord = `
 # Create logRecord object
 r = {}
 r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
 r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 # Convert syslog severity keyword to number, default to 9 (unknown)
 r.severityNumber = to_syslog_severity(.level) ?? 9
+`
+	BodyFromMessage = `
+r.body = {"stringValue": string!(.message)}
+`
+	BodyFromInternal = `
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+`
+	LogAttributes = `
+# Create logRecord attributes
 r.attributes = []
-
-# Append logRecord attributes
 r.attributes = append(r.attributes,
     [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
 )
-
 `
-	AppendAPILogRecordAttributes = `
-# Append logRecord attributes
+	ContainerLogAttributes = `
+# Append kube pod labels
+r.attributes = append(r.attributes,
+    [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
+    {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},]
+)
+if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+`
+	APILogAttributes = `
+# Append API logRecord attributes
 r.attributes = append(r.attributes,
 	[{"key": "url.full", "value": {"stringValue": .requestURI}},
 	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
 	{"key": "http.request.method", "value": {"stringValue": .verb}}]
 )
 `
-	AppendNodeLogRecordAttributes = `
+	NodeLogAttributes = `
 # Append log attributes for node logs
-logAttribute = [
-  "systemd.t.BOOT_ID",
-  "systemd.t.COMM",
-  "systemd.t.CAP_EFFECTIVE",
-  "systemd.t.CMDLINE",
-  "systemd.t.EXE",
-  "systemd.t.GID",
-  "systemd.t.MACHINE_ID",
-  "systemd.t.PID",
-  "systemd.t.SELINUX_CONTEXT",
-  "systemd.t.STREAM_ID",
-  "systemd.t.SYSTEMD_CGROUP",
-  "systemd.t.SYSTEMD_INVOCATION_ID",
-  "systemd.t.SYSTEMD_SLICE",
-  "systemd.t.SYSTEMD_UNIT",
-  "systemd.t.TRANSPORT",
-  "systemd.t.UID",
-  "systemd.u.SYSLOG_FACILITY",
-  "systemd.u.SYSLOG_IDENTIFIER",
-]
-replacements = {
-  "SYSTEMD.CGROUP": "system.cgroup",
-  "SYSTEMD.INVOCATION.ID": "system.invocation.id",
-  "SYSTEMD.SLICE": "system.slice",
-  "SYSTEMD.UNIT": "system.unit",
-  "SYSLOG.FACILITY": "syslog.facility",
-  "SYSLOG.IDENTIFIER": "syslog.identifier",
-  "PID": "syslog.procid"
-}
-for_each(logAttribute) -> |_,sub_key| {
-  path = split(sub_key,".")
-  if length(path) > 1 {
-	sub_key = replace!(path[-1],"_",".")
-  }
-  if get!(replacements, [sub_key]) != null {
-	sub_key = string!(get!(replacements, [sub_key]))
-  } else {
-	sub_key = "system." + downcase(sub_key)
-  }
-  r.attributes = append(r.attributes,
-      [{"key": sub_key, "value": {"stringValue": get!(.,path)}}]
-  )
-}
+r.attributes = append(r.attributes,
+	[{"key": "syslog.facility", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_FACILITY"]))}},
+	{"key": "syslog.identifier", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_IDENTIFIER"]))}},
+	{"key": "syslog.procid", "value": {"stringValue": to_string!(get!(.,["systemd","t","PID"]))}},
+	{"key": "system.unit", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_UNIT"]))}},
+	{"key": "system.uid", "value": {"stringValue": to_string!(get!(.,["systemd","t","UID"]))}},
+	{"key": "system.slice", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_SLICE"]))}},
+	{"key": "system.cgroup", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_CGROUP"]))}},
+	{"key": "system.cmdline", "value": {"stringValue": to_string!(get!(.,["systemd","t","CMDLINE"]))}},
+	{"key": "system.invocation.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_INVOCATION_ID"]))}}]
+)
 `
-	FinalObjectWithOpenshiftGrouping = `
+	FinalGrouping = `
 # Openshift object for grouping (dropped before sending)
 o = {
     "log_type": .log_type,
@@ -124,7 +100,7 @@ o = {
   "logRecords": r
 }
 `
-	FinalObjectWithKubeContainerGrouping = `
+	FinalGroupingContainers = `
 # Openshift and kubernetes objects for grouping containers (dropped before sending)
 o = {
     "log_type": .log_type,
@@ -147,37 +123,57 @@ o = {
 
 func containerLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
-		CreateResourceAttributes,
-		AppendContainerAttributes,
-		CreateLogRecord,
-		FinalObjectWithKubeContainerGrouping,
+		BaseResourceAttributes,
+		ContainerResourceAttributes,
+		LogRecord,
+		BodyFromMessage,
+		LogAttributes,
+		ContainerLogAttributes,
+		FinalGroupingContainers,
 	}), "\n")
 }
 
 func nodeLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
-		CreateResourceAttributes,
-		CreateLogRecord,
-		AppendNodeLogRecordAttributes,
-		FinalObjectWithOpenshiftGrouping,
+		BaseResourceAttributes,
+		LogRecord,
+		BodyFromMessage,
+		LogAttributes,
+		NodeLogAttributes,
+		FinalGrouping,
 	}), "\n")
 }
 
 func auditHostLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
-		CreateResourceAttributes,
-		AppendHostAttributes,
-		CreateLogRecord,
-		FinalObjectWithOpenshiftGrouping,
+		BaseResourceAttributes,
+		HostResourceAttributes,
+		LogRecord,
+		BodyFromInternal,
+		LogAttributes,
+		FinalGrouping,
 	}), "\n")
 }
 
 func auditAPILogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
-		CreateResourceAttributes,
-		CreateLogRecord,
-		AppendAPILogRecordAttributes,
-		FinalObjectWithOpenshiftGrouping,
+		BaseResourceAttributes,
+		LogRecord,
+		BodyFromInternal,
+		LogAttributes,
+		APILogAttributes,
+		FinalGrouping,
+	}), "\n")
+}
+
+func auditOvnLogsVRL() string {
+	return strings.Join(helpers.TrimSpaces([]string{
+		BaseResourceAttributes,
+		LogRecord,
+		BodyFromMessage,
+		LogAttributes,
+		APILogAttributes,
+		FinalGrouping,
 	}), "\n")
 }
 
@@ -229,7 +225,7 @@ func TransformAuditOvn(id string, inputs []string) Element {
 		Desc:        "Normalize audit log ovn records to OTLP semantic conventions",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditAPILogsVRL(),
+		VRL:         auditOvnLogsVRL(),
 	}
 }
 

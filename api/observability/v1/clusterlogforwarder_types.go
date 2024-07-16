@@ -125,8 +125,7 @@ type CollectorSpec struct {
 type PipelineSpec struct {
 	// Name of the pipeline
 	//
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]*[a-z0-9]$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 
@@ -302,6 +301,7 @@ type ClusterLogForwarderStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=observability,shortName=clf
+// +kubebuilder:validation:XValidation:rule="matches(self.metadata.name,'^[a-z][a-z0-9-]{1,61}[a-z0-9]$')",message="Name must be a valid DNS1035 label"
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

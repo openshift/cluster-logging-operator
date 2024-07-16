@@ -1,0 +1,18 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: 65409debug-3y8sw019
+spec:
+  outputs:
+    - name: http
+      type: http
+      http:
+        url: http://gonowhere
+  pipelines:
+    - inputRefs:
+        - infrastructure
+      name: forward-to-lokistack
+      outputRefs:
+        - http
+  serviceAccount:
+    name: clf-validation-test

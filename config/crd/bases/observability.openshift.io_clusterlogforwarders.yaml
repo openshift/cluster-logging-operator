@@ -372,7 +372,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the filter from a `pipeline`.
-                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                      pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
                     openShiftLabels:
                       additionalProperties:
@@ -608,7 +608,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.
-                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                      pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
                     receiver:
                       description: Receiver to receive logs from non-cluster sources.
@@ -1823,7 +1823,7 @@ spec:
                       type: object
                     name:
                       description: Name used to refer to the output from a `pipeline`.
-                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                      pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
                     otlp:
                       description: OTLP defines configuration for sending logs via
@@ -2400,7 +2400,7 @@ spec:
                       type: array
                     name:
                       description: Name of the pipeline
-                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                      pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
                     outputRefs:
                       description: OutputRefs lists the names (`output.name`) of outputs
@@ -2785,6 +2785,9 @@ spec:
                 type: array
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: Name must be a valid DNS1035 label
+          rule: matches(self.metadata.name,'^[a-z][a-z0-9-]{1,61}[a-z0-9]$')
     served: true
     storage: true
     subresources:

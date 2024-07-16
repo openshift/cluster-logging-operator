@@ -57,8 +57,7 @@ var (
 type InputSpec struct {
 	// Name used to refer to the input of a `pipeline`.
 	//
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
+	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]*[a-z0-9]$"
 	Name string `json:"name"`
 
 	// Type of output sink.

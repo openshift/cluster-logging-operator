@@ -55,5 +55,8 @@ var _ = Describe("", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(MatchRegexp("clusterlogforwarder.*created"))
 		}),
+		Entry("should fail with invalid name", "invalid_name.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("Name.*valid DNS1035"))
+		}),
 	)
 })

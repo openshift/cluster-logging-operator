@@ -72,6 +72,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					},
 					Authentication: &obs.LokiStackAuthentication{
 						Token: &obs.BearerToken{
+							From: obs.BearerTokenFromSecret,
 							Secret: &obs.BearerTokenSecretKey{
 								Name: constants.LogCollectorToken,
 								Key:  constants.BearerTokenFileKey,
@@ -178,6 +179,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					SecretName: secretName,
 				},
 				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{
 						Name: secretName,
 						Key:  constants.BearerTokenFileKey,
@@ -262,7 +264,7 @@ var _ = Describe("#ConvertOutputs", func() {
 			expectedCWOut := &obs.Cloudwatch{
 				URL:       url,
 				Region:    "us-west",
-				GroupName: "prefix.{{.log_type}}",
+				GroupName: `prefix.{.log_type||"none"}`,
 				Tuning: &obs.CloudwatchTuningSpec{
 					Compression: "gzip",
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
@@ -283,7 +285,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					},
 				},
 			}
-			Expect(mapCloudwatch(loggingOutSpec, secret, "")).To(Equal(expectedCWOut))
+			Expect(mapCloudwatch(loggingOutSpec, secret)).To(Equal(expectedCWOut))
 		})
 		It("should map logging.Cloudwatch to obs.Cloudwatch with role_arn & token", func() {
 			secret.Data[constants.AWSWebIdentityRoleKey] = []byte("test-role-arn")
@@ -305,7 +307,7 @@ var _ = Describe("#ConvertOutputs", func() {
 			expectedCWOut := &obs.Cloudwatch{
 				URL:       url,
 				Region:    "us-west",
-				GroupName: "prefix.{{.log_type}}",
+				GroupName: `prefix.{.log_type||"none"}`,
 				Tuning: &obs.CloudwatchTuningSpec{
 					Compression: "gzip",
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
@@ -320,6 +322,7 @@ var _ = Describe("#ConvertOutputs", func() {
 							SecretName: secretName,
 						},
 						Token: &obs.BearerToken{
+							From: obs.BearerTokenFromSecret,
 							Secret: &obs.BearerTokenSecretKey{
 								Name: secretName,
 								Key:  constants.BearerTokenFileKey,
@@ -328,7 +331,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					},
 				},
 			}
-			Expect(mapCloudwatch(loggingOutSpec, secret, "")).To(Equal(expectedCWOut))
+			Expect(mapCloudwatch(loggingOutSpec, secret)).To(Equal(expectedCWOut))
 		})
 		It("should map logging.Elasticsearch to obs.Elasticsearch", func() {
 			secret.Data[constants.ClientUsername] = []byte("user")
@@ -384,8 +387,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				OutputTypeSpec: logging.OutputTypeSpec{
 					GoogleCloudLogging: &logging.GoogleCloudLogging{
 						BillingAccountID: "foo",
-
-						LogID: "baz",
+						LogID:            "baz",
 					},
 				},
 				Tuning: &logging.OutputTuningSpec{
@@ -545,7 +547,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				URLSpec: obs.URLSpec{
 					URL: url,
 				},
-				TenantKey: "app",
+				TenantKey: `{.app||"none"}`,
 				LabelKeys: []string{"foo", "bar"},
 				Tuning: &obs.LokiTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
@@ -558,6 +560,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 				Authentication: &obs.HTTPAuthentication{
 					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
 						Secret: &obs.BearerTokenSecretKey{
 							Name: secretName,
 							Key:  constants.BearerTokenFileKey,
@@ -631,7 +634,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				RFC:        "RFC3164",
 				Severity:   "error",
 				Facility:   "foo",
-				PayloadKey: "bar",
+				PayloadKey: "{.bar}",
 				AppName:    "app",
 				ProcID:     "123",
 				MsgID:      "12345",
@@ -819,10 +822,10 @@ var _ = Describe("#ConvertOutputs", func() {
 					URLSpec: obs.URLSpec{
 						URL: url,
 					},
-					TenantKey: "{{.log_type}}",
 					LabelKeys: []string{"foo", "bar"},
 					Authentication: &obs.HTTPAuthentication{
 						Token: &obs.BearerToken{
+							From: obs.BearerTokenFromSecret,
 							Secret: &obs.BearerTokenSecretKey{
 								Name: lokiSecret.Name,
 								Key:  constants.BearerTokenFileKey,

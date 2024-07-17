@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"path"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 	"strconv"
@@ -58,8 +57,7 @@ func init() {
 }
 
 const (
-	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterlogforwarders/%s"
+	clusterLoggingURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
 
 	DefaultCleanUpTimeout = 60.0 * 5
 
@@ -70,8 +68,6 @@ const (
 
 var (
 	delayedLogWriter *commonlog.BufferedLogWriter
-
-	clusterLogForwarderURIFmt = path.Join("apis", obs.GroupVersion.Group, obs.GroupVersion.Version, "namespaces", "%s", "clusterlogforwarders", "%s")
 )
 
 type LogStore interface {

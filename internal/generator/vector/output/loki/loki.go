@@ -46,7 +46,6 @@ var (
 	requiredLabelKeys = []string{
 		lokiLabelKubernetesHost,
 	}
-	lokiEncodingJson = fmt.Sprintf("%q", "json")
 )
 
 type Loki struct {

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -11,10 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-)
-
-var (
-	httpEncodingJson = fmt.Sprintf("%q", "json")
 )
 
 type Http struct {

@@ -52,12 +52,6 @@ const (
 	logSourceKubeAPI      = string(obs.AuditSourceKube)
 	logSourceOpenshiftAPI = string(obs.AuditSourceOpenShift)
 	logSourceOvn          = string(obs.AuditSourceOVN)
-
-	// For now we are grouping all container logs by their ns, pod and container names
-	// so there is no distinction here at the moment.
-	// TODO: revise or remove
-	logSourceContainerApp   = string(obs.ApplicationSourceContainer)
-	logSourceContainerInfra = string(obs.InfrastructureSourceContainer)
 )
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {

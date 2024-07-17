@@ -20,6 +20,5 @@ func Validate(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[st
 // validations are the set of admission rules for validating
 // a ClusterLogForwarder
 var validations = []func(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus){
-	ValidateFilters,
 	validateAnnotations,
 }

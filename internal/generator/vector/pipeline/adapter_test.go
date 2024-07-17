@@ -62,7 +62,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 							Name: "my-prune",
 							Type: obs.FilterTypePrune,
 							PruneFilterSpec: &obs.PruneFilterSpec{
-								In: []string{".foo.test",
+								In: []obs.FieldPath{".foo.test",
 									".bar",
 									`.foo."@some"."d.f.g.o111-22/333".foo_bar`,
 									`.foo.labels."test.dot-with/slashes888"`},
@@ -87,7 +87,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 							Name: "my-prune",
 							Type: obs.FilterTypePrune,
 							PruneFilterSpec: &obs.PruneFilterSpec{
-								NotIn: []string{".kubernetes.labels", ".message", ".foo"},
+								NotIn: []obs.FieldPath{".kubernetes.labels", ".message", ".foo"},
 							},
 						},
 					}),
@@ -109,8 +109,8 @@ var _ = Describe("pipeline/adapter.go", func() {
 							Name: "my-prune",
 							Type: obs.FilterTypePrune,
 							PruneFilterSpec: &obs.PruneFilterSpec{
-								In:    []string{".kubernetes.labels.foo", ".log_type", ".message"},
-								NotIn: []string{".kubernetes.container_name", `.foo.bar."baz/bar"`, `.foo`},
+								In:    []obs.FieldPath{".kubernetes.labels.foo", ".log_type", ".message"},
+								NotIn: []obs.FieldPath{".kubernetes.container_name", `.foo.bar."baz/bar"`, `.foo`},
 							},
 						},
 					}),

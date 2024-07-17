@@ -188,7 +188,7 @@ serviceAccount:
 					func(spec *obs.FilterSpec) {
 						spec.Type = obs.FilterTypePrune
 						spec.PruneFilterSpec = &obs.PruneFilterSpec{
-							NotIn: []string{".log_type"},
+							NotIn: []obs.FieldPath{".log_type"},
 						}
 					}).ToElasticSearchOutput()
 

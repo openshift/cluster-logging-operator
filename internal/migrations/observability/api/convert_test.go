@@ -371,7 +371,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							Name: "my-prune",
 							Type: obs.FilterTypePrune,
 							PruneFilterSpec: &obs.PruneFilterSpec{
-								In: []string{"foo", "bar"},
+								In: []obs.FieldPath{"foo", "bar"},
 							},
 						},
 						{

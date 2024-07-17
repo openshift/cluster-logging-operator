@@ -27,24 +27,24 @@ var _ = Describe("prune functions", func() {
 	)
 
 	It("should generate string of an array of quoted path segments from dot-delimited path expressions", func() {
-		pathExpression := []string{`.foo.bar."foo.bar.baz-ok".foo123."bar/baz0-9.test"`, `.foo.bar`}
+		pathExpression := []obs.FieldPath{`.foo.bar."foo.bar.baz-ok".foo123."bar/baz0-9.test"`, `.foo.bar`}
 		expectedString := `[["foo","bar","foo.bar.baz-ok","foo123","bar/baz0-9.test"],["foo","bar"]]`
 		Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 	})
 	Context("for explicitly dedoted fields", func() {
 
 		It("should do nothing special for path segments where the dedotted labels dont have dots", func() {
-			pathExpression := []string{`.kubernetes.labels.foo`}
+			pathExpression := []obs.FieldPath{`.kubernetes.labels.foo`}
 			expectedString := `[["kubernetes","labels","foo"]]`
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 		})
 		It("should generate path segments for the original and dedotted labels", func() {
-			pathExpression := []string{`.kubernetes.labels."bar/baz0-9.test"`}
+			pathExpression := []obs.FieldPath{`.kubernetes.labels."bar/baz0-9.test"`}
 			expectedString := `[["kubernetes","labels","bar/baz0-9.test"],["kubernetes","labels","bar_baz0-9_test"]]`
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 		})
 		It("should generate path segments for the original and dedotted namespace labels", func() {
-			pathExpression := []string{`.kubernetes.namespace_labels."bar/baz0-9.test"`}
+			pathExpression := []obs.FieldPath{`.kubernetes.namespace_labels."bar/baz0-9.test"`}
 			expectedString := `[["kubernetes","namespace_labels","bar/baz0-9.test"],["kubernetes","namespace_labels","bar_baz0-9_test"]]`
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 		})
@@ -54,8 +54,8 @@ var _ = Describe("prune functions", func() {
 	Context("#VRL", func() {
 		It("should generate valid VRL for pruning", func() {
 			spec := &obs.PruneFilterSpec{
-				In:    []string{".log_type", ".message", ".kubernetes.container_name"},
-				NotIn: []string{`.kubernetes.labels."foo-bar/baz"`, ".level"},
+				In:    []obs.FieldPath{".log_type", ".message", ".kubernetes.container_name"},
+				NotIn: []obs.FieldPath{`.kubernetes.labels."foo-bar/baz"`, ".level"},
 			}
 			Expect(NewFilter(spec).VRL()).To(matchers.EqualTrimLines(`
 notIn = [["kubernetes","labels","foo-bar/baz"],["kubernetes","labels","foo-bar_baz"],["level"]]

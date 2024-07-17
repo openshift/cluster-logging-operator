@@ -63,17 +63,17 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 		cond := verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)
 		Expect(cond).To(BeEmpty())
 	},
-		Entry("when `in` does not include .hostname", obs.PruneFilterSpec{In: []string{".foo"}}),
-		Entry("when `notIn` includes .hostname", obs.PruneFilterSpec{NotIn: []string{".hostname"}}),
-		Entry("when `in` does not include and `notIn` includes .hostname", obs.PruneFilterSpec{In: []string{".foo"}, NotIn: []string{".hostname"}}))
+		Entry("when `in` does not include .hostname", obs.PruneFilterSpec{In: []obs.FieldPath{".foo"}}),
+		Entry("when `notIn` includes .hostname", obs.PruneFilterSpec{NotIn: []obs.FieldPath{".hostname"}}),
+		Entry("when `in` does not include and `notIn` includes .hostname", obs.PruneFilterSpec{In: []obs.FieldPath{".foo"}, NotIn: []obs.FieldPath{".hostname"}}))
 
 	It("should not return empty when prune filters `.hostname` for pipeline without GCL output", func() {
 		pruneHost := obs.FilterSpec{
 			Name: "prune",
 			Type: obs.FilterTypePrune,
 			PruneFilterSpec: &obs.PruneFilterSpec{
-				In:    []string{".foo, .hostname"},
-				NotIn: []string{".foo"},
+				In:    []obs.FieldPath{".foo, .hostname"},
+				NotIn: []obs.FieldPath{".foo"},
 			},
 		}
 		filters[pruneHost.Name] = &pruneHost
@@ -94,8 +94,8 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 			Name: "prune",
 			Type: obs.FilterTypePrune,
 			PruneFilterSpec: &obs.PruneFilterSpec{
-				In:    []string{".foo, .hostname"},
-				NotIn: []string{".foo"},
+				In:    []obs.FieldPath{".foo, .hostname"},
+				NotIn: []obs.FieldPath{".foo"},
 			},
 		}
 		outputs = map[string]obs.OutputSpec{

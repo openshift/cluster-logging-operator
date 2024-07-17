@@ -316,7 +316,7 @@ type Cloudwatch struct {
 
 // CloudwatchAuthType sets the authentication type used for CloudWatch.
 //
-// +kubebuilder:validation:Enum:=accessKey;iamRole
+// +kubebuilder:validation:Enum:=awsAccessKey;iamRole
 type CloudwatchAuthType string
 
 const (

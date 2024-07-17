@@ -1,6 +1,8 @@
 package splunk
 
 import (
+	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -9,6 +11,7 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
 
 type Splunk struct {
@@ -16,7 +19,7 @@ type Splunk struct {
 	Inputs       string
 	Endpoint     string
 	DefaultToken string
-	Index        string
+	Index        Element
 	common.RootMixin
 }
 
@@ -32,7 +35,7 @@ inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 {{.Compression}}
 default_token = "{{.DefaultToken}}"
-index = "{{.Index}}"
+{{kv .Index -}}
 timestamp_key = "@timestamp"
 {{end}}`
 }
@@ -50,12 +53,20 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 
 	timestampID := vectorhelpers.MakeID(id, "timestamp")
 
-	splunkSink := sink(id, o, []string{timestampID}, secrets, op)
+	var indexTemplate Element
+	splunkSink := sink(id, o, []string{timestampID}, "", secrets, op)
+	if hasIndexKey(o.Splunk) {
+		splunkIndexID := vectorhelpers.MakeID(id, "splunk_index")
+		indexTemplate = commontemplate.TemplateRemap(splunkIndexID, []string{timestampID}, o.Splunk.Index, splunkIndexID, "Splunk Index")
+		splunkSink = sink(id, o, []string{splunkIndexID}, splunkIndexID, secrets, op)
+	}
+
 	if strategy != nil {
 		strategy.VisitSink(splunkSink)
 	}
 	return []Element{
 		FixTimestampFormat(timestampID, inputs),
+		indexTemplate,
 		splunkSink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
@@ -66,12 +77,12 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options) *Splunk {
+func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets vectorhelpers.Secrets, op Options) *Splunk {
 	s := &Splunk{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.Splunk.URL,
-		Index:       o.Splunk.Index,
+		Index:       Tenant(o.Splunk, index),
 		RootMixin:   common.NewRootMixin("none"),
 	}
 	authentication := o.Splunk.Authentication
@@ -96,4 +107,15 @@ if err != null {
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         vrl,
 	}
+}
+
+func hasIndexKey(s *obs.Splunk) bool {
+	return s != nil && s.Index != ""
+}
+
+func Tenant(s *obs.Splunk, index string) Element {
+	if !hasIndexKey(s) {
+		return Nil
+	}
+	return KV("index", fmt.Sprintf(`"{{ _internal.%s }}"`, index))
 }

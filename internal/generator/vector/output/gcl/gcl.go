@@ -2,6 +2,7 @@ package gcl
 
 import (
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
@@ -12,6 +13,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
 
 const (
@@ -50,7 +52,7 @@ type = "gcp_stackdriver_logs"
 inputs = {{.Inputs}}
 {{kv .LogDestination -}}
 credentials_path = {{.CredentialsPath}}
-log_id = "{{.LogID}}"
+log_id = "{{"{{"}} _internal.{{.LogID}} {{"}}"}}"
 severity_key = "{{.SeverityKey}}"
 
 [sinks.{{.ComponentID}}.resource]
@@ -72,12 +74,13 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 	if o.GoogleCloudLogging == nil {
 		return []Element{}
 	}
+	componentID := vectorhelpers.MakeID(id, "log_id")
 	g := o.GoogleCloudLogging
 	gcl := &GoogleCloudLogging{
 		ComponentID:     id,
-		Inputs:          helpers.MakeInputs(inputs...),
+		Inputs:          helpers.MakeInputs(componentID),
 		LogDestination:  LogDestination(g),
-		LogID:           g.LogID,
+		LogID:           componentID,
 		SeverityKey:     SeverityKey(g),
 		CredentialsPath: auth(g.Authentication, secrets),
 		RootMixin:       common.NewRootMixin(nil),
@@ -86,6 +89,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 		strategy.VisitSink(gcl)
 	}
 	return []Element{
+		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogID, componentID, "GoogleCloudLogging LogID"),
 		gcl,
 		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),

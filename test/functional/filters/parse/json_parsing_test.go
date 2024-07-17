@@ -3,9 +3,10 @@ package parse
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/google/go-cmp/cmp"
@@ -168,7 +169,7 @@ var _ = Describe("[functional][filters][parse] Json log parsing", func() {
 			FromInput(obs.InputTypeApplication).
 			WithParseJson().
 			ToElasticSearchOutput(func(spec *obs.OutputSpec) {
-				spec.Elasticsearch.Index = "{{kubernetes.namespace_name}}-write"
+				spec.Elasticsearch.Index = "{.kubernetes.namespace_name}-write"
 			})
 
 		ExpectOK(framework.Deploy())

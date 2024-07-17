@@ -126,17 +126,21 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Entry("should pass with none", "none"))
 	})
 
-	It("should forward logs to custom tenant", func() {
-		customTenant := "myapp-{{.log_type}}"
-		f.Forwarder.Spec.Outputs[0].Loki.TenantKey = customTenant
-		Expect(f.Deploy()).To(BeNil())
-		msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
-		Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
-		query := fmt.Sprintf(`{kubernetes_namespace_name=%q, kubernetes_pod_name=%q}`, f.Namespace, f.Name)
-		result, err := l.QueryUntil(query, customTenant, 1)
-		Expect(err).To(BeNil())
-		Expect(result).NotTo(BeNil())
-		Expect(len(result)).To(Equal(1))
+	Context("tenant", func() {
+		DescribeTable("with user defined tenant", func(tenant, expTenant string) {
+			f.Forwarder.Spec.Outputs[0].Loki.TenantKey = tenant
+			Expect(f.Deploy()).To(BeNil())
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+			query := fmt.Sprintf(`{kubernetes_namespace_name=%q, kubernetes_pod_name=%q}`, f.Namespace, f.Name)
+			result, err := l.QueryUntil(query, expTenant, 1)
+			Expect(err).To(BeNil())
+			Expect(result).NotTo(BeNil())
+			Expect(len(result)).To(Equal(1))
+		},
+			Entry("should write to defined static tenant", "custom-index", "custom-index"),
+			Entry("should write to defined dynamic tenant", `{.log_type||"none"}`, "application"),
+			Entry("should write to defined static + dynamic tenant", `foo-{.log_type||"none"}`, "foo-application"),
+			Entry("should write to defined static + fallback value if field is missing", `foo-{.missing||"none"}`, "foo-none"))
 	})
-
 })

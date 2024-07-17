@@ -2,11 +2,12 @@ package functional
 
 import (
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -120,30 +121,34 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 
 	/////////////////////////////////////////////
 	//step c
-	topics := []string{output.Kafka.Topic}
-
-	for _, topic := range topics {
-		containername := kafka.ConsumerNameForTopic(topic)
-		// Deploy consumer  - reference implementation followed from the e2e kafka test as below
-		//consumerapp := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
-
-		log.V(2).Info("Creating a Topic and Deploying Consumer app")
-		//create topic and deploy consumer app
-		cmdCreateTopic := fmt.Sprintf(`./bin/kafka-topics.sh --zookeeper localhost:2181 --create --if-not-exists --topic %s --partitions 1 --replication-factor 1 ;`, topic)
-		cmdRunConsumer := fmt.Sprintf(`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning > /shared/consumed.logs ;`, "localhost:9092", topic)
-		cmdSlice := []string{"sleep 120;", cmdCreateTopic, cmdRunConsumer}
-		cmdJ := strings.Join(cmdSlice, "")
-		cmdCreateTopicAndDeployConsumer := []string{"/bin/bash", "-c", cmdJ}
-
-		b.AddContainer(containername, ImageRemoteKafka).
-			WithCmd(cmdCreateTopicAndDeployConsumer).
-			AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
-			AddVolumeMount("kafka", filepath.Join(constants.CollectorSecretsDir, "kafka"), "", false).
-			AddVolumeMount("shared", "/shared", "", false).
-			End().
-			AddEmptyDirVolume("shared")
-
+	topicMap := map[string]string{
+		"clo-app-topic":           "clo-app-topic",
+		"openshift":               "openshift",
+		"custom-index":            "custom-index",
+		`{.log_type||"none"}`:     "application",
+		`foo-{.log_type||"none"}`: "foo-application",
+		`foo-{.missing||"none"}`:  "foo-none",
 	}
+	currTopic := topicMap[output.Kafka.Topic]
+	containername := kafka.ConsumerNameForTopic(currTopic)
+	// Deploy consumer  - reference implementation followed from the e2e kafka test as below
+	//consumerapp := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
+
+	log.V(2).Info("Creating a Topic and Deploying Consumer app")
+	//create topic and deploy consumer app
+	cmdCreateTopic := fmt.Sprintf(`./bin/kafka-topics.sh --zookeeper localhost:2181 --create --if-not-exists --topic %s --partitions 1 --replication-factor 1 ;`, currTopic)
+	cmdRunConsumer := fmt.Sprintf(`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning > /shared/consumed.logs ;`, "localhost:9092", currTopic)
+	cmdSlice := []string{"sleep 120;", cmdCreateTopic, cmdRunConsumer}
+	cmdJ := strings.Join(cmdSlice, "")
+	cmdCreateTopicAndDeployConsumer := []string{"/bin/bash", "-c", cmdJ}
+
+	b.AddContainer(containername, ImageRemoteKafka).
+		WithCmd(cmdCreateTopicAndDeployConsumer).
+		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
+		AddVolumeMount("kafka", filepath.Join(constants.CollectorSecretsDir, "kafka"), "", false).
+		AddVolumeMount("shared", "/shared", "", false).
+		End().
+		AddEmptyDirVolume("shared")
 
 	return nil
 }

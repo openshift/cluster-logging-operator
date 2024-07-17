@@ -45,9 +45,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								URL: esURL,
 							},
 							Version: 6,
-							IndexSpec: obs.IndexSpec{
-								Index: "{{.log_type}}",
-							},
+							Index:   `{.log_type||"none"}`,
 						},
 						TLS: &obs.OutputTLSSpec{
 							TLSSpec: obs.TLSSpec{
@@ -309,9 +307,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 										SecretName: "es-secret",
 									},
 								},
-								IndexSpec: obs.IndexSpec{
-									Index: "{{.log_type}}",
-								},
+								Index: `{.log_type||"none"}`,
 							},
 							TLS: &obs.OutputTLSSpec{
 								InsecureSkipVerify: true,
@@ -425,9 +421,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 								URL: "https://elasticsearch:9200",
 							},
 							Version: 6,
-							IndexSpec: obs.IndexSpec{
-								Index: "{{.log_type}}",
-							},
+							Index:   `{.log_type||"none"}`,
 						},
 						TLS: &obs.OutputTLSSpec{
 							TLSSpec: obs.TLSSpec{
@@ -514,5 +508,4 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 					clf.Name = "cl-clf"
 				}))
 	})
-
 })

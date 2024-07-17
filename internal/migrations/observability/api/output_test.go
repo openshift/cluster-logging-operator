@@ -33,9 +33,7 @@ var _ = Describe("#ConvertOutputs", func() {
 						URL: fmt.Sprintf("https://%s:%d", string(obs.OutputTypeElasticsearch), 9200),
 					},
 					Version: 6,
-					IndexSpec: obs.IndexSpec{
-						Index: "{{.log_type}}",
-					},
+					Index:   `{.log_type||"none"}`,
 				},
 				TLS: &obs.OutputTLSSpec{
 					TLSSpec: obs.TLSSpec{
@@ -342,7 +340,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					Elasticsearch: &logging.Elasticsearch{
 						Version: 8,
 						ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
-							StructuredTypeKey:  ".namespace",
+							StructuredTypeKey:  "namespace",
 							StructuredTypeName: "structName",
 						},
 					},
@@ -358,9 +356,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					URL: url,
 				},
 				Version: 8,
-				IndexSpec: obs.IndexSpec{
-					Index: ".namespace",
-				},
+				Index:   `{.namespace||"structName"}`,
 				Authentication: &obs.HTTPAuthentication{
 					Username: &obs.SecretReference{
 						Key:        constants.ClientUsername,
@@ -578,7 +574,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				URL: url,
 				OutputTypeSpec: logging.OutputTypeSpec{
 					Splunk: &logging.Splunk{
-						IndexKey: ".bar",
+						IndexKey: "bar",
 					},
 				},
 				Tuning: &logging.OutputTuningSpec{
@@ -593,9 +589,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				URLSpec: obs.URLSpec{
 					URL: url,
 				},
-				IndexSpec: obs.IndexSpec{
-					Index: ".bar",
-				},
+				Index: `{.bar||""}`,
 				Tuning: &obs.SplunkTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
 						Delivery:         obs.DeliveryModeAtLeastOnce,
@@ -781,9 +775,7 @@ var _ = Describe("#ConvertOutputs", func() {
 						URL: url,
 					},
 					Version: 8,
-					IndexSpec: obs.IndexSpec{
-						Index: "{{.log_type}}",
-					},
+					Index:   `{.log_type||"none"}`,
 					Authentication: &obs.HTTPAuthentication{
 						Username: &obs.SecretReference{
 							Key:        constants.ClientUsername,
@@ -806,9 +798,7 @@ var _ = Describe("#ConvertOutputs", func() {
 					URLSpec: obs.URLSpec{
 						URL: url,
 					},
-					IndexSpec: obs.IndexSpec{
-						Index: "app",
-					},
+					Index: "app",
 					Tuning: &obs.SplunkTuningSpec{
 						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
 							Delivery: obs.DeliveryModeAtMostOnce,

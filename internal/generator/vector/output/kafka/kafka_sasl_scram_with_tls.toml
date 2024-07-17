@@ -1,8 +1,16 @@
+# Kafka Topic
+[transforms.kafka_receiver_topic]
+type = "remap"
+inputs = ["pipeline_1","pipeline_2"]
+source = '''
+._internal.kafka_receiver_topic = "topic"
+'''
+
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
-topic = "topic"
+topic = "{{ _internal.kafka_receiver_topic }}"
 
 [sinks.kafka_receiver.encoding]
 codec = "json"

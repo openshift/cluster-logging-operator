@@ -1125,12 +1125,18 @@ spec:
                               type: object
                           type: object
                         index:
-                          default: '{{.log_type}}'
-                          description: Index is the tenant for the logs. This supports
-                            template syntax to allow dynamic per-event values. Defaults
-                            to the log type (i.e. application, audit, infrastructure)
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                          description: "Index is the index for the logs. This supports
+                            template syntax to allow dynamic per-event values. \n
+                            The Index can be a combination of static and dynamic values
+                            consisting of field paths followed by `||` followed by
+                            another field path or a static value. A dynamic value
+                            is encased in single curly brackets `{}` and MUST end
+                            with a static fallback value separated with `||`. Static
+                            values can only contain alphanumeric characters along
+                            with dashes, underscores, dots and forward slashes. Example:
+                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
+                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1239,11 +1245,17 @@ spec:
                           - value
                           type: object
                         logId:
-                          default: '{{.log_type}}'
-                          description: LogID is the log ID to which to publish logs.
-                            This identifies log stream.
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                          description: "LogID is the log ID to which to publish logs.
+                            This identifies log stream. \n The LogID can be a combination
+                            of static and dynamic values consisting of field paths
+                            followed by `||` followed by another field path or a static
+                            value. A dynamic value is encased in single curly brackets
+                            `{}` and MUST end with a static fallback value separated
+                            with `||`. Static values can only contain alphanumeric
+                            characters along with dashes, underscores, dots and forward
+                            slashes. Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
+                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1492,11 +1504,17 @@ spec:
                             type: string
                           type: array
                         topic:
-                          default: '{{.log_type}}'
-                          description: Topic specifies the target topic to send logs
-                            to.
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                          description: "Topic specifies the target topic to send logs
+                            to. \n The Topic can be a combination of static and dynamic
+                            values consisting of field paths followed by `||` followed
+                            by another field path or a static value. A dynamic value
+                            is encased in single curly brackets `{}` and MUST end
+                            with a static fallback value separated with `||`. Static
+                            values can only contain alphanumeric characters along
+                            with dashes, underscores, dots and forward slashes. Example:
+                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
+                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1638,13 +1656,19 @@ spec:
                             type: string
                           type: array
                         tenantKey:
-                          default: '{{.log_type}}'
-                          description: TenantKey is the tenant for the logs. This
+                          description: "TenantKey is the tenant for the logs. This
                             supports vector's template syntax to allow dynamic per-event
-                            values. Defaults to the log type (i.e. application, audit,
-                            infrastructure)
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                            values. \n The TenantKey can be a combination of static
+                            and dynamic values consisting of field paths followed
+                            by `||` followed by another field path or a static value.
+                            A dynamic value is encased in single curly brackets `{}`
+                            and MUST end with a static fallback value separated with
+                            `||`. Static values can only contain alphanumeric characters
+                            along with dashes, underscores, dots and forward slashes.
+                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
+                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                          nullable: true
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -1696,7 +1720,6 @@ spec:
                             'tls'). The 'username@password' part of `url` is ignored."
                           type: string
                       required:
-                      - tenantKey
                       - url
                       type: object
                     lokiStack:
@@ -1997,12 +2020,19 @@ spec:
                           - token
                           type: object
                         index:
-                          default: '{{.log_type}}'
-                          description: Index is the tenant for the logs. This supports
-                            template syntax to allow dynamic per-event values. Defaults
-                            to the log type (i.e. application, audit, infrastructure)
-                          pattern: ^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[
-                            ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$
+                          description: "Index is the index for the logs. This supports
+                            template syntax to allow dynamic per-event values. \n
+                            The Index can be a combination of static and dynamic values
+                            consisting of field paths followed by `||` followed by
+                            another field path or a static value. A dynamic value
+                            is encased in single curly brackets `{}` and MUST end
+                            with a static fallback value separated with `||`. Static
+                            values can only contain alphanumeric characters along
+                            with dashes, underscores, dots and forward slashes. Example:
+                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
+                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                          nullable: true
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
                           description: Tuning specs tuning for the output
@@ -2054,7 +2084,6 @@ spec:
                           type: string
                       required:
                       - authentication
-                      - index
                       - url
                       type: object
                     syslog:

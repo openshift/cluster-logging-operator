@@ -15,6 +15,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -126,7 +127,15 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
-	sink := Output(id, o, []string{remapLabelID})
+
+	var tenantTemplate Element
+	sink := Output(id, o, []string{remapLabelID}, "")
+	if hasTenantKey(o.Loki) {
+		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
+		tenantTemplate = commontemplate.TemplateRemap(lokiTenantID, []string{remapLabelID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
+		sink = Output(id, o, []string{lokiTenantID}, lokiTenantID)
+	}
+
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -134,6 +143,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	return []Element{
 		CleanupFields(componentID, inputs),
 		RemapLabels(remapLabelID, o, []string{componentID}),
+		tenantTemplate,
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
@@ -144,15 +154,15 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		tls.New(id, o.TLS, secrets, op),
 		auth.HTTPAuth(id, o.Loki.Authentication, secrets),
 	}
-
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string) *Loki {
+func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
+
 	return &Loki{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.Loki.URLSpec.URL,
-		TenantID:    Tenant(o.Loki),
+		TenantID:    Tenant(o.Loki, tenant),
 		RootMixin:   common.NewRootMixin(nil),
 	}
 }
@@ -227,11 +237,15 @@ func Labels(id string, o obs.OutputSpec) Element {
 	}
 }
 
-func Tenant(l *obs.Loki) Element {
-	if l == nil || l.TenantKey == "" {
+func hasTenantKey(l *obs.Loki) bool {
+	return l != nil && l.TenantKey != ""
+}
+
+func Tenant(l *obs.Loki, tenant string) Element {
+	if !hasTenantKey(l) {
 		return Nil
 	}
-	return KV("tenant_id", fmt.Sprintf("%q", l.TenantKey))
+	return KV("tenant_id", fmt.Sprintf(`"{{ _internal.%s }}"`, tenant))
 }
 
 func CleanupFields(id string, inputs []string) Element {

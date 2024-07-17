@@ -2,10 +2,12 @@ package kafka
 
 import (
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"net/url"
 	"strings"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -38,7 +40,7 @@ func (k Kafka) Template() string {
 type = "kafka"
 inputs = {{.Inputs}}
 bootstrap_servers = {{.BootstrapServers}}
-topic = {{.Topic}}
+topic = "{{"{{"}} _internal.{{.Topic}} {{"}}"}}"
 {{.Compression}}
 {{end}}
 `
@@ -54,9 +56,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-
+	componentID := vectorhelpers.MakeID(id, "topic")
 	brokers := Brokers(o)
-	sink := sink(id, o, inputs, op, brokers)
+	sink := sink(id, o, []string{componentID}, componentID, op, brokers)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -72,6 +74,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		}
 	}
 	elements := []Element{
+		commontemplate.TemplateRemap(componentID, inputs, Topics(o), componentID, "Kafka Topic"),
 		sink,
 		common.NewEncoding(id, common.CodecJSON, func(e *common.Encoding) {
 			e.TimeStampFormat.Value = common.TimeStampFormatRFC3339
@@ -87,11 +90,11 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	return elements
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, op Options, brokers string) *Kafka {
+func sink(id string, o obs.OutputSpec, inputs []string, topic string, op Options, brokers string) *Kafka {
 	return &Kafka{
 		ComponentID:      id,
 		Inputs:           vectorhelpers.MakeInputs(inputs...),
-		Topic:            fmt.Sprintf("%q", Topics(o)),
+		Topic:            topic,
 		BootstrapServers: fmt.Sprintf("%q", brokers),
 		RootMixin:        common.NewRootMixin(nil),
 	}

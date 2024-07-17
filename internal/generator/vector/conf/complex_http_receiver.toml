@@ -408,11 +408,19 @@ if .log_source == "node" {
 }
 '''
 
+# Kafka Topic
+[transforms.output_kafka_receiver_topic]
+type = "remap"
+inputs = ["pipeline_pipeline_viaq_1"]
+source = '''
+._internal.output_kafka_receiver_topic = "topic"
+'''
+
 [sinks.output_kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_pipeline_viaq_1"]
+inputs = ["output_kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
-topic = "topic"
+topic = "{{ _internal.output_kafka_receiver_topic }}"
 
 [sinks.output_kafka_receiver.encoding]
 codec = "json"

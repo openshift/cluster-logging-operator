@@ -134,9 +134,7 @@ func (p *PipelineBuilder) ToElasticSearchOutput(visitors ...func(output *obs.Out
 			URLSpec: obs.URLSpec{
 				URL: "http://0.0.0.0:9200",
 			},
-			IndexSpec: obs.IndexSpec{
-				Index: "{{.log_type}}-write",
-			},
+			Index: "{.log_type}-write",
 		}
 		for _, v := range visitors {
 			v(output)
@@ -205,9 +203,6 @@ func (p *PipelineBuilder) ToSplunkOutput(hecTokenSecret obs.SecretReference, vis
 		output.Splunk = &obs.Splunk{
 			URLSpec: obs.URLSpec{
 				URL: "http://localhost:8088",
-			},
-			IndexSpec: obs.IndexSpec{
-				Index: "{{.log_type}}",
 			},
 			Authentication: &obs.SplunkAuthentication{
 				Token: &hecTokenSecret,

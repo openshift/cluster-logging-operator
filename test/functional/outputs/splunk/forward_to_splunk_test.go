@@ -111,38 +111,45 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(strings.Contains(collectorLog, tsWarn)).To(BeFalse(), "Expected collector logs to NOT contain timestamp unexpected type warning")
 	})
 
-	It("should send logs to spec'd index in Splunk", func() {
-		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(obs.InputTypeApplication).
-			ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
-				output.Splunk.IndexSpec = obs.IndexSpec{
-					Index: functional.SplunkIndexName,
-				}
-			})
-		framework.Secrets = append(framework.Secrets, secret)
-		Expect(framework.Deploy()).To(BeNil())
+	Context("splunk index", func() {
+		DescribeTable("with user defined indices", func(index, expIndex string) {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+					if index != "" {
+						output.Splunk.Index = index
+					}
+				})
+			framework.Secrets = append(framework.Secrets, secret)
+			Expect(framework.Deploy()).To(BeNil())
 
-		// Wait for splunk to be ready
-		time.Sleep(90 * time.Second)
+			// Wait for splunk to be ready
+			time.Sleep(90 * time.Second)
 
-		// Write app logs
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
-		applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
+			// Write app logs
+			timestamp := "2020-11-04T18:13:59.061892+00:00"
+			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
-		// Read app logs
-		logs, err := framework.ReadAppLogsByIndexFromSplunk(framework.Namespace, framework.Name, functional.SplunkIndexName)
-		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
-		Expect(logs).ToNot(BeEmpty())
+			// Read app logs
+			logs, err := framework.ReadAppLogsByIndexFromSplunk(framework.Namespace, framework.Name, expIndex)
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
 
-		// Parse the logs
-		var appLogs []types.ApplicationLog
-		jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
-		err = types.ParseLogsFrom(jsonString, &appLogs, false)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			// Parse the logs
+			var appLogs []types.ApplicationLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &appLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 
-		outputTestLog := appLogs[0]
-		Expect(outputTestLog.LogType).To(Equal(string(obs.InputTypeApplication)))
+			outputTestLog := appLogs[0]
+			Expect(outputTestLog.LogType).To(Equal(string(obs.InputTypeApplication)))
+		},
+			Entry("should send logs to spec'd static index in Splunk", functional.SplunkIndexName, functional.SplunkIndexName),
+			Entry("should send logs to spec'd dynamic index in Splunk", `{.log_type||"missing"}`, "application"),
+			Entry("should send logs to spec'd static + dynamic index in Splunk", `foo-{.log_type||"missing"}`, "foo-application"),
+			Entry("should send logs to spec'd static + fallback value's index in Splunk if field is missing", `foo-{.missing||"application"}`, "foo-application"),
+			Entry("should send logs to default index in Splunk when no index is defined", "", functional.SplunkDefaultIndex))
 	})
 
 	Context("tuning parameters", func() {

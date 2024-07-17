@@ -3,7 +3,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal.gcl_1_log_id = "vector-1"
+._internal.gcl_1_log_id = "my-id" + to_string!(.log_type||"none")
 '''
 
 [sinks.gcl_1]

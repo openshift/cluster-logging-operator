@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/outputs"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
@@ -208,17 +207,6 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 		case output.Type == loggingv1.OutputTypeCloudwatch && output.Cloudwatch == nil:
 			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
 			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Cloudwatch output requires type spec", output.Name))
-		case output.Type == loggingv1.OutputTypeAzureMonitor:
-			if output.AzureMonitor == nil {
-				log.V(3).Info("verifyOutputs failed", "reason", "Azure Monitor Logs output requires type spec", "output name", output.Name)
-				status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: Azure Monitor Logs output requires type spec", output.Name))
-			} else {
-				valid, con := outputs.VerifyAzureMonitorLog(output.Name, output.AzureMonitor)
-				if !valid {
-					log.V(3).Info("verifyOutputs failed", "reason", con.Reason, "output name", output.Name)
-				}
-				status.Outputs.Set(output.Name, con)
-			}
 		// Check googlecloudlogging specs, must only include one of the following
 		case output.Type == loggingv1.OutputTypeGoogleCloudLogging && output.GoogleCloudLogging != nil && !verifyGoogleCloudLogging(output.GoogleCloudLogging):
 			log.V(3).Info("verifyOutputs failed", "reason",
@@ -227,12 +215,6 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			status.Outputs.Set(output.Name,
 				conditions.CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 					output.Name))
-		case output.Type == loggingv1.OutputTypeSplunk:
-			valid, con := outputs.VerifySplunk(output.Name, output.Splunk)
-			if !valid {
-				log.V(3).Info("verifyOutputs failed", "reason", con.Reason, "output name", output.Name)
-			}
-			status.Outputs.Set(output.Name, con)
 		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
 			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: sink cannot have negative limit threshold", output.Name))
 		case !outputRefs.Has(output.Name):
@@ -250,15 +232,6 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 					output.Cloudwatch.GroupPrefix = &clusterName
 				}
 			}
-		}
-
-		if valid, msg := outputs.VerifyTuning(output); !valid {
-			log.V(3).Info("verify output tuning failed", "output name", output.Name, "message", msg)
-			status.Outputs.Set(output.Name, conditions.CondInvalid("output %q: %s", output.Name, msg))
-			status.Outputs.Set(output.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
-				corev1.ConditionTrue,
-				loggingv1.ValidationFailureReason,
-				msg))
 		}
 		names.Insert(output.Name)
 	}
@@ -371,14 +344,6 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 	switch output.Type {
 	case loggingv1.OutputTypeCloudwatch:
 		if !verifySecretKeysForCloudwatch(output, conds, secret) {
-			return false
-		}
-	case loggingv1.OutputTypeSplunk:
-		if !outputs.VerifySecretKeysForSplunk(output, conds, secret) {
-			return false
-		}
-	case loggingv1.OutputTypeAzureMonitor:
-		if !outputs.VerifySharedKeysForAzure(output, conds, secret) {
 			return false
 		}
 	}

@@ -11,11 +11,13 @@ import (
 
 func Validate(context internalcontext.ForwarderContext) {
 	for _, out := range context.Forwarder.Spec.Outputs {
+		messages := []string{}
 		configs := internalobs.SecretReferencesAsValueReferences(out)
 		if out.TLS != nil {
+			messages = append(messages, validateURLAccordingToTLS(out)...)
 			configs = append(configs, internalobs.ValueReferences(out.TLS.TLSSpec)...)
 		}
-		messages := common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)
+		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
 		// Validate by output type
 		switch out.Type {
 		case obsv1.OutputTypeCloudwatch:

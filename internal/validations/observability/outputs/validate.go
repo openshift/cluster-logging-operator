@@ -2,7 +2,7 @@ package outputs
 
 import (
 	"fmt"
-	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
@@ -20,20 +20,20 @@ func Validate(context internalcontext.ForwarderContext) {
 		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
 		// Validate by output type
 		switch out.Type {
-		case obsv1.OutputTypeCloudwatch:
-			messages = append(messages, ValidateCloudWatchAuth(out)...)
-		case obsv1.OutputTypeHTTP:
+		case obs.OutputTypeCloudwatch:
+			messages = append(messages, ValidateCloudWatchAuth(out, context)...)
+		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
-		case obsv1.OutputTypeOTLP:
+		case obs.OutputTypeOTLP:
 			messages = append(messages, ValidateOtlpAnnotation(context)...)
 		}
 		// Set condition
 		if len(messages) > 0 {
 			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
-				internalobs.NewConditionFromPrefix(obsv1.ConditionTypeValidOutputPrefix, out.Name, false, obsv1.ReasonValidationFailure, strings.Join(messages, ",")))
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
 			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
-				internalobs.NewConditionFromPrefix(obsv1.ConditionTypeValidOutputPrefix, out.Name, true, obsv1.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}
 }

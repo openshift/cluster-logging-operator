@@ -1,38 +1,34 @@
 package outputs
 
 import (
+	"github.com/golang-collections/collections/set"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func ValidateCloudWatchAuth(spec obs.OutputSpec) (results []string) {
-	if spec.Type != obs.OutputTypeCloudwatch {
-		return results
-	}
+const (
+	RoleARNsOpt           = "roleARNs"
+	ErrVariousRoleARNAuth = "Found multiple different CloudWatch RoleARN authorizations in the outputs spec"
+)
+
+func ValidateCloudWatchAuth(spec obs.OutputSpec, context internalcontext.ForwarderContext) (results []string) {
+	secrets := helpers.Secrets(context.Secrets)
+	additionalContext := context.AdditionalContext
 	authSpec := spec.Cloudwatch.Authentication
-	if authSpec == nil {
-		return []string{"auth missing"}
-	}
-	switch authSpec.Type {
-	case obs.CloudwatchAuthTypeAccessKey:
-		if authSpec.AWSAccessKey == nil {
-			return []string{"AccessKey is nil"}
-		}
-		if authSpec.AWSAccessKey.KeySecret == nil {
-			results = append(results, "KeySecret is missing")
-		}
-		if authSpec.AWSAccessKey.KeyID == nil {
-			results = append(results, "KeyID is missing")
-		}
-	case obs.CloudwatchAuthTypeIAMRole:
-		if authSpec.IAMRole == nil {
-			return []string{"IAMRole is nil"}
-		}
-		if authSpec.IAMRole.RoleARN == nil {
-			results = append(results, "RoleARN is missing")
-		}
-		if authSpec.IAMRole.Token != nil && authSpec.IAMRole.Token.From == obs.BearerTokenFromSecret && authSpec.IAMRole.Token.Secret == nil {
-			results = append(results, "Secret for token is missing")
-		}
+
+	if authSpec.Type == obs.CloudwatchAuthTypeIAMRole {
+		roleArn := cloudwatch.ParseRoleArn(authSpec, secrets)
+		roleARNs := set.New(roleArn)
+		utils.Update(additionalContext, RoleARNsOpt, roleARNs, func(existing *set.Set) *set.Set {
+			existing = existing.Union(roleARNs)
+			if existing.Len() > 1 {
+				results = append(results, ErrVariousRoleARNAuth)
+			}
+			return existing
+		})
 	}
 	return results
 }

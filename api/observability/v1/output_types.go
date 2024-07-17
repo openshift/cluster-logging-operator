@@ -310,7 +310,6 @@ type Cloudwatch struct {
 	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
-	// +kubebuilder:validation:Required
 	GroupName string `json:"groupName"`
 }
 
@@ -380,16 +379,6 @@ type CloudwatchAWSAccessKey struct {
 	KeySecret *SecretReference `json:"keySecret"`
 }
 
-type IndexSpec struct {
-	// Index is the tenant for the logs. This supports template syntax
-	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
-	//
-	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default:="{{.log_type}}"
-	Index string `json:"index"`
-}
-
 type ElasticsearchTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
 
@@ -413,8 +402,19 @@ type Elasticsearch struct {
 	// +kubebuilder:validation:Optional
 	Tuning *ElasticsearchTuningSpec `json:"tuning,omitempty"`
 
-	// defaults to: log_type-write
-	IndexSpec `json:",inline"`
+	// Index is the index for the logs. This supports template syntax
+	// to allow dynamic per-event values.
+	//
+	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	Index string `json:"index"`
 
 	// Version specifies the version of Elasticsearch to be used.
 	// Must be one of: 6-8, where 8 is the default
@@ -452,9 +452,15 @@ type GoogleCloudLogging struct {
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	//
-	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default:="{{.log_type}}"
+	// The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	LogID string `json:"logId"`
 
 	// Tuning specs tuning for the output
@@ -585,9 +591,15 @@ type Kafka struct {
 
 	// Topic specifies the target topic to send logs to.
 	//
-	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default:="{{.log_type}}"
+	// The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	Topic string `json:"topic"`
 
 	// Brokers specifies the list of broker endpoints of a Kafka cluster.
@@ -699,12 +711,20 @@ type Loki struct {
 	LabelKeys []string `json:"labelKeys,omitempty"`
 
 	// TenantKey is the tenant for the logs. This supports vector's template syntax
-	// to allow dynamic per-event values. Defaults to the log type (i.e. application, audit, infrastructure)
+	// to allow dynamic per-event values.
 	//
-	// +kubebuilder:validation:Pattern:=`^([a-zA-Z0-9-_.\/])*(\{\{[ ]?\.[a-zA-Z0-9_.]+?[ ]?\}\}([a-zA-Z0-9-_.\/])*)*([a-zA-Z0-9-_.\/])*$`
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default:="{{.log_type}}"
-	TenantKey string `json:"tenantKey"`
+	// The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +kubebuilder:validation:Optional
+	// +nullable
+	TenantKey string `json:"tenantKey,omitempty"`
 }
 
 type SplunkTuningSpec struct {
@@ -741,8 +761,21 @@ type Splunk struct {
 
 	URLSpec `json:",inline"`
 
-	// defaults to: Splunk receiver's defined index
-	IndexSpec `json:",inline"`
+	// Index is the index for the logs. This supports template syntax
+	// to allow dynamic per-event values.
+	//
+	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +kubebuilder:validation:Optional
+	// +nullable
+	Index string `json:"index,omitempty"`
 }
 
 // SyslogRFCType sets which RFC the generated messages conform to.

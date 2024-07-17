@@ -2,6 +2,7 @@ package splunk_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -61,7 +62,6 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 							SecretName: secretName,
 						},
 					},
-					IndexSpec: obs.IndexSpec{Index: "{{.log_type}}"},
 				},
 			}
 		}
@@ -86,6 +86,9 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Splunk.Index = "foo"
+		}),
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
 		}),
 	)
 })

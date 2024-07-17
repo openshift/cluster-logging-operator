@@ -85,9 +85,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 						URLSpec: obs.URLSpec{
 							URL: "http://0.0.0.0:9800",
 						},
-						IndexSpec: obs.IndexSpec{
-							Index: "foo",
-						},
+						Index: "foo",
 					}
 				}, "other-es")
 

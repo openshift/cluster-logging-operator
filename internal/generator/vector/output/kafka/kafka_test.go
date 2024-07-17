@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -102,6 +103,10 @@ var _ = Describe("Generate vector config", func() {
 		Entry("without security", "kafka_no_security.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""
+		}),
+		Entry("without custom topic template", "kafka_custom_topic.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092"
+			spec.Kafka.Topic = `foo-bar{.log_type||"none"}`
 		}),
 	)
 })

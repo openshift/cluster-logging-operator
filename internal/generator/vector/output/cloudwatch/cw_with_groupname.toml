@@ -28,7 +28,7 @@ source = '''
 type = "remap"
 inputs = ["cw_normalize_streams"]
 source = '''
-._internal.cw_groupname = to_string!(.log_type||"missing") + "-foo"
+._internal.cw_group_name = to_string!(.log_type||"missing") + "-foo"
 '''
 
 [transforms.cw_dedot]
@@ -61,7 +61,7 @@ type = "aws_cloudwatch_logs"
 inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
-group_name = "{{ _internal.cw_groupname }}"
+group_name = "{{ _internal.cw_group_name }}"
 stream_name = "{{ stream_name }}"
 auth.access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
 auth.secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"

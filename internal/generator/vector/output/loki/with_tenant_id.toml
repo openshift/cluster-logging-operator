@@ -20,13 +20,21 @@ if !exists(.kubernetes.container_name) {
 }
 '''
 
+# Loki Tenant
+[transforms.loki_receiver_loki_tenant]
+type = "remap"
+inputs = ["loki_receiver_remap_label"]
+source = '''
+._internal.loki_receiver_loki_tenant = "foo-" + to_string!(.foo.bar.baz||"none")
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap_label"]
+inputs = ["loki_receiver_loki_tenant"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
-tenant_id = "{{.foo.bar.baz}}"
+tenant_id = "{{ _internal.loki_receiver_loki_tenant }}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"

@@ -53,7 +53,6 @@ var _ = Describe("Generate vector config", func() {
 		saTokenSecretName = "test-sa-token"
 		defaultTLS        = "VersionTLS12"
 		defaultCiphers    = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-		defaultTenantKey  = "{{.log_type}}"
 	)
 
 	var (
@@ -98,7 +97,6 @@ var _ = Describe("Generate vector config", func() {
 					URLSpec: obs.URLSpec{
 						URL: "https://logs-us-west1.grafana.net",
 					},
-					TenantKey: defaultTenantKey,
 				},
 			}
 		}
@@ -120,7 +118,7 @@ var _ = Describe("Generate vector config", func() {
 			spec.Loki.LabelKeys = []string{"kubernetes.labels.app", "kubernetes.container_name"}
 		}),
 		Entry("with tenant id", "with_tenant_id.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
-			spec.Loki.TenantKey = "{{.foo.bar.baz}}"
+			spec.Loki.TenantKey = `foo-{.foo.bar.baz||"none"}`
 		}),
 		Entry("with custom bearer token", "with_custom_bearer_token.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{

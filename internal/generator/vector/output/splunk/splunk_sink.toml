@@ -17,7 +17,6 @@ inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
-index = "{{.log_type}}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"

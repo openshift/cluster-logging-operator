@@ -390,11 +390,19 @@ source = '''
 .openshift.labels = {"key1":"value1","key2":"value2"}
 '''
 
+# Kafka Topic
+[transforms.output_kafka_receiver_topic]
+type = "remap"
+inputs = ["pipeline_pipeline_my_labels_2"]
+source = '''
+._internal.output_kafka_receiver_topic = "topic"
+'''
+
 [sinks.output_kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_pipeline_my_labels_2"]
+inputs = ["output_kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
-topic = "topic"
+topic = "{{ _internal.output_kafka_receiver_topic }}"
 
 [sinks.output_kafka_receiver.encoding]
 codec = "json"

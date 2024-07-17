@@ -2,6 +2,7 @@ package elasticsearch_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -45,9 +46,7 @@ var _ = Describe("Generate Vector config", func() {
 					URLSpec: obs.URLSpec{
 						URL: "https://es.svc.infra.cluster:9200",
 					},
-					IndexSpec: obs.IndexSpec{
-						Index: "{{.log_type}}",
-					},
+					Index: `{.log_type||"none"}`,
 					Authentication: &obs.HTTPAuthentication{
 						Username: &obs.SecretReference{
 							Key:        constants.ClientUsername,
@@ -100,5 +99,9 @@ var _ = Describe("Generate Vector config", func() {
 				InsecureSkipVerify: true,
 			}
 		}, framework.NoOptions, "es_with_tls_skip_verify.toml"),
+		Entry("with custom index with static and dynamic values", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = nil
+			spec.Elasticsearch.Index = `foo-{.kubernetes.namespace||"none"}`
+		}, framework.NoOptions, "es_with_custom_index.toml"),
 	)
 })

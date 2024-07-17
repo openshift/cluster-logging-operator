@@ -64,6 +64,27 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 		})
 	})
 
+	Context("topics", func() {
+		DescribeTable("user defined topics", func(topic, expTopic string) {
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToKafkaOutput(func(output *obs.OutputSpec) {
+					output.Kafka.Topic = topic
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(20, 10, 0)).To(BeNil())
+			// Read line from Kafka output
+			outputlogs, err := framework.ReadApplicationLogsFromKafka(expTopic, "localhost:9092", kafka.ConsumerNameForTopic(expTopic))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+		},
+			Entry("should write to defined static topic", "custom-index", "custom-index"),
+			Entry("should write to defined dynamic topic", `{.log_type||"none"}`, "application"),
+			Entry("should write to defined static + dynamic topic", `foo-{.log_type||"none"}`, "foo-application"),
+			Entry("should write to defined static + fallback value if field is missing", `foo-{.missing||"none"}`, "foo-none"))
+	})
+
 	Context("with tuning parameters", func() {
 
 		DescribeTable("with compression", func(compression string) {

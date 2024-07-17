@@ -2,6 +2,7 @@ package gcl_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -78,5 +79,8 @@ var _ = Describe("Generate Vector config", func() {
 		Entry("with TLS config", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 		}, framework.NoOptions, "gcl_with_tls.toml"),
+		Entry("with custom logId", func(spec *obs.OutputSpec) {
+			spec.GoogleCloudLogging.LogID = `my-id{.log_type||"none"}`
+		}, framework.NoOptions, "gcl_with_custom_logid.toml"),
 	)
 })

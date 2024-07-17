@@ -3,7 +3,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal.es_1_index = "foo"
+._internal.es_1_index = "foo-" + to_string!(.kubernetes.namespace||"none")
 '''
 
 [sinks.es_1]

@@ -148,16 +148,12 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			Entry("should pass with no compression", "none"))
 	})
 
-	It("should write to custom index", func() {
-		customIndex := "customapp-write"
-		outputLogTemplate.ViaqIndexName = customIndex
+	DescribeTable("user defined index", func(index, expIndex string) {
 		framework = functional.NewCollectorFunctionalFramework()
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
 			ToElasticSearchOutput(func(output *obs.OutputSpec) {
-				output.Elasticsearch.IndexSpec = obs.IndexSpec{
-					Index: customIndex,
-				}
+				output.Elasticsearch.Index = index
 			})
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -166,8 +162,13 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
-		raw, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), customIndex)
+		raw, err := framework.GetLogsFromElasticSearchIndex(string(obs.OutputTypeElasticsearch), expIndex)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(raw).To(Not(BeEmpty()))
-	})
+	},
+		Entry("should write to defined static index", "custom-index", "custom-index"),
+		Entry("should write to defined dynamic index", `{.log_type||"none"}`, "application"),
+		Entry("should write to defined static + dynamic index", `foo-{.log_type||"none"}`, "foo-application"),
+		Entry("should write to defined static + fallback value if field is missing", `foo-{.missing||"none"}`, "foo-none"),
+	)
 })

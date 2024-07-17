@@ -11,18 +11,23 @@ if err != null {
 }
 
 '''
+
+# Splunk Index
+[transforms.splunk_hec_splunk_index]
+type = "remap"
+inputs = ["splunk_hec_timestamp"]
+source = '''
+._internal.splunk_hec_splunk_index = "foo-" + to_string!(.kubernetes.namespace_name||"missing")
+'''
+
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
-inputs = ["splunk_hec_timestamp"]
+inputs = ["splunk_hec_splunk_index"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
+index = "{{ _internal.splunk_hec_splunk_index }}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["_internal"]
-
-[sinks.splunk_hec.tls]
-key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret/ca-bundle.crt"

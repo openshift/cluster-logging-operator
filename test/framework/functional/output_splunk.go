@@ -18,11 +18,12 @@ import (
 )
 
 const (
-	SplunkImage        = "quay.io/openshift-logging/splunk:9.0.0"
-	SplunkHecPort      = 8088
-	SplunkIndexName    = "fooIndex"
-	SplunkIndexKeyName = "log_type"
-	SplunkDefaultIndex = "main"
+	SplunkImage              = "quay.io/openshift-logging/splunk:9.0.0"
+	SplunkHecPort            = 8088
+	SplunkIndexName          = "fooIndex"
+	SplunkIndexKeyName       = "log_type"
+	SplunkDefaultIndex       = "main"
+	SplunkStaticDynamicIndex = "foo-application"
 )
 
 var (
@@ -51,7 +52,14 @@ splunk:
             homePath: $SPLUNK_DB/%s/db
             coldPath: $SPLUNK_DB/%s/colddb
             thawedPath: $SPLUNK_DB/%s/thaweddb
-`, SplunkIndexName, SplunkIndexName, SplunkIndexName, SplunkIndexName, logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication)
+          %s:
+            homePath: $SPLUNK_DB/%s/db
+            coldPath: $SPLUNK_DB/%s/colddb
+            thawedPath: $SPLUNK_DB/%s/thaweddb
+`, SplunkIndexName, SplunkIndexName, SplunkIndexName, SplunkIndexName,
+		logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication,
+		SplunkStaticDynamicIndex, SplunkStaticDynamicIndex, SplunkStaticDynamicIndex, SplunkStaticDynamicIndex,
+	)
 	SplunkEndpointHTTP = fmt.Sprintf("http://localhost:%d", SplunkHecPort)
 )
 

@@ -89,9 +89,7 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 					URL: fmt.Sprintf("https://%s:%d", string(obs.OutputTypeElasticsearch), 9200),
 				},
 				Version: 6,
-				IndexSpec: obs.IndexSpec{
-					Index: "{{.log_type}}",
-				},
+				Index:   `{.log_type||"none"}`,
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{
@@ -338,9 +336,7 @@ func mapElasticsearch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) 
 			URL: loggingOutSpec.URL,
 		},
 		Version: 8,
-		IndexSpec: obs.IndexSpec{
-			Index: "{{.log_type}}",
-		},
+		Index:   `{.log_type||"none"}`,
 	}
 
 	if secret != nil {
@@ -362,9 +358,12 @@ func mapElasticsearch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) 
 	obsEs.Version = loggingES.Version
 
 	if loggingES.StructuredTypeKey != "" && loggingES.StructuredTypeName != "" {
-		obsEs.IndexSpec = obs.IndexSpec{
-			Index: loggingES.StructuredTypeKey,
+		// Ensure StructuredTypeKey begins with `.`
+		structuredTypeKey := loggingES.StructuredTypeKey
+		if structuredTypeKey[0] != '.' {
+			structuredTypeKey = "." + structuredTypeKey
 		}
+		obsEs.Index = fmt.Sprintf("{%s||%q}", structuredTypeKey, loggingES.StructuredTypeName)
 	}
 
 	return obsEs
@@ -539,9 +538,6 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 		URLSpec: obs.URLSpec{
 			URL: loggingOutSpec.URL,
 		},
-		IndexSpec: obs.IndexSpec{
-			Index: "{{.log_type}}",
-		},
 	}
 
 	// Set auth
@@ -569,11 +565,17 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 	}
 
 	// Set index if specified
+	var splunkIndex string
 	if loggingSplunk.IndexKey != "" {
-		obsSplunk.IndexSpec.Index = loggingSplunk.IndexKey
+		indexKey := loggingSplunk.IndexKey
+		if indexKey[0] != '.' {
+			indexKey = "." + indexKey
+		}
+		splunkIndex = fmt.Sprintf(`{%s||""}`, indexKey)
 	} else if loggingSplunk.IndexName != "" {
-		obsSplunk.IndexSpec.Index = loggingSplunk.IndexName
+		splunkIndex = loggingSplunk.IndexName
 	}
+	obsSplunk.Index = splunkIndex
 
 	return obsSplunk
 }

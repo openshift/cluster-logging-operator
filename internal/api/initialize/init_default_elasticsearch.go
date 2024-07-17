@@ -30,11 +30,9 @@ func GenerateESOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSp
 		Name: fmt.Sprintf("%s-%s", outSpec.Name, input),
 		Type: obs.OutputTypeElasticsearch,
 		Elasticsearch: &obs.Elasticsearch{
-			URLSpec: outSpec.Elasticsearch.URLSpec,
-			Version: outSpec.Elasticsearch.Version,
-			IndexSpec: obs.IndexSpec{
-				Index: elasticsearchIndex(tenant),
-			},
+			URLSpec:        outSpec.Elasticsearch.URLSpec,
+			Version:        outSpec.Elasticsearch.Version,
+			Index:          elasticsearchIndex(tenant),
 			Authentication: outSpec.Elasticsearch.Authentication,
 			Tuning:         outSpec.Elasticsearch.Tuning,
 		},
@@ -53,5 +51,5 @@ func elasticsearchIndex(tenant string) string {
 	case string(obs.InputTypeInfrastructure):
 		return InfraIndex
 	}
-	return "{{.log_type}}"
+	return `{.log_type||"none"}`
 }

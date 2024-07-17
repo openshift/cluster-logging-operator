@@ -61,7 +61,7 @@ type = "aws_cloudwatch_logs"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
 {{.Compression}}
-group_name = "{{"{{ _internal.cw_groupname }}"}}"
+group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 healthcheck.enabled = false
@@ -84,14 +84,14 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 			Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	sink := sink(id, o, []string{dedottedID}, secrets, op, o.Cloudwatch.Region, o.Cloudwatch.GroupName)
+	sink := sink(id, o, []string{dedottedID}, secrets, op, o.Cloudwatch.Region, groupNameID)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 
 	return []Element{
 		NormalizeStreamName(componentID, inputs),
-		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, "cw_groupname", "Cloudwatch Groupname"),
+		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
 		viaq.DedotLabels(dedottedID, []string{groupNameID}),
 		sink,
 		common.NewEncoding(id, common.CodecJSON),

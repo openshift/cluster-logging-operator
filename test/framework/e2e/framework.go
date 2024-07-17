@@ -2,11 +2,9 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -17,29 +15,22 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/openshift/cluster-logging-operator/test/runtime"
-
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -57,8 +48,6 @@ func init() {
 }
 
 const (
-	clusterLoggingURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
-
 	DefaultCleanUpTimeout = 60.0 * 5
 
 	defaultRetryInterval      = 1 * time.Second
@@ -174,67 +163,6 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace, name stri
 	return tc.DeployLogGeneratorWithNamespaceName(namespace, name, options)
 }
 
-func (tc *E2ETestFramework) DeployJsonLogGenerator(vals, labels map[string]string) (string, string, error) {
-	namespace := tc.CreateTestNamespace()
-	pycode := `
-import time,json,sys,datetime
-%s
-i=0
-while True:
-  i=i+1
-  ts=time.time()
-  data={
-	"timestamp"   :datetime.datetime.fromtimestamp(ts).strftime('%%Y-%%m-%%d %%H:%%M:%%S'),
-	"index"       :i,
-  }
-  set_vals()
-  print json.dumps(data)
-  sys.stdout.flush()
-  time.sleep(1)
-`
-	setVals := `
-def set_vals():
-  pass
-
-`
-	if len(vals) != 0 {
-		setVals = "def set_vals():\n"
-		for k, v := range vals {
-			//...  data["key"]="value"
-			setVals += fmt.Sprintf("  data[\"%s\"]=\"%s\"\n", k, v)
-		}
-		setVals += "\n"
-	}
-	container := corev1.Container{
-		Name:            "log-generator",
-		Image:           "centos:centos7",
-		ImagePullPolicy: corev1.PullIfNotPresent,
-		Args:            []string{"python2", "-c", fmt.Sprintf(pycode, setVals)},
-	}
-	podSpec := corev1.PodSpec{
-		Containers: []corev1.Container{container},
-	}
-	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
-	for k, v := range labels {
-		deployment.Spec.Template.Labels[k] = v
-	}
-	clolog.Info("Deploying Deployment to namespace", "Deployment", deployment.Name, "namespace", deployment.Namespace)
-	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-	if err != nil {
-		return "", "", err
-	}
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-	})
-	err = tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
-	if err == nil {
-		podName, _ := oc.Get().WithNamespace(namespace).Pod().OutputJsonpath("{.items[0].metadata.name}").Run()
-		return namespace, podName, nil
-
-	}
-	return "", "", err
-}
-
 func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint string) error {
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
@@ -285,78 +213,8 @@ func (tc *E2ETestFramework) CreateNamespace(name string) string {
 	return name
 }
 
-func (tc *E2ETestFramework) DeployComponents(componentTypes ...helpers.LogComponentType) error {
-	for _, comp := range componentTypes {
-		switch comp {
-		case helpers.ComponentTypeReceiverElasticsearchRHManaged:
-			receiver := elasticsearch.NewManagedElasticsearch(tc)
-			if err := receiver.Deploy(); err != nil {
-				return err
-			}
-			tc.LogStores[elasticsearch.ManagedLogStore] = receiver
-		case helpers.ComponentTypeCollectorVector:
-			clf := runtime.NewClusterLogForwarder()
-			clf.Name = "mycollector"
-			runtime.NewClusterLogForwarderBuilder(clf).
-				FromInput(logging.InputNameApplication).
-				AndInput(logging.InputNameInfrastructure).
-				AndInput(logging.InputNameAudit).
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-					spec.Type = logging.OutputTypeElasticsearch
-					spec.URL = "https://elasticsearch:9200"
-					spec.Secret = &logging.OutputSecretSpec{
-						Name: clf.Name,
-					}
-				}, elasticsearch.ManagedLogStore)
-			if err := tc.CreateServiceAccountAndAuthorizeFor(clf); err != nil {
-				return err
-			}
-			if err := tc.CreateClusterLogForwarder(clf); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (tc *E2ETestFramework) Client() *kubernetes.Clientset {
 	return tc.KubeClient
-}
-
-func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) (err error) {
-	return tc.DeployComponents()
-}
-
-func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {
-	body, err := json.Marshal(clusterlogging)
-	if err != nil {
-		return err
-	}
-	deleteCL := func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", fmt.Sprintf(clusterLoggingURI, clusterlogging.Namespace))).
-			SetHeader("Content-Type", "application/json").
-			Do(context.TODO()).Error()
-	}
-	createCL := func() error {
-		clolog.Info("Creating ClusterLogging:", "ClusterLogging", string(body))
-		return tc.KubeClient.RESTClient().Post().
-			RequestURI(fmt.Sprintf(clusterLoggingURI, clusterlogging.Namespace)).
-			SetHeader("Content-Type", "application/json").
-			Body(body).
-			Do(context.TODO()).Error()
-	}
-	tc.AddCleanup(deleteCL)
-	err = createCL()
-	if apierrors.IsAlreadyExists(err) {
-		clolog.Info("clusterlogging instance already exists. Attempting to re-deploy...")
-		if err = deleteCL(); err != nil {
-			clolog.Error(err, "failed deleting clusterlogging instance")
-			return err
-		}
-		err = createCL()
-	}
-	return err
 }
 
 // Create (re)creates an object
@@ -376,10 +234,6 @@ func (tc *E2ETestFramework) Create(obj crclient.Object) error {
 	})
 	clolog.Info("Creating object", "obj", string(body))
 	return tc.Test.Recreate(obj)
-}
-
-func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
-	return tc.Create(forwarder)
 }
 
 func (tc *E2ETestFramework) CreateObservabilityClusterLogForwarder(forwarder *obs.ClusterLogForwarder) error {
@@ -414,11 +268,6 @@ func (tc *E2ETestFramework) Cleanup() {
 		}
 	}
 	tc.CleanupFns = [](func() error){}
-	if tc.ClusterLogging != nil && tc.ClusterLogging.Spec.Collection != nil &&
-		(tc.ClusterLogging.Spec.Collection.Type == logging.LogCollectionTypeFluentd ||
-			tc.ClusterLogging.Spec.Collection.Logs != nil && tc.ClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd) {
-		tc.CleanFluentDBuffers()
-	}
 	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		delayedLogWriter.Flush()
 	}
@@ -438,117 +287,6 @@ func RunCleanupScript() {
 		result, err := cmd.CombinedOutput()
 		clolog.Info("RunCleanupScript output: ", "output", string(result))
 		clolog.Info("RunCleanupScript err: ", "error", err)
-	}
-}
-
-func (tc *E2ETestFramework) CleanFluentDBuffers() {
-	h := corev1.HostPathDirectory
-	p := true
-	spec := &v1.DaemonSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "clean-buffers",
-			Namespace: "default",
-		},
-		Spec: v1.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"name": "clean-buffers",
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"name": "clean-buffers",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Tolerations: []corev1.Toleration{
-						{
-							Key:    "node-role.kubernetes.io/master",
-							Effect: corev1.TaintEffectNoSchedule,
-						},
-					},
-					InitContainers: []corev1.Container{
-						{
-							Name:  "clean-buffers",
-							Image: "centos:centos7",
-							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** || rm /logs/audit/audit.log.pos || rm /logs/kube-apiserver/audit.log.pos || rm /logs/es-containers.log.pos"},
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: &p,
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "fluentd-buffers",
-									MountPath: "/fluentd-buffers",
-								},
-								{
-									Name:      "logs",
-									MountPath: "/logs",
-								},
-							},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							Name:  "pause",
-							Image: "centos:centos7",
-							Args:  []string{"sh", "-c", "echo done!!!!"},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "fluentd-buffers",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/var/lib/fluentd",
-									Type: &h,
-								},
-							},
-						},
-						{
-							Name: "logs",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/var/log",
-									Type: &h,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
-	if err != nil {
-		clolog.Error(err, "Could not create DaemonSet for cleaning fluentd buffers.")
-		return
-	} else {
-		clolog.Info("DaemonSet to clean fluent buffers created")
-	}
-	_ = wait.PollUntilContextTimeout(context.TODO(), time.Second*10, time.Minute*5, true, func(cxt context.Context) (done bool, err error) {
-		desired, err2 := oc.Get().Resource("daemonset", "clean-buffers").WithNamespace("default").OutputJsonpath("{.status.desiredNumberScheduled}").Run()
-		if err2 != nil {
-			return false, nil
-		}
-		current, err2 := oc.Get().Resource("daemonset", "clean-buffers").WithNamespace("default").OutputJsonpath("{.status.currentNumberScheduled}").Run()
-		if err2 != nil {
-			return false, nil
-		}
-		if current == desired {
-			return true, nil
-		}
-		return false, nil
-	})
-	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
-	if err != nil {
-		clolog.Error(err, "Could not delete DaemonSet for cleaning fluentd buffers.")
-	} else {
-		clolog.Info("DaemonSet to clean fluent buffers deleted")
 	}
 }
 
@@ -602,18 +340,4 @@ func (tc *E2ETestFramework) CreatePipelineSecret(namespace, logStoreName, secret
 	}
 
 	return nil, err
-}
-
-// CLF depends on CL, so sync the creator goroutines
-func RecreateClClfAsync(g *errgroup.Group, c *client.Test, cl *logging.ClusterLogging, clf *logging.ClusterLogForwarder) {
-	ch := make(chan struct{}, 1)
-	g.Go(func() error {
-		defer func() { ch <- struct{}{} }()
-		return c.Recreate(cl)
-	})
-	g.Go(func() error {
-		defer func() { close(ch) }()
-		<-ch
-		return c.Recreate(clf)
-	})
 }

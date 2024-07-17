@@ -972,7 +972,7 @@ spec:
                               description: Type is the type of cloudwatch authentication
                                 to configure
                               enum:
-                              - accessKey
+                              - awsAccessKey
                               - iamRole
                               type: string
                           required:

@@ -21,6 +21,5 @@ func Validate(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[st
 // a ClusterLogForwarder
 var validations = []func(clf v1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *v1.ClusterLogForwarderStatus){
 	ValidateFilters,
-	ValidateInputsOutputsPipelines,
 	validateAnnotations,
 }

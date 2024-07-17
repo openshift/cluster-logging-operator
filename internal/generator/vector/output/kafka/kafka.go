@@ -112,7 +112,9 @@ func Brokers(o obs.OutputSpec) string {
 	if o.Kafka.URL != "" {
 		brokerUrls = append(brokerUrls, o.Kafka.URL)
 	}
-	brokerUrls = append(brokerUrls, o.Kafka.Brokers...)
+	for _, b := range o.Kafka.Brokers {
+		brokerUrls = append(brokerUrls, string(b))
+	}
 	brokerHosts := []string{}
 	for _, s := range brokerUrls { // Convert URLs to hostnames
 		u, _ := url.Parse(s)

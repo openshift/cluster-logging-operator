@@ -33,9 +33,7 @@ var _ = Describe("[internal][validations][observability][outputs] ClusterLogForw
 		})
 		It("should pass validation when not secure URL and no TLS config", func() {
 			spec.Syslog = &obs.Syslog{
-				URLSpec: obs.URLSpec{
-					URL: "tcp://local.svc:514",
-				},
+				URL: "tcp://local.svc:514",
 			}
 			Expect(validateURLAccordingToTLS(spec)).To(BeEmpty())
 		})
@@ -80,9 +78,7 @@ var _ = Describe("[internal][validations][observability][outputs] ClusterLogForw
 		It("should pass validation when secure URL and exist TLS config: tls.InsecureSkipVerify=false", func() {
 			spec.Type = obs.OutputTypeKafka
 			spec.Kafka = &obs.Kafka{
-				URLSpec: obs.URLSpec{
-					URL: "https://local.svc:514",
-				},
+				URL: "https://local.svc:514",
 			}
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,

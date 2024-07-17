@@ -39,9 +39,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		kafkaOutput = obs.OutputSpec{Type: obs.OutputTypeKafka,
 			Name: outputName,
 			Kafka: &obs.Kafka{
-				URLSpec: obs.URLSpec{
-					URL: "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
-				},
+				URL: "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{

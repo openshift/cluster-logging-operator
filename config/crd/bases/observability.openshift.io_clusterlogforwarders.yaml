@@ -1048,6 +1048,9 @@ spec:
                           description: "URL to send log records to. \n The 'username@password'
                             part of `url` is ignored."
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - authentication
                       - groupName
@@ -1179,15 +1182,13 @@ spec:
                               type: integer
                           type: object
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
+                          description: URL to send log records to. Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                            'tls'). The 'username@password' part of `url` is ignored.
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                         version:
                           default: 8
                           description: 'Version specifies the version of Elasticsearch
@@ -1431,15 +1432,13 @@ spec:
                               type: integer
                           type: object
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
+                          description: URL to send log records to. Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                            'tls'). The 'username@password' part of `url` is ignored.
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - url
                       type: object
@@ -1504,6 +1503,9 @@ spec:
                             as fallback.
                           items:
                             type: string
+                            x-kubernetes-validations:
+                            - message: invalid URL
+                              rule: isURL(self)
                           type: array
                         topic:
                           description: "Topic specifies the target topic to send logs
@@ -1549,19 +1551,18 @@ spec:
                               x-kubernetes-int-or-string: true
                           type: object
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
-                            if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                          description: "URL to send log records to. \n The 'username@password'
+                            part of `url` is ignored."
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - topic
-                      - url
                       type: object
+                      x-kubernetes-validations:
+                      - message: URL or brokers required
+                        rule: has(self.url) || self.brokers.size() > 0
                     loki:
                       description: 'Loki provides optional extra properties for `type:
                         loki`'
@@ -1712,15 +1713,13 @@ spec:
                               type: integer
                           type: object
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
+                          description: URL to send log records to. Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                            'tls'). The 'username@password' part of `url` is ignored.
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - url
                       type: object
@@ -1971,6 +1970,9 @@ spec:
                             `url` is ignored."
                           pattern: ^(https?):\/\/\S+\/v1\/logs$
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - url
                       type: object
@@ -2075,15 +2077,13 @@ spec:
                               type: integer
                           type: object
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
+                          description: URL to send log records to. Basic TLS is enabled
                             if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                            'tls'). The 'username@password' part of `url` is ignored.
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - authentication
                       - url
@@ -2186,15 +2186,13 @@ spec:
                             Informational Debug"
                           type: string
                         url:
-                          description: "URL to send log records to. \n An absolute
-                            URL, with a scheme. Valid schemes depend on `type`. Special
-                            schemes `tcp`, `tls`, `udp` and `udps` are used for types
-                            that have no scheme of their own. For example, to send
-                            syslog records using secure UDP: \n { type: syslog, url:
-                            udps://syslog.example.com:1234 } \n Basic TLS is enabled
-                            if the URL scheme requires it (for example 'https' or
-                            'tls'). The 'username@password' part of `url` is ignored."
+                          description: 'An absolute URL, with a scheme. Valid schemes
+                            are: `tcp`, `tls`, `udp` and `udps` For example, to send
+                            syslog records using secure UDP: url: udps://syslog.example.com:1234'
                           type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
                       required:
                       - rfc
                       - url

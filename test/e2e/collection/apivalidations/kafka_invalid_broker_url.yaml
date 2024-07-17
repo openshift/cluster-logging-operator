@@ -1,0 +1,22 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  outputs:
+    - name: kafka
+      kafka:
+        brokers:
+          - thisisntaurl
+          - https://thisis:01234
+      type: kafka
+  pipelines:
+  - inputRefs:
+      - infrastructure
+      - audit
+      - application
+    name: thepipeline
+    outputRefs:
+    - kafka
+  serviceAccount:
+    name: clf-validation-test

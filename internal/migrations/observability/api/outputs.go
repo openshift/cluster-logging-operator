@@ -456,9 +456,7 @@ func mapHTTP(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.HTTP
 
 func mapKafka(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Kafka {
 	obsKafka := &obs.Kafka{
-		URLSpec: obs.URLSpec{
-			URL: loggingOutSpec.URL,
-		},
+		URL: loggingOutSpec.URL,
 	}
 
 	if secret != nil {
@@ -502,7 +500,9 @@ func mapKafka(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Kaf
 	}
 
 	obsKafka.Topic = loggingKafka.Topic
-	obsKafka.Brokers = loggingKafka.Brokers
+	for _, b := range loggingKafka.Brokers {
+		obsKafka.Brokers = append(obsKafka.Brokers, obs.URL(b))
+	}
 
 	return obsKafka
 }
@@ -591,9 +591,7 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 
 func mapSyslog(loggingOutSpec logging.OutputSpec) *obs.Syslog {
 	obsSyslog := &obs.Syslog{
-		URLSpec: obs.URLSpec{
-			URL: loggingOutSpec.URL,
-		},
+		URL: loggingOutSpec.URL,
 	}
 
 	loggingSyslog := loggingOutSpec.Syslog

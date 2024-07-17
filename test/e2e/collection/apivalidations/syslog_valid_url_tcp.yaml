@@ -1,0 +1,20 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  outputs:
+    - name: syslog
+      syslog:
+        url: tcp://someplance:100
+      type: syslog
+  pipelines:
+  - inputRefs:
+      - infrastructure
+      - audit
+      - application
+    name: thepipeline
+    outputRefs:
+    - syslog
+  serviceAccount:
+    name: clf-validation-test

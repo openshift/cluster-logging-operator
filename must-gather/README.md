@@ -36,18 +36,19 @@ Example must-gather for cluster-logging output:
 ```
 ├── cluster-logging
 │  ├── clo
-│  │  ├── [nampespace_name]       ## including openshift-logging
-│  │  │  ├── cluster-logging-operator-74dd5994f-6ttgt
-│  │  │  ├── cr
-│  │  │  ├── csv
-│  │  │  └── deployment
+│  │  └── [nampespace_name]       ## including openshift-logging
+│  │     ├── cluster-logging-operator-74dd5994f-6ttgt
+│  │     ├── cr
+│  │     ├── collector-config_vector.toml
+│  │     ├── version
+│  │     └── [keys]
 │  ├── collectors
-│  │  ├── [nampespace_name]       ## including openshift-logging
-│  │  ├── collector-2tr64
+│  │  └── [nampespace_name]       ## including openshift-logging
+│  │     └── collector-2tr64.describe
 │  ├── eo
-│  │  ├── csv
-│  │  ├── deployment
-│  │  └── elasticsearch-operator-7dc7d97b9d-jb4r4
+│  │  ├── elasticsearch-operator-7dc7d97b9d-jb4r4
+│  │  ├── indicex.txt
+│  │  └── eo-deployment.describe
 │  ├── es
 │  │  ├── cluster-elasticsearch
 │  │  │  ├── aliases.cat
@@ -67,21 +68,16 @@ Example must-gather for cluster-logging output:
 │  │  ├── cr
 │  │  ├── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
 │  │  └── logs
-│  │     ├── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
-│  ├── install
-│  │  ├── co_logs
-│  │  ├── install_plan
-│  │  ├── olmo_logs
-│  │  └── subscription
+│  │     └── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
 │  └── kibana
 │     ├── cr
-│     ├── kibana-9d69668d4-2rkvz
+│     └── kibana-9d69668d4-2rkvz
 ├── cluster-scoped-resources
 │  └── core
 │     ├── nodes
-│     │  ├── ip-10-0-146-180.eu-west-1.compute.internal.yaml
+│     │  └── ip-10-0-146-180.eu-west-1.compute.internal.yaml
 │     └── persistentvolumes
-│        ├── pvc-0a8d65d9-54aa-4c44-9ecc-33d9381e41c1.yaml
+│        └── pvc-0a8d65d9-54aa-4c44-9ecc-33d9381e41c1.yaml
 ├── event-filter.html
 ├── gather-debug.log
 └── namespaces
@@ -96,9 +92,9 @@ Example must-gather for cluster-logging output:
    │  │  └── jobs.yaml
    │  ├── logging.openshift.io/
    │  │  ├── clusterloggings
-   │  │  │  ├── [instance_name.yaml]
-   │  │  ├── clusterlogforwarders
-   │  │  │  └── [clf_name.yaml]   
+   │  │  │  └── [instance_name.yaml]
+   │  │  └── clusterlogforwarders
+   │  │     └── [clf_name.yaml]   
    │  ├── core
    │  │  ├── configmaps.yaml
    │  │  ├── endpoints.yaml
@@ -108,13 +104,20 @@ Example must-gather for cluster-logging output:
    │  │  │  ├── elasticsearch-delete-infra-1596020400-v98tk.1626341a2d821069.yaml
    │  │  │  ├── elasticsearch-rollover-app-1596020400-cc5vc.1626341a3019b238.yaml
    │  │  │  ├── elasticsearch-rollover-audit-1596020400-s8d5s.1626341a31f7b315.yaml
-   │  │  │  ├── elasticsearch-rollover-infra-1596020400-7mgv8.1626341a35ea59ed.yaml
+   │  │  │  └── elasticsearch-rollover-infra-1596020400-7mgv8.1626341a35ea59ed.yaml
    │  │  ├── events.yaml
    │  │  ├── persistentvolumeclaims.yaml
    │  │  ├── pods.yaml
    │  │  ├── replicationcontrollers.yaml
    │  │  ├── secrets.yaml
    │  │  └── services.yaml
+   │  ├── operators.coreos.com
+   │  │  ├── clusterserviceversions
+   │  │  │  └── elasticsearch-operator.v5.8.8.yaml
+   │  │  ├── installplans
+   │  │  │  └── install-xyzwq.yaml
+   │  │  └── subscriptions
+   │  │     └── cluster-logging.yaml
    │  ├── openshift-logging.yaml
    │  ├── pods
    │  │  ├── cluster-logging-operator-74dd5994f-6ttgt
@@ -184,6 +187,6 @@ Example must-gather for cluster-logging output:
 ### Moved resources
 With the support of [multi log-forwarder feature](https://docs.openshift.com/container-platform/4.14/logging/log_collection_forwarding/log-forwarding.html#log-forwarding-implementations-multi-clf_log-forwarding) in Cluster Logging v5.8, CLO resources have moved from `cluster-logging/clo/` to individual namespaces under `cluster-logging/clo/[namespace_name]`.
 
-The `clusterlogging` and `clusterlogforwarder` resources are no longer collected in `cluster-logging/clo` and have moved to `namespaces/[namespace_name]/logging.openshift.io/`. This directory structure allows tools like [`omc`](https://github.com/gmeghnag/omc/) to work with those resources in a similar way to `oc` commands on a cluster.
+The `clusterlogging` and `clusterlogforwarder` resources, and also `installplans`, `subscriptions`, `clusterserviceversions`, `logfilemetricexporter`, etc. are now collected by `oc adm inspect` command in the different `namespaces/[namespace_name]/` directories and no longer in `cluster-logging/clo`. This directory structure allows tools like [`omc`](https://github.com/gmeghnag/omc/) to work with those resources in a similar way to `oc` commands on a cluster.
 
 The `deployments`, `daemonsets` and `secrets` are also found under `namespaces/[namespace_name]/` and can also be seen using the [`omc`](https://github.com/gmeghnag/omc/) tool.

@@ -172,16 +172,3 @@ func createSubjectAccessReview(user, namespace, verb, resource, name, resourceAP
 	}
 	return sar
 }
-
-func hasInfraNamespaces(appNamespaces []string) bool {
-	if len(appNamespaces) == 0 {
-		return false
-	}
-
-	for _, ns := range appNamespaces {
-		if infraNamespaces.MatchString(ns) {
-			return true
-		}
-	}
-	return false
-}

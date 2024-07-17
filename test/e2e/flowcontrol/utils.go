@@ -23,10 +23,7 @@ const (
 	ThanosHost = `oc get route thanos-querier -n openshift-monitoring -o jsonpath={.spec.host}`
 
 	VectorCompSentEvents = `rate(vector_component_sent_events_total{component_name="%s"}[30s])`
-	SumMetric            = `sum(%s)`
 	VectorUpTotal        = `vector_started_total`
-
-	maxRetries = 100
 )
 
 func WaitForMetricsToShow() bool {

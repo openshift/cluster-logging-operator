@@ -9,9 +9,6 @@ import (
 
 var _ = Describe("Pipeline validation #validateRef", func() {
 
-	const (
-		expConditionTypeRE = obs.ConditionTypeValidPipelinePrefix + "-.*"
-	)
 	var (
 		initSpec = func() obs.PipelineSpec {
 			return obs.PipelineSpec{

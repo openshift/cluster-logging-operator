@@ -139,7 +139,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				spec.Type = obs.OutputTypeLoki
 				spec.Loki = &obs.Loki{
 					URLSpec: obs.URLSpec{
-						l.InternalURL("").String(),
+						URL: l.InternalURL("").String(),
 					},
 				}
 			}, string(obs.OutputTypeLoki))

@@ -11,8 +11,6 @@ import (
 
 var (
 	globRE = regexp.MustCompile(`^[a-zA-Z0-9\*\-]*$`)
-
-	globErrorFmt = `input %q: invalid glob for %s. Must match '` + globRE.String() + `"`
 )
 
 func ValidateApplication(spec obs.InputSpec) (conditions []metav1.Condition) {

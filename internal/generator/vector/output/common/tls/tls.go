@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	IncludeEnabledOption = framework.Option{IncludeEnabled, ""}
+	IncludeEnabledOption = framework.Option{Name: IncludeEnabled, Value: ""}
 )
 
 type TLSConf struct {

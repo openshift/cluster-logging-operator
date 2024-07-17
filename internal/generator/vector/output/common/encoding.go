@@ -25,7 +25,7 @@ func NewEncoding(id, codec string, inits ...func(*Encoding)) Encoding {
 		Codec: helpers.NewOptionalPair("codec", codec),
 		ExceptFields: helpers.NewOptionalPair("except_fields",
 			vectorhelpers.MakeInputs("_internal"),
-			framework.Option{helpers.OptionFormatter, "%s = %v"},
+			framework.Option{Name: helpers.OptionFormatter, Value: "%s = %v"},
 		),
 		TimeStampFormat: helpers.NewOptionalPair("timestamp_format", nil),
 	}

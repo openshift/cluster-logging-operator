@@ -344,7 +344,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), config.Name, opts)
 	})
-	if tc.Test.Recreate(config); err != nil {
+	if err = tc.Test.Recreate(config); err != nil {
 		return nil, err
 	}
 

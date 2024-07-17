@@ -101,6 +101,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							},
 							Authentication: &obs.LokiStackAuthentication{
 								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromSecret,
 									Secret: &obs.BearerTokenSecretKey{
 										Name: constants.LogCollectorToken,
 										Key:  constants.BearerTokenFileKey,
@@ -331,7 +332,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							Name: "cw",
 							Type: logging.OutputTypeCloudwatch,
 							Cloudwatch: &obs.Cloudwatch{
-								GroupName: "{{.log_type}}",
+								GroupName: `{.openshift.cluster_id||"none"}.{.log_type||"none"}`,
 								Region:    "us-west-1",
 								Authentication: &obs.CloudwatchAuthentication{
 									Type: obs.CloudwatchAuthTypeAccessKey,

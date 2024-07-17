@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -29,7 +30,7 @@ func convertOutputs(loggingClfSpec *logging.ClusterLogForwarderSpec, secrets map
 		case obs.OutputTypeAzureMonitor:
 			obsOut.AzureMonitor = mapAzureMonitor(output, secrets[output.Name])
 		case obs.OutputTypeCloudwatch:
-			obsOut.Cloudwatch = mapCloudwatch(output, secrets[output.Name], loggingClfSpec.ServiceAccountName)
+			obsOut.Cloudwatch = mapCloudwatch(output, secrets[output.Name])
 		case obs.OutputTypeElasticsearch:
 			obsOut.Elasticsearch = mapElasticsearch(output, secrets[output.Name])
 		case obs.OutputTypeGoogleCloudLogging:
@@ -120,6 +121,7 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 				},
 				Authentication: &obs.LokiStackAuthentication{
 					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
 						Secret: &obs.BearerTokenSecretKey{
 							Name: constants.LogCollectorToken,
 							Key:  constants.BearerTokenFileKey,
@@ -202,6 +204,7 @@ func mapHTTPAuth(secret *corev1.Secret) *obs.HTTPAuthentication {
 	}
 	if security.HasBearerTokenFileKey(secret) {
 		httpAuth.Token = &obs.BearerToken{
+			From: obs.BearerTokenFromSecret,
 			Secret: &obs.BearerTokenSecretKey{
 				Name: secret.Name,
 				Key:  constants.BearerTokenFileKey,
@@ -243,7 +246,7 @@ func mapAzureMonitor(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *
 	return obsAzMon
 }
 
-func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saName string) *obs.Cloudwatch {
+func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Cloudwatch {
 	obsCw := &obs.Cloudwatch{
 		URL: loggingOutSpec.URL,
 	}
@@ -282,6 +285,7 @@ func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saN
 			}
 			if security.HasBearerTokenFileKey(secret) {
 				obsCw.Authentication.IAMRole.Token = &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
 					Secret: &obs.BearerTokenSecretKey{
 						Name: secret.Name,
 						Key:  constants.BearerTokenFileKey,
@@ -322,10 +326,12 @@ func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret, saN
 	groupPrefix := ""
 
 	if loggingCw.GroupPrefix != nil {
-		groupPrefix = *loggingCw.GroupPrefix + "."
+		groupPrefix = *loggingCw.GroupPrefix
+	} else {
+		groupPrefix = `{.openshift.cluster_id||"none"}`
 	}
 
-	obsCw.GroupName = fmt.Sprintf("%s{{%s}}", groupPrefix, groupBy)
+	obsCw.GroupName = fmt.Sprintf(`%s.{%s||"none"}`, groupPrefix, groupBy)
 
 	return obsCw
 }
@@ -360,7 +366,7 @@ func mapElasticsearch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) 
 	if loggingES.StructuredTypeKey != "" && loggingES.StructuredTypeName != "" {
 		// Ensure StructuredTypeKey begins with `.`
 		structuredTypeKey := loggingES.StructuredTypeKey
-		if structuredTypeKey[0] != '.' {
+		if !strings.HasPrefix(structuredTypeKey, ".") {
 			structuredTypeKey = "." + structuredTypeKey
 		}
 		obsEs.Index = fmt.Sprintf("{%s||%q}", structuredTypeKey, loggingES.StructuredTypeName)
@@ -506,7 +512,6 @@ func mapLoki(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Loki
 		URLSpec: obs.URLSpec{
 			URL: loggingOutSpec.URL,
 		},
-		TenantKey: "{{.log_type}}",
 	}
 
 	if secret != nil {
@@ -526,7 +531,11 @@ func mapLoki(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Loki
 	}
 
 	if loggingLoki.TenantKey != "" {
-		obsLoki.TenantKey = loggingLoki.TenantKey
+		tenantKey := loggingLoki.TenantKey
+		if !strings.HasPrefix(tenantKey, ".") {
+			tenantKey = "." + tenantKey
+		}
+		obsLoki.TenantKey = fmt.Sprintf(`{%s||"none"}`, tenantKey)
 	}
 	obsLoki.LabelKeys = loggingLoki.LabelKeys
 
@@ -568,7 +577,7 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 	var splunkIndex string
 	if loggingSplunk.IndexKey != "" {
 		indexKey := loggingSplunk.IndexKey
-		if indexKey[0] != '.' {
+		if !strings.HasPrefix(indexKey, ".") {
 			indexKey = "." + indexKey
 		}
 		splunkIndex = fmt.Sprintf(`{%s||""}`, indexKey)
@@ -593,12 +602,31 @@ func mapSyslog(loggingOutSpec logging.OutputSpec) *obs.Syslog {
 	}
 
 	obsSyslog.RFC = obs.SyslogRFCType(loggingSyslog.RFC)
-	obsSyslog.Severity = loggingSyslog.Severity
-	obsSyslog.PayloadKey = loggingSyslog.PayloadKey
-	obsSyslog.AppName = loggingSyslog.AppName
-	obsSyslog.ProcID = loggingSyslog.ProcID
-	obsSyslog.MsgID = loggingSyslog.MsgID
 	obsSyslog.Facility = loggingSyslog.Facility
+	obsSyslog.Severity = loggingSyslog.Severity
+
+	if loggingSyslog.AddLogSource {
+		obsSyslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
+	}
+
+	obsSyslog.AppName = loggingSyslog.AppName
+	if strings.HasPrefix(loggingSyslog.AppName, "$.message") {
+		obsSyslog.AppName = fmt.Sprintf(`{%s||"none"}`, strings.Split(loggingSyslog.AppName, "$.message")[1])
+	}
+
+	obsSyslog.ProcID = loggingSyslog.ProcID
+	if strings.HasPrefix(loggingSyslog.ProcID, "$.message") {
+		obsSyslog.AppName = fmt.Sprintf(`{%s||"none"}`, strings.Split(loggingSyslog.ProcID, "$.message")[1])
+	}
+
+	obsSyslog.MsgID = loggingSyslog.MsgID
+	if strings.HasPrefix(loggingSyslog.MsgID, "$.message") {
+		obsSyslog.AppName = fmt.Sprintf(`{%s||"none"}`, strings.Split(loggingSyslog.MsgID, "$.message")[1])
+	}
+
+	if loggingSyslog.PayloadKey != "" {
+		obsSyslog.PayloadKey = fmt.Sprintf("{.%s}", loggingSyslog.PayloadKey)
+	}
 
 	return obsSyslog
 }

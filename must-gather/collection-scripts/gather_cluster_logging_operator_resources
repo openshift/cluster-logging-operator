@@ -43,7 +43,7 @@ secret_names=$(oc -n $NAMESPACE get secrets -o custom-columns=:.metadata.name | 
 for name in ${secret_names[@]}; do
   data=$(oc -n $NAMESPACE get secret ${name} -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
   if [ "$data" != "" ] ; then
-    echo $data | base64 -d > ${clo_folder}/${name}_vector.toml 2>&1
+    echo $data | base64 -d | awk '{ if ($1~/access_key/) { print $1 " = xxxxxxxx" } else { print }}' > ${clo_folder}/${name}_vector.toml 2>&1
   fi
 done
 

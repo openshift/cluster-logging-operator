@@ -73,6 +73,10 @@ resources+=(serviceaccounts)
 resources+=(events)
 resources+=(clusterlogging)
 resources+=(clusterlogforwarder)
+resources+=(installplans)
+resources+=(subscriptions)
+resources+=(clusterserviceversions)
+resources+=(logfilemetricexporter)
 
 log "BEGIN inspecting namespaces ..." >> "${LOGFILE_PATH}"
 
@@ -93,16 +97,7 @@ done
 log "END inspecting namespaces ..." >> "${LOGFILE_PATH}"
 
 
-log "BEGIN inspecting install resources ..." >> "${LOGFILE_PATH}"
-eo_found="$(oc -n openshift-operators-redhat get deployment elasticsearch-operator --ignore-not-found --no-headers)"
 default_clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
-if [ "$default_clo_found" != "" ] || [ "$eo_found" != "" ] ; then
-    ${SCRIPT_DIR}/gather_install_resources "$BASE_COLLECTION_PATH" >> "${LOGFILE_PATH}" 2>&1 &
-    pids+=($!)
-else
-  log "Skipping install inspection.  No default CLO or EO deployment found in namespace: $LOGGING_NS" >> "${LOGFILE_PATH}" 2>&1
-fi
-log "END inspecting install resources ..." >> "${LOGFILE_PATH}"
 
 if [ "$default_clo_found" != "" ] ; then
   log "BEGIN gathering default CLO resources ..." >> "${LOGFILE_PATH}"

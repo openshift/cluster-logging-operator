@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 )
 
-// Match condition by type, status and reason if reason != "".
+// MatchCondition condition by type, status and reason if reason != "".
 // Also match messageRegex if it is not empty.
-func matchCondition(conditionType string, conditionStatus bool, reason string, messageRegex string) types.GomegaMatcher {
+func MatchCondition(conditionType string, conditionStatus bool, reason string, messageRegex string) types.GomegaMatcher {
 	var status metav1.ConditionStatus
 	if conditionStatus {
 		status = metav1.ConditionTrue
@@ -31,7 +31,7 @@ func matchCondition(conditionType string, conditionStatus bool, reason string, m
 }
 
 func HaveCondition(reConditionType string, conditionTrue bool, reason string, messageRegex string) types.GomegaMatcher {
-	return ContainElement(matchCondition(reConditionType, conditionTrue, reason, messageRegex))
+	return ContainElement(MatchCondition(reConditionType, conditionTrue, reason, messageRegex))
 }
 
 func equalCondition(expected metav1.Condition) types.GomegaMatcher {

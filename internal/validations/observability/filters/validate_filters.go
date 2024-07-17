@@ -1,15 +1,13 @@
-package clusterlogforwarder
+package filters
 
 import (
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/set"
 	"regexp"
 	"strings"
-
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
-	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -18,38 +16,34 @@ var (
 	pathExpRegex = regexp.MustCompile(`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`)
 )
 
-// ValidateFilters validates the defined filters.
-func ValidateFilters(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {
-	if len(clf.Spec.Filters) == 0 {
-		return nil, nil
-	}
+func ValidateFilter(spec obs.FilterSpec) (condition metav1.Condition) {
 
-	clf.Status.Filters = loggingv1.NamedConditions{}
-	for _, filterSpec := range clf.Spec.Filters {
-		switch filterSpec.Type {
-		case loggingv1.FilterDrop:
-			validateDropFilter(&filterSpec, &clf.Status.Filters)
-		case loggingv1.FilterPrune:
-			validatePruneFilter(&filterSpec, &clf.Status.Filters)
-		}
+	var results []string
+	switch spec.Type {
+	case obs.FilterTypeDrop:
+		results = append(results, validateDropFilter(spec)...)
+	case obs.FilterTypePrune:
+		results = append(results, validatePruneFilter(spec)...)
 	}
-	if len(clf.Status.Filters) != 0 {
-		return errors.NewValidationError("One or more errors are present in defined filters."), &clf.Status
+	condition = internalobs.NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("filter %q is valid", spec.Name))
+	if len(results) > 0 {
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = obs.ReasonValidationFailure
+		condition.Message = strings.Join(results, ",")
 	}
-	return nil, nil
+	return condition
 }
 
 // validateDropFilter validates each test and their associated conditions in a drop filter.
 // It sets the filter status for the specific drop test index to better diagnose problems
-func validateDropFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
-	if filterSpec.DropTestsSpec == nil {
-		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("drop filter must have at least one test spec'd"))
-		return
+func validateDropFilter(filterSpec obs.FilterSpec) (results []string) {
+	if len(filterSpec.DropTestsSpec) == 0 {
+		results = append(results, fmt.Sprintf("%q drop filter must have at least one test spec'd", filterSpec.Name))
 	}
 
 	var err error
 	// Validate each test
-	for i, dropTest := range *filterSpec.DropTestsSpec {
+	for i, dropTest := range filterSpec.DropTestsSpec {
 		testErrors := []string{}
 		// For each test, validate conditions
 		for _, testCondition := range dropTest.DropConditions {
@@ -71,15 +65,16 @@ func validateDropFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.N
 			}
 		}
 		if len(testErrors) != 0 {
-			clfStatus.Set(fmt.Sprintf("%s: test[%d]", filterSpec.Name, i), conditions.CondInvalid("%v", testErrors))
+			results = append(results, fmt.Sprintf("%s: test[%d] %v", filterSpec.Name, i, testErrors))
 		}
 	}
+	return results
 }
 
-func validatePruneFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.NamedConditions) {
+func validatePruneFilter(filterSpec obs.FilterSpec) (results []string) {
 	if filterSpec.PruneFilterSpec == nil {
-		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("prune filter must have one or both of `in`, `notIn`"))
-		return
+		results = append(results, fmt.Sprintf("%s prune filter must have one or both of `in`, `notIn`", filterSpec.Name))
+		return results
 	}
 	errList := []string{}
 	// Validate `in` paths
@@ -108,27 +103,29 @@ func validatePruneFilter(filterSpec *loggingv1.FilterSpec, clfStatus *loggingv1.
 		}
 	}
 	if len(errList) != 0 {
-		clfStatus.Set(filterSpec.Name, conditions.CondInvalid("%v", errList))
+		results = append(results, fmt.Sprintf("%s: %v", filterSpec.Name, errList))
 	}
+	return results
 }
 
 // validateFieldPath validates a field path for correctness
-func validateFieldPath(fieldPath string) string {
+func validateFieldPath(fieldPath obs.FieldPath) string {
+	path := string(fieldPath)
 	// Validate field starts with a '.'
-	if !strings.HasPrefix(fieldPath, ".") {
+	if !strings.HasPrefix(path, ".") {
 		return fmt.Sprintf("%q must start with a '.'", fieldPath)
 		// Validate field path
-	} else if !pathExpRegex.MatchString(fieldPath) {
+	} else if !pathExpRegex.MatchString(path) {
 		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
 	}
 	return ""
 }
 
-func validateRequiredFields(fieldList []string, pruneType string) string {
-	requiredFields := sets.NewString(".log_type", ".message")
+func validateRequiredFields(fieldList []obs.FieldPath, pruneType string) string {
+	requiredFields := set.New[obs.FieldPath](".log_type", ".message")
 
 	if pruneType == "in" {
-		foundInList := []string{}
+		foundInList := []obs.FieldPath{}
 		for _, field := range fieldList {
 			if requiredFields.Has(field) {
 				foundInList = append(foundInList, field)
@@ -140,11 +137,11 @@ func validateRequiredFields(fieldList []string, pruneType string) string {
 	} else {
 		for _, field := range fieldList {
 			if requiredFields.Has(field) {
-				requiredFields.Remove(field)
+				requiredFields.Delete(field)
 			}
 		}
 		if requiredFields.Len() != 0 {
-			return fmt.Sprintf("%q is/are required fields and must be included in the `notIn` list.", requiredFields.List())
+			return fmt.Sprintf("%q is/are required fields and must be included in the `notIn` list.", requiredFields.SortedList())
 		}
 	}
 

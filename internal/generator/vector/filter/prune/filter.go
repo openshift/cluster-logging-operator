@@ -48,21 +48,21 @@ func (f PruneFilter) VRL() (string, error) {
 
 // generateQuotedPathSegmentArrayStr generates the final string of the array of array of path segments
 // to feed into VRL
-func generateQuotedPathSegmentArrayStr(fieldPathArray []string) string {
+func generateQuotedPathSegmentArrayStr(fieldPathArray []obs.FieldPath) string {
 	quotedPathArray := []string{}
 	for _, fieldPath := range fieldPathArray {
-		f := func(path string) string {
-			splitPathSegments := splitPath(path)
+		f := func(path obs.FieldPath) string {
+			splitPathSegments := splitPath(string(path))
 			pathArray := quotePathSegments(splitPathSegments)
 			return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
 		}
 		quotedPathArray = append(quotedPathArray, f(fieldPath))
 		for _, d := range dedottedFields {
-			label, found := strings.CutPrefix(fieldPath, d)
+			label, found := strings.CutPrefix(string(fieldPath), d)
 			if found && strings.ContainsAny(label, "/.") {
 				label = strings.ReplaceAll(label, ".", "_")
 				label = strings.ReplaceAll(label, "/", "_")
-				quotedPathArray = append(quotedPathArray, f(d+label))
+				quotedPathArray = append(quotedPathArray, f(obs.FieldPath(d+label)))
 			}
 		}
 	}

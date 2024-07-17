@@ -174,6 +174,7 @@ spec:
                                     characters outside of this range, the segment
                                     must be quoted. Examples: `.kubernetes.namespace_name`,
                                     `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                                  pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
                                   type: string
                                 matches:
                                   description: A regular expression that the field
@@ -190,6 +191,11 @@ spec:
                                     one of matches or notMatches
                                   type: string
                               type: object
+                              x-kubernetes-validations:
+                              - message: only one of matches or notMatches can be
+                                  defined at once
+                                rule: has(self.matches) && has(self.notMatches)
+                            minItems: 1
                             type: array
                         type: object
                       type: array
@@ -401,6 +407,16 @@ spec:
                             `.hostname` CANNOT be added to this list as it is a required
                             field.'
                           items:
+                            description: 'Field Path represents a path to find a value
+                              for a given field.  The format must a value that can
+                              be converted to a valid collector configuration. It
+                              is a dot delimited path to a field in the log record.
+                              It must start with a `.`. The path can contain alpha-numeric
+                              characters and underscores (a-zA-Z0-9_). If segments
+                              contain characters outside of this range, the segment
+                              must be quoted. Examples: `.kubernetes.namespace_name`,
+                              `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                            pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
                             type: string
                           type: array
                         notIn:
@@ -418,6 +434,16 @@ spec:
                             `.hostname` MUST be added to this list as it is a required
                             field.'
                           items:
+                            description: 'Field Path represents a path to find a value
+                              for a given field.  The format must a value that can
+                              be converted to a valid collector configuration. It
+                              is a dot delimited path to a field in the log record.
+                              It must start with a `.`. The path can contain alpha-numeric
+                              characters and underscores (a-zA-Z0-9_). If segments
+                              contain characters outside of this range, the segment
+                              must be quoted. Examples: `.kubernetes.namespace_name`,
+                              `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+                            pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
                             type: string
                           type: array
                       type: object

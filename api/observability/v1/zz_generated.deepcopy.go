@@ -1365,12 +1365,12 @@ func (in *PruneFilterSpec) DeepCopyInto(out *PruneFilterSpec) {
 	*out = *in
 	if in.In != nil {
 		in, out := &in.In, &out.In
-		*out = make([]string, len(*in))
+		*out = make([]FieldPath, len(*in))
 		copy(*out, *in)
 	}
 	if in.NotIn != nil {
 		in, out := &in.NotIn, &out.NotIn
-		*out = make([]string, len(*in))
+		*out = make([]FieldPath, len(*in))
 		copy(*out, *in)
 	}
 }

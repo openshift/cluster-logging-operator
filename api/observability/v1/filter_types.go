@@ -40,6 +40,15 @@ var (
 	}
 )
 
+// Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+// valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
+// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+// If segments contain characters outside of this range, the segment must be quoted.
+// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+//
+// +kubebuilder:validation:Pattern:=`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`
+type FieldPath string
+
 // FilterSpec defines a filter for log messages.
 // +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'drop' || has(self.drop)", message="Additional type specific spec is required for the filter type"
@@ -81,10 +90,12 @@ type FilterSpec struct {
 type DropTest struct {
 	// DropConditions is an array of DropCondition which are conditions that are ANDed together
 	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems:=1
 	DropConditions []DropCondition `json:"test,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="has(self.matches) && has(self.notMatches)", message="only one of matches or notMatches can be defined at once"
 type DropCondition struct {
 	// A dot delimited path to a field in the log record. It must start with a `.`.
 	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
@@ -92,7 +103,7 @@ type DropCondition struct {
 	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
 	//
 	// +kubebuilder:validation:Optional
-	Field string `json:"field,omitempty"`
+	Field FieldPath `json:"field,omitempty"`
 
 	// A regular expression that the field will match.
 	// If the value of the field defined in the DropTest matches the regular expression, the log record will be dropped.
@@ -119,7 +130,7 @@ type PruneFilterSpec struct {
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 	//
 	// +kubebuilder:validation:Optional
-	In []string `json:"in,omitempty"`
+	In []FieldPath `json:"in,omitempty"`
 
 	// `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record
 	// Each field path expression must start with a `.`.
@@ -130,5 +141,5 @@ type PruneFilterSpec struct {
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
 	//
 	// +kubebuilder:validation:Optional
-	NotIn []string `json:"notIn,omitempty"`
+	NotIn []FieldPath `json:"notIn,omitempty"`
 }

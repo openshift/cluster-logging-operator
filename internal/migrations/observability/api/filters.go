@@ -58,7 +58,7 @@ func mapDropFilter(loggingDropTest []logging.DropTest) []obs.DropTest {
 
 		for _, cond := range test.DropConditions {
 			obsDropConditions = append(obsDropConditions, obs.DropCondition{
-				Field:      cond.Field,
+				Field:      obs.FieldPath(cond.Field),
 				Matches:    cond.Matches,
 				NotMatches: cond.NotMatches,
 			})
@@ -73,8 +73,13 @@ func mapDropFilter(loggingDropTest []logging.DropTest) []obs.DropTest {
 }
 
 func mapPruneFilter(loggingPruneSpec logging.PruneFilterSpec) *obs.PruneFilterSpec {
-	return &obs.PruneFilterSpec{
-		In:    loggingPruneSpec.In,
-		NotIn: loggingPruneSpec.NotIn,
+	spec := &obs.PruneFilterSpec{}
+	for _, in := range loggingPruneSpec.In {
+		spec.In = append(spec.In, obs.FieldPath(in))
 	}
+	for _, notIn := range loggingPruneSpec.NotIn {
+		spec.NotIn = append(spec.NotIn, obs.FieldPath(notIn))
+	}
+
+	return spec
 }

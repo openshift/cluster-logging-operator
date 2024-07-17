@@ -97,7 +97,7 @@ func prunesHostName(filter obs.FilterSpec) bool {
 	if filter.PruneFilterSpec.NotIn != nil {
 		found := false
 		for _, field := range filter.PruneFilterSpec.NotIn {
-			if field == hostName {
+			if string(field) == hostName {
 				found = true
 				break
 			}
@@ -109,7 +109,7 @@ func prunesHostName(filter obs.FilterSpec) bool {
 
 	if filter.PruneFilterSpec.In != nil {
 		for _, field := range filter.PruneFilterSpec.In {
-			if field == hostName {
+			if string(field) == hostName {
 				notInListPrunes = true
 				break
 			}

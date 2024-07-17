@@ -104,8 +104,8 @@ var _ = Describe("#ConvertFilters", func() {
 		}
 
 		expObsPruneSpec := &obs.PruneFilterSpec{
-			In:    []string{"foo", "bar", "baz"},
-			NotIn: []string{"test", "something", "other"},
+			In:    []obs.FieldPath{"foo", "bar", "baz"},
+			NotIn: []obs.FieldPath{"test", "something", "other"},
 		}
 
 		Expect(mapPruneFilter(*loggingPruneSpec)).To(Equal(expObsPruneSpec))
@@ -212,7 +212,7 @@ var _ = Describe("#ConvertFilters", func() {
 				Name: "prune",
 				Type: logging.FilterPrune,
 				PruneFilterSpec: &obs.PruneFilterSpec{
-					In: []string{"foo", "bar"},
+					In: []obs.FieldPath{"foo", "bar"},
 				},
 			},
 		}

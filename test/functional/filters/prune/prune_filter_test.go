@@ -46,8 +46,8 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
 					spec.Type = obs.FilterTypePrune
 					spec.PruneFilterSpec = &obs.PruneFilterSpec{
-						In:    []string{".kubernetes.namespace_name", ".kubernetes.container_name", `.kubernetes.labels."foo-bar/baz"`},
-						NotIn: []string{".log_type", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
+						In:    []obs.FieldPath{".kubernetes.namespace_name", ".kubernetes.container_name", `.kubernetes.labels."foo-bar/baz"`},
+						NotIn: []obs.FieldPath{".log_type", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
 					}
 				}).
 				ToElasticSearchOutput()
@@ -95,7 +95,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				FromInput(obs.InputTypeApplication).
 				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
 					spec.Type = obs.FilterTypePrune
-					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []string{".log_type", ".message"}}
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []obs.FieldPath{".log_type", ".message"}}
 				})
 		})
 

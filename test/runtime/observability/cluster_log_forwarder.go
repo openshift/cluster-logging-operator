@@ -149,9 +149,7 @@ func (p *PipelineBuilder) ToSyslogOutput(rfc obs.SyslogRFCType, visitors ...func
 		output.Type = obs.OutputTypeSyslog
 		output.Syslog = &obs.Syslog{
 			RFC: rfc,
-			URLSpec: obs.URLSpec{
-				URL: "tcp://127.0.0.1:24224",
-			},
+			URL: "tcp://127.0.0.1:24224",
 		}
 		for _, v := range visitors {
 			v(output)
@@ -220,9 +218,7 @@ func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *obs.OutputSpec)
 		output.Name = string(obs.OutputTypeKafka)
 		output.Type = obs.OutputTypeKafka
 		output.Kafka = &obs.Kafka{
-			URLSpec: obs.URLSpec{
-				URL: "https://localhost:9093",
-			},
+			URL:   "https://localhost:9093",
 			Topic: kafka.AppLogsTopic,
 		}
 		output.TLS = &obs.OutputTLSSpec{

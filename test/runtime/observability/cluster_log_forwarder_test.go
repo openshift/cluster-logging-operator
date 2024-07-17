@@ -130,9 +130,7 @@ serviceAccount:
 						spec.Type = obs.OutputTypeSyslog
 						spec.Syslog = &obs.Syslog{
 							RFC: obs.SyslogRFC5424,
-							URLSpec: obs.URLSpec{
-								URL: "tcp://0.0.0.0:24225",
-							},
+							URL: "tcp://0.0.0.0:24225",
 						}
 					}, "other")
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:

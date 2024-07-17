@@ -47,6 +47,33 @@ var _ = Describe("", func() {
 		_, err = buffer.ReadFrom(reader)
 		assert(buffer.String(), err)
 	},
+		Entry("should pass for syslog with valid udp URL", "syslog_valid_url_udp.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for syslog with valid udps URL", "syslog_valid_url_udps.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for syslog with valid tls URL", "syslog_valid_url_tls.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for syslog with valid tcp URL", "syslog_valid_url_tcp.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for kafka with valid URL or brokers", "kafka_valid_url_and_brokers.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for kafka without URL or brokers", "kafka_no_url_or_brokers.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp(".*URL.*brokers.*required.*"))
+		}),
+		Entry("should fail for kafka with invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+		}),
+		Entry("should fail for kafka with invalid URL", "kafka_invalid_url.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+		}),
+		Entry("should fail for kafka invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+		}),
 		Entry("LOG-5788: for multilineException filter should not fail", "log5788_mulitiline_ex_filter.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(MatchRegexp("clusterlogforwarder.*created"))

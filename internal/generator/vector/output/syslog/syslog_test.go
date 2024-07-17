@@ -47,9 +47,7 @@ var _ = Describe("vector syslog clf output", func() {
 				Name: "example",
 				Syslog: &obs.Syslog{
 					RFC: obs.SyslogRFC5424,
-					URLSpec: obs.URLSpec{
-						URL: "xyz://logserver:514",
-					},
+					URL: "xyz://logserver:514",
 				},
 			}
 		}
@@ -82,7 +80,7 @@ var _ = Describe("vector syslog clf output", func() {
 		}),
 		Entry("should configure UDP with every setting", "udp_with_every_setting.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
-				URLSpec:    obs.URLSpec{URL: "udp://logserver:514"},
+				URL:        "udp://logserver:514",
 				RFC:        obs.SyslogRFC3164,
 				Facility:   "kern",
 				Severity:   "critical",
@@ -95,7 +93,7 @@ var _ = Describe("vector syslog clf output", func() {
 		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Syslog = &obs.Syslog{
-				URLSpec:    obs.URLSpec{URL: "tls://logserver:6514"},
+				URL:        "tls://logserver:6514",
 				RFC:        obs.SyslogRFC5424,
 				Facility:   "$$.message.facility",
 				Severity:   "$$.message.severity",

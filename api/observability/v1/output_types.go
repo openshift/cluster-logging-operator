@@ -146,17 +146,11 @@ type OutputTLSSpec struct {
 
 type URLSpec struct {
 	// URL to send log records to.
-	//
-	// An absolute URL, with a scheme. Valid schemes depend on `type`.
-	// Special schemes `tcp`, `tls`, `udp` and `udps` are used for types that
-	// have no scheme of their own. For example, to send syslog records using secure UDP:
-	//
-	//     { type: syslog, url: udps://syslog.example.com:1234 }
-	//
 	// Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
 	URL string `json:"url"`
 }
 
@@ -283,6 +277,7 @@ type Cloudwatch struct {
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
 	URL string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.
@@ -574,8 +569,15 @@ type SASLAuthentication struct {
 }
 
 // Kafka provides optional extra properties for `type: kafka`
+// +kubebuilder:validation:XValidation:rule="has(self.url) || self.brokers.size() > 0", message="URL or brokers required"
 type Kafka struct {
-	URLSpec `json:",inline"`
+
+	// URL to send log records to.
+	//
+	// The 'username@password' part of `url` is ignored.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	URL string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -606,10 +608,12 @@ type Kafka struct {
 	// first connection only. The collector's Kafka client fetches constantly an updated list
 	// from Kafka. These updates are not reconciled back to the collector configuration.
 	// If none provided the target URL from the OutputSpec is used as fallback.
-	//
 	// +kubebuilder:validation:Optional
-	Brokers []string `json:"brokers,omitempty"`
+	Brokers []URL `json:"brokers,omitempty"`
 }
+
+// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+type URL string
 
 type LokiTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
@@ -789,7 +793,14 @@ const (
 
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
-	URLSpec `json:",inline"`
+
+	// An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
+	// For example, to send syslog records using secure UDP:
+	//     url: udps://syslog.example.com:1234
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	URL string `json:"url"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:=RFC5424
@@ -928,6 +939,7 @@ type OTLP struct {
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Pattern:=`^(https?):\/\/\S+\/v1\/logs$`
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
 	URL string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.

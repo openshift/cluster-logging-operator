@@ -496,11 +496,9 @@ var _ = Describe("#ConvertOutputs", func() {
 			}
 
 			expObsKafka := &obs.Kafka{
-				URLSpec: obs.URLSpec{
-					URL: url,
-				},
+				URL:     url,
 				Topic:   "foo",
-				Brokers: []string{"foo", "bar"},
+				Brokers: []obs.URL{"foo", "bar"},
 				Authentication: &obs.KafkaAuthentication{
 					SASL: &obs.SASLAuthentication{
 						Username: &obs.SecretReference{
@@ -625,9 +623,7 @@ var _ = Describe("#ConvertOutputs", func() {
 			}
 
 			expObsSyslog := &obs.Syslog{
-				URLSpec: obs.URLSpec{
-					URL: url,
-				},
+				URL:        url,
 				RFC:        "RFC3164",
 				Severity:   "error",
 				Facility:   "foo",

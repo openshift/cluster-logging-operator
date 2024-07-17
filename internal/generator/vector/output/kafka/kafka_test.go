@@ -51,8 +51,8 @@ var _ = Describe("Generate vector config", func() {
 				Type: obs.OutputTypeKafka,
 				Name: "kafka-receiver",
 				Kafka: &obs.Kafka{
-					URLSpec: obs.URLSpec{URL: "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"},
-					Topic:   "build_complete",
+					URL:   "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+					Topic: "build_complete",
 				},
 			}
 		}

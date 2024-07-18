@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
 )
@@ -117,8 +116,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			// testruntime a pod spec with a selector for labels and namespace
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(obs.InputTypeApplication,
+				FromInputName("myinput",
 					func(spec *obs.InputSpec) {
+						spec.Type = obs.InputTypeApplication
 						spec.Application = &obs.Application{
 							Includes: []obs.NamespaceContainerSpec{
 								{
@@ -146,31 +146,27 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		})
 
 		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("not supported for this vector release")
-			}
-			appNamespace := "multi-line-test"
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(obs.InputTypeApplication,
+				FromInputName("myinput",
 					func(spec *obs.InputSpec) {
+						spec.Type = obs.InputTypeApplication
 						spec.Application = &obs.Application{
 							Includes: []obs.NamespaceContainerSpec{
 								{
-									Namespace: appNamespace,
+									Namespace: framework.Namespace,
 								},
 							},
 						}
 					}).
 				WithMultilineErrorDetectionFilter().
 				ToCloudwatchOutput(*obsCwAuth)
-			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
 
 			exception := `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
         at testjava.Main.printMe(Main.java:19)
         at testjava.Main.main(Main.java:10)`
-			timestamp := "2021-03-31T12:59:28.573159188+00:00"
+			timestamp := functional.CRIOTime(time.Now())
 
 			buffer := []string{}
 			for _, line := range strings.Split(exception, "\n") {
@@ -178,7 +174,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				buffer = append(buffer, crioLine)
 			}
 
-			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), framework.Namespace, 1)).To(Succeed())
 			time.Sleep(10 * time.Second)
 
 			raw, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
@@ -186,58 +182,6 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
 			Expect(logs[0].Message).Should(Equal(exception))
-		})
-	})
-
-	Context("When sending infrastructure log messages to CloudWatch", func() {
-		var (
-			numLogsSent = 2
-			readLogType = logging.InputNameApplication
-		)
-		It("should not appear in the application log_group (e.g. LOG-2455)", func() {
-			// Test method fails for vector since our pod/container namespace will always
-			// begin with  "test-", thus cluster infrastructure logs are never found.
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("not a valid test for vector since we route by namespace")
-			}
-			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToCloudwatchOutput(*obsCwAuth).
-				FromInput(logging.InputNameAudit).
-				ToCloudwatchOutput(*obsCwAuth).
-				FromInput(logging.InputNameInfrastructure).
-				ToCloudwatchOutput(*obsCwAuth)
-			framework.Secrets = append(framework.Secrets, secret)
-			Expect(framework.Deploy()).To(BeNil())
-
-			// Write audit logs
-			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
-			auditLogLine := functional.NewAuditHostLog(tstamp)
-			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, 3)
-			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
-
-			// Use specific namespace from ticket LOG-2455
-			infraNamespace := "openshift-authentication-operator"
-			payload := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), `{"index":1,"timestamp":1}`)
-			writeTicketLogs := framework.WriteMessagesToNamespace(payload, infraNamespace, 5)
-			Expect(writeTicketLogs).To(BeNil(), "Expect no errors writing logs")
-
-			// Write other fake infra messages (namespace: "openshift-fake-infra")
-			writeInfraLogs := framework.WriteMessagesToInfraContainerLog(payload, 5)
-			Expect(writeInfraLogs).To(BeNil(), "Expect no errors writing logs")
-
-			// Write a single app log just to be sure its picked up ("test-..." namespace)
-			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
-			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
-			time.Sleep(10 * time.Second)
-
-			// Get application logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(readLogType)
-			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
-
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
-			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)), "Expected log_type to be correct")
 		})
 	})
 

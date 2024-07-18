@@ -190,8 +190,10 @@ fmt:
 GEN_TIMESTAMP=.target/codegen
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find api -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
-	@$(CONTROLLER_GEN) object paths="./api/..."
-	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
+	@$(CONTROLLER_GEN) object paths="./api/observability/..."
+	@$(CONTROLLER_GEN) object paths="./api/logging/v1alpha1"
+	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/observability/..." output:crd:artifacts:config=config/crd/bases
+	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/logging/v1alpha1" output:crd:artifacts:config=config/crd/bases
 	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(VERSION))\"" > version/version.go
 	@$(MAKE) fmt
 	@touch $@

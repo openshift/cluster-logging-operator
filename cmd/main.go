@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"os"
 	"runtime"
 	"strings"
@@ -20,7 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/controller/clusterlogging"
@@ -75,7 +75,6 @@ func init() {
 	utilruntime.Must(configv1.AddToScheme(scheme))
 	utilruntime.Must(securityv1.AddToScheme(scheme))
 
-	utilruntime.Must(loggingv1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(observabilityv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -146,22 +145,30 @@ func main() {
 
 	log.Info("Registering Components.")
 
-	if err = (&clusterlogging.ReconcileClusterLogging{
-		Client: mgr.GetClient(),
-		Reader: mgr.GetAPIReader(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		os.Exit(1)
-	}
-
-	if err = (&forwarding.ReconcileForwarder{
-		Client: mgr.GetClient(),
-		Reader: mgr.GetAPIReader(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", "logging.ClusterLogForwarder")
-		os.Exit(1)
+	// this does not seem to return an error if CRD is unavailable
+	_ = loggingv1.AddToScheme(scheme)
+	// Annotate existing logging.openshift.io CLFs/CLs so they can be reconciled
+	if err = annotateExistingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
+		log.Info("Skipping registration of ClusterLogging.logging.openshift.io controller since CRD is absent")
+		log.Info("Skipping registration of ClusterLogForwarder.logging.openshift.io controller since CRD is absent")
+		log.V(1).Error(err, "CRD may be absent if this is a new cluster that did not have Logging 5.9")
+	} else {
+		if err = (&clusterlogging.ReconcileClusterLogging{
+			Client: mgr.GetClient(),
+			Reader: mgr.GetAPIReader(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create controller", "controller", "logging.ClusterLogging")
+			os.Exit(1)
+		}
+		if err = (&forwarding.ReconcileForwarder{
+			Client: mgr.GetClient(),
+			Reader: mgr.GetAPIReader(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create controller", "controller", "logging.ClusterLogForwarder")
+			os.Exit(1)
+		}
 	}
 
 	// The Log File Metric Exporter Controller
@@ -203,11 +210,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Annotate existing logging.openshift.io CLFs/CLs so they can be reconciled
-	if err := annotateExistingResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
-		log.Error(err, "unable to annotate existing CRs")
-		os.Exit(1)
-	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -59,7 +59,7 @@ type SyslogEncoding struct {
 	ProcID       Element
 	MsgID        Element
 	Tag          Element
-	AddLogSource Element
+	AddLogSource genhelper.OptionalPair
 	PayloadKey   Element
 }
 
@@ -79,7 +79,7 @@ severity = "{{.Severity}}"
 {{optional .MsgID -}}
 {{optional .ProcID -}}
 {{optional .Tag -}}
-{{optional .AddLogSource -}}
+{{ .AddLogSource }}
 {{optional .PayloadKey -}}
 {{end}}`
 }
@@ -124,14 +124,15 @@ func Output(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.
 
 func Encoding(id string, o obs.OutputSpec) Element {
 	return SyslogEncoding{
-		ComponentID: id,
-		RFC:         strings.ToLower(string(o.Syslog.RFC)),
-		Facility:    Facility(o.Syslog),
-		Severity:    Severity(o.Syslog),
-		AppName:     AppName(o.Syslog),
-		ProcID:      ProcID(o.Syslog),
-		MsgID:       MsgID(o.Syslog),
-		PayloadKey:  PayloadKey(o.Syslog),
+		ComponentID:  id,
+		RFC:          strings.ToLower(string(o.Syslog.RFC)),
+		Facility:     Facility(o.Syslog),
+		Severity:     Severity(o.Syslog),
+		AppName:      AppName(o.Syslog),
+		ProcID:       ProcID(o.Syslog),
+		MsgID:        MsgID(o.Syslog),
+		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
+		PayloadKey:   PayloadKey(o.Syslog),
 	}
 }
 

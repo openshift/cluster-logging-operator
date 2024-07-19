@@ -847,7 +847,24 @@ type Syslog struct {
 	//
 	// +kubebuilder:validation:Optional
 	MsgID string `json:"msgID,omitempty"`
+
+	// Enrichment is an additional modification the log message before forwarding it to the receiver
+	// +kubebuilder:validation:Optional
+	Enrichment EnrichmentType `json:"enrichment,omitempty"`
 }
+
+// +kubebuilder:validation:Enum:=none;kubernetesMinimal
+type EnrichmentType string
+
+const (
+	// EnrichmentTypeNone add no additional enrichment to the recored
+	EnrichmentTypeNone EnrichmentType = "none"
+
+	// EnrichmentTypeKubernetesMinimal adds namespace_name, pod_name, and collector_name to the beginning of the message
+	// body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).  This may
+	// result in the message body being an invalid JSON structure
+	EnrichmentTypeKubernetesMinimal EnrichmentType = "kubernetesMinimal"
+)
 
 type OTLPTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`

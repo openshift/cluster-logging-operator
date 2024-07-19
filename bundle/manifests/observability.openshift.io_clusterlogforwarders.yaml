@@ -2098,6 +2098,13 @@ spec:
                             isnt based on fluentd assumptions of \"tag\" when this
                             is empty"
                           type: string
+                        enrichment:
+                          description: Enrichment is an additional modification the
+                            log message before forwarding it to the receiver
+                          enum:
+                          - none
+                          - kubernetesMinimal
+                          type: string
                         facility:
                           default: user
                           description: "Facility to set on outgoing syslog records.

@@ -27,31 +27,12 @@ cleanup(){
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
       ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
-
-      pushd ../elasticsearch-operator
-        # uninstall the elasticsearch operator
-        ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/operator-uninstall.sh
-        # uninstall the catalog containing the elasticsearch operator csv
-        ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/catalog-uninstall.sh
-      popd
   fi
   os::cleanup::all "${return_code}"
   set -e
   exit ${return_code}
 }
 trap cleanup exit
-
-if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
-    pushd ../elasticsearch-operator
-    # install the catalog containing the elasticsearch operator csv
-    LOGGING_VERSION=${ES_LOGGING_VERSION} \
-    ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat \
-    olm_deploy/scripts/catalog-deploy.sh
-
-    # install the elasticsearch operator from that catalog
-    LOGGING_VERSION=${ES_LOGGING_VERSION} ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
-    popd
-fi
 
 os::log::info "Deploying cluster-logging-operator"
 ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh

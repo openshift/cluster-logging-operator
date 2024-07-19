@@ -20,3 +20,4 @@ severity = "critical"
 app_name = "appName"
 msg_id = "msgID"
 proc_id = "procID"
+add_log_source = false

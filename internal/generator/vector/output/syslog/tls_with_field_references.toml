@@ -20,6 +20,7 @@ severity = "$$.message.severity"
 app_name = "$$.message.app_name"
 msg_id = "$$.message.msg_id"
 proc_id = "$$.message.proc_id"
+add_log_source = false
 payload_key = "$$.message"
 
 [sinks.example.tls]

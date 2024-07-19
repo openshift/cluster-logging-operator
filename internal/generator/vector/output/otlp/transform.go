@@ -40,9 +40,13 @@ r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 r.severityNumber = to_syslog_severity(.level) ?? 9
 `
 	BodyFromMessage = `
-r.body = {"stringValue": string!(.message)}
+# Create body from original message or structured
+value = .message
+if (value == null) { value = encode_json(.structured) }
+r.body = {"stringValue": string!(value)}
 `
 	BodyFromInternal = `
+# Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 `
 	LogAttributes = `

@@ -1,6 +1,7 @@
 package syslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		framework.Cleanup()
 	})
 
-	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, expInfo string) {
+	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, payloadKey, expInfo string) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
@@ -40,7 +41,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				output.Syslog.AppName = appName
 				output.Syslog.ProcID = procId
 				output.Syslog.MsgID = msgId
-				output.Syslog.PayloadKey = "message"
+				output.Syslog.PayloadKey = payloadKey
 			})
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -55,8 +56,39 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to match the appname/procid/msgid in received message")
 		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
 	},
+		Entry("should use the value from the record and include the message", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, `{.message}`, "rec_appname rec_procid rec_msgid"),
+	)
 
-		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid"),
+	DescribeTable("logforwarder configured with payload key", func(appName, msgId, procId, payloadKey string) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(logging.InputNameApplication).
+			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				output.Syslog.Facility = "user"
+				output.Syslog.Severity = "debug"
+				output.Syslog.AppName = appName
+				output.Syslog.ProcID = procId
+				output.Syslog.MsgID = msgId
+				output.Syslog.PayloadKey = payloadKey
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		record := `{"index":1,"appname_key":"rec_appname","msgid_key":"rec_msgid","procid_key":"rec_procid"}`
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+		fields := strings.Split(outputlogs[0], " - ")
+		payload := strings.TrimSpace(fields[1])
+		parsedRecord := map[string]interface{}{}
+		Expect(json.Unmarshal([]byte(payload), &parsedRecord)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
+		msg := parsedRecord["message"]
+		Expect(msg).To(Equal(record))
+
+	},
+		Entry("should include the whole message when payloadkey is empty", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, ""),
+		Entry("should include the message when payloadkey is not found", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, "{.key_not_available}"),
 	)
 
 	Describe("configured with values for facility,severity", func() {

@@ -821,30 +821,70 @@ type Syslog struct {
 	// +kubebuilder:default:=user
 	Facility string `json:"facility,omitempty"`
 
-	// PayloadKey specifies record field to use as payload.
+	// PayloadKey specifies record field to use as payload. This supports template syntax
+	// to allow dynamic per-event values.
+
+	// The PayloadKey must be a single field path encased in single curly brackets `{}`.
+	// Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+	// If left empty, Syslog will use the whole message as the payload key
 	//
+	// Example:
+	// 1. {.bar}
+	// 2. {.foo.bar.baz}
+	// 3. {.foo.bar."baz/with/slashes"}
+	//
+	// +kubebuilder:validation:Pattern:=`^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$`
 	// +kubebuilder:validation:Optional
 	PayloadKey string `json:"payloadKey,omitempty"`
 
-	// AppName is APP-NAME part of the syslog-msg header
-	//
+	// AppName is APP-NAME part of the syslog-msg header.
 	// AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
+	// This supports template syntax to allow dynamic per-event values.
 	//
+	// The AppName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +kubebuilder:validation:Optional
 	// TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of "tag" when this is empty
 	AppName string `json:"appName,omitempty"`
 
-	// ProcID is PROCID part of the syslog-msg header
+	// ProcID is PROCID part of the syslog-msg header. This supports template syntax
+	// to allow dynamic per-event values.
+	//
+	// The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +kubebuilder:validation:Optional
 	ProcID string `json:"procID,omitempty"`
 
-	// MsgID is MSGID part of the syslog-msg header
+	// MsgID is MSGID part of the syslog-msg header. This supports template syntax
+	// to allow dynamic per-event values.
+	//
+	// The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Example:
+	// 1. foo-{.bar||"none"}
+	// 2. {.foo||.bar||"missing"}
+	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +kubebuilder:validation:Optional
 	MsgID string `json:"msgID,omitempty"`
 

@@ -64,7 +64,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 			ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
 				spec.Syslog.Facility = "user"
 				spec.Syslog.Severity = "debug"
-				spec.Syslog.PayloadKey = "message"
+				spec.Syslog.PayloadKey = "{.message}"
 				spec.Syslog.Enrichment = enrichment
 			})
 		Expect(framework.Deploy()).To(BeNil())

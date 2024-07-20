@@ -3,9 +3,10 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -132,9 +133,9 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
-					spec.Syslog.AppName = "$.message.appname_key"
-					spec.Syslog.ProcID = "$.message.procid_key"
-					spec.Syslog.MsgID = "$.message.msgid_key"
+					spec.Syslog.AppName = `{.appname_key||"none"}`
+					spec.Syslog.ProcID = `{.procid_key||"none"}`
+					spec.Syslog.MsgID = `{.msgid_key||"none"}`
 				}))
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -151,6 +152,30 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getAppName(fields)).To(Equal("rec_appname"))
 			Expect(getProcID(fields)).To(Equal("rec_procid"))
 			Expect(getMsgID(fields)).To(Equal("rec_msgid"))
+		})
+		It("should allow combination of static + dynamic setting of appname, procid, messageid from record", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
+					spec.Syslog.AppName = `foo-{.openshift.cluster_id||"none"}`
+					spec.Syslog.ProcID = `bar-{.appname_key||"none"}`
+					spec.Syslog.MsgID = `baz{.level||"none"}.{.log_type||"none"}`
+				}))
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Log message data
+			for _, log := range JSONApplicationLogs {
+				log = functional.NewFullCRIOLogMessage(timestamp, log)
+				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
+			}
+			// Read line from Syslog output
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+			fields := strings.Split(outputlogs[0], " ")
+			Expect(getAppName(fields)).To(Equal("foo-functional"))
+			Expect(getProcID(fields)).To(Equal("bar-rec_appname"))
+			Expect(getMsgID(fields)).To(Equal("bazdefault.application"))
 		})
 	})
 	Context("Audit logs", func() {

@@ -2,6 +2,7 @@ package syslog_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -81,13 +82,14 @@ var _ = Describe("vector syslog clf output", func() {
 		}),
 		Entry("should configure UDP with every setting", "udp_with_every_setting.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
-				URLSpec:  obs.URLSpec{URL: "udp://logserver:514"},
-				RFC:      obs.SyslogRFC3164,
-				Facility: "kern",
-				Severity: "critical",
-				AppName:  "appName",
-				MsgID:    "msgID",
-				ProcID:   "procID",
+				URLSpec:    obs.URLSpec{URL: "udp://logserver:514"},
+				RFC:        obs.SyslogRFC3164,
+				Facility:   "kern",
+				Severity:   "critical",
+				AppName:    "appName",
+				MsgID:      "msgID",
+				ProcID:     "procID",
+				PayloadKey: "{.plKey}",
 			}
 		}),
 		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
@@ -95,12 +97,12 @@ var _ = Describe("vector syslog clf output", func() {
 			spec.Syslog = &obs.Syslog{
 				URLSpec:    obs.URLSpec{URL: "tls://logserver:6514"},
 				RFC:        obs.SyslogRFC5424,
-				Facility:   "$.message.facility",
-				Severity:   "$.message.severity",
-				AppName:    "$.message.app_name",
-				MsgID:      "$.message.msg_id",
-				ProcID:     "$.message.proc_id",
-				PayloadKey: "$.message",
+				Facility:   "$$.message.facility",
+				Severity:   "$$.message.severity",
+				AppName:    `{.app_name||"none"}`,
+				MsgID:      `{.msg_id||"none"}`,
+				ProcID:     `{.proc_id||"none"}`,
+				PayloadKey: `{.payload_key}`,
 			}
 		}),
 	)

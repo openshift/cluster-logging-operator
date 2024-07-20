@@ -3,12 +3,6 @@ type = "remap"
 inputs = ["application"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
-
-if is_null(.) {
-	.payload_key = .
-} else {
-	.payload_key = .
-}
 '''
 
 [sinks.example]
@@ -24,4 +18,3 @@ rfc = "rfc5424"
 facility = "user"
 severity = "informational"
 add_log_source = false
-payload_key = "payload_key"

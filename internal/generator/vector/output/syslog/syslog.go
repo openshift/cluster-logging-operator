@@ -193,18 +193,22 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 }
 
 func Encoding(id string, o obs.OutputSpec, templatePairs []FieldVRLStringPair) []Element {
-	// Set the appropriate encoding fields that have been user templated
-	encodingFields := []Element{
-		SyslogEncoding{
-			ComponentID:  id,
-			RFC:          strings.ToLower(string(o.Syslog.RFC)),
-			Facility:     Facility(o.Syslog),
-			Severity:     Severity(o.Syslog),
-			AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
-			PayloadKey:   genhelper.NewOptionalPair("payload_key", "payload_key"),
-		},
+	sysLEncode := SyslogEncoding{
+		ComponentID:  id,
+		RFC:          strings.ToLower(string(o.Syslog.RFC)),
+		Facility:     Facility(o.Syslog),
+		Severity:     Severity(o.Syslog),
+		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
+		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
+	}
+	if o.Syslog.PayloadKey != "" {
+		sysLEncode.PayloadKey.Value = "payload_key"
 	}
 
+	encodingFields := []Element{
+		sysLEncode,
+	}
+	// Add fields that have been templated
 	for _, pair := range templatePairs {
 		encodingFields = append(encodingFields, KV(pair.Field, fmt.Sprintf(`"$$.message.%s"`, pair.Field)))
 	}
@@ -246,7 +250,7 @@ func Severity(s *obs.Syslog) string {
 func PayloadKey(plKey string) string {
 	// Default
 	if plKey == "" {
-		return "."
+		return ""
 	}
 	return plKey[1 : len(plKey)-1]
 }

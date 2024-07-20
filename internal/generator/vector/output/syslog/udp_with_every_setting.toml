@@ -1,13 +1,23 @@
-[transforms.example_json]
+[transforms.example_parse_encoding]
 type = "remap"
 inputs = ["application"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
+
+.app_name = "appName"
+.msg_id = "msgID"
+.proc_id = "procID"
+
+if is_null(.plKey) {
+	.payload_key = .
+} else {
+	.payload_key = .plKey
+}
 '''
 
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_parse_encoding"]
 address = "logserver:514"
 mode = "udp"
 
@@ -17,7 +27,8 @@ except_fields = ["_internal"]
 rfc = "rfc3164"
 facility = "kern"
 severity = "critical"
-app_name = "appName"
-msg_id = "msgID"
-proc_id = "procID"
 add_log_source = false
+payload_key = "payload_key"
+app_name = "$$.message.app_name"
+msg_id = "$$.message.msg_id"
+proc_id = "$$.message.proc_id"

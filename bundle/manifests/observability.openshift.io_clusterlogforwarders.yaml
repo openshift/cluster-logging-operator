@@ -2092,11 +2092,21 @@ spec:
                       properties:
                         appName:
                           description: "AppName is APP-NAME part of the syslog-msg
-                            header \n AppName needs to be specified if using rfc5424.
+                            header. AppName needs to be specified if using rfc5424.
                             The maximum length of the final values is truncated to
-                            48 \n TODO: DETERMIN HOW to default the app name that
-                            isnt based on fluentd assumptions of \"tag\" when this
-                            is empty"
+                            48 This supports template syntax to allow dynamic per-event
+                            values. \n The AppName can be a combination of static
+                            and dynamic values consisting of field paths followed
+                            by `||` followed by another field path or a static value.
+                            A dynamic value is encased in single curly brackets `{}`
+                            and MUST end with a static fallback value separated with
+                            `||`. Static values can only contain alphanumeric characters
+                            along with dashes, underscores, dots and forward slashes.
+                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
+                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+                            \n TODO: DETERMIN HOW to default the app name that isnt
+                            based on fluentd assumptions of \"tag\" when this is empty"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         enrichment:
                           description: Enrichment is an additional modification the
@@ -2117,18 +2127,45 @@ spec:
                             local1 local2 local3 local4 local5 local6 local7"
                           type: string
                         msgID:
-                          description: "MsgID is MSGID part of the syslog-msg header
+                          description: "MsgID is MSGID part of the syslog-msg header.
+                            This supports template syntax to allow dynamic per-event
+                            values. \n The MsgID can be a combination of static and
+                            dynamic values consisting of field paths followed by `||`
+                            followed by another field path or a static value. A dynamic
+                            value is encased in single curly brackets `{}` and MUST
+                            end with a static fallback value separated with `||`.
+                            Static values can only contain alphanumeric characters
+                            along with dashes, underscores, dots and forward slashes.
+                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
+                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
                             \n MsgID needs to be specified if using rfc5424.  The
                             maximum length of the final values is truncated to 32"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         payloadKey:
-                          description: PayloadKey specifies record field to use as
-                            payload.
+                          description: "The PayloadKey must be a single field path
+                            encased in single curly brackets `{}`. Field paths must
+                            only contain alphanumeric and underscores. Any field with
+                            other characters must be quoted. If left empty, Syslog
+                            will use the whole message as the payload key \n Example:
+                            1. {.bar} 2. {.foo.bar.baz} 3. {.foo.bar.\"baz/with/slashes\"}"
+                          pattern: ^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$
                           type: string
                         procID:
-                          description: "ProcID is PROCID part of the syslog-msg header
+                          description: "ProcID is PROCID part of the syslog-msg header.
+                            This supports template syntax to allow dynamic per-event
+                            values. \n The ProcID can be a combination of static and
+                            dynamic values consisting of field paths followed by `||`
+                            followed by another field path or a static value. A dynamic
+                            value is encased in single curly brackets `{}` and MUST
+                            end with a static fallback value separated with `||`.
+                            Static values can only contain alphanumeric characters
+                            along with dashes, underscores, dots and forward slashes.
+                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
+                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
                             \n ProcID needs to be specified if using rfc5424. The
                             maximum length of the final values is truncated to 128"
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         rfc:
                           default: RFC5424

@@ -1,13 +1,23 @@
-[transforms.example_json]
+[transforms.example_parse_encoding]
 type = "remap"
 inputs = ["application"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
+
+.app_name = to_string!(.app_name||"none")
+.msg_id = to_string!(.msg_id||"none")
+.proc_id = to_string!(.proc_id||"none")
+
+if is_null(.payload_key) {
+	.payload_key = .
+} else {
+	.payload_key = .payload_key
+}
 '''
 
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_parse_encoding"]
 address = "logserver:6514"
 mode = "tcp"
 
@@ -17,11 +27,11 @@ except_fields = ["_internal"]
 rfc = "rfc5424"
 facility = "$$.message.facility"
 severity = "$$.message.severity"
+add_log_source = false
+payload_key = "payload_key"
 app_name = "$$.message.app_name"
 msg_id = "$$.message.msg_id"
 proc_id = "$$.message.proc_id"
-add_log_source = false
-payload_key = "$$.message"
 
 [sinks.example.tls]
 enabled = true

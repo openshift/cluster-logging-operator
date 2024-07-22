@@ -6,7 +6,9 @@
     ],
     "hideTypePatterns": [
         "ParseError$",
-        "List$"
+        "List$",
+        "github.com/openshift/cluster-logging-operator/api/logging/v1/.*",
+        "github.com/openshift/cluster-logging-operator/api/observability/.*"
     ],
     "externalPackages": [
         {
@@ -64,7 +66,6 @@
         "k8s.io/apimachinery/pkg/apis/meta/v1/": "",
         "k8s.io/component-base/config/": "Kubernetes ",
         "sigs.k8s.io/controller-runtime/pkg/config/": "K8S Controller-runtime ",
-        "github.com/openshift/cluster-logging-operator/api/logging/v1": "Cluster Logging v1",
         "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1/": "ViaQ Data Model v1"
     },
     "markdownDisabled": true

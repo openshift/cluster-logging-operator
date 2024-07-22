@@ -1,0 +1,2744 @@
+////
+:_mod-docs-content-type: ASSEMBLY
+include::_attributes/common-attributes.adoc[]
+include::_attributes/attributes-openshift-dedicated.adoc[]
+[id="logging-5-x-reference"]
+= 5.x logging API reference
+:context: logging-5-x-reference
+
+toc::[]
+////
+
+////
+** These release notes are generated from the content in the openshift/cluster-logging-operator repository.
+** Do not modify the content here manually except for the metadata and section IDs - changes to the content should be made in the source code.
+////
+
+[id="logging-5-x-reference-LogFileMetricExporter"]
+== LogFileMetricExporter
+
+A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the logFileMetricExporters API
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|spec|object|  
+|status|object|  
+|======================
+
+=== .spec
+
+LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
+|resources|object|  *(optional)* The resource requirements for the LogFileMetricExporter
+|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+|======================
+
+=== .spec.nodeSelector
+
+Type:: object
+
+=== .spec.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.resources.limits
+
+Type:: object
+
+=== .spec.resources.requests
+
+Type:: object
+
+=== .spec.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .status
+
+LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|conditions|object|  Conditions of the Log File Metrics Exporter.
+|======================
+
+=== .status.conditions
+
+Type:: object
+
+[id="logging-5-x-reference-ClusterLogForwarder"]
+== ClusterLogForwarder
+docs/reference/operator/api_logging_v1alpha1.adoc
+ClusterLogForwarder is an API to configure forwarding logs.
+
+You configure forwarding by specifying a list of `pipelines`,
+which forward from a set of named inputs to a set of named outputs.
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|spec|object|  
+|status|object|  
+|======================
+
+=== .spec
+
+ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|collector|object|  Specification of the Collector deployment to define
+resource limits and workload placement
+
+|filters|array|  Filters are applied to log records passing through a pipeline.
+There are different types of filter that can select and modify log records in different ways.
+See [FilterTypeSpec] for a list of filter types.
+
+|inputs|array|  Inputs are named filters for log messages to be forwarded.
+
+There are three built-in inputs named `application`, `infrastructure` and
+`audit`. You don&#39;t need to define inputs here if those are sufficient for
+your needs. See `inputRefs` for more.
+
+|managementState|string|  Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
+
+|outputs|array|  Outputs are named destinations for log messages.
+
+|pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
+
+|serviceAccount|object|  ServiceAccount points to the ServiceAccount resource used by the collector pods.
+
+|======================
+
+=== .spec.collector
+
+CollectorSpec is spec to define scheduling and resources for a collector
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object|  Define nodes for scheduling the pods.
+
+|resources|object|  The resource requirements for the collector
+
+|tolerations|array|  Define the tolerations the collector pods will accept
+
+|======================
+
+=== .spec.collector.nodeSelector
+
+Type:: object
+
+=== .spec.collector.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.collector.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.collector.resources.limits
+
+Type:: object
+
+=== .spec.collector.resources.requests
+
+Type:: object
+
+=== .spec.collector.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.collector.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .spec.filters[]
+
+FilterSpec defines a filter for log messages.
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|drop|array|  A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
+Each test contains a sequence of conditions, all conditions must be true for the test to pass.
+A DropTestsSpec contains an array of tests which contains an array of conditions
+
+|kubeAPIAudit|object|  
+|name|string|  Name used to refer to the filter from a `pipeline`.
+
+|openShiftLabels|object|  Labels applied to log records passing through a pipeline.
+These labels appear in the `openshift.labels` map in the log record.
+
+|prune|object|  The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
+
+|type|string|  Type of filter.
+
+|======================
+
+=== .spec.filters[].drop[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|test|array|  DropConditions is an array of DropCondition which are conditions that are ANDed together
+
+|======================
+
+=== .spec.filters[].drop[].test[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|field|string|  A dot delimited path to a field in the log record. It must start with a `.`.
+The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted.
+Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
+|matches|string|  A regular expression that the field will match.
+If the value of the field defined in the DropTest matches the regular expression, the log record will be dropped.
+Must define only one of matches OR notMatches
+
+|notMatches|string|  A regular expression that the field does not match.
+If the value of the field defined in the DropTest does not match the regular expression, the log record will be dropped.
+Must define only one of matches or notMatches
+
+|======================
+
+=== .spec.filters[].kubeAPIAudit
+
+KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
+
+# Policy Filtering
+
+Policy event rules are the same format as the [Kube Audit Policy] with some minor extensions.
+The extensions are described here, see the [Kube Audit Policy] for the standard rule behavior.
+Rules are checked in order, checking stops at the first matching rule.
+
+An audit policy event contains meta-data describing who made the request.
+It can also include the full body of the API request, and the response that was sent.
+The `level` of an audit rule determines how much data is included in the event:
+
+- None: the event is dropped.
+
+- Metadata: Only the audit metadata is included, request and response bodies are removed.
+
+- Request: Audit metadata and the request body are included, the response body is removed.
+
+- RequestResponse: All data is included: metadata, request body and response body. Note the response body can be very large.
+
+For example the a command like `oc get -A pods` generates a response body containing the YAML description of every pod in the cluster.
+
+# Extensions
+
+The following features are extensions to the standard [Kube Audit Policy]
+
+## Wildcards
+
+Names of users, groups, namespaces, and resources can have a leading or trailing &#39;*&#39; character.
+For example namespace &#39;openshift-*&#39; matches &#39;openshift-apiserver&#39; or &#39;openshift-authentication.
+Resource &#39;*/status&#39; matches &#39;Pod/status&#39; or &#39;Deployment/status&#39;
+
+## Default Rules
+
+Events that do not match any rule in the policy are filtered as follows:
+- User events (ie. non-system and non-serviceaccount) are forwarded
+- Read-only system events (get/list/watch etc) are dropped
+- Service account write events that occur within the same namespace as the service account are dropped
+- All other events are forwarded, subject to any configured [rate limits][#rate-lmiting]
+
+If you want to disable these defaults, end your rules list with rule that has only a `level` field.
+An empty rule matches any event, and prevents the defaults from taking effect.
+
+## Omit Response Codes
+
+You can drop events based on the HTTP status code in the response. See the OmitResponseCodes field.
+
+[Kube Audit Policy]: https://kubernetes.io/docs/reference/config-api/apiserver-audit.v1/#audit-k8s-io-v1-Policy
+[Kubernetes Auditing]: https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|omitResponseCodes|int|  OmitResponseCodes is a list of HTTP status code for which no events are created.
+If this field is missing or null, the default value used is [404, 409, 422, 429]
+(NotFound, Conflict, UnprocessableEntity, TooManyRequests)
+If it is the empty list [], then no status codes are omitted.
+Otherwise, this field should be a list of integer status codes to omit.
+
+|omitStages|array|  OmitStages is a list of stages for which no events are created.
+Note that this can also be specified per rule in which case the union of both are omitted.
+
+|rules|array|  Rules specify the audit Level a request should be recorded at.
+A request may match multiple rules, in which case the FIRST matching rule is used.
+PolicyRules are strictly ordered.
+
+If Rules is empty or missing default rules apply, see [KubeAPIAudit]
+|======================
+
+=== .spec.filters[].kubeAPIAudit.omitResponseCodes
+
+Type:: int
+
+=== .spec.filters[].kubeAPIAudit.omitStages[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|level|string|  The Level that requests matching this rule are recorded at.
+|namespaces|array|  *(optional)* Namespaces that this rule matches.
+The empty string &#34;&#34; matches non-namespaced resources.
+An empty list implies every namespace.
+|nonResourceURLs|array|  *(optional)* NonResourceURLs is a set of URL paths that should be audited.
+`*`s are allowed, but only as the full, final step in the path.
+Examples:
+- `/metrics` - Log requests for apiserver metrics
+- `/healthz*` - Log all health checks
+|omitManagedFields|bool|  *(optional)* OmitManagedFields indicates whether to omit the managed fields of the request
+and response bodies from being written to the API audit log.
+- a value of &#39;true&#39; will drop the managed fields from the API audit log
+- a value of &#39;false&#39; indicates that the managed fileds should be included
+
+in the API audit log
+Note that the value, if specified, in this rule will override the global default
+If a value is not specified then the global default specified in
+Policy.OmitManagedFields will stand.
+|omitStages|array|  *(optional)* OmitStages is a list of stages for which no events are created. Note that this can also
+be specified policy wide in which case the union of both are omitted.
+An empty list means no restrictions will apply.
+|resources|array|  *(optional)* Resources that this rule matches. An empty list implies all kinds in all API groups.
+|userGroups|array|  *(optional)* The user groups this rule applies to. A user is considered matching
+if it is a member of any of the UserGroups.
+An empty list implies every user group.
+|users|array|  *(optional)* The users (by authenticated user name) this rule applies to.
+An empty list implies every user.
+|verbs|array|  *(optional)* The verbs that match this rule.
+An empty list implies every verb.
+|======================
+
+=== .spec.filters[].kubeAPIAudit.rules[].namespaces[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].nonResourceURLs[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].omitManagedFields
+
+Type:: bool
+
+=== .spec.filters[].kubeAPIAudit.rules[].omitStages[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].resources[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|group|string|  *(optional)* Group is the name of the API group that contains the resources.
+The empty string represents the core API group.
+|resourceNames|array|  *(optional)* ResourceNames is a list of resource instance names that the policy matches.
+Using this field requires Resources to be specified.
+An empty list implies that every instance of the resource is matched.
+|resources|array|  *(optional)* Resources is a list of resources this rule applies to.
+
+For example:
+- `pods` matches pods.
+- `pods/log` matches the log subresource of pods.
+- `*` matches all resources and their subresources.
+- `pods/*` matches all subresources of pods.
+- `*/scale` matches all scale subresources.
+
+If wildcard is present, the validation rule will ensure resources do not
+overlap with each other.
+
+An empty list implies all resources and subresources in this API groups apply.
+|======================
+
+=== .spec.filters[].kubeAPIAudit.rules[].resources[].resourceNames[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].resources[].resources[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].userGroups[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].users[]
+
+Type:: array
+
+=== .spec.filters[].kubeAPIAudit.rules[].verbs[]
+
+Type:: array
+
+=== .spec.filters[].openShiftLabels
+
+Type:: object
+
+=== .spec.filters[].prune
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|in|array|  `In` is an array of dot-delimited field paths. Fields included here are removed from the log record.
+Each field path expression must start with a `.`.
+The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+NOTE1: `In` CANNOT contain `.log_type` or `.message` as those fields are required and cannot be pruned.
+NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
+
+|notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record
+Each field path expression must start with a `.`.
+The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields are required and cannot be pruned.
+NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+
+|======================
+
+=== .spec.filters[].prune.in[]
+
+Type:: array
+
+=== .spec.filters[].prune.notIn[]
+
+Type:: array
+
+=== .spec.inputs[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|application|object|  Application, named set of `application` logs that
+can specify a set of match criteria
+
+|audit|object|  Audit, enables `audit` logs.
+
+|infrastructure|object|  Infrastructure, Enables `infrastructure` logs.
+
+|name|string|  Name used to refer to the input of a `pipeline`.
+
+|receiver|object|  Receiver to receive logs from non-cluster sources.
+
+|type|string|  Type of output sink.
+
+|======================
+
+=== .spec.inputs[].application
+
+Application workload log selector.
+All conditions in the selector must be satisfied (logical AND) to select logs.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|excludes|array|  Excludes is the set of namespaces and containers to ignore when collecting logs.
+Takes precedence over Includes option.
+
+|includes|array|  Includes is the set of namespaces and containers to include when collecting logs.
+Note: infrastructure namespaces are still excluded for &#34;*&#34; values unless a qualifying glob pattern is specified.
+
+|selector|object|  Selector for logs from pods with matching labels.
+Only messages from pods with these labels are collected.
+If absent or empty, logs are collected regardless of labels.
+
+|tuning|object|  Tuning is the container input tuning spec for this container sources
+
+|======================
+
+=== .spec.inputs[].application.excludes[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|container|string|  Container spec the containers from which to collect logs
+Supports glob patterns and presumes &#34;*&#34; if omitted.
+
+|namespace|string|  Namespace specs the namespace from which to collect logs
+Supports glob patterns and presumes &#34;*&#34; if omitted.
+
+|======================
+
+=== .spec.inputs[].application.includes[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|container|string|  Container spec the containers from which to collect logs
+Supports glob patterns and presumes &#34;*&#34; if omitted.
+
+|namespace|string|  Namespace specs the namespace from which to collect logs
+Supports glob patterns and presumes &#34;*&#34; if omitted.
+
+|======================
+
+=== .spec.inputs[].application.selector
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the
+operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|======================
+
+=== .spec.inputs[].application.selector.matchExpressions[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  key is the label key that the selector applies to.
+|operator|string|  operator represents a key&#39;s relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.
+|values|array|  *(optional)* values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.
+|======================
+
+=== .spec.inputs[].application.selector.matchExpressions[].values[]
+
+Type:: array
+
+=== .spec.inputs[].application.selector.matchLabels
+
+Type:: object
+
+=== .spec.inputs[].application.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container
+by this input. This limit is applied per collector deployment.
+
+|======================
+
+=== .spec.inputs[].application.tuning.rateLimitPerContainer
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+allowed per input/output in a pipeline
+
+|======================
+
+=== .spec.inputs[].audit
+
+Audit enables audit logs.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sources|array|  Sources defines the list of audit sources to collect.
+This field is optional and its exclusion results in the collection of all audit sources.
+
+|======================
+
+=== .spec.inputs[].audit.sources[]
+
+AuditSource defines which type of audit log source is used.
+
+Type:: array
+
+=== .spec.inputs[].infrastructure
+
+Infrastructure enables infrastructure logs.
+Sources of these logs:
+* container workloads deployed to namespaces: default, kube*, openshift*
+* journald logs from cluster nodes
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sources|array|  Sources defines the list of infrastructure sources to collect.
+This field is optional and omission results in the collection of all infrastructure sources.
+
+|======================
+
+=== .spec.inputs[].infrastructure.sources[]
+
+InfrastructureSource defines the type of infrastructure log source to use.
+
+Type:: array
+
+=== .spec.inputs[].receiver
+
+ReceiverSpec is a union of input Receiver types.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|http|object|  
+|port|int|  Port the Receiver listens on. It must be a value between 1024 and 65535
+
+|tls|object|  TLS contains settings for controlling options of TLS connections.
+
+The operator will request certificates from the cluster&#39;s cert signing service when TLS is not defined.
+The certificates are injected into a secret named &#34;&lt;clusterlogforwarder.name&gt;-&lt;input.name&gt;&#34; which is mounted into
+the collector. The collector is configured to use the public and private key provided by the service
+
+|type|string|  Type of Receiver plugin.
+
+|======================
+
+=== .spec.inputs[].receiver.http
+
+HTTPReceiver receives encoded logs as a HTTP endpoint.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|format|string|  Format is the format of incoming log data.
+
+|======================
+
+=== .spec.inputs[].receiver.tls
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ca|object|  CA can be used to specify a custom list of trusted certificate authorities.
+
+|certificate|object|  Certificate points to the server certificate to use.
+
+|key|object|  Key points to the private key of the server certificate.
+
+|keyPassphrase|object|  KeyPassphrase points to the passphrase used to unlock the private key.
+
+|======================
+
+=== .spec.inputs[].receiver.tls.ca
+
+ValueReference encodes a reference to a single field in either a ConfigMap or Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|configMapName|string|  ConfigMapName contains the name of the ConfigMap containing the referenced value.
+|key|string|  Name of the key used to get the value in either the referenced ConfigMap or Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+|======================
+
+=== .spec.inputs[].receiver.tls.certificate
+
+ValueReference encodes a reference to a single field in either a ConfigMap or Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|configMapName|string|  ConfigMapName contains the name of the ConfigMap containing the referenced value.
+|key|string|  Name of the key used to get the value in either the referenced ConfigMap or Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+|======================
+
+=== .spec.inputs[].receiver.tls.key
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.inputs[].receiver.tls.keyPassphrase
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[]
+
+OutputSpec defines a destination for log messages.
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|azureMonitor|object|  
+|cloudwatch|object|  
+|elasticsearch|object|  
+|googleCloudLogging|object|  
+|http|object|  
+|kafka|object|  
+|loki|object|  
+|lokiStack|object|  
+|name|string|  Name used to refer to the output from a `pipeline`.
+
+|otlp|object|  
+|rateLimit|object|  Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
+to this output from any given collector container. The total log flow from an individual collector
+container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node
+Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
+
+|splunk|object|  
+|syslog|object|  
+|tls|object|  TLS contains settings for controlling options on TLS client connections.
+
+|type|string|  Type of output sink.
+
+|======================
+
+=== .spec.outputs[].azureMonitor
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|azureResourceId|string|  AzureResourceId the Resource ID of the Azure resource the data should be associated with.
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+
+|customerId|string|  CustomerId che unique identifier for the Log Analytics workspace.
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+
+|host|string|  Host alternative host for dedicated Azure regions. (for example for China region)
+https://docs.azure.cn/en-us/articles/guidance/developerdifferences#check-endpoints-in-azure
+
+|logType|string|  LogType the record type of the data that is being submitted.
+Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].azureMonitor.authentication
+
+AzureMonitorAuthentication contains configuration for authenticating requests to a AzureMonitor output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sharedKey|object|  SharedKey points to the secret containing the shared key used for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].azureMonitor.authentication.sharedKey
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning
+
+BaseOutputTuningSpec tuning parameters for an output
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxRetryDuration
+
+Type:: Duration
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.outputs[].azureMonitor.tuning.maxWrite.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.minRetryDuration
+
+Type:: Duration
+
+=== .spec.outputs[].cloudwatch
+
+Cloudwatch provides configuration for the output type `cloudwatch`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|groupName|string|  GroupName defines the strategy for grouping logstreams
+The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|region|string|  
+|tuning|object|  Tuning specs tuning for the output
+
+|url|string|  URL to send log records to.
+
+The &#39;username@password&#39; part of `url` is ignored.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication
+
+CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|awsAccessKey|object|  AWSAccessKey points to the AWS access key id and secret to be used for authentication.
+
+|iamRole|object|  IAMRole points to the secret containing the role ARN to be used for authentication.
+This can be used for authentication in STS-enabled clusters when additionally specifying
+a web identity token
+
+|type|string|  Type is the type of cloudwatch authentication to configure
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.awsAccessKey
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|keyID|object|  AccessKeyID points to the AWS access key id to be used for authentication.
+
+|keySecret|object|  AccessKeySecret points to the AWS access key secret to be used for authentication.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.awsAccessKey.keyID
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.awsAccessKey.keySecret
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.iamRole
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|roleARN|object|  RoleARN points to the secret containing the role ARN to be used for authentication.
+This is used for authentication in STS-enabled clusters.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.iamRole.roleARN
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.iamRole.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.iamRole.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].cloudwatch.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+It is an error if the compression type is not supported by the output.
+
+|======================
+
+=== .spec.outputs[].elasticsearch
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|url|string|  URL to send log records to.
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|index|string|  Index is the index for the logs. This supports template syntax
+to allow dynamic per-event values.
+
+The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|tuning|object|  Tuning specs tuning for the output
+
+|version|int|  Version specifies the version of Elasticsearch to be used.
+Must be one of: 6-8, where 8 is the default
+
+|======================
+
+=== .spec.outputs[].elasticsearch.authentication
+
+HTTPAuthentication provides options for setting common authentication credentials.
+This is mostly used with outputs using HTTP or a derivative as transport.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|password|object|  Password to use for authenticating requests.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|username|object|  Username to use for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].elasticsearch.authentication.password
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].elasticsearch.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].elasticsearch.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].elasticsearch.authentication.username
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].elasticsearch.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging
+
+GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging.
+Exactly one of billingAccountID, organizationID, folderID, or projectID must be set.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|id|object|  ID must be one of the required ID fields for the output
+
+|logId|string|  LogID is the log ID to which to publish logs. This identifies log stream.
+
+The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.authentication
+
+GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|credentials|object|  Credentials points to the secret containing the `google-application-credentials.json`.
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.authentication.credentials
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.id
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|type|string|  Type is the ID type provided
+|value|string|  Value is the value of the ID
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|======================
+
+=== .spec.outputs[].http
+
+HTTP provided configuration for sending json encoded logs to a generic HTTP endpoint.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|url|string|  URL to send log records to.
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|headers|object|  Headers specify optional headers to be sent with the request
+
+|method|string|  Method specifies the Http method to be used for sending logs. If not set, &#39;POST&#39; is used.
+
+|timeout|int|  Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].http.authentication
+
+HTTPAuthentication provides options for setting common authentication credentials.
+This is mostly used with outputs using HTTP or a derivative as transport.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|password|object|  Password to use for authenticating requests.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|username|object|  Username to use for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].http.authentication.password
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].http.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].http.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].http.authentication.username
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].http.headers
+
+Type:: object
+
+=== .spec.outputs[].http.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|======================
+
+=== .spec.outputs[].kafka
+
+Kafka provides optional extra properties for `type: kafka`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|brokers|array|  Brokers specifies the list of broker endpoints of a Kafka cluster.
+The list represents only the initial set used by the collector&#39;s Kafka client for the
+first connection only. The collector&#39;s Kafka client fetches constantly an updated list
+from Kafka. These updates are not reconciled back to the collector configuration.
+If none provided the target URL from the OutputSpec is used as fallback.
+|topic|string|  Topic specifies the target topic to send logs to.
+
+The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|tuning|object|  Tuning specs tuning for the output
+
+|url|string|  URL to send log records to.
+
+The &#39;username@password&#39; part of `url` is ignored.
+|======================
+
+=== .spec.outputs[].kafka.authentication
+
+KafkaAuthentication contains configuration for authenticating requests to a Kafka output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|sasl|object|  SASL contains options configuring SASL authentication.
+
+|======================
+
+=== .spec.outputs[].kafka.authentication.sasl
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|mechanism|string|  Mechanism sets the SASL mechanism to use.
+
+|password|object|  Username points to the secret to be used as SASL password.
+
+|username|object|  Username points to the secret to be used as SASL username.
+
+|======================
+
+=== .spec.outputs[].kafka.authentication.sasl.password
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].kafka.authentication.sasl.username
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].kafka.brokers[]
+
+Type:: array
+
+=== .spec.outputs[].kafka.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|delivery|string|  
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|======================
+
+=== .spec.outputs[].kafka.tuning.maxWrite
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.outputs[].kafka.tuning.maxWrite.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.outputs[].kafka.tuning.maxWrite.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.outputs[].kafka.tuning.maxWrite.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.outputs[].kafka.tuning.maxWrite.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.outputs[].kafka.tuning.maxWrite.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
+|======================
+
+=== .spec.outputs[].loki
+
+Loki provides optional extra properties for `type: loki`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|url|string|  URL to send log records to.
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|labelKeys|array|  LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
+
+If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+
+Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
+Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
+Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
+For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+
+Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
+See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
+Loki queries can also query based on any log record field (not just labels) using query filters.
+
+|tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax
+to allow dynamic per-event values.
+
+The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].loki.authentication
+
+HTTPAuthentication provides options for setting common authentication credentials.
+This is mostly used with outputs using HTTP or a derivative as transport.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|password|object|  Password to use for authenticating requests.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|username|object|  Username to use for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].loki.authentication.password
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].loki.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].loki.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].loki.authentication.username
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].loki.labelKeys[]
+
+Type:: array
+
+=== .spec.outputs[].loki.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|======================
+
+=== .spec.outputs[].lokiStack
+
+LokiStack provides optional extra properties for `type: lokistack`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|labelKeys|array|  LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
+
+If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+
+Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
+Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
+Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
+For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+
+Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
+See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
+Loki queries can also query based on any log record field (not just labels) using query filters.
+
+|target|object|  Target points to the LokiStack resources that should be used as a target for the output.
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].lokiStack.authentication
+
+LokiStackAuthentication is the authentication for LokiStack
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].lokiStack.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].lokiStack.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].lokiStack.labelKeys[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.target
+
+LokiStackTarget contains information about how to reach the LokiStack used as an output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name of the in-cluster LokiStack resource.
+
+|namespace|string|  Namespace of the in-cluster LokiStack resource.
+
+|======================
+
+=== .spec.outputs[].lokiStack.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|======================
+
+=== .spec.outputs[].otlp
+
+OTLP defines configuration for sending logs via OTLP using OTEL semantic conventions
+https://opentelemetry.io/docs/specs/otlp/#otlphttp
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|tuning|object|  Tuning specs tuning for the output
+
+|url|string|  URL to send log records to.
+
+An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|======================
+
+=== .spec.outputs[].otlp.authentication
+
+HTTPAuthentication provides options for setting common authentication credentials.
+This is mostly used with outputs using HTTP or a derivative as transport.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|password|object|  Password to use for authenticating requests.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|username|object|  Username to use for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].otlp.authentication.password
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].otlp.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].otlp.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].otlp.authentication.username
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].otlp.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+It is an error if the compression type is not supported by the output.
+
+|======================
+
+=== .spec.outputs[].rateLimit
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+allowed per input/output in a pipeline
+
+|======================
+
+=== .spec.outputs[].splunk
+
+Splunk Deliver log data to Splunk’s HTTP Event Collector
+Provides optional extra properties for `type: splunk_hec` (&#39;splunk_hec_logs&#39; after Vector 0.23
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|url|string|  URL to send log records to.
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|index|string|  Index is the index for the logs. This supports template syntax
+to allow dynamic per-event values.
+
+The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].splunk.authentication
+
+SplunkAuthentication contains configuration for authenticating requests to a Splunk output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|token|object|  Token points to the secret containing the Splunk HEC token used for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].splunk.authentication.token
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].splunk.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|delivery|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+
+|======================
+
+=== .spec.outputs[].syslog
+
+Syslog provides optional extra properties for output type `syslog`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|appName|string|  AppName is APP-NAME part of the syslog-msg header
+
+AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
+
+TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of &#34;tag&#34; when this is empty
+|facility|string|  Facility to set on outgoing syslog records.
+
+Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+The value can be a decimal integer. Facility keywords are not standardized,
+this API recognizes at least the following case-insensitive keywords
+(defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
+
+kernel user mail daemon auth syslog lpr news
+
+uucp cron authpriv ftp ntp security console solaris-cron
+
+local0 local1 local2 local3 local4 local5 local6 local7
+
+|msgID|string|  MsgID is MSGID part of the syslog-msg header
+
+MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
+
+|payloadKey|string|  PayloadKey specifies record field to use as payload.
+
+|procID|string|  ProcID is PROCID part of the syslog-msg header
+
+ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
+
+|rfc|string|  
+|severity|string|  Severity to set on outgoing syslog records.
+
+Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+The value can be a decimal integer or one of these case-insensitive keywords:
+
+Emergency Alert Critical Error Warning Notice Informational Debug
+
+|url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
+For example, to send syslog records using secure UDP:
+
+url: udps://syslog.example.com:1234
+
+|======================
+
+=== .spec.outputs[].tls
+
+OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ca|object|  CA can be used to specify a custom list of trusted certificate authorities.
+
+|certificate|object|  Certificate points to the server certificate to use.
+
+|key|object|  Key points to the private key of the server certificate.
+
+|keyPassphrase|object|  KeyPassphrase points to the passphrase used to unlock the private key.
+
+|insecureSkipVerify|bool|  If InsecureSkipVerify is true, then the TLS client will be configured to skip validating server certificates.
+
+This option is *not* recommended for production configurations.
+
+|securityProfile|object|  TLSSecurityProfile is the security profile to apply to the output connection.
+
+|======================
+
+=== .spec.outputs[].tls.securityProfile
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
+profile as invalid configurations can be catastrophic. An example custom profile
+looks like this:
+
+ciphers:
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+minTLSVersion: VersionTLS11
+
+|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES256-GCM-SHA384
+
+- ECDHE-RSA-AES256-GCM-SHA384
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- DHE-RSA-AES128-GCM-SHA256
+
+- DHE-RSA-AES256-GCM-SHA384
+
+minTLSVersion: VersionTLS12
+
+|modern|object|  *(optional)* modern is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+minTLSVersion: VersionTLS13
+
+NOTE: Currently unsupported.
+
+|old|object|  *(optional)* old is a TLS security profile based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
+
+and looks like this (yaml):
+
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+
+- TLS_AES_256_GCM_SHA384
+
+- TLS_CHACHA20_POLY1305_SHA256
+
+- ECDHE-ECDSA-AES128-GCM-SHA256
+
+- ECDHE-RSA-AES128-GCM-SHA256
+
+- ECDHE-ECDSA-AES256-GCM-SHA384
+
+- ECDHE-RSA-AES256-GCM-SHA384
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+
+- ECDHE-RSA-CHACHA20-POLY1305
+
+- DHE-RSA-AES128-GCM-SHA256
+
+- DHE-RSA-AES256-GCM-SHA384
+
+- DHE-RSA-CHACHA20-POLY1305
+
+- ECDHE-ECDSA-AES128-SHA256
+
+- ECDHE-RSA-AES128-SHA256
+
+- ECDHE-ECDSA-AES128-SHA
+
+- ECDHE-RSA-AES128-SHA
+
+- ECDHE-ECDSA-AES256-SHA384
+
+- ECDHE-RSA-AES256-SHA384
+
+- ECDHE-ECDSA-AES256-SHA
+
+- ECDHE-RSA-AES256-SHA
+
+- DHE-RSA-AES128-SHA256
+
+- DHE-RSA-AES256-SHA256
+
+- AES128-GCM-SHA256
+
+- AES256-GCM-SHA384
+
+- AES128-SHA256
+
+- AES256-SHA256
+
+- AES128-SHA
+
+- AES256-SHA
+
+- DES-CBC3-SHA
+
+minTLSVersion: VersionTLS10
+
+|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
+the ability to specify individual TLS security profile parameters.
+Old, Intermediate and Modern are TLS security profiles based on:
+
+https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations
+
+The profiles are intent based, so they may change over time as new ciphers are developed and existing ciphers
+are found to be insecure.  Depending on precisely which ciphers are available to a process, the list may be
+reduced.
+
+Note that the Modern profile is currently not supported because it is not
+yet well adopted by common software libraries.
+
+|======================
+
+=== .spec.outputs[].tls.securityProfile.custom
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
+during the TLS handshake.  Operators may remove entries their operands
+do not support.  For example, to use DES-CBC3-SHA  (yaml):
+
+ciphers:
+
+- DES-CBC3-SHA
+|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
+that is negotiated during the TLS handshake. For example, to use TLS
+versions 1.1, 1.2 and 1.3 (yaml):
+
+minTLSVersion: VersionTLS11
+
+NOTE: currently the highest minTLSVersion allowed is VersionTLS12
+|======================
+
+=== .spec.outputs[].tls.securityProfile.intermediate
+
+Type:: object
+
+=== .spec.outputs[].tls.securityProfile.modern
+
+Type:: object
+
+=== .spec.outputs[].tls.securityProfile.old
+
+Type:: object
+
+=== .spec.pipelines[]
+
+PipelineSpec links a set of inputs and transformations to a set of outputs.
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|filterRefs|array|  Filters lists the names of filters to be applied to records going through this pipeline.
+
+Each filter is applied in order.
+If a filter drops a records, subsequent filters are not applied.
+
+|inputRefs|array|  InputRefs lists the names (`input.name`) of inputs to this pipeline.
+
+The following built-in input names are always available:
+
+`application` selects all logs from application pods.
+
+`infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+
+`audit` selects node logs related to security audits.
+
+|name|string|  Name of the pipeline
+
+|outputRefs|array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
+
+|======================
+
+=== .spec.pipelines[].filterRefs[]
+
+Type:: array
+
+=== .spec.pipelines[].inputRefs[]
+
+Type:: array
+
+=== .spec.pipelines[].outputRefs[]
+
+Type:: array
+
+=== .spec.serviceAccount
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
+
+|======================
+
+=== .status
+
+ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|conditions|array|  Conditions of the log forwarder.
+
+|filtersStatus|array|  Filters maps filter name to condition of the filter.
+
+|inputsStatus|array|  Inputs maps input name to condition of the input.
+
+|outputsStatus|array|  Outputs maps output name to condition of the output.
+
+|pipelinesStatus|array|  Pipelines maps pipeline name to condition of the pipeline.
+
+|======================
+
+=== .status.conditions[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+|message|string|  message is a human readable message indicating details about the transition.
+This may be an empty string.
+|observedGeneration|int|  *(optional)* observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.
+|reason|string|  reason contains a programmatic identifier indicating the reason for the condition&#39;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.
+|status|string|  status of the condition, one of True, False, Unknown.
+|type|string|  type of condition in CamelCase or in foo.example.com/CamelCase.
+---
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+useful (see .node.status.conditions), the ability to deconflict is important.
+The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+|======================
+
+=== .status.filtersStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+|message|string|  message is a human readable message indicating details about the transition.
+This may be an empty string.
+|observedGeneration|int|  *(optional)* observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.
+|reason|string|  reason contains a programmatic identifier indicating the reason for the condition&#39;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.
+|status|string|  status of the condition, one of True, False, Unknown.
+|type|string|  type of condition in CamelCase or in foo.example.com/CamelCase.
+---
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+useful (see .node.status.conditions), the ability to deconflict is important.
+The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+|======================
+
+=== .status.inputsStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+|message|string|  message is a human readable message indicating details about the transition.
+This may be an empty string.
+|observedGeneration|int|  *(optional)* observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.
+|reason|string|  reason contains a programmatic identifier indicating the reason for the condition&#39;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.
+|status|string|  status of the condition, one of True, False, Unknown.
+|type|string|  type of condition in CamelCase or in foo.example.com/CamelCase.
+---
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+useful (see .node.status.conditions), the ability to deconflict is important.
+The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+|======================
+
+=== .status.outputsStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+|message|string|  message is a human readable message indicating details about the transition.
+This may be an empty string.
+|observedGeneration|int|  *(optional)* observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.
+|reason|string|  reason contains a programmatic identifier indicating the reason for the condition&#39;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.
+|status|string|  status of the condition, one of True, False, Unknown.
+|type|string|  type of condition in CamelCase or in foo.example.com/CamelCase.
+---
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+useful (see .node.status.conditions), the ability to deconflict is important.
+The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+|======================
+
+=== .status.pipelinesStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+|message|string|  message is a human readable message indicating details about the transition.
+This may be an empty string.
+|observedGeneration|int|  *(optional)* observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.
+|reason|string|  reason contains a programmatic identifier indicating the reason for the condition&#39;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.
+|status|string|  status of the condition, one of True, False, Unknown.
+|type|string|  type of condition in CamelCase or in foo.example.com/CamelCase.
+---
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+useful (see .node.status.conditions), the ability to deconflict is important.
+The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+|======================
+

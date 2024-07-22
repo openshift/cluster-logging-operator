@@ -63,6 +63,8 @@ const (
 	ReasonMigrated status.ConditionReason = "Migrated"
 
 	ValidationFailureReason status.ConditionReason = "ValidationFailure"
+
+	ReasonUnmanagedState status.ConditionReason = "UnmanagedState"
 )
 
 // SetCondition returns true if the condition changed or is new.

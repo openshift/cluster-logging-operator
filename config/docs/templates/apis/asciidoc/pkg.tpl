@@ -4,9 +4,9 @@
 :_mod-docs-content-type: ASSEMBLY
 include::_attributes/common-attributes.adoc[]
 include::_attributes/attributes-openshift-dedicated.adoc[]
-[id="logging-5-x-reference"]
-= 5.x logging API reference
-:context: logging-5-x-reference
+[id="logging-6-x-reference"]
+= 6.x logging API reference
+:context: logging-6-x-reference
 
 toc::[]
 ////

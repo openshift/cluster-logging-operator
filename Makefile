@@ -113,20 +113,20 @@ build: bin/cluster-logging-operator
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
-docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc docs/reference/operator/secrets.adoc
+docs: docs/reference/operator/api_observability_v1.adoc docs/reference/operator/api_logging_v1alpha1.adoc docs/reference/datamodels/viaq/v1.adoc
 .PHONY: docs
 
-docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api/" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
-.PHONY: docs/reference/operator/api.adoc
+docs/reference/operator/api_observability_v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api" -config "$(PWD)/config/docs/config_observability_v1.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+.PHONY: docs/reference/operator/api_observability_v1.adoc
+
+docs/reference/operator/api_logging_v1alpha1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api" -config "$(PWD)/config/docs/config_logging_v1alpha1.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+.PHONY: docs/reference/operator/api_observability_v1.adoc
 
 docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config_observability_v1.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
 .PHONY: docs/reference/datamodels/viaq/v1.adoc
-
-docs/reference/operator/secrets.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/operator/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
-.PHONY: docs/reference/datamodels/logging/v1.adoc
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run

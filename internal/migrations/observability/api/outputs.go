@@ -392,22 +392,22 @@ func mapGoogleCloudLogging(loggingOutSpec logging.OutputSpec, secret *corev1.Sec
 		return obsGcp
 	}
 	if loggingGcp.BillingAccountID != "" {
-		obsGcp.ID = obs.GoogleGloudLoggingID{
+		obsGcp.ID = obs.GoogleCloudLoggingID{
 			Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 			Value: loggingGcp.BillingAccountID,
 		}
 	} else if loggingGcp.OrganizationID != "" {
-		obsGcp.ID = obs.GoogleGloudLoggingID{
+		obsGcp.ID = obs.GoogleCloudLoggingID{
 			Type:  obs.GoogleCloudLoggingIDTypeOrganization,
 			Value: loggingGcp.OrganizationID,
 		}
 	} else if loggingGcp.FolderID != "" {
-		obsGcp.ID = obs.GoogleGloudLoggingID{
+		obsGcp.ID = obs.GoogleCloudLoggingID{
 			Type:  obs.GoogleCloudLoggingIDTypeFolder,
 			Value: loggingGcp.FolderID,
 		}
 	} else if loggingGcp.ProjectID != "" {
-		obsGcp.ID = obs.GoogleGloudLoggingID{
+		obsGcp.ID = obs.GoogleCloudLoggingID{
 			Type:  obs.GoogleCloudLoggingIDTypeProject,
 			Value: loggingGcp.ProjectID,
 		}

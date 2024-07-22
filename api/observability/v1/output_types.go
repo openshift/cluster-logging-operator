@@ -447,7 +447,7 @@ type GoogleCloudLogging struct {
 	// ID must be one of the required ID fields for the output
 	//
 	// +kubebuilder:validation:Required
-	ID GoogleGloudLoggingID `json:"id"`
+	ID GoogleCloudLoggingID `json:"id"`
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	//
@@ -468,7 +468,7 @@ type GoogleCloudLogging struct {
 	Tuning *GoogleCloudLoggingTuningSpec `json:"tuning,omitempty"`
 }
 
-type GoogleGloudLoggingID struct {
+type GoogleCloudLoggingID struct {
 	// Type is the ID type provided
 	// +kubebuilder:validation:Required
 	Type GoogleCloudLoggingIDType `json:"type"`

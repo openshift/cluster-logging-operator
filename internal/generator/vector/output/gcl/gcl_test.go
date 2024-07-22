@@ -40,7 +40,7 @@ var _ = Describe("Generate Vector config", func() {
 				Type: obs.OutputTypeGoogleCloudLogging,
 				Name: "gcl_1",
 				GoogleCloudLogging: &obs.GoogleCloudLogging{
-					ID: obs.GoogleGloudLoggingID{
+					ID: obs.GoogleCloudLoggingID{
 						Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 						Value: "billing-1",
 					},

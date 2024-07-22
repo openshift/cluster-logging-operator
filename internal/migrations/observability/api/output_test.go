@@ -397,7 +397,7 @@ var _ = Describe("#ConvertOutputs", func() {
 			}
 
 			expObsGCP := &obs.GoogleCloudLogging{
-				ID: obs.GoogleGloudLoggingID{
+				ID: obs.GoogleCloudLoggingID{
 					Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 					Value: "foo",
 				},

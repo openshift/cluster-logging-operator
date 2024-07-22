@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 	"time"
 
@@ -65,6 +66,18 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		}
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
+	}
+
+	// skip reconcile process if Unmanaged state
+	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
+		cond := loggingv1.NewCondition(loggingv1.ConditionReady, corev1.ConditionFalse,
+			loggingv1.ReasonUnmanagedState, "Skip reconcile if managementState is Unmanaged")
+		instance.Status.Conditions.SetCondition(cond)
+		result, err := r.updateStatus(instance)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		return result, nil
 	}
 
 	// Fetch associated logging.ClusterLogForwarder if any

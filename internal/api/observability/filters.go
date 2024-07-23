@@ -10,3 +10,13 @@ func FilterMap(spec obs.ClusterLogForwarderSpec) map[string]*obs.FilterSpec {
 	}
 	return m
 }
+
+type Filters []obs.FilterSpec
+
+// Names returns a slice of filter names
+func (filters Filters) Names() (names []string) {
+	for _, f := range filters {
+		names = append(names, f.Name)
+	}
+	return names
+}

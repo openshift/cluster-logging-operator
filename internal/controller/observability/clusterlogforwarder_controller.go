@@ -50,6 +50,8 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 		return defaultRequeue, err
 	}
 
+	removeStaleStatuses(r.Forwarder)
+
 	readyCond := internalobs.NewCondition(obsv1.ConditionTypeReady, obsv1.ConditionUnknown, obsv1.ReasonUnknownState, "")
 	defer func() {
 		updateStatus(r.Client, r.Forwarder, readyCond)
@@ -172,7 +174,6 @@ func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error
 
 func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {
 	validations.ValidateClusterLogForwarder(forwarderContext)
-	// TODO: Determine if we need to "sync" conditions like in 5.9
 
 	validCond := internalobs.NewCondition(obsv1.ConditionTypeValid, obsv1.ConditionTrue, obsv1.ReasonValidationSuccess, "")
 	if valid = internalobs.IsValid(*forwarderContext.Forwarder); !valid {
@@ -189,4 +190,15 @@ func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, r
 	if err := k8Client.Status().Update(context.TODO(), instance); err != nil {
 		log.Error(err, "clusterlogforwarder-controller error updating status", "status", instance.Status)
 	}
+}
+
+func removeStaleStatuses(forwarder *obsv1.ClusterLogForwarder) {
+	inputs := internalobs.Inputs(forwarder.Spec.Inputs)
+	outputs := internalobs.Outputs(forwarder.Spec.Outputs)
+	filters := internalobs.Filters(forwarder.Spec.Filters)
+	pipelines := internalobs.Pipelines(forwarder.Spec.Pipelines)
+	internalobs.PruneConditions(&forwarder.Status.Inputs, inputs)
+	internalobs.PruneConditions(&forwarder.Status.Outputs, outputs)
+	internalobs.PruneConditions(&forwarder.Status.Filters, filters)
+	internalobs.PruneConditions(&forwarder.Status.Pipelines, pipelines)
 }

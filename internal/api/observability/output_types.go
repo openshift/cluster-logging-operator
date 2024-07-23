@@ -14,6 +14,14 @@ func OutputTypeUnknown(t obsv1.OutputType) error {
 
 type Outputs []obsv1.OutputSpec
 
+// Names returns a slice of output names
+func (outputs Outputs) Names() (names []string) {
+	for _, o := range outputs {
+		names = append(names, o.Name)
+	}
+	return names
+}
+
 // Map returns a map of output name to output spec
 func (outputs Outputs) Map() map[string]obsv1.OutputSpec {
 	m := map[string]obsv1.OutputSpec{}

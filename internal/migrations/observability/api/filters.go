@@ -7,7 +7,8 @@ import (
 
 const (
 	parseFilterName                = "converted-filter-parse"
-	detectMultilineErrorFilterName = "converted-filter-detectMultilineError"
+	detectMultilineErrorFilterName = "converted-filter-detect-multiline-error"
+	openshiftLabelsFilterName      = "converted-openshift-labels"
 )
 
 // convertFilters maps logging.Filters to observability.Filters

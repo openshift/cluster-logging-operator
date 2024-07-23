@@ -178,7 +178,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 
 		It("should apply an audit filter", func() {
 			Expect(events.Items[0].Stage).To(Not(Equal(events.Items[1].Stage)))
-			filterName := "auditFilter"
+			filterName := "audit-filter"
 			framework.Forwarder.Spec.Filters = []obs.FilterSpec{
 				{
 					Name: filterName,

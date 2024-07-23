@@ -96,7 +96,7 @@ func generatePipelineFilters(loggingPipelineSpec logging.PipelineSpec, createdFi
 		}
 	}
 	if len(loggingPipelineSpec.Labels) != 0 {
-		openshiftLabelFilterName := fmt.Sprintf("filter-%s-%s", loggingPipelineSpec.Name, string(obs.FilterTypeOpenshiftLabels))
+		openshiftLabelFilterName := fmt.Sprintf("filter-%s-%s", loggingPipelineSpec.Name, openshiftLabelsFilterName)
 		addedFilterRefs = append(addedFilterRefs, openshiftLabelFilterName)
 		obsFilter := &obs.FilterSpec{
 			Type:            obs.FilterTypeOpenshiftLabels,

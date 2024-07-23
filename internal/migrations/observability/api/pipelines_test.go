@@ -27,7 +27,7 @@ var _ = Describe("#ConvertPipelines", func() {
 		Expect(actFilterRefs).To(Equal(expObsFilterRefs))
 	},
 		Entry("should generate detect multiline error as a filter and filterRef", logging.PipelineSpec{
-			Name:                  "detectPipeline",
+			Name:                  "detect-pipeline",
 			DetectMultilineErrors: true,
 		}, []obs.FilterSpec{
 			{
@@ -47,18 +47,18 @@ var _ = Describe("#ConvertPipelines", func() {
 		},
 			[]string{parseFilterName}),
 		Entry("should generate labels as a filter and filterRef", logging.PipelineSpec{
-			Name:   "labelPipeline",
+			Name:   "label-pipeline",
 			Labels: map[string]string{"foo": "bar"},
 		}, []obs.FilterSpec{
 			{
-				Name:            "filter-labelPipeline-openShiftLabels",
+				Name:            "filter-label-pipeline-" + openshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
 		},
-			[]string{"filter-labelPipeline-openShiftLabels"}),
+			[]string{"filter-label-pipeline-" + openshiftLabelsFilterName}),
 		Entry("should generate all pipeline filters and filterRefs", logging.PipelineSpec{
-			Name:                  "filterPipeline",
+			Name:                  "filter-pipeline",
 			Labels:                map[string]string{"foo": "bar"},
 			Parse:                 "json",
 			DetectMultilineErrors: true,
@@ -72,12 +72,12 @@ var _ = Describe("#ConvertPipelines", func() {
 				Type: obs.FilterTypeParse,
 			},
 			{
-				Name:            "filter-filterPipeline-openShiftLabels",
+				Name:            "filter-filter-pipeline-" + openshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
 		},
-			[]string{detectMultilineErrorFilterName, parseFilterName, "filter-filterPipeline-openShiftLabels"}),
+			[]string{detectMultilineErrorFilterName, parseFilterName, "filter-filter-pipeline-" + openshiftLabelsFilterName}),
 	)
 
 	Context("pipeline with default reference", func() {
@@ -206,7 +206,7 @@ var _ = Describe("#ConvertPipelines", func() {
 				Type: obs.FilterTypeParse,
 			},
 			{
-				Name:            "filter-my-app-default-openShiftLabels",
+				Name:            "filter-my-app-default-" + openshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
@@ -228,7 +228,7 @@ var _ = Describe("#ConvertPipelines", func() {
 				Name:       "my-app-default",
 				InputRefs:  []string{logging.InputNameApplication},
 				OutputRefs: []string{"default-lokistack"},
-				FilterRefs: []string{"filter-my-app-default-openShiftLabels"},
+				FilterRefs: []string{"filter-my-app-default-" + openshiftLabelsFilterName},
 			},
 		}
 

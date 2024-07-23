@@ -117,7 +117,7 @@ var _ = Describe("#ConvertFilters", func() {
 		)
 		loggingClfSpec.Filters = []logging.FilterSpec{
 			{
-				Name: "kubeApiAudit",
+				Name: "kube-api-audit",
 				Type: logging.FilterKubeAPIAudit,
 				FilterTypeSpec: logging.FilterTypeSpec{
 					KubeAPIAudit: &logging.KubeAPIAudit{
@@ -171,7 +171,7 @@ var _ = Describe("#ConvertFilters", func() {
 
 		expObsClfFilterSpec := []obs.FilterSpec{
 			{
-				Name: "kubeApiAudit",
+				Name: "kube-api-audit",
 				Type: logging.FilterKubeAPIAudit,
 				KubeAPIAudit: &obs.KubeAPIAudit{
 					Rules: []v1.PolicyRule{{

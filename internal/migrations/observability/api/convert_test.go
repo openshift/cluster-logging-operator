@@ -374,7 +374,7 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							},
 						},
 						{
-							Name:            "filter-app-logs-" + string(obs.FilterTypeOpenshiftLabels),
+							Name:            "filter-app-logs-" + openshiftLabelsFilterName,
 							Type:            obs.FilterTypeOpenshiftLabels,
 							OpenShiftLabels: map[string]string{"foo": "bar"},
 						},

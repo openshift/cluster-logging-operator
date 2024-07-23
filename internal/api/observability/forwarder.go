@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+// NameList provides a list of names for any resource implementing Names
+type NameList interface {
+	Names() []string
+}
+
 // DeployAsDeployment evaluates the spec to determine if the collector will be deployed as a deployment.
 // Collector is not a daemonset if the only input source is an HTTP receiver
 // Enabled through an annotation

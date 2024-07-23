@@ -3,6 +3,7 @@ package inputs
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,5 +23,8 @@ func Validate(context internalcontext.ForwarderContext) {
 		}
 		results = append(results, conditions...)
 	}
-	context.Forwarder.Status.Inputs = results
+	// Set condition
+	for _, condition := range results {
+		internalobs.SetCondition(&context.Forwarder.Status.Inputs, condition)
+	}
 }

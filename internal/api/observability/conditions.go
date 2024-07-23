@@ -5,6 +5,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclock "k8s.io/utils/clock"
+	"strings"
 )
 
 // clock is used to set status condition timestamps.
@@ -50,4 +51,17 @@ func SetCondition(conditions *[]metav1.Condition, newCond metav1.Condition) bool
 	}
 	*conditions = append(*conditions, newCond)
 	return true
+}
+
+// PruneConditions keeps only those conditions that match names from the spec
+func PruneConditions(conditions *[]metav1.Condition, spec NameList) {
+	keepers := []metav1.Condition{}
+	for _, condition := range *conditions {
+		for _, name := range spec.Names() {
+			if strings.HasSuffix(condition.Type, name) {
+				keepers = append(keepers, condition)
+			}
+		}
+	}
+	*conditions = keepers
 }

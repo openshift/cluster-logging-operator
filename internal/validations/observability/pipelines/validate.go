@@ -24,7 +24,7 @@ func Validate(context internalcontext.ForwarderContext) {
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
 			internalobs.SetCondition(&context.Forwarder.Status.Pipelines,
-				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, "pipeline valid"))
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("pipeline %q is valid", pipelineSpec.Name)))
 		}
 	}
 

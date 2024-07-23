@@ -300,8 +300,8 @@ type ClusterLogForwarderStatus struct {
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:categories=observability,shortName=clf
-// +kubebuilder:validation:XValidation:rule="matches(self.metadata.name,'^[a-z][a-z0-9-]{1,61}[a-z0-9]$')",message="Name must be a valid DNS1035 label"
+// +kubebuilder:resource:categories=observability,shortName=obsclf;clf
+// +kubebuilder:validation:XValidation:rule="self.metadata.name.matches('^[a-z][a-z0-9-]{1,61}[a-z0-9]$')",message="Name must be a valid DNS1035 label"
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

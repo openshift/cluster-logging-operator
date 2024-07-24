@@ -1,13 +1,13 @@
 package initialize
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
 var _ = Describe("MigrateLokiStack", func() {
@@ -164,6 +164,96 @@ var _ = Describe("MigrateLokiStack", func() {
 						Name:       lokistackPipeline,
 						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
 						OutputRefs: []string{lokistackOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, single lokistack output, customized LabelKeys",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOutApp},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{lokistackOutAudit},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: lokistackOutApp,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOutAudit,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							LabelKeys: []string{
+								"log_type",
+								"objectRef.apiGroup",
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = []obs.OutputSpec{
+					{
+						Name: lokistackOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      lokistackTarget,
+								Namespace: constants.OpenshiftNS,
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							LabelKeys: &obs.LokiStackLabelKeys{
+								Audit: &obs.LokiStackTenantLabelKeys{
+									IgnoreGlobal: true,
+									LabelKeys: []string{
+										"log_type",
+										"objectRef.apiGroup",
+									},
+								},
+							},
+						},
+					},
+				}
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name: lokistackPipeline,
+						InputRefs: []string{
+							string(obs.InputTypeApplication),
+							string(obs.InputTypeAudit),
+						},
+						OutputRefs: []string{
+							lokistackOut,
+						},
 					},
 				}
 			},
@@ -611,7 +701,7 @@ var _ = Describe("MigrateLokiStack", func() {
 				}
 			},
 		),
-		Entry("mulitple tenants, multiple pipelines, multiple lokistacks in each pipeline",
+		Entry("multiple tenants, multiple pipelines, multiple lokistacks in each pipeline",
 			obs.ClusterLogForwarderSpec{
 				Pipelines: []obs.PipelineSpec{
 					{
@@ -810,6 +900,128 @@ var _ = Describe("MigrateLokiStack", func() {
 						OutputRefs: []string{"foo-" + lokistackOut, "bar-" + lokistackOut},
 					},
 				}
+			},
+		),
+	)
+
+	DescribeTable(
+		"LabelKeys logic for LokiStack tenants", func(labelKeys *obs.LokiStackLabelKeys, tenant string, wantKeys []string) {
+			keys := lokiStackLabelKeysForTenant(labelKeys, tenant)
+			Expect(keys).To(Equal(wantKeys))
+		},
+		Entry(
+			"no config",
+			nil,
+			string(obs.InputTypeApplication),
+			nil,
+		),
+		Entry(
+			"empty slices -> still nil",
+			&obs.LokiStackLabelKeys{
+				Global: []string{},
+				Application: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{},
+				},
+			},
+			string(obs.InputTypeApplication),
+			nil,
+		),
+		Entry(
+			"only global",
+			&obs.LokiStackLabelKeys{
+				Global: []string{
+					"global_one",
+					"global_two",
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"global_one",
+				"global_two",
+			},
+		),
+		Entry(
+			"only tenant",
+			&obs.LokiStackLabelKeys{
+				Application: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{
+						"tenant_one",
+						"tenant_two",
+					},
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"tenant_one",
+				"tenant_two",
+			},
+		),
+		Entry(
+			"global and tenant",
+			&obs.LokiStackLabelKeys{
+				Global: []string{
+					"global_one",
+					"global_two",
+				},
+				Application: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{
+						"tenant_one",
+						"tenant_two",
+					},
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"global_one",
+				"global_two",
+				"tenant_one",
+				"tenant_two",
+			},
+		),
+		Entry(
+			"global and tenant, ignore global",
+			&obs.LokiStackLabelKeys{
+				Global: []string{
+					"global_one",
+					"global_two",
+				},
+				Application: &obs.LokiStackTenantLabelKeys{
+					IgnoreGlobal: true,
+					LabelKeys: []string{
+						"tenant_one",
+						"tenant_two",
+					},
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"tenant_one",
+				"tenant_two",
+			},
+		),
+		Entry(
+			"global and tenant, ignore duplicates",
+			&obs.LokiStackLabelKeys{
+				Global: []string{
+					"global_one",
+					"global_two",
+					"common_one",
+				},
+				Application: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{
+						"tenant_one",
+						"tenant_two",
+						"common_one",
+					},
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"common_one",
+				"global_one",
+				"global_two",
+				"tenant_one",
+				"tenant_two",
 			},
 		),
 	)

@@ -101,6 +101,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	obsClf.Spec = initialize.DefaultElasticsearch(obsClf.Spec)
 
 	if err := r.Client.Create(context.TODO(), obsClf); err != nil {
+		log.V(0).Error(err, "Failed to create ClusterLogForwarder.observability.openshift.io resource from a ClusterLogForwarder.logging.openshift.io object")
 		return ctrl.Result{}, err
 	}
 

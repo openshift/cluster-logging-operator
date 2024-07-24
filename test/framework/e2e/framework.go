@@ -3,36 +3,33 @@ package e2e
 import (
 	"context"
 	"fmt"
+	clolog "github.com/ViaQ/logerr/v2/log/static"
+	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
-	"math/rand"
-	"os"
-	"os/exec"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/operator"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	clolog "github.com/ViaQ/logerr/v2/log/static"
-	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"math/rand"
+	"os"
+	"os/exec"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/yaml"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func init() {
@@ -108,6 +105,10 @@ func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 func (tc *E2ETestFramework) DeployCURLLogGenerator(endpoint string) (string, error) {
 	namespace := tc.CreateTestNamespace()
 	return namespace, tc.DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint)
+}
+
+func (tc *E2ETestFramework) NewOperatorDeployment(namespace, packageName, channel string) *operator.OperatorDeployment {
+	return operator.NewDeployment(tc, namespace, packageName, channel)
 }
 
 type LogGeneratorOptions struct {
@@ -213,8 +214,12 @@ func (tc *E2ETestFramework) CreateNamespace(name string) string {
 	return name
 }
 
-func (tc *E2ETestFramework) Client() *kubernetes.Clientset {
+func (tc *E2ETestFramework) ClientTyped() *kubernetes.Clientset {
 	return tc.KubeClient
+}
+
+func (tc *E2ETestFramework) Client() *client.Client {
+	return tc.Test.Client
 }
 
 // Create (re)creates an object

@@ -254,7 +254,7 @@ test-functional-benchmarker-vector: bin/functional-benchmarker
 test-unit: test-forwarder-generator
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
+	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers|upgrade)'`
 
 .PHONY: coverage
 coverage: test-unit
@@ -327,7 +327,8 @@ test-upgrade: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
-	exit 0
+	LOG_LEVEL=3 \
+	hack/test-upgrade.sh
 	
 
 .PHONY: test-e2e

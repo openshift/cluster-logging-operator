@@ -50,6 +50,14 @@ func (index *Index) DocCount() int {
 	}
 	return value
 }
+func (indices *Indices) Get(name string) (Index, bool) {
+	for _, index := range []Index(*indices) {
+		if index.Name == name {
+			return index, true
+		}
+	}
+	return Index{}, false
+}
 
 // HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
 func (indices *Indices) HasInfraStructureLogs() bool {
@@ -152,7 +160,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		LabelSelector: "component=elasticsearch",
 	}
 
-	pods, err := es.Client().CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	pods, err := es.ClientTyped().CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}

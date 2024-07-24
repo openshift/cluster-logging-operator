@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("Client", func() {
+var _ = Describe("ClientTyped", func() {
 	var (
 		t    *Test
 		data map[string]string

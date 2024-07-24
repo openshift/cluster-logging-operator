@@ -54,12 +54,12 @@ spec:
 `
 	uri := fmt.Sprintf(elasticsearchURI, constants.OpenshiftNS, "elasticsearch")
 	es.AddCleanup(func() error {
-		return es.Client().RESTClient().Delete().
+		return es.ClientTyped().RESTClient().Delete().
 			RequestURI(uri).
 			SetHeader("Content-Type", "application/yaml").
 			Do(context.TODO()).Error()
 	})
-	return es.Client().RESTClient().Post().
+	return es.ClientTyped().RESTClient().Post().
 		RequestURI(uri).
 		SetHeader("Content-Type", "application/yaml").
 		Body([]byte(yaml)).

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"sync"
 	"time"
@@ -317,4 +318,8 @@ func Get() *Client {
 		panic(s.err)
 	}
 	return s.c
+}
+
+func (c *Client) Scheme() *runtime.Scheme {
+	return c.c.Scheme()
 }

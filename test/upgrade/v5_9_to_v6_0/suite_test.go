@@ -1,4 +1,4 @@
-package client_test
+package v59_to_60
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestClient(t *testing.T) {
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ClientTyped Suite")
+	RunSpecs(t, "[upgrade] Suite")
 }

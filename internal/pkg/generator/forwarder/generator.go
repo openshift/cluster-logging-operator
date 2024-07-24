@@ -47,7 +47,7 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	//}
 
 	//if client != nil {
-	//	clRequest.Client = client
+	//	clRequest.ClientTyped = client
 	//}
 	//TODO: Enable migrations?
 	//mSpec, extras, condition := migrations.MigrateClusterLogForwarder(forwarder.Namespace, forwarder.Name, forwarder.Spec, clRequest.Cluster.Spec.LogStore, map[string]bool{}, "", "")

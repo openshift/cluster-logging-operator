@@ -322,6 +322,14 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
+.PHONY: test-upgrade
+test-eupgrade: $(JUNITREPORT)
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
+	exit 0
+	
+
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \

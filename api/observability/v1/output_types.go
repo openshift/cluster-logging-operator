@@ -661,18 +661,77 @@ type LokiStack struct {
 	// +kubebuilder:validation:Optional
 	Tuning *LokiTuningSpec `json:"tuning,omitempty"`
 
-	// LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
-	//
-	// If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+	// LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 	//
 	// Note: Loki label names must match the regular expression "[a-zA-Z_:][a-zA-Z0-9_:]*"
 	// Log record keys may contain characters like "." and "/" that are not allowed in Loki labels.
 	// Log record keys are translated to Loki labels by replacing any illegal characters with '_'.
-	// For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+	//
+	// For example the default log record keys translate to these Loki labels:
+	//
+	// - log_type
+	//
+	// - kubernetes_container_name
+	//
+	// - kubernetes_namespace_name
+	//
+	// - kubernetes_pod_name
 	//
 	// Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 	// See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
 	// Loki queries can also query based on any log record field (not just labels) using query filters.
+	//
+	// +kubebuilder:validation:Optional
+	LabelKeys *LokiStackLabelKeys `json:"labelKeys,omitempty"`
+}
+
+// LokiStackLabelKeys contains the configuration that maps log record's keys to Loki labels used to identify streams.
+type LokiStackLabelKeys struct {
+	// Global contains a list of record keys which are used for all tenants.
+	//
+	// If LabelKeys is not set, the default keys are:
+	//
+	//  - log_type
+	//
+	//  - kubernetes.container_name
+	//
+	//  - kubernetes.namespace_name
+	//
+	//  - kubernetes.pod_name
+	//
+	// One additional label "kubernetes_host" is not part of the label keys configuration. It contains the hostname
+	// where the collector is running and is always present.
+	//
+	// +kubebuilder:validation:Optional
+	Global []string `json:"global,omitempty"`
+
+	// Application contains the label keys configuration for the "application" tenant.
+	//
+	// +kubebuilder:validation:Optional
+	Application *LokiStackTenantLabelKeys `json:"application,omitempty"`
+
+	// Infrastructure contains the label keys configuration for the "infrastructure" tenant.
+	//
+	// +kubebuilder:validation:Optional
+	Infrastructure *LokiStackTenantLabelKeys `json:"infrastructure,omitempty"`
+
+	// Audit contains the label keys configuration for the "audit" tenant.
+	//
+	// +kubebuilder:validation:Optional
+	Audit *LokiStackTenantLabelKeys `json:"audit,omitempty"`
+}
+
+// LokiStackTenantLabelKeys contains options for customizing the mapping of log record keys to Loki stream labels for a single tenant.
+type LokiStackTenantLabelKeys struct {
+	// If IgnoreGlobal is true, then the tenant will not use the labels configured in the Global section of the label
+	// keys configuration.
+	//
+	// +kubebuilder:validation:Optional
+	IgnoreGlobal bool `json:"ignoreGlobal,omitempty"`
+
+	// LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+	// By default, this list is combined with the labels specified in the Global configuration.
+	// This behavior can be changed by setting IgnoreGlobal to true.
 	//
 	// +kubebuilder:validation:Optional
 	LabelKeys []string `json:"labelKeys,omitempty"`
@@ -693,14 +752,34 @@ type Loki struct {
 
 	URLSpec `json:",inline"`
 
-	// LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
+	// LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 	//
-	// If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+	// If LabelKeys is not set, the default keys are:
+	//
+	// - log_type
+	//
+	// - kubernetes.container_name
+	//
+	// - kubernetes.namespace_name
+	//
+	// - kubernetes.pod_name
+	//
+	// One additional label "kubernetes_host" is not part of the label keys configuration. It contains the hostname
+	// where the collector is running and is always present.
 	//
 	// Note: Loki label names must match the regular expression "[a-zA-Z_:][a-zA-Z0-9_:]*"
 	// Log record keys may contain characters like "." and "/" that are not allowed in Loki labels.
 	// Log record keys are translated to Loki labels by replacing any illegal characters with '_'.
-	// For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+	//
+	// For example the default log record keys translate to these Loki labels:
+	//
+	// - log_type
+	//
+	// - kubernetes_container_name
+	//
+	// - kubernetes_namespace_name
+	//
+	// - kubernetes_pod_name
 	//
 	// Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 	// See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.

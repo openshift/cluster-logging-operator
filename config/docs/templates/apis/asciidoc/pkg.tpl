@@ -12,7 +12,7 @@ toc::[]
 ////
 
 ////
-** These release notes are generated from the content in the openshift/cluster-logging-operator repository.
+** This reference is generated from the content in the openshift/cluster-logging-operator repository.
 ** Do not modify the content here manually except for the metadata and section IDs - changes to the content should be made in the source code.
 ////
 
@@ -21,7 +21,7 @@ toc::[]
     {{- range (sortedTypes (visibleTypes .Types )) -}}
         {{if isObjectRoot . }}
 
-[id="logging-5-x-reference-{{ (typeDisplayName .) }}"]
+[id="logging-6-x-reference-{{ (typeDisplayName .) }}"]
 == {{ (typeDisplayName .) }}
 
 {{  (comments .CommentLines) }}

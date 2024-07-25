@@ -54,6 +54,72 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
 		})
+		It("should set the compression when not empty or none for Splunk", func() {
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeSplunk,
+				Splunk: &obs.Splunk{
+					Tuning: &obs.SplunkTuningSpec{
+						Compression: "gzip",
+					},
+				},
+			}, nil, framework.NoOptions)
+			sink := &fakeSink{}
+			output.VisitSink(sink)
+			Expect(sink.Compression).To(Equal("gzip"))
+		})
+		It("should set the compression when not empty or none for Kafka", func() {
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeKafka,
+				Kafka: &obs.Kafka{
+					Tuning: &obs.KafkaTuningSpec{
+						Compression: "snappy",
+					},
+				},
+			}, nil, framework.NoOptions)
+			sink := &fakeSink{}
+			output.VisitSink(sink)
+			Expect(sink.Compression).To(Equal("snappy"))
+		})
+		It("should set the compression when not empty or none for CloudWatch", func() {
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeCloudwatch,
+				Cloudwatch: &obs.Cloudwatch{
+					Tuning: &obs.CloudwatchTuningSpec{
+						Compression: "gzip",
+					},
+				},
+			}, nil, framework.NoOptions)
+			sink := &fakeSink{}
+			output.VisitSink(sink)
+			Expect(sink.Compression).To(Equal("gzip"))
+		})
+		It("should set the compression when not empty or none for Http", func() {
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeHTTP,
+				HTTP: &obs.HTTP{
+					Tuning: &obs.HTTPTuningSpec{
+						Compression: "gzip",
+					},
+				},
+			}, nil, framework.NoOptions)
+			sink := &fakeSink{}
+			output.VisitSink(sink)
+			Expect(sink.Compression).To(Equal("gzip"))
+		})
+		It("should set the compression when not empty or none for OTLP", func() {
+			output := NewOutput(obs.OutputSpec{
+				Type: obs.OutputTypeOTLP,
+				OTLP: &obs.OTLP{
+					Tuning: &obs.OTLPTuningSpec{
+						Compression: "gzip",
+					},
+				},
+			}, nil, framework.NoOptions)
+			sink := &fakeSink{}
+			output.VisitSink(sink)
+			Expect(sink.Compression).To(Equal("gzip"))
+		})
+
 	})
 	Context("MaxRetryDuration", func() {
 

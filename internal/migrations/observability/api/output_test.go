@@ -654,7 +654,8 @@ var _ = Describe("#ConvertOutputs", func() {
 				"test-namespace",
 				"splunk-secret",
 				map[string][]byte{
-					constants.SplunkHECTokenKey: []byte("hec-token"),
+					constants.SplunkHECTokenKey:  []byte("hec-token"),
+					constants.TrustedCABundleKey: []byte("ca"),
 				},
 			)
 
@@ -806,6 +807,14 @@ var _ = Describe("#ConvertOutputs", func() {
 					Authentication: &obs.SplunkAuthentication{
 						Token: &obs.SecretReference{
 							Key:        constants.SplunkHECTokenKey,
+							SecretName: splunkSecret.Name,
+						},
+					},
+				},
+				TLS: &obs.OutputTLSSpec{
+					TLSSpec: obs.TLSSpec{
+						CA: &obs.ValueReference{
+							Key:        constants.TrustedCABundleKey,
 							SecretName: splunkSecret.Name,
 						},
 					},

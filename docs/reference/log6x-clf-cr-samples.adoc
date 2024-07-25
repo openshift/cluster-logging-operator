@@ -1,0 +1,128 @@
+[id="log6x-clf-cr-samples_{context}"]
+:_mod-docs-content-type: REFERENCE
+= ClusterLogForwarder CR Sample Configurations for Common Logging Use Cases
+
+This reference module provides sample configurations for the ClusterLogForwarder custom resource (CR) to address common logging use cases. These examples help administrators and developers manage log forwarding, aggregation, and storage. Each configuration is commented with necessary explanations.
+
+////
+This document was created with the intent of single sourcing engineering owned and validated CR samples for inclusion in product documentation. New use cases should be added here and then included in product docs. Orphan code sample blocks should not be created.
+
+To enable each sample to be included individually, we're creating tagged regions. tag directives (e.g., tag::name[] and end::name[]) must follow a word boundary and precede a space character or the end of line. The tag name must not be empty and must consist exclusively of non-space characters. Tag directives must be placed after a line comment as defined by the language of the source file. for [source,yaml] and [source,terminal] tags should begin with `# `, for [source, text] and plain asciidoc, tags should begin with `// `. Note the space following the comment line indicator.
+////
+
+// tag::proof[]
+.Proof of Concept CR for testing
+--
+[source,yaml]
+----
+  apiVersion: observability.openshift.io/v1
+  kind: ClusterLogForwarder
+  metadata:
+    name: collector # <1>
+    namespace: openshift-logging # <2>
+  spec:
+    inputs:
+    - name: mylogqa1
+      type: application
+      application:
+        selector:
+          matchLabels:
+            test: centos-logtest
+        includes:
+        - namespace: project-qa-1
+        - namespace: project-qa-2
+    filters:
+    - name: drop-logs
+      type: drop
+      drop:
+      - test:
+        - field: .kubernetes.namespace_name
+          matches: "openshift*"
+    outputs:
+    - name: aws-cloudwatch
+      type: cloudwatch
+      cloudwatch:
+        authentication:
+          type: accessKey
+          awsAccessKey:
+            keyID:
+              key: aws_access_key_id
+              secretName: cloudwatch-credentials
+            keySecret:
+              key: aws_secret_access_key
+              secretName: cloudwatch-credentials
+        groupName: <default-value>
+        region: us-east-2
+    - name: lokistack
+      type: lokiStack
+      lokiStack:
+        authentication:
+          token:
+            from: secret
+            secret:
+              key: token
+              name: secret-to-lokistack
+        labelKeys:
+        - .hostname
+        - .log_type
+        - .kubernetes_container_name
+        - .kubernetes_namespace_name
+        - .kubernetes_pod_name
+        target:
+          name: lokistack-sample
+          namespace: openshift-logging
+      tls:
+        ca:
+          key: ca-bundle.crt
+          secretName: secret-to-lokistack
+    pipelines:
+    - name: all-filter-to-default
+      inputRefs:
+      - infrastructure
+      - application
+      - audit
+      filterRefs:
+      - drop-logs
+      outputRefs:
+      - lokistack
+    - name: selected-app-to-cw
+      inputRefs:
+      - mylogqa1
+      outputRefs:
+      - aws-cloudwatch
+    serviceAccount:
+      name: logcollector
+----
+<1> Callouts should be commented out.
+<2> Content goes down here next to the relevant number.
+--
+// end::proof[]
+
+//An include directive must be placed on a line by itself with the following syntax:
+
+//include::uri-of-raw-version-on-github[tag(s)=name(s)]
+
+////
+For further info: https://github.com/openshift/openshift-docs/blob/main/contributing_to_docs/doc_guidelines.adoc#embedding-an-external-file
+https://docs.asciidoctor.org/asciidoc/latest/directives/include-tagged-regions/
+///
+
+////
+AsciiDoc markup to consider for reference data:
+
+.Unordered list
+* Item
+* Another item
+
+.Labeled list
+Term 1:: Definition
+Term 2:: Definition
+
+.Table
+[options="header"]
+|====
+|Column 1|Column 2|Column 3
+|Row 1, column 1|Row 1, column 2|Row 1, column 3
+|Row 2, column 1|Row 2, column 2|Row 2, column 3
+|====
+////

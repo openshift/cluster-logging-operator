@@ -54,9 +54,7 @@ func convertOutputs(loggingClfSpec *logging.ClusterLogForwarderSpec, secrets map
 		}
 
 		// TLS Settings
-		if output.TLS != nil {
-			obsOut.TLS = mapOutputTls(output.TLS, secrets[output.Name])
-		}
+		obsOut.TLS = mapOutputTls(output.TLS, secrets[output.Name])
 
 		// Add output to obs clf
 		obsOutputs = append(obsOutputs, *obsOut)
@@ -143,9 +141,16 @@ func generateDefaultOutput(logStoreSpec *logging.LogStoreSpec) *obs.OutputSpec {
 }
 
 func mapOutputTls(loggingTls *logging.OutputTLSSpec, outputSecret *corev1.Secret) *obs.OutputTLSSpec {
-	obsTls := &obs.OutputTLSSpec{
-		InsecureSkipVerify: loggingTls.InsecureSkipVerify,
-		TLSSecurityProfile: loggingTls.TLSSecurityProfile,
+	if loggingTls == nil && !security.HasTLSCertAndKey(outputSecret) &&
+		!security.HasCABundle(outputSecret) && !security.HasPassphrase(outputSecret) {
+		return nil
+	}
+
+	obsTls := &obs.OutputTLSSpec{}
+
+	if loggingTls != nil {
+		obsTls.InsecureSkipVerify = loggingTls.InsecureSkipVerify
+		obsTls.TLSSecurityProfile = loggingTls.TLSSecurityProfile
 	}
 
 	if security.HasTLSCertAndKey(outputSecret) {

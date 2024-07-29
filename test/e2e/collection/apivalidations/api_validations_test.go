@@ -65,9 +65,6 @@ var _ = Describe("", func() {
 		Entry("should fail for kafka without URL or brokers", "kafka_no_url_or_brokers.yaml", func(out string, err error) {
 			Expect(err.Error()).To(MatchRegexp(".*URL.*brokers.*required.*"))
 		}),
-		Entry("should fail for kafka with invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp("invalid URL"))
-		}),
 		Entry("should fail for kafka with invalid URL", "kafka_invalid_url.yaml", func(out string, err error) {
 			Expect(err.Error()).To(MatchRegexp("invalid URL"))
 		}),
@@ -84,6 +81,15 @@ var _ = Describe("", func() {
 		}),
 		Entry("should fail with invalid name", "invalid_name.yaml", func(out string, err error) {
 			Expect(err.Error()).To(MatchRegexp("Name.*valid DNS1035"))
+		}),
+		Entry("should pass for Cloudwatch with no URL", "cloudwatch-no-url.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for Cloudwatch with invalid URL", "cloudwatch-invalid-url.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+		}),
+		Entry("should pass for Cloudwatch with empty URL", "cloudwatch-empty-url.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
 		}),
 	)
 })

@@ -1075,7 +1075,7 @@ spec:
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL
-                            rule: isURL(self)
+                            rule: self == '' ||  isURL(self)
                       required:
                       - authentication
                       - groupName
@@ -1581,7 +1581,7 @@ spec:
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL
-                            rule: isURL(self)
+                            rule: self == '' ||  isURL(self)
                       required:
                       - topic
                       type: object

@@ -5,7 +5,8 @@ metadata:
 spec:
   outputs:
     - name: kafka
-      kafka: {}
+      kafka:
+        topic: clo-app-topic
       type: kafka
   pipelines:
   - inputRefs:

@@ -6,6 +6,7 @@ spec:
   outputs:
     - name: kafka
       kafka:
+        topic: clo-app-topic
         url: http://foo
         brokers:
         - http://foo

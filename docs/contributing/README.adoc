@@ -18,9 +18,9 @@ Quick summary of main targets only, see below and the Makefile itself for more d
 * `make check`: Generate and format code, run unit tests and linter.
 
 To build, deploy and test the CLO image in your own cluster:
-* `make deploy`: Build CLO image and deploy to cluster with elasticsearch.
+* `make deploy`: Build CLO image and deploy to cluster.
 * `make undeploy`: Undo `make deploy`.
-* `make undeploy-all`: Undeploys CLO and Elasticsearch operator.
+* `make undeploy-all`: Undeploys CLO.
 
 To run CLO as a local process:
 * `make run`: Run CLO as a local process. Does not require `make deploy`.
@@ -32,27 +32,15 @@ To run the e2e tests:
 
 *Note*: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 
-*Note*: There is a temporary issue with openshift base images using RHEL8
-repositories that are not accessible to all. This will be fixed, but until it is
-you can build using CentOS as the base instead, as follows:
-
-[source,bash]
-----
-    PATCH=Dockerfile.centos.patch make ...
-
-----
-
 == Testing Overview
 
-There are two types of test:
+There are several types of test:
 
 * _Unit tests:_ run in seconds, no cluster needed, verify internal behavior - behind the API. New code _should_ be reasonably well covered by unit tests but we don't have a formal requirement.
-* _E2E tests:_ run in minutes to hour(s), require a cluster. There are several ways to run these:
-* _CI tests:_ run automatically when you raise a PR in a controlled cluster environment. Can take hour(s) to get results.
-* _Deployed tests:_ Build and deploy CLO image to your own cluster, allows you to run tests selectively.
-* _Local process:_ requires a cluster with dependencies deployed (elasticsearch), but runs CLO as a _local process_. Faster and easier to debug.
+* _Function tests:_ run in minutes to hour(s), require a cluster. These intend to cover base functionality and mimics aspects of deployment without full integration
+* _E2E tests:_ run in minutes to hour(s), require a cluster. There are several ways to run these
 
-All PRs should pass unit tests. CI runs all tests automatically and won't merge a PR till they pass, so it is OK to create a PR and let CI run the e2e tests if you've done enough testing to be confident. This allows for human review and feedback while CI tests are running.
+All PRs should pass unit tests. CI runs all tests automatically and won't merge a PR till they pass, so it is OK to create a PR and let CI run tests if you've done enough testing to be confident. This allows for human review and feedback while CI tests are running.
 
 To get a code review of unfinished work, create a PR with "[WIP]" at the start of the description. The CI system will not merge it until the "[WIP]" is removed and all tests are passing.
 
@@ -141,10 +129,6 @@ _How it works_: An operator is actually a cluster _client_. It watches for
 changes to its own custom resources, and creates/updates other resources
 accordingly. This can all be done from outside the cluster.
 
-*Note:* You must run the `make deploy-elasticsearch-operator` as a separate target which will:
-* Deploy the Elasticsearch CRD upon which the CLO depends
-* Define ClusterLogForwarding to the default log store
-
 Examples:
 
 ----
@@ -191,10 +175,6 @@ The best approach is to clone these repos under `$GOPATH/src/github.com/openshif
 which the build scripts will pick up automatically. If you do not, the build script
 will attempt to clone them to a temporary directory.
 
-== Updating Dependencies
-
-Bumping the release and manifest versions typically require updating the `elasticsearch-operator` as well.
-* `dep ensure -update github.com/openshift/elasticsearch-operator`
 
 == Deploying without OLM
 

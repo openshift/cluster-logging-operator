@@ -2,9 +2,10 @@ package clusterlogging
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
@@ -97,7 +98,10 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	// Convert to observability.ClusterLogForwarder
-	obsClf := api.ConvertLoggingToObservability(r.Client, instance, clf, outputSecrets)
+	obsClf, err := api.ConvertLoggingToObservability(r.Client, instance, clf, outputSecrets)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	// Fix indices for default elasticsearch to be `app-write`, `infra-write`, `audit-write`
 	obsClf.Spec = initialize.DefaultElasticsearch(obsClf.Spec)
 

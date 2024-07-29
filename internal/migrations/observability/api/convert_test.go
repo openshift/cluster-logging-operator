@@ -403,7 +403,8 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 
 			expObsVisit(expObsClf)
 
-			actObsClfSpec := ConvertLoggingToObservability(k8sClient, loggingCl, loggingClf, outputSecrets)
+			actObsClfSpec, err := ConvertLoggingToObservability(k8sClient, loggingCl, loggingClf, outputSecrets)
+			Expect(err).To(BeNil())
 			Expect(actObsClfSpec.Spec.ServiceAccount).To(Equal(expObsClf.Spec.ServiceAccount))
 			Expect(actObsClfSpec.Spec.Collector).To(Equal(expObsClf.Spec.Collector))
 			Expect(actObsClfSpec.Spec.Inputs).To(Equal(expObsClf.Spec.Inputs))

@@ -93,7 +93,10 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	}
 
 	// Convert to observability.ClusterLogForwarder
-	obsClf := api.ConvertLoggingToObservability(r.Client, clInstance, instance, outputSecrets)
+	obsClf, err := api.ConvertLoggingToObservability(r.Client, clInstance, instance, outputSecrets)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	// Fix indices for default elasticsearch to be `app-write`, `infra-write`, `audit-write`
 	obsClf.Spec = initialize.DefaultElasticsearch(obsClf.Spec)
 

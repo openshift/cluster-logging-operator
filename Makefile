@@ -323,7 +323,7 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
 .PHONY: test-upgrade
-test-eupgrade: $(JUNITREPORT)
+test-upgrade: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \

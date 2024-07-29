@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: to-cloudwatch-secret-4884
+data:
+  aws_access_key_id: YXdzX2FjY2Vzc19rZXlfaWQ=
+  aws_secret_access_key: YXdzX3NlY3JldF9hY2Nlc3Nfa2V5
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  managementState: Managed
+  outputs:
+    - name: cloudwatch-aosqe
+      cloudwatch:
+        region: "us-east-1"
+        groupName: 'foo-{.bar||"none"}'
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyID:
+              key: aws_access_key_id
+              secretName: to-cloudwatch-secret-4884
+            keySecret:
+              key: aws_secret_access_key
+              secretName: to-cloudwatch-secret-4884
+      type: cloudwatch
+  pipelines:
+    - inputRefs:
+        - infrastructure
+        - audit
+        - application
+      name: forward-log-cw
+      outputRefs:
+        - cloudwatch-aosqe
+  serviceAccount:
+    name: clf-validation-test

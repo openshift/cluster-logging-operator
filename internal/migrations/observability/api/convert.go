@@ -13,26 +13,31 @@ import (
 
 // ConvertLoggingToObservability converts a logging.ClusterLogging and/or logging.ClusterLogForwarder
 // to observability.ClusterLogForwarder
-func ConvertLoggingToObservability(k8sClient client.Client, loggingCL *logging.ClusterLogging, loggingCLF *logging.ClusterLogForwarder, outputSecrets map[string]*corev1.Secret) *obs.ClusterLogForwarder {
+func ConvertLoggingToObservability(k8sClient client.Client, loggingCL *logging.ClusterLogging, loggingCLF *logging.ClusterLogForwarder, outputSecrets map[string]*corev1.Secret) (*obs.ClusterLogForwarder, error) {
 	// Legacy Workflow
 	if loggingCL != nil && loggingCL.Name == constants.SingletonName && loggingCL.Namespace == constants.OpenshiftNS {
+		// Create logcollector SA permissions for legacy case
+		if err := CreateLogCollectorSAPermissions(k8sClient); err != nil {
+			return nil, err
+		}
+
 		clToObsCLF := obsruntime.NewClusterLogForwarder(loggingCL.Namespace, loggingCL.Name, runtime.Initialize)
 		// Legacy ClusterLogging only
 		if loggingCLF == nil {
 			obsClfSpec := convertLegacyClusterLogging(&loggingCL.Spec)
 			clToObsCLF.Spec = *obsClfSpec
-			return clToObsCLF
+			return clToObsCLF, nil
 		}
 		// Legacy ClusterLogging + ClusterLogForwarder
 		clToObsCLF.Spec = convertClusterLogForwarder(loggingCL, loggingCLF, outputSecrets, true)
-		return clToObsCLF
+		return clToObsCLF, nil
 	}
 
 	// custom clf
 	obsCLF := obsruntime.NewClusterLogForwarder(loggingCLF.Namespace, loggingCLF.Name, runtime.Initialize)
 	obsCLF.Spec = convertClusterLogForwarder(loggingCL, loggingCLF, outputSecrets, false)
 
-	return obsCLF
+	return obsCLF, nil
 }
 
 // convertLegacyClusterLogging generates the output and pipelines determined by the logstore type of the ClusterLoggingInstance

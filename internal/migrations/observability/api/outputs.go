@@ -247,8 +247,10 @@ func mapAzureMonitor(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *
 }
 
 func mapCloudwatch(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Cloudwatch {
-	obsCw := &obs.Cloudwatch{
-		URL: loggingOutSpec.URL,
+	obsCw := &obs.Cloudwatch{}
+
+	if loggingOutSpec.URL != "" {
+		obsCw.URL = &loggingOutSpec.URL
 	}
 
 	// Map secret to authentication
@@ -455,8 +457,10 @@ func mapHTTP(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.HTTP
 }
 
 func mapKafka(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Kafka {
-	obsKafka := &obs.Kafka{
-		URL: loggingOutSpec.URL,
+	obsKafka := &obs.Kafka{}
+
+	if loggingOutSpec.URL != "" {
+		obsKafka.URL = &loggingOutSpec.URL
 	}
 
 	if secret != nil {

@@ -47,11 +47,12 @@ var _ = Describe("Generate vector config", func() {
 			},
 		}
 		initOutput = func() obs.OutputSpec {
+			url := "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			return obs.OutputSpec{
 				Type: obs.OutputTypeKafka,
 				Name: "kafka-receiver",
 				Kafka: &obs.Kafka{
-					URL:   "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+					URL:   &url,
 					Topic: "build_complete",
 				},
 			}
@@ -94,18 +95,21 @@ var _ = Describe("Generate vector config", func() {
 			spec.TLS = tlsSpec
 		}),
 		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", "kafka_insecure_skipverify.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
-			spec.Kafka.URL = "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
+			url := "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
+			spec.Kafka.URL = &url
 			spec.Kafka.Topic = ""
 			spec.TLS = tlsSpec
 			tlsSpec.InsecureSkipVerify = true
 
 		}),
 		Entry("without security", "kafka_no_security.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
-			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
+			url := "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
+			spec.Kafka.URL = &url
 			spec.Kafka.Topic = ""
 		}),
 		Entry("without custom topic template", "kafka_custom_topic.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
-			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092"
+			url := "tcp://broker1-kafka.svc.messaging.cluster.local:9092"
+			spec.Kafka.URL = &url
 			spec.Kafka.Topic = `foo-bar{.log_type||"none"}`
 		}),
 	)

@@ -109,8 +109,8 @@ func sink(id string, o obs.OutputSpec, inputs []string, topic string, op Options
 // Finally, if neither approach works the current collector process will be terminated.
 func Brokers(o obs.OutputSpec) string {
 	brokerUrls := []string{}
-	if o.Kafka.URL != "" {
-		brokerUrls = append(brokerUrls, o.Kafka.URL)
+	if o.Kafka.URL != nil {
+		brokerUrls = append(brokerUrls, *o.Kafka.URL)
 	}
 	for _, b := range o.Kafka.Brokers {
 		brokerUrls = append(brokerUrls, string(b))
@@ -133,7 +133,7 @@ func Topics(o obs.OutputSpec) string {
 		return o.Kafka.Topic
 	}
 
-	url, _ := urlhelper.Parse(o.Kafka.URL)
+	url, _ := urlhelper.Parse(*o.Kafka.URL)
 	topic := strings.TrimLeft(url.Path, "/")
 	if topic != "" {
 		return topic

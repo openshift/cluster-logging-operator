@@ -1400,6 +1400,7 @@ spec:
                             with the request
                           type: object
                         method:
+                          default: POST
                           description: Method specifies the Http method to be used
                             for sending logs. If not set, 'POST' is used.
                           enum:

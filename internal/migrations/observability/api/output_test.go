@@ -262,7 +262,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 			}
 			expectedCWOut := &obs.Cloudwatch{
-				URL:       url,
+				URL:       &url,
 				Region:    "us-west",
 				GroupName: `prefix.{.log_type||"none"}`,
 				Tuning: &obs.CloudwatchTuningSpec{
@@ -305,7 +305,7 @@ var _ = Describe("#ConvertOutputs", func() {
 				},
 			}
 			expectedCWOut := &obs.Cloudwatch{
-				URL:       url,
+				URL:       &url,
 				Region:    "us-west",
 				GroupName: `prefix.{.log_type||"none"}`,
 				Tuning: &obs.CloudwatchTuningSpec{
@@ -498,7 +498,7 @@ var _ = Describe("#ConvertOutputs", func() {
 			}
 
 			expObsKafka := &obs.Kafka{
-				URL:     url,
+				URL:     &url,
 				Topic:   "foo",
 				Brokers: []obs.URL{"foo", "bar"},
 				Authentication: &obs.KafkaAuthentication{

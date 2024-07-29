@@ -165,8 +165,9 @@ func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.CloudwatchAuthentication, 
 		output.TLS = &obs.OutputTLSSpec{
 			InsecureSkipVerify: true,
 		}
+		url := "https://localhost:5000"
 		output.Cloudwatch = &obs.Cloudwatch{
-			URL:            "https://localhost:5000",
+			URL:            &url,
 			Region:         "us-east-1",
 			GroupName:      `group-prefix.{.log_type||"none"}`,
 			Authentication: &auth,
@@ -217,8 +218,9 @@ func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *obs.OutputSpec)
 	kafkaVisitor := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeKafka)
 		output.Type = obs.OutputTypeKafka
+		url := "https://localhost:9093"
 		output.Kafka = &obs.Kafka{
-			URL:   "https://localhost:9093",
+			URL:   &url,
 			Topic: kafka.AppLogsTopic,
 		}
 		output.TLS = &obs.OutputTLSSpec{

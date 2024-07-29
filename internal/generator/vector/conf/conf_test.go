@@ -23,6 +23,7 @@ import (
 )
 
 var _ = Describe("Testing Complete Config Generation", func() {
+	url := "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 	var (
 		clusterOptions = framework.Options{framework.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		secretName     = "kafka-receiver-1"
@@ -39,7 +40,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		kafkaOutput = obs.OutputSpec{Type: obs.OutputTypeKafka,
 			Name: outputName,
 			Kafka: &obs.Kafka{
-				URL: "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+				URL: &url,
 			},
 			TLS: &obs.OutputTLSSpec{
 				TLSSpec: obs.TLSSpec{

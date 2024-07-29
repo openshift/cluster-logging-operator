@@ -13,13 +13,17 @@ func validateURLAccordingToTLS(output obs.OutputSpec) (results []string) {
 	specURL := ""
 	switch output.Type {
 	case obs.OutputTypeCloudwatch:
-		specURL = output.Cloudwatch.URL
+		if output.Cloudwatch.URL != nil {
+			specURL = *output.Cloudwatch.URL
+		}
 	case obs.OutputTypeElasticsearch:
 		specURL = output.Elasticsearch.URL
 	case obs.OutputTypeHTTP:
 		specURL = output.HTTP.URL
 	case obs.OutputTypeKafka:
-		specURL = output.Kafka.URL
+		if output.Kafka.URL != nil {
+			specURL = *output.Kafka.URL
+		}
 	case obs.OutputTypeLoki:
 		specURL = output.Loki.URL
 	case obs.OutputTypeSplunk:

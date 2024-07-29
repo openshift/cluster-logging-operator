@@ -126,11 +126,11 @@ func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secret
 }
 
 func endpointConfig(cw *obs.Cloudwatch) Element {
-	if cw == nil {
+	if cw == nil || cw.URL == nil {
 		return Endpoint{}
 	}
 	return Endpoint{
-		URL: cw.URL,
+		URL: *cw.URL,
 	}
 }
 

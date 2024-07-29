@@ -278,7 +278,7 @@ type Cloudwatch struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
-	URL string `json:"url"`
+	URL *string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -523,8 +523,9 @@ type HTTP struct {
 
 	// Method specifies the Http method to be used for sending logs. If not set, 'POST' is used.
 	//
-	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
+	// +kubebuilder:default:=POST
 	Method string `json:"method,omitempty"`
 }
 
@@ -577,7 +578,7 @@ type Kafka struct {
 	// The 'username@password' part of `url` is ignored.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
-	URL string `json:"url"`
+	URL *string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//

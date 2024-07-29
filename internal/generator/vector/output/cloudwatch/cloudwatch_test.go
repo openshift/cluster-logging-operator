@@ -115,7 +115,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {},
 				framework.NoOptions, "cw_with_groupname.toml"),
 			Entry("when URL is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
-				spec.Cloudwatch.URL = "http://mylogreceiver"
+				url := "http://mylogreceiver"
+				spec.Cloudwatch.URL = &url
 			}, framework.NoOptions, "cw_with_url.toml"),
 			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil, testhelpers.FrameworkOptionWithDefaultTLSCiphers, "cw_with_tls_and_default_mintls_ciphers.toml"),
 			Entry("when tls is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {

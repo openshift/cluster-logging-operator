@@ -10,6 +10,7 @@ spec:
           token:
             from: serviceAccount
         labelKeys:
+          global:
           - .hostname
           - .log_type
           - .kubernetes_container_name

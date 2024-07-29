@@ -277,8 +277,8 @@ type Cloudwatch struct {
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
-	URL string `json:"url"`
+	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	URL string `json:"url,omitempty"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -576,8 +576,8 @@ type Kafka struct {
 	//
 	// The 'username@password' part of `url` is ignored.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
-	URL string `json:"url"`
+	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	URL string `json:"url,omitempty"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//

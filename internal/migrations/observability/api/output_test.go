@@ -609,34 +609,92 @@ var _ = Describe("#ConvertOutputs", func() {
 
 			Expect(mapSplunk(loggingOutSpec, secret)).To(Equal(expObsSplunk))
 		})
-		It("should map logging.Syslog to obs.Syslog", func() {
-			loggingOutSpec := logging.OutputSpec{
-				URL: url,
-				OutputTypeSpec: logging.OutputTypeSpec{
-					Syslog: &logging.Syslog{
-						RFC:        "RFC3164",
-						Severity:   "error",
-						Facility:   "foo",
-						PayloadKey: "bar",
-						AppName:    "app",
-						ProcID:     "123",
-						MsgID:      "12345",
+		Context("syslog", func() {
+			It("should map logging.Syslog to obs.Syslog", func() {
+				loggingOutSpec := logging.OutputSpec{
+					URL: url,
+					OutputTypeSpec: logging.OutputTypeSpec{
+						Syslog: &logging.Syslog{
+							RFC:        "RFC3164",
+							Severity:   "error",
+							Facility:   "foo",
+							PayloadKey: "bar",
+							AppName:    "app",
+							ProcID:     "123",
+							MsgID:      "12345",
+						},
 					},
-				},
-			}
+				}
 
-			expObsSyslog := &obs.Syslog{
-				URL:        url,
-				RFC:        "RFC3164",
-				Severity:   "error",
-				Facility:   "foo",
-				PayloadKey: "{.bar}",
-				AppName:    "app",
-				ProcID:     "123",
-				MsgID:      "12345",
-			}
+				expObsSyslog := &obs.Syslog{
+					URL:        url,
+					RFC:        "RFC3164",
+					Severity:   "error",
+					Facility:   "foo",
+					PayloadKey: "{.bar}",
+					AppName:    "app",
+					ProcID:     "123",
+					MsgID:      "12345",
+				}
 
-			Expect(mapSyslog(loggingOutSpec)).To(Equal(expObsSyslog))
+				Expect(mapSyslog(loggingOutSpec)).To(Equal(expObsSyslog))
+			})
+
+			It("should map logging.Syslog to obs.Syslog when RFC is not specified", func() {
+				loggingOutSpec := logging.OutputSpec{
+					URL: url,
+					OutputTypeSpec: logging.OutputTypeSpec{
+						Syslog: &logging.Syslog{
+							Severity:   "error",
+							Facility:   "foo",
+							PayloadKey: "bar",
+							AppName:    "app",
+							ProcID:     "123",
+							MsgID:      "12345",
+						},
+					},
+				}
+
+				expObsSyslog := &obs.Syslog{
+					URL:        url,
+					RFC:        obs.SyslogRFC5424,
+					Severity:   "error",
+					Facility:   "foo",
+					PayloadKey: "{.bar}",
+					AppName:    "app",
+					ProcID:     "123",
+					MsgID:      "12345",
+				}
+
+				Expect(mapSyslog(loggingOutSpec)).To(Equal(expObsSyslog))
+			})
+
+			It("should map logging.Syslog to obs.Syslog and default values when facility & severity are not spec'd", func() {
+				loggingOutSpec := logging.OutputSpec{
+					URL: url,
+					OutputTypeSpec: logging.OutputTypeSpec{
+						Syslog: &logging.Syslog{
+							PayloadKey: "bar",
+							AppName:    "app",
+							ProcID:     "123",
+							MsgID:      "12345",
+						},
+					},
+				}
+
+				expObsSyslog := &obs.Syslog{
+					URL:        url,
+					RFC:        obs.SyslogRFC5424,
+					Severity:   "informational",
+					Facility:   "user",
+					PayloadKey: "{.bar}",
+					AppName:    "app",
+					ProcID:     "123",
+					MsgID:      "12345",
+				}
+
+				Expect(mapSyslog(loggingOutSpec)).To(Equal(expObsSyslog))
+			})
 		})
 	})
 

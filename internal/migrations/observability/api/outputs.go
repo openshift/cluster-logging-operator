@@ -596,7 +596,10 @@ func mapSplunk(loggingOutSpec logging.OutputSpec, secret *corev1.Secret) *obs.Sp
 
 func mapSyslog(loggingOutSpec logging.OutputSpec) *obs.Syslog {
 	obsSyslog := &obs.Syslog{
-		URL: loggingOutSpec.URL,
+		URL:      loggingOutSpec.URL,
+		RFC:      obs.SyslogRFC5424,
+		Facility: "user",
+		Severity: "informational",
 	}
 
 	loggingSyslog := loggingOutSpec.Syslog
@@ -604,9 +607,17 @@ func mapSyslog(loggingOutSpec logging.OutputSpec) *obs.Syslog {
 		return obsSyslog
 	}
 
-	obsSyslog.RFC = obs.SyslogRFCType(loggingSyslog.RFC)
-	obsSyslog.Facility = loggingSyslog.Facility
-	obsSyslog.Severity = loggingSyslog.Severity
+	if loggingSyslog.RFC != "" {
+		obsSyslog.RFC = obs.SyslogRFCType(loggingSyslog.RFC)
+	}
+
+	if loggingSyslog.Facility != "" {
+		obsSyslog.Facility = loggingSyslog.Facility
+	}
+
+	if loggingSyslog.Severity != "" {
+		obsSyslog.Severity = loggingSyslog.Severity
+	}
 
 	if loggingSyslog.AddLogSource {
 		obsSyslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal

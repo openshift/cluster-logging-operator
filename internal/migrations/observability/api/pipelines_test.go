@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
+
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -31,32 +33,32 @@ var _ = Describe("#ConvertPipelines", func() {
 			DetectMultilineErrors: true,
 		}, []obs.FilterSpec{
 			{
-				Name: detectMultilineErrorFilterName,
+				Name: filters.DetectMultilineErrorFilterName,
 				Type: obs.FilterTypeDetectMultiline,
 			},
 		},
-			[]string{detectMultilineErrorFilterName}),
+			[]string{filters.DetectMultilineErrorFilterName}),
 		Entry("should generate parse json as a filter and filterRef", logging.PipelineSpec{
 			Name:  "parsePipeline",
 			Parse: "json",
 		}, []obs.FilterSpec{
 			{
-				Name: parseFilterName,
+				Name: filters.ParseFilterName,
 				Type: obs.FilterTypeParse,
 			},
 		},
-			[]string{parseFilterName}),
+			[]string{filters.ParseFilterName}),
 		Entry("should generate labels as a filter and filterRef", logging.PipelineSpec{
 			Name:   "label-pipeline",
 			Labels: map[string]string{"foo": "bar"},
 		}, []obs.FilterSpec{
 			{
-				Name:            "filter-label-pipeline-" + openshiftLabelsFilterName,
+				Name:            "filter-label-pipeline-" + filters.OpenshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
 		},
-			[]string{"filter-label-pipeline-" + openshiftLabelsFilterName}),
+			[]string{"filter-label-pipeline-" + filters.OpenshiftLabelsFilterName}),
 		Entry("should generate all pipeline filters and filterRefs", logging.PipelineSpec{
 			Name:                  "filter-pipeline",
 			Labels:                map[string]string{"foo": "bar"},
@@ -64,20 +66,20 @@ var _ = Describe("#ConvertPipelines", func() {
 			DetectMultilineErrors: true,
 		}, []obs.FilterSpec{
 			{
-				Name: detectMultilineErrorFilterName,
+				Name: filters.DetectMultilineErrorFilterName,
 				Type: obs.FilterTypeDetectMultiline,
 			},
 			{
-				Name: parseFilterName,
+				Name: filters.ParseFilterName,
 				Type: obs.FilterTypeParse,
 			},
 			{
-				Name:            "filter-filter-pipeline-" + openshiftLabelsFilterName,
+				Name:            "filter-filter-pipeline-" + filters.OpenshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
 		},
-			[]string{detectMultilineErrorFilterName, parseFilterName, "filter-filter-pipeline-" + openshiftLabelsFilterName}),
+			[]string{filters.DetectMultilineErrorFilterName, filters.ParseFilterName, "filter-filter-pipeline-" + filters.OpenshiftLabelsFilterName}),
 	)
 
 	Context("pipeline with default reference", func() {
@@ -202,11 +204,11 @@ var _ = Describe("#ConvertPipelines", func() {
 		}
 		expPipelineFilterSpecs := []obs.FilterSpec{
 			{
-				Name: parseFilterName,
+				Name: filters.ParseFilterName,
 				Type: obs.FilterTypeParse,
 			},
 			{
-				Name:            "filter-my-app-default-" + openshiftLabelsFilterName,
+				Name:            "filter-my-app-default-" + filters.OpenshiftLabelsFilterName,
 				Type:            obs.FilterTypeOpenshiftLabels,
 				OpenShiftLabels: map[string]string{"foo": "bar"},
 			},
@@ -216,19 +218,19 @@ var _ = Describe("#ConvertPipelines", func() {
 				Name:       "my-app",
 				InputRefs:  []string{string(obs.InputTypeApplication)},
 				OutputRefs: []string{"es-out", "foo", "bar"},
-				FilterRefs: []string{parseFilterName},
+				FilterRefs: []string{filters.ParseFilterName},
 			},
 			{
 				Name:       "my-infra-audit",
 				InputRefs:  []string{string(obs.InputTypeInfrastructure), string(obs.InputTypeAudit)},
 				OutputRefs: []string{"es-out", "foo", "baz"},
-				FilterRefs: []string{parseFilterName},
+				FilterRefs: []string{filters.ParseFilterName},
 			},
 			{
 				Name:       "my-app-default",
 				InputRefs:  []string{logging.InputNameApplication},
 				OutputRefs: []string{"default-lokistack"},
-				FilterRefs: []string{"filter-my-app-default-" + openshiftLabelsFilterName},
+				FilterRefs: []string{"filter-my-app-default-" + filters.OpenshiftLabelsFilterName},
 			},
 		}
 

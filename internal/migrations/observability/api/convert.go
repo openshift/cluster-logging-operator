@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -82,7 +83,7 @@ func convertClusterLogForwarder(loggingCl *logging.ClusterLogging, loggingClf *l
 
 	obsClfSpec.Inputs = convertInputs(&loggingClf.Spec)
 	obsClfSpec.Outputs = convertOutputs(&loggingClf.Spec, secrets)
-	obsClfSpec.Filters = convertFilters(&loggingClf.Spec)
+	obsClfSpec.Filters = filters.ConvertFilters(&loggingClf.Spec)
 
 	obsPipelineSpec, filtersToAdd, needDefault := convertPipelines(logStoreSpec, &loggingClf.Spec)
 	obsClfSpec.Pipelines = obsPipelineSpec

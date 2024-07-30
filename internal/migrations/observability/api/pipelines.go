@@ -5,6 +5,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -76,27 +77,27 @@ func generatePipelineFilters(loggingPipelineSpec logging.PipelineSpec, createdFi
 	obsPipelinefilterSpecs := []obs.FilterSpec{}
 	addedFilterRefs := []string{}
 	if loggingPipelineSpec.DetectMultilineErrors {
-		addedFilterRefs = append(addedFilterRefs, detectMultilineErrorFilterName)
+		addedFilterRefs = append(addedFilterRefs, filters.DetectMultilineErrorFilterName)
 		if !createdFilters.Has(string(obs.FilterTypeDetectMultiline)) {
 			filterDetectMultiline := &obs.FilterSpec{
 				Type: obs.FilterTypeDetectMultiline,
-				Name: detectMultilineErrorFilterName,
+				Name: filters.DetectMultilineErrorFilterName,
 			}
 			obsPipelinefilterSpecs = append(obsPipelinefilterSpecs, *filterDetectMultiline)
 		}
 	}
 	if loggingPipelineSpec.Parse == "json" {
-		addedFilterRefs = append(addedFilterRefs, parseFilterName)
+		addedFilterRefs = append(addedFilterRefs, filters.ParseFilterName)
 		if !createdFilters.Has(string(obs.FilterTypeParse)) {
 			filterParse := &obs.FilterSpec{
 				Type: obs.FilterTypeParse,
-				Name: parseFilterName,
+				Name: filters.ParseFilterName,
 			}
 			obsPipelinefilterSpecs = append(obsPipelinefilterSpecs, *filterParse)
 		}
 	}
 	if len(loggingPipelineSpec.Labels) != 0 {
-		openshiftLabelFilterName := fmt.Sprintf("filter-%s-%s", loggingPipelineSpec.Name, openshiftLabelsFilterName)
+		openshiftLabelFilterName := fmt.Sprintf("filter-%s-%s", loggingPipelineSpec.Name, filters.OpenshiftLabelsFilterName)
 		addedFilterRefs = append(addedFilterRefs, openshiftLabelFilterName)
 		obsFilter := &obs.FilterSpec{
 			Type:            obs.FilterTypeOpenshiftLabels,

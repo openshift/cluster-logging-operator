@@ -1,4 +1,4 @@
-package api
+package filters
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -10,107 +10,6 @@ import (
 )
 
 var _ = Describe("#ConvertFilters", func() {
-	It("should map logging.KubeApiAudit to observability.KubeApiAudit", func() {
-		loggingAudit := &logging.KubeAPIAudit{
-			Rules: []v1.PolicyRule{{
-				Level: "RequestResponse",
-				Resources: []v1.GroupResources{
-					{
-						Group:     "",
-						Resources: []string{"pods"},
-					},
-				},
-			}},
-			OmitStages:        []v1.Stage{v1.StageRequestReceived},
-			OmitResponseCodes: &[]int{404, 409},
-		}
-		expObsAudit := &obs.KubeAPIAudit{
-			Rules: []v1.PolicyRule{{
-				Level: "RequestResponse",
-				Resources: []v1.GroupResources{
-					{
-						Group:     "",
-						Resources: []string{"pods"},
-					},
-				},
-			}},
-			OmitStages:        []v1.Stage{v1.StageRequestReceived},
-			OmitResponseCodes: &[]int{404, 409},
-		}
-
-		Expect(mapKubeApiAuditFilter(*loggingAudit)).To(Equal(expObsAudit))
-	})
-
-	It("should map logging.DropTest to observability.DropTest", func() {
-		loggingDropTest := []logging.DropTest{
-			{
-				DropConditions: []logging.DropCondition{
-					{
-						Field:   ".foo",
-						Matches: "bar",
-					},
-					{
-						Field:      ".foo2",
-						NotMatches: "baz",
-					},
-				},
-			},
-			{
-				DropConditions: []logging.DropCondition{
-					{
-						Field:   ".test",
-						Matches: "foo",
-					},
-					{
-						Field:   ".laz",
-						Matches: "paz",
-					},
-				},
-			},
-		}
-		expObsDropTest := []obs.DropTest{
-			{
-				DropConditions: []obs.DropCondition{
-					{
-						Field:   ".foo",
-						Matches: "bar",
-					},
-					{
-						Field:      ".foo2",
-						NotMatches: "baz",
-					},
-				},
-			},
-			{
-				DropConditions: []obs.DropCondition{
-					{
-						Field:   ".test",
-						Matches: "foo",
-					},
-					{
-						Field:   ".laz",
-						Matches: "paz",
-					},
-				},
-			},
-		}
-		Expect(mapDropFilter(loggingDropTest)).To(Equal(expObsDropTest))
-	})
-
-	It("should map logging.PruneFilterSpec to observability.PruneFilterSpec", func() {
-		loggingPruneSpec := &logging.PruneFilterSpec{
-			In:    []string{"foo", "bar", "baz"},
-			NotIn: []string{"test", "something", "other"},
-		}
-
-		expObsPruneSpec := &obs.PruneFilterSpec{
-			In:    []obs.FieldPath{"foo", "bar", "baz"},
-			NotIn: []obs.FieldPath{"test", "something", "other"},
-		}
-
-		Expect(mapPruneFilter(*loggingPruneSpec)).To(Equal(expObsPruneSpec))
-	})
-
 	It("should convert all filters appropriately", func() {
 		var (
 			loggingClfSpec = logging.ClusterLogForwarderSpec{}
@@ -217,6 +116,6 @@ var _ = Describe("#ConvertFilters", func() {
 			},
 		}
 
-		Expect(convertFilters(&loggingClfSpec)).To(Equal(expObsClfFilterSpec))
+		Expect(ConvertFilters(&loggingClfSpec)).To(Equal(expObsClfFilterSpec))
 	})
 })

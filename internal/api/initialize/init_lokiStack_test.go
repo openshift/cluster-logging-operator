@@ -906,7 +906,11 @@ var _ = Describe("MigrateLokiStack", func() {
 
 	DescribeTable(
 		"LabelKeys logic for LokiStack tenants", func(labelKeys *obs.LokiStackLabelKeys, tenant string, wantKeys []string) {
-			keys := lokiStackLabelKeysForTenant(labelKeys, tenant)
+			testDefaultKeys := []string{
+				"default_one",
+				"default_two",
+			}
+			keys := lokiStackLabelKeysForTenant(labelKeys, tenant, testDefaultKeys)
 			Expect(keys).To(Equal(wantKeys))
 		},
 		Entry(
@@ -944,6 +948,7 @@ var _ = Describe("MigrateLokiStack", func() {
 			"only tenant",
 			&obs.LokiStackLabelKeys{
 				Application: &obs.LokiStackTenantLabelKeys{
+					IgnoreGlobal: true,
 					LabelKeys: []string{
 						"tenant_one",
 						"tenant_two",
@@ -952,6 +957,24 @@ var _ = Describe("MigrateLokiStack", func() {
 			},
 			string(obs.InputTypeApplication),
 			[]string{
+				"tenant_one",
+				"tenant_two",
+			},
+		),
+		Entry(
+			"only tenant but with defaults",
+			&obs.LokiStackLabelKeys{
+				Application: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{
+						"tenant_one",
+						"tenant_two",
+					},
+				},
+			},
+			string(obs.InputTypeApplication),
+			[]string{
+				"default_one",
+				"default_two",
 				"tenant_one",
 				"tenant_two",
 			},

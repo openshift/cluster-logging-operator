@@ -29,7 +29,8 @@ const (
 )
 
 var (
-	defaultLabelKeys = []string{
+	// DefaultLabelKeys contains the log entry keys that are used as Loki stream labels by default.
+	DefaultLabelKeys = []string{
 		logType,
 
 		//container labels
@@ -172,7 +173,7 @@ func lokiLabelKeys(l *obs.Loki) []string {
 	if l != nil && len(l.LabelKeys) != 0 {
 		keys = *sets.NewString(l.LabelKeys...)
 	} else {
-		keys = *sets.NewString(defaultLabelKeys...)
+		keys = *sets.NewString(DefaultLabelKeys...)
 	}
 	// Ensure required tags for serialization
 	keys.Insert(requiredLabelKeys...)

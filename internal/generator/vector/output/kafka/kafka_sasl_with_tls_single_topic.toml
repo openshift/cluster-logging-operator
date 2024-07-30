@@ -18,6 +18,7 @@ timestamp_format = "rfc3339"
 except_fields = ["_internal"]
 
 [sinks.kafka_receiver.sasl]
+enabled = true
 username = "SECRET[kubernetes_secret.kafka-receiver-1/username]"
 password = "SECRET[kubernetes_secret.kafka-receiver-1/password]"
 mechanism = "PLAIN"

@@ -24,6 +24,7 @@ func (t SASL) Name() string {
 func (t SASL) Template() string {
 	return `{{define "vectorKafkaSasl"}}
 [sinks.{{.ComponentID}}.sasl]
+enabled = true
 username = "{{.Username}}"
 password = "{{.Password}}"
 mechanism = "{{.Mechanism}}"

@@ -193,7 +193,7 @@ spec:
                               x-kubernetes-validations:
                               - message: only one of matches or notMatches can be
                                   defined at once
-                                rule: has(self.matches) && has(self.notMatches)
+                                rule: '!(has(self.matches) && has(self.notMatches))'
                             minItems: 1
                             type: array
                         type: object

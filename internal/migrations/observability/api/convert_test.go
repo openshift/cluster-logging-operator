@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -375,12 +376,12 @@ var _ = Describe("#ConvertLoggingToObservability", func() {
 							},
 						},
 						{
-							Name:            "filter-app-logs-" + openshiftLabelsFilterName,
+							Name:            "filter-app-logs-" + filters.OpenshiftLabelsFilterName,
 							Type:            obs.FilterTypeOpenshiftLabels,
 							OpenShiftLabels: map[string]string{"foo": "bar"},
 						},
 						{
-							Name: detectMultilineErrorFilterName,
+							Name: filters.DetectMultilineErrorFilterName,
 							Type: obs.FilterTypeDetectMultiline,
 						},
 					},

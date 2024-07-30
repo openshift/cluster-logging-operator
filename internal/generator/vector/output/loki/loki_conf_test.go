@@ -31,7 +31,7 @@ var _ = Describe("outputLabelConf", func() {
 	Context("#lokiLabelKeys when LabelKeys", func() {
 		Context("are not spec'd", func() {
 			It("should provide a default set of labels including the required ones", func() {
-				exp := append(defaultLabelKeys, requiredLabelKeys...)
+				exp := append(DefaultLabelKeys, requiredLabelKeys...)
 				sort.Strings(exp)
 				Expect(lokiLabelKeys(loki)).To(BeEquivalentTo(exp))
 			})

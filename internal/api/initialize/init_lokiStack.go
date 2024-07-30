@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -32,7 +33,7 @@ func GenerateLokiOutput(outSpec obs.OutputSpec, input, tenant string) obs.Output
 				Token: outSpec.LokiStack.Authentication.Token,
 			},
 			Tuning:    outSpec.LokiStack.Tuning,
-			LabelKeys: lokiStackLabelKeysForTenant(outSpec.LokiStack.LabelKeys, tenant),
+			LabelKeys: lokiStackLabelKeysForTenant(outSpec.LokiStack.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
 		},
 		TLS:   outSpec.TLS,
 		Limit: outSpec.Limit,
@@ -51,7 +52,9 @@ func lokiStackGatewayService(lokiStackServiceName string) string {
 	return fmt.Sprintf("%s-gateway-http", lokiStackServiceName)
 }
 
-func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant string) []string {
+// lokiStackLabelKeysForTenant returns the per-tenant labelKeys for a Loki output based on the LokiStack configuration.
+// A return value of "nil" indicates that the defaults of the Loki output should be used.
+func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant string, defaultKeys []string) []string {
 	if labelKeys == nil {
 		return nil
 	}
@@ -76,8 +79,14 @@ func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant strin
 		}
 	}
 
-	if !ignoreGlobal && len(labelKeys.Global) > 0 {
-		keys = append(keys, labelKeys.Global...)
+	if !ignoreGlobal {
+		if len(labelKeys.Global) > 0 {
+			keys = append(keys, labelKeys.Global...)
+		} else if len(keys) > 0 {
+			// If the per-tenant configuration is custom, but there is no customization of the global keys
+			// then we need to explicitly add the default keys.
+			keys = append(keys, defaultKeys...)
+		}
 	}
 
 	if len(keys) > 1 {

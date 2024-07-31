@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs/managedlogstores"
 )
 
 var _ = Describe("DefaultElasticsearch", func() {
 	const (
 		esOut             = "es-out"
-		defaultESOut      = api.DefaultEsName
+		defaultESOut      = managedlogstores.DefaultEsName
 		saName            = "test-sa"
 		defaultESPipeline = "test-default-pipeline"
 		defaultEsOutApp   = defaultESOut + "-" + string(obs.InputTypeApplication)

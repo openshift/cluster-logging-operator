@@ -6,6 +6,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs/managedlogstores"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -35,7 +36,7 @@ func convertPipelines(logStoreSpec *logging.LogStoreSpec, loggingClfSpec *loggin
 
 			// Add default output name to output refs
 			// Default name is `default-<LOGSTORE TYPE>`. E.g `default-elasticsearch`, `default-lokistack`
-			pipelineOutrefs = append(pipelineOutrefs, DefaultName+string(logStoreSpec.Type))
+			pipelineOutrefs = append(pipelineOutrefs, managedlogstores.DefaultName+string(logStoreSpec.Type))
 			obsPipeline.OutputRefs = pipelineOutrefs
 		} else {
 			obsPipeline.OutputRefs = pipeline.OutputRefs

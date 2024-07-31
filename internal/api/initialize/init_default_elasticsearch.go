@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs/managedlogstores"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 func DefaultElasticsearch(spec obs.ClusterLogForwarderSpec) obs.ClusterLogForwarderSpec {
 	var outputs []obs.OutputSpec
 	var pipelines []obs.PipelineSpec
-	outputs, pipelines = ProcessForwarderPipelines(spec, obs.OutputTypeElasticsearch, api.DefaultEsName, true)
+	outputs, pipelines = ProcessForwarderPipelines(spec, obs.OutputTypeElasticsearch, managedlogstores.DefaultEsName, true)
 
 	spec.Outputs = outputs
 	spec.Pipelines = pipelines

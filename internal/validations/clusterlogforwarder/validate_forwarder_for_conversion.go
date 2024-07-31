@@ -5,7 +5,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
-	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,7 +24,7 @@ func ValidateClusterLogForwarderForConversion(clfInstance *loggingv1.ClusterLogF
 
 	status := loggingv1.ClusterLogForwarderStatus{}
 
-	if api.ReferencesFluentDForward(&clfInstance.Spec) {
+	if outputs.ReferencesFluentDForward(&clfInstance.Spec) {
 		status.Conditions.SetCondition(conditions.CondInvalid("cannot migrate CLF because fluentDForward is referenced as an output."))
 		return nil, &status, fmt.Errorf("cannot migrate CLF with FluentDForward as an output")
 	}

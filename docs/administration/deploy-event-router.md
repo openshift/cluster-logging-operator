@@ -1,7 +1,7 @@
 # Deploying Event Router
 The EventRouter is a simple service that listens to kubernetes events and writes them to `STDOUT`.  It is not managed by the `cluster-logging-operator`.
 Creating a deployment using the following template will enable event collection equivalent to the same capability from 3.11 releases or earlier.
-Currently, all events are collected by the cluster logging collector and indexed to the `infra` index when
+Currently, all events are collected by the cluster logging collector and forwarded as infrastructure log-type when
 the `EventRouter` is deployed into an operations namespace (e.g. `openshift-*`). Elevated permissions are required to create the cluster level roles and bindings referenced in the following template:
 
 ```

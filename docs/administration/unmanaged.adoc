@@ -11,11 +11,11 @@ Potential reasons for needing to go Unmanaged:
 * Hacking configuration for testing custom images
 * Feature request investigation
 
-NOTE: Logging components in an unmanaged state are not supported unless an exception is in place.  This means a
+NOTE: Logging components in an unmanaged state are not supported unless a support exception exists.  This means a
   formal exception or a documented workaround associated with a known issue.  Operating in an unmanaged state is intended
   to be temporary and should be reverted once the respective issue is resolved.
 
-NOTE: An unmanaged deployment will not receive updates until the `ClusterLogging` custom resource is placed back into a managed state.
+NOTE: An unmanaged deployment will not receive updates until the `ClusterLogForwarder` custom resource is placed back into a managed state.
 ```
   spec:
     managementState: "Managed"
@@ -23,21 +23,14 @@ NOTE: An unmanaged deployment will not receive updates until the `ClusterLogging
 
 == Unmanaged Collector
 
-* Set or edit the `ClusterLogging` resource to managementState of Unmanaged:
+* Set or edit the `ClusterLogForwarder` resource to managementState of Unmanaged:
 ```
-oc patch clusterlogging/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
-```
-
-* Extract the collector configuration (vector implementation):
-```
-oc extract secret/$NAME-config
+oc patch clusterlogforwarder.observability.openshift.io/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
 ```
 
 * Edit the configuration(vector.toml) as needed
-
-* Update the configuration
 ```
-oc set data secret/$NAME-config --from-file=vector.toml=vector.toml
+oc edit configmap/$NAME
 ```
 
 * Restart the collector pods

@@ -103,12 +103,6 @@ func (clusterRequest *ClusterLoggingRequest) IsLegacyDeployment() bool {
 		clusterRequest.Cluster.Name == constants.SingletonName
 }
 
-// true if equals "Managed" or empty
-func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
-	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged ||
-		clusterRequest.Cluster.Spec.ManagementState == ""
-}
-
 // Update the runtime Object or return error
 func (clusterRequest *ClusterLoggingRequest) Update(object client.Object) (err error) {
 	if err = clusterRequest.Client.Update(context.TODO(), object); err != nil {

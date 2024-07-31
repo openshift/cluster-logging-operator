@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
 	"math/rand"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -31,7 +32,6 @@ import (
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -123,7 +123,7 @@ func NewDefaultLogGeneratorOptions() LogGeneratorOptions {
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name string, options LogGeneratorOptions) error {
-	pod := runtime.NewMultiContainerLogGenerator(namespace, name, options.Count, options.Delay, options.Message, options.ContainerCount, options.Labels)
+	pod := testruntime.NewMultiContainerLogGenerator(namespace, name, options.Count, options.Delay, options.Message, options.ContainerCount, options.Labels)
 	clolog.Info("Checking SA for LogGenerator", "Deployment name", pod.Name, "namespace", namespace)
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
@@ -143,7 +143,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name 
 
 // DeploySocat will deploy pod with socat software
 func (tc *E2ETestFramework) DeploySocat(namespace, name, forwarderName string, options LogGeneratorOptions) error {
-	pod := runtime.NewSocatPod(namespace, name, forwarderName, options.Labels)
+	pod := testruntime.NewSocatPod(namespace, name, forwarderName, options.Labels)
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(names
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
 	}
-	pod := runtime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 0, 0, "My life is my message")
+	pod := testruntime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 0, 0, "My life is my message")
 	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
 	opts := metav1.CreateOptions{}
 	pod, err := tc.KubeClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, opts)
@@ -321,9 +321,9 @@ func (tc *E2ETestFramework) CreatePipelineSecret(namespace, logStoreName, secret
 	}
 
 	sOpts := metav1.CreateOptions{}
-	secret := k8shandler.NewSecret(
-		secretName,
+	secret := runtime.NewSecret(
 		namespace,
+		secretName,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)

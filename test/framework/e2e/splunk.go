@@ -3,10 +3,10 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/url"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
@@ -367,9 +367,9 @@ func newSplunkSecret() *v1.Secret {
 		"shc_secret":   []byte("77mwFNOSUzmQLG9EGa2ZVEFq"),
 		"password":     AdminPassword,
 	}
-	secret := k8shandler.NewSecret(
-		splunkSecret,
+	secret := runtime.NewSecret(
 		constants.OpenshiftNS,
+		splunkSecret,
 		data,
 	)
 	return secret

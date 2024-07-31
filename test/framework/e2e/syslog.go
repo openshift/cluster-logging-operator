@@ -200,9 +200,9 @@ func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1
 
 func (tc *E2ETestFramework) CreateLegacySyslogConfigMap(namespace, conf string) (err error) {
 	opts := metav1.CreateOptions{}
-	fluentdConfigMap := k8shandler.NewConfigMap(
-		"syslog",
+	fluentdConfigMap := runtime.NewConfigMap(
 		namespace,
+		"syslog",
 		map[string]string{
 			"syslog.conf": conf,
 		},
@@ -384,7 +384,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	rsyslogConf = GenerateRsyslogConf(rsyslogConf, rfc)
 
 	cOpts := metav1.CreateOptions{}
-	config := k8shandler.NewConfigMap(container.Name, constants.OpenshiftNS, map[string]string{
+	config := runtime.NewConfigMap(constants.OpenshiftNS, container.Name, map[string]string{
 		"rsyslog.conf": rsyslogConf,
 	})
 	config, err = tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Create(context.TODO(), config, cOpts)
@@ -473,9 +473,9 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 	}
 
 	sOpts := metav1.CreateOptions{}
-	secret = k8shandler.NewSecret(
-		secretName,
+	secret = runtime.NewSecret(
 		constants.OpenshiftNS,
+		secretName,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore", "secret", secret.Name, "logStore", logStoreName)

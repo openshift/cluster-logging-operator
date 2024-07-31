@@ -13,7 +13,7 @@ repo_dir="$(dirname $0)/.."
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
-INCLUDES="${INCLUDES:-}"
+EXCLUDES="${EXCLUDES:-}"
 
 cleanup(){
   local return_code="$?"
@@ -41,8 +41,8 @@ ${repo_dir}/olm_deploy/scripts/operator-install.sh
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
-  if [ -n "$INCLUDES" ] ; then
-    if ! echo $test | grep -P -q "$INCLUDES" ; then
+  if [ -n "$EXCLUDES" ] ; then
+    if echo $test | grep -P -q "$EXCLUDES" ; then
       os::log::info "==============================================================="
 	    os::log::info "excluding e2e $test "
 	    os::log::info "==============================================================="

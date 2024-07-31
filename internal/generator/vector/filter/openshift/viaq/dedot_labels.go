@@ -26,7 +26,6 @@ if exists(.kubernetes.labels) {
       }
     }
 }`
-	VRLOpenShiftSequence = `.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
 )
 
 // DedotLabels replaces '[\./]' with '_' as well as adds the openshift.sequence id
@@ -34,6 +33,6 @@ func DedotLabels(id string, inputs []string) Element {
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         strings.Join([]string{VRLOpenShiftSequence, VRLDedotLabels}, "\n"),
+		VRL:         strings.Join([]string{VRLDedotLabels}, "\n"),
 	}
 }

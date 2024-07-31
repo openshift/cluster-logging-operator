@@ -52,6 +52,7 @@ if .log_type == "%s" && .log_source == "%s" {
 			AddDefaultLogLevel,
 			FixHostname,
 			FixTimestampField,
+			VRLOpenShiftSequence,
 		}), "\n"))
 }
 
@@ -70,6 +71,7 @@ if .log_type == "%s" && .log_source == "%s" {
 			FixK8sAuditLevel,
 			FixHostname,
 			FixTimestampField,
+			VRLOpenShiftSequence,
 		}), "\n"))
 }
 
@@ -88,6 +90,7 @@ if .log_type == "%s" && .log_source == "%s" {
 			FixOpenshiftAuditLevel,
 			FixHostname,
 			FixTimestampField,
+			VRLOpenShiftSequence,
 		}), "\n"))
 }
 
@@ -104,6 +107,7 @@ if .log_type == "%s" && .log_source == "%s" {
 			FixLogLevel,
 			FixHostname,
 			FixTimestampField,
+			VRLOpenShiftSequence,
 		}), "\n"))
 }
 

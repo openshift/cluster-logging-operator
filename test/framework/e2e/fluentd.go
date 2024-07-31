@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -336,7 +337,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 		})
 	}
 
-	config := k8shandler.NewConfigMap(container.Name, namespace, map[string]string{
+	config := runtime.NewConfigMap(namespace, container.Name, map[string]string{
 		"fluent.conf": fluentConf,
 	})
 

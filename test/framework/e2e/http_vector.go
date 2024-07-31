@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	apps "k8s.io/api/apps/v1"
@@ -123,7 +124,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		ServiceAccountName: serviceAccount.Name,
 	}
 	opts := metav1.CreateOptions{}
-	config := k8shandler.NewConfigMap(container.Name, ns, map[string]string{
+	config := runtime.NewConfigMap(ns, container.Name, map[string]string{
 		vector.ConfigFile:    vectorHttpConf,
 		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
 	})

@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"fmt"
+	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -57,7 +58,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	splunkSink := sink(id, o, []string{timestampID}, "", secrets, op)
 	if hasIndexKey(o.Splunk) {
 		splunkIndexID := vectorhelpers.MakeID(id, "splunk_index")
-		indexTemplate = commontemplate.TemplateRemap(splunkIndexID, []string{timestampID}, o.Splunk.Index, splunkIndexID, "Splunk Index")
+		indexTemplate = commontemplate.TemplateRemap(splunkIndexID, []string{timestampID}, dedotIndexKey(o.Splunk.Index), splunkIndexID, "Splunk Index")
 		splunkSink = sink(id, o, []string{splunkIndexID}, splunkIndexID, secrets, op)
 	}
 
@@ -113,9 +114,27 @@ func hasIndexKey(s *obs.Splunk) bool {
 	return s != nil && s.Index != ""
 }
 
+func dedotIndexKey(index string) string {
+	prefixes := []string{".kubernetes.namespace_labels", ".kubernetes.labels"}
+
+	for _, prefix := range prefixes {
+		pos := strings.Index(index, prefix)
+		if pos != -1 {
+			return replaceDotsAndSlashes(index, pos+len(prefix)+1)
+		}
+	}
+	return index
+}
+
+func replaceDotsAndSlashes(str string, start int) string {
+	modifiedRest := strings.ReplaceAll(str[start:], ".", "_")
+	modifiedRest = strings.ReplaceAll(modifiedRest, "/", "_")
+	return str[:start] + modifiedRest
+}
+
 func Tenant(s *obs.Splunk, index string) Element {
 	if !hasIndexKey(s) {
 		return Nil
 	}
-	return KV("index", fmt.Sprintf(`"{{ _internal.%s }}"`, index))
+	return KV("index", fmt.Sprintf(`"{{ ._internal.%s }}"`, index))
 }

@@ -19,7 +19,7 @@ Supported values are: footnote:[https://vector.dev/docs/administration/monitorin
 .Enable Debug Log Level for Vector
 [source]
 ----
-apiVersion: "logging.openshift.io/v1"
+apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
   name: instance

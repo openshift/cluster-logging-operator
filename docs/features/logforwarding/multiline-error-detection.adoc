@@ -18,25 +18,29 @@ java.lang.NullPointerException: Cannot invoke "String.toString()" because "<para
 ----
 
 === Solution
-Include `detectMultilineErrors` set to `true` when you create your Cluster Log Forwarder.
+Include `detectMultilineException` filter when you create your Cluster Log Forwarder.
 Openshift Logging will detect multi-line exceptions and reassemble them into a single log entry.
 
 .cluster-log-forwarder.yaml
 [source,yaml]
 ----
-apiVersion: logging.openshift.io/v1
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  filters:
+  - name: detectMultilineException
+    type: detectMultilineException
   pipelines:
     - name: my-app-logs
       inputRefs:
-        - application
+      - application
       outputRefs:
-        - default
-      detectMultilineErrors: true
+      - anOutput
+      filterRefs:
+      - detectMultilineError
 ----
 
 === Details
@@ -45,15 +49,15 @@ The content of the message field of the first log message is replaced with the c
 
 .Supported languages per collector:
 |===
-|Language | Fluentd | Vector
+|Language | 
 
-|Java | ✓ | ✓
-|JS | ✓ | ✓
-|Ruby | ✓ | ✓
-|Python | ✓ | ✓
-|Golang | ✓ | ✓
-|PHP | ✓ |
-|Dart | ✓ | ✓
+|Java |
+|JS |
+|Ruby | 
+|Python | 
+|Golang | 
+|PHP | 
+|Dart | 
 |===
 
 === Troubleshooting
@@ -70,25 +74,8 @@ When enabled, the collector configuration will include a new section with type: 
  multiline_flush_interval_ms = 1000
 ----
 
-.fluentd config section example
-----
-<label @MULTILINE_APP_LOGS>
-  <match kubernetes.**>
-    @type detect_exceptions
-    remove_tag_prefix 'kubernetes'
-    message message
-    force_line_breaks true
-    multiline_flush_interval .2
-  </match>
-</label>
-
-----
-
 === Extended support
 
 Supporting new languages or custom formats requires new detection rules and additional feature changes.
 
 The rules currently in use are located in *detect_exceptions* transform in the *ViaQ/Vector* repository on github.
-
-*Notice:* Fluentd as a collector is deprecated and is planned to be removed in a future release.
-Red Hat will provide bug fixes and support for this feature during the current release lifecycle, but will no longer provide enhancements.

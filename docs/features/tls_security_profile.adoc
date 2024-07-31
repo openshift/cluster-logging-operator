@@ -14,7 +14,7 @@ are applied according to the following order of precedence:
 .Enable TLS Security Profile feature
 [source]
 ----
-apiVersion: "logging.openshift.io/v1"
+apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
   name: instance

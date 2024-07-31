@@ -2,7 +2,6 @@
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
   if exists(.kubernetes.namespace_labels) {
 	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
 		newkey = replace(key, r'[\./]', "_")

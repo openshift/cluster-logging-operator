@@ -118,6 +118,7 @@ func journalLogsVRL() string {
 		SystemU,
 		AddTime,
 		FixTimestampField,
+		VRLOpenShiftSequence,
 	}), "\n\n")
 }
 

@@ -12,6 +12,7 @@ if .log_type == "audit" && .log_source == "kubeAPI" {
   .k8s_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''
 

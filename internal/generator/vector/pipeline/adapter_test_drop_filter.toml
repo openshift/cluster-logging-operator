@@ -163,6 +163,7 @@ if .log_source == "node" {
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''
 

@@ -8,6 +8,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/filters"
 	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/inputs"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs"
+	"github.com/openshift/cluster-logging-operator/internal/migrations/observability/api/outputs/managedlogstores"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +46,7 @@ func ConvertLoggingToObservability(k8sClient client.Client, loggingCL *logging.C
 
 // convertLegacyClusterLogging generates the output and pipelines determined by the logstore type of the ClusterLoggingInstance
 func convertLegacyClusterLogging(loggingCLSpec *logging.ClusterLoggingSpec) *obs.ClusterLogForwarderSpec {
-	obsDefaultOut := *generateDefaultOutput(loggingCLSpec.LogStore)
+	obsDefaultOut := *managedlogstores.GenerateDefaultOutput(loggingCLSpec.LogStore)
 
 	return &obs.ClusterLogForwarderSpec{
 		ManagementState: obs.ManagementState(loggingCLSpec.ManagementState),
@@ -88,7 +90,7 @@ func convertClusterLogForwarder(loggingCl *logging.ClusterLogging, loggingClf *l
 	}
 
 	obsClfSpec.Inputs = inputs.ConvertInputs(&loggingClf.Spec)
-	obsClfSpec.Outputs = convertOutputs(&loggingClf.Spec, secrets)
+	obsClfSpec.Outputs = outputs.ConvertOutputs(&loggingClf.Spec, secrets)
 	obsClfSpec.Filters = filters.ConvertFilters(&loggingClf.Spec)
 
 	obsPipelineSpec, filtersToAdd, needDefault := convertPipelines(logStoreSpec, &loggingClf.Spec)
@@ -98,7 +100,7 @@ func convertClusterLogForwarder(loggingCl *logging.ClusterLogging, loggingClf *l
 
 	// Generate default output if referenced
 	if needDefault && logStoreSpec != nil {
-		obsClfSpec.Outputs = append(obsClfSpec.Outputs, *generateDefaultOutput(logStoreSpec))
+		obsClfSpec.Outputs = append(obsClfSpec.Outputs, *managedlogstores.GenerateDefaultOutput(logStoreSpec))
 	}
 
 	return *obsClfSpec

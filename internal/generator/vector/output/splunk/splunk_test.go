@@ -90,5 +90,8 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
 		}),
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Splunk.Index = `foo-{.kubernetes.namespace_labels."test/logging.io"||"missing"}`
+		}),
 	)
 })

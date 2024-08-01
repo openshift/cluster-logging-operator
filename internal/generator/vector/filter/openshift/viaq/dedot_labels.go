@@ -8,7 +8,9 @@ import (
 )
 
 const (
-	VRLDedotLabels = `if exists(.kubernetes.namespace_labels) {
+	VRLDedotLabels = `
+if .log_source == "container" {
+  if exists(.kubernetes.namespace_labels) {
     for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
       newkey = replace(key, r'[\./]', "_") 
       .kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
@@ -16,8 +18,8 @@ const (
         .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
       }
     }
-}
-if exists(.kubernetes.labels) {
+  }
+  if exists(.kubernetes.labels) {
     for_each(object!(.kubernetes.labels)) -> |key,value| { 
       newkey = replace(key, r'[\./]', "_") 
       .kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
@@ -25,11 +27,16 @@ if exists(.kubernetes.labels) {
         .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
       }
     }
+  }
 }`
 )
 
-// DedotLabels replaces '[\./]' with '_' as well as adds the openshift.sequence id
-func DedotLabels(id string, inputs []string) Element {
+func NewDedot(id string, inputs ...string) Element {
+	return DedotLabels(id, inputs...)
+}
+
+// DedotLabels replaces dots and forward slashes with underscores
+func DedotLabels(id string, inputs ...string) Element {
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),

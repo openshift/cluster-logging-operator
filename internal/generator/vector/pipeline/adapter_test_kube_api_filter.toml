@@ -61,3 +61,30 @@ source = '''
 		}
 	}
 '''
+
+
+[transforms.pipeline_mypipeline_viaqdedot_2]
+type = "remap"
+inputs = ["pipeline_mypipeline_my_audit_1"]
+source = '''
+  if .log_source == "container" {
+    if exists(.kubernetes.namespace_labels) {
+      for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+        newkey = replace(key, r'[\./]', "_")
+        .kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+        if newkey != key {
+          .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+        }
+      }
+    }
+    if exists(.kubernetes.labels) {
+      for_each(object!(.kubernetes.labels)) -> |key,value| {
+        newkey = replace(key, r'[\./]', "_")
+        .kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+        if newkey != key {
+          .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+        }
+      }
+    }
+  }
+'''

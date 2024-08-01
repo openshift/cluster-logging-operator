@@ -13,6 +13,7 @@ import (
 const (
 	Viaq        = "viaq"
 	ViaqJournal = "viaqjournal"
+	ViaqDedot   = "viaqdedot"
 )
 
 func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
@@ -48,7 +49,6 @@ if .log_source == "%s" {
 		RemoveTimestampEnd,
 		FixTimestampField,
 		VRLOpenShiftSequence,
-		VRLDedotLabels,
 	}), "\n"))
 }
 

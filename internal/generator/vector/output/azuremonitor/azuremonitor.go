@@ -2,7 +2,6 @@ package azuremonitor
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
@@ -44,7 +43,6 @@ shared_key = "{{.SharedKey}}"
 }
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			Debug(vectorhelpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
@@ -53,7 +51,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	azm := o.AzureMonitor
 	e := AzureMonitor{
 		ComponentID:     id,
-		Inputs:          vectorhelpers.MakeInputs(dedottedID),
+		Inputs:          vectorhelpers.MakeInputs(inputs...),
 		CustomerId:      azm.CustomerId,
 		LogType:         azm.LogType,
 		AzureResourceId: azm.AzureResourceId,
@@ -65,7 +63,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	}
 	confTLS := tls.New(id, o.TLS, secrets, op)
 	return []framework.Element{
-		viaq.DedotLabels(dedottedID, inputs),
 		e,
 		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),

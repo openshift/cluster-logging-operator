@@ -54,13 +54,6 @@ if [ "${DO_SETUP:-false}" == "true" ] ; then
   ${repo_dir}/olm_deploy/scripts/operator-install.sh
 fi
 
-reset_logging(){
-    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
-      oc -n $LOGGING_NS delete $r --ignore-not-found --force --grace-period=0||:
-      os::cmd::try_until_failure "oc -n $LOGGING_NS get $r" "$((5 * $minute))"
-    done
-}
-
 failed=0
 for dir in $(eval echo $TEST_DIR); do
   if [ -n "${CLF_INCLUDES}" ] ; then
@@ -78,7 +71,6 @@ for dir in $(eval echo $TEST_DIR); do
 
   mkdir -p /tmp/artifacts/junit
   mkdir -p $artifact_dir
-  reset_logging
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
     SUCCESS_TIMEOUT=10m \
@@ -92,6 +84,5 @@ for dir in $(eval echo $TEST_DIR); do
     os::log::info "Logforwarding $dir failed"
     os::log::info "======================================================="
   fi
-  reset_logging
 done
 exit $failed

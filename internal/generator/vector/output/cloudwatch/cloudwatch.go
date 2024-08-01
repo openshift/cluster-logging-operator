@@ -8,7 +8,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
@@ -77,14 +76,13 @@ func (e *CloudWatch) SetCompression(algo string) {
 func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
-	dedottedID := vectorhelpers.MakeID(id, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			NormalizeStreamName(componentID, inputs),
 			Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	sink := sink(id, o, []string{dedottedID}, secrets, op, o.Cloudwatch.Region, groupNameID)
+	sink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
@@ -92,7 +90,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	return []Element{
 		NormalizeStreamName(componentID, inputs),
 		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
-		viaq.DedotLabels(dedottedID, []string{groupNameID}),
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),

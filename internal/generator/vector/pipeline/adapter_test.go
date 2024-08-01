@@ -71,7 +71,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					}),
 					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(2), "expected a VIAQ and prune filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(3), "expected a viaq, prune and dedot filter to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_inOnly_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 			It("should add prune filter with only defined `notIn` fields and no `in` fields", func() {
@@ -93,7 +93,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					}),
 					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(2), "expected VIA and prune filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(3), "expected viaq, prune and dedot filters to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_notIn_only_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 			It("should add prune filter with both defined in fields and notIn fields when spec'd", func() {
@@ -116,7 +116,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 					}),
 					inputSpecs,
 				)
-				Expect(adapter.Filters).To(HaveLen(2), "expected a VIA and prune filter to be added to the pipeline")
+				Expect(adapter.Filters).To(HaveLen(3), "expected a viaq, prune and dedot filter to be added to the pipeline")
 				Expect(mustLoad("adapter_test_prune_inNotIn_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 			})
 		})
@@ -149,7 +149,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 				}),
 				inputSpecs,
 			)
-			Expect(adapter.Filters).To(HaveLen(2), "expected VIAQ and kubeapi filter to be added to the pipeline")
+			Expect(adapter.Filters).To(HaveLen(3), "expected viaq, kubeapi and dedot filters to be added to the pipeline")
 			Expect(mustLoad("adapter_test_kube_api_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 		})
 
@@ -202,7 +202,7 @@ var _ = Describe("pipeline/adapter.go", func() {
 				}),
 				inputSpecs,
 			)
-			Expect(adapter.Filters).To(HaveLen(3), "expected VIAQ and drop filter to be added to the pipeline")
+			Expect(adapter.Filters).To(HaveLen(4), "expected journal, viaq, drop and dedot filters to be added to the pipeline")
 			Expect(mustLoad("adapter_test_drop_filter.toml")).To(EqualConfigFrom(adapter.Elements()))
 		})
 	})

@@ -63,24 +63,6 @@ if .log_source == "container" {
   del(.timestamp_end)
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
-		newkey = replace(key, r'[\./]', "_")
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| {
-		newkey = replace(key, r'[\./]', "_")
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
 }
 if .log_source == "node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
@@ -172,4 +154,30 @@ type = "filter"
 inputs = ["pipeline_mypipeline_viaq_1"]
 condition = '''
 !((!match(.kubernetes.namespace_name, r'very-important') && match(.level, r'warning|error|critical') ?? false) || (match(.message, r'foobar') && !match(.kubernetes.namespace_labels."test-dashes/slashes", r'true') ?? false))
+'''
+
+[transforms.pipeline_mypipeline_viaqdedot_3]
+type = "remap"
+inputs = ["pipeline_mypipeline_my_drop_filter_2"]
+source = '''
+  if .log_source == "container" {
+    if exists(.kubernetes.namespace_labels) {
+      for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+        newkey = replace(key, r'[\./]', "_")
+        .kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
+        if newkey != key {
+          .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
+        }
+      }
+    }
+    if exists(.kubernetes.labels) {
+      for_each(object!(.kubernetes.labels)) -> |key,value| {
+        newkey = replace(key, r'[\./]', "_")
+        .kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
+        if newkey != key {
+          .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
+        }
+      }
+    }
+  }
 '''

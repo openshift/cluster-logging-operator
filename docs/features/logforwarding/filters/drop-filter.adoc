@@ -2,19 +2,20 @@
 
 Collecting all logs from a cluster produces a large amount of data, which can be expensive to transport and store. A lot of log data is low-value noise that does not need to be stored.
 
-The drop filter allows for dropping whole log records based on a set of tests and their conditions to reduce the amount of logs flowing into a log store.
+The drop filter allows for dropping whole log records based on the evaluation of a set of regex tests.
 
 == Configuring and Using a Drop Filter
 
 The drop filter extends the filter API by adding `drop`, `test`, `field`, and `matches`/`notMatches` fields. 
 
 1. The `drop` field is an array of `test`.
-2. The `test` field is an array of "conditions" where each "condition" comprises a `field` & `matches` OR `notMatches`.
+2. The `test` field is an array of "conditions" where each "condition" comprises a `field`, and a `matches` OR `notMatches` regex expression.
 
 For a log record to be dropped:
 
-1. All conditions in a test must be true, i.e the test passes.
+1. All conditions in a test must be true, i.e the test passes the regex evaluation.
 2. Any test in the drop filter must pass.
+3. Only one of `matches` or `notMatches` can be defined per `field`
 
 NOTE: If there is an error evaluating a condition (e.g. a missing field), that condition evaluates to false. Evaluation continues as normal.
 
@@ -37,8 +38,8 @@ spec:
         # 1. drop logs with a namespace that leads with `openshift`
         - test:
           - field: .kubernetes.namespace_name
-            matches: "openshift*"
-        # 2. drop application logs that don't have `busybox-pod-labels` as the pod name
+            matches: "openshift.*"
+        # 2. drop application logs that don't have `busybox-pod-labels` in the pod name
         - test:
           - field: .log_type
             matches: "application"

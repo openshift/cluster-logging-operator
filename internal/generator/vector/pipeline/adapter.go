@@ -49,12 +49,13 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	for name, f := range filters {
 		pipeline.filterMap[name] = *f
 	}
-
 	addPrefilters(pipeline)
+	addPostfilters(pipeline)
 
 	for i, filterName := range pipeline.FilterRefs {
 		pipeline.initFilter(i, filterName)
 	}
+
 	if len(pipeline.FilterRefs) > 0 {
 		if len(pipeline.Filters) == 0 {
 			log.V(0).Info("Runtime error in pipelineAdapter while processing filters.  Filters spec'd but not constructed", "filterRefs", pipeline.FilterRefs)
@@ -101,10 +102,24 @@ func addPrefilters(p *Pipeline) {
 		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
 		SuppliesTransform: true,
 		TranformFactory: func(id string, inputs ...string) framework.Element {
+			// Build all log_source VRL
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
 	p.FilterRefs = append(prefilters, p.FilterRefs...)
+}
+
+func addPostfilters(p *Pipeline) {
+	postfilters := []string{}
+	postfilters = append(postfilters, viaq.ViaqDedot)
+	p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
+		FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
+		SuppliesTransform: true,
+		TranformFactory: func(id string, inputs ...string) framework.Element {
+			return viaq.NewDedot(id, inputs...)
+		},
+	}
+	p.FilterRefs = append(p.FilterRefs, postfilters...)
 }
 
 func (p *Pipeline) Name() string {

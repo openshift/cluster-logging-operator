@@ -2,6 +2,9 @@ package clusterlogging
 
 import (
 	"context"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"time"
 
@@ -115,6 +118,10 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	if err = removeOwnerRefs(r.Client, instance); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// Set and update status
 	instance.Status = loggingv1.ClusterLoggingStatus{}
 	instance.Status.Conditions.SetCondition(conditions.CondReadyWithMessage(loggingv1.ReasonMigrated, "ClusterLogging.logging.openshift.io migrated to ClusterLogForwarder.observability.openshift.io"))
@@ -123,6 +130,35 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 	}
 
 	return ctrl.Result{}, err
+}
+
+func removeOwnerRefs(k8sClient client.Client, instance *loggingv1.ClusterLogging) (err error) {
+	if err = removeOwnerRef(k8sClient, constants.OpenshiftNS, constants.ElasticsearchName, &elasticsearch.Elasticsearch{}); err != nil {
+		return err
+	}
+	if err = removeOwnerRef(k8sClient, constants.OpenshiftNS, constants.KibanaName, &elasticsearch.Kibana{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// removeOwnerRefs removes ownerRefs from objects which we no longer manage and may need to continue
+// after removal of ClusterLogging
+func removeOwnerRef[T client.Object](k8sClient client.Client, namespace, name string, proto T) (err error) {
+	key := types.NamespacedName{Name: name, Namespace: namespace}
+	err = k8sClient.Get(context.TODO(), key, proto)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+	proto.SetOwnerReferences([]metav1.OwnerReference{})
+	if err = k8sClient.Update(context.TODO(), proto); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (ctrl.Result, error) {

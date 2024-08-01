@@ -42,6 +42,8 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 		}
 	case obs.OutputTypeKafka:
 		if spec.Kafka != nil && spec.Kafka.Tuning != nil {
+			t.Delivery = spec.Kafka.Tuning.Delivery
+			t.MaxWrite = spec.Kafka.Tuning.MaxWrite
 			t.Compression = spec.Kafka.Tuning.Compression
 		}
 	case obs.OutputTypeLoki:

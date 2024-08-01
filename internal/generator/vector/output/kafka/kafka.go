@@ -153,7 +153,8 @@ timestamp_format = "rfc3339"
 }
 
 func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options, genTLSConf bool) []Element {
-	if o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify) {
+	isTls := isTlsBrokers(o)
+	if isTls && (o.Secret != nil || (o.TLS != nil && o.TLS.InsecureSkipVerify)) {
 		conf := []Element{}
 
 		if tlsConf := common.GenerateTLSConfWithID(id, o, secret, op, genTLSConf); tlsConf != nil {
@@ -171,6 +172,19 @@ func TLSConf(id string, o logging.OutputSpec, secret *corev1.Secret, op Options,
 		return conf
 	}
 	return []Element{}
+}
+
+func isTlsBrokers(o logging.OutputSpec) bool {
+	isTls := true
+	if o.Kafka != nil {
+		for _, b := range o.Kafka.Brokers {
+			if !strings.HasPrefix(b, "tls:") {
+				isTls = false
+				break
+			}
+		}
+	}
+	return isTls
 }
 
 func SASLConf(id string, o logging.OutputSpec, secret *corev1.Secret) []Element {

@@ -30,15 +30,15 @@ var _ = Describe("#MapManagedLogStores", func() {
 				TLSSpec: obs.TLSSpec{
 					CA: &obs.ValueReference{
 						Key:        constants.TrustedCABundleKey,
-						SecretName: constants.ElasticsearchName,
+						SecretName: constants.CollectorSecretName,
 					},
 					Certificate: &obs.ValueReference{
 						Key:        constants.ClientCertKey,
-						SecretName: constants.ElasticsearchName,
+						SecretName: constants.CollectorSecretName,
 					},
 					Key: &obs.SecretReference{
 						Key:        constants.ClientPrivateKey,
-						SecretName: constants.ElasticsearchName,
+						SecretName: constants.CollectorSecretName,
 					},
 				},
 			},

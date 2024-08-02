@@ -69,8 +69,6 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 			for _, outSpec := range outputSpecList {
 				var obsSpec obs.OutputSpec
 				switch wantedOutputType {
-				case obs.OutputTypeElasticsearch:
-					obsSpec = GenerateESOutput(outSpec, input, tenant)
 				case obs.OutputTypeLokiStack:
 					obsSpec = GenerateLokiOutput(outSpec, input, tenant)
 				}

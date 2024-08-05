@@ -407,5 +407,5 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 	logStore.deployment = fluentDeployment
 	name := fluentDeployment.GetName()
 	tc.LogStores[name] = logStore
-	return fluentDeployment, tc.waitForDeployment(namespace, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
+	return fluentDeployment, tc.WaitForDeployment(namespace, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
 }

@@ -229,7 +229,7 @@ func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 			return err
 		}
 
-		if err := tc.waitForDeployment(constants.OpenshiftNS, app.GetName(), defaultRetryInterval, defaultTimeout); err != nil {
+		if err := tc.WaitForDeployment(constants.OpenshiftNS, app.GetName(), defaultRetryInterval, defaultTimeout); err != nil {
 			return err
 		}
 	}

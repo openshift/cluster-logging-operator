@@ -458,7 +458,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 
 	name := syslogDeployment.GetName()
 	tc.LogStores[name] = logStore
-	return syslogDeployment, tc.waitForDeployment(constants.OpenshiftNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
+	return syslogDeployment, tc.WaitForDeployment(constants.OpenshiftNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (secret *corev1.Secret, err error) {

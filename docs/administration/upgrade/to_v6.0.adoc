@@ -72,7 +72,7 @@ Configuration of the management state (i.e. Managed, Unmanaged), resource reques
 are part of the new ClusterLogForwarder API.
 
 .Previous
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogging"
@@ -86,7 +86,7 @@ spec:
     tolerations: {}
 ----
 .Current
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -109,7 +109,7 @@ https://github.com/openshift/enhancements/blob/master/enhancements/cluster-loggi
 Namespace and container inclusion and exclusions were collapsed into a single field
 
 .5.9 Application Input with Namespace and Container Includes and Excludes
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -129,7 +129,7 @@ spec:
 ----
 
 .6.0 Application Input with Namespace and Container Includes and Excludes
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -157,7 +157,7 @@ Input receiver changes:
 * Moves the port to the receiver level.
 
 .5.9 Input Receivers
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -176,7 +176,7 @@ spec:
 ----
 
 .6.0 Input Receivers
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -215,7 +215,7 @@ how to configure a ClusterLogForwarder secrets to forward to existing Red Hat ma
 
 ===== Red Hat Managed Elasticsearch
 .v5.9 Forwarding to Red Hat Managed Elasticsearch
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogging"
@@ -225,17 +225,16 @@ metadata:
 spec:
   logStore:
     type: elasticsearch
-  . . .
 ----
 
 .v6.0 Forwarding to Red Hat Managed Elasticsearch
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
   name: instance
-  namespace:openshift-logging
+  namespace: openshift-logging
 spec:
   outputs:
   - name: default-elasticsearch
@@ -265,7 +264,7 @@ NOTE: In this example, application logs are written to the 'application-write' a
 
 ===== Red Hat Managed LokiStack
 .v5.9 Forwarding to Red Hat Managed LokiStack
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogging"
@@ -277,11 +276,10 @@ spec:
     type: lokistack
     lokistack:
       name: lokistack-dev
-  . . .
 ----
 
 .v6.0 Forwarding to Red Hat Managed LokiStack
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -319,7 +317,7 @@ Pipeline configuration only provides defines routing of input sources to their o
 filters in this release.  Individual filters are defined in the "filters" spec and referenced by a pipeline
 
 .5.9 Filters
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "logging.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -333,7 +331,7 @@ spec:
 ----
 
 .6.0 Filter Configuration
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -361,7 +359,7 @@ a departure from previous releases where all validation occurred post creation r
 Instances of the **ClusterLogForwarder.observability.openshift.io** must satisfy the following conditions before the operator will deploy the log collector: Authorized, Valid, Ready.  An example of these conditions is:
 
 .6.0 Status Conditions
-[source, golang]
+[source, yaml]
 ----
 apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
@@ -370,7 +368,7 @@ status:
   - message: ""
     status: "True"
     type: Ready
-  - message: permitted to collect log types: [application]
+  - message: "permitted to collect log types: [application]"
     reason: ClusterRoleExists
     status: "True"
     type: observability.openshift.io/Authorized

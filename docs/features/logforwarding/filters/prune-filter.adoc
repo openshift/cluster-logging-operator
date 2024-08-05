@@ -35,12 +35,17 @@ Below is an example `ClusterLogForwarder` configuration specifying a custom prun
 
 [source,yaml]
 --
-apiVersion: "logging.openshift.io/v1"
+apiVersion: "observability.openshift.io/v1"
 kind: ClusterLogForwarder
 metadata:
   name: instance 
   namespace: openshift-logging 
 spec:
+  outputs:
+  - name: default
+    type: http
+    http:
+      url: https://my-default.foo.bar
   filters:
     - name: my-prune
       type: prune
@@ -59,6 +64,6 @@ spec:
 --
 == Relevant Links:
 
-1. link:../../../../apis/logging/v1/filter_types.go[API documentation]
+1. link:../../../../apis/observability/v1/filter_types.go[API documentation]
 2. https://github.com/openshift/enhancements/blob/a6a1feb9cceb0b61960bcf00f292cb0d04ee3753/enhancements/cluster-logging/content-filter.md#prune-filters[Enhancement Proposal]
 3. https://issues.redhat.com/browse/LOG-3883[Related JIRA]

@@ -11,6 +11,7 @@ type = "kafka"
 inputs = ["kafka_receiver_topic"]
 bootstrap_servers = "broker1:9092,broker2:9092,broker3:9092"
 topic = "{{ _internal.kafka_receiver_topic }}"
+healthcheck.enabled = false
 
 [sinks.kafka_receiver.encoding]
 codec = "json"

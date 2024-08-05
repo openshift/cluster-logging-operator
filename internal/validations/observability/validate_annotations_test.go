@@ -1,37 +1,46 @@
-package clusterlogforwarder
+package observability
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("[internal][validations] validate clusterlogforwarder annotations", func() {
 	var (
-		clf *loggingv1.ClusterLogForwarder
+		clf     *obs.ClusterLogForwarder
+		context internalcontext.ForwarderContext
 	)
 
 	BeforeEach(func() {
-		clf = runtime.NewClusterLogForwarder()
+		clf = obsruntime.NewClusterLogForwarder("foo", "bar", runtime.Initialize)
+		context = internalcontext.ForwarderContext{
+			Forwarder: clf,
+		}
 	})
 
 	Context("#validateLogLevel", func() {
 		It("should pass validation if no annotations are set", func() {
-			Expect(validateAnnotations(*clf, nil, nil)).To(Succeed())
+			validateAnnotations(context)
+			Expect(clf.Status.Conditions).To(BeEmpty())
 		})
 
 		It("should fail validation if log level is not supported", func() {
 			clf.Annotations = map[string]string{constants.AnnotationVectorLogLevel: "foo"}
-			err, _ := validateAnnotations(*clf, nil, nil)
-			Expect(err).ToNot(BeNil())
+			validateAnnotations(context)
+			Expect(clf.Status.Conditions).To(HaveCondition(obs.ConditionTypeLogLevel, false, obs.ReasonLogLevelSupported, ".*must be one of.*"))
 		})
 
 		DescribeTable("valid log levels", func(level string) {
 			clf.Annotations = map[string]string{constants.AnnotationVectorLogLevel: level}
-			Expect(validateAnnotations(*clf, nil, nil)).To(Succeed())
+			validateAnnotations(context)
+			Expect(clf.Status.Conditions).To(HaveCondition(obs.ConditionTypeLogLevel, true, obs.ReasonLogLevelSupported, ".*"))
 		},
 			Entry("should pass with level trace", "trace"),
 			Entry("should pass with level debug", "debug"),

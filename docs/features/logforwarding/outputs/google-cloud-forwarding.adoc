@@ -26,29 +26,6 @@
 +
 Replace `project_id` and `private_key` with real values.
 
-. Create a `Cluster Logging` instance with vector collector with following yaml.
-+
-----
-  oc apply -f cluster-logging.yaml
-----
-+
-.cluster-logging.yaml:
-[source,yaml]
-----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
-metadata:
-  name: "instance"
-  namespace: "openshift-logging"
-  annotations:
-spec:
-  collection:
-    type: vector
-  managementState: Managed
-
-----
-
-
 . Create a Cluster Log Forwarder instance with following yaml.
 +
 ----
@@ -59,20 +36,24 @@ spec:
 +
 [source,yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogForwarder"
+apiVersion: "observability.openshift.io/v1"
+kind: ClusterLogForwarder
 metadata:
-  name: "instance"
-  namespace: "openshift-logging"
+  name: instance
+  namespace: openshift-logging
 spec:
   outputs:
     - name: gcp-1
       type: googleCloudLogging
-      secret:
-        name: gcp-secret
       googleCloudLogging:
-        projectId : "openshift-gce-devel"
-        logId : "app-gcp"
+        id:
+          type: project
+          value: openshift-gce-devel
+        logId : app-gcp
+        authentication:
+          credentials:
+            key: google-application-credentials.json
+            secretName: gcp-secret
   pipelines:
     - name: demo-logs
       inputRefs:

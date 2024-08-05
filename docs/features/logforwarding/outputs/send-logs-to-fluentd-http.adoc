@@ -4,7 +4,7 @@
 . Create a Pod which runs http endpoint on fluentd using following fluentd configuration
 +
 .fluent.conf
-[source,xml]
+[source]
 ----
 <system>
   log_level info
@@ -62,7 +62,7 @@
 .cluster-log-forwarder.yaml
 [source,yaml]
 ----
-apiVersion: logging.openshift.io/v1
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   labels:
@@ -73,41 +73,35 @@ metadata:
 spec:
   outputs:
   - http:
+      url: https://fluent-receiver.openshift-logging.svc:24224/logs/app
       headers:
         h1: v1
         h2: v2
       method: POST
     name: httpout-app
-    secret:
-      name: fluent-receiver
     tls:
       insecureSkipVerify: true
     type: http
-    url: https://fluent-receiver.openshift-logging.svc:24224/logs/app
   - http:
+      url: https://fluent-receiver.openshift-logging.svc:24224/logs/infra
       headers:
         h1: v1
         h2: v2
       method: POST
     name: httpout-infra
-    secret:
-      name: fluent-receiver
     tls:
       insecureSkipVerify: true
     type: http
-    url: https://fluent-receiver.openshift-logging.svc:24224/logs/infra
   - http:
+      url: https://fluent-receiver.openshift-logging.svc:24224/logs/audit
       headers:
         h1: v1
         h2: v2
       method: POST
     name: httpout-audit
-    secret:
-      name: fluent-receiver
     tls:
       insecureSkipVerify: true
     type: http
-    url: https://fluent-receiver.openshift-logging.svc:24224/logs/audit
   pipelines:
   - inputRefs:
     - application
@@ -126,31 +120,6 @@ spec:
     - httpout-audit
 
 ----
-
-
-. Create a `Cluster Logging` instance with vector collector with following yaml.
-+
-----
-  oc apply -f cluster-logging.yaml
-----
-+
-.cluster-logging.yaml
-[source,yaml]
-----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
-metadata:
-  name: "instance"
-  namespace: "openshift-logging"
-  annotations:
-spec:
-  collection:
-    type: vector
-  managementState: Managed
-----
-
-
-
 . Check logs in destination http endpoint
 +
 ----

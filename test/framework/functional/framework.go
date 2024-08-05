@@ -288,6 +288,14 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	addSecretVolumeMountsToCollector(&f.Pod.Spec, f.Secrets)
 	collector.AddSecretVolumes(&f.Pod.Spec, secretMap)
 
+	f.Pod.Spec.Tolerations = []corev1.Toleration{
+		{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: corev1.TolerationOpExists,
+			Effect:   corev1.TaintEffectNoSchedule,
+		},
+	}
+
 	log.V(2).Info("Creating pod", "pod", f.Pod)
 	if err = f.Test.Client.Create(f.Pod); err != nil {
 		return err

@@ -8,25 +8,6 @@
  oc create secret generic splunk-secret -n openshift-logging --from-literal=hecToken='<hec_token_here>'
 ----
 
-. Create a Cluster Logging instance with collection `type: vector`:
-+
-----
- oc apply -f cluster-logging.yaml
-----
-+
-.cluster-logging.yaml
-[source,yaml]
-----
-kind: ClusterLogging
-apiVersion: logging.openshift.io/v1
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  collection:
-    type: vector
-----
-
 . Create a Cluster Log Forwarder instance by specifying your `url` and the `secret` name:
 +
 ----
@@ -37,41 +18,7 @@ spec:
 [source,yaml]
 ----
 kind: ClusterLogForwarder
-apiVersion: logging.openshift.io/v1
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  outputs:
-    - name: splunk-receiver
-      type: splunk
-      secret:
-        name: splunk-secret
-      url: 'http://example-splunk-hec-service:8088'
-  pipelines:
-    - name: my-logs
-      inputRefs:
-        - application
-        - infrastructure
-      outputRefs:
-        - splunk-receiver
-----
-
-=== Customizing Splunk Index
-
-To customize the index where you send events to in Splunk, you need to configure it in your log forwarding configuration (If not specified, the default index defined within Splunk is used.):
-
-. Specifying `indexKey`:
-+
-----
-oc apply -f cluster-log-forwarder.yaml
-----
-+
-.cluster-log-forwarder.yaml
-[source,yaml]
-----
-kind: ClusterLogForwarder
-apiVersion: logging.openshift.io/v1
+apiVersion: observability.openshift.io/v1
 metadata:
   name: instance
   namespace: openshift-logging
@@ -80,10 +27,12 @@ spec:
     - name: splunk-receiver
       type: splunk
       splunk:
-       indexKey: "kubernetes.namespace_name"
-      secret:
-        name: splunk-secret
-      url: 'http://example-splunk-hec-service:8088'
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-secret
+        url: 'http://example-splunk-hec-service:8088'
+        index: '{.log_type || "undefined"}'
   pipelines:
     - name: my-logs
       inputRefs:
@@ -91,36 +40,6 @@ spec:
         - infrastructure
       outputRefs:
         - splunk-receiver
-----
-+
-. Specifying `indexName`:
-----
-oc apply -f cluster-log-forwarder.yaml
 ----
 
-.cluster-log-forwarder.yaml
-[source,yaml]
-----
-kind: ClusterLogForwarder
-apiVersion: logging.openshift.io/v1
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  outputs:
-    - name: splunk-receiver
-      type: splunk
-      splunk:
-       indexName: "testIndex"
-      secret:
-        name: splunk-secret
-      url: 'http://example-splunk-hec-service:8088'
-  pipelines:
-    - name: my-logs
-      inputRefs:
-        - application
-        - infrastructure
-      outputRefs:
-        - splunk-receiver
-----
-NOTE:  Only one of _indexKey_ or _indexName_ can be used at once, not both at the same time.
+NOTE: This will forward logs to the log type of the message.  The default index of the splunk server configuration is used when 'index' is not defined

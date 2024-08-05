@@ -28,9 +28,9 @@ const (
 	ConditionUnknown = metav1.ConditionUnknown
 
 	// ConditionTypeAuthorized identifies the state of authorization for the service
-	ConditionTypeAuthorized string = GroupName + "/Authorized"
+	ConditionTypeAuthorized = GroupName + "/Authorized"
 
-	ConditionTypeMigrated string = "Migrated"
+	ConditionTypeLogLevel = GroupName + "/LogLevel"
 
 	// ConditionTypeReady indicates the service is ready.
 	//
@@ -42,7 +42,7 @@ const (
 	ConditionTypeReady string = "Ready"
 
 	// ConditionTypeValid identifies the state of validation for the service
-	ConditionTypeValid string = GroupName + "/Valid"
+	ConditionTypeValid = GroupName + "/Valid"
 
 	// ConditionTypeValidInputPrefix prefixes a named input to identify its validation state
 	ConditionTypeValidInputPrefix = GroupName + "/ValidInput"
@@ -66,18 +66,19 @@ const (
 	ReasonDeploymentError = "DeploymentError"
 
 	// ReasonInitializationFailed indicates a failure initializing the reconciliation context
-	ReasonInitializationFailed string = "InitializationFailed"
+	ReasonInitializationFailed = "InitializationFailed"
 
 	// ReasonFailureToRemoveStaleWorkload indicates a failure removing a stale workload after the deployment type changes
-	ReasonFailureToRemoveStaleWorkload string = "FailureToRemoveStaleWorkload"
+	ReasonFailureToRemoveStaleWorkload = "FailureToRemoveStaleWorkload"
 
 	// ReasonManagementStateUnmanaged is used when the workload is in an Unmanaged state
 	ReasonManagementStateUnmanaged = "ManagementStateUnmanaged"
 
-	ReasonMigrateOutput string = "Migrate"
-
 	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
 	ReasonMissingSpec = "MissingSpec"
+
+	// ReasonLogLevelSupported indicates the support for the log level annotation value
+	ReasonLogLevelSupported = "LogLevelSupported"
 
 	// ReasonReconciliationComplete when the operator has initialized, validated, and deployed the resources for the workload
 	ReasonReconciliationComplete = "ReconciliationComplete"
@@ -92,7 +93,7 @@ const (
 	ReasonValidationSuccess = "ValidationSuccess"
 
 	// ReasonValidationFailure is used when validation fails.
-	ReasonValidationFailure string = "ValidationFailure"
+	ReasonValidationFailure = "ValidationFailure"
 
 	// ReasonUnknownState is used when the operator can not determine the state of the deployment
 	ReasonUnknownState = "UnknownState"

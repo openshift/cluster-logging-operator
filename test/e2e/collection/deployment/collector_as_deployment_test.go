@@ -6,8 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	corev1 "k8s.io/api/core/v1"
-	"strconv"
-	"strings"
+	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -101,23 +100,8 @@ var _ = Describe("Test collector deployment type", func() {
 		})
 
 		It("should be a deployment when annotated and http receiver is the only input", func() {
-			if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
-				Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
-			}
-			if err := e2e.WaitForResourceCondition(forwarder.Namespace, "deployment", forwarder.Name, "", "{.status.availableReplicas}", 1,
-				func(out string) (bool, error) {
-					out = strings.TrimSpace(out)
-					if out == "" {
-						return false, nil
-					}
-					available, err := strconv.Atoi(out)
-					if err != nil {
-						return false, err
-					}
-					return available >= 1, nil
-				}); err != nil {
-				Fail(err.Error())
-			}
+			Expect(e2e.CreateObservabilityClusterLogForwarder(forwarder)).To(Succeed(), "Exp. to create instance of ClusterLogForwarder")
+			Expect(e2e.WaitForDeployment(forwarder.Namespace, forwarder.Name, 5*time.Second, 3*time.Minute)).To(Succeed(), "Exp. the collector to deploy as a deployment")
 
 			logStore := e2e.LogStores[fluentDeployment.GetName()]
 			Expect(logStore.HasAuditLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "exp. to find some audit logs")
@@ -125,7 +109,6 @@ var _ = Describe("Test collector deployment type", func() {
 			collectedLogs, err := logStore.RetrieveLogs()
 			Expect(err).To(BeNil())
 			auditLogsStr, ok := collectedLogs["audit"]
-			fmt.Printf("---- %s\n", auditLogsStr)
 			Expect(ok).To(BeTrue())
 			auditLogs := map[string]interface{}{}
 			err = json.Unmarshal([]byte(auditLogsStr), &auditLogs)

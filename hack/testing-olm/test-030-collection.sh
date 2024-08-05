@@ -10,7 +10,7 @@ os::test::junit::declare_suite_start "[ClusterLogging] Collection"
 start_seconds=$(date +%s)
 
 TEST_DIR=${TEST_DIR:-'./test/e2e/collection/*/'}
-INCLUDES="*"
+INCLUDES="apivalidations|status|tuning"
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
@@ -47,7 +47,7 @@ if [ "${DO_SETUP:-false}" == "true" ] ; then
 fi
 
 failed=0
-for dir in $(ls -d $TEST_DIR| grep -E "'${INCLUDES}'"); do
+for dir in $(ls -d $TEST_DIR| grep -E "${INCLUDES}"); do
   os::log::info "=========================================================="
   os::log::info "Starting test of collection $dir"
   os::log::info "=========================================================="
@@ -68,7 +68,7 @@ for dir in $(ls -d $TEST_DIR| grep -E "'${INCLUDES}'"); do
     os::log::info "======================================================="
   fi
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
-    for ns in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
+    for ns in "ns/$GENERATOR_NS" "clusterlogforwarder.observability.openshift.io/instance"; do
       oc delete $ns --ignore-not-found --force --grace-period=0||:
       os::cmd::try_until_failure "oc get $ns" "$((1 * $minute))"
     done

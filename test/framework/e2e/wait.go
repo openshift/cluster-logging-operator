@@ -20,13 +20,13 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	clolog.Info("Waiting for component to be ready", "component", component)
 	switch component {
 	case helpers.ComponentTypeVisualization:
-		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
+		return tc.WaitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorVector:
 		return tc.WaitForDaemonSet(constants.OpenshiftNS, "mycollector")
 	case helpers.ComponentTypeStore, helpers.ComponentTypeReceiverElasticsearchRHManaged:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollectorDeployment:
-		return tc.waitForDeployment(constants.OpenshiftNS, constants.CollectorName, defaultRetryInterval, defaultTimeout)
+		return tc.WaitForDeployment(constants.OpenshiftNS, constants.CollectorName, defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }
@@ -130,7 +130,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 	})
 }
 
-func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
+func (tc *E2ETestFramework) WaitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(context.TODO(), retryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {

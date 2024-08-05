@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -euo pipefail
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
@@ -14,75 +17,39 @@ NAMESPACE=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 # Adding namespace folders to allow for multi-logging
-collector_folder="$CLO_COLLECTION_PATH/collectors/$NAMESPACE"
+collector_folder="$CLO_COLLECTION_PATH/namespaces/$NAMESPACE"
 
-check_collector_connectivity() {
-  local pod=$1
-  echo "--Connectivity between $pod and elasticsearch" >> $collector_folder/$pod
+log "- BEGIN <gather_collection_resources> for namespace: $NAMESPACE ..."
 
-  local es_host=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_HOST")].value}')
-  local es_port=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_PORT")].value}')
+log "-- Exporting ClusterLogForwarder.observability.openshift.io resources"
+crs="$(oc get clusterLogForwarder.observability.openshift.io -n $NAMESPACE -o custom-columns=:.metadata.name)"
 
-  local collector=fluent
-  local container=$2
-  echo "  with ca" >> $collector_folder/$pod
-  oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- curl -ILvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert --cacert /etc/$collector/keys/ca -XGET https://$es_host:$es_port & >> $collector_folder/$pod
-
-  echo "  without ca" >> $collector_folder/$pod
-  oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- curl -ILkvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert -XGET https://$es_host:$es_port & >> $collector_folder/$pod
-}
-
-check_collector_persistence() {
-  local pod=$1
-  echo "--Persistence stats for pod $pod" >> $collector_folder/$pod
-
-  local collector=$2
-  local fbstoragePath=$(oc -n $NAMESPACE get daemonset $collector -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[?(@.name=="filebufferstorage")].mountPath}')
-
-  if [ -z "$fbstoragePath" ] ; then
-    echo "No filebuffer storage defined" >>  $collector_folder/$pod
-  else
-    oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- df -h $fbstoragePath >> $collector_folder/$pod
-    oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- ls -lr $fbstoragePath >> $collector_folder/$pod
-  fi
-}
-
-log "BEGIN <gather_collection_resources> for namespace: $NAMESPACE ..."
-
-# find daemonsets
-log "- Searching for collectors"
-ds_names="$(oc get ds -n $NAMESPACE -lcomponent=collector -o custom-columns=:.metadata.name)"
-
-# get name of collector from ds name
-for collector in ${ds_names[@]}; do
-  # get yaml to check for fluentd
-  yaml="$(oc -n $NAMESPACE get ds/$collector --ignore-not-found -o yaml)"
-  if [ "$yaml" == "" ] ; then
-    continue
-  fi
-
-  is_fluent=$(echo $yaml|grep fluent)
-
-  log "- Gathering data for collector: $collector"
+# get name of collector from CR name
+for collector in ${crs}; do
+  log "-- Gathering data for ClusterLogForwarder: $collector"
   mkdir -p $collector_folder
+  oc -n $NAMESPACE get clusterLogForwarder.observability.openshift.io/$collector -o yaml > $collector_folder/$collector.yaml --cache-dir=${KUBECACHEDIR} 2>&1
+
+  # find daemonset
+  log "--- Describe Daemonset ds/$collector"
+  ds_describe=$(oc -n $NAMESPACE describe ds/$collector --cache-dir=${KUBECACHEDIR} 2>&1)||
+  if [ "$?" == "0" ]; then
+    echo "$ds_describe" > $collector_folder/$collector.describe
+  fi
 
   # gathering collector pods
-  pods="$(oc -n $NAMESPACE get pods -l component=collector -l app.kubernetes.io/instance=$collector -o jsonpath='{.items[*].metadata.name}')"
+  pods="$(oc -n $NAMESPACE get pods -lapp.kubernetes.io/instance=$collector -lapp.kubernetes.io/component=collector -o custom-columns=:.metadata.name)"
   for pod in $pods
   do
       log "--- Describe collector pod: $pod"
       oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe --cache-dir=${KUBECACHEDIR} 2>&1
-      # fluent health checks
-      if [ "$is_fluent" != "" ] ; then
-        log "- Checking health of component: $pod"
-        check_collector_connectivity $pod $collector
-        check_collector_persistence $pod $collector
-        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- ls -l /var/lib/fluentd/default  > $collector_folder/$pod.es-buffers.txt
-        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- ls -l /var/lib/fluentd/retry_default > $collector_folder/$pod.buffers.es-retry.txt
-        echo "$pod" >> $collector_folder/output-buffer-size.txt
-        echo "---------------" >> $collector_folder/output-buffer-size.txt
-        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- bash -c ' du -sh /var/lib/fluentd/*' >> $collector_folder/output-buffer-size.txt
-      fi
   done
+
+  config_name="$collector-config"
+  log "-- Gathering $config_name#vector.toml from namespace: $NAMESPACE"
+  data=$(oc -n $NAMESPACE get "configmap/$config_name" -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
+  if [ "$data" != "" ] ; then
+    echo "$data"  > $collector_folder/configmap_${config_name}_vector.toml 2>&1
+  fi
 done
-log "END <gather_collection_resources> for namespace: $NAMESPACE ..."
+log "- END <gather_collection_resources> for namespace: $NAMESPACE ..."

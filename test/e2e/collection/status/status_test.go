@@ -111,7 +111,6 @@ var _ = Describe("ClusterLogForwarderReconciliation", func() {
 			},
 		)
 		Expect(retryErr).To(BeNil())
-		Fail(">>> ")
 	})
 
 })

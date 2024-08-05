@@ -188,7 +188,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		return tc.KubeClient.CoreV1().Services(ns).Delete(context.TODO(), service.Name, opts)
 	})
 	tc.LogStores[logStore.Deployment.Name] = logStore
-	return logStore, tc.waitForDeployment(ns, logStore.Deployment.Name, defaultRetryInterval, 1*time.Minute)
+	return logStore, tc.WaitForDeployment(ns, logStore.Deployment.Name, defaultRetryInterval, 1*time.Minute)
 }
 
 type ContainerLogSimpleMeta struct {

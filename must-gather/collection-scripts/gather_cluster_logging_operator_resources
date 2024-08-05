@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
@@ -15,7 +16,7 @@ fi
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 # Adding namespace folders to allow for multi-logging
-clo_folder="$CLO_COLLECTION_PATH/clo/$NAMESPACE"
+clo_folder="$CLO_COLLECTION_PATH/clo"
 
 log "Creating namespace directory: $clo_folder"
 mkdir -p "$clo_folder"
@@ -27,38 +28,13 @@ if [ $NAMESPACE == "openshift-logging" ]; then
   pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath='{.items[*].metadata.name}')
   for pod in $pods
   do
+      log "Inspecting $pod"
       get_env $pod $clo_folder $NAMESPACE "Dockerfile-.*operator*"
   done
 fi
-
-log "Gathering any secret/'vector.toml' from logging namespace: $NAMESPACE"
-secret_names=$(oc -n $NAMESPACE get secrets -o custom-columns=:.metadata.name | grep -e '-config')
-for name in "${secret_names[@]}"; do
-  data=$(oc -n $NAMESPACE get secret ${name} -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
-  if [ "$data" != "" ] ; then
-    echo $data | base64 -d | awk '{ if ($1~/access_key/) { print $1 " = xxxxxxxx" } else { print }}' > ${clo_folder}/secret_${name}_vector.toml 2>&1
-  fi
-done
-
-log "Gathering any configmap/'vector.toml' from logging namespace: $NAMESPACE"
-names=$(oc -n $NAMESPACE get configmap -o custom-columns=:.metadata.name | grep -e '-config')
-for name in "${names[@]}"; do
-  data=$(oc -n $NAMESPACE get configmap ${name} -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
-  if [ "$data" != "" ] ; then
-    echo $data | base64 -d | awk '{ if ($1~/access_key/) { print $1 " = xxxxxxxx" } else { print }}' > ${clo_folder}/configmap_${name}_vector.toml 2>&1
-  fi
-done
 
 log "Gathering 'version' from logging namespace: $NAMESPACE"
 csv_name="$(oc -n $NAMESPACE get csv -o name | grep -E 'cluster(-?)logging')"
 oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"/must-gather\n"}{.spec.version}' --cache-dir=${KUBECACHEDIR} > "${clo_folder}/version"
 
-log "Checking for legacy es and fluentd resources"
-for r in "secret/elasticsearch" "configmap/collector" ; do
-  result="$(oc -n $NAMESPACE get $r --ignore-not-found)"
-  if [ "$result" != "" ] ; then
-    log "Gathering legacy resource '$r'"
-    oc -n $NAMESPACE extract $r --to=${clo_folder} --cache-dir=${KUBECACHEDIR}
-  fi
-done
 log "END <gather_cluster_logging_operator_resources> from namespace: $NAMESPACE ..."

@@ -1,10 +1,12 @@
 package security
 
 import (
+	"context"
 	"fmt"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"runtime"
 	"time"
 
@@ -102,10 +104,12 @@ var _ = Describe("Tests of collector container security stance", func() {
 			Fail(fmt.Sprintf("Failed waiting for collector %s/%s to be ready: %v", forwarder.Namespace, forwarder.Name, err))
 		}
 
-		pod, err := oc.Get().WithNamespace(forwarder.Namespace).Pod().Selector("component=collector").OutputJsonpath("{.items[0].metadata.name}").Run()
-		Expect(err).To(BeNil())
-		collector = pod
-		Expect(collector).To(Not(BeNil()))
+		pods, err := e2e.Client().CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: "component=collector",
+		})
+		Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
+		Expect(pods.Items).ToNot(BeEmpty(), "Exp. to find deployed collector pods")
+		collector = pods.Items[0].Name
 
 		By("having all Linux capabilities disabled")
 		result, err := runInCollectorContainer("getpcaps", "1")

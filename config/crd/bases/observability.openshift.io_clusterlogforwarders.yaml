@@ -1535,15 +1535,15 @@ spec:
                           type: array
                         topic:
                           description: "Topic specifies the target topic to send logs
-                            to. \n The Topic can be a combination of static and dynamic
-                            values consisting of field paths followed by `||` followed
-                            by another field path or a static value. A dynamic value
-                            is encased in single curly brackets `{}` and MUST end
-                            with a static fallback value separated with `||`. Static
-                            values can only contain alphanumeric characters along
-                            with dashes, underscores, dots and forward slashes. Example:
-                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
-                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                            to. The value when not specified is 'topic' \n The Topic
+                            can be a combination of static and dynamic values consisting
+                            of field paths followed by `||` followed by another field
+                            path or a static value. A dynamic value is encased in
+                            single curly brackets `{}` and MUST end with a static
+                            fallback value separated with `||`. Static values can
+                            only contain alphanumeric characters along with dashes,
+                            underscores, dots and forward slashes. Example: 1. foo-{.bar||\"none\"}
+                            2. {.foo||.bar||\"missing\"} 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -1583,8 +1583,6 @@ spec:
                           x-kubernetes-validations:
                           - message: invalid URL
                             rule: self == '' ||  isURL(self)
-                      required:
-                      - topic
                       type: object
                       x-kubernetes-validations:
                       - message: URL or brokers required

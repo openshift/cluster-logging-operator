@@ -590,7 +590,7 @@ type Kafka struct {
 	// +nullable
 	Tuning *KafkaTuningSpec `json:"tuning,omitempty"`
 
-	// Topic specifies the target topic to send logs to.
+	// Topic specifies the target topic to send logs to. The value when not specified is 'topic'
 	//
 	// The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
@@ -601,7 +601,8 @@ type Kafka struct {
 	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
-	Topic string `json:"topic"`
+	// +kubebuilder:validation:Optional
+	Topic string `json:"topic,omitempty"`
 
 	// Brokers specifies the list of broker endpoints of a Kafka cluster.
 	// The list represents only the initial set used by the collector's Kafka client for the

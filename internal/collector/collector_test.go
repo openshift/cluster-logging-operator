@@ -121,7 +121,7 @@ var _ = Describe("Factory#Daemonset#NewPodSpec", func() {
 					v1.VolumeMount{
 						Name:      saTokenVolumeName,
 						ReadOnly:  true,
-						MountPath: common.ServiceAccountBasePath(saTokenVolumeName)}))
+						MountPath: constants.ServiceAccountSecretPath}))
 			})
 		})
 	})

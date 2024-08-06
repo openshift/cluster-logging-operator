@@ -216,7 +216,10 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
 		return common.ConfigMapBasePath(strings.TrimPrefix(name, "config-"))
 	})
-	AddVolumeMounts(collector, []string{saTokenVolumeName}, common.ServiceAccountBasePath)
+	AddVolumeMounts(collector, []string{saTokenVolumeName}, func(name string) string {
+		// projected sa tokens are created in their own 'token' directory at this path
+		return constants.ServiceAccountSecretPath
+	})
 
 	return collector
 }

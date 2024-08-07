@@ -14,7 +14,7 @@ import (
 )
 
 // ReconcileInputServices evaluates receiver inputs and deploys services for them
-func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader kubernetes.Reader, namespace, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader kubernetes.Reader, namespace string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 
 	if err := RemoveOrphanedInputServices(k8sClient, k8sReader, namespace, f.ForwarderSpec, *f.ResourceNames, owner, true); err != nil {
 		return err
@@ -25,7 +25,7 @@ func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader 
 		serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
 		if input.Receiver != nil {
 			listenPort = input.Receiver.Port
-			if err := network.ReconcileInputService(k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
+			if err := network.ReconcileInputService(k8sClient, namespace, serviceName, f.ResourceNames.CommonName, serviceName, listenPort, listenPort, input.Receiver.Type, owner, visitors); err != nil {
 				return err
 			}
 		}
@@ -36,9 +36,9 @@ func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader 
 // RemoveOrphanedInputServices removes receiver input services not owned by the given owner
 func RemoveOrphanedInputServices(client kubernetes.Client, reader kubernetes.Reader, namespace string, spec obs.ClusterLogForwarderSpec, resourceNames factory.ForwarderResourceNames, currOwner metav1.OwnerReference, removeAllServices bool) error {
 
-	for label, receiverType := range map[string]obs.ReceiverType{constants.LabelHTTPInputService: obs.ReceiverTypeHTTP, constants.LabelSyslogInputService: obs.ReceiverTypeSyslog} {
+	for _, receiverType := range obs.ReceiverTypes {
 		// Get list of input services by label/ namespace
-		services, err := service.List(reader, constants.LabelComponent, label, namespace)
+		services, err := service.List(reader, namespace, constants.LabelsLoggingInputServiceType, string(receiverType))
 		if err != nil {
 			return err
 		}

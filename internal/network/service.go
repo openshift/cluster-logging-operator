@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -15,12 +14,12 @@ import (
 )
 
 // ReconcileService reconciles the service that exposes metrics
-func ReconcileService(k8sClient client.Client, namespace, name, component, portName, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func ReconcileService(k8sClient client.Client, namespace, name, instanceName, component, portName, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
 		name,
 		namespace,
 		component,
-		name,
+		instanceName,
 		[]v1.ServicePort{
 			{
 				Port:       portNum,
@@ -38,7 +37,7 @@ func ReconcileService(k8sClient client.Client, namespace, name, component, portN
 	return reconcile.Service(k8sClient, desired)
 }
 
-func ReconcileInputService(k8sClient client.Client, namespace, name, instance, certSecretName string, port, targetPort int32, receiverType obs.ReceiverType, isDaemonset bool, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func ReconcileInputService(k8sClient client.Client, namespace, name, instance, certSecretName string, port, targetPort int32, receiverType obs.ReceiverType, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
 		name,
 		namespace,
@@ -56,16 +55,13 @@ func ReconcileInputService(k8sClient client.Client, namespace, name, instance, c
 		},
 		visitors,
 	)
-
-	if !isDaemonset {
-		desired.Spec.Selector[constants.CollectorDeploymentKind] = constants.DeploymentType
-	}
+	desired.Labels[constants.LabelsLoggingInputServiceType] = string(receiverType)
+	selectors := runtime.Selectors(instance, constants.CollectorName, desired.Labels[constants.LabelK8sName])
+	desired.Spec.Selector = selectors
 
 	desired.Annotations = map[string]string{
 		constants.AnnotationServingCertSecretName: certSecretName,
 	}
-
-	desired.Labels[constants.LabelComponent] = fmt.Sprintf("%s-input-service", receiverType)
 
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.Service(k8sClient, desired)

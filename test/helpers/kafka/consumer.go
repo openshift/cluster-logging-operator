@@ -94,5 +94,5 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 		},
 	}
 
-	return factory.NewDeployment(namespace, name, DeploymentName, name, "", podSpec)
+	return factory.NewDeployment(namespace, name, DeploymentName, name, 1, podSpec)
 }

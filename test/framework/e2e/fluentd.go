@@ -20,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -148,20 +147,27 @@ const (
 `
 )
 
-func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Duration) (bool, error) {
+func (fluent *fluentReceiverLogStore) listPods() (*corev1.PodList, error) {
 	options := metav1.ListOptions{
-		LabelSelector: "component=fluent-receiver",
+		LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, receiverName),
 	}
 	pods, err := fluent.tc.KubeClient.CoreV1().Pods(fluent.deployment.Namespace).List(context.TODO(), options)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if len(pods.Items) == 0 {
-		return false, errors.New("No pods found for fluent receiver")
+		return nil, errors.New("No pods found for fluent receiver")
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
-	cmd := fmt.Sprintf("ls %s | wc -l", file)
+	return pods, nil
+}
 
+func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Duration) (bool, error) {
+	pods, err := fluent.listPods()
+	if err != nil {
+		return false, err
+	}
+	cmd := fmt.Sprintf("ls %s | wc -l", file)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
 		output, err := fluent.tc.PodExec(fluent.deployment.Namespace, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
@@ -182,17 +188,10 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 }
 
 func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration) (string, error) {
-	options := metav1.ListOptions{
-		LabelSelector: "component=fluent-receiver",
-	}
-	pods, err := fluent.tc.KubeClient.CoreV1().Pods(fluent.deployment.Namespace).List(context.TODO(), options)
+	pods, err := fluent.listPods()
 	if err != nil {
 		return "", err
 	}
-	if len(pods.Items) == 0 {
-		return "", errors.New("No pods found for fluent receiver")
-	}
-	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeToWait, true, func(cxt context.Context) (done bool, err error) {
@@ -349,15 +348,18 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 		return nil, err
 	}
 
-	fluentDeployment := k8shandler.NewDeployment(
-		container.Name,
+	commonLabeler := func(o runtime.Object) {
+		runtime.SetCommonLabels(o, receiverName, receiverName, receiverName)
+	}
+	fluentDeployment := factory.NewDeployment(
 		namespace,
 		container.Name,
-		serviceAccount.Name,
+		receiverName,
+		receiverName,
+		1,
 		podSpec,
+		commonLabeler,
 	)
-	// Add instance label to pod spec template. Service now selects using instance name as well
-	fluentDeployment.Spec.Template.Labels[constants.LabelK8sInstance] = serviceAccount.Name
 
 	if err = tc.Test.Recreate(fluentDeployment); err != nil {
 		return nil, err
@@ -373,6 +375,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 				Port: 24224,
 			},
 		},
+		commonLabeler,
 	)
 
 	tc.AddCleanup(func() error {

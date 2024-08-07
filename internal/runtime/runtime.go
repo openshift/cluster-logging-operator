@@ -96,9 +96,9 @@ func Labels(o runtime.Object) map[string]string {
 // SetCommonLabels initialize given object labels with K8s Common labels
 // These are recommended labels. They make it easier to manage applications but aren't required for any core tooling.
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
-func SetCommonLabels(object runtime.Object, collectorType, instanceName, component string) {
+func SetCommonLabels(object runtime.Object, name, instanceName, component string) {
 	common := map[string]string{
-		constants.LabelK8sName:      collectorType,
+		constants.LabelK8sName:      name,
 		constants.LabelK8sInstance:  instanceName,
 		constants.LabelK8sComponent: component,
 		constants.LabelK8sPartOf:    constants.ClusterLogging,
@@ -106,6 +106,16 @@ func SetCommonLabels(object runtime.Object, collectorType, instanceName, compone
 		constants.LabelK8sVersion:   version.Version,
 	}
 	utils.AddLabels(Meta(object), common)
+}
+
+func Selectors(instanceName, component, name string) map[string]string {
+	return map[string]string{
+		constants.LabelK8sName:      name,
+		constants.LabelK8sInstance:  instanceName,
+		constants.LabelK8sComponent: component,
+		constants.LabelK8sPartOf:    constants.ClusterLogging,
+		constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+	}
 }
 
 // Initialize sets name, namespace and type metadata deduced from Go type.

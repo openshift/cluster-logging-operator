@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -137,23 +136,25 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().ConfigMaps(ns).Delete(context.TODO(), config.Name, opts)
 	})
-
+	commonLabeler := func(o runtime.Object) {
+		runtime.SetCommonLabels(o, HttpReceiver, HttpReceiver, HttpReceiver)
+	}
 	dOpts := metav1.CreateOptions{}
-	logStore.Deployment = k8shandler.NewDeployment(
-		container.Name,
+	logStore.Deployment = factory.NewDeployment(
 		ns,
 		container.Name,
-		serviceAccount.Name,
+		HttpReceiver,
+		HttpReceiver,
+		1,
 		podSpec,
+		commonLabeler,
 	)
-	// Add instance label to pod spec template. Service now selects using instance name as well
-	logStore.Deployment.Spec.Template.Labels[constants.LabelK8sInstance] = HttpReceiver
 	logStore.Deployment.Spec.Template.Labels["vector.dev/exclude"] = "true"
 
-	log.V(1).Info("Deploying http receiver deployment", "namespace", ns, "name", logStore.Deployment.Name)
+	log.V(1).Info("Deploying http receiver deployment", "namespace", ns, "name", logStore.Deployment.Name, "spec", logStore.Deployment.Spec)
 	logStore.Deployment, err = tc.KubeClient.AppsV1().Deployments(ns).Create(context.TODO(), logStore.Deployment, dOpts)
 	if err != nil {
-		log.Error(err, "Unable to create Deployment", "meta", logStore.Deployment.ObjectMeta)
+		log.Error(err, "Unable to create Deployment", "deployment", logStore.Deployment)
 		return nil, err
 	}
 
@@ -175,6 +176,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 				Port: 8090,
 			},
 		},
+		commonLabeler,
 	)
 
 	sOpts := metav1.CreateOptions{}

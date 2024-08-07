@@ -28,7 +28,8 @@ resource.attributes = append( resource.attributes,
 resource.attributes = append( resource.attributes,
     [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
     {"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
-    {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+    {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}},
+    {"key": "k8s.stream", "value": {"stringValue": get!(.,["kubernetes","stream"])}}]
 )
 `
 	LogRecord = `

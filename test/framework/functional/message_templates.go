@@ -31,6 +31,7 @@ var (
 		FlatLabels:       []string{"*"},
 		NamespaceLabels:  map[string]string{"*": "*"},
 		Annotations:      map[string]string{"*": "*"},
+		Stream:           "stdout",
 	}
 	templateForInfraKubernetes = types.Kubernetes{
 		ContainerID:       "**optional**",

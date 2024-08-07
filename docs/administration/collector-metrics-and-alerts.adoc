@@ -1,26 +1,5 @@
 == Collector Metrics
 
-=== Log bytes collected (24h avg)
-The number of raw bytes accepted by collector from origin over 24-hour period.
-Summarized by  namespace an instance name.
-Metric source: Vector observability data
-[source]
-----
-sum by(namespace, app_kubernetes_io_instance) (increase(vector_component_received_bytes_total{component_kind=\"source\",
-component_type!=\"internal_metrics\"}[24h]))
-----
-
-=== Log bytes sent (24h avg)
-The number of raw bytes sent by collector to the sinks over 24-hour period.
-Summarized by  namespace an instance name.
-Metric source: Vector observability data
-[source]
-----
-sum by (app_kubernetes_io_instance, namespace) (increase(vector_component_sent_bytes_total{component_kind=\"sink\",
-component_type!=\"prometheus_exporter\"}[24h]))
-
-----
-
 === Log collection rate (5m avg)
 Calculates the rate of received bytes by collector over a 5-minute period.
 Organizes it by namespaces and instance names.

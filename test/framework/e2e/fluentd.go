@@ -20,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -349,11 +348,12 @@ func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(namespace string, secu
 		return nil, err
 	}
 
-	fluentDeployment := k8shandler.NewDeployment(
-		container.Name,
+	fluentDeployment := factory.NewDeployment(
 		namespace,
 		container.Name,
+		container.Name,
 		serviceAccount.Name,
+		"",
 		podSpec,
 	)
 	// Add instance label to pod spec template. Service now selects using instance name as well

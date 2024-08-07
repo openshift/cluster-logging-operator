@@ -7,12 +7,12 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -26,15 +26,15 @@ var inValidCR string
 
 var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 
+	defer GinkgoRecover()
+
 	var (
 		err        error
 		e2e        = framework.NewE2ETestFramework()
-		createLFME = func(cr string) (string, error) {
-			execCMD := exec.Command("sh", "-c", fmt.Sprintf("echo '%s' | oc create -f -", cr))
-			reader, err := cmd.NewReader(execCMD)
-			Expect(err).ToNot(HaveOccurred())
-			defer reader.Close()
-			return reader.ReadLine()
+		createLFME = func(cr string) error {
+			lfme := &v1alpha1.LogFileMetricExporter{}
+			test.MustUnmarshal(cr, lfme)
+			return e2e.Create(lfme)
 		}
 	)
 	AfterEach(func() {
@@ -42,7 +42,7 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 	})
 
 	It("should reject any CR not named openshift-logging/instance", func() {
-		_, err = createLFME(inValidCR)
+		err = createLFME(inValidCR)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(MatchRegexp("is invalid.*supported values.*instance"), "exp. the CR to be rejected because it is not THE singleton")
 	})
@@ -51,7 +51,7 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		e2e.AddCleanup(func() error {
 			return oc.Literal().From("oc -n openshift-logging delete --ignore-not-found logfilemetricexporter instance").Output()
 		})
-		_, err = createLFME(validCR)
+		err = createLFME(validCR)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
 

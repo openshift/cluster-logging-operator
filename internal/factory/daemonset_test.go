@@ -3,6 +3,7 @@ package factory
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 )
@@ -10,34 +11,20 @@ import (
 var _ = Describe("#NewDaemonSet", func() {
 
 	var (
-		daemonSet   *apps.DaemonSet
-		expSelector = map[string]string{
-			"provider":      "openshift",
-			"component":     "thecomponent",
-			"logging-infra": "thecomponent",
-		}
-		expLabels = map[string]string{
-			"provider":       "openshift",
-			"component":      "thecomponent",
-			"logging-infra":  "thecomponent",
-			"implementation": "collectorImpl",
-		}
+		daemonSet    *apps.DaemonSet
+		expSelectors = runtime.Selectors("theinstancename", "thecomponent", "thecomponent")
 	)
 
 	BeforeEach(func() {
-		daemonSet = NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", "collectorImpl", core.PodSpec{})
+		daemonSet = NewDaemonSet("thenamespace", "thenname", "theinstancename", "thecomponent", "thecomponent", core.PodSpec{})
 	})
 
 	It("should leave the MinReadySeconds as the default", func() {
 		Expect(daemonSet.Spec.MinReadySeconds).ToNot(Equal(0), "Exp. the MinReadySeconds to be the default")
 	})
 
-	It("should only include the provider, component, logging-infra in the selector", func() {
-		Expect(daemonSet.Spec.Selector.MatchLabels).To(Equal(expSelector), "Exp. the selector to only include: provider, component, logging-infra")
+	It("should only include the kubernetes common labels in the selector", func() {
+		Expect(daemonSet.Spec.Selector.MatchLabels).To(Equal(expSelectors), "Exp. the selector to contain kubernetes common labels")
 	})
 
-	It("should include the collector implementation in the labels only", func() {
-		Expect(daemonSet.Labels).To(Equal(expLabels))
-		Expect(daemonSet.Spec.Template.Labels).To(Equal(expLabels))
-	})
 })

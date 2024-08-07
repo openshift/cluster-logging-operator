@@ -26,7 +26,9 @@ func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.Da
 		if err := k8Client.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				reason = constants.EventReasonCreateObject
-				return k8Client.Create(context.TODO(), desired)
+				err := k8Client.Create(context.TODO(), desired)
+				log.V(0).Error(err, "Unable to create DaemonSet", "key", key, "spec", desired.Spec)
+				return err
 			}
 			return fmt.Errorf("failed to get %v DaemonSet: %w", key, err)
 		}

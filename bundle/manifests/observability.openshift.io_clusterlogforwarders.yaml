@@ -944,7 +944,6 @@ spec:
                                   description: RoleARN points to the secret containing
                                     the role ARN to be used for authentication. This
                                     is used for authentication in STS-enabled clusters.
-                                  nullable: true
                                   properties:
                                     key:
                                       description: Key contains the name of the key
@@ -961,7 +960,6 @@ spec:
                                 token:
                                   description: Token specifies a bearer token to be
                                     used for authenticating requests.
-                                  nullable: true
                                   properties:
                                     from:
                                       description: From is the source from where to
@@ -994,6 +992,7 @@ spec:
                                     rule: self.from != 'secret' || has(self.secret)
                               required:
                               - roleARN
+                              - token
                               type: object
                             type:
                               description: Type is the type of cloudwatch authentication

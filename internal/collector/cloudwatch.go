@@ -20,7 +20,7 @@ func addWebIdentityForCloudwatch(collector *v1.Container, forwarderSpec obs.Clus
 
 			if roleARN := cloudwatch.ParseRoleArn(o.Cloudwatch.Authentication, secrets); roleARN != "" {
 				tokenPath := common.ServiceAccountBasePath(constants.TokenKey)
-				if o.Cloudwatch.Authentication.IAMRole.Token != nil && o.Cloudwatch.Authentication.IAMRole.Token.From == obs.BearerTokenFromSecret {
+				if o.Cloudwatch.Authentication.IAMRole.Token.From == obs.BearerTokenFromSecret {
 					secret := o.Cloudwatch.Authentication.IAMRole.Token.Secret
 					tokenPath = common.SecretPath(secret.Name, secret.Key)
 				}

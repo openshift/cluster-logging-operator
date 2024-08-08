@@ -25,9 +25,12 @@ var _ = Describe("validating CloudWatch auth", func() {
 					Authentication: &obs.CloudwatchAuthentication{
 						Type: obs.CloudwatchAuthTypeIAMRole,
 						IAMRole: &obs.CloudwatchIAMRole{
-							RoleARN: &obs.SecretReference{
+							RoleARN: obs.SecretReference{
 								SecretName: "foo",
 								Key:        constants.AWSCredentialsKey,
+							},
+							Token: obs.BearerToken{
+								From: obs.BearerTokenFromServiceAccount,
 							},
 						},
 					},

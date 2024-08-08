@@ -71,11 +71,11 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 				Authentication: &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeAccessKey,
 					AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-						KeySecret: &obs.SecretReference{
+						KeySecret: obs.SecretReference{
 							SecretName: secretName,
 							Key:        constants.AWSSecretAccessKey,
 						},
-						KeyID: &obs.SecretReference{
+						KeyID: obs.SecretReference{
 							SecretName: secretName,
 							Key:        constants.AWSAccessKeyID,
 						},
@@ -94,9 +94,12 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 				Authentication: &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							SecretName: secretName,
 							Key:        constants.AWSCredentialsKey,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				},

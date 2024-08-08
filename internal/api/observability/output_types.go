@@ -51,8 +51,8 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 			auths = append(auths, o.Loki.Authentication.Token)
 		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
 			auths = append(auths, o.LokiStack.Authentication.Token)
-		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.CloudwatchAuthTypeIAMRole && o.Cloudwatch.Authentication.IAMRole.Token != nil:
-			auths = append(auths, o.Cloudwatch.Authentication.IAMRole.Token)
+		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.CloudwatchAuthTypeIAMRole:
+			auths = append(auths, &o.Cloudwatch.Authentication.IAMRole.Token)
 		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
 			auths = append(auths, o.Elasticsearch.Authentication.Token)
 		}
@@ -182,11 +182,11 @@ func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretRef
 func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretReference) {
 	if auth != nil {
 		if auth.AWSAccessKey != nil {
-			keys = append(keys, auth.AWSAccessKey.KeyID, auth.AWSAccessKey.KeySecret)
+			keys = append(keys, &auth.AWSAccessKey.KeyID, &auth.AWSAccessKey.KeySecret)
 		}
 		if auth.IAMRole != nil {
-			keys = append(keys, auth.IAMRole.RoleARN)
-			if auth.IAMRole.Token != nil && auth.IAMRole.Token.From == obsv1.BearerTokenFromSecret && auth.IAMRole.Token.Secret != nil {
+			keys = append(keys, &auth.IAMRole.RoleARN)
+			if auth.IAMRole.Token.From == obsv1.BearerTokenFromSecret && auth.IAMRole.Token.Secret != nil {
 				keys = append(keys, &obsv1.SecretReference{
 					Key:        auth.IAMRole.Token.Secret.Key,
 					SecretName: auth.IAMRole.Token.Secret.Name,

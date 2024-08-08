@@ -332,6 +332,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 	var (
 		podSpec   v1.PodSpec
 		collector v1.Container
+		saToken   v1.VolumeProjection
 
 		factory *Factory
 	)
@@ -344,6 +345,13 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 		}
 		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 		collector = podSpec.Containers[0]
+		saToken = v1.VolumeProjection{
+			ServiceAccountToken: &v1.ServiceAccountTokenProjection{
+				Audience:          "openshift",
+				ExpirationSeconds: utils.GetPtr[int64](saTokenExpirationSecs),
+				Path:              constants.TokenKey,
+			},
+		}
 	})
 	Describe("when creating the collector container", func() {
 
@@ -371,6 +379,14 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 	})
 
 	Describe("when creating the podSpec", func() {
+
+		Context("and mounting volumes", func() {
+			It("should not mount host path or sa token volumes", func() {
+				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: saTokenVolumeName, VolumeSource: v1.VolumeSource{Projected: &v1.ProjectedVolumeSource{Sources: []v1.VolumeProjection{saToken}}}}))
+				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
+				Expect(podSpec.Volumes).To(HaveLen(5))
+			})
+		})
 
 		Context("and evaluating tolerations", func() {
 			It("should add only defaults when none are defined", func() {
@@ -474,9 +490,29 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 
 		Context("and using custom named ClusterLogForwarder", func() {
 
-			It("should have custom named podSpec resources based on CLF name", func() {
+			It("should have volume mounts and custom named podSpec resources based on CLF name", func() {
 				clf := *obsruntime.NewClusterLogForwarder(constants.OpenshiftNS, "custom-clf", runtime.Initialize)
 				clf.Spec.ServiceAccount.Name = "custom-clf"
+				clf.Spec.Outputs = []obs.OutputSpec{
+					{
+						Name: "my-clf",
+						Type: obs.OutputTypeCloudwatch,
+						Cloudwatch: &obs.Cloudwatch{
+							Authentication: &obs.CloudwatchAuthentication{
+								Type: obs.CloudwatchAuthTypeIAMRole,
+								IAMRole: &obs.CloudwatchIAMRole{
+									RoleARN: obs.SecretReference{
+										SecretName: "my-secret",
+										Key:        constants.AWSCredentialsKey,
+									},
+									Token: obs.BearerToken{
+										From: obs.BearerTokenFromServiceAccount,
+									},
+								},
+							},
+						},
+					},
+				}
 				factory.ResourceNames = coreFactory.ResourceNames(clf)
 				expectedPodSpecMetricsVol := v1.Volume{
 					Name: "metrics",
@@ -494,7 +530,7 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, obs.ClusterLogForwarderSpec{}, "foobar", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+				}, clf.Spec, "foobar", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 
 				collector = podSpec.Containers[0]
 				Expect(podSpec.Volumes).To(ContainElement(expectedPodSpecMetricsVol))
@@ -520,13 +556,14 @@ var _ = Describe("Factory#Deployment#NewPodSpec", func() {
 					ReadOnly:  true,
 					MountPath: constants.TrustedCABundleMountDir,
 				}))
-			})
-		})
-
-		Context("and mounting volumes", func() {
-			It("should not mount host path volumes", func() {
-				Expect(podSpec.Volumes).NotTo(ContainElement(v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}}))
-				Expect(podSpec.Volumes).To(HaveLen(6))
+				Expect(podSpec.Volumes).To(ContainElement(v1.Volume{
+					Name: saTokenVolumeName,
+					VolumeSource: v1.VolumeSource{
+						Projected: &v1.ProjectedVolumeSource{
+							Sources: []v1.VolumeProjection{saToken},
+						},
+					},
+				}))
 			})
 		})
 	})
@@ -597,16 +634,19 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 					Authentication: &obs.CloudwatchAuthentication{
 						Type: obs.CloudwatchAuthTypeIAMRole,
 						IAMRole: &obs.CloudwatchIAMRole{
-							RoleARN: &obs.SecretReference{
+							RoleARN: obs.SecretReference{
 								Key:        "credentials",
 								SecretName: "cw",
+							},
+							Token: obs.BearerToken{
+								From: obs.BearerTokenFromServiceAccount,
 							},
 						},
 					},
 				},
 			},
 		}
-		bearerToken = &obs.BearerToken{
+		bearerToken = obs.BearerToken{
 			From: obs.BearerTokenFromSecret,
 			Secret: &obs.BearerTokenSecretKey{
 				Key:  constants.TokenKey,

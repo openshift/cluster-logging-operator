@@ -147,9 +147,11 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 	secretVolumes := AddSecretVolumes(podSpec, f.Secrets)
 	configmapVolumes := AddConfigmapVolumes(podSpec, f.ConfigMaps)
-	AddServiceAccountProjectedVolume(podSpec, defaultAudience)
+	if internalobs.Outputs(spec.Outputs).NeedServiceAccountToken() {
+		AddServiceAccountProjectedVolume(podSpec, defaultAudience)
+	}
 
-	collector := f.NewCollectorContainer(spec.Inputs, secretVolumes, configmapVolumes, clusterID)
+	collector := f.NewCollectorContainer(spec.Inputs, spec.Outputs, secretVolumes, configmapVolumes, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
@@ -164,8 +166,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
-
+func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs internalobs.Outputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
 	collector := runtime.NewContainer(constants.CollectorName, utils.GetComponentImage(f.ImageName), v1.PullIfNotPresent, f.CollectorSpec.Resources)
 	collector.Ports = []v1.ContainerPort{
 		{
@@ -216,10 +217,13 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, secretVolumes
 	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
 		return common.ConfigMapBasePath(strings.TrimPrefix(name, "config-"))
 	})
-	AddVolumeMounts(collector, []string{saTokenVolumeName}, func(name string) string {
-		// projected sa tokens are created in their own 'token' directory at this path
-		return constants.ServiceAccountSecretPath
-	})
+
+	if outputs.NeedServiceAccountToken() {
+		AddVolumeMounts(collector, []string{saTokenVolumeName}, func(name string) string {
+			// projected sa tokens are created in their own 'token' directory at this path
+			return constants.ServiceAccountSecretPath
+		})
+	}
 
 	return collector
 }

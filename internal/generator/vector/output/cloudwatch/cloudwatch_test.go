@@ -61,11 +61,11 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						Authentication: &obs.CloudwatchAuthentication{
 							Type: obs.CloudwatchAuthTypeAccessKey,
 							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-								KeyID: &obs.SecretReference{
+								KeyID: obs.SecretReference{
 									Key:        constants.AWSAccessKeyID,
 									SecretName: secretName,
 								},
-								KeySecret: &obs.SecretReference{
+								KeySecret: obs.SecretReference{
 									Key:        constants.AWSSecretAccessKey,
 									SecretName: secretName,
 								},
@@ -129,9 +129,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        constants.AWSCredentialsKey,
 							SecretName: secretWithCredentials,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}
@@ -167,9 +170,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        constants.AWSWebIdentityRoleKey,
 							SecretName: secretName,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}, roleArn),
@@ -177,9 +183,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        "altArn",
 							SecretName: secretName,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}, altRoleArn),
@@ -187,9 +196,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        constants.AWSCredentialsKey,
 							SecretName: secretName,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}, credentialsRoleArn),
@@ -197,9 +209,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        "role_arn_as_cred",
 							SecretName: secretName,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}, credentialsRoleArn),
@@ -207,9 +222,12 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
 					IAMRole: &obs.CloudwatchIAMRole{
-						RoleARN: &obs.SecretReference{
+						RoleARN: obs.SecretReference{
 							Key:        "bad",
 							SecretName: secretName,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
 				}, ""),

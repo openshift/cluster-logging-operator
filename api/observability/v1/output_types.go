@@ -349,28 +349,24 @@ type CloudwatchIAMRole struct {
 	// This is used for authentication in STS-enabled clusters.
 	//
 	// +kubebuilder:validation:Required
-	// +nullable
-	RoleARN *SecretReference `json:"roleARN"`
+	RoleARN SecretReference `json:"roleARN"`
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
-	// +nullable
-	Token *BearerToken `json:"token,omitempty"`
+	// +kubebuilder:validation:Required
+	Token BearerToken `json:"token"`
 }
 
 type CloudwatchAWSAccessKey struct {
 	// AccessKeyID points to the AWS access key id to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
-	// +nullable
-	KeyID *SecretReference `json:"keyID"`
+	KeyID SecretReference `json:"keyID"`
 
 	// AccessKeySecret points to the AWS access key secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
-	// +nullable
-	KeySecret *SecretReference `json:"keySecret"`
+	KeySecret SecretReference `json:"keySecret"`
 }
 
 type ElasticsearchTuningSpec struct {

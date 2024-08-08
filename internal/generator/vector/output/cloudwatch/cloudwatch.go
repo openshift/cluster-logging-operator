@@ -2,7 +2,6 @@ package cloudwatch
 
 import (
 	_ "embed"
-
 	"regexp"
 	"strings"
 
@@ -116,8 +115,8 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
-		authConfig.KeyID.Value = vectorhelpers.SecretFrom(auth.AWSAccessKey.KeyID)
-		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(auth.AWSAccessKey.KeySecret)
+		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyID)
+		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
 	}
 	return authConfig
 }
@@ -161,7 +160,7 @@ del(.source_type)
 // ParseRoleArn search for matching valid ARN
 func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) string {
 	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
-		roleArnString := secrets.AsString(auth.IAMRole.RoleARN)
+		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
 
 		if roleArnString != "" {
 			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)

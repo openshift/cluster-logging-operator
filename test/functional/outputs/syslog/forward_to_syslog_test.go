@@ -12,7 +12,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -66,7 +65,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 		secret, tlsSpec := secrets.NewTLSSecret(framework.Forwarder.Namespace, "syslog-tls", framework.Namespace, "syslogreceiver")
 		framework.Secrets = append(framework.Secrets, secret)
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
 				if output.TLS == nil {
 					output.TLS = &obs.OutputTLSSpec{}
@@ -131,7 +130,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 		})
 		It("should take values of appname, procid, messageid from record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = `{.appname_key||"none"}`
 					spec.Syslog.ProcID = `{.procid_key||"none"}`
@@ -155,7 +154,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 		})
 		It("should allow combination of static + dynamic setting of appname, procid, messageid from record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = `foo-{.openshift.cluster_id||"none"}`
 					spec.Syslog.ProcID = `bar-{.appname_key||"none"}`

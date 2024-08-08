@@ -11,7 +11,6 @@ import (
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -61,7 +60,7 @@ func (f *CollectorFunctionalFramework) ReadRawApplicationLogsFrom(outputName str
 }
 
 func (f *CollectorFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, logging.InputNameInfrastructure)
+	return f.ReadLogsFrom(outputName, string(obs.InputTypeInfrastructure))
 }
 func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
 	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin

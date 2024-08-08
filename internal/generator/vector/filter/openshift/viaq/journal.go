@@ -2,7 +2,7 @@ package viaq
 
 import (
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -103,7 +103,7 @@ func journalLogs() string {
 if .log_source == "%s" {
   %s
 }
-`, logging.InfrastructureSourceNode, journalLogsVRL())
+`, obs.InfrastructureSourceNode, journalLogsVRL())
 }
 
 func journalLogsVRL() string {

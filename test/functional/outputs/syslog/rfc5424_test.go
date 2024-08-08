@@ -11,7 +11,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 )
@@ -34,7 +33,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 
 	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, payloadKey, expInfo string) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
@@ -49,7 +48,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
 		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-		outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		expMatch := fmt.Sprintf(`( %s )`, expInfo)
@@ -61,7 +60,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 
 	DescribeTable("logforwarder configured with payload key", func(appName, msgId, procId, payloadKey string) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
@@ -76,7 +75,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
 		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-		outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		fields := strings.Split(outputlogs[0], " - ")
@@ -94,7 +93,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
 					spec.Syslog.Severity = "$.message.severity_key"
@@ -105,7 +104,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
 			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 
@@ -117,7 +116,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	})
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToSyslogOutput(obs.SyslogRFC5424)
 		Expect(framework.Deploy()).To(BeNil())
 

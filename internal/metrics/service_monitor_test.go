@@ -6,9 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,42 +23,25 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 	_ = monitoringv1.AddToScheme(scheme.Scheme)
 
 	var (
-		cluster = &loggingv1.ClusterLogging{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SingletonName,
-				Namespace: constants.OpenshiftNS,
-			},
-			Spec: loggingv1.ClusterLoggingSpec{
-				ManagementState: loggingv1.ManagementStateManaged,
-				LogStore: &loggingv1.LogStoreSpec{
-					Type: loggingv1.LogStoreTypeElasticsearch,
-				},
-				Collection: &loggingv1.CollectionSpec{
-					Type:          loggingv1.LogCollectionTypeFluentd,
-					CollectorSpec: loggingv1.CollectorSpec{},
-				},
-			},
-		}
 
 		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
 		namespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{"test": "true"},
-				Name:   cluster.Namespace,
+				Name:   constants.OpenshiftNS,
 			},
 		}
 
 		reqClient = fake.NewFakeClient( //nolint
-			cluster,
 			namespace,
 		)
 		recorder    = record.NewFakeRecorder(100)
-		owner       = utils.AsOwner(cluster)
+		owner       = metav1.OwnerReference{}
 		portName    = "test-port"
 		serviceName = "test-service"
 		component   = "test-component"
 
-		serviceMonitorKey = types.NamespacedName{Name: serviceName, Namespace: cluster.GetNamespace()}
+		serviceMonitorKey = types.NamespacedName{Name: serviceName, Namespace: namespace.Name}
 		smInstance        = &monitoringv1.ServiceMonitor{}
 	)
 
@@ -68,7 +49,7 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 		// Reconcile the exporter daemonset
 		Expect(ReconcileServiceMonitor(recorder,
 			reqClient,
-			cluster.GetNamespace(),
+			namespace.Name,
 			serviceName,
 			component,
 			portName,

@@ -31,7 +31,6 @@ import (
 	yaml "sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -81,11 +80,6 @@ type CollectorFunctionalFramework struct {
 	MaxReadDuration *time.Duration
 
 	delayedWriter *commonlog.BufferedLogWriter
-}
-
-// TODO: REMOVE ME
-func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType, testOptions ...client.TestOption) *CollectorFunctionalFramework {
-	return nil
 }
 
 func NewCollectorFunctionalFramework(testOptions ...client.TestOption) *CollectorFunctionalFramework {
@@ -414,27 +408,27 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 	log.V(2).Info("Adding outputs", "outputs", outputs)
 	for _, output := range outputs {
 		switch output.Type {
-		case logging.OutputTypeSyslog:
+		case obs.OutputTypeSyslog:
 			if err := f.AddSyslogOutput(b, output); err != nil {
 				return err
 			}
-		case logging.OutputTypeKafka:
+		case obs.OutputTypeKafka:
 			if err := f.AddKafkaOutput(b, output); err != nil {
 				return err
 			}
-		case logging.OutputTypeElasticsearch:
+		case obs.OutputTypeElasticsearch:
 			if err := f.AddES7Output(b, output); err != nil {
 				return err
 			}
-		case logging.OutputTypeHttp:
+		case obs.OutputTypeHTTP:
 			if err := f.AddVectorHttpOutput(b, output); err != nil {
 				return err
 			}
-		case logging.OutputTypeSplunk:
+		case obs.OutputTypeSplunk:
 			if err := f.AddSplunkOutput(b, output); err != nil {
 				return err
 			}
-		case logging.OutputTypeCloudwatch:
+		case obs.OutputTypeCloudwatch:
 			if err := f.AddCloudWatchOutput(b, output); err != nil {
 				return err
 			}

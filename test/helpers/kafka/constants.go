@@ -2,8 +2,7 @@ package kafka
 
 import (
 	"fmt"
-
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 const (
@@ -25,9 +24,9 @@ var (
 
 func init() {
 	inputTypeToTopic = map[string]string{
-		loggingv1.InputNameApplication:    AppLogsTopic,
-		loggingv1.InputNameAudit:          AuditLogsTopic,
-		loggingv1.InputNameInfrastructure: InfraLogsTopic,
+		string(obs.InputTypeApplication):    AppLogsTopic,
+		string(obs.InputTypeAudit):          AuditLogsTopic,
+		string(obs.InputTypeInfrastructure): InfraLogsTopic,
 	}
 }
 

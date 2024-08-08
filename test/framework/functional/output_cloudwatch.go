@@ -4,15 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net/http"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"net/http"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	openshiftv1 "github.com/openshift/api/route/v1"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -31,7 +29,7 @@ var (
 	route     *openshiftv1.Route
 )
 
-func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder, obs obs.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder, spec obs.OutputSpec) error {
 	if err := f.createCloudWatchService(); err != nil {
 		return err
 	}
@@ -65,7 +63,7 @@ func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder
 			}),
 		})
 
-	b.AddContainer(logging.OutputTypeCloudwatch, cloudwatchMotoImage).
+	b.AddContainer(string(obs.OutputTypeCloudwatch), cloudwatchMotoImage).
 		WithCmdArgs([]string{"-s"}).
 		End()
 

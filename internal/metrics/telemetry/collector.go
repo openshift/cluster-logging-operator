@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -137,7 +136,7 @@ func boolLabel(value bool) string {
 
 func hasReadyCondition(conditions status.Conditions) bool {
 	for _, c := range conditions {
-		if c.Type == loggingv1.ConditionReady && c.Status == corev1.ConditionTrue {
+		if c.Type == loggingv1alpha1.ConditionReady && c.Status == corev1.ConditionTrue {
 			return true
 		}
 	}

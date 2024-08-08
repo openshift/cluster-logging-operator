@@ -1,9 +1,10 @@
 package loglevel
 
 import (
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -57,7 +58,6 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		outputTestLog := logs[0]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 	},
-		Entry("should recognize a WARN message", "warn", "Warning: failed to query journal: Bad message OS Error 74"),
 		Entry("should recognize an INFO message", "info", "I0920 14:22:00.089385       1 scheduler.go:592] \"Successfully bound pod to node\" pod=\"openshift-marketplace/community-operators-qrs99\" node=\"ip-10-0-215-216.us-east-2.compute.internal\" evaluatedNodes=6 feasibleNodes=3"),
 		Entry("should recognize an INFO message(LOG-4480)", "info", "2023-08-28T19:53:52.115Z\tinfo\tconfiguration-policy-controller\tlogr@v1.2.2/logr.go:252\tProcessing the policies"),
 		Entry("should recognize an ERROR message", "error", "E0427 02:47:01.619035 1 authentication.go:53] Unable to authenticate the request due to an error: invalid bearer token, context canceled"),

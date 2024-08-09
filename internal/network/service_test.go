@@ -74,6 +74,7 @@ var _ = Describe("Reconcile Service", func() {
 			reqClient,
 			constants.OpenshiftNS,
 			serviceName,
+			cluster.Name,
 			componentName,
 			portName,
 			certSecret,

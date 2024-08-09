@@ -248,6 +248,7 @@ func DoCleanup() bool {
 
 func (tc *E2ETestFramework) Cleanup() {
 	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+		defer delayedLogWriter.Flush()
 		clolog.Info("Test failed", "TestText", g.FullTestText)
 		//allow caller to cleanup if unset (e.g script cleanup())
 		if DoCleanup() {
@@ -268,9 +269,6 @@ func (tc *E2ETestFramework) Cleanup() {
 		}
 	}
 	tc.CleanupFns = [](func() error){}
-	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
-		delayedLogWriter.Flush()
-	}
 }
 
 func RunCleanupScript() {

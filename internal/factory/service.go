@@ -9,11 +9,7 @@ import (
 // NewService stubs an instance of a Service
 func NewService(serviceName string, namespace string, selectorComponent, instanceName string, servicePorts []core.ServicePort, visitors ...func(o runtime.Object)) *core.Service {
 	service := runtime.NewService(namespace, serviceName, visitors...)
-	selector := map[string]string{
-		"component":                selectorComponent,
-		"provider":                 "openshift",
-		constants.LabelK8sInstance: instanceName,
-	}
-	runtime.NewServiceBuilder(service).WithSelector(selector).WithServicePort(servicePorts).AddLabel("logging-infra", "support")
+	selector := runtime.Selectors(instanceName, selectorComponent, service.Labels[constants.LabelK8sName])
+	runtime.NewServiceBuilder(service).WithSelector(selector).WithServicePort(servicePorts)
 	return service
 }

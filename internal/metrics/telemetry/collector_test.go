@@ -2,14 +2,11 @@ package telemetry
 
 import (
 	"context"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
 
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,10 +124,10 @@ log_forwarder_pipelines{resource_name="test-name",resource_namespace="test-names
 				lfme := &loggingv1alpha1.LogFileMetricExporter{
 					ObjectMeta: singletonMeta,
 					Status: loggingv1alpha1.LogFileMetricExporterStatus{
-						Conditions: []status.Condition{
+						Conditions: []metav1.Condition{
 							{
-								Type:   loggingv1.ConditionReady,
-								Status: corev1.ConditionTrue,
+								Type:   observabilityv1.ConditionTypeReady,
+								Status: metav1.ConditionTrue,
 							},
 						},
 					},

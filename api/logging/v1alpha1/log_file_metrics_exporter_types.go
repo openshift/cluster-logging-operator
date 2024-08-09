@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,11 +26,18 @@ type LogFileMetricExporterSpec struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
+const (
+	// ReasonValid is used as a reason for the condition indicating that the LogFileMetricExporter is deployed.
+	ReasonValid string = "Valid"
+	// ReasonInvalid is used as a reason for the condition indicating that there was an issue with the LogFileMetricExporter instance.
+	ReasonInvalid string = "Invalid"
+)
+
 // LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
 type LogFileMetricExporterStatus struct {
 	// Conditions of the Log File Metrics Exporter.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Log File Metrics Exporter Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:logFileMetricsExporterConditions"}
-	Conditions status.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +k8s:openapi-gen=true

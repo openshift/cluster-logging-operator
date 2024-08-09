@@ -10,11 +10,11 @@ toc::[]
 ////
 
 ////
-** These release notes are generated from the content in the openshift/cluster-logging-operator repository.
+** This reference is generated from the content in the openshift/cluster-logging-operator repository.
 ** Do not modify the content here manually except for the metadata and section IDs - changes to the content should be made in the source code.
 ////
 
-[id="logging-5-x-reference-ClusterLogForwarder"]
+[id="logging-6-x-reference-ClusterLogForwarder"]
 == ClusterLogForwarder
 
 ClusterLogForwarder is an API to configure forwarding logs.
@@ -436,13 +436,27 @@ NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname`
 
 === .spec.filters[].prune.in[]
 
+Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
+The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted.
+Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
 Type:: array
 
 === .spec.filters[].prune.notIn[]
 
+Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
+The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted.
+Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
 Type:: array
 
 === .spec.inputs[]
+
+InputSpec defines a selector of log messages for a given log type.
 
 Type:: array
 
@@ -1483,7 +1497,7 @@ The list represents only the initial set used by the collector&#39;s Kafka clien
 first connection only. The collector&#39;s Kafka client fetches constantly an updated list
 from Kafka. These updates are not reconciled back to the collector configuration.
 If none provided the target URL from the OutputSpec is used as fallback.
-|topic|string|  Topic specifies the target topic to send logs to.
+|topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
 
 The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
@@ -1663,14 +1677,34 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
-|labelKeys|array|  LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
+|labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 
-If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+If LabelKeys is not set, the default keys are:
+
+- log_type
+
+- kubernetes.container_name
+
+- kubernetes.namespace_name
+
+- kubernetes.pod_name
+
+One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname
+where the collector is running and is always present.
 
 Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
 Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
 Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
-For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+
+For example the default log record keys translate to these Loki labels:
+
+- log_type
+
+- kubernetes_container_name
+
+- kubernetes_namespace_name
+
+- kubernetes_pod_name
 
 Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
@@ -1808,14 +1842,21 @@ Type:: object
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
-|labelKeys|array|  LabelKeys is a list of log record keys that will be used as Loki labels with the corresponding log record value.
-
-If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+|labelKeys|object|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 
 Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
 Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
 Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
-For example the default log record keys translate to these Loki labels: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+
+For example the default log record keys translate to these Loki labels:
+
+- log_type
+
+- kubernetes_container_name
+
+- kubernetes_namespace_name
+
+- kubernetes_pod_name
 
 Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
@@ -1872,7 +1913,109 @@ Type:: object
 
 |======================
 
-=== .spec.outputs[].lokiStack.labelKeys[]
+=== .spec.outputs[].lokiStack.labelKeys
+
+LokiStackLabelKeys contains the configuration that maps log record&#39;s keys to Loki labels used to identify streams.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|application|object|  Application contains the label keys configuration for the &#34;application&#34; tenant.
+
+|audit|object|  Audit contains the label keys configuration for the &#34;audit&#34; tenant.
+
+|global|array|  Global contains a list of record keys which are used for all tenants.
+
+If LabelKeys is not set, the default keys are:
+
+- log_type
+
+- kubernetes.container_name
+
+- kubernetes.namespace_name
+
+- kubernetes.pod_name
+
+One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname
+where the collector is running and is always present.
+
+|infrastructure|object|  Infrastructure contains the label keys configuration for the &#34;infrastructure&#34; tenant.
+
+|======================
+
+=== .spec.outputs[].lokiStack.labelKeys.application
+
+LokiStackTenantLabelKeys contains options for customizing the mapping of log record keys to Loki stream labels for a single tenant.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ignoreGlobal|bool|  If IgnoreGlobal is true, then the tenant will not use the labels configured in the Global section of the label
+keys configuration.
+
+|labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+By default, this list is combined with the labels specified in the Global configuration.
+This behavior can be changed by setting IgnoreGlobal to true.
+
+|======================
+
+=== .spec.outputs[].lokiStack.labelKeys.application.labelKeys[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.labelKeys.audit
+
+LokiStackTenantLabelKeys contains options for customizing the mapping of log record keys to Loki stream labels for a single tenant.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ignoreGlobal|bool|  If IgnoreGlobal is true, then the tenant will not use the labels configured in the Global section of the label
+keys configuration.
+
+|labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+By default, this list is combined with the labels specified in the Global configuration.
+This behavior can be changed by setting IgnoreGlobal to true.
+
+|======================
+
+=== .spec.outputs[].lokiStack.labelKeys.audit.labelKeys[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.labelKeys.global[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.labelKeys.infrastructure
+
+LokiStackTenantLabelKeys contains options for customizing the mapping of log record keys to Loki stream labels for a single tenant.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ignoreGlobal|bool|  If IgnoreGlobal is true, then the tenant will not use the labels configured in the Global section of the label
+keys configuration.
+
+|labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+By default, this list is combined with the labels specified in the Global configuration.
+This behavior can be changed by setting IgnoreGlobal to true.
+
+|======================
+
+=== .spec.outputs[].lokiStack.labelKeys.infrastructure.labelKeys[]
 
 Type:: array
 
@@ -2141,11 +2284,20 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|appName|string|  AppName is APP-NAME part of the syslog-msg header
-
+|appName|string|  AppName is APP-NAME part of the syslog-msg header.
 AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
+This supports template syntax to allow dynamic per-event values.
+
+The AppName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of &#34;tag&#34; when this is empty
+|enrichment|string|  Enrichment is an additional modification the log message before forwarding it to the receiver
 |facility|string|  Facility to set on outgoing syslog records.
 
 Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
@@ -2159,13 +2311,38 @@ uucp cron authpriv ftp ntp security console solaris-cron
 
 local0 local1 local2 local3 local4 local5 local6 local7
 
-|msgID|string|  MsgID is MSGID part of the syslog-msg header
+|msgID|string|  MsgID is MSGID part of the syslog-msg header. This supports template syntax
+to allow dynamic per-event values.
+
+The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 
-|payloadKey|string|  PayloadKey specifies record field to use as payload.
+|payloadKey|string|  The PayloadKey must be a single field path encased in single curly brackets `{}`.
+Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+If left empty, Syslog will use the whole message as the payload key
 
-|procID|string|  ProcID is PROCID part of the syslog-msg header
+Example:
+1. {.bar}
+2. {.foo.bar.baz}
+3. {.foo.bar.&#34;baz/with/slashes&#34;}
+
+|procID|string|  ProcID is PROCID part of the syslog-msg header. This supports template syntax
+to allow dynamic per-event values.
+
+The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+1. foo-{.bar||&#34;none&#34;}
+2. {.foo||.bar||&#34;missing&#34;}
+3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 

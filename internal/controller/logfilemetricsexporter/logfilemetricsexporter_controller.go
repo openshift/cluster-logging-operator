@@ -2,28 +2,29 @@ package logfilemetricsexporter
 
 import (
 	"context"
-	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
-	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
+	"fmt"
 	"strings"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var _ reconcile.Reconciler = &ReconcileLogFileMetricExporter{}
@@ -38,10 +39,12 @@ type ReconcileLogFileMetricExporter struct {
 	ClusterID string
 }
 
-var condReady = status.Condition{Type: loggingv1.ConditionReady, Status: corev1.ConditionTrue}
+func condReady() metav1.Condition {
+	return internalobs.NewCondition(observabilityv1.ConditionTypeReady, metav1.ConditionTrue, loggingv1alpha1.ReasonValid, "")
+}
 
-func condNotReady(r status.ConditionReason, format string, args ...interface{}) status.Condition {
-	return loggingv1.NewCondition(loggingv1.ConditionReady, corev1.ConditionFalse, r, format, args...)
+func condNotReady(r string, format string, args ...interface{}) metav1.Condition {
+	return internalobs.NewCondition(observabilityv1.ConditionTypeReady, metav1.ConditionFalse, r, fmt.Sprintf(format, args...))
 }
 
 func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
@@ -62,9 +65,9 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 	// Validate LogFileMetricExporter instance
 	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
-		condition := loggingv1.CondInvalid("validation failed: %v", err)
-		lfmeInstance.Status.Conditions.SetCondition(condition)
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), condition.Message)
+		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "validation failed: %v", err)
+		setCondition(&lfmeInstance.Status, condition)
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, loggingv1alpha1.ReasonInvalid, condition.Message)
 		return r.updateStatus(lfmeInstance)
 	}
 
@@ -72,15 +75,16 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.Recorder, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
-		lfmeInstance.Status.Conditions.SetCondition(
-			condNotReady(loggingv1.ReasonInvalid, reconcileErr.Error()))
+		condition := condNotReady(loggingv1alpha1.ReasonInvalid, reconcileErr.Error())
+		setCondition(&lfmeInstance.Status, condition)
+
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		log.V(2).Error(reconcileErr, "logfilemetricexporter-controller returning, error")
-
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), reconcileErr.Error())
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, loggingv1alpha1.ReasonInvalid, reconcileErr.Error())
 	} else {
-		if !lfmeInstance.Status.Conditions.SetCondition(condReady) {
-			r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, string(condReady.Type), "LogFileMetricExporter deployed and ready")
+		condition := condReady()
+		if updated := setCondition(&lfmeInstance.Status, condition); !updated {
+			r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, condition.Type, "LogFileMetricExporter deployed and ready")
 		}
 	}
 
@@ -114,4 +118,24 @@ func (r *ReconcileLogFileMetricExporter) SetupWithManager(mgr ctrl.Manager) erro
 		Owns(&corev1.Service{}).
 		Owns(&monitoringv1.ServiceMonitor{}).
 		Complete(r)
+}
+
+func setCondition(status *loggingv1alpha1.LogFileMetricExporterStatus, newCond metav1.Condition) bool {
+	newCond.LastTransitionTime = metav1.Time{Time: time.Now()}
+
+	for i, condition := range status.Conditions {
+		if condition.Type == newCond.Type {
+			if condition.Status == newCond.Status {
+				newCond.LastTransitionTime = condition.LastTransitionTime
+			}
+			changed := condition.Status != newCond.Status ||
+				condition.Reason != newCond.Reason ||
+				condition.Message != newCond.Message
+			status.Conditions[i] = newCond
+			return changed
+		}
+	}
+
+	status.Conditions = append(status.Conditions, newCond)
+	return true
 }

@@ -2,15 +2,13 @@ package telemetry
 
 import (
 	"context"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/status"
-
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/prometheus/client_golang/prometheus"
-	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -135,9 +133,9 @@ func boolLabel(value bool) string {
 	return boolNo
 }
 
-func hasReadyCondition(conditions status.Conditions) bool {
+func hasReadyCondition(conditions []metav1.Condition) bool {
 	for _, c := range conditions {
-		if c.Type == loggingv1.ConditionReady && c.Status == corev1.ConditionTrue {
+		if c.Type == observabilityv1.ConditionTypeReady && c.Status == metav1.ConditionTrue {
 			return true
 		}
 	}

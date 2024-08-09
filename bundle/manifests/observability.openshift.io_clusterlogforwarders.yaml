@@ -898,7 +898,6 @@ spec:
                                 keyID:
                                   description: AccessKeyID points to the AWS access
                                     key id to be used for authentication.
-                                  nullable: true
                                   properties:
                                     key:
                                       description: Key contains the name of the key
@@ -915,7 +914,6 @@ spec:
                                 keySecret:
                                   description: AccessKeySecret points to the AWS access
                                     key secret to be used for authentication.
-                                  nullable: true
                                   properties:
                                     key:
                                       description: Key contains the name of the key

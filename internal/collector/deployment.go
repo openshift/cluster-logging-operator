@@ -12,16 +12,15 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileDeployment reconciles a deployment specifically for the collector defined by the factory
-func (f *Factory) ReconcileDeployment(er record.EventRecorder, k8sClient client.Client, namespace string, trustedCABundle *corev1.ConfigMap, owner metav1.OwnerReference) error {
+func (f *Factory) ReconcileDeployment(k8sClient client.Client, namespace string, trustedCABundle *corev1.ConfigMap, owner metav1.OwnerReference) error {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
 	desired := f.NewDeployment(namespace, f.ResourceNames.DaemonSetName(), trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile))
 	utils.AddOwnerRefToObject(desired, owner)
-	return reconcile.Deployment(er, k8sClient, desired)
+	return reconcile.Deployment(k8sClient, desired)
 }
 
 func RemoveDeployment(k8sClient client.Client, namespace, name string) (err error) {

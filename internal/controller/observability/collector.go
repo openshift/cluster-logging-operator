@@ -54,13 +54,13 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Add roles to ServiceAccount to allow the collector to read from the node
-	if err = auth.ReconcileRBAC(noOpEventRecorder, context.Client, context.Forwarder.Name, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name, ownerRef); err != nil {
+	if err = auth.ReconcileRBAC(context.Client, context.Forwarder.Name, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name, ownerRef); err != nil {
 		log.V(3).Error(err, "auth.ReconcileRBAC")
 		return
 	}
 
 	// TODO: This can be the same per NS but what is the ownerref?  Multiple CLFs will clash
-	if err = collector.ReconcileTrustedCABundleConfigMap(noOpEventRecorder, context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, ownerRef); err != nil {
+	if err = collector.ReconcileTrustedCABundleConfigMap(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileTrustedCABundleConfigMap")
 		return err
 	}
@@ -83,7 +83,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	isDaemonSet := !internalobs.DeployAsDeployment(*context.Forwarder)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
 	factory := collector.New(collectorConfHash, context.ClusterID, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
-	if err = factory.ReconcileCollectorConfig(noOpEventRecorder, context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
+	if err = factory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}
@@ -92,22 +92,22 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	if !isDaemonSet {
 		reconcileWorkload = factory.ReconcileDeployment
 	}
-	if err := reconcileWorkload(noOpEventRecorder, context.Client, context.Forwarder.Namespace, trustedCABundle, ownerRef); err != nil {
+	if err := reconcileWorkload(context.Client, context.Forwarder.Namespace, trustedCABundle, ownerRef); err != nil {
 		log.Error(err, "Error reconciling the deployment of the collector")
 		return err
 	}
 
-	if err := factory.ReconcileInputServices(noOpEventRecorder, context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := factory.ReconcileInputServices(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileInputServices")
 		return err
 	}
 
 	// Reconcile resources to support metrics gathering
-	if err := network.ReconcileService(noOpEventRecorder, context.Client, context.Forwarder.Namespace, resourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, factory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
-	if err := metrics.ReconcileServiceMonitor(noOpEventRecorder, context.Client, context.Forwarder.Namespace, resourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, ownerRef); err != nil {
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
 	}

@@ -377,7 +377,7 @@ spec:
                           type: array
                       type: object
                     name:
-                      description: Name used to refer to the filter from a `pipeline`.
+                      description: Name used to refer to the filter from a "pipeline".
                       pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
                     openShiftLabels:
@@ -392,25 +392,25 @@ spec:
                         in and notIn, which dictate the fields to be pruned.
                       properties:
                         in:
-                          description: '`In` is an array of dot-delimited field paths.
+                          description: "`In` is an array of dot-delimited field paths.
                             Fields included here are removed from the log record.
-                            Each field path expression must start with a `.`. The
-                            path can contain alpha-numeric characters and underscores
-                            (a-zA-Z0-9_). If segments contain characters outside of
-                            this range, the segment must be quoted otherwise paths
-                            do NOT need to be quoted. Examples: `.kubernetes.namespace_name`,
-                            `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`
-                            NOTE1: `In` CANNOT contain `.log_type` or `.message` as
-                            those fields are required and cannot be pruned. NOTE2:
-                            If this filter is used in a pipeline with GoogleCloudLogging,
-                            `.hostname` CANNOT be added to this list as it is a required
-                            field.'
+                            \n Each field path expression must start with a \".\"
+                            \n The path can contain alphanumeric characters and underscores
+                            (a-zA-Z0-9_). \n If segments contain characters outside
+                            of this range, the segment must be quoted otherwise paths
+                            do NOT need to be quoted. \n Examples: \n - `.kubernetes.namespace_name`
+                            \n - `.log_type` \n - '.kubernetes.labels.foobar' \n -
+                            `.kubernetes.labels.\"foo-bar/baz\"` \n NOTE1: `In` CANNOT
+                            contain `.log_type` or `.message` as those fields are
+                            required and cannot be pruned. \n NOTE2: If this filter
+                            is used in a pipeline with GoogleCloudLogging, `.hostname`
+                            CANNOT be added to this list as it is a required field."
                           items:
-                            description: 'Field Path represents a path to find a value
+                            description: 'FieldPath represents a path to find a value
                               for a given field.  The format must a value that can
                               be converted to a valid collector configuration. It
                               is a dot delimited path to a field in the log record.
-                              It must start with a `.`. The path can contain alpha-numeric
+                              It must start with a `.`. The path can contain alphanumeric
                               characters and underscores (a-zA-Z0-9_). If segments
                               contain characters outside of this range, the segment
                               must be quoted. Examples: `.kubernetes.namespace_name`,
@@ -419,25 +419,26 @@ spec:
                             type: string
                           type: array
                         notIn:
-                          description: '`NotIn` is an array of dot-delimited field
+                          description: "`NotIn` is an array of dot-delimited field
                             paths. All fields besides the ones listed here are removed
-                            from the log record Each field path expression must start
-                            with a `.`. The path can contain alpha-numeric characters
-                            and underscores (a-zA-Z0-9_). If segments contain characters
-                            outside of this range, the segment must be quoted otherwise
-                            paths do NOT need to be quoted. Examples: `.kubernetes.namespace_name`,
-                            `.log_type`, ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`
-                            NOTE1: `NotIn` MUST contain `.log_type` and `.message`
-                            as those fields are required and cannot be pruned. NOTE2:
-                            If this filter is used in a pipeline with GoogleCloudLogging,
+                            from the log record. \n Each field path expression must
+                            start with a \".\" \n The path can contain alphanumeric
+                            characters and underscores (a-zA-Z0-9_). \n If segments
+                            contain characters outside of this range, the segment
+                            must be quoted otherwise paths do NOT need to be quoted.
+                            \n Examples: \n - `.kubernetes.namespace_name` \n - `.log_type`
+                            \n - '.kubernetes.labels.foobar' \n - `.kubernetes.labels.\"foo-bar/baz\"`
+                            \n NOTE1: `NotIn` MUST contain `.log_type` and `.message`
+                            as those fields are required and cannot be pruned. \n
+                            NOTE2: If this filter is used in a pipeline with GoogleCloudLogging,
                             `.hostname` MUST be added to this list as it is a required
-                            field.'
+                            field."
                           items:
-                            description: 'Field Path represents a path to find a value
+                            description: 'FieldPath represents a path to find a value
                               for a given field.  The format must a value that can
                               be converted to a valid collector configuration. It
                               is a dot delimited path to a field in the log record.
-                              It must start with a `.`. The path can contain alpha-numeric
+                              It must start with a `.`. The path can contain alphanumeric
                               characters and underscores (a-zA-Z0-9_). If segments
                               contain characters outside of this range, the segment
                               must be quoted. Examples: `.kubernetes.namespace_name`,
@@ -492,9 +493,9 @@ spec:
                       nullable: true
                       properties:
                         excludes:
-                          description: Excludes is the set of namespaces and containers
-                            to ignore when collecting logs. Takes precedence over
-                            Includes option.
+                          description: "Excludes is the set of namespaces and containers
+                            to ignore when collecting logs. \n Takes precedence over
+                            Includes option."
                           items:
                             properties:
                               container:
@@ -510,10 +511,10 @@ spec:
                             type: object
                           type: array
                         includes:
-                          description: 'Includes is the set of namespaces and containers
-                            to include when collecting logs. Note: infrastructure
-                            namespaces are still excluded for "*" values unless a
-                            qualifying glob pattern is specified.'
+                          description: "Includes is the set of namespaces and containers
+                            to include when collecting logs. \n Note: infrastructure
+                            namespaces are still excluded for \"*\" values unless
+                            a qualifying glob pattern is specified."
                           items:
                             properties:
                               container:
@@ -529,9 +530,10 @@ spec:
                             type: object
                           type: array
                         selector:
-                          description: Selector for logs from pods with matching labels.
-                            Only messages from pods with these labels are collected.
-                            If absent or empty, logs are collected regardless of labels.
+                          description: "Selector for logs from pods with matching
+                            labels. \n Only messages from pods with these labels are
+                            collected. \n If absent or empty, logs are collected regardless
+                            of labels."
                           properties:
                             matchExpressions:
                               description: matchExpressions is a list of label selector
@@ -795,7 +797,7 @@ spec:
               managementState:
                 default: Managed
                 description: Indicator if the resource is 'Managed' or 'Unmanaged'
-                  by the operator
+                  by the operator.
                 enum:
                 - Managed
                 - Unmanaged
@@ -1010,16 +1012,16 @@ spec:
                               authentication
                             rule: self.type != 'iamRole' || has(self.iamRole)
                         groupName:
-                          description: 'GroupName defines the strategy for grouping
-                            logstreams The GroupName can be a combination of static
+                          description: "GroupName defines the strategy for grouping
+                            logstreams \n The GroupName can be a combination of static
                             and dynamic values consisting of field paths followed
                             by `||` followed by another field path or a static value.
-                            A dynamic value is encased in single curly brackets `{}`
-                            and MUST end with a static fallback value separated with
-                            `||`. Static values can only contain alphanumeric characters
-                            along with dashes, underscores, dots and forward slashes.
-                            Example: 1. foo-{.bar||"none"} 2. {.foo||.bar||"missing"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}'
+                            \n A dynamic value is encased in single curly brackets
+                            `{}` and MUST end with a static fallback value separated
+                            with `||`. \n Static values can only contain alphanumeric
+                            characters along with dashes, underscores, dots and forward
+                            slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2.
+                            {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         region:
@@ -1156,13 +1158,13 @@ spec:
                             template syntax to allow dynamic per-event values. \n
                             The Index can be a combination of static and dynamic values
                             consisting of field paths followed by `||` followed by
-                            another field path or a static value. A dynamic value
+                            another field path or a static value. \n A dynamic value
                             is encased in single curly brackets `{}` and MUST end
-                            with a static fallback value separated with `||`. Static
+                            with a static fallback value separated with `||`. \n Static
                             values can only contain alphanumeric characters along
-                            with dashes, underscores, dots and forward slashes. Example:
-                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
-                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                            with dashes, underscores, dots and forward slashes. \n
+                            Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+                            \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -1274,12 +1276,12 @@ spec:
                             This identifies log stream. \n The LogID can be a combination
                             of static and dynamic values consisting of field paths
                             followed by `||` followed by another field path or a static
-                            value. A dynamic value is encased in single curly brackets
+                            value. \n A dynamic value is encased in single curly brackets
                             `{}` and MUST end with a static fallback value separated
-                            with `||`. Static values can only contain alphanumeric
+                            with `||`. \n Static values can only contain alphanumeric
                             characters along with dashes, underscores, dots and forward
-                            slashes. Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                            slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2.
+                            {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -1515,14 +1517,14 @@ spec:
                               type: object
                           type: object
                         brokers:
-                          description: Brokers specifies the list of broker endpoints
-                            of a Kafka cluster. The list represents only the initial
+                          description: "Brokers specifies the list of broker endpoints
+                            of a Kafka cluster. \n The list represents only the initial
                             set used by the collector's Kafka client for the first
                             connection only. The collector's Kafka client fetches
                             constantly an updated list from Kafka. These updates are
-                            not reconciled back to the collector configuration. If
-                            none provided the target URL from the OutputSpec is used
-                            as fallback.
+                            not reconciled back to the collector configuration. \n
+                            If none provided the target URL from the OutputSpec is
+                            used as fallback."
                           items:
                             type: string
                             x-kubernetes-validations:
@@ -1534,12 +1536,13 @@ spec:
                             to. The value when not specified is 'topic' \n The Topic
                             can be a combination of static and dynamic values consisting
                             of field paths followed by `||` followed by another field
-                            path or a static value. A dynamic value is encased in
-                            single curly brackets `{}` and MUST end with a static
-                            fallback value separated with `||`. Static values can
+                            path or a static value. \n A dynamic value is encased
+                            in single curly brackets `{}` and MUST end with a static
+                            fallback value separated with `||`. \n Static values can
                             only contain alphanumeric characters along with dashes,
-                            underscores, dots and forward slashes. Example: 1. foo-{.bar||\"none\"}
-                            2. {.foo||.bar||\"missing\"} 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+                            underscores, dots and forward slashes. \n Example: \n
+                            1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+                            \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -1687,13 +1690,12 @@ spec:
                             values. \n The TenantKey can be a combination of static
                             and dynamic values consisting of field paths followed
                             by `||` followed by another field path or a static value.
-                            A dynamic value is encased in single curly brackets `{}`
-                            and MUST end with a static fallback value separated with
-                            `||`. Static values can only contain alphanumeric characters
-                            along with dashes, underscores, dots and forward slashes.
-                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
-                          nullable: true
+                            \n A dynamic value is encased in single curly brackets
+                            `{}` and MUST end with a static fallback value separated
+                            with `||`. \n Static values can only contain alphanumeric
+                            characters along with dashes, underscores, dots and forward
+                            slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2.
+                            {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -1817,11 +1819,11 @@ spec:
                                     section of the label keys configuration.
                                   type: boolean
                                 labelKeys:
-                                  description: LabelKeys contains a list of log record
-                                    keys that are mapped to Loki stream labels. By
-                                    default, this list is combined with the labels
+                                  description: "LabelKeys contains a list of log record
+                                    keys that are mapped to Loki stream labels. \n
+                                    By default, this list is combined with the labels
                                     specified in the Global configuration. This behavior
-                                    can be changed by setting IgnoreGlobal to true.
+                                    can be changed by setting IgnoreGlobal to true."
                                   items:
                                     type: string
                                   type: array
@@ -1836,11 +1838,11 @@ spec:
                                     section of the label keys configuration.
                                   type: boolean
                                 labelKeys:
-                                  description: LabelKeys contains a list of log record
-                                    keys that are mapped to Loki stream labels. By
-                                    default, this list is combined with the labels
+                                  description: "LabelKeys contains a list of log record
+                                    keys that are mapped to Loki stream labels. \n
+                                    By default, this list is combined with the labels
                                     specified in the Global configuration. This behavior
-                                    can be changed by setting IgnoreGlobal to true.
+                                    can be changed by setting IgnoreGlobal to true."
                                   items:
                                     type: string
                                   type: array
@@ -1867,11 +1869,11 @@ spec:
                                     section of the label keys configuration.
                                   type: boolean
                                 labelKeys:
-                                  description: LabelKeys contains a list of log record
-                                    keys that are mapped to Loki stream labels. By
-                                    default, this list is combined with the labels
+                                  description: "LabelKeys contains a list of log record
+                                    keys that are mapped to Loki stream labels. \n
+                                    By default, this list is combined with the labels
                                     specified in the Global configuration. This behavior
-                                    can be changed by setting IgnoreGlobal to true.
+                                    can be changed by setting IgnoreGlobal to true."
                                   items:
                                     type: string
                                   type: array
@@ -1886,7 +1888,8 @@ spec:
                               pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                               type: string
                             namespace:
-                              description: Namespace of the in-cluster LokiStack resource.
+                              description: "Namespace of the in-cluster LokiStack
+                                resource. \n If unset, this defaults to \"openshift-logging\"."
                               type: string
                           required:
                           - name
@@ -2117,14 +2120,13 @@ spec:
                             template syntax to allow dynamic per-event values. \n
                             The Index can be a combination of static and dynamic values
                             consisting of field paths followed by `||` followed by
-                            another field path or a static value. A dynamic value
+                            another field path or a static value. \n A dynamic value
                             is encased in single curly brackets `{}` and MUST end
-                            with a static fallback value separated with `||`. Static
+                            with a static fallback value separated with `||`. \n Static
                             values can only contain alphanumeric characters along
-                            with dashes, underscores, dots and forward slashes. Example:
-                            1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"} 3.
-                            foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
-                          nullable: true
+                            with dashes, underscores, dots and forward slashes. \n
+                            Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+                            \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -2183,18 +2185,18 @@ spec:
                       properties:
                         appName:
                           description: "AppName is APP-NAME part of the syslog-msg
-                            header. AppName needs to be specified if using rfc5424.
+                            header. \n AppName needs to be specified if using rfc5424.
                             The maximum length of the final values is truncated to
                             48 This supports template syntax to allow dynamic per-event
                             values. \n The AppName can be a combination of static
                             and dynamic values consisting of field paths followed
                             by `||` followed by another field path or a static value.
-                            A dynamic value is encased in single curly brackets `{}`
-                            and MUST end with a static fallback value separated with
-                            `||`. Static values can only contain alphanumeric characters
-                            along with dashes, underscores, dots and forward slashes.
-                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+                            \n A dynamic value is encased in single curly brackets
+                            `{}` and MUST end with a static fallback value separated
+                            with `||`. \n Static values can only contain alphanumeric
+                            characters along with dashes, underscores, dots and forward
+                            slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2.
+                            {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
                             \n TODO: DETERMIN HOW to default the app name that isnt
                             based on fluentd assumptions of \"tag\" when this is empty"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
@@ -2210,7 +2212,7 @@ spec:
                           default: user
                           description: "Facility to set on outgoing syslog records.
                             \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
-                            The value can be a decimal integer. Facility keywords
+                            \n The value can be a decimal integer. Facility keywords
                             are not standardized, this API recognizes at least the
                             following case-insensitive keywords (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
                             \n kernel user mail daemon auth syslog lpr news uucp cron
@@ -2222,24 +2224,26 @@ spec:
                             This supports template syntax to allow dynamic per-event
                             values. \n The MsgID can be a combination of static and
                             dynamic values consisting of field paths followed by `||`
-                            followed by another field path or a static value. A dynamic
-                            value is encased in single curly brackets `{}` and MUST
-                            end with a static fallback value separated with `||`.
-                            Static values can only contain alphanumeric characters
+                            followed by another field path or a static value. \n A
+                            dynamic value is encased in single curly brackets `{}`
+                            and MUST end with a static fallback value separated with
+                            `||`. \n Static values can only contain alphanumeric characters
                             along with dashes, underscores, dots and forward slashes.
-                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+                            \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+                            \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
                             \n MsgID needs to be specified if using rfc5424.  The
                             maximum length of the final values is truncated to 32"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         payloadKey:
-                          description: "The PayloadKey must be a single field path
-                            encased in single curly brackets `{}`. Field paths must
-                            only contain alphanumeric and underscores. Any field with
-                            other characters must be quoted. If left empty, Syslog
-                            will use the whole message as the payload key \n Example:
-                            1. {.bar} 2. {.foo.bar.baz} 3. {.foo.bar.\"baz/with/slashes\"}"
+                          description: "PayloadKey specifies record field to use as
+                            payload. This supports template syntax to allow dynamic
+                            per-event values. \n The PayloadKey must be a single field
+                            path encased in single curly brackets `{}`. \n Field paths
+                            must only contain alphanumeric and underscores. Any field
+                            with other characters must be quoted. \n If left empty,
+                            Syslog will use the whole message as the payload key \n
+                            Example: \n 1. {.bar} \n 2. {.foo.bar.baz} \n 3. {.foo.bar.\"baz/with/slashes\"}"
                           pattern: ^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$
                           type: string
                         procID:
@@ -2247,13 +2251,13 @@ spec:
                             This supports template syntax to allow dynamic per-event
                             values. \n The ProcID can be a combination of static and
                             dynamic values consisting of field paths followed by `||`
-                            followed by another field path or a static value. A dynamic
-                            value is encased in single curly brackets `{}` and MUST
-                            end with a static fallback value separated with `||`.
-                            Static values can only contain alphanumeric characters
+                            followed by another field path or a static value. \n A
+                            dynamic value is encased in single curly brackets `{}`
+                            and MUST end with a static fallback value separated with
+                            `||`. \n Static values can only contain alphanumeric characters
                             along with dashes, underscores, dots and forward slashes.
-                            Example: 1. foo-{.bar||\"none\"} 2. {.foo||.bar||\"missing\"}
-                            3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+                            \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+                            \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
                             \n ProcID needs to be specified if using rfc5424. The
                             maximum length of the final values is truncated to 128"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
@@ -2270,9 +2274,9 @@ spec:
                           default: informational
                           description: "Severity to set on outgoing syslog records.
                             \n Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
-                            The value can be a decimal integer or one of these case-insensitive
-                            keywords: \n Emergency Alert Critical Error Warning Notice
-                            Informational Debug"
+                            \n The value can be a decimal integer or one of these
+                            case-insensitive keywords: \n Emergency Alert Critical
+                            Error Warning Notice Informational Debug"
                           type: string
                         url:
                           description: 'An absolute URL, with a scheme. Valid schemes
@@ -2551,10 +2555,10 @@ spec:
                     inputRefs:
                       description: "InputRefs lists the names (`input.name`) of inputs
                         to this pipeline. \n The following built-in input names are
-                        always available: \n `application` selects all logs from application
-                        pods. \n `infrastructure` selects logs from openshift and
-                        kubernetes pods and some node logs. \n `audit` selects node
-                        logs related to security audits."
+                        always available: \n - `application` selects all logs from
+                        application pods. \n - `infrastructure` selects logs from
+                        openshift and kubernetes pods and some node logs. \n - `audit`
+                        selects node logs related to security audits."
                       items:
                         type: string
                       minItems: 1

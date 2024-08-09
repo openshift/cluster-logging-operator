@@ -1099,6 +1099,7 @@ More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-co
 
 === .spec.collection.logs.fluentd.resources.claims[]
 
+<<<<<<< HEAD
 Type:: array
 
 [options="header"]
@@ -2318,12 +2319,15 @@ Type:: object
 
 === .status.conditions[]
 
+=======
+>>>>>>> bffb95011 (Improve descriptors for OpenShift Console CLF creation form)
 Type:: array
 
 [options="header"]
 |======================
 |Property|Type|Description
 
+<<<<<<< HEAD
 |lastTransitionTime|string|  lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
 |message|string|  message is a human readable message indicating details about the transition.
@@ -2344,3 +2348,1219 @@ useful (see .node.status.conditions), the ability to deconflict is important.
 The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 |======================
 
+=======
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.collection.logs.fluentd.resources.limits
+
+Type:: object
+
+=== .spec.collection.logs.fluentd.resources.requests
+
+Type:: object
+
+=== .spec.collection.logs.fluentd.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.collection.logs.fluentd.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .spec.curation
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+This is the struct that will contain information pertinent to Log curation (Curator)
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|curator|object|  The specification of curation to configure
+|type|string|  The kind of curation to configure
+|======================
+
+=== .spec.curation.curator
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
+
+|resources|object|  *(optional)* The resource requirements for Curator
+
+|schedule|string|  The cron schedule that the Curator job is run. Defaults to &#34;30 3 * * *&#34;
+|tolerations|array|  
+|======================
+
+=== .spec.curation.curator.nodeSelector
+
+Type:: object
+
+=== .spec.curation.curator.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.curation.curator.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.curation.curator.resources.limits
+
+Type:: object
+
+=== .spec.curation.curator.resources.requests
+
+Type:: object
+
+=== .spec.curation.curator.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.curation.curator.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .spec.forwarder
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+ForwarderSpec contains global tuning parameters for specific forwarder implementations.
+This field is not required for general use, it allows performance tuning by users
+familiar with the underlying forwarder technology.
+Currently supported: `fluentd`.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|fluentd|object|  
+|======================
+
+=== .spec.forwarder.fluentd
+
+FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|buffer|object|  
+|inFile|object|  
+|======================
+
+=== .spec.forwarder.fluentd.buffer
+
+FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
+the buffer configuration for all fluentd outputs. It supports a subset of
+parameters to configure buffer and queue sizing, flush operations and retry
+flushing.
+
+For general parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+
+For flush parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+
+For retry parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#retries-parameters
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|chunkLimitSize|string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
+written into chunks until the size of chunks become this size.
+
+|flushInterval|string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
+operations. Takes only effect used together with `flushMode: interval`.
+
+|flushMode|string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
+allows lazy (if `time` parameter set), per interval or immediate flushing.
+
+|flushThreadCount|int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
+plugin to flush/write chunks in parallel.
+
+|overflowAction|string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
+execute when a buffer queue is full. (Default: block)
+
+|retryMaxInterval|string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
+between retries. Takes only effect if used together with `retryType: exponential_backoff`.
+
+|retryTimeout|string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
+and the record is disguarded.  If unspecified, the default will be used
+
+|retryType|string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
+be retried either periodically or by applying exponential backoff.
+
+|retryWait|string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
+buffers for periodic retries or a constant factor of time on retries with exponential
+backoff.
+
+|totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+buffer to allocate. Once this threshold is reached, all append operations
+will fail with error (and data will be lost).
+
+|======================
+
+=== .spec.forwarder.fluentd.inFile
+
+FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
+to tune the configuration for all fluentd in-tail inputs.
+
+For general parameters refer to:
+https://docs.fluentd.org/input/tail#parameters
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+|======================
+
+=== .spec.logStore
+
+The LogStoreSpec contains information about how logs are stored.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|elasticsearch|object| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
+|lokistack|object|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+
+The cluster-logging-operator does not create or manage the referenced LokiStack.
+|retentionPolicy|object| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
+
+|type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+managed by elasticsearch-operator or Loki managed by loki-operator (LokiStack) as a default log store.
+
+When using ElasticSearch as a log store this operator also manages the ElasticSearch deployment.
+
+When using LokiStack as a log store this operator does not manage the LokiStack, but only creates
+configuration referencing an existing LokiStack deployment. The user is responsible for creating and
+managing the LokiStack himself.
+
+|======================
+
+=== .spec.logStore.elasticsearch
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeCount|int|  Number of nodes to deploy for Elasticsearch
+|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
+
+|proxy|object|  Specification of the Elasticsearch Proxy component
+|redundancyPolicy|string|  *(optional)* 
+|resources|object|  *(optional)* The resource requirements for Elasticsearch
+
+|storage|object|  *(optional)* The storage specification for Elasticsearch data nodes
+
+|tolerations|array|  
+|======================
+
+=== .spec.logStore.elasticsearch.nodeSelector
+
+Type:: object
+
+=== .spec.logStore.elasticsearch.proxy
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|resources|object|  
+|======================
+
+=== .spec.logStore.elasticsearch.proxy.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.logStore.elasticsearch.proxy.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.logStore.elasticsearch.proxy.resources.limits
+
+Type:: object
+
+=== .spec.logStore.elasticsearch.proxy.resources.requests
+
+Type:: object
+
+=== .spec.logStore.elasticsearch.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.logStore.elasticsearch.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.logStore.elasticsearch.resources.limits
+
+Type:: object
+
+=== .spec.logStore.elasticsearch.resources.requests
+
+Type:: object
+
+=== .spec.logStore.elasticsearch.storage
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|size|object|  The max storage capacity for the node to provision.
+|storageClassName|string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
+More info: https://kubernetes.io/docs/concepts/storage/storage-classes/
+|======================
+
+=== .spec.logStore.elasticsearch.storage.size
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.logStore.elasticsearch.storage.size.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.logStore.elasticsearch.storage.size.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.logStore.elasticsearch.storage.size.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
+|======================
+
+=== .spec.logStore.elasticsearch.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.logStore.elasticsearch.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .spec.logStore.lokistack
+
+LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
+It points to an existing LokiStack in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name of the LokiStack resource.
+
+|======================
+
+=== .spec.logStore.retentionPolicy
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|application|object|  
+|audit|object|  
+|infra|object|  
+|======================
+
+=== .spec.logStore.retentionPolicy.application
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+|maxAge|string|  *(optional)* 
+|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+|======================
+
+=== .spec.logStore.retentionPolicy.application.namespaceSpec[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
+|======================
+
+=== .spec.logStore.retentionPolicy.audit
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+|maxAge|string|  *(optional)* 
+|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+|======================
+
+=== .spec.logStore.retentionPolicy.audit.namespaceSpec[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
+|======================
+
+=== .spec.logStore.retentionPolicy.infra
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+|maxAge|string|  *(optional)* 
+|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+|======================
+
+=== .spec.logStore.retentionPolicy.infra.namespaceSpec[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+Can be one namespace name or a prefix (e.g., &#34;openshift-&#34; covers all namespaces with this prefix)
+|======================
+
+=== .spec.visualization
+
+This is the struct that will contain information pertinent to Log visualization (Kibana)
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
+
+|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
+
+|ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
+
+|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+|type|string|  The type of Visualization to configure
+
+|======================
+
+=== .spec.visualization.kibana
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object| **(DEPRECATED)** Define which Nodes the Pods are scheduled on.
+
+|proxy|object|  Specification of the Kibana Proxy component
+|replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
+|resources|object|  *(optional)* The resource requirements for Kibana
+
+|tolerations|array| **(DEPRECATED)** Define the tolerations the Pods will accept
+
+|======================
+
+=== .spec.visualization.kibana.nodeSelector
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+=== .spec.visualization.kibana.proxy
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|resources|object|  
+|======================
+
+=== .spec.visualization.kibana.proxy.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.visualization.kibana.proxy.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.visualization.kibana.proxy.resources.limits
+
+Type:: object
+
+=== .spec.visualization.kibana.proxy.resources.requests
+
+Type:: object
+
+=== .spec.visualization.kibana.replicas
+
+Type:: int
+
+=== .spec.visualization.kibana.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.visualization.kibana.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.visualization.kibana.resources.limits
+
+Type:: object
+
+=== .spec.visualization.kibana.resources.requests
+
+Type:: object
+
+=== .spec.visualization.kibana.tolerations[]
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.visualization.kibana.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .spec.visualization.nodeSelector
+
+Type:: object
+
+=== .spec.visualization.ocpConsole
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|logsLimit|int|  *(optional)* LogsLimit is the max number of entries returned for a query.
+
+|timeout|string|  *(optional)* Timeout is the max duration before a query timeout
+
+|======================
+
+=== .spec.visualization.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.visualization.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .status
+
+ClusterLoggingStatus defines the observed state of ClusterLogging
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|collection|object| **(DEPRECATED)** *(optional)* Deprecated.
+|conditions|object|  *(optional)* 
+|curation|object| **(DEPRECATED)** *(optional)* 
+|logStore|object|  *(optional)* 
+|visualization|object|  *(optional)* 
+|======================
+
+=== .status.collection
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|logs|object|  *(optional)* 
+|======================
+
+=== .status.collection.logs
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|fluentdStatus|object|  *(optional)* 
+|======================
+
+=== .status.collection.logs.fluentdStatus
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clusterCondition|object|  *(optional)* 
+|daemonSet|string|  *(optional)* 
+|nodes|object|  *(optional)* 
+|pods|string|  *(optional)* 
+|======================
+
+=== .status.collection.logs.fluentdStatus.clusterCondition
+
+`operator-sdk generate crds` does not allow map-of-slice, must use a named type.
+
+Type:: object
+
+=== .status.collection.logs.fluentdStatus.nodes
+
+Type:: object
+
+=== .status.conditions
+
+Type:: object
+
+=== .status.curation
+
+[IMPORTANT]
+====
+This API key has been deprecated and is planned for removal in a future release. For more information, see the release notes for logging on Red{nbsp}Hat OpenShift.
+====
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|curatorStatus|array|  *(optional)* 
+|======================
+
+=== .status.curation.curatorStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clusterCondition|object|  *(optional)* 
+|cronJobs|string|  *(optional)* 
+|schedules|string|  *(optional)* 
+|suspended|bool|  *(optional)* 
+|======================
+
+=== .status.curation.curatorStatus[].clusterCondition
+
+`operator-sdk generate crds` does not allow map-of-slice, must use a named type.
+
+Type:: object
+
+=== .status.logStore
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|elasticsearchStatus|array|  *(optional)* 
+|======================
+
+=== .status.logStore.elasticsearchStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|cluster|object|  *(optional)* 
+|clusterConditions|object|  *(optional)* 
+|clusterHealth|string|  *(optional)* 
+|clusterName|string|  *(optional)* 
+|deployments|array|  *(optional)* 
+|nodeConditions|object|  *(optional)* 
+|nodeCount|int|  *(optional)* 
+|pods|object|  *(optional)* 
+|replicaSets|array|  *(optional)* 
+|shardAllocationEnabled|string|  *(optional)* 
+|statefulSets|array|  *(optional)* 
+|======================
+
+=== .status.logStore.elasticsearchStatus[].cluster
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|activePrimaryShards|int|  The number of Active Primary Shards for the Elasticsearch Cluster
+|activeShards|int|  The number of Active Shards for the Elasticsearch Cluster
+|initializingShards|int|  The number of Initializing Shards for the Elasticsearch Cluster
+|numDataNodes|int|  The number of Data Nodes for the Elasticsearch Cluster
+|numNodes|int|  The number of Nodes for the Elasticsearch Cluster
+|pendingTasks|int|  
+|relocatingShards|int|  The number of Relocating Shards for the Elasticsearch Cluster
+|status|string|  The current Status of the Elasticsearch Cluster
+|unassignedShards|int|  The number of Unassigned Shards for the Elasticsearch Cluster
+|======================
+
+=== .status.logStore.elasticsearchStatus[].clusterConditions
+
+Type:: object
+
+=== .status.logStore.elasticsearchStatus[].deployments[]
+
+Type:: array
+
+=== .status.logStore.elasticsearchStatus[].nodeConditions
+
+Type:: object
+
+=== .status.logStore.elasticsearchStatus[].pods
+
+Type:: object
+
+=== .status.logStore.elasticsearchStatus[].replicaSets[]
+
+Type:: array
+
+=== .status.logStore.elasticsearchStatus[].statefulSets[]
+
+Type:: array
+
+=== .status.visualization
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|kibanaStatus|array|  *(optional)* 
+|======================
+
+=== .status.visualization.kibanaStatus[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clusterCondition|object|  *(optional)* 
+|deployment|string|  *(optional)* 
+|pods|string|  *(optional)* The status for each of the Kibana pods for the Visualization component
+|replicaSets|array|  *(optional)* 
+|replicas|int|  *(optional)* 
+|======================
+
+=== .status.visualization.kibanaStatus[].clusterCondition
+
+Type:: object
+
+=== .status.visualization.kibanaStatus[].replicaSets[]
+
+Type:: array
+
+[id="logging-6-x-reference-LogFileMetricExporter"]
+== LogFileMetricExporter
+
+A Log File Metric Exporter instance. LogFileMetricExporter is the Schema for the logFileMetricExporters API
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|spec|object|  
+|status|object|  
+|======================
+
+=== .spec
+
+LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
+|resources|object|  *(optional)* The resource requirements for the LogFileMetricExporter
+|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+|======================
+
+=== .spec.nodeSelector
+
+Type:: object
+
+=== .spec.resources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
+that are used by this container.
+
+This is an alpha field and requires enabling the
+DynamicResourceAllocation feature gate.
+
+This field is immutable. It can only be set for containers.
+
+|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+otherwise to an implementation-defined value. Requests cannot exceed Limits.
+More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+|======================
+
+=== .spec.resources.claims[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|name|string|  Name must match the name of one entry in pod.spec.resourceClaims of
+the Pod where this field is used. It makes that resource available
+inside a container.
+|======================
+
+=== .spec.resources.limits
+
+Type:: object
+
+=== .spec.resources.requests
+
+Type:: object
+
+=== .spec.tolerations[]
+
+Type:: array
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+Valid operators are Exists and Equal. Defaults to Equal.
+Exists is equivalent to wildcard for value, so that a pod can
+tolerate all taints of a particular category.
+|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
+it is not set, which means tolerate the taint forever (do not evict). Zero and
+negative values will be treated as 0 (evict immediately) by the system.
+|value|string|  *(optional)* Value is the taint value the toleration matches to.
+If the operator is Exists, the value should be empty, otherwise just a regular string.
+|======================
+
+=== .spec.tolerations[].tolerationSeconds
+
+Type:: int
+
+=== .status
+
+LogFileMetricExporterStatus defines the observed state of LogFileMetricExporter
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|conditions|object|  Conditions of the Log File Metrics Exporter.
+|======================
+
+=== .status.conditions
+
+Type:: object
+>>>>>>> bffb95011 (Improve descriptors for OpenShift Console CLF creation form)

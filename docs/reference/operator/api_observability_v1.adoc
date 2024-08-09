@@ -53,7 +53,7 @@ There are three built-in inputs named `application`, `infrastructure` and
 `audit`. You don&#39;t need to define inputs here if those are sufficient for
 your needs. See `inputRefs` for more.
 
-|managementState|string|  Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
+|managementState|string|  Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator.
 
 |outputs|array|  Outputs are named destinations for log messages.
 
@@ -173,7 +173,7 @@ Each test contains a sequence of conditions, all conditions must be true for the
 A DropTestsSpec contains an array of tests which contains an array of conditions
 
 |kubeAPIAudit|object|  
-|name|string|  Name used to refer to the filter from a `pipeline`.
+|name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 
 |openShiftLabels|object|  Labels applied to log records passing through a pipeline.
 These labels appear in the `openshift.labels` map in the log record.
@@ -417,28 +417,56 @@ Type:: object
 |Property|Type|Description
 
 |in|array|  `In` is an array of dot-delimited field paths. Fields included here are removed from the log record.
-Each field path expression must start with a `.`.
-The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+
+Each field path expression must start with a &#34;.&#34;
+
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+
 If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
-Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
+Examples:
+
+- `.kubernetes.namespace_name`
+
+- `.log_type`
+
+- &#39;.kubernetes.labels.foobar&#39;
+
+- `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
 NOTE1: `In` CANNOT contain `.log_type` or `.message` as those fields are required and cannot be pruned.
+
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 
-|notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record
-Each field path expression must start with a `.`.
-The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+|notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record.
+
+Each field path expression must start with a &#34;.&#34;
+
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+
 If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
-Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
+Examples:
+
+- `.kubernetes.namespace_name`
+
+- `.log_type`
+
+- &#39;.kubernetes.labels.foobar&#39;
+
+- `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+
 NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields are required and cannot be pruned.
+
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
 
 |======================
 
 === .spec.filters[].prune.in[]
 
-Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
 valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
-The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
 If segments contain characters outside of this range, the segment must be quoted.
 Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
 
@@ -446,9 +474,9 @@ Type:: array
 
 === .spec.filters[].prune.notIn[]
 
-Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
 valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
-The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
 If segments contain characters outside of this range, the segment must be quoted.
 Examples: `.kubernetes.namespace_name`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
 
@@ -491,13 +519,17 @@ Type:: object
 |Property|Type|Description
 
 |excludes|array|  Excludes is the set of namespaces and containers to ignore when collecting logs.
+
 Takes precedence over Includes option.
 
 |includes|array|  Includes is the set of namespaces and containers to include when collecting logs.
+
 Note: infrastructure namespaces are still excluded for &#34;*&#34; values unless a qualifying glob pattern is specified.
 
 |selector|object|  Selector for logs from pods with matching labels.
+
 Only messages from pods with these labels are collected.
+
 If absent or empty, logs are collected regardless of labels.
 
 |tuning|object|  Tuning is the container input tuning spec for this container sources
@@ -712,9 +744,11 @@ Type:: object
 |Property|Type|Description
 
 |configMapName|string|  ConfigMapName contains the name of the ConfigMap containing the referenced value.
+
 |key|string|  Name of the key used to get the value in either the referenced ConfigMap or Secret.
 
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
 |======================
 
 === .spec.inputs[].receiver.tls.certificate
@@ -728,9 +762,11 @@ Type:: object
 |Property|Type|Description
 
 |configMapName|string|  ConfigMapName contains the name of the ConfigMap containing the referenced value.
+
 |key|string|  Name of the key used to get the value in either the referenced ConfigMap or Secret.
 
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
 |======================
 
 === .spec.inputs[].receiver.tls.key
@@ -962,12 +998,19 @@ Type:: object
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
 |groupName|string|  GroupName defines the strategy for grouping logstreams
+
 The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |region|string|  
@@ -1141,15 +1184,20 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
-|index|string|  Index is the index for the logs. This supports template syntax
-to allow dynamic per-event values.
+|index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 
 The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
@@ -1278,11 +1326,17 @@ Type:: object
 |logId|string|  LogID is the log ID to which to publish logs. This identifies log stream.
 
 The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
@@ -1493,18 +1547,27 @@ Type:: object
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
 |brokers|array|  Brokers specifies the list of broker endpoints of a Kafka cluster.
+
 The list represents only the initial set used by the collector&#39;s Kafka client for the
 first connection only. The collector&#39;s Kafka client fetches constantly an updated list
 from Kafka. These updates are not reconciled back to the collector configuration.
+
 If none provided the target URL from the OutputSpec is used as fallback.
+
 |topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
 
 The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
@@ -1710,15 +1773,20 @@ Note: the set of labels should be small, Loki imposes limits on the size and num
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
 Loki queries can also query based on any log record field (not just labels) using query filters.
 
-|tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax
-to allow dynamic per-event values.
+|tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values.
 
 The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
@@ -1960,6 +2028,7 @@ Type:: object
 keys configuration.
 
 |labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+
 By default, this list is combined with the labels specified in the Global configuration.
 This behavior can be changed by setting IgnoreGlobal to true.
 
@@ -1983,6 +2052,7 @@ Type:: object
 keys configuration.
 
 |labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+
 By default, this list is combined with the labels specified in the Global configuration.
 This behavior can be changed by setting IgnoreGlobal to true.
 
@@ -2010,6 +2080,7 @@ Type:: object
 keys configuration.
 
 |labelKeys|array|  LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+
 By default, this list is combined with the labels specified in the Global configuration.
 This behavior can be changed by setting IgnoreGlobal to true.
 
@@ -2032,6 +2103,8 @@ Type:: object
 |name|string|  Name of the in-cluster LokiStack resource.
 
 |namespace|string|  Namespace of the in-cluster LokiStack resource.
+
+If unset, this defaults to &#34;openshift-logging&#34;.
 
 |======================
 
@@ -2210,15 +2283,20 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
-|index|string|  Index is the index for the logs. This supports template syntax
-to allow dynamic per-event values.
+|index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 
 The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
@@ -2285,22 +2363,31 @@ Type:: object
 |Property|Type|Description
 
 |appName|string|  AppName is APP-NAME part of the syslog-msg header.
+
 AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
 This supports template syntax to allow dynamic per-event values.
 
 The AppName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of &#34;tag&#34; when this is empty
 |enrichment|string|  Enrichment is an additional modification the log message before forwarding it to the receiver
+
 |facility|string|  Facility to set on outgoing syslog records.
 
 Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+
 The value can be a decimal integer. Facility keywords are not standardized,
 this API recognizes at least the following case-insensitive keywords
 (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
@@ -2311,37 +2398,54 @@ uucp cron authpriv ftp ntp security console solaris-cron
 
 local0 local1 local2 local3 local4 local5 local6 local7
 
-|msgID|string|  MsgID is MSGID part of the syslog-msg header. This supports template syntax
-to allow dynamic per-event values.
+|msgID|string|  MsgID is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
 The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 
-|payloadKey|string|  The PayloadKey must be a single field path encased in single curly brackets `{}`.
+|payloadKey|string|  PayloadKey specifies record field to use as payload. This supports template syntax to allow dynamic per-event values.
+
+The PayloadKey must be a single field path encased in single curly brackets `{}`.
+
 Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+
 If left empty, Syslog will use the whole message as the payload key
 
 Example:
+
 1. {.bar}
+
 2. {.foo.bar.baz}
+
 3. {.foo.bar.&#34;baz/with/slashes&#34;}
 
-|procID|string|  ProcID is PROCID part of the syslog-msg header. This supports template syntax
-to allow dynamic per-event values.
+|procID|string|  ProcID is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
 The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
 Example:
+
 1. foo-{.bar||&#34;none&#34;}
+
 2. {.foo||.bar||&#34;missing&#34;}
+
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
@@ -2350,6 +2454,7 @@ ProcID needs to be specified if using rfc5424. The maximum length of the final v
 |severity|string|  Severity to set on outgoing syslog records.
 
 Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+
 The value can be a decimal integer or one of these case-insensitive keywords:
 
 Emergency Alert Critical Error Warning Notice Informational Debug
@@ -2599,11 +2704,11 @@ If a filter drops a records, subsequent filters are not applied.
 
 The following built-in input names are always available:
 
-`application` selects all logs from application pods.
+- `application` selects all logs from application pods.
 
-`infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+- `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
 
-`audit` selects node logs related to security audits.
+- `audit` selects node logs related to security audits.
 
 |name|string|  Name of the pipeline
 

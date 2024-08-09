@@ -24,7 +24,8 @@ source = '''
   resource.attributes = append( resource.attributes,
       [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
       {"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
-      {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+      {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}},
+      {"key": "k8s.stream", "value": {"stringValue": get!(.,["kubernetes","stream"])}}]
   )
   # Create logRecord object
   r = {}
@@ -76,7 +77,7 @@ type = "reduce"
 inputs = ["output_otel_collector_container"]
 expire_after_ms = 15000
 max_events = 250
-group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name"]
+group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name",".kubernetes.stream"]
 merge_strategies.resource = "retain"
 merge_strategies.logRecords = "array"
 

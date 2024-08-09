@@ -40,9 +40,9 @@ var (
 	}
 )
 
-// Field Path represents a path to find a value for a given field.  The format must a value that can be converted to a
+// FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
 // valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
-// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+// The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
 // If segments contain characters outside of this range, the segment must be quoted.
 // Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
 //
@@ -50,22 +50,26 @@ var (
 type FieldPath string
 
 // FilterSpec defines a filter for log messages.
+//
 // +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'drop' || has(self.drop)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'prune' || has(self.prune)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'openShiftLabels' || has(self.openShiftLabels)", message="Additional type specific spec is required for the filter type"
 type FilterSpec struct {
-	// Name used to refer to the filter from a `pipeline`.
+	// Name used to refer to the filter from a "pipeline".
 	//
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]*[a-z0-9]$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Filter Name"
 	Name string `json:"name"`
 
 	// Type of filter.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Filter Type"
 	Type FilterType `json:"type"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubernetes API Audit Filter"
 	KubeAPIAudit *KubeAPIAudit `json:"kubeAPIAudit,omitempty"`
 
 	// A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
@@ -73,17 +77,20 @@ type FilterSpec struct {
 	// A DropTestsSpec contains an array of tests which contains an array of conditions
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Drop Filters"
 	DropTestsSpec []DropTest `json:"drop,omitempty"`
 
 	// The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Prune Filters"
 	PruneFilterSpec *PruneFilterSpec `json:"prune,omitempty"`
 
 	// Labels applied to log records passing through a pipeline.
 	// These labels appear in the `openshift.labels` map in the log record.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Labels"
 	OpenShiftLabels map[string]string `json:"openShiftLabels,omitempty"`
 }
 
@@ -92,6 +99,7 @@ type DropTest struct {
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems:=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Drop Filter Conditions"
 	DropConditions []DropCondition `json:"test,omitempty"`
 }
 
@@ -103,6 +111,7 @@ type DropCondition struct {
 	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Field Path"
 	Field FieldPath `json:"field,omitempty"`
 
 	// A regular expression that the field will match.
@@ -110,6 +119,7 @@ type DropCondition struct {
 	// Must define only one of matches OR notMatches
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Drop Match Expression"
 	Matches string `json:"matches,omitempty"`
 
 	// A regular expression that the field does not match.
@@ -117,29 +127,60 @@ type DropCondition struct {
 	// Must define only one of matches or notMatches
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Keep Match Expression"
 	NotMatches string `json:"notMatches,omitempty"`
 }
 
 type PruneFilterSpec struct {
 	// `In` is an array of dot-delimited field paths. Fields included here are removed from the log record.
-	// Each field path expression must start with a `.`.
-	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+	//
+	// Each field path expression must start with a "."
+	//
+	// The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+	//
 	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
-	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	//
+	// Examples:
+	//
+	//  - `.kubernetes.namespace_name`
+	//
+	//  - `.log_type`
+	//
+	//  - '.kubernetes.labels.foobar'
+	//
+	//  - `.kubernetes.labels."foo-bar/baz"`
+	//
 	// NOTE1: `In` CANNOT contain `.log_type` or `.message` as those fields are required and cannot be pruned.
+	//
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fields to be dropped"
 	In []FieldPath `json:"in,omitempty"`
 
-	// `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record
-	// Each field path expression must start with a `.`.
-	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+	// `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record.
+	//
+	// Each field path expression must start with a "."
+	//
+	// The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+	//
 	// If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
-	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	//
+	// Examples:
+	//
+	//  - `.kubernetes.namespace_name`
+	//
+	//  - `.log_type`
+	//
+	//  - '.kubernetes.labels.foobar'
+	//
+	//  - `.kubernetes.labels."foo-bar/baz"`
+	//
 	// NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields are required and cannot be pruned.
+	//
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fields to be kept"
 	NotIn []FieldPath `json:"notIn,omitempty"`
 }

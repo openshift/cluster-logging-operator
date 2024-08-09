@@ -24,7 +24,6 @@ import (
 // +kubebuilder:validation:Enum:=audit;application;infrastructure;receiver
 type InputType string
 
-// Reserved input names.
 const (
 	// InputTypeApplication contains all the non-infrastructure container logs.
 	InputTypeApplication InputType = "application"
@@ -46,7 +45,8 @@ var (
 	ReservedInputTypes = sets.NewString(
 		string(InputTypeApplication),
 		string(InputTypeAudit),
-		string(InputTypeInfrastructure))
+		string(InputTypeInfrastructure),
+	)
 )
 
 // InputSpec defines a selector of log messages for a given log type.
@@ -58,33 +58,39 @@ type InputSpec struct {
 	// Name used to refer to the input of a `pipeline`.
 	//
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]*[a-z0-9]$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Input Name"
 	Name string `json:"name"`
 
 	// Type of output sink.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Input Type"
 	Type InputType `json:"type"`
 
 	// Application, named set of `application` logs that
 	// can specify a set of match criteria
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Application Logs Input"
 	Application *Application `json:"application,omitempty"`
 
 	// Infrastructure, Enables `infrastructure` logs.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Infrastructure Logs Input"
 	Infrastructure *Infrastructure `json:"infrastructure,omitempty"`
 
 	// Audit, enables `audit` logs.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Audit Logs Input"
 	Audit *Audit `json:"audit,omitempty"`
 
 	// Receiver to receive logs from non-cluster sources.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Receiver"
 	Receiver *ReceiverSpec `json:"receiver,omitempty"`
 }
 
@@ -94,6 +100,7 @@ type ContainerInputTuningSpec struct {
 	// by this input. This limit is applied per collector deployment.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Per-Container Rate Limit"
 	RateLimitPerContainer *LimitSpec `json:"rateLimitPerContainer,omitempty"`
 }
 
@@ -113,27 +120,35 @@ const (
 // All conditions in the selector must be satisfied (logical AND) to select logs.
 type Application struct {
 	// Selector for logs from pods with matching labels.
+	//
 	// Only messages from pods with these labels are collected.
+	//
 	// If absent or empty, logs are collected regardless of labels.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Pod Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Pod"}
 	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 
 	// Tuning is the container input tuning spec for this container sources
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Input Tuning"
 	Tuning *ContainerInputTuningSpec `json:"tuning,omitempty"`
 
 	// Includes is the set of namespaces and containers to include when collecting logs.
+	//
 	// Note: infrastructure namespaces are still excluded for "*" values unless a qualifying glob pattern is specified.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Include"
 	Includes []NamespaceContainerSpec `json:"includes,omitempty"`
 
 	// Excludes is the set of namespaces and containers to ignore when collecting logs.
+	//
 	// Takes precedence over Includes option.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Exclude"
 	Excludes []NamespaceContainerSpec `json:"excludes,omitempty"`
 }
 
@@ -143,12 +158,14 @@ type NamespaceContainerSpec struct {
 	// Supports glob patterns and presumes "*" if omitted.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Namespace Glob",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Namespace string `json:"namespace,omitempty"`
 
 	// Container spec the containers from which to collect logs
 	// Supports glob patterns and presumes "*" if omitted.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Container Glob",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Container string `json:"container,omitempty"`
 }
 
@@ -182,6 +199,7 @@ type Infrastructure struct {
 	// This field is optional and omission results in the collection of all infrastructure sources.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Sources"
 	Sources []InfrastructureSource `json:"sources,omitempty"`
 }
 
@@ -219,6 +237,7 @@ type Audit struct {
 	// This field is optional and its exclusion results in the collection of all audit sources.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Sources"
 	Sources []AuditSource `json:"sources,omitempty"`
 }
 
@@ -246,6 +265,7 @@ type ReceiverSpec struct {
 	// Type of Receiver plugin.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Receiver Type"
 	Type ReceiverType `json:"type"`
 
 	// TLS contains settings for controlling options of TLS connections.
@@ -255,6 +275,7 @@ type ReceiverSpec struct {
 	// the collector. The collector is configured to use the public and private key provided by the service
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="TLS Options"
 	TLS *InputTLSSpec `json:"tls,omitempty"`
 
 	// Port the Receiver listens on. It must be a value between 1024 and 65535
@@ -262,9 +283,11 @@ type ReceiverSpec struct {
 	// +kubebuilder:default:=8443
 	// +kubebuilder:validation:Minimum:=1024
 	// +kubebuilder:validation:Maximum:=65535
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Listen Port",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Port int32 `json:"port"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="HTTP Receiver Configuration"
 	HTTP *HTTPReceiver `json:"http,omitempty"`
 }
 
@@ -282,5 +305,6 @@ type HTTPReceiver struct {
 	// Format is the format of incoming log data.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Data Format"
 	Format HTTPReceiverFormat `json:"format"`
 }

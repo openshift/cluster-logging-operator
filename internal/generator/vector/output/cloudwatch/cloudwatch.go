@@ -2,6 +2,7 @@ package cloudwatch
 
 import (
 	_ "embed"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"regexp"
 	"strings"
 
@@ -72,7 +73,7 @@ func (e *CloudWatch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	if genhelper.IsDebugOutput(op) {
@@ -99,7 +100,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options, region, groupName string) *CloudWatch {
+func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, region, groupName string) *CloudWatch {
 	return &CloudWatch{
 		Desc:           "Cloudwatch Logs",
 		ComponentID:    id,
@@ -112,7 +113,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Se
 	}
 }
 
-func authConfig(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) Element {
+func authConfig(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyID)
@@ -158,7 +159,7 @@ del(.source_type)
 }
 
 // ParseRoleArn search for matching valid ARN
-func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets vectorhelpers.Secrets) string {
+func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
 	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
 		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
 

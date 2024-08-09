@@ -2,6 +2,7 @@ package input
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -9,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
-func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourceNames, secrets helpers.Secrets, op generator.Options) ([]generator.Element, []string) {
+func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourceNames, secrets observability.Secrets, op generator.Options) ([]generator.Element, []string) {
 	base := helpers.MakeInputID(spec.Name)
 	tlsConfig := receiverTLS(base, spec.Receiver.TLS, secrets, op)
 
@@ -38,7 +39,7 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourc
 	return els, []string{metaID}
 }
 
-func receiverTLS(id string, spec *obs.InputTLSSpec, secrets helpers.Secrets, op generator.Options) generator.Element {
+func receiverTLS(id string, spec *obs.InputTLSSpec, secrets observability.Secrets, op generator.Options) generator.Element {
 	if spec == nil {
 		return generator.Nil
 	}

@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
@@ -48,7 +49,7 @@ func (e *Elasticsearch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, helpers.MakeInputs(inputs...)),
@@ -88,7 +89,7 @@ if exists(.kubernetes.event.metadata.uid) {
 	return outputs
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets helpers.Secrets, op Options) *Elasticsearch {
+func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets observability.Secrets, op Options) *Elasticsearch {
 	idKey := genhelper.NewOptionalPair("id_key", nil)
 	if o.Elasticsearch.Version == 6 {
 		idKey.Value = "_id"

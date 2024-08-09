@@ -1,6 +1,7 @@
 package deployments
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"reflect"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -27,6 +28,12 @@ func AreSame(current *apps.Deployment, desired *apps.Deployment) (bool, string) 
 	if !reflect.DeepEqual(current.GetOwnerReferences(), desired.GetOwnerReferences()) {
 		log.V(3).Info("Deployment ownership change", "name", current.Name)
 		return false, "ownerReference"
+	}
+
+	currentHash := current.Spec.Template.Annotations[constants.AnnotationSecretHash]
+	desiredHash := desired.Spec.Template.Annotations[constants.AnnotationSecretHash]
+	if currentHash != desiredHash {
+		return false, "secretHash"
 	}
 
 	return true, ""

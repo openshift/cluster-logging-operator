@@ -3,15 +3,15 @@ package collector
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	v1 "k8s.io/api/core/v1"
 )
 
 // Add volumes and env vars if output type is cloudwatch and role is found in the secret
-func addWebIdentityForCloudwatch(collector *v1.Container, forwarderSpec obs.ClusterLogForwarderSpec, secrets helpers.Secrets) {
+func addWebIdentityForCloudwatch(collector *v1.Container, forwarderSpec obs.ClusterLogForwarderSpec, secrets observability.Secrets) {
 	if secrets == nil {
 		return
 	}

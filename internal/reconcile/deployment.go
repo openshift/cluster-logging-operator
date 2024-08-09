@@ -3,7 +3,6 @@ package reconcile
 import (
 	"context"
 	"fmt"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/deployments"
 	apps "k8s.io/api/apps/v1"

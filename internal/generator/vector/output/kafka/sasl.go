@@ -2,6 +2,7 @@ package kafka
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -31,7 +32,7 @@ mechanism = "{{.Mechanism}}"
 {{end}}`
 }
 
-func SASLConf(id string, spec *obs.KafkaAuthentication, secrets vectorhelpers.Secrets) Element {
+func SASLConf(id string, spec *obs.KafkaAuthentication, secrets observability.Secrets) Element {
 	if spec != nil {
 		saslAuth := spec.SASL
 		if saslAuth != nil && saslAuth.Username != nil && saslAuth.Password != nil {

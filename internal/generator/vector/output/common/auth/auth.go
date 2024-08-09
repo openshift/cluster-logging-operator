@@ -2,8 +2,8 @@ package auth
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 // HTTPAuth provides auth configuration for http authentication where username/password or bearer token

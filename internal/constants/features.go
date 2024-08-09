@@ -17,4 +17,6 @@ const (
 
 	// AnnotationOtlpOutputTechPreview is the annotation to enable tech preview of output type otlp for forwarding logs.
 	AnnotationOtlpOutputTechPreview = "observability.openshift.io/tech-preview-otlp-output"
+
+	AnnotationSecretHash = "observability.openshift.io/secret-hash"
 )

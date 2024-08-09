@@ -2,6 +2,7 @@ package gcl
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
@@ -65,7 +66,7 @@ func (g *GoogleCloudLogging) SetCompression(algo string) {
 	g.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -100,7 +101,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets helpers.Secrets, 
 	}
 }
 
-func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets helpers.Secrets) string {
+func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets observability.Secrets) string {
 	if spec == nil {
 		return ""
 	}

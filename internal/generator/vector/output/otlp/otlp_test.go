@@ -6,13 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("Generate vector config", func() {
-	DescribeTable("for OTLP output", func(output obs.OutputSpec, secret helpers.Secrets, op framework.Options, expFile string) {
+	DescribeTable("for OTLP output", func(output obs.OutputSpec, secret observability.Secrets, op framework.Options, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))

@@ -2,6 +2,7 @@ package auth
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -26,7 +27,7 @@ token = "{{.Token}}"
 `
 }
 
-func NewBearerToken(id string, spec *obs.HTTPAuthentication, secrets helpers.Secrets, op framework.Options) BearerToken {
+func NewBearerToken(id string, spec *obs.HTTPAuthentication, secrets observability.Secrets, op framework.Options) BearerToken {
 	bt := BearerToken{}
 	if spec != nil {
 		key := spec.Token

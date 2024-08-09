@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"net/url"
 	"strings"
 
@@ -51,7 +52,7 @@ func (k *Kafka) SetCompression(algo string) {
 	k.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),

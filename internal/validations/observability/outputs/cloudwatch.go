@@ -4,7 +4,7 @@ import (
 	"github.com/golang-collections/collections/set"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
@@ -15,7 +15,7 @@ const (
 )
 
 func ValidateCloudWatchAuth(spec obs.OutputSpec, context internalcontext.ForwarderContext) (results []string) {
-	secrets := helpers.Secrets(context.Secrets)
+	secrets := observability.Secrets(context.Secrets)
 	additionalContext := context.AdditionalContext
 	authSpec := spec.Cloudwatch.Authentication
 

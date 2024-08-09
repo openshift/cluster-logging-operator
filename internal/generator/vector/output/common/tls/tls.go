@@ -2,6 +2,7 @@ package tls
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	typehelpers "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
@@ -32,7 +33,7 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func New(id string, spec *obs.OutputTLSSpec, secrets helpers.Secrets, op framework.Options, options ...framework.Option) framework.Element {
+func New(id string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op framework.Options, options ...framework.Option) framework.Element {
 	if outURL, found := framework.HasOption(framework.URL, options); found {
 		if !url.IsSecure(outURL.(string)) {
 			return framework.Nil

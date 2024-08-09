@@ -2,6 +2,7 @@ package syslog
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"net/url"
 	"regexp"
 	"strings"
@@ -121,7 +122,7 @@ func (s *Syslog) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -149,7 +150,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 	)
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Secrets, op Options, urlScheme string, host string) *Syslog {
+func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, urlScheme string, host string) *Syslog {
 	var mode = strings.ToLower(urlScheme)
 	if urlScheme == TLS {
 		mode = TCP

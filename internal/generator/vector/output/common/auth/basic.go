@@ -2,6 +2,7 @@ package auth
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -31,7 +32,7 @@ password = "{{.Password}}"
 {{- end}}`
 }
 
-func NewBasic(id string, spec *obs.HTTPAuthentication, secrets helpers.Secrets) Basic {
+func NewBasic(id string, spec *obs.HTTPAuthentication, secrets observability.Secrets) Basic {
 	b := Basic{}
 	if spec != nil {
 		b.ID = id

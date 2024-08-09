@@ -3,6 +3,7 @@ package deployments_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +58,16 @@ var _ = Describe("deployments#AreSame", func() {
 		It("should recognize the specs are same", func() {
 			ok, _ := deployments.AreSame(current, desired)
 			Expect(ok).To(BeTrue())
+		})
+
+		It("should fail when the secret hash is different", func() {
+			current.Spec.Template.Annotations = map[string]string{
+				constants.AnnotationSecretHash: "foo",
+			}
+			ok, reason := deployments.AreSame(current, desired)
+
+			Expect(ok).To(BeFalse())
+			Expect(reason).To(Equal("secretHash"))
 		})
 	})
 

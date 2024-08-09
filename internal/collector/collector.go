@@ -5,7 +5,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
 
@@ -57,7 +56,7 @@ type Factory struct {
 	ClusterID              string
 	ImageName              string
 	Visit                  Visitor
-	Secrets                map[string]*v1.Secret
+	Secrets                internalobs.Secrets
 	ConfigMaps             map[string]*v1.ConfigMap
 	ForwarderSpec          obs.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
@@ -83,7 +82,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets map[string]*v1.Secret, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -110,12 +109,18 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets m
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds.Spec.Template.Annotations = map[string]string{
+		constants.AnnotationSecretHash: f.Secrets.Hash64a(),
+	}
 	return ds
 }
 
 func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.Deployment {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	dpl.Spec.Template.Annotations = map[string]string{
+		constants.AnnotationSecretHash: f.Secrets.Hash64a(),
+	}
 	return dpl
 }
 
@@ -247,7 +252,7 @@ func AddVolumeMounts(collector *v1.Container, names []string, path func(string) 
 
 // AddSecretVolumes adds secret volumes to the pod spec for the unique set of output secrets and returns the list of
 // the names
-func AddSecretVolumes(podSpec *v1.PodSpec, secrets vectorhelpers.Secrets) []string {
+func AddSecretVolumes(podSpec *v1.PodSpec, secrets internalobs.Secrets) []string {
 	names := secrets.Names()
 	log.WithName("AddSecretVolumes").V(4).Info("volumes", "names", secrets.Names())
 	for _, name := range names {

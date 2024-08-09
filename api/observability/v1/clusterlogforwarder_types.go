@@ -21,9 +21,10 @@ import (
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
 type ClusterLogForwarderSpec struct {
-	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator
+	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator.
 	//
 	// +kubebuilder:default:=Managed
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Management State"
 	ManagementState ManagementState `json:"managementState,omitempty"`
 
 	// Specification of the Collector deployment to define
@@ -74,6 +75,7 @@ type ClusterLogForwarderSpec struct {
 	// ServiceAccount points to the ServiceAccount resource used by the collector pods.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Service Account"
 	ServiceAccount ServiceAccount `json:"serviceAccount"`
 }
 
@@ -81,7 +83,7 @@ type ServiceAccount struct {
 	// Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
 	//
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ServiceAccount Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 }
 
@@ -118,6 +120,7 @@ type CollectorSpec struct {
 	//
 	// +nullable
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tolerations"
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
@@ -133,20 +136,22 @@ type PipelineSpec struct {
 	//
 	// The following built-in input names are always available:
 	//
-	// `application` selects all logs from application pods.
+	//  - `application` selects all logs from application pods.
 	//
-	// `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+	//  - `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
 	//
-	// `audit` selects node logs related to security audits.
+	//  - `audit` selects node logs related to security audits.
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems:=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Inputs"
 	InputRefs []string `json:"inputRefs"`
 
 	// OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems:=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Outputs"
 	OutputRefs []string `json:"outputRefs"`
 
 	// Filters lists the names of filters to be applied to records going through this pipeline.
@@ -155,6 +160,7 @@ type PipelineSpec struct {
 	// If a filter drops a records, subsequent filters are not applied.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Filters"
 	FilterRefs []string `json:"filterRefs,omitempty"`
 }
 
@@ -181,9 +187,13 @@ type ValueReference struct {
 	Key string `json:"key"`
 
 	// ConfigMapName contains the name of the ConfigMap containing the referenced value.
+	//
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ConfigMap Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	ConfigMapName string `json:"configMapName,omitempty"`
 
 	// SecretName contains the name of the Secret containing the referenced value.
+	//
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	SecretName string `json:"secretName,omitempty"`
 }
 
@@ -198,6 +208,7 @@ type SecretReference struct {
 	// SecretName contains the name of the Secret containing the referenced value.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	SecretName string `json:"secretName"`
 }
 
@@ -209,11 +220,13 @@ type BearerToken struct {
 	// From is the source from where to find the token
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token Source"
 	From BearerTokenFrom `json:"from"`
 
 	// Use Secret if the value should be sourced from a Secret in the same namespace.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token Secret"
 	Secret *BearerTokenSecretKey `json:"secret,omitempty"`
 }
 
@@ -234,11 +247,13 @@ type BearerTokenSecretKey struct {
 	// Name of the key used to get the value from the referenced Secret.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Key string `json:"key"`
 
 	// Name of secret
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 }
 
@@ -247,21 +262,25 @@ type TLSSpec struct {
 	// CA can be used to specify a custom list of trusted certificate authorities.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Certificate Authority Bundle"
 	CA *ValueReference `json:"ca,omitempty"`
 
 	// Certificate points to the server certificate to use.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Certificate"
 	Certificate *ValueReference `json:"certificate,omitempty"`
 
 	// Key points to the private key of the server certificate.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Certificate Key"
 	Key *SecretReference `json:"key,omitempty"`
 
 	// KeyPassphrase points to the passphrase used to unlock the private key.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Certificate Key Passphrase"
 	KeyPassphrase *SecretReference `json:"keyPassphrase,omitempty"`
 }
 

@@ -59,6 +59,7 @@ var (
 )
 
 // OutputSpec defines a destination for log messages.
+//
 // +kubebuilder:validation:XValidation:rule="self.type != 'azureMonitor' || has(self.azureMonitor)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'cloudwatch' || has(self.cloudwatch)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'elasticsearch' || has(self.elasticsearch)", message="Additional type specific spec is required for the output type"
@@ -74,16 +75,19 @@ type OutputSpec struct {
 	// Name used to refer to the output from a `pipeline`.
 	//
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]*[a-z0-9]$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Output Name"
 	Name string `json:"name"`
 
 	// Type of output sink.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Output Type"
 	Type OutputType `json:"type"`
 
 	// TLS contains settings for controlling options on TLS client connections.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="TLS Options"
 	TLS *OutputTLSSpec `json:"tls,omitempty"`
 
 	// Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
@@ -92,39 +96,51 @@ type OutputSpec struct {
 	// Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Rate Limiting"
 	Limit *LimitSpec `json:"rateLimit,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Monitor"
 	AzureMonitor *AzureMonitor `json:"azureMonitor,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon CloudWatch"
 	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch"
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Google Cloud Logging"
 	GoogleCloudLogging *GoogleCloudLogging `json:"googleCloudLogging,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="HTTP Output"
 	HTTP *HTTP `json:"http,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Apache Kafka"
 	Kafka *Kafka `json:"kafka,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Grafana Loki"
 	Loki *Loki `json:"loki,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack"
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Splunk"
 	Splunk *Splunk `json:"splunk,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog Output"
 	Syslog *Syslog `json:"syslog,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OpenTelemetry Output"
 	OTLP *OTLP `json:"otlp,omitempty"`
 }
 
@@ -136,11 +152,13 @@ type OutputTLSSpec struct {
 	// This option is *not* recommended for production configurations.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Skip Certificate Validation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 
 	// TLSSecurityProfile is the security profile to apply to the output connection.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="TLS Security Profile"
 	TLSSecurityProfile *openshiftv1.TLSSecurityProfile `json:"securityProfile,omitempty"`
 }
 
@@ -151,26 +169,31 @@ type URLSpec struct {
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 }
 
 // BaseOutputTuningSpec tuning parameters for an output
 type BaseOutputTuningSpec struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Delivery Mode"
 	Delivery DeliveryMode `json:"delivery,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Batch Size"
 	MaxWrite *resource.Quantity `json:"maxWrite,omitempty"`
 
 	// MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Minimum Retry Duration"
 	MinRetryDuration *time.Duration `json:"minRetryDuration,omitempty"`
 
 	// MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Maximum Retry Duration"
 	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`
 }
 
@@ -196,20 +219,23 @@ const (
 type HTTPAuthentication struct {
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Bearer Token"
 	Token *BearerToken `json:"token,omitempty"`
 
 	// Username to use for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Username"
 	Username *SecretReference `json:"username,omitempty"`
 
 	// Password to use for authenticating requests.
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Password"
 	Password *SecretReference `json:"password,omitempty"`
 }
 
@@ -217,8 +243,9 @@ type HTTPAuthentication struct {
 type AzureMonitorAuthentication struct {
 	// SharedKey points to the secret containing the shared key used for authenticating requests.
 	//
-	// +kubebuilder:validation:Required
 	// +nullable
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Shared Key"
 	SharedKey *SecretReference `json:"sharedKey"`
 }
 
@@ -226,12 +253,14 @@ type AzureMonitor struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *AzureMonitorAuthentication `json:"authentication"`
 
 	// CustomerId che unique identifier for the Log Analytics workspace.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Customer ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	CustomerId string `json:"customerId"`
 
 	// LogType the record type of the data that is being submitted.
@@ -239,23 +268,27 @@ type AzureMonitor struct {
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
 	//
 	// +kubebuilder:validation:Pattern:="^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	LogType string `json:"logType,omitempty"`
 
 	// AzureResourceId the Resource ID of the Azure resource the data should be associated with.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Resource ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	AzureResourceId string `json:"azureResourceId,omitempty"`
 
 	// Host alternative host for dedicated Azure regions. (for example for China region)
 	// https://docs.azure.cn/en-us/articles/guidance/developerdifferences#check-endpoints-in-azure
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Host",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Host string `json:"host,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *BaseOutputTuningSpec `json:"tuning,omitempty"`
 }
 
@@ -267,6 +300,7 @@ type CloudwatchTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
 	// +kubebuilder:default:=none
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -278,32 +312,44 @@ type Cloudwatch struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *CloudwatchAuthentication `json:"authentication"`
 
 	// Tuning specs tuning for the output
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *CloudwatchTuningSpec `json:"tuning,omitempty"`
 
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon Region",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Region string `json:"region"`
 
 	// GroupName defines the strategy for grouping logstreams
+	//
 	// The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
 	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Group Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	GroupName string `json:"groupName"`
 }
 
@@ -327,12 +373,14 @@ type CloudwatchAuthentication struct {
 	// Type is the type of cloudwatch authentication to configure
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
 	Type CloudwatchAuthType `json:"type"`
 
 	// AWSAccessKey points to the AWS access key id and secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Access Key"
 	AWSAccessKey *CloudwatchAWSAccessKey `json:"awsAccessKey,omitempty"`
 
 	// IAMRole points to the secret containing the role ARN to be used for authentication.
@@ -341,6 +389,7 @@ type CloudwatchAuthentication struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon IAM Role"
 	IAMRole *CloudwatchIAMRole `json:"iamRole,omitempty"`
 }
 
@@ -349,11 +398,13 @@ type CloudwatchIAMRole struct {
 	// This is used for authentication in STS-enabled clusters.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="RoleARN Secret"
 	RoleARN SecretReference `json:"roleARN"`
 
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
 	Token BearerToken `json:"token"`
 }
 
@@ -361,11 +412,13 @@ type CloudwatchAWSAccessKey struct {
 	// AccessKeyID points to the AWS access key id to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key ID"
 	KeyID SecretReference `json:"keyID"`
 
 	// AccessKeySecret points to the AWS access key secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
 	KeySecret SecretReference `json:"keySecret"`
 }
 
@@ -376,6 +429,7 @@ type ElasticsearchTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;zlib
 	// +kubebuilder:default:=none
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -385,25 +439,33 @@ type Elasticsearch struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *ElasticsearchTuningSpec `json:"tuning,omitempty"`
 
-	// Index is the index for the logs. This supports template syntax
-	// to allow dynamic per-event values.
+	// Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 	//
 	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
 	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index"`
 
 	// Version specifies the version of Elasticsearch to be used.
@@ -412,6 +474,7 @@ type Elasticsearch struct {
 	// +kubebuilder:validation:Minimum:=6
 	// +kubebuilder:validation:Maximum:=8
 	// +kubebuilder:default:=8
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Version int `json:"version,omitempty"`
 }
 
@@ -420,6 +483,7 @@ type GoogleCloudLoggingAuthentication struct {
 	// Credentials points to the secret containing the `google-application-credentials.json`.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Credentials File"
 	Credentials *SecretReference `json:"credentials"`
 }
 
@@ -433,40 +497,52 @@ type GoogleCloudLogging struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *GoogleCloudLoggingAuthentication `json:"authentication,omitempty"`
 
 	// ID must be one of the required ID fields for the output
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Logging ID"
 	ID GoogleCloudLoggingID `json:"id"`
 
 	// LogID is the log ID to which to publish logs. This identifies log stream.
 	//
 	// The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
 	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Stream ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	LogID string `json:"logId"`
 
 	// Tuning specs tuning for the output
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *GoogleCloudLoggingTuningSpec `json:"tuning,omitempty"`
 }
 
 type GoogleCloudLoggingID struct {
 	// Type is the ID type provided
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Logging ID Type"
 	Type GoogleCloudLoggingIDType `json:"type"`
 
 	// Value is the value of the ID
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Logging ID Value",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Value string `json:"value"`
 }
 
@@ -489,6 +565,7 @@ type HTTPTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy;zlib
 	// +kubebuilder:default:=none
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -499,43 +576,51 @@ type HTTP struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *HTTPTuningSpec `json:"tuning,omitempty"`
 
 	// Headers specify optional headers to be sent with the request
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Headers"
 	Headers map[string]string `json:"headers,omitempty"`
 
 	// Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Timeout",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Timeout int `json:"timeout,omitempty"`
 
 	// Method specifies the Http method to be used for sending logs. If not set, 'POST' is used.
 	//
 	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="HTTP Method"
 	Method string `json:"method,omitempty"`
 }
 
 type KafkaTuningSpec struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Delivery Mode"
 	Delivery DeliveryMode `json:"delivery,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Batch Size"
 	MaxWrite *resource.Quantity `json:"maxWrite,omitempty"`
 
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;snappy;zstd;lz4
 	// +kubebuilder:default:=none
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -544,6 +629,7 @@ type KafkaAuthentication struct {
 	// SASL contains options configuring SASL authentication.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="SASL Options"
 	SASL *SASLAuthentication `json:"sasl,omitempty"`
 }
 
@@ -551,16 +637,19 @@ type SASLAuthentication struct {
 	// Username points to the secret to be used as SASL username.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Username"
 	Username *SecretReference `json:"username,omitempty"`
 
 	// Username points to the secret to be used as SASL password.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Password"
 	Password *SecretReference `json:"password,omitempty"`
 
 	// Mechanism sets the SASL mechanism to use.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="SASL Mechanism",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Mechanism string `json:"mechanism,omitempty"`
 }
 
@@ -573,39 +662,53 @@ type Kafka struct {
 	// The 'username@password' part of `url` is ignored.
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *KafkaAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *KafkaTuningSpec `json:"tuning,omitempty"`
 
 	// Topic specifies the target topic to send logs to. The value when not specified is 'topic'
 	//
 	// The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kafka Topic",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Topic string `json:"topic,omitempty"`
 
 	// Brokers specifies the list of broker endpoints of a Kafka cluster.
+	//
 	// The list represents only the initial set used by the collector's Kafka client for the
 	// first connection only. The collector's Kafka client fetches constantly an updated list
 	// from Kafka. These updates are not reconciled back to the collector configuration.
+	//
 	// If none provided the target URL from the OutputSpec is used as fallback.
+	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kafka Brokers"
 	Brokers []URL `json:"brokers,omitempty"`
 }
 
@@ -619,6 +722,7 @@ type LokiTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy
 	// +kubebuilder:default:=snappy
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -626,13 +730,17 @@ type LokiTuningSpec struct {
 type LokiStackTarget struct {
 	// Namespace of the in-cluster LokiStack resource.
 	//
+	// If unset, this defaults to "openshift-logging".
+	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack Namespace",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Namespace string `json:"namespace,omitempty"`
 
 	// Name of the in-cluster LokiStack resource.
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 }
 
@@ -640,8 +748,9 @@ type LokiStackTarget struct {
 type LokiStackAuthentication struct {
 	// Token specifies a bearer token to be used for authenticating requests.
 	//
-	// +kubebuilder:validation:Required
 	// +nullable
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Bearer Token"
 	Token *BearerToken `json:"token"`
 }
 
@@ -650,16 +759,19 @@ type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *LokiStackAuthentication `json:"authentication"`
 
 	// Target points to the LokiStack resources that should be used as a target for the output.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Target LokiStack Reference"
 	Target LokiStackTarget `json:"target"`
 
 	// Tuning specs tuning for the output
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *LokiTuningSpec `json:"tuning,omitempty"`
 
 	// LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
@@ -683,6 +795,7 @@ type LokiStack struct {
 	// Loki queries can also query based on any log record field (not just labels) using query filters.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stream Label Configuration"
 	LabelKeys *LokiStackLabelKeys `json:"labelKeys,omitempty"`
 }
 
@@ -704,21 +817,25 @@ type LokiStackLabelKeys struct {
 	// where the collector is running and is always present.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Global Configuration"
 	Global []string `json:"global,omitempty"`
 
 	// Application contains the label keys configuration for the "application" tenant.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Application Tenant Configuration"
 	Application *LokiStackTenantLabelKeys `json:"application,omitempty"`
 
 	// Infrastructure contains the label keys configuration for the "infrastructure" tenant.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Infrastructure Tenant Configuration"
 	Infrastructure *LokiStackTenantLabelKeys `json:"infrastructure,omitempty"`
 
 	// Audit contains the label keys configuration for the "audit" tenant.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Audit Tenant Configuration"
 	Audit *LokiStackTenantLabelKeys `json:"audit,omitempty"`
 }
 
@@ -728,13 +845,16 @@ type LokiStackTenantLabelKeys struct {
 	// keys configuration.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Ignore Global Settings",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	IgnoreGlobal bool `json:"ignoreGlobal,omitempty"`
 
 	// LabelKeys contains a list of log record keys that are mapped to Loki stream labels.
+	//
 	// By default, this list is combined with the labels specified in the Global configuration.
 	// This behavior can be changed by setting IgnoreGlobal to true.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Label Keys"
 	LabelKeys []string `json:"labelKeys,omitempty"`
 }
 
@@ -743,12 +863,14 @@ type Loki struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *LokiTuningSpec `json:"tuning,omitempty"`
 
 	URLSpec `json:",inline"`
@@ -787,22 +909,28 @@ type Loki struct {
 	// Loki queries can also query based on any log record field (not just labels) using query filters.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stream Label Configuration"
 	LabelKeys []string `json:"labelKeys,omitempty"`
 
-	// TenantKey is the tenant for the logs. This supports vector's template syntax
-	// to allow dynamic per-event values.
+	// TenantKey is the tenant for the logs. This supports vector's template syntax to allow dynamic per-event values.
 	//
 	// The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
 	// +kubebuilder:validation:Optional
-	// +nullable
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tenant Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	TenantKey string `json:"tenantKey,omitempty"`
 }
 
@@ -813,6 +941,7 @@ type SplunkTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=none;gzip
 	// +kubebuilder:default:=none
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -821,6 +950,7 @@ type SplunkAuthentication struct {
 	// Token points to the secret containing the Splunk HEC token used for authenticating requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Splunk HEC Token"
 	Token *SecretReference `json:"token"`
 }
 
@@ -830,30 +960,37 @@ type Splunk struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *SplunkAuthentication `json:"authentication"`
 
 	// Tuning specs tuning for the output
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *SplunkTuningSpec `json:"tuning,omitempty"`
 
 	URLSpec `json:",inline"`
 
-	// Index is the index for the logs. This supports template syntax
-	// to allow dynamic per-event values.
+	// Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 	//
 	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
 	// +kubebuilder:validation:Optional
-	// +nullable
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index,omitempty"`
 }
 
@@ -876,26 +1013,31 @@ type Syslog struct {
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default:=RFC5424
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog RFC"
 	RFC SyslogRFCType `json:"rfc"`
 
 	// Severity to set on outgoing syslog records.
 	//
 	// Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+	//
 	// The value can be a decimal integer or one of these case-insensitive keywords:
 	//
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:=informational
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Severity",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Severity string `json:"severity,omitempty"`
 
 	// Facility to set on outgoing syslog records.
 	//
 	// Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+	//
 	// The value can be a decimal integer. Facility keywords are not standardized,
 	// this API recognizes at least the following case-insensitive keywords
 	// (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
@@ -906,77 +1048,105 @@ type Syslog struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:=user
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Facility",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Facility string `json:"facility,omitempty"`
 
-	// PayloadKey specifies record field to use as payload. This supports template syntax
-	// to allow dynamic per-event values.
-
+	// PayloadKey specifies record field to use as payload. This supports template syntax to allow dynamic per-event values.
+	//
 	// The PayloadKey must be a single field path encased in single curly brackets `{}`.
+	//
 	// Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+	//
 	// If left empty, Syslog will use the whole message as the payload key
 	//
 	// Example:
-	// 1. {.bar}
-	// 2. {.foo.bar.baz}
-	// 3. {.foo.bar."baz/with/slashes"}
 	//
-	// +kubebuilder:validation:Pattern:=`^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$`
+	//  1. {.bar}
+	//
+	//  2. {.foo.bar.baz}
+	//
+	//  3. {.foo.bar."baz/with/slashes"}
+	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Payload Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	PayloadKey string `json:"payloadKey,omitempty"`
 
 	// AppName is APP-NAME part of the syslog-msg header.
+	//
 	// AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
 	// This supports template syntax to allow dynamic per-event values.
 	//
 	// The AppName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="App Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	// TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of "tag" when this is empty
 	AppName string `json:"appName,omitempty"`
 
-	// ProcID is PROCID part of the syslog-msg header. This supports template syntax
-	// to allow dynamic per-event values.
+	// ProcID is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 	//
 	// The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
 	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="PROCID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	ProcID string `json:"procID,omitempty"`
 
-	// MsgID is MSGID part of the syslog-msg header. This supports template syntax
-	// to allow dynamic per-event values.
+	// MsgID is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 	//
 	// The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
 	// Example:
-	// 1. foo-{.bar||"none"}
-	// 2. {.foo||.bar||"missing"}
-	// 3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="MSGID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	MsgID string `json:"msgID,omitempty"`
 
 	// Enrichment is an additional modification the log message before forwarding it to the receiver
+	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Enrichment Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Enrichment EnrichmentType `json:"enrichment,omitempty"`
 }
 
@@ -984,7 +1154,7 @@ type Syslog struct {
 type EnrichmentType string
 
 const (
-	// EnrichmentTypeNone add no additional enrichment to the recored
+	// EnrichmentTypeNone add no additional enrichment to the record
 	EnrichmentTypeNone EnrichmentType = "none"
 
 	// EnrichmentTypeKubernetesMinimal adds namespace_name, pod_name, and collector_name to the beginning of the message
@@ -1001,6 +1171,7 @@ type OTLPTuningSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=gzip;none
 	// +kubebuilder:default:=gzip
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Compression string `json:"compression,omitempty"`
 }
 
@@ -1016,16 +1187,19 @@ type OTLP struct {
 	//
 	// +kubebuilder:validation:Pattern:=`^(https?):\/\/\S+\/v1\/logs$`
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
 	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
 	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
 
 	// Tuning specs tuning for the output
 	//
-	// +kubebuilder:validation:Optional
 	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *OTLPTuningSpec `json:"tuning,omitempty"`
 }

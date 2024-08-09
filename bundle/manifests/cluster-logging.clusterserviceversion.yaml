@@ -100,7 +100,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-07-18T18:29:26Z"
+    createdAt: "2024-08-09T16:07:33Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -155,110 +155,1230 @@ spec:
         path: collector.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Define the tolerations the collector pods will accept
+        displayName: Tolerations
+        path: collector.tolerations
       - description: Filters are applied to log records passing through a pipeline.
           There are different types of filter that can select and modify log records
           in different ways. See [FilterTypeSpec] for a list of filter types.
         displayName: Log Forwarder Pipeline Filters
         path: filters
+      - description: A drop filter applies a sequence of tests to a log record and
+          drops the record if any test passes. Each test contains a sequence of conditions,
+          all conditions must be true for the test to pass. A DropTestsSpec contains
+          an array of tests which contains an array of conditions
+        displayName: Drop Filters
+        path: filters[0].drop
+      - description: DropConditions is an array of DropCondition which are conditions
+          that are ANDed together
+        displayName: Drop Filter Conditions
+        path: filters[0].drop[0].test
+      - description: 'A dot delimited path to a field in the log record. It must start
+          with a `.`. The path can contain alpha-numeric characters and underscores
+          (a-zA-Z0-9_). If segments contain characters outside of this range, the
+          segment must be quoted. Examples: `.kubernetes.namespace_name`, `.log_type`,
+          ''.kubernetes.labels.foobar'', `.kubernetes.labels."foo-bar/baz"`'
+        displayName: Field Path
+        path: filters[0].drop[0].test[0].field
+      - description: A regular expression that the field will match. If the value
+          of the field defined in the DropTest matches the regular expression, the
+          log record will be dropped. Must define only one of matches OR notMatches
+        displayName: Drop Match Expression
+        path: filters[0].drop[0].test[0].matches
+      - description: A regular expression that the field does not match. If the value
+          of the field defined in the DropTest does not match the regular expression,
+          the log record will be dropped. Must define only one of matches or notMatches
+        displayName: Keep Match Expression
+        path: filters[0].drop[0].test[0].notMatches
+      - displayName: Kubernetes API Audit Filter
+        path: filters[0].kubeAPIAudit
+      - description: Name used to refer to the filter from a "pipeline".
+        displayName: Filter Name
+        path: filters[0].name
+      - description: Labels applied to log records passing through a pipeline. These
+          labels appear in the `openshift.labels` map in the log record.
+        displayName: Labels
+        path: filters[0].openShiftLabels
+      - description: The PruneFilterSpec consists of two arrays, namely in and notIn,
+          which dictate the fields to be pruned.
+        displayName: Prune Filters
+        path: filters[0].prune
+      - description: "`In` is an array of dot-delimited field paths. Fields included
+          here are removed from the log record. \n Each field path expression must
+          start with a \".\" \n The path can contain alphanumeric characters and underscores
+          (a-zA-Z0-9_). \n If segments contain characters outside of this range, the
+          segment must be quoted otherwise paths do NOT need to be quoted. \n Examples:
+          \n - `.kubernetes.namespace_name` \n - `.log_type` \n - '.kubernetes.labels.foobar'
+          \n - `.kubernetes.labels.\"foo-bar/baz\"` \n NOTE1: `In` CANNOT contain
+          `.log_type` or `.message` as those fields are required and cannot be pruned.
+          \n NOTE2: If this filter is used in a pipeline with GoogleCloudLogging,
+          `.hostname` CANNOT be added to this list as it is a required field."
+        displayName: Fields to be dropped
+        path: filters[0].prune.in
+      - description: "`NotIn` is an array of dot-delimited field paths. All fields
+          besides the ones listed here are removed from the log record. \n Each field
+          path expression must start with a \".\" \n The path can contain alphanumeric
+          characters and underscores (a-zA-Z0-9_). \n If segments contain characters
+          outside of this range, the segment must be quoted otherwise paths do NOT
+          need to be quoted. \n Examples: \n - `.kubernetes.namespace_name` \n - `.log_type`
+          \n - '.kubernetes.labels.foobar' \n - `.kubernetes.labels.\"foo-bar/baz\"`
+          \n NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields
+          are required and cannot be pruned. \n NOTE2: If this filter is used in a
+          pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list
+          as it is a required field."
+        displayName: Fields to be kept
+        path: filters[0].prune.notIn
+      - description: Type of filter.
+        displayName: Filter Type
+        path: filters[0].type
       - description: "Inputs are named filters for log messages to be forwarded. \n
           There are three built-in inputs named `application`, `infrastructure` and
           `audit`. You don't need to define inputs here if those are sufficient for
           your needs. See `inputRefs` for more."
         displayName: Log Forwarder Inputs
         path: inputs
+      - description: Application, named set of `application` logs that can specify
+          a set of match criteria
+        displayName: Application Logs Input
+        path: inputs[0].application
+      - description: "Excludes is the set of namespaces and containers to ignore when
+          collecting logs. \n Takes precedence over Includes option."
+        displayName: Exclude
+        path: inputs[0].application.excludes
+      - description: Container spec the containers from which to collect logs Supports
+          glob patterns and presumes "*" if omitted.
+        displayName: Container Glob
+        path: inputs[0].application.excludes[0].container
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Namespace specs the namespace from which to collect logs Supports
+          glob patterns and presumes "*" if omitted.
+        displayName: Namespace Glob
+        path: inputs[0].application.excludes[0].namespace
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Includes is the set of namespaces and containers to include
+          when collecting logs. \n Note: infrastructure namespaces are still excluded
+          for \"*\" values unless a qualifying glob pattern is specified."
+        displayName: Include
+        path: inputs[0].application.includes
+      - description: Container spec the containers from which to collect logs Supports
+          glob patterns and presumes "*" if omitted.
+        displayName: Container Glob
+        path: inputs[0].application.includes[0].container
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Namespace specs the namespace from which to collect logs Supports
+          glob patterns and presumes "*" if omitted.
+        displayName: Namespace Glob
+        path: inputs[0].application.includes[0].namespace
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Selector for logs from pods with matching labels. \n Only messages
+          from pods with these labels are collected. \n If absent or empty, logs are
+          collected regardless of labels."
+        displayName: Pod Selector
+        path: inputs[0].application.selector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Pod
+      - description: Tuning is the container input tuning spec for this container
+          sources
+        displayName: Input Tuning
+        path: inputs[0].application.tuning
+      - description: RateLimitPerContainer is the limit applied to each container
+          by this input. This limit is applied per collector deployment.
+        displayName: Per-Container Rate Limit
+        path: inputs[0].application.tuning.rateLimitPerContainer
       - description: MaxRecordsPerSecond is the maximum number of log records allowed
           per input/output in a pipeline
         displayName: Max Records Per Second
         path: inputs[0].application.tuning.rateLimitPerContainer.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Audit, enables `audit` logs.
+        displayName: Audit Logs Input
+        path: inputs[0].audit
+      - description: Sources defines the list of audit sources to collect. This field
+          is optional and its exclusion results in the collection of all audit sources.
+        displayName: Log Sources
+        path: inputs[0].audit.sources
+      - description: Infrastructure, Enables `infrastructure` logs.
+        displayName: Infrastructure Logs Input
+        path: inputs[0].infrastructure
+      - description: Sources defines the list of infrastructure sources to collect.
+          This field is optional and omission results in the collection of all infrastructure
+          sources.
+        displayName: Log Sources
+        path: inputs[0].infrastructure.sources
+      - description: Name used to refer to the input of a `pipeline`.
+        displayName: Input Name
+        path: inputs[0].name
+      - description: Receiver to receive logs from non-cluster sources.
+        displayName: Log Receiver
+        path: inputs[0].receiver
+      - displayName: HTTP Receiver Configuration
+        path: inputs[0].receiver.http
+      - description: Format is the format of incoming log data.
+        displayName: Data Format
+        path: inputs[0].receiver.http.format
+      - description: Port the Receiver listens on. It must be a value between 1024
+          and 65535
+        displayName: Listen Port
+        path: inputs[0].receiver.port
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - description: "TLS contains settings for controlling options of TLS connections.
+          \n The operator will request certificates from the cluster's cert signing
+          service when TLS is not defined. The certificates are injected into a secret
+          named \"<clusterlogforwarder.name>-<input.name>\" which is mounted into
+          the collector. The collector is configured to use the public and private
+          key provided by the service"
+        displayName: TLS Options
+        path: inputs[0].receiver.tls
+      - description: Type of Receiver plugin.
+        displayName: Receiver Type
+        path: inputs[0].receiver.type
+      - description: Type of output sink.
+        displayName: Input Type
+        path: inputs[0].type
+      - description: Indicator if the resource is 'Managed' or 'Unmanaged' by the
+          operator.
+        displayName: Management State
+        path: managementState
       - description: Outputs are named destinations for log messages.
         displayName: Log Forwarder Outputs
         path: outputs
+      - displayName: Azure Monitor
+        path: outputs[0].azureMonitor
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].azureMonitor.authentication
+      - description: SharedKey points to the secret containing the shared key used
+          for authenticating requests.
+        displayName: Shared Key
+        path: outputs[0].azureMonitor.authentication.sharedKey
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].azureMonitor.authentication.sharedKey.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].azureMonitor.authentication.sharedKey.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: AzureResourceId the Resource ID of the Azure resource the data
+          should be associated with. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+        displayName: Azure Resource ID
+        path: outputs[0].azureMonitor.azureResourceId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: CustomerId che unique identifier for the Log Analytics workspace.
+          https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-uri-parameters
+        displayName: Customer ID
+        path: outputs[0].azureMonitor.customerId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Host alternative host for dedicated Azure regions. (for example
+          for China region) https://docs.azure.cn/en-us/articles/guidance/developerdifferences#check-endpoints-in-azure
+        displayName: Azure Host
+        path: outputs[0].azureMonitor.host
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: LogType the record type of the data that is being submitted.
+          Can only contain letters, numbers, and underscores (_), and may not exceed
+          100 characters. https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+        displayName: Log Type
+        path: outputs[0].azureMonitor.logType
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].azureMonitor.tuning
+      - displayName: Delivery Mode
+        path: outputs[0].azureMonitor.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].azureMonitor.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].azureMonitor.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].azureMonitor.tuning.minRetryDuration
+      - displayName: Amazon CloudWatch
+        path: outputs[0].cloudwatch
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].cloudwatch.authentication
+      - description: AWSAccessKey points to the AWS access key id and secret to be
+          used for authentication.
+        displayName: Access Key
+        path: outputs[0].cloudwatch.authentication.awsAccessKey
+      - description: AccessKeyID points to the AWS access key id to be used for authentication.
+        displayName: Secret with Access Key ID
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: AccessKeySecret points to the AWS access key secret to be used
+          for authentication.
+        displayName: Secret with Access Key Secret
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keySecret
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].cloudwatch.authentication.awsAccessKey.keySecret.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keySecret.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: IAMRole points to the secret containing the role ARN to be used
+          for authentication. This can be used for authentication in STS-enabled clusters
+          when additionally specifying a web identity token
+        displayName: Amazon IAM Role
+        path: outputs[0].cloudwatch.authentication.iamRole
+      - description: RoleARN points to the secret containing the role ARN to be used
+          for authentication. This is used for authentication in STS-enabled clusters.
+        displayName: RoleARN Secret
+        path: outputs[0].cloudwatch.authentication.iamRole.roleARN
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].cloudwatch.authentication.iamRole.roleARN.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.iamRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Token
+        path: outputs[0].cloudwatch.authentication.iamRole.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].cloudwatch.authentication.iamRole.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].cloudwatch.authentication.iamRole.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.iamRole.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.iamRole.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Type is the type of cloudwatch authentication to configure
+        displayName: Authentication Type
+        path: outputs[0].cloudwatch.authentication.type
+      - description: "GroupName defines the strategy for grouping logstreams \n The
+          GroupName can be a combination of static and dynamic values consisting of
+          field paths followed by `||` followed by another field path or a static
+          value. \n A dynamic value is encased in single curly brackets `{}` and MUST
+          end with a static fallback value separated with `||`. \n Static values can
+          only contain alphanumeric characters along with dashes, underscores, dots
+          and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+          \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Group Name
+        path: outputs[0].cloudwatch.groupName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Amazon Region
+        path: outputs[0].cloudwatch.region
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].cloudwatch.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network. It is an error if the compression type is not supported by
+          the output.
+        displayName: Compression
+        path: outputs[0].cloudwatch.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].cloudwatch.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].cloudwatch.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].cloudwatch.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].cloudwatch.tuning.minRetryDuration
+      - description: "URL to send log records to. \n The 'username@password' part
+          of `url` is ignored."
+        displayName: Destination URL
+        path: outputs[0].cloudwatch.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: ElasticSearch
+        path: outputs[0].elasticsearch
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].elasticsearch.authentication
+      - description: Password to use for authenticating requests.
+        displayName: Password
+        path: outputs[0].elasticsearch.authentication.password
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].elasticsearch.authentication.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].elasticsearch.authentication.password.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Bearer Token
+        path: outputs[0].elasticsearch.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].elasticsearch.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].elasticsearch.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].elasticsearch.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].elasticsearch.authentication.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username to use for authenticating requests.
+        displayName: Username
+        path: outputs[0].elasticsearch.authentication.username
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].elasticsearch.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].elasticsearch.authentication.username.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Index is the index for the logs. This supports template syntax
+          to allow dynamic per-event values. \n The Index can be a combination of
+          static and dynamic values consisting of field paths followed by `||` followed
+          by another field path or a static value. \n A dynamic value is encased in
+          single curly brackets `{}` and MUST end with a static fallback value separated
+          with `||`. \n Static values can only contain alphanumeric characters along
+          with dashes, underscores, dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"}
+          \n 2. {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Log Index
+        path: outputs[0].elasticsearch.index
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].elasticsearch.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].elasticsearch.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].elasticsearch.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].elasticsearch.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].elasticsearch.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].elasticsearch.tuning.minRetryDuration
+      - description: URL to send log records to. Basic TLS is enabled if the URL scheme
+          requires it (for example 'https' or 'tls'). The 'username@password' part
+          of `url` is ignored.
+        displayName: Destination URL
+        path: outputs[0].elasticsearch.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: 'Version specifies the version of Elasticsearch to be used. Must
+          be one of: 6-8, where 8 is the default'
+        displayName: ElasticSearch Version
+        path: outputs[0].elasticsearch.version
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: Google Cloud Logging
+        path: outputs[0].googleCloudLogging
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].googleCloudLogging.authentication
+      - description: Credentials points to the secret containing the `google-application-credentials.json`.
+        displayName: Secret with Credentials File
+        path: outputs[0].googleCloudLogging.authentication.credentials
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].googleCloudLogging.authentication.credentials.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].googleCloudLogging.authentication.credentials.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: ID must be one of the required ID fields for the output
+        displayName: Logging ID
+        path: outputs[0].googleCloudLogging.id
+      - description: Type is the ID type provided
+        displayName: Logging ID Type
+        path: outputs[0].googleCloudLogging.id.type
+      - description: Value is the value of the ID
+        displayName: Logging ID Value
+        path: outputs[0].googleCloudLogging.id.value
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "LogID is the log ID to which to publish logs. This identifies
+          log stream. \n The LogID can be a combination of static and dynamic values
+          consisting of field paths followed by `||` followed by another field path
+          or a static value. \n A dynamic value is encased in single curly brackets
+          `{}` and MUST end with a static fallback value separated with `||`. \n Static
+          values can only contain alphanumeric characters along with dashes, underscores,
+          dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+          \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Log Stream ID
+        path: outputs[0].googleCloudLogging.logId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].googleCloudLogging.tuning
+      - displayName: Delivery Mode
+        path: outputs[0].googleCloudLogging.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].googleCloudLogging.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].googleCloudLogging.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].googleCloudLogging.tuning.minRetryDuration
+      - displayName: HTTP Output
+        path: outputs[0].http
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].http.authentication
+      - description: Password to use for authenticating requests.
+        displayName: Password
+        path: outputs[0].http.authentication.password
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].http.authentication.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].http.authentication.password.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Bearer Token
+        path: outputs[0].http.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].http.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].http.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].http.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].http.authentication.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username to use for authenticating requests.
+        displayName: Username
+        path: outputs[0].http.authentication.username
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].http.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].http.authentication.username.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Headers specify optional headers to be sent with the request
+        displayName: Headers
+        path: outputs[0].http.headers
+      - description: Method specifies the Http method to be used for sending logs.
+          If not set, 'POST' is used.
+        displayName: HTTP Method
+        path: outputs[0].http.method
+      - description: Timeout specifies the Http request timeout in seconds. If not
+          set, 10secs is used.
+        displayName: Timeout
+        path: outputs[0].http.timeout
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].http.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].http.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].http.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].http.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].http.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].http.tuning.minRetryDuration
+      - description: URL to send log records to. Basic TLS is enabled if the URL scheme
+          requires it (for example 'https' or 'tls'). The 'username@password' part
+          of `url` is ignored.
+        displayName: Destination URL
+        path: outputs[0].http.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Apache Kafka
+        path: outputs[0].kafka
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].kafka.authentication
+      - description: SASL contains options configuring SASL authentication.
+        displayName: SASL Options
+        path: outputs[0].kafka.authentication.sasl
+      - description: Mechanism sets the SASL mechanism to use.
+        displayName: SASL Mechanism
+        path: outputs[0].kafka.authentication.sasl.mechanism
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username points to the secret to be used as SASL password.
+        displayName: Secret with Password
+        path: outputs[0].kafka.authentication.sasl.password
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].kafka.authentication.sasl.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].kafka.authentication.sasl.password.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username points to the secret to be used as SASL username.
+        displayName: Secret with Username
+        path: outputs[0].kafka.authentication.sasl.username
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].kafka.authentication.sasl.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].kafka.authentication.sasl.username.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Brokers specifies the list of broker endpoints of a Kafka cluster.
+          \n The list represents only the initial set used by the collector's Kafka
+          client for the first connection only. The collector's Kafka client fetches
+          constantly an updated list from Kafka. These updates are not reconciled
+          back to the collector configuration. \n If none provided the target URL
+          from the OutputSpec is used as fallback."
+        displayName: Kafka Brokers
+        path: outputs[0].kafka.brokers
+      - description: "Topic specifies the target topic to send logs to. The value
+          when not specified is 'topic' \n The Topic can be a combination of static
+          and dynamic values consisting of field paths followed by `||` followed by
+          another field path or a static value. \n A dynamic value is encased in single
+          curly brackets `{}` and MUST end with a static fallback value separated
+          with `||`. \n Static values can only contain alphanumeric characters along
+          with dashes, underscores, dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"}
+          \n 2. {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Kafka Topic
+        path: outputs[0].kafka.topic
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].kafka.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].kafka.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].kafka.tuning.delivery
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].kafka.tuning.maxWrite
+      - description: "URL to send log records to. \n The 'username@password' part
+          of `url` is ignored."
+        displayName: Destination URL
+        path: outputs[0].kafka.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Grafana Loki
+        path: outputs[0].loki
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].loki.authentication
+      - description: Password to use for authenticating requests.
+        displayName: Password
+        path: outputs[0].loki.authentication.password
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].loki.authentication.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].loki.authentication.password.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Bearer Token
+        path: outputs[0].loki.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].loki.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].loki.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].loki.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].loki.authentication.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username to use for authenticating requests.
+        displayName: Username
+        path: outputs[0].loki.authentication.username
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].loki.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].loki.authentication.username.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "LabelKeys can be used to customize which log record keys are
+          mapped to Loki stream labels. \n If LabelKeys is not set, the default keys
+          are: \n - log_type \n - kubernetes.container_name \n - kubernetes.namespace_name
+          \n - kubernetes.pod_name \n One additional label \"kubernetes_host\" is
+          not part of the label keys configuration. It contains the hostname where
+          the collector is running and is always present. \n Note: Loki label names
+          must match the regular expression \"[a-zA-Z_:][a-zA-Z0-9_:]*\" Log record
+          keys may contain characters like \".\" and \"/\" that are not allowed in
+          Loki labels. Log record keys are translated to Loki labels by replacing
+          any illegal characters with '_'. \n For example the default log record keys
+          translate to these Loki labels: \n - log_type \n - kubernetes_container_name
+          \n - kubernetes_namespace_name \n - kubernetes_pod_name \n Note: the set
+          of labels should be small, Loki imposes limits on the size and number of
+          labels allowed. See https://grafana.com/docs/loki/latest/configuration/#limits_config
+          for more. Loki queries can also query based on any log record field (not
+          just labels) using query filters."
+        displayName: Stream Label Configuration
+        path: outputs[0].loki.labelKeys
+      - description: "TenantKey is the tenant for the logs. This supports vector's
+          template syntax to allow dynamic per-event values. \n The TenantKey can
+          be a combination of static and dynamic values consisting of field paths
+          followed by `||` followed by another field path or a static value. \n A
+          dynamic value is encased in single curly brackets `{}` and MUST end with
+          a static fallback value separated with `||`. \n Static values can only contain
+          alphanumeric characters along with dashes, underscores, dots and forward
+          slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+          \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Tenant Key
+        path: outputs[0].loki.tenantKey
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].loki.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].loki.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].loki.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].loki.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].loki.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].loki.tuning.minRetryDuration
+      - description: URL to send log records to. Basic TLS is enabled if the URL scheme
+          requires it (for example 'https' or 'tls'). The 'username@password' part
+          of `url` is ignored.
+        displayName: Destination URL
+        path: outputs[0].loki.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: LokiStack
+        path: outputs[0].lokiStack
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].lokiStack.authentication
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Bearer Token
+        path: outputs[0].lokiStack.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].lokiStack.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].lokiStack.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].lokiStack.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].lokiStack.authentication.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "LabelKeys can be used to customize which log record keys are
+          mapped to Loki stream labels. \n Note: Loki label names must match the regular
+          expression \"[a-zA-Z_:][a-zA-Z0-9_:]*\" Log record keys may contain characters
+          like \".\" and \"/\" that are not allowed in Loki labels. Log record keys
+          are translated to Loki labels by replacing any illegal characters with '_'.
+          \n For example the default log record keys translate to these Loki labels:
+          \n - log_type \n - kubernetes_container_name \n - kubernetes_namespace_name
+          \n - kubernetes_pod_name \n Note: the set of labels should be small, Loki
+          imposes limits on the size and number of labels allowed. See https://grafana.com/docs/loki/latest/configuration/#limits_config
+          for more. Loki queries can also query based on any log record field (not
+          just labels) using query filters."
+        displayName: Stream Label Configuration
+        path: outputs[0].lokiStack.labelKeys
+      - description: Application contains the label keys configuration for the "application"
+          tenant.
+        displayName: Application Tenant Configuration
+        path: outputs[0].lokiStack.labelKeys.application
+      - description: If IgnoreGlobal is true, then the tenant will not use the labels
+          configured in the Global section of the label keys configuration.
+        displayName: Ignore Global Settings
+        path: outputs[0].lokiStack.labelKeys.application.ignoreGlobal
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: "LabelKeys contains a list of log record keys that are mapped
+          to Loki stream labels. \n By default, this list is combined with the labels
+          specified in the Global configuration. This behavior can be changed by setting
+          IgnoreGlobal to true."
+        displayName: Label Keys
+        path: outputs[0].lokiStack.labelKeys.application.labelKeys
+      - description: Audit contains the label keys configuration for the "audit" tenant.
+        displayName: Audit Tenant Configuration
+        path: outputs[0].lokiStack.labelKeys.audit
+      - description: If IgnoreGlobal is true, then the tenant will not use the labels
+          configured in the Global section of the label keys configuration.
+        displayName: Ignore Global Settings
+        path: outputs[0].lokiStack.labelKeys.audit.ignoreGlobal
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: "LabelKeys contains a list of log record keys that are mapped
+          to Loki stream labels. \n By default, this list is combined with the labels
+          specified in the Global configuration. This behavior can be changed by setting
+          IgnoreGlobal to true."
+        displayName: Label Keys
+        path: outputs[0].lokiStack.labelKeys.audit.labelKeys
+      - description: "Global contains a list of record keys which are used for all
+          tenants. \n If LabelKeys is not set, the default keys are: \n - log_type
+          \n - kubernetes.container_name \n - kubernetes.namespace_name \n - kubernetes.pod_name
+          \n One additional label \"kubernetes_host\" is not part of the label keys
+          configuration. It contains the hostname where the collector is running and
+          is always present."
+        displayName: Global Configuration
+        path: outputs[0].lokiStack.labelKeys.global
+      - description: Infrastructure contains the label keys configuration for the
+          "infrastructure" tenant.
+        displayName: Infrastructure Tenant Configuration
+        path: outputs[0].lokiStack.labelKeys.infrastructure
+      - description: If IgnoreGlobal is true, then the tenant will not use the labels
+          configured in the Global section of the label keys configuration.
+        displayName: Ignore Global Settings
+        path: outputs[0].lokiStack.labelKeys.infrastructure.ignoreGlobal
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: "LabelKeys contains a list of log record keys that are mapped
+          to Loki stream labels. \n By default, this list is combined with the labels
+          specified in the Global configuration. This behavior can be changed by setting
+          IgnoreGlobal to true."
+        displayName: Label Keys
+        path: outputs[0].lokiStack.labelKeys.infrastructure.labelKeys
+      - description: Target points to the LokiStack resources that should be used
+          as a target for the output.
+        displayName: Target LokiStack Reference
+        path: outputs[0].lokiStack.target
+      - description: Name of the in-cluster LokiStack resource.
+        displayName: LokiStack Name
+        path: outputs[0].lokiStack.target.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Namespace of the in-cluster LokiStack resource. \n If unset,
+          this defaults to \"openshift-logging\"."
+        displayName: LokiStack Namespace
+        path: outputs[0].lokiStack.target.namespace
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].lokiStack.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].lokiStack.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].lokiStack.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].lokiStack.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].lokiStack.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].lokiStack.tuning.minRetryDuration
+      - description: Name used to refer to the output from a `pipeline`.
+        displayName: Output Name
+        path: outputs[0].name
+      - displayName: OpenTelemetry Output
+        path: outputs[0].otlp
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].otlp.authentication
+      - description: Password to use for authenticating requests.
+        displayName: Password
+        path: outputs[0].otlp.authentication.password
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].otlp.authentication.password.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].otlp.authentication.password.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Bearer Token
+        path: outputs[0].otlp.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].otlp.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].otlp.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].otlp.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].otlp.authentication.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Username to use for authenticating requests.
+        displayName: Username
+        path: outputs[0].otlp.authentication.username
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].otlp.authentication.username.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].otlp.authentication.username.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].otlp.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network. It is an error if the compression type is not supported by
+          the output.
+        displayName: Compression
+        path: outputs[0].otlp.tuning.compression
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Delivery Mode
+        path: outputs[0].otlp.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].otlp.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].otlp.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].otlp.tuning.minRetryDuration
+      - description: "URL to send log records to. \n An absolute URL, with a valid
+          http scheme. Must terminate with `/v1/logs` \n Basic TLS is enabled if the
+          URL scheme requires it (for example 'https'). The 'username@password' part
+          of `url` is ignored."
+        displayName: Destination URL
+        path: outputs[0].otlp.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Limit imposes a limit in records-per-second on the total aggregate
+          rate of logs forwarded to this output from any given collector container.
+          The total log flow from an individual collector container to this output
+          cannot exceed the limit.  Generally, one collector is deployed per cluster
+          node Logs may be dropped to enforce the limit. Missing or 0 means no rate
+          limit.
+        displayName: Rate Limiting
+        path: outputs[0].rateLimit
       - description: MaxRecordsPerSecond is the maximum number of log records allowed
           per input/output in a pipeline
         displayName: Max Records Per Second
         path: outputs[0].rateLimit.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - displayName: Splunk
+        path: outputs[0].splunk
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].splunk.authentication
+      - description: Token points to the secret containing the Splunk HEC token used
+          for authenticating requests.
+        displayName: Splunk HEC Token
+        path: outputs[0].splunk.authentication.token
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].splunk.authentication.token.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].splunk.authentication.token.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Index is the index for the logs. This supports template syntax
+          to allow dynamic per-event values. \n The Index can be a combination of
+          static and dynamic values consisting of field paths followed by `||` followed
+          by another field path or a static value. \n A dynamic value is encased in
+          single curly brackets `{}` and MUST end with a static fallback value separated
+          with `||`. \n Static values can only contain alphanumeric characters along
+          with dashes, underscores, dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"}
+          \n 2. {.foo||.bar||\"missing\"} \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
+        displayName: Index
+        path: outputs[0].splunk.index
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].splunk.tuning
+      - description: Compression causes data to be compressed before sending over
+          the network.
+        displayName: Compression
+        path: outputs[0].splunk.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].splunk.tuning.delivery
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].splunk.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].splunk.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].splunk.tuning.minRetryDuration
+      - description: URL to send log records to. Basic TLS is enabled if the URL scheme
+          requires it (for example 'https' or 'tls'). The 'username@password' part
+          of `url` is ignored.
+        displayName: Destination URL
+        path: outputs[0].splunk.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Syslog Output
+        path: outputs[0].syslog
+      - description: "AppName is APP-NAME part of the syslog-msg header. \n AppName
+          needs to be specified if using rfc5424. The maximum length of the final
+          values is truncated to 48 This supports template syntax to allow dynamic
+          per-event values. \n The AppName can be a combination of static and dynamic
+          values consisting of field paths followed by `||` followed by another field
+          path or a static value. \n A dynamic value is encased in single curly brackets
+          `{}` and MUST end with a static fallback value separated with `||`. \n Static
+          values can only contain alphanumeric characters along with dashes, underscores,
+          dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
+          \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+          \n TODO: DETERMIN HOW to default the app name that isnt based on fluentd
+          assumptions of \"tag\" when this is empty"
+        displayName: App Name
+        path: outputs[0].syslog.appName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Enrichment is an additional modification the log message before
+          forwarding it to the receiver
+        displayName: Enrichment Type
+        path: outputs[0].syslog.enrichment
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "Facility to set on outgoing syslog records. \n Facility values
+          are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1. \n The
+          value can be a decimal integer. Facility keywords are not standardized,
+          this API recognizes at least the following case-insensitive keywords (defined
+          by https://en.wikipedia.org/wiki/Syslog#Facility_Levels): \n kernel user
+          mail daemon auth syslog lpr news uucp cron authpriv ftp ntp security console
+          solaris-cron local0 local1 local2 local3 local4 local5 local6 local7"
+        displayName: Facility
+        path: outputs[0].syslog.facility
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "MsgID is MSGID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The MsgID can be a
+          combination of static and dynamic values consisting of field paths followed
+          by `||` followed by another field path or a static value. \n A dynamic value
+          is encased in single curly brackets `{}` and MUST end with a static fallback
+          value separated with `||`. \n Static values can only contain alphanumeric
+          characters along with dashes, underscores, dots and forward slashes. \n
+          Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
+          foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+          \n MsgID needs to be specified if using rfc5424.  The maximum length of
+          the final values is truncated to 32"
+        displayName: MSGID
+        path: outputs[0].syslog.msgID
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "PayloadKey specifies record field to use as payload. This supports
+          template syntax to allow dynamic per-event values. \n The PayloadKey must
+          be a single field path encased in single curly brackets `{}`. \n Field paths
+          must only contain alphanumeric and underscores. Any field with other characters
+          must be quoted. \n If left empty, Syslog will use the whole message as the
+          payload key \n Example: \n 1. {.bar} \n 2. {.foo.bar.baz} \n 3. {.foo.bar.\"baz/with/slashes\"}"
+        displayName: Payload Key
+        path: outputs[0].syslog.payloadKey
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "ProcID is PROCID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The ProcID can be
+          a combination of static and dynamic values consisting of field paths followed
+          by `||` followed by another field path or a static value. \n A dynamic value
+          is encased in single curly brackets `{}` and MUST end with a static fallback
+          value separated with `||`. \n Static values can only contain alphanumeric
+          characters along with dashes, underscores, dots and forward slashes. \n
+          Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
+          foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
+          \n ProcID needs to be specified if using rfc5424. The maximum length of
+          the final values is truncated to 128"
+        displayName: PROCID
+        path: outputs[0].syslog.procID
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Syslog RFC
+        path: outputs[0].syslog.rfc
+      - description: "Severity to set on outgoing syslog records. \n Severity values
+          are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1 \n The
+          value can be a decimal integer or one of these case-insensitive keywords:
+          \n Emergency Alert Critical Error Warning Notice Informational Debug"
+        displayName: Severity
+        path: outputs[0].syslog.severity
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: 'An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`,
+          `udp` and `udps` For example, to send syslog records using secure UDP: url:
+          udps://syslog.example.com:1234'
+        displayName: Destination URL
+        path: outputs[0].syslog.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: TLS contains settings for controlling options on TLS client connections.
+        displayName: TLS Options
+        path: outputs[0].tls
+      - description: CA can be used to specify a custom list of trusted certificate
+          authorities.
+        displayName: Certificate Authority Bundle
+        path: outputs[0].tls.ca
+      - description: ConfigMapName contains the name of the ConfigMap containing the
+          referenced value.
+        displayName: ConfigMap Name
+        path: outputs[0].tls.ca.configMapName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value in either the referenced
@@ -267,34 +1387,108 @@ spec:
         path: outputs[0].tls.ca.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].tls.ca.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Certificate points to the server certificate to use.
+        displayName: Certificate
+        path: outputs[0].tls.certificate
+      - description: ConfigMapName contains the name of the ConfigMap containing the
+          referenced value.
+        displayName: ConfigMap Name
+        path: outputs[0].tls.certificate.configMapName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Name of the key used to get the value in either the referenced
           ConfigMap or Secret.
         displayName: Key Name
         path: outputs[0].tls.certificate.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].tls.certificate.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: "If InsecureSkipVerify is true, then the TLS client will be configured
+          to skip validating server certificates. \n This option is *not* recommended
+          for production configurations."
+        displayName: Skip Certificate Validation
+        path: outputs[0].tls.insecureSkipVerify
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:booleanSwitch
+      - description: Key points to the private key of the server certificate.
+        displayName: Certificate Key
+        path: outputs[0].tls.key
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].tls.key.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].tls.key.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: KeyPassphrase points to the passphrase used to unlock the private
+          key.
+        displayName: Certificate Key Passphrase
+        path: outputs[0].tls.keyPassphrase
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
         path: outputs[0].tls.keyPassphrase.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].tls.keyPassphrase.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: TLSSecurityProfile is the security profile to apply to the output
+          connection.
+        displayName: TLS Security Profile
+        path: outputs[0].tls.securityProfile
+      - description: Type of output sink.
+        displayName: Output Type
+        path: outputs[0].type
       - description: Pipelines forward the messages selected by a set of inputs to
           a set of outputs.
         displayName: Log Forwarder Pipelines
         path: pipelines
+      - description: "Filters lists the names of filters to be applied to records
+          going through this pipeline. \n Each filter is applied in order. If a filter
+          drops a records, subsequent filters are not applied."
+        displayName: Filters
+        path: pipelines[0].filterRefs
+      - description: "InputRefs lists the names (`input.name`) of inputs to this pipeline.
+          \n The following built-in input names are always available: \n - `application`
+          selects all logs from application pods. \n - `infrastructure` selects logs
+          from openshift and kubernetes pods and some node logs. \n - `audit` selects
+          node logs related to security audits."
+        displayName: Inputs
+        path: pipelines[0].inputRefs
       - description: Name of the pipeline
         displayName: Name
         path: pipelines[0].name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: OutputRefs lists the names (`output.name`) of outputs from this
+          pipeline.
+        displayName: Outputs
+        path: pipelines[0].outputRefs
+      - description: ServiceAccount points to the ServiceAccount resource used by
+          the collector pods.
+        displayName: Service Account
+        path: serviceAccount
       - description: Name of the ServiceAccount to use to deploy the Forwarder.  The
           ServiceAccount is created by the administrator
-        displayName: Name
+        displayName: ServiceAccount Name
         path: serviceAccount.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text

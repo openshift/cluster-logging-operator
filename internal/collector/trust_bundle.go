@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -25,7 +24,7 @@ var (
 
 // ReconcileTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
 // By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
-func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
+func ReconcileTrustedCABundleConfigMap(k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
 	desired := runtime.NewConfigMap(
 		namespace,
 		name,
@@ -38,14 +37,12 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 
 	utils.AddOwnerRefToObject(desired, owner)
 
-	reason := constants.EventReasonGetObject
 	var current *corev1.ConfigMap
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current = &corev1.ConfigMap{}
 		key := client.ObjectKeyFromObject(desired)
 		if err := k8sClient.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
-				reason = constants.EventReasonCreateObject
 				if err = k8sClient.Create(context.TODO(), desired); err != nil {
 					return err
 				}
@@ -61,19 +58,11 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 		}
 		current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
 		current.OwnerReferences = desired.OwnerReferences
-		reason = constants.EventReasonUpdateObject
 		if err := k8sClient.Update(context.TODO(), current); err != nil {
 			return err
 		}
 		return fmt.Errorf("waiting for %v ConfigMap to get created", key)
 	})
-	eventType := corev1.EventTypeNormal
-	msg := fmt.Sprintf("%s ConfigMap %s/%s", reason, desired.Namespace, desired.Name)
-	if retryErr != nil {
-		eventType = corev1.EventTypeWarning
-		msg = fmt.Sprintf("Unable to %s: %v", msg, retryErr)
-	}
-	er.Event(desired, eventType, reason, msg)
 	if retryErr != nil {
 		log.Error(retryErr, "collector.ReconcileTrustedCABundleConfigMap")
 		return retryErr

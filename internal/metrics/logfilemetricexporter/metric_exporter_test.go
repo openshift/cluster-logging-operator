@@ -19,7 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -59,7 +58,6 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 			cluster,
 			namespace,
 		)
-		recorder = record.NewFakeRecorder(100)
 
 		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{}
 
@@ -98,7 +96,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		}
 
 		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, recorder, utils.AsOwner(lfmeInstance))).To(Succeed())
+		Expect(Reconcile(lfmeInstance, reqClient, utils.AsOwner(lfmeInstance))).To(Succeed())
 
 		// Daemonset
 		// Get and check the daemonset

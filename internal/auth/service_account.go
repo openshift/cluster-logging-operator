@@ -12,17 +12,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileServiceAccount reconciles the serviceAccount for a workload
-func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
+func ReconcileServiceAccount(k8sClient client.Client, namespace string, resNames *factory.ForwarderResourceNames, owner metav1.OwnerReference) (err error) {
 	if namespace == constants.OpenshiftNS && resNames.ServiceAccount == constants.LogfilesmetricexporterName {
 		serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
 		utils.AddOwnerRefToObject(serviceAccount, owner)
 		serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-		if serviceAccount, err = reconcile.ServiceAccount(er, k8sClient, serviceAccount); err != nil {
+		if serviceAccount, err = reconcile.ServiceAccount(k8sClient, serviceAccount); err != nil {
 			return err
 		}
 		_, err = ReconcileServiceAccountTokenSecret(serviceAccount, k8sClient, namespace, resNames.ServiceAccountTokenSecret, owner)

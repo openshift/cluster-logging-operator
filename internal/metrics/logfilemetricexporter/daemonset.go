@@ -7,13 +7,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileDaemonset reconciles the daemonset for the LogFileMetricExporter
 func ReconcileDaemonset(exporter loggingv1alpha1.LogFileMetricExporter,
-	er record.EventRecorder,
 	k8sClient client.Client,
 	namespace,
 	name string,
@@ -22,5 +20,5 @@ func ReconcileDaemonset(exporter loggingv1alpha1.LogFileMetricExporter,
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
 	desired := NewDaemonSet(exporter, namespace, name, tls.GetClusterTLSProfileSpec(tlsProfile), visitors...)
 	utils.AddOwnerRefToObject(desired, owner)
-	return reconcile.DaemonSet(er, k8sClient, desired)
+	return reconcile.DaemonSet(k8sClient, desired)
 }

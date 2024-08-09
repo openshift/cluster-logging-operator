@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -51,7 +50,6 @@ var _ = Describe("Reconcile Service", func() {
 			cluster,
 			namespace,
 		)
-		recorder      = record.NewFakeRecorder(100)
 		portName      = "test-port"
 		port          = int32(1337)
 		certSecret    = "test-secret"
@@ -70,7 +68,7 @@ var _ = Describe("Reconcile Service", func() {
 
 	It("should successfully reconcile the service", func() {
 		// Reconcile the service
-		Expect(ReconcileService(recorder,
+		Expect(ReconcileService(
 			reqClient,
 			constants.OpenshiftNS,
 			serviceName,

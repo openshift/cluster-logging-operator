@@ -14,7 +14,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -22,7 +21,6 @@ import (
 
 func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	requestClient client.Client,
-	er record.EventRecorder,
 	owner metav1.OwnerReference) error {
 
 	// Adding common labels
@@ -42,28 +40,27 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		MetadataReaderClusterRoleBinding: "cluster-logging-" + constants.LogfilesmetricexporterName + "-metadata-reader",
 	}
 
-	if err := auth.ReconcileServiceAccount(er, requestClient, lfmeInstance.Namespace, resNames, owner); err != nil {
+	if err := auth.ReconcileServiceAccount(requestClient, lfmeInstance.Namespace, resNames, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceAccount")
 		return err
 	}
 
-	if err := auth.ReconcileRBAC(er, requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount, owner); err != nil {
+	if err := auth.ReconcileRBAC(requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileRBAC")
 		return err
 	}
 
-	if err := network.ReconcileService(er, requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
+	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
 		return err
 	}
 
-	if err := metrics.ReconcileServiceMonitor(er, requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
 		return err
 	}
 
 	if err := ReconcileDaemonset(*lfmeInstance,
-		er,
 		requestClient,
 		lfmeInstance.Namespace,
 		resNames.CommonName,

@@ -7,23 +7,22 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileRBAC reconciles the RBAC specifically for the service account and SCC
-func ReconcileRBAC(er record.EventRecorder, k8sClient client.Client, rbacName, saNamespace, saName string, owner metav1.OwnerReference) error {
+func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string, owner metav1.OwnerReference) error {
 	desiredCRB := NewMetaDataReaderClusterRoleBinding(saNamespace, saName, owner)
 	if err := reconcile.ClusterRoleBinding(k8sClient, desiredCRB.Name, func() *rbacv1.ClusterRoleBinding { return desiredCRB }); err != nil {
 		return err
 	}
 	desiredSCCRole := NewServiceAccountSCCRole(saNamespace, saName, owner)
-	if err := reconcile.Role(er, k8sClient, desiredSCCRole); err != nil {
+	if err := reconcile.Role(k8sClient, desiredSCCRole); err != nil {
 		return err
 	}
 
 	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, rbacName, desiredSCCRole.Name, saName, owner)
-	return reconcile.RoleBinding(er, k8sClient, desiredSCCRoleBinding)
+	return reconcile.RoleBinding(k8sClient, desiredSCCRoleBinding)
 }
 
 // NewMetaDataReaderClusterRoleBinding stubs a clusterrolebinding to allow reading of pod metadata (i.e. labels)

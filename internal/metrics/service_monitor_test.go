@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -54,7 +53,6 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 			cluster,
 			namespace,
 		)
-		recorder    = record.NewFakeRecorder(100)
 		owner       = utils.AsOwner(cluster)
 		portName    = "test-port"
 		serviceName = "test-service"
@@ -66,7 +64,7 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 
 	It("should successfully reconcile the ServiceMonitor", func() {
 		// Reconcile the exporter daemonset
-		Expect(ReconcileServiceMonitor(recorder,
+		Expect(ReconcileServiceMonitor(
 			reqClient,
 			cluster.GetNamespace(),
 			serviceName,

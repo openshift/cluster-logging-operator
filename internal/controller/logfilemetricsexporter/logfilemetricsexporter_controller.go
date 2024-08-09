@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -30,9 +29,8 @@ import (
 var _ reconcile.Reconciler = &ReconcileLogFileMetricExporter{}
 
 type ReconcileLogFileMetricExporter struct {
-	Client   client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Client client.Client
+	Scheme *runtime.Scheme
 	//ClusterVersion is the semantic version of the cluster
 	ClusterVersion string
 	//ClusterID is the unique identifier of the cluster in which the operator is deployed
@@ -51,7 +49,6 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	log.V(3).Info("logfilemetricsexporter-controller fetching LFME instance")
 
 	lfmeInstance := loggingruntime.NewLogFileMetricExporter(request.NamespacedName.Namespace, request.NamespacedName.Name)
-	r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, "ReconcilingLFMECR", "Reconciling Log File Metrics Exporter resource")
 
 	if err := r.Client.Get(ctx, request.NamespacedName, lfmeInstance); err != nil {
 		log.V(2).Info("logfilemetricsexporter-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
@@ -67,12 +64,11 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "validation failed: %v", err)
 		setCondition(&lfmeInstance.Status, condition)
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, loggingv1alpha1.ReasonInvalid, condition.Message)
 		return r.updateStatus(lfmeInstance)
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.Recorder, utils.AsOwner(lfmeInstance))
+	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, reconcileErr.Error())
@@ -80,12 +76,9 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		log.V(2).Error(reconcileErr, "logfilemetricexporter-controller returning, error")
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, loggingv1alpha1.ReasonInvalid, reconcileErr.Error())
 	} else {
 		condition := condReady()
-		if updated := setCondition(&lfmeInstance.Status, condition); !updated {
-			r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, condition.Type, "LogFileMetricExporter deployed and ready")
-		}
+		setCondition(&lfmeInstance.Status, condition)
 	}
 
 	if result, err := r.updateStatus(lfmeInstance); err != nil {

@@ -9,13 +9,12 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime/service"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/set"
 	kubernetes "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileInputServices evaluates receiver inputs and deploys services for them
-func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient kubernetes.Client, k8sReader kubernetes.Reader, namespace, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
+func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader kubernetes.Reader, namespace, selectorComponent string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 
 	if err := RemoveOrphanedInputServices(k8sClient, k8sReader, namespace, f.ForwarderSpec, *f.ResourceNames, owner, true); err != nil {
 		return err
@@ -26,7 +25,7 @@ func (f *Factory) ReconcileInputServices(er record.EventRecorder, k8sClient kube
 		serviceName := f.ResourceNames.GenerateInputServiceName(input.Name)
 		if input.Receiver != nil {
 			listenPort = input.Receiver.Port
-			if err := network.ReconcileInputService(er, k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
+			if err := network.ReconcileInputService(k8sClient, namespace, serviceName, selectorComponent, serviceName, listenPort, listenPort, input.Receiver.Type, f.isDaemonset, owner, visitors); err != nil {
 				return err
 			}
 		}

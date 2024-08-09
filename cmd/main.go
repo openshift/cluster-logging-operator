@@ -143,7 +143,6 @@ func main() {
 	if err = (&logfilemetricsexporter.ReconcileLogFileMetricExporter{
 		Client:         mgr.GetClient(),
 		Scheme:         mgr.GetScheme(),
-		Recorder:       &observabilitycontroller.NoOpEventRecorder{},
 		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {

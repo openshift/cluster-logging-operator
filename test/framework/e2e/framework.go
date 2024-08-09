@@ -162,9 +162,6 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace, name stri
 }
 
 func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(namespace, endpoint string) error {
-	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
-		return err
-	}
 	pod := testruntime.NewCURLLogGenerator(namespace, "log-generator", endpoint, 0, 0, "My life is my message")
 	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
 	opts := metav1.CreateOptions{}

@@ -33,9 +33,8 @@ cluster_resources+=(ns/openshift-operators-redhat)
 
 # multi-forwarder namespaces
 for kind in $(oc get crd -A -o custom-columns=:.metadata.name | grep clusterlogforwarder); do
-namespaces=$(oc get $kind -A -o custom-columns=:.metadata.namespace | sort -u)
-for multi in ${namespaces} ; do
-    if [ "$multi" != $LOGGING_NS ] ; then
+  namespaces=$(oc get $kind -A -o custom-columns=:.metadata.namespace | sort -u)
+  for multi in ${namespaces} ; do
       # add to the list of namespaces
       cluster_resources+=(ns/$multi)
       log "Adding namespace '$multi' to cluster resources list" >> "${LOGFILE_PATH}"
@@ -43,8 +42,7 @@ for multi in ${namespaces} ; do
       # get collector resources from the namespace
       log "Inspecting collector resources in namespace '$multi'" | tee "${LOGFILE_PATH}"
       ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" "$multi" 2>&1 >> "${LOGFILE_PATH}"
-    fi
-done
+  done
 done
 
 # cluster-scoped resources

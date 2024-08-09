@@ -3,7 +3,6 @@ package status
 import (
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -51,7 +50,7 @@ var _ = Describe("ClusterLogForwarderReconciliation", func() {
 				Outputs: []obs.OutputSpec{
 					{
 						Name: miscellaneousReceiverName,
-						Type: loggingv1.OutputTypeLoki,
+						Type: obs.OutputTypeLoki,
 						Loki: &obs.Loki{
 							URLSpec: obs.URLSpec{
 								URL: "http://127.0.0.1:3100",

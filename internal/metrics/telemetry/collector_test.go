@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 	"strings"
 
@@ -129,7 +128,7 @@ log_forwarder_pipelines{resource_name="test-name",resource_namespace="test-names
 					Status: loggingv1alpha1.LogFileMetricExporterStatus{
 						Conditions: []status.Condition{
 							{
-								Type:   loggingv1.ConditionReady,
+								Type:   loggingv1alpha1.ConditionReady,
 								Status: corev1.ConditionTrue,
 							},
 						},

@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/url"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 type ElasticsearchVersion int
@@ -46,7 +45,7 @@ func AddESOutput(version ElasticsearchVersion, b *runtime.PodBuilder, output obs
 	}
 
 	log.V(2).Info("Adding container", "name", name)
-	log.V(2).Info("Adding ElasticSearch output container", "name", logging.OutputTypeElasticsearch)
+	log.V(2).Info("Adding ElasticSearch output container", "name", obs.OutputTypeElasticsearch)
 
 	b.AddContainer(name, esVersionToImage[version]).
 		AddEnvVar("discovery.type", "single-node").

@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -139,11 +138,12 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 	})
 
 	dOpts := metav1.CreateOptions{}
-	logStore.Deployment = k8shandler.NewDeployment(
-		container.Name,
+	logStore.Deployment = factory.NewDeployment(
 		ns,
 		container.Name,
+		container.Name,
 		serviceAccount.Name,
+		"",
 		podSpec,
 	)
 	// Add instance label to pod spec template. Service now selects using instance name as well

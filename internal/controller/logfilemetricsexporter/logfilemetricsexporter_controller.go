@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -38,10 +37,10 @@ type ReconcileLogFileMetricExporter struct {
 	ClusterID string
 }
 
-var condReady = status.Condition{Type: loggingv1.ConditionReady, Status: corev1.ConditionTrue}
+var condReady = status.Condition{Type: loggingv1alpha1.ConditionReady, Status: corev1.ConditionTrue}
 
 func condNotReady(r status.ConditionReason, format string, args ...interface{}) status.Condition {
-	return loggingv1.NewCondition(loggingv1.ConditionReady, corev1.ConditionFalse, r, format, args...)
+	return loggingv1alpha1.NewCondition(loggingv1alpha1.ConditionReady, corev1.ConditionFalse, r, format, args...)
 }
 
 func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
@@ -62,9 +61,9 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 	// Validate LogFileMetricExporter instance
 	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
-		condition := loggingv1.CondInvalid("validation failed: %v", err)
+		condition := loggingv1alpha1.CondInvalid("validation failed: %v", err)
 		lfmeInstance.Status.Conditions.SetCondition(condition)
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), condition.Message)
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1alpha1.ReasonInvalid), condition.Message)
 		return r.updateStatus(lfmeInstance)
 	}
 
@@ -73,11 +72,11 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 	if reconcileErr != nil {
 		lfmeInstance.Status.Conditions.SetCondition(
-			condNotReady(loggingv1.ReasonInvalid, reconcileErr.Error()))
+			condNotReady(loggingv1alpha1.ReasonInvalid, reconcileErr.Error()))
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		log.V(2).Error(reconcileErr, "logfilemetricexporter-controller returning, error")
 
-		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), reconcileErr.Error())
+		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1alpha1.ReasonInvalid), reconcileErr.Error())
 	} else {
 		if !lfmeInstance.Status.Conditions.SetCondition(condReady) {
 			r.Recorder.Event(lfmeInstance, corev1.EventTypeNormal, string(condReady.Type), "LogFileMetricExporter deployed and ready")

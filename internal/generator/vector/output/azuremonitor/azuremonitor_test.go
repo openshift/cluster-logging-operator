@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -60,7 +59,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			},
 		}
 		outputCommon = obs.OutputSpec{
-			Type: loggingv1.OutputTypeAzureMonitor,
+			Type: obs.OutputTypeAzureMonitor,
 			Name: outputName,
 			AzureMonitor: &obs.AzureMonitor{
 				CustomerId: customerId,

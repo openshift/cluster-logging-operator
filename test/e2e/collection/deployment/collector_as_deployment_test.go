@@ -29,7 +29,6 @@ var _ = Describe("Test collector deployment type", func() {
 		deploymentAnnotation = map[string]string{constants.AnnotationEnableCollectorAsDeployment: "true"}
 		fluentDeployment     *apps.Deployment
 		deployNS             string
-		logGenNS             string
 		e2e                  = framework.NewE2ETestFramework()
 		serviceAccount       *corev1.ServiceAccount
 	)
@@ -48,7 +47,8 @@ var _ = Describe("Test collector deployment type", func() {
 
 			httpReceiverServiceName := fmt.Sprintf("%s-%s", forwarderName, receiverName)
 			httpReceiverEndpoint := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", httpReceiverServiceName, deployNS, receiverPort)
-			if logGenNS, err = e2e.DeployCURLLogGenerator(httpReceiverEndpoint); err != nil {
+
+			if err = e2e.DeployCURLLogGeneratorWithNamespaceAndEndpoint(deployNS, httpReceiverEndpoint); err != nil {
 				Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
 			}
 
@@ -121,7 +121,6 @@ var _ = Describe("Test collector deployment type", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
 		})
 	})
 

@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -35,25 +34,19 @@ func (tc *E2ETestFramework) WaitForDaemonSet(namespace, name string) error {
 	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
-	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(cxt context.Context) (done bool, err error) {
-		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get ds/%s --ignore-not-found -o jsonpath={.status.numberUnavailable}", namespace, name)).Run()
-		if err == nil {
-			if numUnavail == "" {
-				numUnavail = "0"
-			}
-			value, err := strconv.Atoi(strings.TrimSpace(numUnavail))
-			if err != nil {
-				times = 0
-				return false, err
-			}
-			if value == 0 {
-				times++
-			} else {
-				times = 0
-			}
-			if times == maxtimes {
-				return true, nil
-			}
+	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(cxt context.Context) (done bool, _ error) {
+
+		ds, err := tc.KubeClient.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			clolog.V(0).Error(err, "error polling and waiting for daemonset", "namespace", namespace, "name", name)
+			return false, nil
+		}
+		if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+			times++
+		}
+		if times == maxtimes {
+			clolog.V(3).Info("Successfully waited for daemonset", "namespace", namespace, "name", name)
+			return true, nil
 		}
 		return false, nil
 	})

@@ -104,11 +104,13 @@ var _ = Describe("Tests of collector container security stance", func() {
 			Fail(fmt.Sprintf("Failed waiting for collector %s/%s to be ready: %v", forwarder.Namespace, forwarder.Name, err))
 		}
 
-		pods, err := e2e.Client().CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: "component=collector",
+		labelSelector := fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.CollectorName)
+		pods, err := e2e.KubeClient.CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: labelSelector,
 		})
+
 		Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
-		Expect(pods.Items).ToNot(BeEmpty(), "Exp. to find deployed collector pods")
+		Expect(pods.Items).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find deployed collector pods in %q with label %q", forwarder.Namespace, labelSelector))
 		collector = pods.Items[0].Name
 
 		By("having all Linux capabilities disabled")
@@ -134,7 +136,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		By("not running as a privileged container")
-		result, err = oc.Get().WithNamespace(forwarder.Namespace).Pod().Selector("component=collector").
+		result, err = oc.Get().WithNamespace(forwarder.Namespace).Pod().Selector(labelSelector).
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())

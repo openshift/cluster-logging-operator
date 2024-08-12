@@ -1,10 +1,12 @@
 package drop
 
 import (
+	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"time"
-
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -80,5 +82,50 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			Expect(hasInfoMessage).To(BeTrue())
 		})
 
+		It("should drop logs that have `.responseStatus.code` not equals 403", func() {
+			f = functional.NewCollectorFunctionalFramework()
+
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				WithFilter(dropFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypeDrop
+					spec.DropTestsSpec = []obs.DropTest{
+						{
+							DropConditions: []obs.DropCondition{
+								{
+									Field:      ".responseStatus.code",
+									NotMatches: "403",
+								},
+							},
+						},
+					}
+				}).
+				ToElasticSearchOutput()
+
+			Expect(f.Deploy()).To(BeNil())
+
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(403), 10)).To(BeNil())
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(404), 10)).To(BeNil())
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(200), 10)).To(BeNil())
+
+			logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
+			Expect(len(logs)).To(BeEquivalentTo(10))
+			var auditLogs []types.OpenshiftAuditLog
+			err = types.StrictlyParseLogs(utils.ToJsonLogs(logs), &auditLogs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %v", logs)
+			for _, auditLog := range auditLogs {
+				Expect(auditLog.ResponseStatus.Code).To(Equal(403))
+			}
+		})
+
 	})
+
 })
+
+func makeLog(code int) string {
+	now := functional.CRIOTime(time.Now())
+	auditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"Metadata", "responseStatus":{"code":%d}}`, now, code)
+	return auditLogLine
+}

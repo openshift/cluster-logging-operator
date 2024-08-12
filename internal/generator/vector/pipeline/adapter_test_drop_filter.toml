@@ -153,7 +153,7 @@ if .log_source == "node" {
 type = "filter"
 inputs = ["pipeline_mypipeline_viaq_1"]
 condition = '''
-!((!match(.kubernetes.namespace_name, r'very-important') && match(.level, r'warning|error|critical') ?? false) || (match(.message, r'foobar') && !match(.kubernetes.namespace_labels."test-dashes/slashes", r'true') ?? false))
+!((!match(to_string(.kubernetes.namespace_name) ?? "", r'very-important') && match(to_string(.level) ?? "", r'warning|error|critical')) || (match(to_string(.message) ?? "", r'foobar') && !match(to_string(.kubernetes.namespace_labels."test-dashes/slashes") ?? "", r'true')))
 '''
 
 [transforms.pipeline_mypipeline_viaqdedot_3]

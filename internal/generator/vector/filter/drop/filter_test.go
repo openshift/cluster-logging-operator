@@ -46,7 +46,7 @@ var _ = Describe("drop filter", func() {
 				},
 			}
 			Expect(NewFilter(spec).VRL()).To(matchers.EqualTrimLines(`
-!((match(.kubernetes.namespace_name, r'busybox') && !match(.level, r'd.+') ?? false) || (match(.log_type, r'application') ?? false) || (match(.kubernetes.container_name, r'error|warning') && !match(.kubernetes.labels.test, r'foo') ?? false))
+!((match(to_string(.kubernetes.namespace_name) ?? "", r'busybox') && !match(to_string(.level) ?? "", r'd.+')) || (match(to_string(.log_type) ?? "", r'application')) || (match(to_string(.kubernetes.container_name) ?? "", r'error|warning') && !match(to_string(.kubernetes.labels.test) ?? "", r'foo')))
 `))
 		})
 	})

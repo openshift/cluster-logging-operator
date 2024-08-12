@@ -3,7 +3,7 @@ package misc
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	obs "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -15,7 +15,7 @@ var _ = Describe("[Functional][Misc][API_CLI] Functional test", func() {
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).FromInput(obs.InputNameInfrastructure).ToHttpOutput()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).FromInput(obs.InputTypeInfrastructure).ToHttpOutput()
 	})
 
 	AfterEach(func() {

@@ -18,7 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	apicontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -37,7 +36,6 @@ import (
 var _ = Describe("Reconciling the Collector", func() {
 	defer GinkgoRecover()
 
-	_ = loggingv1.SchemeBuilder.AddToScheme(scheme.Scheme)
 	_ = monitoringv1.AddToScheme(scheme.Scheme)
 	_ = securityv1.Install(scheme.Scheme)
 	_ = configv1.Install(scheme.Scheme)

@@ -150,7 +150,7 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 }
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType, logSource interface{}) ([]framework.Element, []string) {
+func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	if spec.Application != nil {

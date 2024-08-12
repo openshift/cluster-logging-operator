@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -68,7 +67,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	Context("When sending a sequence of app log messages to CloudWatch", func() {
 		It("should be able to read messages from application log group", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 
@@ -77,7 +76,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
 			time.Sleep(10 * time.Second)
 
-			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			logs, err := framework.ReadLogsFromCloudwatch(string(obs.InputTypeApplication))
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))
 		})
@@ -85,7 +84,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		Context("group_name", func() {
 			DescribeTable("templated group_name", func(groupName, expGroupName string) {
 				obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-					FromInput(logging.InputNameApplication).
+					FromInput(obs.InputTypeApplication).
 					ToCloudwatchOutput(*obsCwAuth, func(output *obs.OutputSpec) {
 						output.Cloudwatch.GroupName = groupName
 					})
@@ -139,7 +138,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
 			time.Sleep(10 * time.Second)
 
-			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			logs, err := framework.ReadLogsFromCloudwatch(string(obs.InputTypeApplication))
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))
 			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)))
@@ -177,7 +176,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), framework.Namespace, 1)).To(Succeed())
 			time.Sleep(10 * time.Second)
 
-			raw, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			raw, err := framework.ReadLogsFromCloudwatch(string(obs.InputTypeApplication))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
@@ -188,11 +187,11 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	Context("When sending audit log messages to CloudWatch", func() {
 		var (
 			numLogsSent = 2
-			readLogType = logging.InputNameAudit
+			readLogType = obs.InputTypeAudit
 		)
 		It("should appear in the audit log group with audit log_type", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
+				FromInput(obs.InputTypeAudit).
 				ToCloudwatchOutput(*obsCwAuth)
 			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.Deploy()).To(BeNil())
@@ -205,7 +204,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			time.Sleep(10 * time.Second)
 
 			// Get audit logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(readLogType)
+			logs, err := framework.ReadLogsFromCloudwatch(string(readLogType))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
 			Expect(logs[0]).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)))
@@ -215,7 +214,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	Context("When setting tuning parameters", func() {
 		DescribeTable("with compression", func(compression string) {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToCloudwatchOutput(*obsCwAuth, func(output *obs.OutputSpec) {
 					output.Cloudwatch.Tuning = &obs.CloudwatchTuningSpec{
 						Compression: compression,
@@ -228,7 +227,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
 			time.Sleep(10 * time.Second)
 
-			logs, err := framework.ReadLogsFromCloudwatch(logging.InputNameApplication)
+			logs, err := framework.ReadLogsFromCloudwatch(string(obs.InputTypeApplication))
 
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))

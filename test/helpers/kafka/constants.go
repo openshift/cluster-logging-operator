@@ -2,8 +2,7 @@ package kafka
 
 import (
 	"fmt"
-
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 const (
@@ -20,14 +19,14 @@ const (
 )
 
 var (
-	inputTypeToTopic map[string]string
+	inputTypeToTopic map[obs.InputType]string
 )
 
 func init() {
-	inputTypeToTopic = map[string]string{
-		loggingv1.InputNameApplication:    AppLogsTopic,
-		loggingv1.InputNameAudit:          AuditLogsTopic,
-		loggingv1.InputNameInfrastructure: InfraLogsTopic,
+	inputTypeToTopic = map[obs.InputType]string{
+		obs.InputTypeApplication:    AppLogsTopic,
+		obs.InputTypeAudit:          AuditLogsTopic,
+		obs.InputTypeInfrastructure: InfraLogsTopic,
 	}
 }
 
@@ -43,5 +42,5 @@ func TopicForInputName(topics []string, inputName string) string {
 	if len(topics) == 1 {
 		return DefaultTopic
 	}
-	return inputTypeToTopic[inputName]
+	return string(inputTypeToTopic[obs.InputType(inputName)])
 }

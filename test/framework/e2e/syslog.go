@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -401,11 +400,12 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	})
 
 	dOpts := metav1.CreateOptions{}
-	syslogDeployment := k8shandler.NewDeployment(
-		container.Name,
+	syslogDeployment := factory.NewDeployment(
 		constants.OpenshiftNS,
 		container.Name,
+		container.Name,
 		serviceAccount.Name,
+		1,
 		podSpec,
 	)
 

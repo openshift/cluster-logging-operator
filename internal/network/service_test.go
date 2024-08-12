@@ -6,10 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,33 +19,15 @@ var _ = Describe("Reconcile Service", func() {
 	defer GinkgoRecover()
 
 	var (
-		cluster = &loggingv1.ClusterLogging{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SingletonName,
-				Namespace: constants.OpenshiftNS,
-			},
-			Spec: loggingv1.ClusterLoggingSpec{
-				ManagementState: loggingv1.ManagementStateManaged,
-				LogStore: &loggingv1.LogStoreSpec{
-					Type: loggingv1.LogStoreTypeElasticsearch,
-				},
-				Collection: &loggingv1.CollectionSpec{
-					Type:          loggingv1.LogCollectionTypeFluentd,
-					CollectorSpec: loggingv1.CollectorSpec{},
-				},
-			},
-		}
-
 		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
 		namespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{"test": "true"},
-				Name:   cluster.Namespace,
+				Name:   constants.OpenshiftNS,
 			},
 		}
 
 		reqClient = fake.NewFakeClient( //nolint
-			cluster,
 			namespace,
 		)
 		portName      = "test-port"
@@ -57,12 +37,12 @@ var _ = Describe("Reconcile Service", func() {
 		serviceName   = "test-service"
 
 		commonLabels = func(o runtime.Object) {
-			runtime.SetCommonLabels(o, "vector", cluster.Name, componentName)
+			runtime.SetCommonLabels(o, "vector", "test", componentName)
 		}
 
-		owner = utils.AsOwner(cluster)
+		owner = metav1.OwnerReference{}
 
-		serviceKey      = types.NamespacedName{Name: serviceName, Namespace: cluster.GetNamespace()}
+		serviceKey      = types.NamespacedName{Name: serviceName, Namespace: namespace.Name}
 		serviceInstance = &corev1.Service{}
 	)
 
@@ -72,7 +52,7 @@ var _ = Describe("Reconcile Service", func() {
 			reqClient,
 			constants.OpenshiftNS,
 			serviceName,
-			cluster.Name,
+			serviceName,
 			componentName,
 			portName,
 			certSecret,

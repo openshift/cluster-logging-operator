@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	securityv1 "github.com/openshift/api/security/v1"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -29,40 +28,22 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 	_ = securityv1.AddToScheme(scheme.Scheme)
 
 	var (
-		cluster = &loggingv1.ClusterLogging{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SingletonName,
-				Namespace: constants.OpenshiftNS,
-			},
-			Spec: loggingv1.ClusterLoggingSpec{
-				ManagementState: loggingv1.ManagementStateManaged,
-				LogStore: &loggingv1.LogStoreSpec{
-					Type: loggingv1.LogStoreTypeElasticsearch,
-				},
-				Collection: &loggingv1.CollectionSpec{
-					Type:          loggingv1.LogCollectionTypeFluentd,
-					CollectorSpec: loggingv1.CollectorSpec{},
-				},
-			},
-		}
-
 		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
 		namespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{"test": "true"},
-				Name:   cluster.Namespace,
+				Name:   constants.OpenshiftNS,
 			},
 		}
 
 		reqClient = fake.NewFakeClient( //nolint
-			cluster,
 			namespace,
 		)
 
 		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{}
 
 		// Daemonset
-		dsKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: cluster.GetNamespace()}
+		dsKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
 		dsInstance = &appsv1.DaemonSet{}
 		reqMem1    = resource.MustParse("50Gi")
 		reqCPU1    = resource.MustParse("300m")
@@ -70,11 +51,11 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		reqCPU2    = resource.MustParse("100m")
 
 		// Service
-		serviceKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: cluster.GetNamespace()}
+		serviceKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
 		serviceInstance = &corev1.Service{}
 
 		// Service Monitor
-		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: cluster.GetNamespace()}
+		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
 		smInstance        = &monitoringv1.ServiceMonitor{}
 	)
 

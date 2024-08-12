@@ -10,6 +10,7 @@ import (
 // NewDeployment stubs an instance of a deployment
 func NewDeployment(namespace, deploymentName, component, impl string, replicas int32, podSpec core.PodSpec, visitors ...func(o runtime.Object)) *apps.Deployment {
 	selectors := runtime.Selectors(deploymentName, component, impl)
+
 	annotations := map[string]string{
 		"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
 	}

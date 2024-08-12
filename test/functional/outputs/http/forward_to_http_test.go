@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -30,11 +29,11 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
+			FromInput(obs.InputTypeApplication).
 			ToHttpOutput(func(output *obs.OutputSpec) {
 				output.HTTP.Tuning = &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-						Delivery:         logging.OutputDeliveryModeAtLeastOnce,
+						Delivery:         obs.DeliveryModeAtLeastOnce,
 						MaxRetryDuration: utils.GetPtr(time.Duration(30)),
 						MinRetryDuration: utils.GetPtr(time.Duration(5)),
 						MaxWrite:         utils.GetPtr(resource.MustParse("1M")),
@@ -114,7 +113,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		DescribeTable("with compression", func(compression string) {
 			framework = functional.NewCollectorFunctionalFramework()
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToHttpOutput(func(output *obs.OutputSpec) {
 					output.HTTP.Tuning = &obs.HTTPTuningSpec{
 						Compression: compression,
@@ -141,7 +140,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(framework.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
-			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeHttp)
+			raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs for type")
 			Expect(raw).ToNot(BeEmpty())
 		},

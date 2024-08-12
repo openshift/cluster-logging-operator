@@ -64,7 +64,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		strategy.VisitSink(sink)
 	}
 	tlsConfig := []Element{Nil}
-	if o.TLS != nil {
+	if o.TLS != nil && isTlsBrokers(o) {
 		skipVerify := o.TLS.InsecureSkipVerify
 		o.TLS.InsecureSkipVerify = false
 		tlsConfig = []Element{tls.New(id, o.TLS, secrets, op, Option{Name: tls.IncludeEnabled, Value: ""})}
@@ -89,6 +89,19 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets vectorhelpers.Sec
 		tlsConfig...,
 	)
 	return elements
+}
+
+func isTlsBrokers(o obs.OutputSpec) bool {
+	isTls := true
+	if o.Kafka != nil {
+		for _, b := range o.Kafka.Brokers {
+			if !strings.HasPrefix(string(b), "tls:") {
+				isTls = false
+				break
+			}
+		}
+	}
+	return isTls
 }
 
 func sink(id string, o obs.OutputSpec, inputs []string, topic string, op Options, brokers string) *Kafka {

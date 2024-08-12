@@ -10,7 +10,6 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
@@ -57,7 +56,7 @@ splunk:
             coldPath: $SPLUNK_DB/%s/colddb
             thawedPath: $SPLUNK_DB/%s/thaweddb
 `, SplunkIndexName, SplunkIndexName, SplunkIndexName, SplunkIndexName,
-		logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication, logging.InputNameApplication,
+		string(obs.InputTypeApplication), string(obs.InputTypeApplication), string(obs.InputTypeApplication), string(obs.InputTypeApplication),
 		SplunkStaticDynamicIndex, SplunkStaticDynamicIndex, SplunkStaticDynamicIndex, SplunkStaticDynamicIndex,
 	)
 	SplunkEndpointHTTP = fmt.Sprintf("http://localhost:%d", SplunkHecPort)
@@ -68,12 +67,12 @@ func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, ou
 	if err != nil {
 		return err
 	}
-	config := runtime.NewConfigMap(b.Pod.Namespace, logging.OutputTypeSplunk, data)
+	config := runtime.NewConfigMap(b.Pod.Namespace, string(obs.OutputTypeSplunk), data)
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name)
 	if err := f.Test.Client.Create(config); err != nil {
 		return err
 	}
-	cb := b.AddContainer(logging.OutputTypeSplunk, SplunkImage).
+	cb := b.AddContainer(string(obs.OutputTypeSplunk), SplunkImage).
 		AddContainerPort("http-splunkweb", 8000).
 		AddContainerPort("http-hec", SplunkHecPort).
 		AddContainerPort("https-splunkd", 8089).
@@ -136,7 +135,7 @@ func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(namespace, name,
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search log_type=%s -auth "admin:%s"`, logType, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(logging.OutputTypeSplunk).WithCmd("/bin/sh", "-c", cmd).Run()
+		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
 		if output == "" || err != nil {
 			return false, err
 		}
@@ -155,7 +154,7 @@ func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(namespace, n
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search index=%s -auth "admin:%s"`, index, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(logging.OutputTypeSplunk).WithCmd("/bin/sh", "-c", cmd).Run()
+		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
 		if output == "" || err != nil {
 			return false, err
 		}

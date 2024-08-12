@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	cl "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -77,12 +76,11 @@ type LogStore interface {
 }
 
 type E2ETestFramework struct {
-	RestConfig     *rest.Config
-	KubeClient     *kubernetes.Clientset
-	ClusterLogging *cl.ClusterLogging
-	CleanupFns     []func() error
-	LogStores      map[string]LogStore
-	Test           *client.Test
+	RestConfig *rest.Config
+	KubeClient *kubernetes.Clientset
+	CleanupFns []func() error
+	LogStores  map[string]LogStore
+	Test       *client.Test
 }
 
 func NewE2ETestFramework() *E2ETestFramework {

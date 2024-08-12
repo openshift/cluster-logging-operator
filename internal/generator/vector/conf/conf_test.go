@@ -18,7 +18,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -208,8 +207,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					{
 						InputRefs: []string{
 							"mytestapp",
-							logging.InputNameInfrastructure,
-							logging.InputNameAudit,
+							string(obs.InputTypeInfrastructure),
+							string(obs.InputTypeAudit),
 							"myreceiver",
 						},
 						OutputRefs: []string{"kafka-receiver"},

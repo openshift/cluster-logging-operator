@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -54,7 +53,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 			initOutput = func() obs.OutputSpec {
 				return obs.OutputSpec{
-					Type: loggingv1.OutputTypeCloudwatch,
+					Type: obs.OutputTypeCloudwatch,
 					Name: "cw",
 					Cloudwatch: &obs.Cloudwatch{
 						Region: "us-east-test",

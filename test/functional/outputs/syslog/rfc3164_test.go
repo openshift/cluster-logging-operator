@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -35,7 +34,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
+				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
 					spec.Syslog.Severity = "$.message.severity_key"

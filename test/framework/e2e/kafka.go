@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +26,7 @@ type kafkaReceiver struct {
 }
 
 func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
-	logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
+	logs, err := kr.tc.consumedLogs(kr.app.Name, string(obs.InputTypeApplication))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
 	}
@@ -35,7 +35,7 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, 
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, string(obs.InputTypeApplication))
 		if err != nil {
 			if err == types.ErrParse {
 				clolog.Error(err, "error occurred while parsing fetched infra logs from kafka topic. Please check the collected test artifact.")
@@ -58,7 +58,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, string(obs.InputTypeApplication))
 		if err != nil {
 			if err == types.ErrParse {
 				clolog.Error(err, "error occurred while parsing fetched application logs from kafka topic. Please check the collected test artifact.")
@@ -81,7 +81,7 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 
 func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, timeout, true, func(cxt context.Context) (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, string(obs.InputTypeAudit))
 		if err != nil {
 			if err == types.ErrParse {
 				clolog.Error(err, "error occurred while parsing fetched audit logs from kafka topic. Please check the collected test artifact.")

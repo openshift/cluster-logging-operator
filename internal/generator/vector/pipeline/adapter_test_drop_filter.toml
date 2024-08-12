@@ -2,5 +2,5 @@
 type = "filter"
 inputs = ["input_app_in_viaq_logtype","input_infra_in_viaq_logtype"]
 condition = '''
-!((!match(.kubernetes.namespace_name, r'very-important') && match(.level, r'warning|error|critical') ?? false) || (match(.message, r'foobar') && !match(.kubernetes.namespace_labels."test-dashes/slashes", r'true') ?? false))
+!((!match(to_string(.kubernetes.namespace_name) ?? "", r'very-important') && match(to_string(.level) ?? "", r'warning|error|critical')) || (match(to_string(.message) ?? "", r'foobar') && !match(to_string(.kubernetes.namespace_labels."test-dashes/slashes") ?? "", r'true')))
 '''

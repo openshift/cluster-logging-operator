@@ -14,15 +14,15 @@ func MakeDropFilter(dropTestsSpec *[]loggingv1.DropTest) (string, error) {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
 			if cond.Matches != "" {
-				condList = append(condList, fmt.Sprintf(`match(%s, r'%s')`, cond.Field, cond.Matches))
+				condList = append(condList, fmt.Sprintf(`match(to_string(%s) ?? "", r'%s')`, cond.Field, cond.Matches))
 			} else {
-				condList = append(condList, fmt.Sprintf(`!match(%s, r'%s')`, cond.Field, cond.NotMatches))
+				condList = append(condList, fmt.Sprintf(`!match(to_string(%s) ?? "", r'%s')`, cond.Field, cond.NotMatches))
 			}
 		}
 		// Concatenate the conditions with ANDs and add Vector's error coalescing.
 		// If any errors arise from the match such as, `cond.Field` not being a string or a field
 		// is not present in the record, then it will automatically evaluate to false for the condition and specific test.
-		vrlCondition := "(" + strings.Join(condList, " && ") + " ?? false)"
+		vrlCondition := "(" + strings.Join(condList, " && ") + ")"
 		vrlTests = append(vrlTests, vrlCondition)
 	}
 

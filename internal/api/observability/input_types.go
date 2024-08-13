@@ -1,8 +1,16 @@
 package observability
 
 import (
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/utils/set"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+)
+
+var ReservedInputTypes = sets.NewString(
+	string(obs.InputTypeApplication),
+	string(obs.InputTypeAudit),
+	string(obs.InputTypeInfrastructure),
 )
 
 func MaxRecordsPerSecond(input obs.InputSpec) (int64, bool) {

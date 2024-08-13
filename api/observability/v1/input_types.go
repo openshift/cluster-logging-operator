@@ -15,7 +15,6 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,11 +41,6 @@ var (
 		InputTypeAudit,
 		InputTypeReceiver,
 	}
-	ReservedInputTypes = sets.NewString(
-		string(InputTypeApplication),
-		string(InputTypeAudit),
-		string(InputTypeInfrastructure),
-	)
 )
 
 // InputSpec defines a selector of log messages for a given log type.

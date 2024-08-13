@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
@@ -86,7 +87,7 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 }
 
 func getInputTypeFromName(spec obs.ClusterLogForwarderSpec, inputName string) string {
-	if obs.ReservedInputTypes.Has(inputName) {
+	if internalobs.ReservedInputTypes.Has(inputName) {
 		// use name as type
 		return inputName
 	}

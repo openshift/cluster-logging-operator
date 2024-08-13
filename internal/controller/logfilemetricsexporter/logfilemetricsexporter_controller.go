@@ -60,6 +60,11 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 		return ctrl.Result{}, nil
 	}
 
+	if lfmeInstance.DeletionTimestamp != nil {
+		// Resource is being deleted, no further reconciliation
+		return ctrl.Result{}, nil
+	}
+
 	// Validate LogFileMetricExporter instance
 	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "validation failed: %v", err)

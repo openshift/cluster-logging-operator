@@ -264,4 +264,47 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Entry("should pass with no compression", ""),
 		)
 	})
+
+	It("should accept application logs when hec token includes $ in it", func() {
+		myToken := "someTokenWith$inIt"
+		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(logging.InputNameApplication).
+			ToSplunkOutput()
+
+		secret := runtime.NewSecret(framework.Namespace, "splunk-secret",
+			map[string][]byte{
+				"hecToken": []byte(myToken),
+			},
+		)
+
+		framework.Secrets = append(framework.Secrets, secret)
+
+		splunkVisitor := func(b *runtime.PodBuilder) error {
+			return framework.AddSplunkOutput([]byte(myToken), b, framework.Forwarder.Spec.Outputs[0])
+		}
+
+		Expect(framework.DeployWithVisitor(splunkVisitor)).To(BeNil())
+
+		// Wait for splunk to be ready
+		time.Sleep(90 * time.Second)
+
+		// Write app logs
+		timestamp := "2020-11-04T18:13:59.061892+00:00"
+		applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
+
+		// Read app logs
+		logs, err := framework.ReadLogsByTypeFromSplunk(framework.Namespace, framework.Name, logging.InputNameApplication)
+		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+		Expect(logs).ToNot(BeEmpty())
+
+		// Parse the logs
+		var appLogs []types.ApplicationLog
+		jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+		err = types.ParseLogsFrom(jsonString, &appLogs, false)
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+
+		outputTestLog := appLogs[0]
+		Expect(outputTestLog.LogType).To(Equal(logging.InputNameApplication))
+	})
 })

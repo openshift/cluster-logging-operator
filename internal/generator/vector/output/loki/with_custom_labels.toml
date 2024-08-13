@@ -66,4 +66,4 @@ kubernetes_labels_app = "{{kubernetes.labels.\"app\"}}"
 [sinks.loki_receiver.auth]
 strategy = "basic"
 user = "username"
-password = "password"
+password = "pa$$sword"

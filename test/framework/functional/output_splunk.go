@@ -53,8 +53,8 @@ splunk:
 	SplunkEndpointHTTP = fmt.Sprintf("http://localhost:%d", SplunkHecPort)
 )
 
-func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	data, err := GenerateConfigmapData()
+func (f *CollectorFunctionalFramework) AddSplunkOutput(hecToken []byte, b *runtime.PodBuilder, output logging.OutputSpec) error {
+	data, err := GenerateConfigmapData(hecToken)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,12 @@ func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, ou
 	return nil
 }
 
-func GenerateConfigmapData() (data map[string]string, err error) {
+func GenerateConfigmapData(hecToken []byte) (data map[string]string, err error) {
+	token := HecToken
+	if hecToken != nil {
+		token = hecToken
+	}
+
 	b := &bytes.Buffer{}
 	t := template.Must(
 		template.New(configTemplateName).
@@ -105,7 +110,7 @@ func GenerateConfigmapData() (data map[string]string, err error) {
 			IdxcSecret   []byte
 			SHCSecret    []byte
 		}{
-			Token:        HecToken,
+			Token:        token,
 			Password:     AdminPassword,
 			Pass4SymmKey: []byte("o4a9itWyG1YECvxpyVV9faUO"),
 			IdxcSecret:   []byte("5oPyAqIlod4sxH1Xk7fZpNe4"),

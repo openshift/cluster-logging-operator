@@ -2,9 +2,10 @@ package azuremonitor
 
 import (
 	_ "embed"
+	"testing"
+
 	. "github.com/openshift/cluster-logging-operator/internal/constants"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -15,18 +16,23 @@ import (
 )
 
 const (
-	sharedKey     = "z9ndQSFH1RLDnS6WR35m84u326p3"
-	azureId       = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage"
-	hostCN        = "ods.opinsights.azure.cn"
-	customerId    = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
-	secretName    = "azure-monitor-secret"
-	secretTlsName = "azure-monitor-secret-tls"
-	outputName    = "azure_monitor_logs"
-	logType       = "myLogType"
+	sharedKey           = "z9ndQSFH1RLDnS6WR35m84u326p3"
+	sharedKeyWithDollar = "mykeyWith$Sign"
+	azureId             = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage"
+	hostCN              = "ods.opinsights.azure.cn"
+	customerId          = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
+	secretName          = "azure-monitor-secret"
+	secretTlsName       = "azure-monitor-secret-tls"
+	outputName          = "azure_monitor_logs"
+	secretWithDollar    = "azure-monitor-secret-dollar"
+	logType             = "myLogType"
 )
 
 //go:embed azm_common.toml
 var ExpectedAzureCommonToml string
+
+//go:embed azm_common_dollar.toml
+var ExpectedAzureCommonDollarToml string
 
 //go:embed azm_advance.toml
 var ExpectedAzureAdvanceToml string
@@ -51,6 +57,20 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			},
 			Secret: &loggingv1.OutputSecretSpec{
 				Name: secretName,
+			},
+		}
+
+		outputCommonWithDollar = loggingv1.OutputSpec{
+			Type: loggingv1.OutputTypeAzureMonitor,
+			Name: outputName,
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				AzureMonitor: &loggingv1.AzureMonitor{
+					CustomerId: customerId,
+					LogType:    logType,
+				},
+			},
+			Secret: &loggingv1.OutputSecretSpec{
+				Name: secretWithDollar,
 			},
 		}
 
@@ -116,6 +136,11 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 					Passphrase:         []byte("foo"),
 				},
 			},
+			secretWithDollar: {
+				Data: map[string][]byte{
+					SharedKey: []byte(sharedKeyWithDollar),
+				},
+			},
 		}
 	)
 
@@ -127,6 +152,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		Entry("for advance case", outputAdvance, secretName, ExpectedAzureAdvanceToml),
 		Entry("for common with tls case", outputCommonTls, secretTlsName, ExpectedAzureTlsToml),
 		Entry("for common with skip tls verify true case", outputWithTlsSkipVerify, secretName, ExpectedAzureSkipTls),
+		Entry("for common case with sharedKey containing `$`", outputCommonWithDollar, secretWithDollar, ExpectedAzureCommonDollarToml),
 	)
 })
 

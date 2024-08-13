@@ -399,7 +399,7 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 				return err
 			}
 		case logging.OutputTypeSplunk:
-			if err := f.AddSplunkOutput(b, output); err != nil {
+			if err := f.AddSplunkOutput(nil, b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeCloudwatch:

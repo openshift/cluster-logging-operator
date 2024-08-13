@@ -159,7 +159,7 @@ func Facility(s *logging.Syslog) string {
 	if IsKeyExpr(s.Facility) {
 		return fmt.Sprintf("$%s", s.Facility)
 	}
-	return s.Facility
+	return vectorhelpers.EscapeDollarSigns(s.Facility)
 }
 
 func Severity(s *logging.Syslog) string {
@@ -169,7 +169,7 @@ func Severity(s *logging.Syslog) string {
 	if IsKeyExpr(s.Severity) {
 		return fmt.Sprintf("$%s", s.Severity)
 	}
-	return s.Severity
+	return vectorhelpers.EscapeDollarSigns(s.Severity)
 }
 
 func RFC(s *logging.Syslog) string {
@@ -199,7 +199,7 @@ func AppName(s *logging.Syslog) Element {
 	if s.AppName == "tag" {
 		return KV(appname, "${tag}")
 	}
-	return KV(appname, fmt.Sprintf(`"%s"`, s.AppName))
+	return KV(appname, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.AppName)))
 }
 
 func Tag(s *logging.Syslog) Element {
@@ -210,7 +210,7 @@ func Tag(s *logging.Syslog) Element {
 	if IsKeyExpr(s.Tag) {
 		return KV(tag, fmt.Sprintf(`"$%s"`, s.Tag))
 	}
-	return KV(tag, fmt.Sprintf(`"%s"`, s.Tag))
+	return KV(tag, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.Tag)))
 }
 
 func MsgID(s *logging.Syslog) Element {
@@ -221,7 +221,7 @@ func MsgID(s *logging.Syslog) Element {
 	if IsKeyExpr(s.MsgID) {
 		return KV(msgid, fmt.Sprintf(`"$%s"`, s.MsgID))
 	}
-	return KV(msgid, fmt.Sprintf(`"%s"`, s.MsgID))
+	return KV(msgid, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.MsgID)))
 }
 
 func ProcID(s *logging.Syslog) Element {
@@ -232,7 +232,7 @@ func ProcID(s *logging.Syslog) Element {
 	if IsKeyExpr(s.ProcID) {
 		return KV(procid, fmt.Sprintf(`"$%s"`, s.ProcID))
 	}
-	return KV(procid, fmt.Sprintf(`"%s"`, s.ProcID))
+	return KV(procid, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.ProcID)))
 }
 
 func AddLogSource(s *logging.Syslog) Element {

@@ -85,6 +85,32 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			ReceivedLen := uint64(len(message))
 			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
+
+		It("should set appropriate sylog parameters containing `$`", func() {
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+					spec.Syslog = &logging.Syslog{
+						RFC:     "RFC5424",
+						AppName: "myapp$withdollar",
+						MsgID:   "mymsgWith$dollar",
+						ProcID:  "someProc$ID",
+					}
+					spec.URL = "udp://0.0.0.0:24224"
+				}, logging.OutputTypeSyslog)
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(1, 1000, 0)).To(BeNil())
+			// Read line from Syslog output
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+			fields := strings.Split(outputlogs[0], " ")
+			Expect(getAppName(fields)).To(Equal("myapp$withdollar"))
+			Expect(getProcID(fields)).To(Equal("someProc$ID"))
+			Expect(getMsgID(fields)).To(Equal("mymsgWith$dollar"))
+		})
+
 		It("should send NonJson App logs to syslog", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).

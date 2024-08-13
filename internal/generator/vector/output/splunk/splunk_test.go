@@ -13,8 +13,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// #nosec G101
-const hecToken = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
+const (
+	// #nosec G101
+	expHecToken = "VS0BNth3wCGF0eol0MuK07SHIrhY$$wCPHFWMG"
+	// #nosec G101
+	hecToken = "VS0BNth3wCGF0eol0MuK07SHIrhY$wCPHFWMG"
+)
 
 var _ = Describe("Generating vector config for Splunk output", func() {
 
@@ -67,7 +71,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "` + hecToken + `"
+default_token = "` + expHecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
@@ -78,7 +82,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "` + hecToken + `"
+default_token = "` + expHecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
@@ -94,7 +98,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "` + hecToken + `"
+default_token = "` + expHecToken + `"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
@@ -127,7 +131,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "` + hecToken + `"
+default_token = "` + expHecToken + `"
 timestamp_key = "@timestamp"
 
 [sinks.splunk_hec.encoding]
@@ -324,7 +328,7 @@ type = "splunk_hec_logs"
 inputs = ["splunk_hec_timestamp"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
-default_token = "` + hecToken + `"
+default_token = "` + expHecToken + `"
 index = "{{ write_index }}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]

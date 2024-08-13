@@ -49,6 +49,33 @@ func AddESOutput(version ElasticsearchVersion, b *runtime.PodBuilder, output log
 	return nil
 }
 
+func AddESOutputWithBasicSecurity(password string, b *runtime.PodBuilder, output logging.OutputSpec) error {
+	log.V(2).Info("Adding elasticsearch output", "name", output.Name)
+	name := strings.ToLower(output.Name)
+
+	esURL, err := url.Parse(output.URL)
+	if err != nil {
+		return err
+	}
+	transportPort, portError := determineTransportPort(esURL.Port())
+	if portError != nil {
+		return portError
+	}
+
+	log.V(2).Info("Adding container", "name", name)
+	log.V(2).Info("Adding ElasticSearch output container", "name", logging.OutputTypeElasticsearch)
+
+	b.AddContainer(name, esVersionToImage[ElasticsearchVersion8]).
+		AddEnvVar("discovery.type", "single-node").
+		AddEnvVar("http.port", esURL.Port()).
+		AddEnvVar("transport.port", transportPort).
+		AddEnvVar("xpack.security.enabled", "true").
+		AddEnvVar("ELASTIC_PASSWORD", password).
+		AddRunAsUser(2000).
+		End()
+	return nil
+}
+
 func determineTransportPort(port string) (string, error) {
 	iPort, err := strconv.Atoi(port)
 	if err != nil {

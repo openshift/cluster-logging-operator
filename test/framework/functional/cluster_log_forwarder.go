@@ -105,8 +105,11 @@ func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
 
 func (p *PipelineBuilder) ToElasticSearchOutputWithSecret(secret *corev1.Secret) *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
+		output.Elasticsearch.Version = int(ElasticsearchVersion8)
 		if secret != nil {
-			output.Secret.Name = secret.Name
+			output.Secret = &logging.OutputSecretSpec{
+				Name: secret.Name,
+			}
 		}
 	}, logging.OutputTypeElasticsearch)
 }

@@ -8,7 +8,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 
@@ -88,7 +87,7 @@ func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) 
 
 	if HasPassphrase(secret) {
 		addTLS = true
-		conf.PassPhrase = security.GetFromSecret(secret, constants.Passphrase)
+		conf.PassPhrase = GetFromSecret(secret, constants.Passphrase)
 	}
 	if conf.TlsMinVersion != "" || conf.CipherSuites != "" {
 		addTLS = true
@@ -206,7 +205,7 @@ func TryKeys(secret *corev1.Secret, keys ...string) (data []byte, ok bool) {
 
 func GetFromSecret(secret *corev1.Secret, name string) string {
 	if secret != nil {
-		return string(secret.Data[name])
+		return helpers.EscapeDollarSigns(string(secret.Data[name]))
 	}
 	return ""
 }

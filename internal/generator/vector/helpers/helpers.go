@@ -52,3 +52,7 @@ func ListenOnAllLocalInterfacesAddress() string {
 	listenAllOnce.Do(f)
 	return listenAllAddress
 }
+
+func EscapeDollarSigns(s string) string {
+	return strings.ReplaceAll(s, "$", "$$")
+}

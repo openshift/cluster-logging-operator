@@ -1,10 +1,11 @@
 package kafka
 
 import (
+	"testing"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"testing"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
@@ -43,7 +44,7 @@ var _ = Describe("Generate vector config", func() {
 					Data: map[string][]byte{
 						"sasl.enable": []byte("true"),
 						"username":    []byte("testuser"),
-						"password":    []byte("testpass"),
+						"password":    []byte("test$pass"),
 					},
 				},
 			},
@@ -88,7 +89,7 @@ timestamp_format = "rfc3339"
 [sinks.kafka_receiver.sasl]
 enabled = true
 username = "testuser"
-password = "testpass"
+password = "test$$pass"
 mechanism = "PLAIN"
 `,
 		}),

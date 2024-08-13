@@ -1,8 +1,9 @@
 package syslog
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -197,7 +198,7 @@ codec = "syslog"
 rfc = "rfc3164"
 facility = "kern"
 severity = "critical"
-app_name = "appName"
+app_name = "app$$Name"
 msg_id = "msgID"
 proc_id = "procID"
 tag = "tag"
@@ -345,7 +346,7 @@ key_pass = "mysecretpassword"
 							RFC:          "rfc3164",
 							Facility:     "kern",
 							Severity:     "critical",
-							AppName:      "appName",
+							AppName:      "app$Name",
 							MsgID:        "msgID",
 							ProcID:       "procID",
 							Tag:          "tag",

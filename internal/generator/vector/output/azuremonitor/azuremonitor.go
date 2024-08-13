@@ -3,7 +3,6 @@ package azuremonitor
 import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 
@@ -73,7 +72,7 @@ func Output(id string, o logging.OutputSpec, inputs []string, secret *corev1.Sec
 		CustomerId:      azm.CustomerId,
 		LogType:         azm.LogType,
 		AzureResourceId: azm.AzureResourceId,
-		SharedKey:       security.GetFromSecret(secret, constants.SharedKey),
+		SharedKey:       common.GetFromSecret(secret, constants.SharedKey),
 		Host:            azm.Host,
 	}
 }

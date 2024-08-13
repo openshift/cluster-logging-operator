@@ -125,7 +125,7 @@ var _ = Describe("Generate vector config", func() {
 				"loki-receiver": {
 					Data: map[string][]byte{
 						"username": []byte("username"),
-						"password": []byte("password"),
+						"password": []byte("pa$sword"),
 					},
 				},
 			},

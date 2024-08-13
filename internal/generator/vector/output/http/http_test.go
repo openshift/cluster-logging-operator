@@ -1,10 +1,11 @@
 package http
 
 import (
+	"testing"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -41,7 +42,7 @@ var _ = Describe("Generate vector config", func() {
 			&corev1.Secret{
 				Data: map[string][]byte{
 					"username": []byte("username"),
-					"password": []byte("password"),
+					"password": []byte("pa$sword"),
 				},
 			},
 			framework.NoOptions,
@@ -94,7 +95,7 @@ headers = {"h1"="v1","h2"="v2"}
 [sinks.http_receiver.auth]
 strategy = "basic"
 user = "username"
-password = "password"
+password = "pa$$sword"
 `,
 		),
 		Entry("with custom bearer token",

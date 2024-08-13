@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
@@ -42,7 +43,7 @@ func GenerateLokiOutput(outSpec obs.OutputSpec, input, tenant string) obs.Output
 
 func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string) string {
 	service := lokiStackGatewayService(lokiStackSpec.Target.Name)
-	if !obs.ReservedInputTypes.Has(tenant) {
+	if !internalobs.ReservedInputTypes.Has(tenant) {
 		return ""
 	}
 	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, lokiStackSpec.Target.Namespace, tenant)

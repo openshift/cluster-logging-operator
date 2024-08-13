@@ -113,7 +113,7 @@ func gatherPipelineInputs(clf obs.ClusterLogForwarder) (sets.String, bool) {
 	for _, pipeline := range clf.Spec.Pipelines {
 		for _, input := range pipeline.InputRefs {
 			inputRefs.Insert(input)
-			if obs.ReservedInputTypes.Has(input) {
+			if internalobs.ReservedInputTypes.Has(input) {
 				inputTypes.Insert(input)
 			}
 		}

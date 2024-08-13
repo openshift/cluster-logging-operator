@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,7 +48,17 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 	log.V(3).Info("reconcile", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
 
 	if r.Forwarder, err = FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
-		return defaultRequeue, err
+		if !errors.IsNotFound(err) {
+			// Other error, so requeue the request
+			return defaultRequeue, err
+		}
+		// Stop reconciliation because resource is not present anymore
+		return defaultRequeue, nil
+	}
+
+	if r.Forwarder.DeletionTimestamp != nil {
+		// Resource is being deleted, no further reconciliation
+		return defaultRequeue, nil
 	}
 
 	removeStaleStatuses(r.Forwarder)

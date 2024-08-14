@@ -38,7 +38,7 @@ func RemoveOrphanedInputServices(client kubernetes.Client, reader kubernetes.Rea
 
 	for _, receiverType := range obs.ReceiverTypes {
 		// Get list of input services by label/ namespace
-		services, err := service.List(reader, namespace, constants.LabelsLoggingInputServiceType, string(receiverType))
+		services, err := service.List(reader, namespace, constants.LabelLoggingInputServiceType, string(receiverType))
 		if err != nil {
 			return err
 		}

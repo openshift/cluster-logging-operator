@@ -1,8 +1,8 @@
 package otlp
 
 const (
-	NodeName           = "node.name"
-	ClusterID          = "cluster.id"
+	NodeName           = "k8s.node.name"
+	ClusterID          = "k8s.cluster.uid"
 	K8sNamespaceName   = "k8s.namespace.name"
 	K8sPodName         = "k8s.pod.name"
 	K8sContainerName   = "k8s.container.name"

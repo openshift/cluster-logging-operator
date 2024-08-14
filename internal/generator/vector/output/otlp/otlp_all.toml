@@ -17,7 +17,7 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Append container resource attributes
@@ -49,7 +49,8 @@ source = '''
   # Append kube pod labels
   r.attributes = append(r.attributes,
       [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
-      {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},]
+      {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
+      {"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
   )
   if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
       r.attributes = append(r.attributes,
@@ -93,7 +94,7 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Create logRecord object
@@ -118,15 +119,16 @@ source = '''
   }}
   # Append log attributes for node logs
   r.attributes = append(r.attributes,
-  	[{"key": "syslog.facility", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_FACILITY"]))}},
-  	{"key": "syslog.identifier", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_IDENTIFIER"]))}},
-  	{"key": "syslog.procid", "value": {"stringValue": to_string!(get!(.,["systemd","t","PID"]))}},
-  	{"key": "system.unit", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_UNIT"]))}},
-  	{"key": "system.uid", "value": {"stringValue": to_string!(get!(.,["systemd","t","UID"]))}},
-  	{"key": "system.slice", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_SLICE"]))}},
-  	{"key": "system.cgroup", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_CGROUP"]))}},
-  	{"key": "system.cmdline", "value": {"stringValue": to_string!(get!(.,["systemd","t","CMDLINE"]))}},
-  	{"key": "system.invocation.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","SYSTEMD_INVOCATION_ID"]))}}]
+	[{"key": "syslog.facility", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_FACILITY"]))}},
+	{"key": "service.name", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_IDENTIFIER"]))}},
+	{"key": "process.command", "value": {"stringValue": to_string!(get!(.,["systemd","t","COMM"]))}},
+	{"key": "process.command_line", "value": {"stringValue": to_string!(get!(.,["systemd","t","CMDLINE"]))}},
+	{"key": "process.executable.path", "value": {"stringValue": to_string!(get!(.,["systemd","t","EXE"]))}},
+	{"key": "process.gid", "value": {"stringValue": to_string!(get!(.,["systemd","t","GID"]))}},
+	{"key": "host.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","MACHINE_ID"]))}},
+	{"key": "host.name", "value": {"stringValue": .hostname}},
+	{"key": "process.pid", "value": {"stringValue": to_string!(get!(.,["systemd","t","PID"]))}},
+	{"key": "process.user.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","UID"]))}}]
   )
   # Openshift object for grouping (dropped before sending)
   o = {
@@ -150,12 +152,12 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Append auditd host attributes
   resource.attributes = append( resource.attributes,
-      [{"key": "node.name", "value": {"stringValue": .hostname}}]
+      [{"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
   )
   # Create logRecord object
   r = {}
@@ -197,7 +199,7 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Create logRecord object
@@ -219,10 +221,15 @@ source = '''
       )
   }}
   # Append API logRecord attributes
+  parts = split(to_string!(.requestURI), "?")
   r.attributes = append(r.attributes,
-  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
-  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
-  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
+      [{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
+      {"key": "http.request.method_original", "value": {"stringValue": .verb}},
+      {"key": "user.name", "value": {"stringValue": get!(.,["user","username"])}},
+      {"key": "user_agent.original", "value": {"stringValue": .userAgent }},
+      {"key": "url.domain", "value": {"stringValue": .hostname }},
+      {"key": "url.path", "value": {"stringValue": parts[0] }},
+      {"key": "url.query", "value": {"stringValue": parts[1] }}]
   )
   # Openshift object for grouping (dropped before sending)
   o = {
@@ -246,7 +253,7 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Create logRecord object
@@ -268,10 +275,15 @@ source = '''
     )
   }}
   # Append API logRecord attributes
+  parts = split(to_string!(.requestURI), "?")
   r.attributes = append(r.attributes,
-  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
-  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
-  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
+      [{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
+      {"key": "http.request.method_original", "value": {"stringValue": .verb}},
+      {"key": "user.name", "value": {"stringValue": get!(.,["user","username"])}},
+      {"key": "user_agent.original", "value": {"stringValue": .userAgent }},
+      {"key": "url.domain", "value": {"stringValue": .hostname }},
+      {"key": "url.path", "value": {"stringValue": parts[0] }},
+      {"key": "url.query", "value": {"stringValue": parts[1] }}]
   )
   # Openshift object for grouping (dropped before sending)
   o = {
@@ -295,7 +307,7 @@ source = '''
   # Create base resource attributes
   resource.attributes = []
   resource.attributes = append( resource.attributes,
-      [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
+      [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
   # Create logRecord object

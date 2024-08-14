@@ -75,7 +75,7 @@ The Semantic Conventions in OpenTelemetry define a *Resource* as an immutable re
 
 For example, a process producing telemetry that is running in a container has a container_name, a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
 
-All of these *Attributes* are included in the *Resource* object.  This grouping and reducing of common attributes is a powerful tool when sending logs as telemetry data.
+All of these *Attributes* are included in the *Resource* object.  This grouping and reducing of common attributes is a key aspect of sending logs via OpenTelemetry.
 
 .OTEL References
 * https://opentelemetry.io/docs/specs/semconv/[Semantic Conventions]
@@ -93,31 +93,39 @@ https://github.com/open-telemetry/opentelemetry-proto/blob/v1.3.1/examples/logs.
 [%header,format=csv]
 |===
 ViaQ,OTEL
-@timestamp,	                timeUnixNano
-N/A,	                    observedTimeUnixNano
-level,	                    severityNumber
-message,                    body
+@timestamp,                       timeUnixNano
+N/A,                            observedTimeUnixNano
+level,                            severityNumber
+message/structured,          body
 --,--
-openshift.cluster_id,             cluster.id
-hostname,	                      node.name
-kubernetes.namespace_name,	      k8s.namespace.name
-kubernetes.pod_name,	          k8s.pod.name
-kubernetes.pod_id,	              k8s.pod.uid
-kubernetes.container_name,	      k8s.container.name
-kubernetes.container_id,	      k8s.container.id
-log_source,	                      openshift.log.source
-log_type,	                      openshift.log.type
-url,                              url.full
-response.code,                    http.response.status.code
-verb,                             http.request.method
-systemd.t.PID,                    syslog.procid
-systemd.u.SYSLOG.FACILITY,        syslog.facility
-systemd.u.SYSLOG.IDENTIFIER,      syslog.identifier
-systemd.t.SYSTEMD.CGROUP,         system.cgroup
-systemd.t.SYSTEMD.INVOCATION.ID,  system.invocation.id
-systemd.t.SYSTEMD.SLICE,          system.slice
-systemd.t.SYSTEMD.UNIT,           system.unit
-systemd.t.CMDLINE,                system.cmdline
+openshift.cluster_id,             k8s.cluster.uid
+hostname,                         k8s.node.name
+kubernetes.container_name,        k8s.container.name
+kubernetes.namespace_name,        k8s.namespace.name
+kubernetes.pod_name,              k8s.pod.name
+kubernetes.container_id,          k8s.container.id
+kubernetes.pod_id,                k8s.pod.uid
+kubernetes.namespace_labels.*,    k8s.namespace.label.*
+kubernetes.labels.*,              k8s.pod.label.*
+openshift.labels.*,               openshift.label.*
+log_type,                         openshift.log.type
+log_source,                       openshift.log.source
+hostname,                         url.domain
+requestURI (split),               url.path
+requestURI (split),               url.query
+responseStatus.code,              http.response.status.code
+verb,                             http.request.method_original
+userAgent,                        user_agent.original
+user.username,                    user.name
+systemd.u.SYSLOG_FACILITY,        syslog.facility
+systemd.u.SYSLOG_IDENTIFIER,      service.name
+systemd.t.COMM,                   process.command
+systemd.t.CMDLINE,                process.command_line
+systemd.t.EXE,                    process.executable.path
+systemd.t.GID,                    process.gid
+systemd.t.MACHINE_ID,             host.id
+systemd.t.PID,                    process.pid
+systemd.t.UID,                    process.user.id
 |===
 
 Please note:  More work to refine this list is ongoing and it will likely change a few times.  This table does not represent a data model.
@@ -125,3 +133,13 @@ Please note:  More work to refine this list is ongoing and it will likely change
 
 .ViaQ Data Model
 * https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/datamodels/viaq/v1.adoc
+
+=== References
+* https://opentelemetry.io/docs/specs/otlp/
+* https://opentelemetry.io/docs/specs/semconv/resource/container/
+* https://opentelemetry.io/docs/specs/semconv/attributes-registry/k8s/
+* https://opentelemetry.io/docs/specs/semconv/attributes-registry/process/
+* https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/
+* https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/
+
+* https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#rfc5424-syslog

@@ -50,9 +50,9 @@ func NewServiceMonitor(namespace, name, component, portName string, owner metav1
 		Endpoints: endpoint,
 		Selector: metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"logging-infra":             "support",
-				constants.LabelK8sInstance:  name,
-				constants.LabelK8sComponent: component,
+				constants.LabelLoggingServiceType: constants.ServiceTypeMetrics,
+				constants.LabelK8sInstance:        name,
+				constants.LabelK8sComponent:       component,
 			},
 		},
 		NamespaceSelector: monitoringv1.NamespaceSelector{

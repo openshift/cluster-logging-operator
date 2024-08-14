@@ -79,7 +79,11 @@ const (
 	LabelK8sManagedBy = "app.kubernetes.io/managed-by" // The tool being used to manage the operation of an application (string)
 	LabelK8sCreatedBy = "app.kubernetes.io/created-by" // The controller/user who created this resource (string)
 
-	LabelsLoggingInputServiceType = "logging.observability.openshift.io/input-service-type"
+	LabelLoggingServiceType      = "logging.observability.openshift.io/service-type"
+	LabelLoggingInputServiceType = "logging.observability.openshift.io/input-service-type"
+
+	ServiceTypeMetrics = "metrics"
+	ServiceTypeInput   = "input"
 
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"

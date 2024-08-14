@@ -13,6 +13,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func withServiceTypeLabel(serviceType string) func(o runtime.Object) {
+	return func(o runtime.Object) {
+		labels := map[string]string{
+			constants.LabelLoggingServiceType: serviceType,
+		}
+		utils.AddLabels(runtime.Meta(o), labels)
+	}
+}
+
 // ReconcileService reconciles the service that exposes metrics
 func ReconcileService(k8sClient client.Client, namespace, name, instanceName, component, portName, certSecretName string, portNum int32, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 	desired := factory.NewService(
@@ -27,6 +36,7 @@ func ReconcileService(k8sClient client.Client, namespace, name, instanceName, co
 				Name:       portName,
 			},
 		},
+		withServiceTypeLabel(constants.ServiceTypeMetrics),
 		visitors,
 	)
 
@@ -53,9 +63,10 @@ func ReconcileInputService(k8sClient client.Client, namespace, name, instance, c
 				Protocol: v1.ProtocolTCP,
 			},
 		},
+		withServiceTypeLabel(constants.ServiceTypeInput),
 		visitors,
 	)
-	desired.Labels[constants.LabelsLoggingInputServiceType] = string(receiverType)
+	desired.Labels[constants.LabelLoggingInputServiceType] = string(receiverType)
 	selectors := runtime.Selectors(instance, constants.CollectorName, desired.Labels[constants.LabelK8sName])
 	desired.Spec.Selector = selectors
 

@@ -1,8 +1,6 @@
 package constants
 
 const (
-	Enabled = "enabled"
-
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 
 	// AnnotationEnableCollectorAsDeployment is to enable deploying the collector as a deployment

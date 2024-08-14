@@ -70,37 +70,18 @@ const (
 	// Annotation Names
 	AnnotationServingCertSecretName = "service.beta.openshift.io/serving-cert-secret-name"
 
-	// K8s recommended label names: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	LabelK8sName      = "app.kubernetes.io/name"       // The name of the application (string)
-	LabelK8sInstance  = "app.kubernetes.io/instance"   // A unique name identifying the instance of an application (string)
-	LabelK8sVersion   = "app.kubernetes.io/version"    // The current version of the application (e.g., a semantic version, revision hash, etc.) (string)
-	LabelK8sComponent = "app.kubernetes.io/component"  // The component within the architecture (string)
-	LabelK8sPartOf    = "app.kubernetes.io/part-of"    // The name of a higher level application this one is part of (string)
-	LabelK8sManagedBy = "app.kubernetes.io/managed-by" // The tool being used to manage the operation of an application (string)
-	LabelK8sCreatedBy = "app.kubernetes.io/created-by" // The controller/user who created this resource (string)
-
-	LabelLoggingServiceType      = "logging.observability.openshift.io/service-type"
-	LabelLoggingInputServiceType = "logging.observability.openshift.io/input-service-type"
-
-	ServiceTypeMetrics = "metrics"
-	ServiceTypeInput   = "input"
-
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"
-
-	EventReasonCreateObject = "CreateObject"
-	EventReasonGetObject    = "GetObject"
-	EventReasonRemoveObject = "RemoveObject"
-	EventReasonUpdateObject = "UpdateObject"
 
 	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 
 	HTTPReceiverPort   = 8443
 	HTTPFormat         = "kubeAPIAudit"
 	SyslogReceiverPort = 10514
+
+	VolumeNameTrustedCA = "trusted-ca"
 )
 
-var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}
 var ExtraNoProxyList = []string{ElasticsearchFQDN}
 
 func DefaultTolerations() []v1.Toleration {
@@ -117,5 +98,3 @@ func DefaultTolerations() []v1.Toleration {
 		},
 	}
 }
-
-const VolumeNameTrustedCA = "trusted-ca"

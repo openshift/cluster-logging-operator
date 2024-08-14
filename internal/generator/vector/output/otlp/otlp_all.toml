@@ -41,6 +41,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+  }}
   # Append kube pod labels
   r.attributes = append(r.attributes,
       [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
@@ -106,6 +111,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+  }}
   # Append log attributes for node logs
   r.attributes = append(r.attributes,
   	[{"key": "syslog.facility", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_FACILITY"]))}},
@@ -160,6 +170,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+  }}
   # Openshift object for grouping (dropped before sending)
   o = {
       "log_type": .log_type,
@@ -198,6 +213,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+      r.attributes = append(r.attributes,
+          [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+  }}
   # Append API logRecord attributes
   r.attributes = append(r.attributes,
   	[{"key": "url.full", "value": {"stringValue": .requestURI}},
@@ -242,6 +262,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+  }}
   # Append API logRecord attributes
   r.attributes = append(r.attributes,
   	[{"key": "url.full", "value": {"stringValue": .requestURI}},
@@ -288,12 +313,11 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
   )
-  # Append API logRecord attributes
-  r.attributes = append(r.attributes,
-  	[{"key": "url.full", "value": {"stringValue": .requestURI}},
-  	{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
-  	{"key": "http.request.method", "value": {"stringValue": .verb}}]
-  )
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+  }}
   # Openshift object for grouping (dropped before sending)
   o = {
       "log_type": .log_type,

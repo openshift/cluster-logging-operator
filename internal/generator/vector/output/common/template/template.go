@@ -62,19 +62,21 @@ func TransformUserTemplateToVRL(userTemplate string) string {
 	// Make the final resulting array with the appropriate pieces so that it can be concatenated together with `+`
 	for _, match := range matchedIndices {
 		// Append the part before the match. Check if empty string so we don't concat it
-		partBeforeMatch := replacedUserTemplate[lastIndex:match[0]]
-		if partBeforeMatch != "" {
-			result = append(result, fmt.Sprintf("%q", partBeforeMatch))
+		if beforePart := replacedUserTemplate[lastIndex:match[0]]; beforePart != "" {
+			result = append(result, fmt.Sprintf("%q", beforePart))
 		}
 
-		// Append the to_string!() group
-		result = append(result, replacedUserTemplate[match[0]:match[1]])
+		// Append the to_string!() group and replace any labels with values from internal context
+		result = append(result, strings.NewReplacer(
+			".kubernetes.labels", "._internal.kubernetes.labels",
+			".kubernetes.namespace_labels", "._internal.kubernetes.namespace_labels",
+			".openshift.labels", "._internal.openshift.labels",
+		).Replace(replacedUserTemplate[match[0]:match[1]]))
 		lastIndex = match[1]
 	}
 	// Append the remaining part of the string after the last match making sure it isn't the empty string
-	endOfString := replacedUserTemplate[lastIndex:]
-	if endOfString != "" {
-		result = append(result, fmt.Sprintf("%q", endOfString))
+	if endPart := replacedUserTemplate[lastIndex:]; endPart != "" {
+		result = append(result, fmt.Sprintf("%q", endPart))
 	}
 
 	// Join array with `+`

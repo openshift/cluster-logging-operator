@@ -150,7 +150,7 @@ if .log_source == "container" {
 type = "remap"
 inputs = ["pipeline_mypipeline_viaq_0"]
 source = '''
-.openshift.labels = {"key1":"value1","key2":"value2"}
+._internal.openshift.labels = .openshift.labels = {"key1":"value1","key2":"value2"}
 '''
 
 [transforms.pipeline_mypipeline_viaqdedot_2]
@@ -159,24 +159,27 @@ inputs = ["pipeline_mypipeline_my_labels_1"]
 source = '''
   if .log_source == "container" {
     if exists(.kubernetes.namespace_labels) {
+      ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
       for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
         newkey = replace(key, r'[\./]', "_")
         .kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-        if newkey != key {
-          .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-        }
+        if newkey != key {.kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)}
       }
     }
     if exists(.kubernetes.labels) {
+      ._internal.kubernetes.labels = .kubernetes.labels
       for_each(object!(.kubernetes.labels)) -> |key,value| {
         newkey = replace(key, r'[\./]', "_")
         .kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-        if newkey != key {
-          .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-        }
+        if newkey != key {.kubernetes.labels = remove!(.kubernetes.labels,[key],true)}
       }
     }
   }
+  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    newkey = replace(key, r'[\./]', "_")
+    .openshift.labels = set!(.openshift.labels,[newkey],value)
+    if newkey != key {.openshift.labels = remove!(.openshift.labels,[key],true)}
+  }}
 '''
 
 # Kafka Topic

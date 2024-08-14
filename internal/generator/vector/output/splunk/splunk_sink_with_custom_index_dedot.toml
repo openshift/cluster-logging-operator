@@ -17,7 +17,7 @@ if err != null {
 type = "remap"
 inputs = ["splunk_hec_timestamp"]
 source = '''
-._internal.splunk_hec_splunk_index = "foo-" + to_string!(.kubernetes.namespace_labels."test_logging_io"||"missing")
+._internal.splunk_hec_splunk_index = "foo-" + to_string!(._internal.kubernetes.namespace_labels."test/logging.io"||"missing")
 '''
 
 [sinks.splunk_hec]

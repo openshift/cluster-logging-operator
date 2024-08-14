@@ -17,6 +17,6 @@ var _ = Describe("", func() {
 		Expect(openshift.NewLabelsFilter(map[string]string{
 			"foo": "bar",
 			"xyz": "abc",
-		}).VRL()).To(Equal(`.openshift.labels = {"foo":"bar","xyz":"abc"}`))
+		}).VRL()).To(Equal(`._internal.openshift.labels = .openshift.labels = {"foo":"bar","xyz":"abc"}`))
 	})
 })

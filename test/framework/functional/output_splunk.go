@@ -80,7 +80,6 @@ func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, ou
 		AddContainerPort("tcp-s2s", 9097).
 		AddEnvVar("SPLUNK_DECLARATIVE_ADMIN_PASSWORD", "true").
 		AddEnvVar("SPLUNK_DEFAULTS_URL", "/mnt/splunk-secrets/default.yml").
-		AddEnvVar("SPLUNK_DECLARATIVE_ADMIN_PASSWORD", "true").
 		AddEnvVar("SPLUNK_HOME_OWNERSHIP_ENFORCEMENT", "false").
 		AddEnvVar("SPLUNK_ROLE", "splunk_standalone").
 		AddEnvVar("SPLUNK_START_ARGS", "--accept-license").

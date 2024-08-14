@@ -30,7 +30,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		secret = runtime.NewSecret(framework.Namespace, splunkSecretName,
 			map[string][]byte{
-				"hecToken": []byte(string(functional.HecToken)),
+				"hecToken": functional.HecToken,
 			},
 		)
 	})
@@ -121,6 +121,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 					}
 				})
 			framework.Secrets = append(framework.Secrets, secret)
+			framework.Labels["slash/test.dot"] = "application"
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
@@ -148,6 +149,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Entry("should send logs to spec'd static index in Splunk", functional.SplunkIndexName, functional.SplunkIndexName),
 			Entry("should send logs to spec'd dynamic index in Splunk", `{.log_type||"missing"}`, "application"),
 			Entry("should send logs to spec'd static + dynamic index in Splunk", `foo-{.log_type||"missing"}`, "foo-application"),
+			Entry("should send logs to spec'd static + label with dot/slash index in Splunk", `foo-{.kubernetes.labels."slash/test.dot"||"missing"}`, "foo-application"),
 			Entry("should send logs to spec'd static + fallback value's index in Splunk if field is missing", `foo-{.missing||"application"}`, "foo-application"),
 			Entry("should send logs to default index in Splunk when no index is defined", "", functional.SplunkDefaultIndex))
 	})

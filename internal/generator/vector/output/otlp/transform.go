@@ -55,6 +55,11 @@ r.attributes = []
 r.attributes = append(r.attributes,
     [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
 )
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
 `
 	ContainerLogAttributes = `
 # Append kube pod labels
@@ -176,7 +181,6 @@ func auditOvnLogsVRL() string {
 		LogRecord,
 		BodyFromMessage,
 		LogAttributes,
-		APILogAttributes,
 		FinalGrouping,
 	}), "\n")
 }

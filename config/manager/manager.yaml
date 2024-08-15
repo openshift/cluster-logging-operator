@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cluster-logging-operator
-  labels:
 spec:
   selector:
     matchLabels:
@@ -23,7 +22,7 @@ spec:
       serviceAccountName: cluster-logging-operator
       containers:
       - name: cluster-logging-operator
-        image: quay.io/openshift-logging/cluster-logging-operator:latest
+        image: controller:latest
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false

@@ -93,13 +93,16 @@ ci-check: check
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
 
-bin/functional-benchmarker: force
+.PHONY: bin/functional-benchmarker
+bin/functional-benchmarker:
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/functional-benchmarker
 
-bin/forwarder-generator: force
+.PHONY: bin/forwarder-generator
+bin/forwarder-generator:
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
-bin/cluster-logging-operator: force
+.PHONY: bin/cluster-logging-operator
+bin/cluster-logging-operator:
 	go build $(BUILD_OPTS) -o $@ ./cmd
 
 .PHONY: openshift-client
@@ -367,7 +370,7 @@ redeploy:
 	$(MAKE) deploy
 
 .PHONY: undeploy-all
-undeploy-all: undeploy undeploy-elasticsearch-operator
+undeploy-all: undeploy
 
 .PHONY: cluster-logging-catalog
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
@@ -402,6 +405,51 @@ cluster-logging-operator-install:
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
 
-.PHONY: gen-dockerfiles
-gen-dockerfiles:
-	./hack/generate-dockerfile-from-midstream > Dockerfile
+#
+# Targets for installing the operator to a cluster using operator-sdk run bundle
+#
+#  - it uses two image repositories: one for the operator and one for the bundle
+#  - version is automatically generated using date and git commit-hash (override using OLM_VERSION)
+#  - the namespace is not automatically created
+#  - supports upgrades of the operator (olm-deploy followed by olm-upgrade) similar to normal user operation
+#
+
+REGISTRY_BASE ?= $(error REGISTRY_BASE needs to be set for the olm- targets to work)
+REPOSITORY_BASE ?= $(REGISTRY_BASE)/cluster-logging-operator
+DEV_VERSION := 0.0.1$(shell date +%m%d%H%M)-$(shell git rev-parse --short HEAD)
+OLM_VERSION ?= $(DEV_VERSION)
+OPERATOR_IMAGE ?= $(REPOSITORY_BASE):$(OLM_VERSION)
+BUNDLE_IMAGE ?= $(REPOSITORY_BASE)-bundle:$(OLM_VERSION)
+
+.PHONY: olm-custom-version
+olm-custom-version: $(KUSTOMIZE)
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(OPERATOR_IMAGE)
+	$(MAKE) bundle VERSION=$(OLM_VERSION)
+
+.PHONY: olm-bundle-build
+olm-bundle-build: olm-custom-version
+	podman build -t $(BUNDLE_IMAGE) -f bundle.Dockerfile .
+
+.PHONY: olm-bundle-push
+olm-bundle-push: olm-bundle-build
+	podman push $(BUNDLE_IMAGE)
+
+.PHONY: olm-operator-build
+olm-operator-build:
+	podman build -t $(OPERATOR_IMAGE) .
+
+.PHONY: olm-operator-push
+olm-operator-push: olm-operator-build
+	podman push $(OPERATOR_IMAGE)
+
+.PHONY: olm-deploy
+olm-deploy: $(OPERATOR_SDK) olm-bundle-push olm-operator-push
+	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode AllNamespaces $(BUNDLE_IMAGE)
+
+.PHONY: olm-upgrade
+olm-upgrade: $(OPERATOR_SDK) olm-bundle-push olm-operator-push
+	$(OPERATOR_SDK) run bundle-upgrade -n $(NAMESPACE) $(BUNDLE_IMAGE)
+
+.PHONY: olm-undeploy
+olm-undeploy: $(OPERATOR_SDK)
+	$(OPERATOR_SDK) cleanup -n $(NAMESPACE) cluster-logging

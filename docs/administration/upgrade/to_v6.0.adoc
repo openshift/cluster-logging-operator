@@ -303,7 +303,7 @@ spec:
     tls:
       ca:
         key: service-ca.crt
-        secretName: logcollector-token
+        configMapName: openshift-service-ca.crt
   pipelines:
   - outputRefs:
     - default-lokistack

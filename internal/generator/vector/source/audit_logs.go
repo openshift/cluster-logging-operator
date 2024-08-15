@@ -12,6 +12,9 @@ type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
+ignore_older_secs = 3600
+max_read_bytes = 3145728
+rotate_wait_ms = 5000
 {{end}}`
 
 type HostAuditLog = framework.ConfLiteral
@@ -24,6 +27,9 @@ type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
+ignore_older_secs = 3600
+max_read_bytes = 3145728
+rotate_wait_ms = 5000
 {{end}}
 `
 
@@ -37,6 +43,9 @@ type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
+ignore_older_secs = 3600
+max_read_bytes = 3145728
+rotate_wait_ms = 5000
 {{end}}
 `
 
@@ -50,6 +59,9 @@ type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
+ignore_older_secs = 3600
+max_read_bytes = 3145728
+rotate_wait_ms = 5000
 {{end}}
 `
 

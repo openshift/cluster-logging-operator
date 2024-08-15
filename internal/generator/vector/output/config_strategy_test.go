@@ -223,7 +223,7 @@ max_bytes = 1024
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{
 						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-							Delivery: obs.DeliveryModeAtLeastOnce,
+							DeliveryMode: obs.DeliveryModeAtLeastOnce,
 						},
 					},
 				},
@@ -248,7 +248,7 @@ max_size = 268435488
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{
 						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-							Delivery: obs.DeliveryModeAtMostOnce,
+							DeliveryMode: obs.DeliveryModeAtMostOnce,
 						},
 					},
 				},

@@ -75,7 +75,7 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 							SecretName: secretName,
 							Key:        constants.AWSSecretAccessKey,
 						},
-						KeyID: obs.SecretReference{
+						KeyId: obs.SecretReference{
 							SecretName: secretName,
 							Key:        constants.AWSAccessKeyID,
 						},
@@ -112,9 +112,9 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 			func(outputs []obs.OutputSpec, expectedMessages []string) {
 				context := createContext(outputs)
 				Validate(context)
-				Expect(context.Forwarder.Status.Outputs).To(HaveLen(len(outputs)))
+				Expect(context.Forwarder.Status.OutputConditions).To(HaveLen(len(outputs)))
 				for i, message := range expectedMessages {
-					Expect(context.Forwarder.Status.Outputs[i].Message).To(ContainSubstring(message))
+					Expect(context.Forwarder.Status.OutputConditions[i].Message).To(ContainSubstring(message))
 				}
 			},
 			Entry("should accept multiple CloudWatch outputs with different static keys",

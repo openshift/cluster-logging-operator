@@ -3,7 +3,7 @@ kind: ClusterLogForwarder
 metadata:
   name: clf-validation-test
 spec:
-  managementState: Managed
+  managementState: managed
   outputs:
     - lokiStack:
         authentication:

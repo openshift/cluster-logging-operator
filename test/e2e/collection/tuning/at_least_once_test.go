@@ -70,7 +70,7 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 			spec.HTTP.URL = receiver.ClusterLocalEndpoint()
 			spec.HTTP.Tuning = &obs.HTTPTuningSpec{
 				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-					Delivery: obs.DeliveryModeAtLeastOnce,
+					DeliveryMode: obs.DeliveryModeAtLeastOnce,
 				},
 			}
 		})

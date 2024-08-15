@@ -108,7 +108,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					{
 						Name:            "my-labels",
 						Type:            obs.FilterTypeOpenshiftLabels,
-						OpenShiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
+						OpenshiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
 					},
 				},
 			}),
@@ -151,7 +151,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					{
 						Name:            "my-labels",
 						Type:            obs.FilterTypeOpenshiftLabels,
-						OpenShiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
+						OpenshiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
 					},
 				},
 				Outputs: []obs.OutputSpec{
@@ -188,7 +188,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 							Type: obs.ReceiverTypeHTTP,
 							Port: 7777,
 							HTTP: &obs.HTTPReceiver{
-								Format: obs.HTTPReceiverFormatKubeAPIAudit,
+								Format: obs.HTTPReceiverFormatKubeApiAudit,
 							},
 							TLS: &obs.InputTLSSpec{
 								Certificate: &obs.ValueReference{

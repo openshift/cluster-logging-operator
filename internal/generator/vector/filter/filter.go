@@ -42,13 +42,13 @@ func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*Intern
 		internalFilter := &InternalFilterSpec{FilterSpec: f}
 		switch f.Type {
 		case obs.FilterTypeOpenshiftLabels:
-			internalFilter.RemapFilter = openshift.NewLabelsFilter(f.OpenShiftLabels)
+			internalFilter.RemapFilter = openshift.NewLabelsFilter(f.OpenshiftLabels)
 		case obs.FilterTypeDrop:
 			internalFilter.RemapFilter = drop.NewFilter(f.DropTestsSpec)
 		case obs.FilterTypePrune:
 			internalFilter.RemapFilter = prune.NewFilter(f.PruneFilterSpec)
-		case obs.FilterTypeKubeAPIAudit:
-			internalFilter.RemapFilter = apiaudit.NewFilter(f.KubeAPIAudit)
+		case obs.FilterTypeKubeApiAudit:
+			internalFilter.RemapFilter = apiaudit.NewFilter(f.KubeApiAudit)
 		case obs.FilterTypeParse:
 			internalFilter.RemapFilter = parse.NewParseFilter()
 		case obs.FilterTypeDetectMultiline:

@@ -8,7 +8,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("[internal][validations] ClusterLogForwarder: Filters", func() {
+var _ = Describe("[internal][validations][observability][filters]", func() {
 	const (
 		myDrop             = "dropFilter"
 		myPrune            = "pruneFilter"

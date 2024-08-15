@@ -184,7 +184,7 @@ func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretRef
 func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretReference) {
 	if auth != nil {
 		if auth.AWSAccessKey != nil {
-			keys = append(keys, &auth.AWSAccessKey.KeyID, &auth.AWSAccessKey.KeySecret)
+			keys = append(keys, &auth.AWSAccessKey.KeyId, &auth.AWSAccessKey.KeySecret)
 		}
 		if auth.IAMRole != nil {
 			keys = append(keys, &auth.IAMRole.RoleARN)

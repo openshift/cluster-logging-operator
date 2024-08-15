@@ -90,7 +90,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(gcl)
 	}
 	return []Element{
-		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogID, componentID, "GoogleCloudLogging LogID"),
+		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
 		gcl,
 		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),
@@ -112,13 +112,13 @@ func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets observability.Secr
 func LogDestination(g *obs.GoogleCloudLogging) Element {
 	var key string
 	switch g.ID.Type {
-	case obs.GoogleCloudLoggingIDTypeFolder:
+	case obs.GoogleCloudLoggingIdTypeFolder:
 		key = FolderID
-	case obs.GoogleCloudLoggingIDTypeProject:
+	case obs.GoogleCloudLoggingIdTypeProject:
 		key = ProjectID
-	case obs.GoogleCloudLoggingIDTypeBillingAccount:
+	case obs.GoogleCloudLoggingIdTypeBillingAccount:
 		key = BillingAccountID
-	case obs.GoogleCloudLoggingIDTypeOrganization:
+	case obs.GoogleCloudLoggingIdTypeOrganization:
 		key = OrganizationID
 	}
 	return KV(key, fmt.Sprintf("%q", g.ID.Value))

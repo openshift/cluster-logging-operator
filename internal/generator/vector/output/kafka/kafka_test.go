@@ -124,8 +124,8 @@ var _ = Describe("Generate vector config", func() {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""
 			spec.Kafka.Tuning = &obs.KafkaTuningSpec{
-				Delivery: obs.DeliveryModeAtLeastOnce,
-				MaxWrite: utils.GetPtr(resource.MustParse("10M")),
+				DeliveryMode: obs.DeliveryModeAtLeastOnce,
+				MaxWrite:     utils.GetPtr(resource.MustParse("10M")),
 			}
 		}),
 	)

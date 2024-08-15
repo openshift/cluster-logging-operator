@@ -19,14 +19,14 @@ var _ = Describe("Output", func() {
 	)
 	var (
 		baseSpec = &obs.BaseOutputTuningSpec{
-			Delivery:         obs.DeliveryModeAtLeastOnce,
+			DeliveryMode:     obs.DeliveryModeAtLeastOnce,
 			MaxWrite:         utils.GetPtr(resource.MustParse("1250G")),
 			MaxRetryDuration: utils.GetPtr(time.Second),
 			MinRetryDuration: utils.GetPtr(3 * time.Second),
 		}
 		kafkaBaseSpec = &obs.BaseOutputTuningSpec{
-			Delivery: obs.DeliveryModeAtLeastOnce,
-			MaxWrite: utils.GetPtr(resource.MustParse("1250G")),
+			DeliveryMode: obs.DeliveryModeAtLeastOnce,
+			MaxWrite:     utils.GetPtr(resource.MustParse("1250G")),
 		}
 	)
 
@@ -91,9 +91,9 @@ var _ = Describe("Output", func() {
 			Type: obs.OutputTypeKafka,
 			Kafka: &obs.Kafka{
 				Tuning: &obs.KafkaTuningSpec{
-					Delivery:    obs.DeliveryModeAtLeastOnce,
-					MaxWrite:    utils.GetPtr(resource.MustParse("1250G")),
-					Compression: compression,
+					DeliveryMode: obs.DeliveryModeAtLeastOnce,
+					MaxWrite:     utils.GetPtr(resource.MustParse("1250G")),
+					Compression:  compression,
 				},
 			},
 		}, kafkaBaseSpec, compression),

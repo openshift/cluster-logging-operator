@@ -16,15 +16,15 @@ package v1
 
 // FilterType specifies the type of filter used in a pipeline
 //
-// +kubebuilder:validation:Enum:=openShiftLabels;detectMultilineException;drop;kubeAPIAudit;parse;prune
+// +kubebuilder:validation:Enum:=openshiftLabels;detectMultilineException;drop;kubeApiAudit;parse;prune
 type FilterType string
 
 // Filter type constants, must match JSON tags of FilterTypeSpec fields.
 const (
 	FilterTypeDetectMultiline FilterType = "detectMultilineException"
 	FilterTypeDrop            FilterType = "drop"
-	FilterTypeKubeAPIAudit    FilterType = "kubeAPIAudit"
-	FilterTypeOpenshiftLabels FilterType = "openShiftLabels"
+	FilterTypeKubeApiAudit    FilterType = "kubeApiAudit"
+	FilterTypeOpenshiftLabels FilterType = "openshiftLabels"
 	FilterTypeParse           FilterType = "parse"
 	FilterTypePrune           FilterType = "prune"
 )
@@ -34,7 +34,7 @@ var (
 		FilterTypeOpenshiftLabels,
 		FilterTypeDetectMultiline,
 		FilterTypeDrop,
-		FilterTypeKubeAPIAudit,
+		FilterTypeKubeApiAudit,
 		FilterTypeParse,
 		FilterTypePrune,
 	}
@@ -51,10 +51,10 @@ type FieldPath string
 
 // FilterSpec defines a filter for log messages.
 //
-// +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'kubeApiAudit' || has(self.kubeApiAudit)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'drop' || has(self.drop)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'prune' || has(self.prune)", message="Additional type specific spec is required for the filter type"
-// +kubebuilder:validation:XValidation:rule="self.type != 'openShiftLabels' || has(self.openShiftLabels)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'openshiftLabels' || has(self.openshiftLabels)", message="Additional type specific spec is required for the filter type"
 type FilterSpec struct {
 	// Name used to refer to the filter from a "pipeline".
 	//
@@ -70,7 +70,7 @@ type FilterSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubernetes API Audit Filter"
-	KubeAPIAudit *KubeAPIAudit `json:"kubeAPIAudit,omitempty"`
+	KubeApiAudit *KubeApiAudit `json:"kubeApiAudit,omitempty"`
 
 	// A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
 	// Each test contains a sequence of conditions, all conditions must be true for the test to pass.
@@ -91,7 +91,7 @@ type FilterSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Labels"
-	OpenShiftLabels map[string]string `json:"openShiftLabels,omitempty"`
+	OpenshiftLabels map[string]string `json:"openshiftLabels,omitempty"`
 }
 
 type DropTest struct {

@@ -134,7 +134,8 @@ func (p *PipelineBuilder) ToElasticSearchOutput(visitors ...func(output *obs.Out
 			URLSpec: obs.URLSpec{
 				URL: "http://0.0.0.0:9200",
 			},
-			Index: "{.log_type}-write",
+			Index:   "{.log_type}-write",
+			Version: 8,
 		}
 		for _, v := range visitors {
 			v(output)

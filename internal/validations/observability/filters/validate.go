@@ -8,6 +8,6 @@ import (
 func Validate(context internalcontext.ForwarderContext) {
 	filterMap := internalobs.FilterMap(context.Forwarder.Spec)
 	for _, filter := range filterMap {
-		internalobs.SetCondition(&context.Forwarder.Status.Filters, ValidateFilter(*filter))
+		internalobs.SetCondition(&context.Forwarder.Status.FilterConditions, ValidateFilter(*filter))
 	}
 }

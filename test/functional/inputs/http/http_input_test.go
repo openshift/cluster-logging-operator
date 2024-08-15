@@ -125,7 +125,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 						Port: servicePortNum,
 						Type: obs.ReceiverTypeHTTP,
 						HTTP: &obs.HTTPReceiver{
-							Format: obs.HTTPReceiverFormatKubeAPIAudit,
+							Format: obs.HTTPReceiverFormatKubeApiAudit,
 						},
 					}
 				}).ToHttpOutput()
@@ -182,8 +182,8 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 			framework.Forwarder.Spec.Filters = []obs.FilterSpec{
 				{
 					Name: filterName,
-					Type: obs.FilterTypeKubeAPIAudit,
-					KubeAPIAudit: &obs.KubeAPIAudit{
+					Type: obs.FilterTypeKubeApiAudit,
+					KubeApiAudit: &obs.KubeApiAudit{
 						OmitStages: []auditv1.Stage{events.Items[0].Stage},
 						Rules:      []auditv1.PolicyRule{{Level: auditv1.LevelMetadata}}, // Skip default rules.
 					},

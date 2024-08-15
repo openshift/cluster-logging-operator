@@ -25,6 +25,6 @@ func Validate(context internalcontext.ForwarderContext) {
 	}
 	// Set condition
 	for _, condition := range results {
-		internalobs.SetCondition(&context.Forwarder.Status.Inputs, condition)
+		internalobs.SetCondition(&context.Forwarder.Status.InputConditions, condition)
 	}
 }

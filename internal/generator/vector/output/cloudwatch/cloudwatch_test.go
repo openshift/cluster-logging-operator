@@ -65,7 +65,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						Authentication: &obs.CloudwatchAuthentication{
 							Type: obs.CloudwatchAuthTypeAccessKey,
 							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-								KeyID: obs.SecretReference{
+								KeyId: obs.SecretReference{
 									Key:        constants.AWSAccessKeyID,
 									SecretName: secretName,
 								},
@@ -103,7 +103,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}
 			baseTune = &obs.CloudwatchTuningSpec{
 				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-					Delivery:         obs.DeliveryModeAtLeastOnce,
+					DeliveryMode:     obs.DeliveryModeAtLeastOnce,
 					MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
 					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
 					MinRetryDuration: utils.GetPtr(time.Duration(20)),

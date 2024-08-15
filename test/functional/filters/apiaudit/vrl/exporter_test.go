@@ -256,7 +256,7 @@ var _ = Describe("splunk-exporter equivalent tests", func() {
 
 	Context("DefaultFilter", func() {
 		It("should filter events", func() {
-			filter := &obs.KubeAPIAudit{}
+			filter := &obs.KubeApiAudit{}
 			Expect(Filtered(filter, TestEvent1)).ShouldNot(BeNil())
 			Expect(Filtered(filter, TestEvent2)).ShouldNot(BeNil())
 			Expect(Filtered(filter, TestEventServiceAccountReadOnly)).Should(BeNil())
@@ -267,7 +267,7 @@ var _ = Describe("splunk-exporter equivalent tests", func() {
 
 	Context("DropResponseStatusCodes", func() {
 		It("should drop based on response codes", func() {
-			filter := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{429, 422}}
+			filter := &obs.KubeApiAudit{OmitResponseCodes: &[]int{429, 422}}
 			Expect(Filtered(filter, TestEventResponseTooManyRequests)).Should(BeNil())
 			Expect(Filtered(filter, TestEvent1)).ShouldNot(BeNil())
 		})

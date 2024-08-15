@@ -286,11 +286,11 @@ type ReceiverSpec struct {
 
 // HTTPReceiverFormat defines the type of log data incoming through the HTTP receiver.
 //
-// +kubebuilder:validation:Enum:=kubeAPIAudit
+// +kubebuilder:validation:Enum:=kubeApiAudit
 type HTTPReceiverFormat string
 
 const (
-	HTTPReceiverFormatKubeAPIAudit HTTPReceiverFormat = "kubeAPIAudit"
+	HTTPReceiverFormatKubeApiAudit HTTPReceiverFormat = "kubeApiAudit"
 )
 
 // HTTPReceiver receives encoded logs as a HTTP endpoint.

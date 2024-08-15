@@ -33,7 +33,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			ToHttpOutput(func(output *obs.OutputSpec) {
 				output.HTTP.Tuning = &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-						Delivery:         obs.DeliveryModeAtLeastOnce,
+						DeliveryMode:     obs.DeliveryModeAtLeastOnce,
 						MaxRetryDuration: utils.GetPtr(time.Duration(30)),
 						MinRetryDuration: utils.GetPtr(time.Duration(5)),
 						MaxWrite:         utils.GetPtr(resource.MustParse("1M")),

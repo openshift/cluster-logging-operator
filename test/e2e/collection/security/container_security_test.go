@@ -76,6 +76,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 							Name: "es",
 							Type: obs.OutputTypeElasticsearch,
 							Elasticsearch: &obs.Elasticsearch{
+								Version: 6,
 								URLSpec: obs.URLSpec{
 									URL: "http://foo.bar.svc:24224",
 								},

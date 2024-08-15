@@ -208,8 +208,8 @@ func removeStaleStatuses(forwarder *obsv1.ClusterLogForwarder) {
 	outputs := internalobs.Outputs(forwarder.Spec.Outputs)
 	filters := internalobs.Filters(forwarder.Spec.Filters)
 	pipelines := internalobs.Pipelines(forwarder.Spec.Pipelines)
-	internalobs.PruneConditions(&forwarder.Status.Inputs, inputs)
-	internalobs.PruneConditions(&forwarder.Status.Outputs, outputs)
-	internalobs.PruneConditions(&forwarder.Status.Filters, filters)
-	internalobs.PruneConditions(&forwarder.Status.Pipelines, pipelines)
+	internalobs.PruneConditions(&forwarder.Status.InputConditions, inputs)
+	internalobs.PruneConditions(&forwarder.Status.OutputConditions, outputs)
+	internalobs.PruneConditions(&forwarder.Status.FilterConditions, filters)
+	internalobs.PruneConditions(&forwarder.Status.PipelineConditions, pipelines)
 }

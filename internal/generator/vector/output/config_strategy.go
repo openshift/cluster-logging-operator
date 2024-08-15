@@ -46,7 +46,7 @@ func (o Output) VisitRequest(r common.Request) common.Request {
 // VisitBuffer modifies the buffer behavior depending upon the value
 // of the tuning.Delivery mode
 func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
-	switch o.tuning.Delivery {
+	switch o.tuning.DeliveryMode {
 	case obs.DeliveryModeAtLeastOnce:
 		b.WhenFull.Value = common.BufferWhenFullBlock
 		b.Type.Value = buffertTypeDisk

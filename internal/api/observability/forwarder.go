@@ -27,10 +27,10 @@ func DeployAsDeployment(forwarder obs.ClusterLogForwarder) bool {
 func IsValid(forwarder obs.ClusterLogForwarder) bool {
 	status := forwarder.Status
 	return isAuthorized(status.Conditions) &&
-		isValid(obs.ConditionTypeValidInputPrefix, status.Inputs, len(forwarder.Spec.Inputs)) &&
-		isValid(obs.ConditionTypeValidOutputPrefix, status.Outputs, len(forwarder.Spec.Outputs)) &&
-		isValid(obs.ConditionTypeValidPipelinePrefix, status.Pipelines, len(forwarder.Spec.Pipelines)) &&
-		isValid(obs.ConditionTypeValidFilterPrefix, status.Filters, len(forwarder.Spec.Filters))
+		isValid(obs.ConditionTypeValidInputPrefix, status.InputConditions, len(forwarder.Spec.Inputs)) &&
+		isValid(obs.ConditionTypeValidOutputPrefix, status.OutputConditions, len(forwarder.Spec.Outputs)) &&
+		isValid(obs.ConditionTypeValidPipelinePrefix, status.PipelineConditions, len(forwarder.Spec.Pipelines)) &&
+		isValid(obs.ConditionTypeValidFilterPrefix, status.FilterConditions, len(forwarder.Spec.Filters))
 }
 
 func isValid(prefix string, conditions []metav1.Condition, expConditions int) bool {

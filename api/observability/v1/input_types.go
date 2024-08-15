@@ -274,7 +274,6 @@ type ReceiverSpec struct {
 
 	// Port the Receiver listens on. It must be a value between 1024 and 65535
 	//
-	// +kubebuilder:default:=8443
 	// +kubebuilder:validation:Minimum:=1024
 	// +kubebuilder:validation:Maximum:=65535
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Listen Port",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}

@@ -200,7 +200,6 @@ type BaseOutputTuningSpec struct {
 // DeliveryMode sets the delivery mode for log forwarding.
 //
 // +kubebuilder:validation:Enum:=atLeastOnce;atMostOnce
-// +kubebuilder:default:=atLeastOnce
 type DeliveryMode string
 
 const (
@@ -299,7 +298,6 @@ type CloudwatchTuningSpec struct {
 	// It is an error if the compression type is not supported by the output.
 	//
 	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
-	// +kubebuilder:default:=none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -428,7 +426,6 @@ type ElasticsearchTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;zlib
-	// +kubebuilder:default:=none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -473,7 +470,6 @@ type Elasticsearch struct {
 	//
 	// +kubebuilder:validation:Minimum:=6
 	// +kubebuilder:validation:Maximum:=8
-	// +kubebuilder:default:=8
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Version int `json:"version,omitempty"`
 }
@@ -564,7 +560,6 @@ type HTTPTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy;zlib
-	// +kubebuilder:default:=none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -619,7 +614,6 @@ type KafkaTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;snappy;zstd;lz4
-	// +kubebuilder:default:=none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -721,7 +715,6 @@ type LokiTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy
-	// +kubebuilder:default:=snappy
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -940,7 +933,6 @@ type SplunkTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip
-	// +kubebuilder:default:=none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
 }
@@ -1017,7 +1009,6 @@ type Syslog struct {
 	URL string `json:"url"`
 
 	// +kubebuilder:validation:Required
-	// +kubebuilder:default:=RFC5424
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog RFC"
 	RFC SyslogRFCType `json:"rfc"`
 
@@ -1030,7 +1021,6 @@ type Syslog struct {
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default:=informational
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Severity",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Severity string `json:"severity,omitempty"`
 
@@ -1047,7 +1037,6 @@ type Syslog struct {
 	//     local0 local1 local2 local3 local4 local5 local6 local7
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default:=user
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Facility",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Facility string `json:"facility,omitempty"`
 
@@ -1170,7 +1159,6 @@ type OTLPTuningSpec struct {
 	// It is an error if the compression type is not supported by the output.
 	//
 	// +kubebuilder:validation:Enum:=gzip;none
-	// +kubebuilder:default:=gzip
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Compression string `json:"compression,omitempty"`
 }

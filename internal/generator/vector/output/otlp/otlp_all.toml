@@ -20,6 +20,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Append container resource attributes
   resource.attributes = append( resource.attributes,
       [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
@@ -96,6 +99,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -153,6 +159,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Append auditd host attributes
   resource.attributes = append( resource.attributes,
       [{"key": "node.name", "value": {"stringValue": .hostname}}]
@@ -200,6 +209,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -249,6 +261,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -298,6 +313,9 @@ source = '''
       [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+  }
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))

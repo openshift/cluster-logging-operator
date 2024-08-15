@@ -16,6 +16,9 @@ resource.attributes = append( resource.attributes,
     [{"key": "cluster.id", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
     {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
 )
+if exists(.openshift.sequence) {
+	resource.attributes = append(resource.attributes,[{"key": "openshift.sequence", "value": {"intValue": .openshift.sequence}}])
+}
 `
 	HostResourceAttributes = `
 # Append auditd host attributes

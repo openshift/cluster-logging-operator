@@ -142,7 +142,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -252,7 +252,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -361,7 +361,7 @@ tenant_id = "{{foo.bar.baz}}"
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -468,7 +468,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -576,7 +576,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -674,7 +674,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -781,7 +781,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.loki_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.loki_receiver.request]
 retry_attempts = 17
@@ -895,7 +895,7 @@ healthcheck.enabled = false
 codec = "json"
 
 [sinks.default_loki_apps.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.default_loki_apps.request]
 retry_attempts = 17

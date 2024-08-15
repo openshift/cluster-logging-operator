@@ -117,7 +117,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -226,7 +226,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -332,7 +332,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -438,7 +438,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -550,7 +550,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -656,7 +656,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -807,7 +807,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17
@@ -910,7 +910,7 @@ method = "post"
 codec = "json"
 
 [sinks.http_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.http_receiver.request]
 retry_attempts = 17

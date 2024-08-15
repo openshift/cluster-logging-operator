@@ -108,7 +108,7 @@ healthcheck.enabled = false
 `
 	cwBufferAndRequest = `
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -128,7 +128,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -149,7 +149,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -177,7 +177,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -202,7 +202,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -230,7 +230,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -256,7 +256,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -284,7 +284,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17
@@ -310,7 +310,7 @@ encoding.codec = "json"
 healthcheck.enabled = false
 
 [sinks.cw.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.cw.request]
 retry_attempts = 17

@@ -108,7 +108,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 # SASL Config
 [sinks.kafka_receiver.sasl]
@@ -208,7 +208,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -314,7 +314,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -412,7 +412,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -509,7 +509,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -604,7 +604,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.librdkafka_options]
 "enable.ssl.certificate.verification" = "false"
@@ -696,7 +696,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -775,7 +775,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 `,
 		}),
 		Entry("with plain TLS - no secret", helpers.ConfGenerateTest{
@@ -850,7 +850,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 `,
 		}),
 		Entry("without security", helpers.ConfGenerateTest{
@@ -925,7 +925,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 `,
 		}),
 		Entry("not TLS brokers", helpers.ConfGenerateTest{
@@ -1016,7 +1016,7 @@ codec = "json"
 timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.buffer]
-when_full = "drop_newest"
+when_full = "block"
 `,
 		}),
 	)

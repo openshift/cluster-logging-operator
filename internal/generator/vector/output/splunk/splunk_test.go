@@ -78,7 +78,7 @@ timestamp_key = "@timestamp"
 codec = "json"
 
 [sinks.splunk_hec.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.splunk_hec.request]
 retry_attempts = 17
@@ -95,7 +95,7 @@ timestamp_key = "@timestamp"
 codec = "json"
 
 [sinks.splunk_hec.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.splunk_hec.request]
 retry_attempts = 17
@@ -116,7 +116,7 @@ timestamp_key = "@timestamp"
 codec = "json"
 
 [sinks.splunk_hec.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.splunk_hec.request]
 retry_attempts = 17
@@ -140,7 +140,7 @@ timestamp_key = "@timestamp"
 codec = "json"
 
 [sinks.splunk_hec.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.splunk_hec.request]
 retry_attempts = 17
@@ -162,7 +162,7 @@ timestamp_key = "@timestamp"
 codec = "json"
 
 [sinks.splunk_hec.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.splunk_hec.request]
 retry_attempts = 17

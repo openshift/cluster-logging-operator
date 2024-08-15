@@ -154,7 +154,7 @@ id_key = "_id"
 api_version = "v6"
 
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -297,7 +297,7 @@ id_key = "_id"
 api_version = "v6"
 
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -429,7 +429,7 @@ id_key = "_id"
 api_version = "v6"
 
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -559,7 +559,7 @@ id_key = "_id"
 api_version = "v6"
 
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -731,7 +731,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -847,7 +847,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_2.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_2.request]
 retry_attempts = 17
@@ -996,7 +996,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1136,7 +1136,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1282,7 +1282,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1441,7 +1441,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1567,7 +1567,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1702,7 +1702,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v5"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1837,7 +1837,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v6"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -1972,7 +1972,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v7"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17
@@ -2107,7 +2107,7 @@ encoding.except_fields = ["write_index"]
 id_key = "_id"
 api_version = "v9"
 [sinks.es_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.es_1.request]
 retry_attempts = 17

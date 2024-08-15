@@ -654,7 +654,6 @@ spec:
                           - format
                           type: object
                         port:
-                          default: 8443
                           description: Port the Receiver listens on. It must be a
                             value between 1024 and 65535
                           format: int32
@@ -1031,7 +1030,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: none
                               description: Compression causes data to be compressed
                                 before sending over the network. It is an error if
                                 the compression type is not supported by the output.
@@ -1171,7 +1169,6 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             compression:
-                              default: none
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -1214,7 +1211,6 @@ spec:
                           - message: invalid URL
                             rule: isURL(self)
                         version:
-                          default: 8
                           description: 'Version specifies the version of Elasticsearch
                             to be used. Must be one of: 6-8, where 8 is the default'
                           maximum: 8
@@ -1420,7 +1416,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: none
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -1550,7 +1545,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: none
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -1703,7 +1697,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: snappy
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -1898,7 +1891,6 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             compression:
-                              default: snappy
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -2020,7 +2012,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: gzip
                               description: Compression causes data to be compressed
                                 before sending over the network. It is an error if
                                 the compression type is not supported by the output.
@@ -2134,7 +2125,6 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              default: none
                               description: Compression causes data to be compressed
                                 before sending over the network.
                               enum:
@@ -2209,7 +2199,6 @@ spec:
                           - kubernetesMinimal
                           type: string
                         facility:
-                          default: user
                           description: "Facility to set on outgoing syslog records.
                             \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
                             \n The value can be a decimal integer. Facility keywords
@@ -2263,7 +2252,6 @@ spec:
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         rfc:
-                          default: RFC5424
                           description: SyslogRFCType sets which RFC the generated
                             messages conform to.
                           enum:
@@ -2271,7 +2259,6 @@ spec:
                           - RFC5424
                           type: string
                         severity:
-                          default: informational
                           description: "Severity to set on outgoing syslog records.
                             \n Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
                             \n The value can be a decimal integer or one of these

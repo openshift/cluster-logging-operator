@@ -20,6 +20,14 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     olm.skipRange: '>=5.8.0-0 <6.0.0'
     operatorframework.io/cluster-monitoring: "true"
+    operatorframework.io/initialization-resource: |
+      {
+        "apiVersion": "observability.openshift.io/v1",
+        "kind": "ClusterLogForwarder",
+        "metadata": {
+          "name": "logging"
+        }
+      }
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift

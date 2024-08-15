@@ -34,28 +34,10 @@ metadata:
           "apiVersion": "observability.openshift.io/v1",
           "kind": "ClusterLogForwarder",
           "metadata": {
-            "labels": {
-              "app.kubernetes.io/component": "collector",
-              "app.kubernetes.io/instance": "log-collector",
-              "app.kubernetes.io/managed-by": "cluster-logging-operator",
-              "app.kubernetes.io/name": "vector",
-              "app.kubernetes.io/part-of": "cluster-logging"
-            },
-            "name": "log-collector",
-            "namespace": "acme-logging"
+            "name": "logging",
+            "namespace": "openshift-logging"
           },
           "spec": {
-            "inputs": [
-              {
-                "infrastructure": {
-                  "sources": [
-                    "container"
-                  ]
-                },
-                "name": "infra-container",
-                "type": "infrastructure"
-              }
-            ],
             "outputs": [
               {
                 "lokiStack": {
@@ -65,10 +47,10 @@ metadata:
                     }
                   },
                   "target": {
-                    "name": "rh-managed-loki"
+                    "name": "logging-loki"
                   }
                 },
-                "name": "rh-loki",
+                "name": "logging-loki",
                 "tls": {
                   "ca": {
                     "configMapName": "openshift-service-ca.crt",
@@ -81,17 +63,17 @@ metadata:
             "pipelines": [
               {
                 "inputRefs": [
-                  "infra-container",
-                  "audit"
+                  "application",
+                  "infrastructure"
                 ],
                 "name": "logs-to-loki",
                 "outputRefs": [
-                  "rh-loki"
+                  "logging-loki"
                 ]
               }
             ],
             "serviceAccount": {
-              "name": "audit-collector-sa"
+              "name": "log-collector"
             }
           }
         }
@@ -100,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-08-09T16:07:33Z"
+    createdAt: "2024-08-15T13:59:59Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -115,6 +97,14 @@ metadata:
     features.operators.openshift.io/token-auth-gcp: "false"
     olm.skipRange: '>=5.8.0-0 <6.0.0'
     operatorframework.io/cluster-monitoring: "true"
+    operatorframework.io/initialization-resource: |
+      {
+        "apiVersion": "observability.openshift.io/v1",
+        "kind": "ClusterLogForwarder",
+        "metadata": {
+          "name": "logging"
+        }
+      }
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift

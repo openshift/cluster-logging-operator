@@ -1,13 +1,12 @@
-apiVersion: "logging.openshift.io/v1alpha1"
-kind: "LogFileMetricExporter"
+apiVersion: logging.openshift.io/v1alpha1
+kind: LogFileMetricExporter
 metadata:
-  name: "instance"
-  namespace: "openshift-logging"
+  name: instance
+  namespace: openshift-logging
 spec:
   resources:
     limits:
-      cpu: "500m"
+      cpu: 500m
     requests:
-      cpu: "200m"
-      memory: "128Mi"
-  
+      cpu: 200m
+      memory: 128Mi

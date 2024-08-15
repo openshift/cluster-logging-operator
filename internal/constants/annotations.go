@@ -26,4 +26,6 @@ const (
 	// instead of a daemonset to support the HCP use case of using the collector for collecting
 	// audit logs via a webhook.
 	AnnotationEnableCollectorAsDeployment = "logging.openshift.io/dev-preview-enable-collector-as-deployment"
+
+	AnnotationSecretHash = "logging.openshift.io/secret-hash"
 )

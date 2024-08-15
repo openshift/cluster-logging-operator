@@ -126,12 +126,18 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, receiverInputs, namespace)
 	ds := factory.NewDaemonSet(name, namespace, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds.Spec.Template.Annotations = map[string]string{
+		constants.AnnotationSecretHash: SecretsHash64a(f.Secrets),
+	}
 	return ds
 }
 
 func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec, receiverInputs []string) *apps.Deployment {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec, receiverInputs, namespace)
 	dpl := factory.NewDeployment(namespace, name, f.ResourceNames.CommonName, constants.CollectorName, string(f.CollectorSpec.Type), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	dpl.Spec.Template.Annotations = map[string]string{
+		constants.AnnotationSecretHash: SecretsHash64a(f.Secrets),
+	}
 	return dpl
 }
 

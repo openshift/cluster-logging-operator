@@ -114,7 +114,7 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_1.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.gcl_1.request]
 retry_attempts = 17
@@ -218,7 +218,7 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_tls.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.gcl_tls.request]
 retry_attempts = 17
@@ -326,7 +326,7 @@ type = "k8s_node"
 node_name = "{{hostname}}"
 
 [sinks.gcl_tls.buffer]
-when_full = "drop_newest"
+when_full = "block"
 
 [sinks.gcl_tls.request]
 retry_attempts = 17

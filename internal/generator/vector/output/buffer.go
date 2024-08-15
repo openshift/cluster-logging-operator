@@ -8,7 +8,7 @@ type Buffer struct {
 func NewBuffer(id string) Buffer {
 	return Buffer{
 		ComponentID: id,
-		WhenFull:    "drop_newest",
+		WhenFull:    "block",
 	}
 }
 

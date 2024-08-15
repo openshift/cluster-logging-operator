@@ -199,8 +199,8 @@ spec:
                             type: array
                         type: object
                       type: array
-                    kubeAPIAudit:
-                      description: "KubeAPIAudit filter Kube API server audit logs,
+                    kubeApiAudit:
+                      description: "KubeApiAudit filter Kube API server audit logs,
                         as described in [Kubernetes Auditing]. \n # Policy Filtering
                         \n Policy event rules are the same format as the [Kube Audit
                         Policy] with some minor extensions. The extensions are described
@@ -264,7 +264,7 @@ spec:
                             be recorded at. A request may match multiple rules, in
                             which case the FIRST matching rule is used. PolicyRules
                             are strictly ordered. \n If Rules is empty or missing
-                            default rules apply, see [KubeAPIAudit]"
+                            default rules apply, see [KubeApiAudit]"
                           items:
                             description: PolicyRule maps requests based off metadata
                               to an audit Level. Requests must match the rules of
@@ -381,7 +381,7 @@ spec:
                       description: Name used to refer to the filter from a "pipeline".
                       pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
                       type: string
-                    openShiftLabels:
+                    openshiftLabels:
                       additionalProperties:
                         type: string
                       description: Labels applied to log records passing through a
@@ -451,10 +451,10 @@ spec:
                     type:
                       description: Type of filter.
                       enum:
-                      - openShiftLabels
+                      - openshiftLabels
                       - detectMultilineException
                       - drop
-                      - kubeAPIAudit
+                      - kubeApiAudit
                       - parse
                       - prune
                       type: string
@@ -465,7 +465,7 @@ spec:
                   x-kubernetes-validations:
                   - message: Additional type specific spec is required for the filter
                       type
-                    rule: self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)
+                    rule: self.type != 'kubeApiAudit' || has(self.kubeApiAudit)
                   - message: Additional type specific spec is required for the filter
                       type
                     rule: self.type != 'drop' || has(self.drop)
@@ -474,7 +474,7 @@ spec:
                     rule: self.type != 'prune' || has(self.prune)
                   - message: Additional type specific spec is required for the filter
                       type
-                    rule: self.type != 'openShiftLabels' || has(self.openShiftLabels)
+                    rule: self.type != 'openshiftLabels' || has(self.openshiftLabels)
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
@@ -649,7 +649,7 @@ spec:
                             format:
                               description: Format is the format of incoming log data.
                               enum:
-                              - kubeAPIAudit
+                              - kubeApiAudit
                               type: string
                           required:
                           - format
@@ -795,12 +795,12 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               managementState:
-                default: Managed
+                default: managed
                 description: Indicator if the resource is 'Managed' or 'Unmanaged'
                   by the operator.
                 enum:
-                - Managed
-                - Unmanaged
+                - managed
+                - unmanaged
                 type: string
               outputs:
                 description: Outputs are named destinations for log messages.
@@ -854,7 +854,7 @@ spec:
                         tuning:
                           description: Tuning specs tuning for the output
                           properties:
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -897,9 +897,9 @@ spec:
                                 id and secret to be used for authentication.
                               nullable: true
                               properties:
-                                keyID:
-                                  description: AccessKeyID points to the AWS access
-                                    key id to be used for authentication.
+                                keyId:
+                                  description: KeyId points to the AWS access key
+                                    id to be used for authentication.
                                   properties:
                                     key:
                                       description: Key contains the name of the key
@@ -914,7 +914,7 @@ spec:
                                   - secretName
                                   type: object
                                 keySecret:
-                                  description: AccessKeySecret points to the AWS access
+                                  description: KeySecret points to the AWS access
                                     key secret to be used for authentication.
                                   properties:
                                     key:
@@ -930,7 +930,7 @@ spec:
                                   - secretName
                                   type: object
                               required:
-                              - keyID
+                              - keyId
                               - keySecret
                               type: object
                             iamRole:
@@ -1041,7 +1041,7 @@ spec:
                               - zlib
                               - zstd
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1177,7 +1177,7 @@ spec:
                               - gzip
                               - zlib
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1213,18 +1213,18 @@ spec:
                             rule: isURL(self)
                         version:
                           description: 'Version specifies the version of Elasticsearch
-                            to be used. Must be one of: 6-8, where 8 is the default'
+                            to be used. Must be one of: 6-8'
                           maximum: 8
                           minimum: 6
                           type: integer
                       required:
                       - index
                       - url
+                      - version
                       type: object
                     googleCloudLogging:
                       description: GoogleCloudLogging provides configuration for sending
-                        logs to Google Cloud Logging. Exactly one of billingAccountID,
-                        organizationID, folderID, or projectID must be set.
+                        logs to Google Cloud Logging.
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1269,8 +1269,8 @@ spec:
                           - value
                           type: object
                         logId:
-                          description: "LogID is the log ID to which to publish logs.
-                            This identifies log stream. \n The LogID can be a combination
+                          description: "LogId is the log ID to which to publish logs.
+                            This identifies log stream. \n The LogId can be a combination
                             of static and dynamic values consisting of field paths
                             followed by `||` followed by another field path or a static
                             value. \n A dynamic value is encased in single curly brackets
@@ -1284,7 +1284,7 @@ spec:
                         tuning:
                           description: Tuning specs tuning for the output
                           properties:
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1425,7 +1425,7 @@ spec:
                               - snappy
                               - zlib
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1554,7 +1554,7 @@ spec:
                               - zstd
                               - lz4
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1705,7 +1705,7 @@ spec:
                               - gzip
                               - snappy
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -1899,7 +1899,7 @@ spec:
                               - gzip
                               - snappy
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -2020,7 +2020,7 @@ spec:
                               - gzip
                               - none
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -2132,7 +2132,7 @@ spec:
                               - none
                               - gzip
                               type: string
-                            delivery:
+                            deliveryMode:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
@@ -2209,10 +2209,10 @@ spec:
                             authpriv ftp ntp security console solaris-cron local0
                             local1 local2 local3 local4 local5 local6 local7"
                           type: string
-                        msgID:
-                          description: "MsgID is MSGID part of the syslog-msg header.
+                        msgId:
+                          description: "MsgId is MSGID part of the syslog-msg header.
                             This supports template syntax to allow dynamic per-event
-                            values. \n The MsgID can be a combination of static and
+                            values. \n The MsgId can be a combination of static and
                             dynamic values consisting of field paths followed by `||`
                             followed by another field path or a static value. \n A
                             dynamic value is encased in single curly brackets `{}`
@@ -2221,7 +2221,7 @@ spec:
                             along with dashes, underscores, dots and forward slashes.
                             \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
                             \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-                            \n MsgID needs to be specified if using rfc5424.  The
+                            \n MsgId needs to be specified if using rfc5424.  The
                             maximum length of the final values is truncated to 32"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
@@ -2236,10 +2236,10 @@ spec:
                             Example: \n 1. {.bar} \n 2. {.foo.bar.baz} \n 3. {.foo.bar.\"baz/with/slashes\"}"
                           pattern: ^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$
                           type: string
-                        procID:
-                          description: "ProcID is PROCID part of the syslog-msg header.
+                        procId:
+                          description: "ProcId is PROCID part of the syslog-msg header.
                             This supports template syntax to allow dynamic per-event
-                            values. \n The ProcID can be a combination of static and
+                            values. \n The ProcId can be a combination of static and
                             dynamic values consisting of field paths followed by `||`
                             followed by another field path or a static value. \n A
                             dynamic value is encased in single curly brackets `{}`
@@ -2248,7 +2248,7 @@ spec:
                             along with dashes, underscores, dots and forward slashes.
                             \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
                             \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-                            \n ProcID needs to be specified if using rfc5424. The
+                            \n ProcId needs to be specified if using rfc5424. The
                             maximum length of the final values is truncated to 128"
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
@@ -2256,8 +2256,8 @@ spec:
                           description: SyslogRFCType sets which RFC the generated
                             messages conform to.
                           enum:
-                          - RFC3164
-                          - RFC5424
+                          - rfc3164
+                          - rfc5424
                           type: string
                         severity:
                           description: "Severity to set on outgoing syslog records.
@@ -2660,8 +2660,9 @@ spec:
                   - type
                   type: object
                 type: array
-              filtersStatus:
-                description: Filters maps filter name to condition of the filter.
+              filterConditions:
+                description: FilterConditions maps filter name to condition of the
+                  filter.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -2729,8 +2730,8 @@ spec:
                   - type
                   type: object
                 type: array
-              inputsStatus:
-                description: Inputs maps input name to condition of the input.
+              inputConditions:
+                description: InputConditions maps input name to condition of the input.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -2798,8 +2799,9 @@ spec:
                   - type
                   type: object
                 type: array
-              outputsStatus:
-                description: Outputs maps output name to condition of the output.
+              outputConditions:
+                description: OutputConditions maps output name to condition of the
+                  output.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -2867,8 +2869,9 @@ spec:
                   - type
                   type: object
                 type: array
-              pipelinesStatus:
-                description: Pipelines maps pipeline name to condition of the pipeline.
+              pipelineConditions:
+                description: PipelineConditions maps pipeline name to condition of
+                  the pipeline.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct

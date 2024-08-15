@@ -20,10 +20,10 @@ func Validate(context internalcontext.ForwarderContext) {
 		}
 		messages = append(messages, verifyHostNameNotFilteredForGCL(pipelineSpec, outputs, filters)...)
 		if len(messages) > 0 {
-			internalobs.SetCondition(&context.Forwarder.Status.Pipelines,
+			internalobs.SetCondition(&context.Forwarder.Status.PipelineConditions,
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
-			internalobs.SetCondition(&context.Forwarder.Status.Pipelines,
+			internalobs.SetCondition(&context.Forwarder.Status.PipelineConditions,
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, pipelineSpec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("pipeline %q is valid", pipelineSpec.Name)))
 		}
 	}

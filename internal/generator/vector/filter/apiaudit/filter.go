@@ -25,16 +25,16 @@ var DefaultOmitResponseCodes = []int{
 	http.StatusTooManyRequests}
 
 type Filter struct {
-	*obs.KubeAPIAudit
+	*obs.KubeApiAudit
 }
 
-func NewFilter(p *obs.KubeAPIAudit) Filter {
+func NewFilter(p *obs.KubeApiAudit) Filter {
 	return Filter{p}
 }
 
 func (p Filter) VRL() (string, error) {
-	if p.KubeAPIAudit == nil {
-		p.KubeAPIAudit = &obs.KubeAPIAudit{} // Treat missing as empty.
+	if p.KubeApiAudit == nil {
+		p.KubeApiAudit = &obs.KubeApiAudit{} // Treat missing as empty.
 	}
 	if p.OmitResponseCodes == nil {
 		p.OmitResponseCodes = &DefaultOmitResponseCodes

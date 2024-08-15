@@ -52,7 +52,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 					Key:        constants.AWSSecretAccessKey,
 					SecretName: functional.CloudwatchSecret,
 				},
-				KeyID: obs.SecretReference{
+				KeyId: obs.SecretReference{
 					Key:        constants.AWSAccessKeyID,
 					SecretName: functional.CloudwatchSecret,
 				},

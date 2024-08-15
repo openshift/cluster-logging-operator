@@ -172,10 +172,10 @@ Type:: array
 Each test contains a sequence of conditions, all conditions must be true for the test to pass.
 A DropTestsSpec contains an array of tests which contains an array of conditions
 
-|kubeAPIAudit|object|  
+|kubeApiAudit|object|  
 |name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 
-|openShiftLabels|object|  Labels applied to log records passing through a pipeline.
+|openshiftLabels|object|  Labels applied to log records passing through a pipeline.
 These labels appear in the `openshift.labels` map in the log record.
 
 |prune|object|  The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
@@ -219,9 +219,9 @@ Must define only one of matches or notMatches
 
 |======================
 
-=== .spec.filters[].kubeAPIAudit
+=== .spec.filters[].kubeApiAudit
 
-KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
+KubeApiAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
 
 # Policy Filtering
 
@@ -290,18 +290,18 @@ Note that this can also be specified per rule in which case the union of both ar
 A request may match multiple rules, in which case the FIRST matching rule is used.
 PolicyRules are strictly ordered.
 
-If Rules is empty or missing default rules apply, see [KubeAPIAudit]
+If Rules is empty or missing default rules apply, see [KubeApiAudit]
 |======================
 
-=== .spec.filters[].kubeAPIAudit.omitResponseCodes
+=== .spec.filters[].kubeApiAudit.omitResponseCodes
 
 Type:: int
 
-=== .spec.filters[].kubeAPIAudit.omitStages[]
+=== .spec.filters[].kubeApiAudit.omitStages[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[]
+=== .spec.filters[].kubeApiAudit.rules[]
 
 Type:: array
 
@@ -340,23 +340,23 @@ An empty list implies every user.
 An empty list implies every verb.
 |======================
 
-=== .spec.filters[].kubeAPIAudit.rules[].namespaces[]
+=== .spec.filters[].kubeApiAudit.rules[].namespaces[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].nonResourceURLs[]
+=== .spec.filters[].kubeApiAudit.rules[].nonResourceURLs[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].omitManagedFields
+=== .spec.filters[].kubeApiAudit.rules[].omitManagedFields
 
 Type:: bool
 
-=== .spec.filters[].kubeAPIAudit.rules[].omitStages[]
+=== .spec.filters[].kubeApiAudit.rules[].omitStages[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].resources[]
+=== .spec.filters[].kubeApiAudit.rules[].resources[]
 
 Type:: array
 
@@ -384,27 +384,27 @@ overlap with each other.
 An empty list implies all resources and subresources in this API groups apply.
 |======================
 
-=== .spec.filters[].kubeAPIAudit.rules[].resources[].resourceNames[]
+=== .spec.filters[].kubeApiAudit.rules[].resources[].resourceNames[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].resources[].resources[]
+=== .spec.filters[].kubeApiAudit.rules[].resources[].resources[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].userGroups[]
+=== .spec.filters[].kubeApiAudit.rules[].userGroups[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].users[]
+=== .spec.filters[].kubeApiAudit.rules[].users[]
 
 Type:: array
 
-=== .spec.filters[].kubeAPIAudit.rules[].verbs[]
+=== .spec.filters[].kubeApiAudit.rules[].verbs[]
 
 Type:: array
 
-=== .spec.filters[].openShiftLabels
+=== .spec.filters[].openshiftLabels
 
 Type:: object
 
@@ -902,7 +902,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -1050,13 +1050,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|keyID|object|  AccessKeyID points to the AWS access key id to be used for authentication.
+|keyId|object|  KeyId points to the AWS access key id to be used for authentication.
 
-|keySecret|object|  AccessKeySecret points to the AWS access key secret to be used for authentication.
+|keySecret|object|  KeySecret points to the AWS access key secret to be used for authentication.
 
 |======================
 
-=== .spec.outputs[].cloudwatch.authentication.awsAccessKey.keyID
+=== .spec.outputs[].cloudwatch.authentication.awsAccessKey.keyId
 
 SecretReference encodes a reference to a single key in a Secret in the same namespace.
 
@@ -1158,7 +1158,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -1203,7 +1203,7 @@ Example:
 |tuning|object|  Tuning specs tuning for the output
 
 |version|int|  Version specifies the version of Elasticsearch to be used.
-Must be one of: 6-8, where 8 is the default
+Must be one of: 6-8
 
 |======================
 
@@ -1297,7 +1297,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -1311,7 +1311,6 @@ Type:: object
 === .spec.outputs[].googleCloudLogging
 
 GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging.
-Exactly one of billingAccountID, organizationID, folderID, or projectID must be set.
 
 Type:: object
 
@@ -1323,9 +1322,9 @@ Type:: object
 
 |id|object|  ID must be one of the required ID fields for the output
 
-|logId|string|  LogID is the log ID to which to publish logs. This identifies log stream.
+|logId|string|  LogId is the log ID to which to publish logs. This identifies log stream.
 
-The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The LogId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
@@ -1394,7 +1393,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -1523,7 +1522,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -1653,7 +1652,7 @@ Type:: object
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |======================
@@ -1887,7 +1886,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -2116,7 +2115,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -2241,7 +2240,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -2341,7 +2340,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|delivery|string|  
+|deliveryMode|string|  
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -2398,9 +2397,9 @@ uucp cron authpriv ftp ntp security console solaris-cron
 
 local0 local1 local2 local3 local4 local5 local6 local7
 
-|msgID|string|  MsgID is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+|msgId|string|  MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
-The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The MsgId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
@@ -2414,7 +2413,7 @@ Example:
 
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
-MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
+MsgId needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 
 |payloadKey|string|  PayloadKey specifies record field to use as payload. This supports template syntax to allow dynamic per-event values.
 
@@ -2432,9 +2431,9 @@ Example:
 
 3. {.foo.bar.&#34;baz/with/slashes&#34;}
 
-|procID|string|  ProcID is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+|procId|string|  ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
-The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The ProcId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
@@ -2448,7 +2447,7 @@ Example:
 
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
-ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
+ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 
 |rfc|string|  
 |severity|string|  Severity to set on outgoing syslog records.
@@ -2752,13 +2751,13 @@ Type:: object
 
 |conditions|array|  Conditions of the log forwarder.
 
-|filtersStatus|array|  Filters maps filter name to condition of the filter.
+|filterConditions|array|  FilterConditions maps filter name to condition of the filter.
 
-|inputsStatus|array|  Inputs maps input name to condition of the input.
+|inputConditions|array|  InputConditions maps input name to condition of the input.
 
-|outputsStatus|array|  Outputs maps output name to condition of the output.
+|outputConditions|array|  OutputConditions maps output name to condition of the output.
 
-|pipelinesStatus|array|  Pipelines maps pipeline name to condition of the pipeline.
+|pipelineConditions|array|  PipelineConditions maps pipeline name to condition of the pipeline.
 
 |======================
 
@@ -2790,7 +2789,7 @@ useful (see .node.status.conditions), the ability to deconflict is important.
 The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 |======================
 
-=== .status.filtersStatus[]
+=== .status.filterConditions[]
 
 Type:: array
 
@@ -2818,7 +2817,7 @@ useful (see .node.status.conditions), the ability to deconflict is important.
 The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 |======================
 
-=== .status.inputsStatus[]
+=== .status.inputConditions[]
 
 Type:: array
 
@@ -2846,7 +2845,7 @@ useful (see .node.status.conditions), the ability to deconflict is important.
 The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 |======================
 
-=== .status.outputsStatus[]
+=== .status.outputConditions[]
 
 Type:: array
 
@@ -2874,7 +2873,7 @@ useful (see .node.status.conditions), the ability to deconflict is important.
 The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 |======================
 
-=== .status.pipelinesStatus[]
+=== .status.pipelineConditions[]
 
 Type:: array
 

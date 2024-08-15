@@ -29,10 +29,10 @@ func Validate(context internalcontext.ForwarderContext) {
 		}
 		// Set condition
 		if len(messages) > 0 {
-			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
+			internalobs.SetCondition(&context.Forwarder.Status.OutputConditions,
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")))
 		} else {
-			internalobs.SetCondition(&context.Forwarder.Status.Outputs,
+			internalobs.SetCondition(&context.Forwarder.Status.OutputConditions,
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}

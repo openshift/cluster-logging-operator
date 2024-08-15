@@ -1,4 +1,4 @@
-# GoogleCloudLogging LogID
+# GoogleCloudLogging LogId
 [transforms.gcl_1_log_id]
 type = "remap"
 inputs = ["application"]

@@ -327,7 +327,7 @@ var _ = Describe("inputs", func() {
 				Type: obs.ReceiverTypeHTTP,
 				Port: 12345,
 				HTTP: &obs.HTTPReceiver{
-					Format: obs.HTTPReceiverFormatKubeAPIAudit,
+					Format: obs.HTTPReceiverFormatKubeApiAudit,
 				},
 				TLS: &obs.InputTLSSpec{
 					Certificate: &obs.ValueReference{

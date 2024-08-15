@@ -42,6 +42,7 @@ outputs:
 - name: elasticsearch
   elasticsearch:
     index: '{.log_type}-write'
+    version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch
 pipelines:
@@ -68,11 +69,12 @@ outputs:
 - name: elasticsearch
   elasticsearch:
     index: '{.log_type}-write'
+    version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch
 - name: syslog
   syslog:
-    rfc: RFC5424
+    rfc: rfc5424
     url: tcp://127.0.0.1:24224
   type: syslog
 pipelines:
@@ -161,7 +163,7 @@ outputs:
 - name: other
   type: syslog
   syslog:
-    rfc: RFC5424
+    rfc: rfc5424
     url: tcp://0.0.0.0:24225
 pipelines:
 - inputRefs:
@@ -206,6 +208,7 @@ outputs:
 - name: elasticsearch
   elasticsearch:
     index: '{.log_type}-write'
+    version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch
 pipelines:

@@ -29,16 +29,16 @@ var _ = Describe("[internal][api][observability]", func() {
 					Conditions: []metav1.Condition{
 						NewCondition(obs.ConditionTypeAuthorized, obs.ConditionTrue, "", ""),
 					},
-					Inputs: []metav1.Condition{
+					InputConditions: []metav1.Condition{
 						NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, "foo", true, "", ""),
 					},
-					Pipelines: []metav1.Condition{
+					PipelineConditions: []metav1.Condition{
 						NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, "foo", true, "", ""),
 					},
-					Filters: []metav1.Condition{
+					FilterConditions: []metav1.Condition{
 						NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, "foo", true, "", ""),
 					},
-					Outputs: []metav1.Condition{
+					OutputConditions: []metav1.Condition{
 						NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, "foo", true, "", ""),
 					},
 				},

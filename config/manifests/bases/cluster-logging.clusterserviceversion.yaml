@@ -104,14 +104,14 @@ spec:
         displayName: Keep Match Expression
         path: filters[0].drop[0].test[0].notMatches
       - displayName: Kubernetes API Audit Filter
-        path: filters[0].kubeAPIAudit
+        path: filters[0].kubeApiAudit
       - description: Name used to refer to the filter from a "pipeline".
         displayName: Filter Name
         path: filters[0].name
       - description: Labels applied to log records passing through a pipeline. These
           labels appear in the `openshift.labels` map in the log record.
         displayName: Labels
-        path: filters[0].openShiftLabels
+        path: filters[0].openshiftLabels
       - description: The PruneFilterSpec consists of two arrays, namely in and notIn,
           which dictate the fields to be pruned.
         displayName: Prune Filters
@@ -310,7 +310,7 @@ spec:
         displayName: Tuning Options
         path: outputs[0].azureMonitor.tuning
       - displayName: Delivery Mode
-        path: outputs[0].azureMonitor.tuning.delivery
+        path: outputs[0].azureMonitor.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -332,22 +332,22 @@ spec:
           used for authentication.
         displayName: Access Key
         path: outputs[0].cloudwatch.authentication.awsAccessKey
-      - description: AccessKeyID points to the AWS access key id to be used for authentication.
+      - description: KeyId points to the AWS access key id to be used for authentication.
         displayName: Secret with Access Key ID
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.key
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: SecretName contains the name of the Secret containing the referenced
           value.
         displayName: Secret Name
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.secretName
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: AccessKeySecret points to the AWS access key secret to be used
-          for authentication.
+      - description: KeySecret points to the AWS access key secret to be used for
+          authentication.
         displayName: Secret with Access Key Secret
         path: outputs[0].cloudwatch.authentication.awsAccessKey.keySecret
       - description: Key contains the name of the key inside the referenced Secret.
@@ -430,7 +430,7 @@ spec:
         displayName: Compression
         path: outputs[0].cloudwatch.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].cloudwatch.tuning.delivery
+        path: outputs[0].cloudwatch.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -523,7 +523,7 @@ spec:
         displayName: Compression
         path: outputs[0].elasticsearch.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].elasticsearch.tuning.delivery
+        path: outputs[0].elasticsearch.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -544,7 +544,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: 'Version specifies the version of Elasticsearch to be used. Must
-          be one of: 6-8, where 8 is the default'
+          be one of: 6-8'
         displayName: ElasticSearch Version
         path: outputs[0].elasticsearch.version
         x-descriptors:
@@ -579,8 +579,8 @@ spec:
         path: outputs[0].googleCloudLogging.id.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "LogID is the log ID to which to publish logs. This identifies
-          log stream. \n The LogID can be a combination of static and dynamic values
+      - description: "LogId is the log ID to which to publish logs. This identifies
+          log stream. \n The LogId can be a combination of static and dynamic values
           consisting of field paths followed by `||` followed by another field path
           or a static value. \n A dynamic value is encased in single curly brackets
           `{}` and MUST end with a static fallback value separated with `||`. \n Static
@@ -595,7 +595,7 @@ spec:
         displayName: Tuning Options
         path: outputs[0].googleCloudLogging.tuning
       - displayName: Delivery Mode
-        path: outputs[0].googleCloudLogging.tuning.delivery
+        path: outputs[0].googleCloudLogging.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -683,7 +683,7 @@ spec:
         displayName: Compression
         path: outputs[0].http.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].http.tuning.delivery
+        path: outputs[0].http.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -772,7 +772,7 @@ spec:
         displayName: Compression
         path: outputs[0].kafka.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].kafka.tuning.delivery
+        path: outputs[0].kafka.tuning.deliveryMode
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
@@ -876,7 +876,7 @@ spec:
         displayName: Compression
         path: outputs[0].loki.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].loki.tuning.delivery
+        path: outputs[0].loki.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -1013,7 +1013,7 @@ spec:
         displayName: Compression
         path: outputs[0].lokiStack.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].lokiStack.tuning.delivery
+        path: outputs[0].lokiStack.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -1094,7 +1094,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Delivery Mode
-        path: outputs[0].otlp.tuning.delivery
+        path: outputs[0].otlp.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -1169,7 +1169,7 @@ spec:
         displayName: Compression
         path: outputs[0].splunk.tuning.compression
       - displayName: Delivery Mode
-        path: outputs[0].splunk.tuning.delivery
+        path: outputs[0].splunk.tuning.deliveryMode
       - description: MaxRetryDuration is the maximum time to wait between retry attempts
           after a delivery failure.
         displayName: Maximum Retry Duration
@@ -1224,8 +1224,8 @@ spec:
         path: outputs[0].syslog.facility
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "MsgID is MSGID part of the syslog-msg header. This supports
-          template syntax to allow dynamic per-event values. \n The MsgID can be a
+      - description: "MsgId is MSGID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The MsgId can be a
           combination of static and dynamic values consisting of field paths followed
           by `||` followed by another field path or a static value. \n A dynamic value
           is encased in single curly brackets `{}` and MUST end with a static fallback
@@ -1233,10 +1233,10 @@ spec:
           characters along with dashes, underscores, dots and forward slashes. \n
           Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
           foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-          \n MsgID needs to be specified if using rfc5424.  The maximum length of
+          \n MsgId needs to be specified if using rfc5424.  The maximum length of
           the final values is truncated to 32"
         displayName: MSGID
-        path: outputs[0].syslog.msgID
+        path: outputs[0].syslog.msgId
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: "PayloadKey specifies record field to use as payload. This supports
@@ -1249,8 +1249,8 @@ spec:
         path: outputs[0].syslog.payloadKey
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "ProcID is PROCID part of the syslog-msg header. This supports
-          template syntax to allow dynamic per-event values. \n The ProcID can be
+      - description: "ProcId is PROCID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The ProcId can be
           a combination of static and dynamic values consisting of field paths followed
           by `||` followed by another field path or a static value. \n A dynamic value
           is encased in single curly brackets `{}` and MUST end with a static fallback
@@ -1258,10 +1258,10 @@ spec:
           characters along with dashes, underscores, dots and forward slashes. \n
           Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
           foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-          \n ProcID needs to be specified if using rfc5424. The maximum length of
+          \n ProcId needs to be specified if using rfc5424. The maximum length of
           the final values is truncated to 128"
         displayName: PROCID
-        path: outputs[0].syslog.procID
+        path: outputs[0].syslog.procId
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Syslog RFC
@@ -1411,24 +1411,24 @@ spec:
         path: conditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Filters maps filter name to condition of the filter.
+      - description: FilterConditions maps filter name to condition of the filter.
         displayName: Filter Conditions
-        path: filtersStatus
+        path: filterConditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Inputs maps input name to condition of the input.
+      - description: InputConditions maps input name to condition of the input.
         displayName: Input Conditions
-        path: inputsStatus
+        path: inputConditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Outputs maps output name to condition of the output.
+      - description: OutputConditions maps output name to condition of the output.
         displayName: Output Conditions
-        path: outputsStatus
+        path: outputConditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
-      - description: Pipelines maps pipeline name to condition of the pipeline.
+      - description: PipelineConditions maps pipeline name to condition of the pipeline.
         displayName: Pipeline Conditions
-        path: pipelinesStatus
+        path: pipelineConditions
         x-descriptors:
         - urn:alm:descriptor:io.kubernetes.conditions
       version: v1

@@ -63,7 +63,7 @@ var _ = Describe("Test collector deployment type", func() {
 							Type: obs.ReceiverTypeHTTP,
 							Port: receiverPort,
 							HTTP: &obs.HTTPReceiver{
-								Format: obs.HTTPReceiverFormatKubeAPIAudit,
+								Format: obs.HTTPReceiverFormatKubeApiAudit,
 							},
 						},
 					},

@@ -38,8 +38,8 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
 				output.Syslog.AppName = appName
-				output.Syslog.ProcID = procId
-				output.Syslog.MsgID = msgId
+				output.Syslog.ProcId = procId
+				output.Syslog.MsgId = msgId
 				output.Syslog.PayloadKey = payloadKey
 			})
 		Expect(framework.Deploy()).To(BeNil())
@@ -65,8 +65,8 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
 				output.Syslog.AppName = appName
-				output.Syslog.ProcID = procId
-				output.Syslog.MsgID = msgId
+				output.Syslog.ProcId = procId
+				output.Syslog.MsgId = msgId
 				output.Syslog.PayloadKey = payloadKey
 			})
 		Expect(framework.Deploy()).To(BeNil())

@@ -16,7 +16,7 @@ package v1
 
 import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 
-// KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
+// KubeApiAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
 //
 // # Policy Filtering
 //
@@ -61,12 +61,12 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 //
 // [Kube Audit Policy]: https://kubernetes.io/docs/reference/config-api/apiserver-audit.v1/#audit-k8s-io-v1-Policy
 // [Kubernetes Auditing]: https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/
-type KubeAPIAudit struct {
+type KubeApiAudit struct {
 	// Rules specify the audit Level a request should be recorded at.
 	// A request may match multiple rules, in which case the FIRST matching rule is used.
 	// PolicyRules are strictly ordered.
 	//
-	// If Rules is empty or missing default rules apply, see [KubeAPIAudit]
+	// If Rules is empty or missing default rules apply, see [KubeApiAudit]
 	Rules []auditv1.PolicyRule `json:"rules,omitempty"`
 
 	// OmitStages is a list of stages for which no events are created.

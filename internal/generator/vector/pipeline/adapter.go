@@ -58,7 +58,7 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 
 	if len(pipeline.FilterRefs) > 0 {
 		if len(pipeline.Filters) == 0 {
-			log.V(0).Info("Runtime error in pipelineAdapter while processing filters.  Filters spec'd but not constructed", "filterRefs", pipeline.FilterRefs)
+			log.V(0).Info("Runtime error in pipelineAdapter while processing filters.  Filter spec'd but not constructed", "filterRefs", pipeline.FilterRefs)
 			os.Exit(0)
 		}
 		first := pipeline.Filters[0]

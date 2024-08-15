@@ -40,8 +40,8 @@ var _ = Describe("API audit filter", func() {
 			FromInput(obs.InputTypeAudit, func(spec *obs.InputSpec) {
 				spec.Audit.Sources = []obs.AuditSource{obs.AuditSourceKube}
 			}).WithFilter("my-audit", func(spec *obs.FilterSpec) {
-			spec.Type = obs.FilterTypeKubeAPIAudit
-			spec.KubeAPIAudit = &obs.KubeAPIAudit{
+			spec.Type = obs.FilterTypeKubeApiAudit
+			spec.KubeApiAudit = &obs.KubeApiAudit{
 				Rules: []auditv1.PolicyRule{
 					{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
 					{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other get requests

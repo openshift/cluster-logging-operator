@@ -23,7 +23,7 @@ import (
 type ClusterLogForwarderSpec struct {
 	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator.
 	//
-	// +kubebuilder:default:=Managed
+	// +kubebuilder:default:=managed
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Management State"
 	ManagementState ManagementState `json:"managementState,omitempty"`
 
@@ -89,15 +89,15 @@ type ServiceAccount struct {
 
 // ManagementState controls whether the operator's reconciliation is active for the given resource.
 //
-// +kubebuilder:validation:Enum:=Managed;Unmanaged
+// +kubebuilder:validation:Enum:=managed;unmanaged
 type ManagementState string
 
 const (
 	// ManagementStateManaged means that the operator is actively managing its operands and resources and driving them to meet the desired spec.
-	ManagementStateManaged ManagementState = "Managed"
+	ManagementStateManaged ManagementState = "managed"
 
 	// ManagementStateUnmanaged means that the operator will not take any action related to the component
-	ManagementStateUnmanaged ManagementState = "Unmanaged"
+	ManagementStateUnmanaged ManagementState = "unmanaged"
 )
 
 // CollectorSpec is spec to define scheduling and resources for a collector
@@ -291,25 +291,25 @@ type ClusterLogForwarderStatus struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// Inputs maps input name to condition of the input.
+	// InputConditions maps input name to condition of the input.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Input Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Inputs []metav1.Condition `json:"inputsStatus,omitempty"`
+	InputConditions []metav1.Condition `json:"inputConditions,omitempty"`
 
-	// Outputs maps output name to condition of the output.
+	// OutputConditions maps output name to condition of the output.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Outputs []metav1.Condition `json:"outputsStatus,omitempty"`
+	OutputConditions []metav1.Condition `json:"outputConditions,omitempty"`
 
-	// Filters maps filter name to condition of the filter.
+	// FilterConditions maps filter name to condition of the filter.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Filter Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Filters []metav1.Condition `json:"filtersStatus,omitempty"`
+	FilterConditions []metav1.Condition `json:"filterConditions,omitempty"`
 
-	// Pipelines maps pipeline name to condition of the pipeline.
+	// PipelineConditions maps pipeline name to condition of the pipeline.
 	//
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Pipelines []metav1.Condition `json:"pipelinesStatus,omitempty"`
+	PipelineConditions []metav1.Condition `json:"pipelineConditions,omitempty"`
 }
 
 // ClusterLogForwarder is an API to configure forwarding logs.

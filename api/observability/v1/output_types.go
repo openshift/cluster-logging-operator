@@ -176,7 +176,7 @@ type URLSpec struct {
 // BaseOutputTuningSpec tuning parameters for an output
 type BaseOutputTuningSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Delivery Mode"
-	Delivery DeliveryMode `json:"delivery,omitempty"`
+	DeliveryMode DeliveryMode `json:"deliveryMode,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
 	//
@@ -407,13 +407,13 @@ type CloudwatchIAMRole struct {
 }
 
 type CloudwatchAWSAccessKey struct {
-	// AccessKeyID points to the AWS access key id to be used for authentication.
+	// KeyId points to the AWS access key id to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key ID"
-	KeyID SecretReference `json:"keyID"`
+	KeyId SecretReference `json:"keyId"`
 
-	// AccessKeySecret points to the AWS access key secret to be used for authentication.
+	// KeySecret points to the AWS access key secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
@@ -466,12 +466,13 @@ type Elasticsearch struct {
 	Index string `json:"index"`
 
 	// Version specifies the version of Elasticsearch to be used.
-	// Must be one of: 6-8, where 8 is the default
+	// Must be one of: 6-8
 	//
 	// +kubebuilder:validation:Minimum:=6
 	// +kubebuilder:validation:Maximum:=8
+	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
-	Version int `json:"version,omitempty"`
+	Version int `json:"version"`
 }
 
 // GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.
@@ -488,7 +489,6 @@ type GoogleCloudLoggingTuningSpec struct {
 }
 
 // GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging.
-// Exactly one of billingAccountID, organizationID, folderID, or projectID must be set.
 type GoogleCloudLogging struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -500,11 +500,11 @@ type GoogleCloudLogging struct {
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Logging ID"
-	ID GoogleCloudLoggingID `json:"id"`
+	ID GoogleCloudLoggingId `json:"id"`
 
-	// LogID is the log ID to which to publish logs. This identifies log stream.
+	// LogId is the log ID to which to publish logs. This identifies log stream.
 	//
-	// The LogID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The LogId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 	//
@@ -520,7 +520,7 @@ type GoogleCloudLogging struct {
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Stream ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	LogID string `json:"logId"`
+	LogId string `json:"logId"`
 
 	// Tuning specs tuning for the output
 	//
@@ -529,11 +529,11 @@ type GoogleCloudLogging struct {
 	Tuning *GoogleCloudLoggingTuningSpec `json:"tuning,omitempty"`
 }
 
-type GoogleCloudLoggingID struct {
+type GoogleCloudLoggingId struct {
 	// Type is the ID type provided
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Logging ID Type"
-	Type GoogleCloudLoggingIDType `json:"type"`
+	Type GoogleCloudLoggingIdType `json:"type"`
 
 	// Value is the value of the ID
 	//
@@ -542,16 +542,16 @@ type GoogleCloudLoggingID struct {
 	Value string `json:"value"`
 }
 
-// GoogleCloudLoggingIDType specifies the type of the provided ID value.
+// GoogleCloudLoggingIdType specifies the type of the provided ID value.
 //
 // +kubebuilder:validation:Enum:=billingAccount;folder;project;organization
-type GoogleCloudLoggingIDType string
+type GoogleCloudLoggingIdType string
 
 const (
-	GoogleCloudLoggingIDTypeBillingAccount GoogleCloudLoggingIDType = "billingAccount"
-	GoogleCloudLoggingIDTypeFolder         GoogleCloudLoggingIDType = "folder"
-	GoogleCloudLoggingIDTypeProject        GoogleCloudLoggingIDType = "project"
-	GoogleCloudLoggingIDTypeOrganization   GoogleCloudLoggingIDType = "organization"
+	GoogleCloudLoggingIdTypeBillingAccount GoogleCloudLoggingIdType = "billingAccount"
+	GoogleCloudLoggingIdTypeFolder         GoogleCloudLoggingIdType = "folder"
+	GoogleCloudLoggingIdTypeProject        GoogleCloudLoggingIdType = "project"
+	GoogleCloudLoggingIdTypeOrganization   GoogleCloudLoggingIdType = "organization"
 )
 
 type HTTPTuningSpec struct {
@@ -603,7 +603,7 @@ type HTTP struct {
 
 type KafkaTuningSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Delivery Mode"
-	Delivery DeliveryMode `json:"delivery,omitempty"`
+	DeliveryMode DeliveryMode `json:"deliveryMode,omitempty"`
 
 	// MaxWrite limits the maximum payload in terms of bytes of a single "send" to the output.
 	//
@@ -988,12 +988,12 @@ type Splunk struct {
 
 // SyslogRFCType sets which RFC the generated messages conform to.
 //
-// +kubebuilder:validation:Enum:=RFC3164;RFC5424
+// +kubebuilder:validation:Enum:=rfc3164;rfc5424
 type SyslogRFCType string
 
 const (
-	SyslogRFC3164 SyslogRFCType = "RFC3164"
-	SyslogRFC5424 SyslogRFCType = "RFC5424"
+	SyslogRFC3164 SyslogRFCType = "rfc3164"
+	SyslogRFC5424 SyslogRFCType = "rfc5424"
 )
 
 // Syslog provides optional extra properties for output type `syslog`
@@ -1086,9 +1086,9 @@ type Syslog struct {
 	// TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of "tag" when this is empty
 	AppName string `json:"appName,omitempty"`
 
-	// ProcID is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+	// ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 	//
-	// The ProcID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The ProcId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 	//
@@ -1102,16 +1102,16 @@ type Syslog struct {
 	//
 	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// ProcID needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
+	// ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="PROCID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	ProcID string `json:"procID,omitempty"`
+	ProcId string `json:"procId,omitempty"`
 
-	// MsgID is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+	// MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 	//
-	// The MsgID can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The MsgId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 	//
@@ -1125,12 +1125,12 @@ type Syslog struct {
 	//
 	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// MsgID needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
+	// MsgId needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="MSGID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	MsgID string `json:"msgID,omitempty"`
+	MsgId string `json:"msgId,omitempty"`
 
 	// Enrichment is an additional modification the log message before forwarding it to the receiver
 	//

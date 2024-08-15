@@ -217,7 +217,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			pipelineBuilder.ToCloudwatchOutput(obs.CloudwatchAuthentication{
 				Type: obs.CloudwatchAuthTypeAccessKey,
 				AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-					KeyID: obs.SecretReference{
+					KeyId: obs.SecretReference{
 						Key:        constants.AWSAccessKeyID,
 						SecretName: functional.CloudwatchSecret,
 					},

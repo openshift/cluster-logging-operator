@@ -10,8 +10,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generate vector config", func() {
@@ -20,6 +23,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	var (
+		adapter fake.Output
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
 				CA: &obs.ValueReference{
@@ -70,7 +74,7 @@ var _ = Describe("Generate vector config", func() {
 		}
 	)
 
-	DescribeTable("for kafka output", func(expFile string, op framework.Options, tlsSpec *obs.OutputTLSSpec, visit func(spec *obs.OutputSpec)) {
+	DescribeTable("for kafka output", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -79,39 +83,50 @@ var _ = Describe("Generate vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		conf := New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"pipeline_1", "pipeline_2"}, secrets, nil, op)
+		if tune {
+			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+		}
+		conf := New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"pipeline_1", "pipeline_2"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with plaintext sasl, to single topic", "kafka_sasl_plaintext_single_topic.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("with plaintext sasl, to single topic", "kafka_sasl_plaintext_single_topic.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.Authentication = &obs.KafkaAuthentication{
 				SASL: saslAuth,
 			}
 		}),
-		Entry("with plaintext sasl, to single topic", "kafka_sasl_with_tls_single_topic.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("with plaintext sasl, to single topic", "kafka_sasl_with_tls_single_topic.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.Authentication = &obs.KafkaAuthentication{
 				SASL: saslAuth,
 			}
 			spec.TLS = tlsSpec
 		}),
-		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", "kafka_insecure_skipverify.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", "kafka_insecure_skipverify.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
 			spec.Kafka.Topic = ""
 			spec.TLS = tlsSpec
 			tlsSpec.InsecureSkipVerify = true
 
 		}),
-		Entry("without security", "kafka_no_security.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("without security", "kafka_no_security.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""
 		}),
-		Entry("without custom topic template", "kafka_custom_topic.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("without custom topic template", "kafka_custom_topic.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092"
 			spec.Kafka.Topic = `foo-bar{.log_type||"none"}`
 		}),
-		Entry("with NOT tls brokers", "kafka_not_tls_brokers.toml", framework.NoOptions, nil, func(spec *obs.OutputSpec) {
+		Entry("with NOT tls brokers", "kafka_not_tls_brokers.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = ""
 			spec.Kafka.Topic = ""
 			spec.Kafka.Brokers = []obs.URL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
+		}),
+		Entry("with tuning", "kafka_tuning.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
+			spec.Kafka.Topic = ""
+			spec.Kafka.Tuning = &obs.KafkaTuningSpec{
+				Delivery: obs.DeliveryModeAtLeastOnce,
+				MaxWrite: utils.GetPtr(resource.MustParse("10M")),
+			}
 		}),
 	)
 })

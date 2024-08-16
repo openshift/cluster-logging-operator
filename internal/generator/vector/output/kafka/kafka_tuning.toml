@@ -1,0 +1,27 @@
+# Kafka Topic
+[transforms.kafka_receiver_topic]
+type = "remap"
+inputs = ["pipeline_1","pipeline_2"]
+source = '''
+._internal.kafka_receiver_topic = "topic"
+'''
+
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["kafka_receiver_topic"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "{{ _internal.kafka_receiver_topic }}"
+healthcheck.enabled = false
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+except_fields = ["_internal"]
+
+[sinks.kafka_receiver.batch]
+max_bytes = 10000000
+
+[sinks.kafka_receiver.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488

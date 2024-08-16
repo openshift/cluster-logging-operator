@@ -2,6 +2,8 @@ package http_test
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -10,8 +12,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generate vector config", func() {
@@ -25,6 +30,7 @@ var _ = Describe("Generate vector config", func() {
 			aToken     = "atoken"
 		)
 		var (
+			adapter fake.Output
 			secrets = map[string]*corev1.Secret{
 				secretName: {
 					Data: map[string][]byte{
@@ -75,9 +81,16 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			}
+
+			baseTune = &obs.BaseOutputTuningSpec{
+				Delivery:         obs.DeliveryModeAtLeastOnce,
+				MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+				MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+				MinRetryDuration: utils.GetPtr(time.Duration(20)),
+			}
 		)
 
-		DescribeTable("for HTTP output", func(visit func(spec *obs.OutputSpec), secrets map[string]*corev1.Secret, op framework.Options, expFile string) {
+		DescribeTable("for HTTP output", func(visit func(spec *obs.OutputSpec), secrets map[string]*corev1.Secret, tune bool, op framework.Options, expFile string) {
 			exp, err := tomlContent.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -86,10 +99,14 @@ var _ = Describe("Generate vector config", func() {
 			if visit != nil {
 				visit(&outputSpec)
 			}
-			conf := http.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"application"}, secrets, nil, op)
+
+			if tune {
+				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+			}
+			conf := http.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"application"}, secrets, adapter, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
-			Entry("with Basic auth", nil, secrets, framework.NoOptions, "http_with_auth_basic.toml"),
+			Entry("with Basic auth", nil, secrets, false, framework.NoOptions, "http_with_auth_basic.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication.Token = &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
@@ -98,11 +115,11 @@ var _ = Describe("Generate vector config", func() {
 						Name: secretName,
 					},
 				}
-			}, secrets, framework.NoOptions, "http_with_auth_token.toml"),
+			}, secrets, false, framework.NoOptions, "http_with_auth_token.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = tlsSpec
-			}, secrets, framework.NoOptions, "http_with_tls.toml"),
+			}, secrets, false, framework.NoOptions, "http_with_tls.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = &obs.OutputTLSSpec{
@@ -121,7 +138,12 @@ var _ = Describe("Generate vector config", func() {
 						},
 					},
 				}
-			}, secrets, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
+			}, secrets, false, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
+			Entry("with tuning", func(spec *obs.OutputSpec) {
+				spec.HTTP.Tuning = &obs.HTTPTuningSpec{
+					BaseOutputTuningSpec: *baseTune,
+				}
+			}, secrets, true, framework.NoOptions, "http_with_tuning.toml"),
 		)
 	})
 

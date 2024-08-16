@@ -1,0 +1,22 @@
+
+[sinks.output_azure_monitor_logs]
+type = "azure_monitor_logs"
+inputs = ["pipelineName"]
+customer_id = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
+log_type = "myLogType"
+shared_key = "SECRET[kubernetes_secret.azure-monitor-secret/shared_key]"
+
+[sinks.output_azure_monitor_logs.encoding]
+except_fields = ["_internal"]
+
+[sinks.output_azure_monitor_logs.batch]
+max_bytes = 10000000
+
+[sinks.output_azure_monitor_logs.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488
+
+[sinks.output_azure_monitor_logs.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35

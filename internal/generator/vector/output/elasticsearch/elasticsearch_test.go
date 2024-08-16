@@ -2,6 +2,7 @@ package elasticsearch_test
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -10,8 +11,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generate Vector config", func() {
@@ -21,6 +25,7 @@ var _ = Describe("Generate Vector config", func() {
 		aPassword  = "testpass"
 	)
 	var (
+		adapter fake.Output
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
 				CA: &obs.ValueReference{
@@ -70,8 +75,15 @@ var _ = Describe("Generate Vector config", func() {
 				},
 			},
 		}
+
+		baseTune = &obs.BaseOutputTuningSpec{
+			Delivery:         obs.DeliveryModeAtLeastOnce,
+			MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+			MinRetryDuration: utils.GetPtr(time.Duration(20)),
+		}
 	)
-	DescribeTable("For Elasticsearch output", func(visit func(spec *obs.OutputSpec), op framework.Options, expFile string) {
+	DescribeTable("For Elasticsearch output", func(visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -80,28 +92,37 @@ var _ = Describe("Generate Vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		conf := New(outputSpec.Name, outputSpec, []string{"application"}, secrets, nil, op)
+		if tune {
+			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+		}
+		conf := New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with username,password", nil, framework.NoOptions, "es_with_auth_username_password.toml"),
+		Entry("with username,password", nil, false, framework.NoOptions, "es_with_auth_username_password.toml"),
 		Entry("with tls key,cert,ca-bundle", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.TLS = tlsSpec
 			spec.Elasticsearch.Version = 6
-		}, framework.NoOptions, "es_with_tls.toml"),
+		}, false, framework.NoOptions, "es_with_tls.toml"),
 		Entry("without security", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.Index = "foo"
-		}, framework.NoOptions, "es_without_security.toml"),
+		}, false, framework.NoOptions, "es_without_security.toml"),
 		Entry("without secret and TLS.insecureSkipVerify=true", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 			}
-		}, framework.NoOptions, "es_with_tls_skip_verify.toml"),
+		}, false, framework.NoOptions, "es_with_tls_skip_verify.toml"),
 		Entry("with custom index with static and dynamic values", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.Index = `foo-{.kubernetes.namespace||"none"}`
-		}, framework.NoOptions, "es_with_custom_index.toml"),
+		}, false, framework.NoOptions, "es_with_custom_index.toml"),
+		Entry("with tune parameters", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = nil
+			spec.Elasticsearch.Tuning = &obs.ElasticsearchTuningSpec{
+				BaseOutputTuningSpec: *baseTune,
+			}
+		}, true, framework.NoOptions, "es_with_tune.toml"),
 	)
 })

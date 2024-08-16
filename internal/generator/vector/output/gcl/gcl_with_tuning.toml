@@ -1,0 +1,34 @@
+# GoogleCloudLogging LogID
+[transforms.gcl_1_log_id]
+type = "remap"
+inputs = ["application"]
+source = '''
+._internal.gcl_1_log_id = "vector-1"
+'''
+
+[sinks.gcl_1]
+type = "gcp_stackdriver_logs"
+inputs = ["gcl_1_log_id"]
+billing_account_id = "billing-1"
+credentials_path = "/var/run/ocp-collector/secrets/gcl-1/google-application-credentials.json"
+log_id = "{{ _internal.gcl_1_log_id }}"
+severity_key = "level"
+
+[sinks.gcl_1.resource]
+type = "k8s_node"
+node_name = "{{hostname}}"
+
+[sinks.gcl_1.encoding]
+except_fields = ["_internal"]
+
+[sinks.gcl_1.batch]
+max_bytes = 10000000
+
+[sinks.gcl_1.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488
+
+[sinks.gcl_1.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35

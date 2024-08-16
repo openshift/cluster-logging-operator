@@ -2,6 +2,7 @@ package gcl_test
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -10,8 +11,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generate Vector config", func() {
@@ -19,6 +23,7 @@ var _ = Describe("Generate Vector config", func() {
 		secretName = "gcl-1"
 	)
 	var (
+		adapter fake.Output
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
 				CA: &obs.ValueReference{
@@ -62,8 +67,15 @@ var _ = Describe("Generate Vector config", func() {
 				},
 			},
 		}
+
+		baseTune = &obs.BaseOutputTuningSpec{
+			Delivery:         obs.DeliveryModeAtLeastOnce,
+			MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+			MinRetryDuration: utils.GetPtr(time.Duration(20)),
+		}
 	)
-	DescribeTable("For GoogleCloudLogging output", func(visit func(spec *obs.OutputSpec), op framework.Options, expFile string) {
+	DescribeTable("For GoogleCloudLogging output", func(visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -72,15 +84,23 @@ var _ = Describe("Generate Vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		conf := gcl.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, nil, op)
+		if tune {
+			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+		}
+		conf := gcl.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with service account token", nil, framework.NoOptions, "gcl_with_token.toml"),
+		Entry("with service account token", nil, false, framework.NoOptions, "gcl_with_token.toml"),
 		Entry("with TLS config", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
-		}, framework.NoOptions, "gcl_with_tls.toml"),
+		}, false, framework.NoOptions, "gcl_with_tls.toml"),
 		Entry("with custom logId", func(spec *obs.OutputSpec) {
 			spec.GoogleCloudLogging.LogID = `my-id{.log_type||"none"}`
-		}, framework.NoOptions, "gcl_with_custom_logid.toml"),
+		}, false, framework.NoOptions, "gcl_with_custom_logid.toml"),
+		Entry("with tuning", func(spec *obs.OutputSpec) {
+			spec.GoogleCloudLogging.Tuning = &obs.GoogleCloudLoggingTuningSpec{
+				BaseOutputTuningSpec: *baseTune,
+			}
+		}, true, framework.NoOptions, "gcl_with_tuning.toml"),
 	)
 })

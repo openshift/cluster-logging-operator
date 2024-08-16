@@ -3,14 +3,20 @@ package azuremonitor
 import (
 	_ "embed"
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generating vector config for Azure Monitor Logs output:", func() {
@@ -28,6 +34,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 	)
 
 	var (
+		adapter fake.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -58,50 +65,58 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 				},
 			},
 		}
-		outputCommon = obs.OutputSpec{
-			Type: obs.OutputTypeAzureMonitor,
-			Name: outputName,
-			AzureMonitor: &obs.AzureMonitor{
-				CustomerId: customerId,
-				LogType:    logType,
-				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretReference{
-						Key:        "shared_key",
-						SecretName: secretName,
+		initOutput = func() obs.OutputSpec {
+			return obs.OutputSpec{
+				Type: obs.OutputTypeAzureMonitor,
+				Name: outputName,
+				AzureMonitor: &obs.AzureMonitor{
+					CustomerId: customerId,
+					LogType:    logType,
+					Authentication: &obs.AzureMonitorAuthentication{
+						SharedKey: &obs.SecretReference{
+							Key:        "shared_key",
+							SecretName: secretName,
+						},
 					},
 				},
-			},
+			}
 		}
 
-		outputAdvance = obs.OutputSpec{
-			Type: obs.OutputTypeAzureMonitor,
-			Name: outputName,
-			AzureMonitor: &obs.AzureMonitor{
-				CustomerId:      customerId,
-				LogType:         logType,
-				AzureResourceId: azureId,
-				Host:            hostCN,
-				Authentication: &obs.AzureMonitorAuthentication{
-					SharedKey: &obs.SecretReference{
-						Key:        "shared_key",
-						SecretName: secretName,
-					},
-				},
-			},
+		baseTune = &obs.BaseOutputTuningSpec{
+			Delivery:         obs.DeliveryModeAtLeastOnce,
+			MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+			MinRetryDuration: utils.GetPtr(time.Duration(20)),
 		}
 	)
 
-	DescribeTable("should generate valid config", func(outputSpec obs.OutputSpec, tlsSpec *obs.OutputTLSSpec, expFile string) {
+	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), tune bool, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
-		outputSpec.TLS = tlsSpec
-		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, nil, nil)
+		outputSpec := initOutput()
+
+		if visit != nil {
+			visit(&outputSpec)
+		}
+
+		if tune {
+			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+		}
+		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, adapter, nil)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("for common case", outputCommon, nil, "azm_common.toml"),
-		Entry("for advance case", outputAdvance, nil, "azm_advance.toml"),
-		Entry("for common with tls case", outputCommon, tlsSpec, "azm_tls.toml"),
+		Entry("for common case", nil, false, "azm_common.toml"),
+		Entry("for advance case", func(output *obs.OutputSpec) {
+			output.AzureMonitor.AzureResourceId = azureId
+			output.AzureMonitor.Host = hostCN
+		}, false, "azm_advance.toml"),
+		Entry("for common with tls case", func(output *obs.OutputSpec) {
+			output.TLS = tlsSpec
+		}, false, "azm_tls.toml"),
+		Entry("for common with tls case", func(output *obs.OutputSpec) {
+			output.AzureMonitor.Tuning = baseTune
+		}, true, "azm_tuning.toml"),
 	)
 })

@@ -457,14 +457,15 @@ type Elasticsearch struct {
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
 	// Example:
+	//  1. {.log_type}-write
 	//
-	//  1. foo-{.bar||"none"}
+	//  2. foo-{.bar||"none"}
 	//
-	//  2. {.foo||.bar||"missing"}
+	//  3. {.foo||.bar||"missing"}
 	//
-	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//  4. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z\d\-_.\/]*)\{(\.\w+(\.\w+)*(\|\|(\.\w+(\.\w+)*|"[^"]*"))*)\}([a-zA-Z\d\-_.\/]*)?(\{(\.\w+(\.\w+)*(\|\|(\.\w+(\.\w+)*|"[^"]*"))*)\}([a-zA-Z\d\-_.\/]*)?)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index"`
 
@@ -989,7 +990,7 @@ type Splunk struct {
 	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +kubebuilder:validation:Pattern:=`^([a-zA-Z\d\-_.\/]*)(\{(\.\w+(\.\w+)*(\|\|(\.\w+(\.\w+)*|"[^"]*"))*)\})?([a-zA-Z\d\-_.\/]*)(\{(\.\w+(\.\w+)*(\|\|(\.\w+(\.\w+)*|"[^"]*"))*)\})?([a-zA-Z\d\-_.\/]*)$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index,omitempty"`
 }

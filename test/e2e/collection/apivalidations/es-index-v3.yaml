@@ -1,0 +1,23 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  managementState: Managed
+  outputs:
+    - name: elasticsearch
+      type: elasticsearch
+      elasticsearch:
+        url: https://elasticsearch:9200
+        version: 6
+        index: "{.foo||.bar||\"missing\"}"
+  pipelines:
+    - inputRefs:
+        - infrastructure
+        - audit
+        - application
+      name: forward-log-es
+      outputRefs:
+        - elasticsearch
+  serviceAccount:
+    name: clf-validation-test

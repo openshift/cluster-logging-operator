@@ -91,5 +91,17 @@ var _ = Describe("", func() {
 		Entry("should pass for Cloudwatch with empty URL", "cloudwatch-empty-url.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
+		Entry("should pass for Elasticsearch index: {.log_type}-write", "es-index-v1.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Elasticsearch index: foo-{.bar||\"none\"}", "es-index-v2.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Elasticsearch index: {.foo||.bar||\"missing\"}", "es-index-v3.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Elasticsearch index: foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}", "es-index-v4.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
 	)
 })

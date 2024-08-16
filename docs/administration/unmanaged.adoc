@@ -18,12 +18,12 @@ NOTE: Logging components in an unmanaged state are not supported unless a suppor
 NOTE: An unmanaged deployment will not receive updates until the `ClusterLogForwarder` custom resource is placed back into a managed state.
 ```
   spec:
-    managementState: "Managed"
+    managementState: Managed
 ```
 
 == Unmanaged Collector
 
-* Set or edit the `ClusterLogForwarder` resource to managementState of Unmanaged:
+* Set or edit the `ClusterLogForwarder` resource to managementState of `Unmanaged`:
 ```
 oc patch clusterlogforwarder.observability.openshift.io/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
 ```

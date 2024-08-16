@@ -1,0 +1,31 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  filters:
+    - name: my-multiline
+      type: detectMultilineException
+    - name: my-parse
+      type: parse
+    - name: my-labels
+      type: openshiftLabels
+      openshiftLabels:
+        foo: bar
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - application
+      outputRefs:
+        - my-output
+      filterRefs:
+        - my-multiline
+        - my-parse
+        - my-labels
+  outputs:
+    - name: my-output
+      type: http
+      http:
+        url: http://my-log-output

@@ -1,0 +1,37 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logcollector
+  outputs:
+    - name: es-managed
+      type: elasticsearch
+      elasticsearch:
+        url: https://elasticsearch:9200
+        version: 6
+        index: 'test-{.log_type||"nologformat"}-write'
+      tls:
+        ca:
+          key: ca-bundle.crt
+          secretName: collector
+        certificate:
+          key: tls.crt
+          secretName: collector
+        key:
+          key: tls.key
+          secretName: collector
+  filters:
+    - name: my-parse
+      type: parse
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - application
+        - infrastructure
+      filterRefs:
+        - my-parse
+      outputRefs:
+        - es-managed

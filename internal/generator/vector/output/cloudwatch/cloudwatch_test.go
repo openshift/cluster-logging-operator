@@ -2,6 +2,7 @@ package cloudwatch_test
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -10,9 +11,12 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generating vector config for cloudwatch output", func() {
@@ -33,6 +37,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		)
 
 		var (
+			adapter fake.Output
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 				TLSSpec: obs.TLSSpec{
@@ -96,9 +101,17 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				},
 			}
+			baseTune = &obs.CloudwatchTuningSpec{
+				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+					Delivery:         obs.DeliveryModeAtLeastOnce,
+					MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+					MinRetryDuration: utils.GetPtr(time.Duration(20)),
+				},
+			}
 		)
 
-		DescribeTable("should generate valid config", func(groupName string, visit func(spec *obs.OutputSpec), op framework.Options, expFile string) {
+		DescribeTable("should generate valid config", func(groupName string, visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
 			exp, err := tomlContent.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -108,22 +121,25 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			if visit != nil {
 				visit(&outputSpec)
 			}
-			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, nil, op)
+			if tune {
+				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+			}
+			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, adapter, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
-			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {},
+			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {}, false,
 				framework.NoOptions, "cw_with_groupname.toml"),
 			Entry("when URL is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.URL = "http://mylogreceiver"
-			}, framework.NoOptions, "cw_with_url.toml"),
-			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil, testhelpers.FrameworkOptionWithDefaultTLSCiphers, "cw_with_tls_and_default_mintls_ciphers.toml"),
+			}, false, framework.NoOptions, "cw_with_url.toml"),
+			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil, false, testhelpers.FrameworkOptionWithDefaultTLSCiphers, "cw_with_tls_and_default_mintls_ciphers.toml"),
 			Entry("when tls is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
-			}, framework.NoOptions, "cw_with_tls_spec.toml"),
+			}, false, framework.NoOptions, "cw_with_tls_spec.toml"),
 			Entry("when tls is spec'd with insecure verify", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
 				spec.TLS.InsecureSkipVerify = true
-			}, framework.NoOptions, "cw_with_tls_spec_insecure_verify.toml"),
+			}, false, framework.NoOptions, "cw_with_tls_spec_insecure_verify.toml"),
 			Entry("when aws credentials are provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
 					Type: obs.CloudwatchAuthTypeIAMRole,
@@ -137,7 +153,10 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "cw_groupname_with_aws_credentials.toml"),
+			}, false, framework.NoOptions, "cw_groupname_with_aws_credentials.toml"),
+			Entry("when tuning is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
+				spec.Cloudwatch.Tuning = baseTune
+			}, true, framework.NoOptions, "cw_with_tuning.toml"),
 		)
 	})
 

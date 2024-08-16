@@ -2,6 +2,9 @@ package otlp
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -12,8 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-	"sort"
-	"strings"
 )
 
 type Otlp struct {
@@ -122,6 +123,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			sink,
 			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
+			common.NewBatch(id, strategy),
+			common.NewBuffer(id, strategy),
+			common.NewRequest(id, strategy),
 			tls.New(id, o.TLS, secrets, op),
 			auth.HTTPAuth(id, o.OTLP.Authentication, secrets, op),
 		},

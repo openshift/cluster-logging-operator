@@ -14,6 +14,7 @@ const (
 
 // clfInitializers are the set of rules for initializing the ClusterLogForwarder spec
 var clfInitializers = []func(spec obs.ClusterLogForwarder, migrateContext utils.Options) obs.ClusterLogForwarder{
+	Resources,
 	MigrateLokiStack,
 	MigrateInputs,
 }

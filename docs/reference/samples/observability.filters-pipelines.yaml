@@ -1,0 +1,43 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  filters:
+    - name: drop-filter
+      type: drop
+      drop:
+        - test:
+            - field: .level
+              matches: debug
+    - name: prune-filter
+      type: prune
+      prune:
+        in:
+          - .kubernetes.labels.foobar
+        notIn:
+          - .message
+    - name: audit-filter
+      type: kubeAPIAudit
+      kubeAPIAudit:
+        omitResponseCodes:
+          - 404
+          - 409
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - application
+        - audit
+      outputRefs:
+        - my-output
+      filterRefs:
+        - drop-filter
+        - prune-filter
+        - audit-filter
+  outputs:
+    - name: my-output
+      type: http
+      http:
+        url: http://my-log-output

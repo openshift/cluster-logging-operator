@@ -1,12 +1,35 @@
-= Upgrading to Logging v6.0
+:toc:
+:toclevels: 4
+
+= What's New In Logging 6.0
 
 == Overview
-Logging v6.0 is a major change from earlier releases and is the realization of several longstanding goals of Cluster Logging:
+Logging version 6.0 is a major change from earlier releases and is the realization of several longstanding goals.
 
-* Distinct operators to support logging components (e.g. collectors, storage, visualization)
-* Remove support of managed log storage and visualization based upon the Elastic products (i.e. Elasticsearch, Kibana)
-* Remove support of Fluentd log collector implementation
-* Remove support of the ClusterLogging.logging.openshift.io and ClusterLogForwarder.logging.openshift.io
+The main highlights of these changes are:
+
+* There are now distinct operators to support each separate logging components (e.g. collectors, storage, visualization)
+* The ClusterLoggingOperator no longer manages log storage or visualization of any kind including LokiStack resource or Elastic products (i.e. Elasticsearch, Kibana)
+* CLO has removed support of Fluentd log collector implementation
+* Introduce the `ClusterLogForwarder.observability.openshift.io` API to replace both `ClusterLogging.logging.openshift.io` and `ClusterLogForwarder.logging.openshift.io` APIs
+
+.5.x
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
+----
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+----
+
+Replaced with:
+
+.6.0
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+----
 
 NOTE: There is no automated upgrade provided by the *cluster-logging-operator*
 
@@ -19,10 +42,10 @@ having more granular control over individual components.  This means administrat
 a given component. The general steps for deploying a complete logging solution are:
 
 1. Deploy the Red Hat **cluster-observability-operator**
-1. Deploy the Red Hat **loki-operator**
-1. Create an instance of **LokiStack** in the *openshift-logging* namespace
-1. Deploy the Red Hat **cluster-logging-operator**
-1. Create an instance of the **ClusterLogForwarder.observability.openshift.io** resource
+2. Deploy the Red Hat **loki-operator**
+3. Create an instance of **LokiStack** in the *openshift-logging* namespace
+4. Deploy the Red Hat **cluster-logging-operator**
+5. Create an instance of the **ClusterLogForwarder.observability.openshift.io** resource
 
 === Log Storage
 The only available managed log storage solution for this release is a Loki stack that is based upon the **loki-operator**.  This
@@ -52,32 +75,42 @@ NOTE: Vector is the only supported collector implementation.
 
 ==== Permissions
 
-This release of Cluster Logging requires administrators to explicitly grant log collection permissions to the service account associated with *ClusterLogForwarder*.  This was not required in previous releases for the legacy logging scenario consisting of a *ClusterLogging* and, optionally, a *ClusterLogForwarder.logging.openshift.io* resource.
+This release of Cluster Logging requires a service account to be specified.  Administrators must now *explicitly grant log collection permissions* to the service account associated with *ClusterLogForwarder*.  This was not required in previous releases for the legacy logging scenario consisting of a *ClusterLogging* and, optionally, a *ClusterLogForwarder.logging.openshift.io* resource.
 
-Using the existing service account (i.e. *logcollector*) from a previous release requires creating the following *CluserRoleBinding*:
+[source, yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: logcollector
+----
+Using the existing service account (i.e. *logcollector*) from a previous release requires creating the following *ClusterRoleBinding*:
 
 ----
-oc adm policy add-cluster-role-to-user collect-application-logs -z openshift-logging:logcollector
-oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z openshift-logging:logcollector
+oc adm policy add-cluster-role-to-user collect-application-logs -z logcollector
+oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z logcollector
 ----
 
 Additionally, create the following *ClusterRoleBinding* if collecting audit logs:
 
 ----
-oc adm policy add-cluster-role-to-user collect-audit-logs -z openshift-logging:logcollector
+oc adm policy add-cluster-role-to-user collect-audit-logs -z logcollector
 ----
 
 ==== Management, Resource Allocation & Workload Scheduling
-Configuration of the management state (i.e. Managed, Unmanaged), resource request and limits, tolerations, and node selection
+Configuration of the management state (i.e. managed, unmanaged), resource request and limits, tolerations, and node selection
 are part of the new ClusterLogForwarder API.
 
-.Previous
+.Previously part of 'ClusterLogging' (5.9)
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
 spec:
-  managementState: "Managed"
+  managementState: Managed
   collection:
     resources:
       limits: {}
@@ -85,10 +118,10 @@ spec:
     nodeSelector: {}
     tolerations: {}
 ----
-.Current
+.Now spec'd in the 6.0 'ClusterLogForwarder' along with inputs, outputs, filters and pipelines
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   managementState: Managed
@@ -98,6 +131,7 @@ spec:
       requests: {}
     nodeSelector: {}
     tolerations: {}
+...
 ----
 
 ==== Input Specifications
@@ -111,11 +145,11 @@ Namespace and container inclusion and exclusions were collapsed into a single fi
 .5.9 Application Input with Namespace and Container Includes and Excludes
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
+apiVersion: logging.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   inputs:
-   - name: application-logs
+   - name: app-logs
      type: application
      application:
        namespaces:
@@ -126,16 +160,18 @@ spec:
          container: main
        excludes:
        - container: too-verbose
+       containerLimit:
+         maxRecordsPerSecond: 500
 ----
 
 .6.0 Application Input with Namespace and Container Includes and Excludes
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   inputs:
-   - name: application-logs
+   - name: app-logs
      type: application
      application:
        includes:
@@ -145,6 +181,9 @@ spec:
          container: main
        excludes:
        - container: too-verbose
+       tuning:
+          rateLimitPerContainer:
+            - maxRecordsPerSecond: 500
 ----
 
 NOTE: *application*, *infrastructure*, and *audit* are reserved words and can not be used for the name when defining an input
@@ -159,7 +198,7 @@ Input receiver changes:
 .5.9 Input Receivers
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
+apiVersion: logging.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   inputs:
@@ -178,7 +217,7 @@ spec:
 .6.0 Input Receivers
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   inputs:
@@ -207,9 +246,10 @@ The high-level output spec changes:
 
 ==== Secrets & TLS Configuration
 Secrets and TLS configuration are separated into authentication and TLS configuration for each output. They
-are explicitly defined in the specification instead of relying upon
+are now explicitly defined in the specification instead of relying upon
 administrators to define secrets with recognized https://github.com/openshift/cluster-logging-operator/blob/release-5.9/docs/reference/operator/secrets.adoc[keys].
-Upgrading TLS and authorization configuration will require administrators to understand the previously, recognized
+
+Upgrading TLS and authorization configuration will require administrators to understand the previously recognized
 keys in order to continue to use existing secrets. Examples in the following sections will provide details
 how to configure a ClusterLogForwarder secrets to forward to existing Red Hat managed log storage solutions.
 
@@ -217,8 +257,8 @@ how to configure a ClusterLogForwarder secrets to forward to existing Red Hat ma
 .v5.9 Forwarding to Red Hat Managed Elasticsearch
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
 metadata:
   name: instance
   namespace: openshift-logging
@@ -230,44 +270,55 @@ spec:
 .v6.0 Forwarding to Red Hat Managed Elasticsearch
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: my-account
   outputs:
-  - name: default-elasticsearch
-    type: elasticsearch
-    elasticsearch:
-      url: https://elasticsearch:9200
-      version: 6
-      index: "{.log_type}-write"
-    tls:
-      ca:
-        key: ca-bundle.crt
-        secretName: collector
-      certificate:
-        key: tls.crt
-        secretName: collector
-      key:
-        key: tls.key
-        secretName: collector
+    - name: default-elasticsearch
+      type: elasticsearch
+      elasticsearch:
+        url: https://elasticsearch:9200
+        version: 6
+        index: '{.log_type||"unknown"}-write'   <1>
+      tls:
+        ca:
+          key: ca-bundle.crt
+          secretName: collector
+        certificate:
+          key: tls.crt
+          secretName: collector
+        key:
+          key: tls.key
+          secretName: collector
   pipelines:
-  - outputRefs:
-    - default-elasticsearch
-  - inputRefs:
-    - application
-    - infrastructure
+    - name: my-pipeline
+      outputRefs:
+        - default-elasticsearch
+      inputRefs:
+        - application
+        - infrastructure
 ----
-NOTE: In this example, application logs are written to the 'application-write' alias/index instead of 'app-write'
+. `index` can be a combination of dynamic and static values. Dynamic values are enclosed in curly brackets `{}`
+and MUST end with a "quoted" static fallback value separated with `||`.
+
+More details use: `oc explain clf.spec.outputs.elasticsearch.index`
+
+
+NOTE: In this example, application logs are written to the 'application-write' and 'infrastructure-write' index.
+Previous versions without the `index` spec, would have instead written to 'app-write', 'infra-write'.
+
 
 ===== Red Hat Managed LokiStack
 .v5.9 Forwarding to Red Hat Managed LokiStack
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
 metadata:
   name: instance
   namespace: openshift-logging
@@ -275,39 +326,39 @@ spec:
   logStore:
     type: lokistack
     lokistack:
-      name: lokistack-dev
+      name: logging-loki
 ----
 
 .v6.0 Forwarding to Red Hat Managed LokiStack
-[source, yaml]
+[source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logcollector
   outputs:
   - name: default-lokistack
     type: lokiStack
     lokiStack:
       target:
-        name: lokistack-dev
+        name: logging-loki
         namespace: openshift-logging
       authentication:
         token:
-          from: secret
-        secret:
-          key: token
-          secretName: logcollector-token
+          from: serviceAccount
     tls:
       ca:
         key: service-ca.crt
         configMapName: openshift-service-ca.crt
   pipelines:
-  - outputRefs:
+  - name: my-pipeline
+    outputRefs:
     - default-lokistack
-  - inputRefs:
+    inputRefs:
     - application
     - infrastructure
 ----
@@ -319,89 +370,293 @@ filters in this release.  Individual filters are defined in the "filters" spec a
 .5.9 Filters
 [source, yaml]
 ----
-apiVersion: "logging.openshift.io/v1"
+apiVersion: logging.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   pipelines:
-   - name: application-logs
-     parse: json
-     labels:
-       foo: bar
-     detectMultilineErrors: true
+  - name: app-logs
+    detectMultilineErrors: true
+    parse: json
+    labels:
+      foo: bar
 ----
 
 .6.0 Filter Configuration
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 spec:
   filters:
-  - name: detectexception
+  - name: my-multiline
     type: detectMultilineException
-  - name: parse-json
+  - name: my-parse
     type: parse
-  - name: labels
-    type: openShiftLables
-    openShiftLabels:
+  - name: my-labels
+    type: openshiftLabels
+    openshiftLabels:
       foo: bar
   pipelines:
-  - name: application-logs
+  - name: app-logs
     filterRefs:
-    - detectexception
-    - labels
-    - parse-json
+    - my-multiline
+    - my-parse
+    - my-labels
+----
+NOTE: Drop filter, Prune filter and KubeAPIAudit filters remain unchanged
+[source, yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+spec:
+  filters:
+  - name: drop-debug-logs
+    type: drop
+    drop:
+    - test:
+      - field: .level
+        matches: debug
+  - name: prune-fields
+    type: prune
+    prune:
+      in:
+      - .kubernetes.labels.foobar
+      notIn:
+      - .message
+  - name: audit-logs
+    type: kubeAPIAudit
+    kubeAPIAudit:
+      omitResponseCodes:
+      - 404
+      - 409
 ----
 ==== Validation & Status
 Most validations are enforced when a resource is created or updated which provides immediate feedback.  This is
 a departure from previous releases where all validation occurred post creation requiring inspection of the resource status location.  Some validation still occurs post resource creation for cases where is not possible to do so at creation or update time.
 
-Instances of the **ClusterLogForwarder.observability.openshift.io** must satisfy the following conditions before the operator will deploy the log collector: Authorized, Valid, Ready.  An example of these conditions is:
+Instances of the **ClusterLogForwarder.observability.openshift.io** must satisfy the following before
+the operator will deploy the log collector:
 
-.6.0 Status Conditions
+- *Resource Status Conditions:* `Authorized, Valid, Ready`
+
+- *Spec Validations:* `Filters, Inputs, Outputs, Pipelines`
+
+All must evaluate to `status: "True"`
+
+.6.0 Status "True" Conditions Example
 [source, yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 status:
   conditions:
-  - message: ""
-    status: "True"
-    type: Ready
   - message: "permitted to collect log types: [application]"
     reason: ClusterRoleExists
     status: "True"
     type: observability.openshift.io/Authorized
   - message: ""
-    reason: Validation Success
+    reason: ValidationSuccess
     status: "True"
     type: observability.openshift.io/Valid
-  inputs:
   - message: ""
     status: "True"
-    type: observability.openshift.io/Valid-application
-  outputs:
-  - message: ""
+    type: observability.openshift.io/Ready
+  filterConditions:
+  - message: filter "my-parse" is valid
+    reason: ValidationSuccess
     status: "True"
-    type: observability.openshift.io/Valid-rh-loki
-  pipelines:
-  - message: ""
+    type: observability.openshift.io/ValidFilter-my-parse
+  inputConditions:
+  - message: input "application" is valid
+    reason: ValidationSuccess
     status: "True"
-    type: observability.openshift.io/Valid-application-logs
+    type: observability.openshift.io/ValidInput-application
+  outputConditions:
+  - message: output "rh-loki" is valid
+    reason: ValidationSuccess
+    status: "True"
+    type: observability.openshift.io/ValidOutput-rh-loki
+  pipelineConditions:
+  - message: pipeline "app-logs" is valid
+    reason: ValidationSuccess
+    status: "True"
+    type: observability.openshift.io/ValidPipeline-app-logs
 ----
 
-NOTE: Conditions that are satisfied and which apply have a "status" value of "True".  Conditions that
-have a "status" other than "True" provide a reason and a message identifying why.
+NOTE: Conditions that are satisfied have a "status" value of "True".  Conditions that
+have a "status" other than "True" provide a reason and a message identifying the failure.
 
-=== Examples & Common Use Cases
+.6.0 Status "False" Example
+[source, yaml]
+----
+status:
+  conditions:
+  - message: insufficient permissions on service account, not authorized to collect 'application' logs
+    reason: ClusterRoleMissing
+    status: "False"
+    type: observability.openshift.io/Authorized
+  - message: ""
+    reason: ValidationFailure
+    status: "False"
+    type: Ready
+----
 
-==== ClusterLogging Only
-===== Red Hat Managed Elasticsearch
-===== Red Hat Managed LokiStack
+== Examples & Common Use Cases
 
-==== ClusterLogging & ClusterLogForwarder
-===== Red Hat Managed Elasticsearch
-===== Red Hat Managed LokiStack
-===== Forwarding to CloudWatch using Short-Lived Token
-===== Forwarding to Elasticsearch using Custom Indices
-===== Forwarding with Input Receivers
+=== Forwarding to CloudWatch
+
+====
+.Forwarding to CloudWatch using long-lived static key and secret
+[source, yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+  - name: my-cw
+    type: cloudwatch
+    cloudwatch:
+      groupName: my-cluster-{.log_type||"unknown"}
+      region: us-east-1
+      authentication:
+        type: awsAccessKey
+        awsAccessKey:
+          keyId:
+            secretName: cw-secret
+            key: aws_access_key_id
+          keySecret:
+            secretName: cw-secret
+            key: aws_secret_access_key
+  pipelines:
+    - name: my-cw-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - my-cw
+----
+.Alternative CW Auth spec using Short-Lived Token (SA Token)
+[source, yaml]
+----
+      authentication:
+        type: iamRole
+        iamRole:
+          roleARN:
+            secretName: role-for-sts
+            key: credentials
+          token:
+            from: serviceAccount
+...
+----
+.Alternative CW Auth spec using role and static token
+[source, yaml]
+----
+      authentication:
+        type: iamRole
+        iamRole:
+          roleARN:
+            secretName: role-for-sts
+            key: credentials
+          token:
+            from: secret
+            secret:
+              key: token
+              name: cw-token
+...
+----
+====
+=== Forwarding to the Red Hat Managed Elasticsearch
+====
+
+.v5 ClusterLogging
+[source, yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  logStore:
+    type: elasticsearch
+    elasticsearch:
+      nodeCount: 3
+      resources:
+        requests:
+          memory: 2Gi
+      redundancyPolicy: ZeroRedundancy
+  visualization:
+    type: kibana
+    kibana:
+      replicas: 1
+  collection:
+    type: vector
+----
+.v5 ClusterLogForwarder
+[source, yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: default
+      type: elasticsearch
+      elasticsearch:
+        enableStructuredContainerLogs: true
+        structuredTypeKey: kubernetes.namespace_name
+        structuredTypeName: nologformat
+  pipelines:
+    - inputRefs:
+        - application
+      name: to-default
+      parse: json
+      outputRefs:
+        - default
+----
+.v6 ClusterLogForwarder
+[source, yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logcollector
+  outputs:
+    - name: es-managed
+      type: elasticsearch
+      elasticsearch:
+        url: https://elasticsearch:9200
+        version: 6
+        index: '{.kubernetes.namespace_name||"nologformat"}-write'
+      tls:
+        ca:
+          key: ca-bundle.crt
+          secretName: collector
+        certificate:
+          key: tls.crt
+          secretName: collector
+        key:
+          key: tls.key
+          secretName: collector
+  filters:
+    - name: my-parse
+      type: parse
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - application
+      filterRefs:
+        - my-parse
+      outputRefs:
+        - es-managed
+----

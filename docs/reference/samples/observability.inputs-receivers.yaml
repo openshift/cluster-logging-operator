@@ -1,0 +1,46 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  inputs:
+    - name: http-receiver
+      type: receiver
+      receiver:
+        type: http
+        port: 8443
+        http:
+          format: kubeApiAudit
+        tls:
+          ca:
+            configMapName: my-configmap
+            key: ca.crt
+          certificate:
+            configMapName: my-cert-configmap
+            key: cert.crt
+          key:
+            secretName: my-secret
+            key: my.key
+          keyPassphrase:
+            secretName: my-secret
+            key: passphrase
+    - name: syslog-receiver
+      type: receiver
+      receiver:
+        type: syslog
+        port: 9442
+        tls:
+          ca:
+            configMapName: my-configmap
+            key: ca.crt
+          certificate:
+            configMapName: my-cert-configmap
+            key: cert.crt
+          key:
+            secretName: my-secret
+            key: my.key
+          keyPassphrase:
+            secretName: my-secret
+            key: passphrase

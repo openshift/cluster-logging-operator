@@ -1,0 +1,41 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  inputs:
+    - name: app-logs
+      type: application
+      application:
+        includes:
+          - namespace: my-ns1
+            container: my-app1
+        excludes:
+          - namespace: my-ns2
+            container: my-app2
+        selector:
+          matchLabels:
+            app: another-app
+          matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - production
+                - staging
+        tuning:
+          rateLimitPerContainer:
+            - maxRecordsPerSecond: 500
+    - name: infra-logs
+      type: infrastructure
+      infrastructure:
+        sources:
+          - node
+          - container
+    - name: audit-logs
+      type: audit
+      audit:
+        sources:
+          - kubeAPI
+          - openshiftAPI

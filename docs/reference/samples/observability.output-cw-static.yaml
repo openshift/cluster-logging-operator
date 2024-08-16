@@ -1,0 +1,29 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: my-cw
+      type: cloudwatch
+      cloudwatch:
+        groupName: test-cluster_{.log_type||"unknown"}
+        region: us-east-1
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyId:
+              secretName: cw-secret
+              key: aws_access_key_id
+            keySecret:
+              secretName: cw-secret
+              key: aws_secret_access_key
+  pipelines:
+    - name: my-cw-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - my-cw

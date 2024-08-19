@@ -49,7 +49,7 @@ func TemplateRemap(componentID string, inputs []string, userTemplate, field, des
 // Example: foo-{.log_type||"none"} -> "foo-" + to_string!(.log_type||"none")
 func TransformUserTemplateToVRL(userTemplate string) string {
 	// Finds and replaces expressions defined in `{}` with to_string!()
-	replacedUserTemplate := ReplaceBracketWithToString(userTemplate, "to_string!(%s)")
+	replacedUserTemplate := ReplaceBracketWithToString(userTemplate, "to_string!(.internal%s)")
 
 	// Finding all matches of to_string!() returning their start + end indices
 	matchedIndices := splitRegex.FindAllStringSubmatchIndex(replacedUserTemplate, -1)
@@ -66,12 +66,12 @@ func TransformUserTemplateToVRL(userTemplate string) string {
 			result = append(result, fmt.Sprintf("%q", beforePart))
 		}
 
-		// Append the to_string!() group and replace any labels with values from internal context
-		result = append(result, strings.NewReplacer(
-			".kubernetes.labels", "._internal.kubernetes.labels",
-			".kubernetes.namespace_labels", "._internal.kubernetes.namespace_labels",
-			".openshift.labels", "._internal.openshift.labels",
-		).Replace(replacedUserTemplate[match[0]:match[1]]))
+		//// Append the to_string!() group and replace any labels with values from internal context
+		//result = append(result, strings.NewReplacer(
+		//	".kubernetes.labels", "._internal.kubernetes.labels",
+		//	".kubernetes.namespace_labels", "._internal.kubernetes.namespace_labels",
+		//	".openshift.labels", "._internal.openshift.labels",
+		//).Replace(replacedUserTemplate[match[0]:match[1]]))
 		lastIndex = match[1]
 	}
 	// Append the remaining part of the string after the last match making sure it isn't the empty string

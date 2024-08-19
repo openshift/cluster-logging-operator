@@ -77,7 +77,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 	filters := filter.NewInternalFilterMap(internalobs.FilterMap(clfspec))
 	pipelineMap := map[string]*pipeline.Pipeline{}
 	for i, p := range clfspec.Pipelines {
-		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs)
+		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs, pipeline.AddPostFilters)
 		pipelineMap[p.Name] = a
 	}
 

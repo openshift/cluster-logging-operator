@@ -3962,6 +3962,18 @@ a|
 
 a|  
 
+|tag
+
+|string
+
+a|  
+
+|time
+
+|string
+
+a|  
+
 |======================
 
 [options="header"]
@@ -4506,6 +4518,12 @@ This is only present when deploying fluentd collector implementations
 |======================
 |Property|Type|Description
 
+|k
+
+|object
+
+a|  
+
 |t
 
 |object
@@ -4520,6 +4538,90 @@ a|
 
 |======================
 
+=== .systemd.k
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|KERNEL_DEVICE
+
+|string
+
+a|  
+
+|KERNEL_SUBSYSTEM
+
+|string
+
+a|  
+
+|UDEV_DEVLINK
+
+|string
+
+a|  
+
+|UDEV_DEVNODE
+
+|string
+
+a|  
+
+|UDEV_SYSNAME
+
+|string
+
+a|  
+
+|======================
+
+=== .systemd.k.KERNEL_DEVICE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.k.KERNEL_SUBSYSTEM
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.k.UDEV_DEVLINK
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.k.UDEV_DEVNODE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.k.UDEV_SYSNAME
+
+===== Description
+
+=====  Type
+
+* string
+
 === .systemd.t
 
 ===== Description
@@ -4531,6 +4633,18 @@ a|
 [options="header"]
 |======================
 |Property|Type|Description
+
+|AUDIT_LOGINUID
+
+|string
+
+a|  
+
+|AUDIT_SESSION
+
+|string
+
+a|  
 
 |BOOT_ID
 
@@ -4563,6 +4677,18 @@ a|
 a|  
 
 |GID
+
+|string
+
+a|  
+
+|HOSTNAME
+
+|string
+
+a|  
+
+|LINE_BREAK
 
 |string
 
@@ -4604,6 +4730,18 @@ a|
 
 a|  
 
+|SYSTEMD_OWNER_UID
+
+|string
+
+a|  
+
+|SYSTEMD_SESSION
+
+|string
+
+a|  
+
 |SYSTEMD_SLICE
 
 |string
@@ -4611,6 +4749,12 @@ a|
 a|  
 
 |SYSTEMD_UNIT
+
+|string
+
+a|  
+
+|SYSTEMD_USER_UNIT
 
 |string
 
@@ -4629,6 +4773,22 @@ a|
 a|  
 
 |======================
+
+=== .systemd.t.AUDIT_LOGINUID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.AUDIT_SESSION
+
+===== Description
+
+=====  Type
+
+* string
 
 === .systemd.t.BOOT_ID
 
@@ -4671,6 +4831,22 @@ a|
 * string
 
 === .systemd.t.GID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.HOSTNAME
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.LINE_BREAK
 
 ===== Description
 
@@ -4726,6 +4902,22 @@ a|
 
 * string
 
+=== .systemd.t.SYSTEMD_OWNER_UID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_SESSION
+
+===== Description
+
+=====  Type
+
+* string
+
 === .systemd.t.SYSTEMD_SLICE
 
 ===== Description
@@ -4735,6 +4927,14 @@ a|
 * string
 
 === .systemd.t.SYSTEMD_UNIT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_USER_UNIT
 
 ===== Description
 
@@ -4770,7 +4970,61 @@ a|
 |======================
 |Property|Type|Description
 
+|CODE_FILE
+
+|string
+
+a|  
+
+|CODE_FUNCTION
+
+|string
+
+a|  
+
+|CODE_LINE
+
+|string
+
+a|  
+
+|ERRNO
+
+|string
+
+a|  
+
+|MESSAGE_ID
+
+|string
+
+a|  
+
+|RESULT
+
+|string
+
+a|  
+
+|SYSLOG_FACILITY
+
+|string
+
+a|  
+
 |SYSLOG_IDENTIFIER
+
+|string
+
+a|  
+
+|SYSLOG_PID
+
+|string
+
+a|  
+
+|UNIT
 
 |string
 
@@ -4778,7 +5032,95 @@ a|
 
 |======================
 
+=== .systemd.u.CODE_FILE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.CODE_FUNCTION
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.CODE_LINE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.ERRNO
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.MESSAGE_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.RESULT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.SYSLOG_FACILITY
+
+===== Description
+
+=====  Type
+
+* string
+
 === .systemd.u.SYSLOG_IDENTIFIER
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.SYSLOG_PID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u.UNIT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .tag
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .time
 
 ===== Description
 

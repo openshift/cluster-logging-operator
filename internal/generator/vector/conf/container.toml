@@ -18,7 +18,7 @@ type = "kubernetes_logs"
 max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube-*_*/*/*.log", "/var/log/pods/kube_*/*/*.log", "/var/log/pods/openshift-*_*/*/*.log", "/var/log/pods/openshift_*/*/*.log"]
+include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
 exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
@@ -32,14 +32,73 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_myinfra_container"]
 source = '''
-  .log_source = "container"
-  # If namespace is infra, label log_type as infra
-  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      .log_type = "infrastructure"
-  } else {
-      .log_type = "application"
-  }
-'''
+      . = {"_internal": .}
+      ._internal.log_source = "container"
+
+        # If namespace is infra, label log_type as infra
+        if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+            ._internal.log_type = "infrastructure"
+        } else {
+            ._internal.log_type = "application"
+        }
+
+      ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+      ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+      if !exists(._internal.level) {
+        level = "default"
+        message = ._internal.message
+
+        # Match on well known structured patterns
+        # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+        if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+          level = "emergency"
+        } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+          level = "alert"
+        } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+          level = "critical"
+        } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+          level = "error"
+        } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+          level = "warn"
+        } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+          level = "notice"
+        } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+          level = "info"
+        } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+          level = "debug"
+        } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+          level = "trace"
+        }
+
+        # Match on unstructured keywords in same order
+
+        if level == "default" {
+          if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+            level = "emergency"
+          } else if match!(message, r'Alert|ALERT|<alert>') {
+            level = "alert"
+          } else if match!(message, r'Critical|CRITICAL|<critical>') {
+            level = "critical"
+          } else if match!(message, r'Error|ERROR|<error>') {
+            level = "error"
+          } else if match!(message, r'Warning|WARN|<warn>') {
+            level = "warn"
+          } else if match!(message, r'Notice|NOTICE|<notice>') {
+            level = "notice"
+          } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+            level = "info"
+          } else if match!(message, r'Debug|DEBUG|<debug>') {
+            level = "debug"
+          } else if match!(message, r'Trace|TRACE|<trace>') {
+            level = "trace"
+          }
+        }
+        ._internal.level = level
+      }
+
+    '''
 
 # Logs from containers (including openshift containers)
 [sources.input_mytestapp_container]
@@ -48,7 +107,7 @@ max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 include_paths_glob_patterns = ["/var/log/pods/test-ns_*/*/*.log"]
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube-*_*/*/*.log", "/var/log/pods/kube_*/*/*.log", "/var/log/pods/openshift-*_*/*/*.log", "/var/log/pods/openshift_*/*/*.log"]
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -61,147 +120,164 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_mytestapp_container"]
 source = '''
-  .log_source = "container"
-  # If namespace is infra, label log_type as infra
-  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      .log_type = "infrastructure"
-  } else {
-      .log_type = "application"
-  }
-'''
+      . = {"_internal": .}
+      ._internal.log_source = "container"
 
-[transforms.pipeline_mypipeline_viaq_0]
+        # If namespace is infra, label log_type as infra
+        if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+            ._internal.log_type = "infrastructure"
+        } else {
+            ._internal.log_type = "application"
+        }
+
+      ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+      ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+      if !exists(._internal.level) {
+        level = "default"
+        message = ._internal.message
+
+        # Match on well known structured patterns
+        # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+        if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+          level = "emergency"
+        } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+          level = "alert"
+        } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+          level = "critical"
+        } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+          level = "error"
+        } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+          level = "warn"
+        } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+          level = "notice"
+        } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+          level = "info"
+        } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+          level = "debug"
+        } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+          level = "trace"
+        }
+
+        # Match on unstructured keywords in same order
+
+        if level == "default" {
+          if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+            level = "emergency"
+          } else if match!(message, r'Alert|ALERT|<alert>') {
+            level = "alert"
+          } else if match!(message, r'Critical|CRITICAL|<critical>') {
+            level = "critical"
+          } else if match!(message, r'Error|ERROR|<error>') {
+            level = "error"
+          } else if match!(message, r'Warning|WARN|<warn>') {
+            level = "warn"
+          } else if match!(message, r'Notice|NOTICE|<notice>') {
+            level = "notice"
+          } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+            level = "info"
+          } else if match!(message, r'Debug|DEBUG|<debug>') {
+            level = "debug"
+          } else if match!(message, r'Trace|TRACE|<trace>') {
+            level = "trace"
+          }
+        }
+        ._internal.level = level
+      }
+
+    '''
+
+[transforms.pipeline_mypipeline_my_labels_0]
 type = "remap"
 inputs = ["input_myinfra_container_meta","input_mytestapp_container_meta"]
 source = '''
-if .log_source == "container" {
-  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-   if !exists(.level) {
-    .level = "default"
+  ._internal.openshift.labels = .openshift.labels = {"key1":"value1","key2":"value2"}
+'''
 
-    # Match on well known structured patterns
-    # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+[transforms.pipeline_mypipeline_viaq_1]
+type = "remap"
+inputs = ["pipeline_mypipeline_my_labels_0"]
+source = '''
+      if ._internal.log_type != "receiver" { ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")}
+       if exists(._internal.hostname) { .hostname = ._internal.hostname }
+      .log_type = ._internal.log_type
+      .log_source = ._internal.log_source
 
-    if match!(.message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
-      .level = "emergency"
-    } else if match!(.message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
-      .level = "alert"
-    } else if match!(.message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
-      .level = "critical"
-    } else if match!(.message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
-      .level = "error"
-    } else if match!(.message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
-      .level = "warn"
-    } else if match!(.message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
-      .level = "notice"
-    } else if match!(.message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
-      .level = "info"
-    } else if match!(.message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
-      .level = "debug"
-    } else if match!(.message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
-      .level = "trace"
-    }
+      if exists(._internal.openshift) {.openshift = ._internal.openshift}
+      if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels) }
 
-    # Match on unstructured keywords in same order
 
-    if .level == "default" {
-      if match!(.message, r'Emergency|EMERGENCY|<emergency>') {
-        .level = "emergency"
-      } else if match!(.message, r'Alert|ALERT|<alert>') {
-        .level = "alert"
-      } else if match!(.message, r'Critical|CRITICAL|<critical>') {
-        .level = "critical"
-      } else if match!(.message, r'Error|ERROR|<error>') {
-        .level = "error"
-      } else if match!(.message, r'Warning|WARN|<warn>') {
-        .level = "warn"
-      } else if match!(.message, r'Notice|NOTICE|<notice>') {
-        .level = "notice"
-      } else if match!(.message, r'(?i)\b(?:info)\b|<info>') {
-        .level = "info"
-      } else if match!(.message, r'Debug|DEBUG|<debug>') {
-        .level = "debug"
-      } else if match!(.message, r'Trace|TRACE|<trace>') {
-        .level = "trace"
-      }
-    }
-  }
-  pod_name = string!(.kubernetes.pod_name)
-  if starts_with(pod_name, "eventrouter-") {
-    parsed, err = parse_json(.message)
-    if err != null {
-      log("Unable to process EventRouter log: " + err, level: "info")
-    } else {
-      ., err = merge(.,parsed)
-      if err == null && exists(.event) && is_object(.event) {
-          if exists(.verb) {
-            .event.verb = .verb
-            del(.verb)
+      if .log_source == "container" {
+        if exists(._internal.kubernetes.pod_name) && starts_with(string!(._internal.kubernetes.pod_name), "eventrouter-") {
+        parsed, err = parse_json(._internal.message)
+        if err != null {
+          log("Unable to process EventRouter log: " + err, level: "info")
+        } else {
+          ._internal.event = parsed
+          if exists(._internal.event.event) && is_object(._internal.event.event) {
+              ._internal.kubernetes.event = del(._internal.event.event)
+      		._internal.kubernetes.event.verb = ._internal.event.verb
+              ._internal.message = del(._internal.kubernetes.event.message)
+              ._internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
+          } else {
+            log("Unable to merge EventRouter log message into record: " + err, level: "info")
           }
-          .kubernetes.event = del(.event)
-          .message = del(.kubernetes.event.message)
-          . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
-          del(.kubernetes.event.metadata.creationTimestamp)
-		  . = compact(., nullish: true)
-      } else {
-        log("Unable to merge EventRouter log message into record: " + err, level: "info")
+        }
       }
-    }
-  }
-  del(._partial)
-  del(.file)
-  del(.source_type)
-  .kubernetes.container_iostream = del(.stream)
-  del(.kubernetes.pod_ips)
-  del(.kubernetes.node_labels)
-  del(.timestamp_end)
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-}
-'''
-
-[transforms.pipeline_mypipeline_my_labels_1]
-type = "remap"
-inputs = ["pipeline_mypipeline_viaq_0"]
-source = '''
-._internal.openshift.labels = .openshift.labels = {"key1":"value1","key2":"value2"}
-'''
-
-[transforms.pipeline_mypipeline_viaqdedot_2]
-type = "remap"
-inputs = ["pipeline_mypipeline_my_labels_1"]
-source = '''
-  if .log_source == "container" {
-    if exists(.kubernetes.namespace_labels) {
-      ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
-      for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {
+      if ._internal.log_source == "container" {
+        if exists(._internal.kubernetes.namespace_labels) {
+          ._internal.dedot_namespace_labels = {}
+          for_each(object!(._internal.kubernetes.namespace_labels)) -> |key,value| {
+            newkey = replace(key, r'[\./]', "_")
+            ._internal.dedot_namespace_labels = set!(._internal.dedot_namespace_labels,[newkey],value)
+          }
+        }
+        if exists(._internal.kubernetes.labels) {
+          ._internal.dedot_labels = {}
+          for_each(object!(._internal.kubernetes.labels)) -> |key,value| {
+            newkey = replace(key, r'[\./]', "_")
+            ._internal.dedot_labels = set!(._internal.dedot_labels,[newkey],value)
+          }
+        }
+      }
+      if exists(._internal.openshift.labels) {for_each(object!(._internal.openshift.labels)) -> |key,value| {
+        ._internal.dedot_openshift_labels = {}
         newkey = replace(key, r'[\./]', "_")
-        .kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-        if newkey != key {.kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)}
+        ._internal.dedot_openshift_labels = set!(._internal.dedot_openshift_labels,[newkey],value)
+      }}
+      .kubernetes = ._internal.kubernetes
+      .kubernetes.container_iostream = ._internal.stream
+      if exists(._internal.dedot_labels) {.kubernetes.labels = del(._internal.dedot_labels) }
+      if exists(._internal.dedot_namespace_labels) {.kubernetes.namespace_labels = del(._internal.dedot_namespace_labels) }
+      del(.kubernetes.node_labels)
+      del(.kubernetes.container_image_id)
+      del(.kubernetes.pod_ips)
+      if !exists(._internal.structured) {
+        .message = ._internal.message
       }
-    }
-    if exists(.kubernetes.labels) {
-      ._internal.kubernetes.labels = .kubernetes.labels
-      for_each(object!(.kubernetes.labels)) -> |key,value| {
-        newkey = replace(key, r'[\./]', "_")
-        .kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-        if newkey != key {.kubernetes.labels = remove!(.kubernetes.labels,[key],true)}
       }
-    }
-  }
-  if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
-    newkey = replace(key, r'[\./]', "_")
-    .openshift.labels = set!(.openshift.labels,[newkey],value)
-    if newkey != key {.openshift.labels = remove!(.openshift.labels,[key],true)}
-  }}
-'''
+
+
+      if ._internal.log_type == "audit" && exists(._internal.structured) {. = merge!(.,._internal.structured) }
+      if ._internal.log_source == "syslog" && exists(._internal.structured) {. = merge!(.,._internal.structured) }
+      if ._internal.log_source == "container" && exists(._internal.structured) {.structured = ._internal.structured }
+
+      .timestamp = ._internal.timestamp
+      ."@timestamp" = ._internal.timestamp
+
+      if ._internal.log_type != "audit" && exists(._internal.level) {
+        .level = ._internal.level
+      }
+
+    '''
 
 # Kafka Topic
 [transforms.output_kafka_receiver_topic]
 type = "remap"
-inputs = ["pipeline_mypipeline_viaqdedot_2"]
+inputs = ["pipeline_mypipeline_viaq_1"]
 source = '''
-._internal.output_kafka_receiver_topic = "topic"
+  ._internal.output_kafka_receiver_topic = "topic"
 '''
 
 [sinks.output_kafka_receiver]
@@ -228,7 +304,7 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 type = "remap"
 inputs = ["internal_metrics"]
 source = '''
-.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+  .tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
 '''
 
 [sinks.prometheus_output]

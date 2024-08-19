@@ -4,7 +4,7 @@ type = "kubernetes_logs"
 max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube-*_*/*/*.log", "/var/log/pods/kube_*/*/*.log", "/var/log/pods/openshift-*_*/*/*.log", "/var/log/pods/openshift_*/*/*.log"]
+include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
 exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
@@ -18,13 +18,71 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_infrastructure_container"]
 source = '''
-  .log_source = "container"
+  . = {"_internal": .}
+  ._internal.log_source = "container"
+
   # If namespace is infra, label log_type as infra
-  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      .log_type = "infrastructure"
+  if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      ._internal.log_type = "infrastructure"
   } else {
-      .log_type = "application"
+      ._internal.log_type = "application"
   }
+   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+   if !exists(._internal.level) {
+     level = "default"
+     message = ._internal.message
+
+     # Match on well known structured patterns
+     # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+     if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+       level = "emergency"
+     } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+       level = "alert"
+     } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+       level = "critical"
+     } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+       level = "error"
+     } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+       level = "warn"
+     } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+       level = "notice"
+     } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+       level = "info"
+     } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+       level = "debug"
+     } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+       level = "trace"
+     }
+
+     # Match on unstructured keywords in same order
+
+     if level == "default" {
+       if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+         level = "emergency"
+       } else if match!(message, r'Alert|ALERT|<alert>') {
+         level = "alert"
+       } else if match!(message, r'Critical|CRITICAL|<critical>') {
+         level = "critical"
+       } else if match!(message, r'Error|ERROR|<error>') {
+         level = "error"
+       } else if match!(message, r'Warning|WARN|<warn>') {
+         level = "warn"
+       } else if match!(message, r'Notice|NOTICE|<notice>') {
+         level = "notice"
+       } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+         level = "info"
+       } else if match!(message, r'Debug|DEBUG|<debug>') {
+         level = "debug"
+       } else if match!(message, r'Trace|TRACE|<trace>') {
+         level = "trace"
+       }
+     }
+     ._internal.level = level
+   }
+
 '''
 
 [sources.input_infrastructure_journal]
@@ -35,6 +93,75 @@ journal_directory = "/var/log/journal"
 type = "remap"
 inputs = ["input_infrastructure_journal"]
 source = '''
-  .log_source = "node"
-  .log_type = "infrastructure"
+  . = {"_internal": .}
+  ._internal.log_source = "node"
+  ._internal.log_type = "infrastructure"
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+  if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
+    ._internal.level = "trace"
+  } else {
+    priority = to_int!(._internal.PRIORITY)
+    ._internal.level, err = to_syslog_level(priority)
+    if err != null {
+        log("Unable to determine level from PRIORITY: " + err, level: "error")
+        log(., level: "error")
+        ._internal.level = "unknown"
+    } else {
+        del(._internal.PRIORITY)
+    }
+  }
+
+  if exists(._internal.MESSAGE) {._internal.message = del(._internal.MESSAGE)}
+
+  # systemd’s kernel-specific metadata.
+  # .systemd.k = {}
+  if exists(._internal.KERNEL_DEVICE) { ._internal.systemd.k.KERNEL_DEVICE = del(._internal.KERNEL_DEVICE) }
+  if exists(._internal.KERNEL_SUBSYSTEM) { ._internal.systemd.k.KERNEL_SUBSYSTEM = del(._internal.KERNEL_SUBSYSTEM) }
+  if exists(._internal.UDEV_DEVLINK) { ._internal.systemd.k.UDEV_DEVLINK = del(._internal.UDEV_DEVLINK) }
+  if exists(._internal.UDEV_DEVNODE) { ._internal.systemd.k.UDEV_DEVNODE = del(._internal.UDEV_DEVNODE) }
+  if exists(._internal.UDEV_SYSNAME) { ._internal.systemd.k.UDEV_SYSNAME = del(._internal.UDEV_SYSNAME) }
+
+
+  # trusted journal fields, fields that are implicitly added by the journal and cannot be altered by client code.
+  ._internal.systemd.t = {}
+  if exists(._internal._AUDIT_LOGINUID) { ._internal.systemd.t.AUDIT_LOGINUID = del(._internal._AUDIT_LOGINUID) }
+  if exists(._internal._BOOT_ID) { ._internal.systemd.t.BOOT_ID = del(._internal._BOOT_ID) }
+  if exists(._internal._AUDIT_SESSION) { ._internal.systemd.t.AUDIT_SESSION = del(._internal._AUDIT_SESSION) }
+  if exists(._internal._CAP_EFFECTIVE) { ._internal.systemd.t.CAP_EFFECTIVE = del(._internal._CAP_EFFECTIVE) }
+  if exists(._internal._CMDLINE) { ._internal.systemd.t.CMDLINE = del(._internal._CMDLINE) }
+  if exists(._internal._COMM) { ._internal.systemd.t.COMM = del(._internal._COMM) }
+  if exists(._internal._EXE) { ._internal.systemd.t.EXE = del(._internal._EXE) }
+  if exists(._internal._GID) { ._internal.systemd.t.GID = del(._internal._GID) }
+  if exists(._internal._HOSTNAME) { ._internal.systemd.t.HOSTNAME = ._internal.hostname }
+  if exists(._internal._LINE_BREAK) { ._internal.systemd.t.LINE_BREAK = del(._internal._LINE_BREAK) }
+  if exists(._internal._MACHINE_ID) { ._internal.systemd.t.MACHINE_ID = del(._internal._MACHINE_ID) }
+  if exists(._internal._PID) { ._internal.systemd.t.PID = del(._internal._PID) }
+  if exists(._internal._SELINUX_CONTEXT) { ._internal.systemd.t.SELINUX_CONTEXT = del(._internal._SELINUX_CONTEXT) }
+  if exists(._internal._SOURCE_REALTIME_TIMESTAMP) { ._internal.systemd.t.SOURCE_REALTIME_TIMESTAMP = del(._internal._SOURCE_REALTIME_TIMESTAMP) }
+  if exists(._internal._STREAM_ID) { ._internal.systemd.t.STREAM_ID = ._internal._STREAM_ID }
+  if exists(._internal._SYSTEMD_CGROUP) { ._internal.systemd.t.SYSTEMD_CGROUP = del(._internal._SYSTEMD_CGROUP) }
+  if exists(._internal._SYSTEMD_INVOCATION_ID) {._internal.systemd.t.SYSTEMD_INVOCATION_ID = ._internal._SYSTEMD_INVOCATION_ID}
+  if exists(._internal._SYSTEMD_OWNER_UID) { ._internal.systemd.t.SYSTEMD_OWNER_UID = del(._internal._SYSTEMD_OWNER_UID) }
+  if exists(._internal._SYSTEMD_SESSION) { ._internal.systemd.t.SYSTEMD_SESSION = del(._internal._SYSTEMD_SESSION) }
+  if exists(._internal._SYSTEMD_SLICE) { ._internal.systemd.t.SYSTEMD_SLICE = del(._internal._SYSTEMD_SLICE) }
+  if exists(._internal._SYSTEMD_UNIT) { ._internal.systemd.t.SYSTEMD_UNIT = del(._internal._SYSTEMD_UNIT) }
+  if exists(._internal._SYSTEMD_USER_UNIT) { ._internal.systemd.t.SYSTEMD_USER_UNIT = del(._internal._SYSTEMD_USER_UNIT) }
+  if exists(._internal._TRANSPORT) { ._internal.systemd.t.TRANSPORT = del(._internal._TRANSPORT) }
+  if exists(._internal._UID) { ._internal.systemd.t.UID = del(._internal._UID) }
+
+
+  # fields that are directly passed from clients and stored in the journal.
+  ._internal.systemd.u = {}
+  if exists(._internal.CODE_FILE) { ._internal.systemd.u.CODE_FILE = del(._internal.CODE_FILE) }
+  if exists(._internal.CODE_FUNC) { ._internal.systemd.u.CODE_FUNCTION = del(._internal.CODE_FUNC) }
+  if exists(._internal.CODE_LINE) { ._internal.systemd.u.CODE_LINE = del(._internal.CODE_LINE) }
+  if exists(._internal.ERRNO) { ._internal.systemd.u.ERRNO = del(._internal.ERRNO) }
+  if exists(._internal.MESSAGE_ID) { ._internal.systemd.u.MESSAGE_ID = del(._internal.MESSAGE_ID) }
+  if exists(._internal.SYSLOG_FACILITY) { ._internal.systemd.u.SYSLOG_FACILITY = del(._internal.SYSLOG_FACILITY) }
+  if exists(._internal.SYSLOG_IDENTIFIER) { ._internal.systemd.u.SYSLOG_IDENTIFIER = del(._internal.SYSLOG_IDENTIFIER) }
+  if exists(._internal.SYSLOG_PID) { ._internal.systemd.u.SYSLOG_PID = del(._internal.SYSLOG_PID) }
+  if exists(._internal.RESULT) { ._internal.systemd.u.RESULT = del(._internal.RESULT) }
+  if exists(._internal.UNIT) { ._internal.systemd.u.UNIT = del(._internal.UNIT) }
+
 '''

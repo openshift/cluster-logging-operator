@@ -148,7 +148,8 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 		It("should parse ovn audit log correctly", func() {
 			// Log message data
 			level := "info"
-			ovnLogLine := functional.NewOVNAuditLog(time.Now())
+			creationTime := time.Now()
+			ovnLogLine := functional.NewOVNAuditLog(creationTime)
 
 			// Template expected as output Log
 			var outputLogTemplate = types.OVNAuditLog{
@@ -157,28 +158,30 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				Hostname:        framework.Pod.Spec.NodeName,
 				Timestamp:       time.Time{},
 				TimestampLegacy: time.Time{},
-				LogSource:       "*",
-				LogType:         "audit",
+				LogSource:       string(obs.AuditSourceOVN),
+				LogType:         string(obs.InputTypeAudit),
 				Openshift: types.OpenshiftMeta{
 					Sequence:  types.NewOptionalInt(""),
 					ClusterID: "*",
 				},
-				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 			}
-			outputLogTemplate.PipelineMetadata.Collector.ReceivedAt = time.Time{}
-			// Write log line as input to fluentd
+
 			Expect(framework.WriteMessagesToOVNAuditLog(ovnLogLine, 10)).To(BeNil())
+
 			// Read line from Log Forward output
 			raw, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+
 			var logs []types.OVNAuditLog
 			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 			ExpectOK(err)
+
 			// Compare to expected template
 			outputTestLog := logs[0]
 			Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 			results := strings.Join(raw, " ")
 			Expect(results).To(MatchRegexp("name=verify-audit-logging_deny-all"), "Message should contain the audit log: %v", raw)
+			Expect(outputTestLog.TimestampLegacy).To(Equal(outputTestLog.Timestamp))
 		})
 
 		AfterEach(func() {

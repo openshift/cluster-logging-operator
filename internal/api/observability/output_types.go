@@ -55,6 +55,8 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 			auths = append(auths, &o.Cloudwatch.Authentication.IAMRole.Token)
 		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
 			auths = append(auths, o.Elasticsearch.Authentication.Token)
+		case o.Type == obsv1.OutputTypeOTLP && o.OTLP.Authentication != nil && o.OTLP.Authentication.Token != nil:
+			auths = append(auths, o.OTLP.Authentication.Token)
 		}
 	}
 	for _, token := range auths {

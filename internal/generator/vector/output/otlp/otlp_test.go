@@ -2,6 +2,8 @@ package otlp
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	corev1 "k8s.io/api/core/v1"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,7 +20,24 @@ import (
 )
 
 var _ = Describe("Generate vector config", func() {
+	const (
+		secretName = "otlp-receiver"
+		aUserName  = "username"
+		aPassword  = "password"
+		aToken     = "atoken"
+	)
+
 	var (
+		secrets = map[string]*corev1.Secret{
+			secretName: {
+				Data: map[string][]byte{
+					constants.ClientUsername: []byte(aUserName),
+					constants.ClientPassword: []byte(aPassword),
+					constants.TokenKey:       []byte(aToken),
+				},
+			},
+		}
+
 		adapter    fake.Output
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
@@ -46,10 +65,13 @@ var _ = Describe("Generate vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
+		var conf []framework.Element
 		if tune {
 			adapter = *fake.NewOutput(outputSpec, secret, framework.NoOptions)
+			conf = New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_my_pipeline_viaq_0"}, secret, adapter, op)
+		} else {
+			conf = New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_my_pipeline_viaq_0"}, secret, nil, op)
 		}
-		conf := New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_my_pipeline_viaq_0"}, secret, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with only URL spec'd",
@@ -69,6 +91,56 @@ var _ = Describe("Generate vector config", func() {
 				}
 			},
 			"otlp_tuning.toml",
+		),
+		Entry("with token auth from secret",
+			secrets,
+			framework.NoOptions,
+			false,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.Authentication = &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
+						Secret: &obs.BearerTokenSecretKey{
+							Key:  constants.TokenKey,
+							Name: secretName,
+						},
+					},
+				}
+			},
+			"otlp_with_auth_token.toml",
+		),
+		Entry("with token auth from SA",
+			secrets,
+			framework.Options{
+				framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
+			},
+			false,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.Authentication = &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromServiceAccount,
+					},
+				}
+			},
+			"otlp_with_auth_sa_token.toml",
+		),
+		Entry("with basic auth",
+			secrets,
+			framework.NoOptions,
+			false,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.Authentication = &obs.HTTPAuthentication{
+					Username: &obs.SecretReference{
+						Key:        constants.ClientUsername,
+						SecretName: secretName,
+					},
+					Password: &obs.SecretReference{
+						Key:        constants.ClientPassword,
+						SecretName: secretName,
+					},
+				}
+			},
+			"otlp_with_auth_basic.toml",
 		),
 	)
 })

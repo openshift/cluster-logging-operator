@@ -107,15 +107,20 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 func NewJournalInfrastructureLogTemplate() types.JournalLog {
 	return types.JournalLog{
 		ViaQCommon: types.ViaQCommon{
-			TimestampLegacy:  time.Time{},
-			Timestamp:        time.Time{},
-			Message:          "*",
-			LogSource:        "node",
-			LogType:          "infrastructure",
-			Level:            "*",
-			Hostname:         "*",
-			ViaqMsgID:        "**optional**",
-			PipelineMetadata: TemplateForAnyPipelineMetadata,
+			TimestampLegacy: time.Time{},
+
+			Timestamp: time.Time{},
+			Message:   "*",
+			LogSource: "node",
+			LogType:   "infrastructure",
+			Level:     "*",
+			Hostname:  "*",
+			Openshift: types.OpenshiftMeta{
+				ClusterID: "*",
+				Sequence:  types.NewOptionalInt(">0"),
+			},
 		},
+		Tag:  ".journal.system",
+		Time: time.Time{},
 	}
 }

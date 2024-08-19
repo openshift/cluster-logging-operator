@@ -13,6 +13,13 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_myaudit_openshift"]
 source = '''
-  .log_source = "openshiftAPI"
-  .log_type = "audit"
+  . = {"_internal": .}
+
+  ._internal.structured = parse_json!(string!(._internal.message))
+  ._internal = merge!(._internal,._internal.structured)
+
+  ._internal.log_source = "openshiftAPI"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
 '''

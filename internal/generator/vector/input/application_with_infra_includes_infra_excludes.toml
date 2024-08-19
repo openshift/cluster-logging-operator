@@ -5,7 +5,7 @@ max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 include_paths_glob_patterns = ["/var/log/pods/kube-apiserver_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log", "/var/log/pods/test-ns-foo_*/*/*.log"]
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube_*/*/*.log", "/var/log/pods/openshift-logging_*/*/*.log", "/var/log/pods/test-ns1_*/*/*.log"]
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/openshift-logging_*/*/*.log", "/var/log/pods/test-ns1_*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -18,11 +18,70 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_my_app_container"]
 source = '''
-  .log_source = "container"
+  . = {"_internal": .}
+
+  ._internal.log_source = "container"
   # If namespace is infra, label log_type as infra
-  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      .log_type = "infrastructure"
+  if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      ._internal.log_type = "infrastructure"
   } else {
-      .log_type = "application"
+      ._internal.log_type = "application"
   }
+
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+  if !exists(._internal.level) {
+    level = "default"
+    message = ._internal.message
+
+    # Match on well known structured patterns
+    # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+    if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+      level = "emergency"
+    } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+      level = "alert"
+    } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+      level = "critical"
+    } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+      level = "error"
+    } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+      level = "warn"
+    } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+      level = "notice"
+    } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+      level = "info"
+    } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+      level = "debug"
+    } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+      level = "trace"
+    }
+
+    # Match on unstructured keywords in same order
+
+    if level == "default" {
+      if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+        level = "emergency"
+      } else if match!(message, r'Alert|ALERT|<alert>') {
+        level = "alert"
+      } else if match!(message, r'Critical|CRITICAL|<critical>') {
+        level = "critical"
+      } else if match!(message, r'Error|ERROR|<error>') {
+        level = "error"
+      } else if match!(message, r'Warning|WARN|<warn>') {
+        level = "warn"
+      } else if match!(message, r'Notice|NOTICE|<notice>') {
+        level = "notice"
+      } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+        level = "info"
+      } else if match!(message, r'Debug|DEBUG|<debug>') {
+        level = "debug"
+      } else if match!(message, r'Trace|TRACE|<trace>') {
+        level = "trace"
+      }
+    }
+    ._internal.level = level
+  }
+
 '''

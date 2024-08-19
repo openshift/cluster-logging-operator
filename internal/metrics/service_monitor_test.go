@@ -37,7 +37,9 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 		owner       = metav1.OwnerReference{}
 		portName    = "test-port"
 		serviceName = "test-service"
-		component   = "test-component"
+		selector    = map[string]string{
+			constants.LabelK8sComponent: "test-component",
+		}
 
 		serviceMonitorKey = types.NamespacedName{Name: serviceName, Namespace: namespace.Name}
 		smInstance        = &monitoringv1.ServiceMonitor{}
@@ -49,9 +51,10 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 			reqClient,
 			constants.OpenshiftNS,
 			serviceName,
-			component,
+			owner,
+			selector,
 			portName,
-			owner)).To(Succeed())
+		)).To(Succeed())
 
 		// Get and check the ServiceMonitor
 		Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())

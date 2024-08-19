@@ -106,7 +106,8 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
-	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, constants.CollectorName, collector.MetricsPortName, ownerRef); err != nil {
+	metricsSelector := metrics.BuildSelector(constants.CollectorName, resourceNames.CommonName)
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, metricsSelector, collector.MetricsPortName); err != nil {
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
 	}

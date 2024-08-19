@@ -50,12 +50,13 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, ExporterPortName, ExporterMetricsSecretName, ExporterPort, owner, commonLabels); err != nil {
+	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, exporterPortName, ExporterMetricsSecretName, exporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
 		return err
 	}
 
-	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, constants.LogfilesmetricexporterName, ExporterPortName, owner); err != nil {
+	metricsSelector := metrics.BuildSelector(constants.LogfilesmetricexporterName, lfmeInstance.Name)
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, owner, metricsSelector, exporterPortName); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
 		return err
 	}

@@ -16,7 +16,7 @@ const (
 	prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 )
 
-func NewServiceMonitor(namespace, name, component, portName string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
+func newServiceMonitor(namespace, name string, owner metav1.OwnerReference, selector map[string]string, portName string) *monitoringv1.ServiceMonitor {
 	var endpoint = []monitoringv1.Endpoint{
 		{
 			Port:   portName,
@@ -49,11 +49,7 @@ func NewServiceMonitor(namespace, name, component, portName string, owner metav1
 		JobLabel:  fmt.Sprintf("monitor-%s", name),
 		Endpoints: endpoint,
 		Selector: metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				constants.LabelLoggingServiceType: constants.ServiceTypeMetrics,
-				constants.LabelK8sInstance:        name,
-				constants.LabelK8sComponent:       component,
-			},
+			MatchLabels: selector,
 		},
 		NamespaceSelector: monitoringv1.NamespaceSelector{
 			MatchNames: []string{namespace},
@@ -71,7 +67,15 @@ func NewServiceMonitor(namespace, name, component, portName string, owner metav1
 	return desired
 }
 
-func ReconcileServiceMonitor(k8sClient client.Client, namespace, name, component, portName string, owner metav1.OwnerReference) error {
-	desired := NewServiceMonitor(namespace, name, component, portName, owner)
+func BuildSelector(component, instance string) map[string]string {
+	return map[string]string{
+		constants.LabelLoggingServiceType: constants.ServiceTypeMetrics,
+		constants.LabelK8sComponent:       component,
+		constants.LabelK8sInstance:        instance,
+	}
+}
+
+func ReconcileServiceMonitor(k8sClient client.Client, namespace, name string, owner metav1.OwnerReference, selector map[string]string, portName string) error {
+	desired := newServiceMonitor(namespace, name, owner, selector, portName)
 	return reconcile.ServiceMonitor(k8sClient, desired)
 }

@@ -102,7 +102,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		Expect(serviceInstance.Spec.Ports).ToNot(BeEmpty(), "Exp. to have spec.Ports")
 
 		Expect(serviceInstance.Spec.Ports[0].Port).
-			To(Equal(ExporterPort), fmt.Sprintf("Exp service port of: %v", ExporterPort))
+			To(Equal(exporterPort), fmt.Sprintf("Exp service port of: %v", exporterPort))
 
 		Expect(serviceInstance.Annotations[constants.AnnotationServingCertSecretName]).
 			To(Equal(ExporterMetricsSecretName))
@@ -116,7 +116,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
 		Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
-		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(ExporterPortName))
+		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(exporterPortName))
 
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).

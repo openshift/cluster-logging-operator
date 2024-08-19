@@ -6,14 +6,11 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
 )
 
@@ -145,12 +142,12 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}
-		return els, ids
 	case obs.InputTypeReceiver:
 		return NewViaqReceiverSource(input, resNames, secrets, op)
 	}
 	return els, ids
 }
+<<<<<<< HEAD
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
 func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {

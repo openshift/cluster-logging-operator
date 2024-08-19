@@ -293,7 +293,7 @@ var _ = Describe("inputs", func() {
 		},
 			"audit_host.toml",
 		),
-		Entry("with an audit input for kube logs should generate kube audit file source", obs.InputSpec{
+		FEntry("with an audit input for kube logs should generate kube audit file source", obs.InputSpec{
 			Name: "myaudit",
 			Type: obs.InputTypeAudit,
 			Audit: &obs.Audit{

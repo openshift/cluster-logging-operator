@@ -81,11 +81,11 @@ if starts_with(pod_name, "eventrouter-") {
 }
 `
 	HandleStream       = `.kubernetes.container_iostream = del(.stream)`
-	RemovePodIPs       = `del(.kubernetes.pod_ips)`
-	RemoveNodeLabels   = `del(.kubernetes.node_labels)`
-	RemoveTimestampEnd = `del(.timestamp_end)`
-
-	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
+	RemovePodIPs         = `del(.kubernetes.pod_ips)`
+	RemoveNodeLabels     = `del(.kubernetes.node_labels)`
+	RemoveTimestampEnd   = `del(.timestamp_end)`
+	MoveStructuredToRoot = ". = ._internal.structured"
+	ParseAndFlatten      = `. = merge(., parse_json!(string!(.message))) ?? .
 del(.message)
 `
 	FixHostname = `.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`

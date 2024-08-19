@@ -7,23 +7,12 @@ import (
 	sources "github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
 
-func NewAuditSources(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
-
-	adapter := &Input{}
-	adapter.Add(NewAuditAuditdSource(input, op)).
-		Add(NewK8sAuditSource(input, op)).
-		Add(NewOpenshiftAuditSource(input, op)).
-		Add(NewOVNAuditSource(input, op))
-
-	return adapter.Elements(), adapter.InputIDs()
-}
-
 func NewAuditAuditdSource(input obs.InputSpec, op generator.Options) ([]generator.Element, []string) {
 	hostID := helpers.MakeInputID(input.Name, "host")
 	metaID := helpers.MakeID(hostID, "meta")
 	el := []generator.Element{
 		sources.NewHostAuditLog(hostID),
-		NewLogSourceAndType(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID, nil),
+		NewInternalNormalization(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID,nil),
 	}
 	return el, []string{metaID}
 }
@@ -33,7 +22,7 @@ func NewK8sAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewK8sAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id, nil),
+		NewInternalNormalization(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id, ParseStructured),
 	}
 	return el, []string{metaID}
 }
@@ -43,7 +32,7 @@ func NewOpenshiftAuditSource(input obs.InputSpec, op generator.Options) ([]gener
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOpenshiftAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id, nil),
+		NewInternalNormalization(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id, ParseStructured),
 	}
 	return el, []string{metaID}
 }
@@ -53,7 +42,7 @@ func NewOVNAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOVNAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id, nil),
+		NewInternalNormalization(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id, ParseStructured),
 	}
 	return el, []string{metaID}
 }

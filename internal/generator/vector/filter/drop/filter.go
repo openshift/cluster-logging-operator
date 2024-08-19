@@ -20,10 +20,11 @@ func (f *Filter) VRL() (string, error) {
 	for _, test := range f.tests {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
+			field := fmt.Sprintf("_.internal%s", cond.Field)
 			if cond.Matches != "" {
-				condList = append(condList, fmt.Sprintf(`match(to_string(%s) ?? "", r'%s')`, cond.Field, cond.Matches))
+				condList = append(condList, fmt.Sprintf(`match(to_string(%s) ?? "", r'%s')`, field, cond.Matches))
 			} else {
-				condList = append(condList, fmt.Sprintf(`!match(to_string(%s) ?? "", r'%s')`, cond.Field, cond.NotMatches))
+				condList = append(condList, fmt.Sprintf(`!match(to_string(%s) ?? "", r'%s')`, field, cond.NotMatches))
 			}
 		}
 		// Concatenate the conditions with ANDs and add Vector's error coalescing.

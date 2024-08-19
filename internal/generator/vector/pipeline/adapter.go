@@ -49,7 +49,7 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	for name, f := range filters {
 		pipeline.filterMap[name] = *f
 	}
-	addPrefilters(pipeline)
+	//addPrefilters(pipeline)
 	addPostfilters(pipeline)
 
 	for i, filterName := range pipeline.FilterRefs {
@@ -85,9 +85,35 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 
 // TODO: add migration to treat like any other
 func addPrefilters(p *Pipeline) {
-	prefilters := []string{}
+	//prefilters := []string{}
+	//if viaq.HasJournalSource(p.inputSpecs) {
+	//	prefilters = append(prefilters, viaq.ViaqJournal)
+	//	p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
+	//		FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
+	//		SuppliesTransform: true,
+	//		TranformFactory: func(id string, inputs ...string) framework.Element {
+	//			return viaq.NewJournal(id, inputs...)
+	//		},
+	//	}
+	//}
+	//
+	//prefilters = append(prefilters, viaq.Viaq)
+	//p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
+	//	FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
+	//	SuppliesTransform: true,
+	//	TranformFactory: func(id string, inputs ...string) framework.Element {
+	//		// Build all log_source VRL
+	//		return viaq.New(id, inputs, p.inputSpecs)
+	//	},
+	//}
+	//p.FilterRefs = append(prefilters, p.FilterRefs...)
+}
+
+func addPostfilters(p *Pipeline) {
+
+	postfilters := []string{}
 	if viaq.HasJournalSource(p.inputSpecs) {
-		prefilters = append(prefilters, viaq.ViaqJournal)
+		postfilters = append(postfilters, viaq.ViaqJournal)
 		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
 			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
 			SuppliesTransform: true,
@@ -97,7 +123,7 @@ func addPrefilters(p *Pipeline) {
 		}
 	}
 
-	prefilters = append(prefilters, viaq.Viaq)
+	postfilters = append(postfilters, viaq.Viaq)
 	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
 		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
 		SuppliesTransform: true,
@@ -106,18 +132,15 @@ func addPrefilters(p *Pipeline) {
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
-	p.FilterRefs = append(prefilters, p.FilterRefs...)
-}
-
-func addPostfilters(p *Pipeline) {
-	postfilters := []string{}
-	postfilters = append(postfilters, viaq.ViaqDedot)
-	p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
-		FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
-		SuppliesTransform: true,
-		TranformFactory: func(id string, inputs ...string) framework.Element {
-			return viaq.NewDedot(id, inputs...)
-		},
+	if viaq.HasContainerSource(p.inputSpecs) {
+		postfilters = append(postfilters, viaq.ViaqDedot)
+		p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
+			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
+			SuppliesTransform: true,
+			TranformFactory: func(id string, inputs ...string) framework.Element {
+				return viaq.NewDedot(id, inputs...)
+			},
+		}
 	}
 	p.FilterRefs = append(p.FilterRefs, postfilters...)
 }

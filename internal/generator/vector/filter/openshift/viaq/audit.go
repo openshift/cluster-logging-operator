@@ -3,8 +3,6 @@ package viaq
 import (
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"strings"
 )
@@ -35,7 +33,7 @@ if err == null {
 
 var (
 	FixK8sAuditLevel       = `.k8s_audit_level = .level`
-	FixOpenshiftAuditLevel = `.openshift_audit_level = .level`
+	FixOpenshiftAuditLevel = `.openshift_audit_level = ._internal.level`
 )
 
 func auditHostLogs() string {
@@ -46,13 +44,13 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceAuditd,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			InternalContext,
+			Message,
 			RemoveFile,
 			RemoveSourceType,
 			ParseHostAuditLogs,
 			AddDefaultLogLevel,
 			FixHostname,
-			FixTimestampField,
+			SetTimestampField,
 			VRLOpenShiftSequence,
 		}), "\n"))
 }
@@ -65,34 +63,27 @@ if .log_type == "%s" && .log_source == "%s" {
 `, string(obs.InputTypeAudit), obs.AuditSourceKube,
 		strings.Join(helpers.TrimSpaces([]string{
 			ClusterID,
-			InternalContext,
+			Message,
 			RemoveFile,
 			RemoveSourceType,
 			ParseAndFlatten,
 			FixK8sAuditLevel,
 			FixHostname,
-			FixTimestampField,
+			SetTimestampField,
 			VRLOpenShiftSequence,
 		}), "\n"))
 }
 
 func auditOpenshiftLogs() string {
-	return fmt.Sprintf(`
-if .log_type == "%s" && .log_source == "%s" {
-%s
-}
-`, string(obs.InputTypeAudit), obs.AuditSourceOpenShift,
-		strings.Join(helpers.TrimSpaces([]string{
-			ClusterID,
-			InternalContext,
-			RemoveFile,
-			RemoveSourceType,
-			ParseAndFlatten,
-			FixOpenshiftAuditLevel,
-			FixHostname,
-			FixTimestampField,
-			VRLOpenShiftSequence,
-		}), "\n"))
+	return strings.Join(helpers.TrimSpaces([]string{
+		MoveStructuredToRoot,
+		FixHostname,
+		FixOpenshiftAuditLevel,
+		SetTimestampField,
+		SetOpenShift,
+		ClusterID,
+		VRLOpenShiftSequence,
+	}), "\n")
 }
 
 func auditOVNLogs() string {
@@ -107,17 +98,7 @@ if .log_type == "%s" && .log_source == "%s" {
 			RemoveSourceType,
 			FixLogLevel,
 			FixHostname,
-			FixTimestampField,
+			SetTimestampField,
 			VRLOpenShiftSequence,
 		}), "\n"))
-}
-
-func NormalizeK8sAuditLogs(inputs, id string) []framework.Element {
-	return []framework.Element{
-		elements.Remap{
-			ComponentID: id,
-			Inputs:      helpers.MakeInputs(inputs),
-			VRL:         auditK8sLogs(),
-		},
-	}
 }

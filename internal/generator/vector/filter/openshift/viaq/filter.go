@@ -47,7 +47,7 @@ if .log_source == "%s" {
 		RemovePodIPs,
 		RemoveNodeLabels,
 		RemoveTimestampEnd,
-		FixTimestampField,
+		SetTimestampField,
 		VRLOpenShiftSequence,
 	}), "\n"))
 }
@@ -81,7 +81,7 @@ func auditHost(vrls []string, inputs []obs.InputSpec) []string {
 }
 
 func containerSource(vrls []string, inputs []obs.InputSpec) []string {
-	if hasContainerSource(inputs) {
+	if HasContainerSource(inputs) {
 		vrls = append(vrls, containerLogs())
 	}
 	return vrls
@@ -103,7 +103,7 @@ func HasJournalSource(inputs []obs.InputSpec) bool {
 	return false
 }
 
-func hasContainerSource(inputSpecs []obs.InputSpec) bool {
+func HasContainerSource(inputSpecs []obs.InputSpec) bool {
 	for _, i := range inputSpecs {
 		if i.Type == obs.InputTypeApplication {
 			return true

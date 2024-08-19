@@ -6,7 +6,7 @@ if !exists(.level) {
   .level = "default"
 
   # Match on well known structured patterns
-  # Order: emergency, alert, critical, error, warn, notice, info, debug
+  # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
 
   if match!(.message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
     .level = "emergency"
@@ -24,6 +24,8 @@ if !exists(.level) {
     .level = "info"
   } else if match!(.message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
     .level = "debug"
+  } else if match!(.message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+    .level = "trace"
   }
 
   # Match on unstructured keywords in same order
@@ -45,6 +47,8 @@ if !exists(.level) {
       .level = "info"
     } else if match!(.message, r'Debug|DEBUG|<debug>') {
       .level = "debug"
+    } else if match!(.message, r'Trace|TRACE|<trace>') {
+      .level = "trace"
     }
   }
 }

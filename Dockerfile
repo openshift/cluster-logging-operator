@@ -27,7 +27,6 @@ ENV SRC_DIR=./
 
 RUN INSTALL_PKGS=" \
       openssl \
-      compat-openssl11 \
       rsync \
       file \
       xz \

@@ -17,38 +17,6 @@ spec:
       labels:
         service: collector
         severity: critical
-    - alert: CollectorHighErrorRate
-      annotations:
-        message: '{{ $value }}% of records have resulted in an error by {{ $labels.namespace
-          }}/{{ $labels.pod }} collector component.'
-        summary: '{{ $labels.namespace }}/{{ $labels.pod }} collector component errors
-          are high'
-      expr: |
-        100 * (
-            collector:log_num_errors:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
-          /
-            collector:received_events:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
-          ) > 0.001
-      for: 15m
-      labels:
-        service: collector
-        severity: critical
-    - alert: CollectorVeryHighErrorRate
-      annotations:
-        message: '{{ $value }}% of records have resulted in an error by {{ $labels.namespace
-          }}/{{ $labels.pod }} collector component.'
-        summary: '{{ $labels.namespace }}/{{ $labels.pod }} collector component errors
-          are very high'
-      expr: |
-        100 * (
-            collector:log_num_errors:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
-          /
-            collector:received_events:sum_rate{app_kubernetes_io_part_of = "cluster-logging"}
-          ) > 0.05
-      for: 15m
-      labels:
-        service: collector
-        severity: critical
     - alert: ElasticsearchDeprecation
       annotations:
         message: In Red Hat OpenShift Logging Operator 6.0, support for the Red Hat

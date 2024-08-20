@@ -254,10 +254,14 @@ test-functional-benchmarker-vector: bin/functional-benchmarker
 	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
-test-unit: test-forwarder-generator
+test-unit: test-forwarder-generator test-unit-api
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
+
+.PHONY: test-unit-api
+test-unit-api:
+	@cd ./api/observability && go test -coverprofile=test.cov ./...
 
 .PHONY: coverage
 coverage: test-unit

@@ -11,11 +11,11 @@ const (
 	AddDefaultLogLevel = `.level = "default"`
 
 	ParseHostAuditLogs = `
-match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
+match1 = parse_regex(._internal.message, r'type=(?P<type>[^ ]+)') ?? {}
 envelop = {}
 envelop |= {"type": match1.type}
 
-match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
+match2, err = parse_regex(._internal.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
 if err == null {
   sp, err = split(match2.ts_record,":")
   if err == null && length(sp) == 2 {
@@ -23,82 +23,52 @@ if err == null {
       if ts != "" { .timestamp = ts }
       ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
       envelop |= {"record_id": sp[1]}
-      . |= {"audit.linux" : envelop}
+      ._internal |= {"audit.linux" : envelop}
+      ._internal."@timestamp" =  format_timestamp(ts,"%+") ?? ""
   }
 } else {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
 }
 `
-)
-
-var (
-	FixK8sAuditLevel       = `.k8s_audit_level = .level`
-	FixOpenshiftAuditLevel = `.openshift_audit_level = ._internal.level`
+	SetK8sAuditLevel       = `.k8s_audit_level = ._internal.structured.level`
+	SetOpenshiftAuditLevel = `.openshift_audit_level = ._internal.structured.level`
 )
 
 func auditHostLogs() string {
 	return fmt.Sprintf(`
-if .log_type == "%s" && .log_source == "%s" {
+if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
 %s
 }
 `, string(obs.InputTypeAudit), obs.AuditSourceAuditd,
 		strings.Join(helpers.TrimSpaces([]string{
-			ClusterID,
-			Message,
-			RemoveFile,
-			RemoveSourceType,
-			ParseHostAuditLogs,
+			SetMessageOnRoot,
+			`."audit.linux" = ._internal."audit.linux"`,
 			AddDefaultLogLevel,
-			FixHostname,
-			SetTimestampField,
-			VRLOpenShiftSequence,
 		}), "\n"))
 }
 
 func auditK8sLogs() string {
 	return fmt.Sprintf(`
-if .log_type == "%s" && .log_source == "%s" {
+if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
 %s
 }
 `, string(obs.InputTypeAudit), obs.AuditSourceKube,
 		strings.Join(helpers.TrimSpaces([]string{
-			ClusterID,
-			Message,
-			RemoveFile,
-			RemoveSourceType,
-			ParseAndFlatten,
-			FixK8sAuditLevel,
-			FixHostname,
-			SetTimestampField,
-			VRLOpenShiftSequence,
+			SetK8sAuditLevel,
 		}), "\n"))
 }
 
 func auditOpenshiftLogs() string {
-	return strings.Join(helpers.TrimSpaces([]string{
-		MoveStructuredToRoot,
-		FixHostname,
-		FixOpenshiftAuditLevel,
-		SetTimestampField,
-		SetOpenShift,
-		ClusterID,
-		VRLOpenShiftSequence,
-	}), "\n")
+	return fmt.Sprintf(`
+if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
+%s
+}
+`, string(obs.InputTypeAudit), obs.AuditSourceOpenShift,
+		strings.Join(helpers.TrimSpaces([]string{
+			SetOpenshiftAuditLevel,
+		}), "\n"))
 }
 
 func auditOVNLogs() string {
-	return fmt.Sprintf(`
-if .log_type == "%s" && .log_source == "%s" {
-%s
-}
-`, string(obs.InputTypeAudit), obs.AuditSourceOVN,
-		strings.Join(helpers.TrimSpaces([]string{
-			ClusterID,
-			RemoveFile,
-			RemoveSourceType,
-			FixLogLevel,
-			FixHostname,
-			SetTimestampField,
-			VRLOpenShiftSequence,
-		}), "\n"))
+	return ""
 }

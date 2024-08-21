@@ -3,6 +3,7 @@ package input
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	generator "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	sources "github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 )
@@ -12,7 +13,7 @@ func NewAuditAuditdSource(input obs.InputSpec, op generator.Options) ([]generato
 	metaID := helpers.MakeID(hostID, "meta")
 	el := []generator.Element{
 		sources.NewHostAuditLog(hostID),
-		NewInternalNormalization(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID,nil),
+		NewInternalNormalization(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID, viaq.ParseHostAuditLogs),
 	}
 	return el, []string{metaID}
 }

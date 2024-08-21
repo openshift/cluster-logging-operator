@@ -108,7 +108,7 @@ if .log_source == "%s" {
 
 func journalLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
-		ClusterID,
+		SetClusterID,
 		AddJournalLogTag,
 		DeleteJournalLogFields,
 		FixJournalLogLevel,
@@ -118,7 +118,7 @@ func journalLogsVRL() string {
 		SystemU,
 		AddTime,
 		SetTimestampField,
-		VRLOpenShiftSequence,
+		SetOpenShiftSequence,
 	}), "\n\n")
 }
 

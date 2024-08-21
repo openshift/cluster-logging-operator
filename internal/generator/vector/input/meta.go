@@ -11,17 +11,23 @@ import (
 )
 
 const (
-	setEnvelope     = ". = ._internal.message = ."
-	ParseStructured = `._internal.structured = merge(._internal.structured, parse_json!(string!(._internal.message))) ?? ._internal.structured`
+	setEnvelope = `. = {"_internal": .}`
+
+	fmtLogType = `
+._internal.log_source = %q
+._internal.log_type = %q
+`
+	ParseStructured = `._internal.structured = parse_json!(string!(._internal.message))`
 )
 
 func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
 	vrls := []string{
-		fmt.Sprintf("._internal.log_source = %q\n._internal.log_type = %q", logSource, logType),
-		viaq.FixHostname,
-		viaq.FixLogLevel,
 		setEnvelope,
-		fmt.Sprintf(".log_source = %q\n.log_type = %q", logSource, logType),
+		fmt.Sprintf(fmtLogType, logSource, logType),
+		`._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`,
+		viaq.SetClusterID,
+		viaq.SetTimestampField,
+		viaq.FixLogLevel,
 	}
 	for _, vrl := range addVRLs {
 		vrls = append(vrls, vrl)

@@ -18,12 +18,21 @@ const (
 
 func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
 
-	vrls := auditHost([]string{}, inputSpecs)
+	vrls := []string{
+		SetOpenShiftSequence,
+		SetHostnameOnRoot,
+		SetLogTypeOnRoot,
+		SetLogSourceOnRoot,
+		MergeStructuredIntoRoot,
+		SetOpenShiftOnRoot,
+		`."@timestamp" = ._internal."@timestamp"`,
+	}
+	vrls = auditHost(vrls, inputSpecs)
 	vrls = auditKube(vrls, inputSpecs)
 	vrls = auditOpenShift(vrls, inputSpecs)
 	vrls = auditOVN(vrls, inputSpecs)
-	vrls = containerSource(vrls, inputSpecs)
-	vrls = journalSource(vrls, inputSpecs)
+	//vrls = containerSource(vrls, inputSpecs)
+	//vrls = journalSource(vrls, inputSpecs)
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
@@ -37,7 +46,7 @@ if .log_source == "%s" {
   %s
 }
 `, obs.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
-		ClusterID,
+		SetClusterID,
 		FixLogLevel,
 		HandleEventRouterLog,
 		RemovePartial,
@@ -48,7 +57,7 @@ if .log_source == "%s" {
 		RemoveNodeLabels,
 		RemoveTimestampEnd,
 		SetTimestampField,
-		VRLOpenShiftSequence,
+		SetOpenShiftSequence,
 	}), "\n"))
 }
 

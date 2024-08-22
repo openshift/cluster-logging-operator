@@ -248,8 +248,8 @@ const (
       # Uncomment the lines below and change log4j.logger.kafka.network.RequestChannel$ to TRACE for additional output
       # related to the handling of requests
       #log4j.logger.kafka.network.Processor=TRACE, requestAppender
-      #log4j.logger.kafka.server.KafkaApis=TRACE, requestAppender
-      #log4j.additivity.kafka.server.KafkaApis=false
+      #log4j.logger.kafka.server.KafkaAPIs=TRACE, requestAppender
+      #log4j.additivity.kafka.server.KafkaAPIs=false
       log4j.logger.kafka.network.RequestChannel$=WARN, requestAppender
       log4j.additivity.kafka.network.RequestChannel$=false
 
@@ -518,8 +518,8 @@ const (
       # Uncomment the lines below and change log4j.logger.kafka.network.RequestChannel$ to TRACE for additional output
       # related to the handling of requests
       #log4j.logger.kafka.network.Processor=TRACE, requestAppender
-      #log4j.logger.kafka.server.KafkaApis=TRACE, requestAppender
-      #log4j.additivity.kafka.server.KafkaApis=false
+      #log4j.logger.kafka.server.KafkaAPIs=TRACE, requestAppender
+      #log4j.additivity.kafka.server.KafkaAPIs=false
       log4j.logger.kafka.network.RequestChannel$=WARN, requestAppender
       log4j.additivity.kafka.network.RequestChannel$=false
 

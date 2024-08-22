@@ -92,7 +92,7 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_infrastructure_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "infrastructure"
 '''
 
@@ -104,7 +104,7 @@ journal_directory = "/var/log/journal"
 type = "remap"
 inputs = ["input_infrastructure_journal"]
 source = '''
-  .log_source = "node"
+  .log_source = "Node"
   .log_type = "infrastructure"
 '''
 
@@ -128,7 +128,7 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_mytestapp_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "application"
 '''
 
@@ -136,7 +136,7 @@ source = '''
 type = "filter"
 inputs = ["input_audit_host_meta","input_audit_kube_meta","input_audit_openshift_meta","input_audit_ovn_meta","input_infrastructure_container_meta","input_infrastructure_journal_meta","input_mytestapp_container_meta"]
 condition = '''
-(.log_source == "node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "container" || .log_type == "audit"
+(.log_source == "Node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "Container" || .log_type == "audit"
 '''
 
 [transforms.pipeline_pipeline_viaq_1]
@@ -252,7 +252,7 @@ if .log_type == "audit" && .log_source == "ovn" {
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
-if .log_source == "container" {
+if .log_source == "Container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
     .level = "default"
@@ -336,7 +336,7 @@ if .log_source == "container" {
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
-if .log_source == "node" {
+if .log_source == "Node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
 
@@ -432,7 +432,7 @@ source = '''
 type = "remap"
 inputs = ["pipeline_pipeline_my_labels_2"]
 source = '''
-  if .log_source == "container" {
+  if .log_source == "Container" {
     if exists(.kubernetes.namespace_labels) {
       ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
       for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {

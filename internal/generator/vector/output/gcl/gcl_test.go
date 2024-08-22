@@ -45,11 +45,11 @@ var _ = Describe("Generate Vector config", func() {
 				Type: obs.OutputTypeGoogleCloudLogging,
 				Name: "gcl_1",
 				GoogleCloudLogging: &obs.GoogleCloudLogging{
-					ID: obs.GoogleCloudLoggingId{
-						Type:  obs.GoogleCloudLoggingIdTypeBillingAccount,
+					ID: obs.GoogleCloudLoggingID{
+						Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 						Value: "billing-1",
 					},
-					LogId: "vector-1",
+					LogID: "vector-1",
 					Authentication: &obs.GoogleCloudLoggingAuthentication{
 						Credentials: &obs.SecretReference{
 							Key:        gcl.GoogleApplicationCredentialsKey,
@@ -95,7 +95,7 @@ var _ = Describe("Generate Vector config", func() {
 			spec.TLS = tlsSpec
 		}, false, framework.NoOptions, "gcl_with_tls.toml"),
 		Entry("with custom logId", func(spec *obs.OutputSpec) {
-			spec.GoogleCloudLogging.LogId = `my-id{.log_type||"none"}`
+			spec.GoogleCloudLogging.LogID = `my-id{.log_type||"none"}`
 		}, false, framework.NoOptions, "gcl_with_custom_logid.toml"),
 		Entry("with tuning", func(spec *obs.OutputSpec) {
 			spec.GoogleCloudLogging.Tuning = &obs.GoogleCloudLoggingTuningSpec{

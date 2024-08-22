@@ -9,7 +9,7 @@ import (
 
 const (
 	VRLDedotLabels = `
-if .log_source == "container" {
+if .log_source == "Container" {
   if exists(.kubernetes.namespace_labels) {
     ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
     for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 

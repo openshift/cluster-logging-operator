@@ -75,7 +75,7 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 							SecretName: secretName,
 							Key:        constants.AWSSecretAccessKey,
 						},
-						KeyId: obs.SecretReference{
+						KeyID: obs.SecretReference{
 							SecretName: secretName,
 							Key:        constants.AWSAccessKeyID,
 						},

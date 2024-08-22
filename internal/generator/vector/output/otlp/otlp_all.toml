@@ -3,9 +3,9 @@
 type = "route"
 inputs = ["pipeline_my_pipeline_viaq_0"]
 route.auditd = '.log_source == "auditd"'
-route.container = '.log_source == "container"'
+route.container = '.log_source == "Container"'
 route.kubeapi = '.log_source == "kubeAPI"'
-route.node = '.log_source == "node"'
+route.node = '.log_source == "Node"'
 route.openshiftapi = '.log_source == "openshiftAPI"'
 route.ovn = '.log_source == "ovn"'
 

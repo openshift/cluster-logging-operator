@@ -26,8 +26,8 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			outspec.Syslog.Facility = "user"
 			outspec.Syslog.Severity = "debug"
 			outspec.Syslog.AppName = "myapp"
-			outspec.Syslog.ProcId = "myproc"
-			outspec.Syslog.MsgId = "mymsg"
+			outspec.Syslog.ProcID = "myproc"
+			outspec.Syslog.MsgID = "mymsg"
 		}
 
 		join = func(
@@ -133,8 +133,8 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = `{.appname_key||"none"}`
-					spec.Syslog.ProcId = `{.procid_key||"none"}`
-					spec.Syslog.MsgId = `{.msgid_key||"none"}`
+					spec.Syslog.ProcID = `{.procid_key||"none"}`
+					spec.Syslog.MsgID = `{.msgid_key||"none"}`
 				}))
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -157,8 +157,8 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = `foo-{.openshift.cluster_id||"none"}`
-					spec.Syslog.ProcId = `bar-{.appname_key||"none"}`
-					spec.Syslog.MsgId = `baz{.level||"none"}.{.log_type||"none"}`
+					spec.Syslog.ProcID = `bar-{.appname_key||"none"}`
+					spec.Syslog.MsgID = `baz{.level||"none"}.{.log_type||"none"}`
 				}))
 			Expect(framework.Deploy()).To(BeNil())
 

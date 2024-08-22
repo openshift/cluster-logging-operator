@@ -17,12 +17,12 @@ import (
 )
 
 //go:embed azure-http-data-collector-api.json
-var AzureHttpDataCollectorApi string
+var AzureHttpDataCollectorAPI string
 
 const (
 	Mockoon          = "mockoon"
 	Port             = 3000
-	azureApiJsonFile = "azure-http-data-collector-api.json"
+	azureAPIJsonFile = "azure-http-data-collector-api.json"
 	image            = "quay.io/openshift-logging/mockoon-cli:6.2.0"
 	data             = "data"
 	AzureDomain      = "acme.com"
@@ -75,7 +75,7 @@ type Transaction struct {
 
 func NewMockoonVisitor(pb *runtime.PodBuilder, azureAltHost string, framework *functional.CollectorFunctionalFramework) error {
 	configMap := runtime.NewConfigMap(framework.Namespace, Mockoon, map[string]string{})
-	runtime.NewConfigMapBuilder(configMap).Add(azureApiJsonFile, AzureHttpDataCollectorApi)
+	runtime.NewConfigMapBuilder(configMap).Add(azureAPIJsonFile, AzureHttpDataCollectorAPI)
 	if err := framework.Test.Create(configMap); err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, azureAltHost string, framework *f
 		AddContainer(Mockoon, image).
 		AddContainerPort(Mockoon, Port).
 		WithCmdArgs([]string{
-			fmt.Sprintf("--data=%s/%s", mountPath, azureApiJsonFile),
+			fmt.Sprintf("--data=%s/%s", mountPath, azureAPIJsonFile),
 			"--log-transaction",
 		}).AddVolumeMount(data, mountPath, "", true).End()
 

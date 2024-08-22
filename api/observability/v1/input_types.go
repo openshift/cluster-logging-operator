@@ -100,14 +100,14 @@ type ContainerInputTuningSpec struct {
 
 // ApplicationSource defines the type of ApplicationSource log source to use.
 //
-// +kubebuilder:validation:Enum:=container
+// +kubebuilder:validation:Enum:=Container
 type ApplicationSource string
 
 const (
 
 	// ApplicationSourceContainer are container logs from deployed workloads
 	// in any of the following namespaces: default, kube*, openshift*
-	ApplicationSourceContainer ApplicationSource = "container"
+	ApplicationSourceContainer ApplicationSource = "Container"
 )
 
 // Application workload log selector.
@@ -165,16 +165,16 @@ type NamespaceContainerSpec struct {
 
 // InfrastructureSource defines the type of infrastructure log source to use.
 //
-// +kubebuilder:validation:Enum:=container;node
+// +kubebuilder:validation:Enum:=Container;Node
 type InfrastructureSource string
 
 const (
 	// InfrastructureSourceNode are journald logs from the node
-	InfrastructureSourceNode InfrastructureSource = "node"
+	InfrastructureSourceNode InfrastructureSource = "Node"
 
 	// InfrastructureSourceContainer are container logs from workloads deployed
 	// in any of the following namespaces: default, kube*, openshift*
-	InfrastructureSourceContainer InfrastructureSource = "container"
+	InfrastructureSourceContainer InfrastructureSource = "Container"
 )
 
 var (
@@ -286,11 +286,11 @@ type ReceiverSpec struct {
 
 // HTTPReceiverFormat defines the type of log data incoming through the HTTP receiver.
 //
-// +kubebuilder:validation:Enum:=kubeApiAudit
+// +kubebuilder:validation:Enum:=kubeAPIAudit
 type HTTPReceiverFormat string
 
 const (
-	HTTPReceiverFormatKubeApiAudit HTTPReceiverFormat = "kubeApiAudit"
+	HTTPReceiverFormatKubeAPIAudit HTTPReceiverFormat = "kubeAPIAudit"
 )
 
 // HTTPReceiver receives encoded logs as a HTTP endpoint.

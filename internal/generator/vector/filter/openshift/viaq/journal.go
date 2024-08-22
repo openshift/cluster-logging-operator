@@ -126,6 +126,6 @@ func DropJournalDebugLogs(id string, inputs ...string) framework.Element {
 	return Filter{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		Condition:   `(.log_source == "node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "container" || .log_type == "audit"`,
+		Condition:   `(.log_source == "Node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "Container" || .log_type == "audit"`,
 	}
 }

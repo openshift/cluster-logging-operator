@@ -1,0 +1,1692 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: clusterlogforwarders.observability.openshift.io
+spec:
+  group: observability.openshift.io
+  names:
+    categories:
+      - observability
+    kind: ClusterLogForwarder
+    listKind: ClusterLogForwarderList
+    plural: clusterlogforwarders
+    shortNames:
+      - obsclf
+      - clf
+    singular: clusterlogforwarder
+  scope: Namespaced
+  versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              properties:
+                collector:
+                  properties:
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      nullable: true
+                      type: object
+                    resources:
+                      nullable: true
+                      properties:
+                        claims:
+                          items:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                              - name
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                            - name
+                          x-kubernetes-list-type: map
+                        limits:
+                          additionalProperties:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          type: object
+                        requests:
+                          additionalProperties:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          type: object
+                      type: object
+                    tolerations:
+                      items:
+                        properties:
+                          effect:
+                            type: string
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          tolerationSeconds:
+                            format: int64
+                            type: integer
+                          value:
+                            type: string
+                        type: object
+                      nullable: true
+                      type: array
+                  type: object
+                filters:
+                  items:
+                    properties:
+                      drop:
+                        items:
+                          properties:
+                            test:
+                              items:
+                                properties:
+                                  field:
+                                    pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
+                                    type: string
+                                  matches:
+                                    type: string
+                                  notMatches:
+                                    type: string
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: only one of matches or notMatches can be defined per field
+                                    rule: '!(has(self.matches) && has(self.notMatches))'
+                              minItems: 1
+                              type: array
+                          type: object
+                        type: array
+                      kubeApiAudit:
+                        properties:
+                          omitResponseCodes:
+                            items:
+                              type: integer
+                            type: array
+                          omitStages:
+                            items:
+                              type: string
+                            type: array
+                          rules:
+                            items:
+                              properties:
+                                level:
+                                  type: string
+                                namespaces:
+                                  items:
+                                    type: string
+                                  type: array
+                                nonResourceURLs:
+                                  items:
+                                    type: string
+                                  type: array
+                                omitManagedFields:
+                                  type: boolean
+                                omitStages:
+                                  items:
+                                    type: string
+                                  type: array
+                                resources:
+                                  items:
+                                    properties:
+                                      group:
+                                        type: string
+                                      resourceNames:
+                                        items:
+                                          type: string
+                                        type: array
+                                      resources:
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  type: array
+                                userGroups:
+                                  items:
+                                    type: string
+                                  type: array
+                                users:
+                                  items:
+                                    type: string
+                                  type: array
+                                verbs:
+                                  items:
+                                    type: string
+                                  type: array
+                              required:
+                                - level
+                              type: object
+                            type: array
+                        type: object
+                      name:
+                        pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                        type: string
+                      openshiftLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      prune:
+                        properties:
+                          in:
+                            items:
+                              pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
+                              type: string
+                            type: array
+                          notIn:
+                            items:
+                              pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
+                              type: string
+                            type: array
+                        type: object
+                      type:
+                        enum:
+                          - openshiftLabels
+                          - detectMultilineException
+                          - drop
+                          - kubeApiAudit
+                          - parse
+                          - prune
+                        type: string
+                    required:
+                      - name
+                      - type
+                    type: object
+                    x-kubernetes-validations:
+                      - message: Additional type specific spec is required for the filter type
+                        rule: self.type != 'kubeApiAudit' || has(self.kubeApiAudit)
+                      - message: Additional type specific spec is required for the filter type
+                        rule: self.type != 'drop' || has(self.drop)
+                      - message: Additional type specific spec is required for the filter type
+                        rule: self.type != 'prune' || has(self.prune)
+                      - message: Additional type specific spec is required for the filter type
+                        rule: self.type != 'openshiftLabels' || has(self.openshiftLabels)
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                inputs:
+                  items:
+                    properties:
+                      application:
+                        nullable: true
+                        properties:
+                          excludes:
+                            items:
+                              properties:
+                                container:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
+                          includes:
+                            items:
+                              properties:
+                                container:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
+                          selector:
+                            properties:
+                              matchExpressions:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    operator:
+                                      type: string
+                                    values:
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                    - key
+                                    - operator
+                                  type: object
+                                type: array
+                              matchLabels:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          tuning:
+                            properties:
+                              rateLimitPerContainer:
+                                properties:
+                                  maxRecordsPerSecond:
+                                    exclusiveMinimum: true
+                                    format: int64
+                                    minimum: 0
+                                    type: integer
+                                required:
+                                  - maxRecordsPerSecond
+                                type: object
+                            type: object
+                        type: object
+                      audit:
+                        properties:
+                          sources:
+                            items:
+                              enum:
+                                - auditd
+                                - kubeAPI
+                                - openshiftAPI
+                                - ovn
+                              type: string
+                            type: array
+                        type: object
+                      infrastructure:
+                        properties:
+                          sources:
+                            items:
+                              enum:
+                                - container
+                                - node
+                              type: string
+                            type: array
+                        type: object
+                      name:
+                        pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                        type: string
+                      receiver:
+                        properties:
+                          http:
+                            properties:
+                              format:
+                                enum:
+                                  - kubeApiAudit
+                                type: string
+                            required:
+                              - format
+                            type: object
+                          port:
+                            format: int32
+                            maximum: 65535
+                            minimum: 1024
+                            type: integer
+                          tls:
+                            properties:
+                              ca:
+                                properties:
+                                  configMapName:
+                                    type: string
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Either configMapName or secretName needs to be set
+                                    rule: has(self.configMapName) || has(self.secretName)
+                                  - message: Only one of configMapName and secretName can be set
+                                    rule: '!(has(self.configMapName) && has(self.secretName))'
+                              certificate:
+                                properties:
+                                  configMapName:
+                                    type: string
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Either configMapName or secretName needs to be set
+                                    rule: has(self.configMapName) || has(self.secretName)
+                                  - message: Only one of configMapName and secretName can be set
+                                    rule: '!(has(self.configMapName) && has(self.secretName))'
+                              key:
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                              keyPassphrase:
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            type: object
+                          type:
+                            enum:
+                              - http
+                              - syslog
+                            type: string
+                        required:
+                          - port
+                          - type
+                        type: object
+                      type:
+                        enum:
+                          - audit
+                          - application
+                          - infrastructure
+                          - receiver
+                        type: string
+                    required:
+                      - name
+                      - type
+                    type: object
+                    x-kubernetes-validations:
+                      - message: Additional type specific spec is required for the input type
+                        rule: self.type != 'application' || has(self.application)
+                      - message: Additional type specific spec is required for the input type
+                        rule: self.type != 'infrastructure' || has(self.infrastructure)
+                      - message: Additional type specific spec is required for the input type
+                        rule: self.type != 'audit' || has(self.audit)
+                      - message: Additional type specific spec is required for the input type
+                        rule: self.type != 'receiver' || has(self.receiver)
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                managementState:
+                  default: managed
+                  enum:
+                    - managed
+                    - unmanaged
+                  type: string
+                outputs:
+                  items:
+                    properties:
+                      azureMonitor:
+                        properties:
+                          authentication:
+                            properties:
+                              sharedKey:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            required:
+                              - sharedKey
+                            type: object
+                          azureResourceId:
+                            type: string
+                          customerId:
+                            type: string
+                          host:
+                            type: string
+                          logType:
+                            pattern: ^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$
+                            type: string
+                          tuning:
+                            properties:
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                        required:
+                          - authentication
+                          - customerId
+                        type: object
+                      cloudwatch:
+                        properties:
+                          authentication:
+                            properties:
+                              awsAccessKey:
+                                nullable: true
+                                properties:
+                                  keyId:
+                                    properties:
+                                      key:
+                                        type: string
+                                      secretName:
+                                        type: string
+                                    required:
+                                      - key
+                                      - secretName
+                                    type: object
+                                  keySecret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      secretName:
+                                        type: string
+                                    required:
+                                      - key
+                                      - secretName
+                                    type: object
+                                required:
+                                  - keyId
+                                  - keySecret
+                                type: object
+                              iamRole:
+                                nullable: true
+                                properties:
+                                  roleARN:
+                                    properties:
+                                      key:
+                                        type: string
+                                      secretName:
+                                        type: string
+                                    required:
+                                      - key
+                                      - secretName
+                                    type: object
+                                  token:
+                                    properties:
+                                      from:
+                                        enum:
+                                          - secret
+                                          - serviceAccount
+                                        type: string
+                                      secret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            type: string
+                                        required:
+                                          - key
+                                          - name
+                                        type: object
+                                    required:
+                                      - from
+                                    type: object
+                                    x-kubernetes-validations:
+                                      - message: Additional secret spec is required when bearer token is sourced from a secret
+                                        rule: self.from != 'secret' || has(self.secret)
+                                required:
+                                  - roleARN
+                                  - token
+                                type: object
+                              type:
+                                enum:
+                                  - awsAccessKey
+                                  - iamRole
+                                type: string
+                            required:
+                              - type
+                            type: object
+                            x-kubernetes-validations:
+                              - message: Additional type specific spec is required for authentication
+                                rule: self.type != 'awsAccessKey' || has(self.awsAccessKey)
+                              - message: Additional type specific spec is required for authentication
+                                rule: self.type != 'iamRole' || has(self.iamRole)
+                          groupName:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          region:
+                            type: string
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - gzip
+                                  - none
+                                  - snappy
+                                  - zlib
+                                  - zstd
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: self == '' ||  isURL(self)
+                        required:
+                          - authentication
+                          - groupName
+                          - region
+                        type: object
+                      elasticsearch:
+                        properties:
+                          authentication:
+                            properties:
+                              password:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                              token:
+                                nullable: true
+                                properties:
+                                  from:
+                                    enum:
+                                      - secret
+                                      - serviceAccount
+                                    type: string
+                                  secret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                      - key
+                                      - name
+                                    type: object
+                                required:
+                                  - from
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Additional secret spec is required when bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              username:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            type: object
+                          index:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          tuning:
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - gzip
+                                  - zlib
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                          version:
+                            maximum: 8
+                            minimum: 6
+                            type: integer
+                        required:
+                          - index
+                          - url
+                          - version
+                        type: object
+                      googleCloudLogging:
+                        properties:
+                          authentication:
+                            properties:
+                              credentials:
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            required:
+                              - credentials
+                            type: object
+                          id:
+                            properties:
+                              type:
+                                enum:
+                                  - billingAccount
+                                  - folder
+                                  - project
+                                  - organization
+                                type: string
+                              value:
+                                type: string
+                            required:
+                              - type
+                              - value
+                            type: object
+                          logId:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          tuning:
+                            properties:
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                        required:
+                          - id
+                          - logId
+                        type: object
+                      http:
+                        properties:
+                          authentication:
+                            properties:
+                              password:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                              token:
+                                nullable: true
+                                properties:
+                                  from:
+                                    enum:
+                                      - secret
+                                      - serviceAccount
+                                    type: string
+                                  secret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                      - key
+                                      - name
+                                    type: object
+                                required:
+                                  - from
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Additional secret spec is required when bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              username:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            type: object
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          method:
+                            enum:
+                              - GET
+                              - HEAD
+                              - POST
+                              - PUT
+                              - DELETE
+                              - OPTIONS
+                              - TRACE
+                              - PATCH
+                            type: string
+                          timeout:
+                            type: integer
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - gzip
+                                  - snappy
+                                  - zlib
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                        required:
+                          - url
+                        type: object
+                      kafka:
+                        properties:
+                          authentication:
+                            properties:
+                              sasl:
+                                properties:
+                                  mechanism:
+                                    type: string
+                                  password:
+                                    properties:
+                                      key:
+                                        type: string
+                                      secretName:
+                                        type: string
+                                    required:
+                                      - key
+                                      - secretName
+                                    type: object
+                                  username:
+                                    properties:
+                                      key:
+                                        type: string
+                                      secretName:
+                                        type: string
+                                    required:
+                                      - key
+                                      - secretName
+                                    type: object
+                                type: object
+                            type: object
+                          brokers:
+                            items:
+                              type: string
+                              x-kubernetes-validations:
+                                - message: invalid URL
+                                  rule: isURL(self)
+                            type: array
+                          topic:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - snappy
+                                  - zstd
+                                  - lz4
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: self == '' ||  isURL(self)
+                        type: object
+                        x-kubernetes-validations:
+                          - message: URL or brokers required
+                            rule: has(self.url) || self.brokers.size() > 0
+                      loki:
+                        properties:
+                          authentication:
+                            properties:
+                              password:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                              token:
+                                nullable: true
+                                properties:
+                                  from:
+                                    enum:
+                                      - secret
+                                      - serviceAccount
+                                    type: string
+                                  secret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                      - key
+                                      - name
+                                    type: object
+                                required:
+                                  - from
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Additional secret spec is required when bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              username:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            type: object
+                          labelKeys:
+                            items:
+                              type: string
+                            type: array
+                          tenantKey:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - gzip
+                                  - snappy
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                        required:
+                          - url
+                        type: object
+                      lokiStack:
+                        properties:
+                          authentication:
+                            properties:
+                              token:
+                                nullable: true
+                                properties:
+                                  from:
+                                    enum:
+                                      - secret
+                                      - serviceAccount
+                                    type: string
+                                  secret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                      - key
+                                      - name
+                                    type: object
+                                required:
+                                  - from
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Additional secret spec is required when bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                            required:
+                              - token
+                            type: object
+                          labelKeys:
+                            properties:
+                              application:
+                                properties:
+                                  ignoreGlobal:
+                                    type: boolean
+                                  labelKeys:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              audit:
+                                properties:
+                                  ignoreGlobal:
+                                    type: boolean
+                                  labelKeys:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              global:
+                                items:
+                                  type: string
+                                type: array
+                              infrastructure:
+                                properties:
+                                  ignoreGlobal:
+                                    type: boolean
+                                  labelKeys:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                            type: object
+                          target:
+                            properties:
+                              name:
+                                pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                                type: string
+                              namespace:
+                                type: string
+                            required:
+                              - name
+                            type: object
+                          tuning:
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - gzip
+                                  - snappy
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                        required:
+                          - authentication
+                          - target
+                        type: object
+                      name:
+                        pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                        type: string
+                      otlp:
+                        properties:
+                          authentication:
+                            properties:
+                              password:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                              token:
+                                nullable: true
+                                properties:
+                                  from:
+                                    enum:
+                                      - secret
+                                      - serviceAccount
+                                    type: string
+                                  secret:
+                                    properties:
+                                      key:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                      - key
+                                      - name
+                                    type: object
+                                required:
+                                  - from
+                                type: object
+                                x-kubernetes-validations:
+                                  - message: Additional secret spec is required when bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              username:
+                                nullable: true
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            type: object
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - gzip
+                                  - none
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            pattern: ^(https?):\/\/\S+\/v1\/logs$
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                        required:
+                          - url
+                        type: object
+                      rateLimit:
+                        properties:
+                          maxRecordsPerSecond:
+                            exclusiveMinimum: true
+                            format: int64
+                            minimum: 0
+                            type: integer
+                        required:
+                          - maxRecordsPerSecond
+                        type: object
+                      splunk:
+                        properties:
+                          authentication:
+                            properties:
+                              token:
+                                properties:
+                                  key:
+                                    type: string
+                                  secretName:
+                                    type: string
+                                required:
+                                  - key
+                                  - secretName
+                                type: object
+                            required:
+                              - token
+                            type: object
+                          index:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          tuning:
+                            nullable: true
+                            properties:
+                              compression:
+                                enum:
+                                  - none
+                                  - gzip
+                                type: string
+                              deliveryMode:
+                                enum:
+                                  - atLeastOnce
+                                  - atMostOnce
+                                type: string
+                              maxRetryDuration:
+                                format: int64
+                                type: integer
+                              maxWrite:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              minRetryDuration:
+                                format: int64
+                                type: integer
+                            type: object
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                        required:
+                          - authentication
+                          - url
+                        type: object
+                      syslog:
+                        properties:
+                          appName:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          enrichment:
+                            enum:
+                              - none
+                              - kubernetesMinimal
+                            type: string
+                          facility:
+                            type: string
+                          msgId:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          payloadKey:
+                            pattern: ^\{(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*\}$
+                            type: string
+                          procId:
+                            pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                            type: string
+                          rfc:
+                            enum:
+                              - rfc3164
+                              - rfc5424
+                            type: string
+                          severity:
+                            type: string
+                          url:
+                            type: string
+                            x-kubernetes-validations:
+                              - message: invalid URL
+                                rule: isURL(self)
+                        required:
+                          - rfc
+                          - url
+                        type: object
+                      tls:
+                        properties:
+                          ca:
+                            properties:
+                              configMapName:
+                                type: string
+                              key:
+                                type: string
+                              secretName:
+                                type: string
+                            required:
+                              - key
+                            type: object
+                            x-kubernetes-validations:
+                              - message: Either configMapName or secretName needs to be set
+                                rule: has(self.configMapName) || has(self.secretName)
+                              - message: Only one of configMapName and secretName can be set
+                                rule: '!(has(self.configMapName) && has(self.secretName))'
+                          certificate:
+                            properties:
+                              configMapName:
+                                type: string
+                              key:
+                                type: string
+                              secretName:
+                                type: string
+                            required:
+                              - key
+                            type: object
+                            x-kubernetes-validations:
+                              - message: Either configMapName or secretName needs to be set
+                                rule: has(self.configMapName) || has(self.secretName)
+                              - message: Only one of configMapName and secretName can be set
+                                rule: '!(has(self.configMapName) && has(self.secretName))'
+                          insecureSkipVerify:
+                            type: boolean
+                          key:
+                            properties:
+                              key:
+                                type: string
+                              secretName:
+                                type: string
+                            required:
+                              - key
+                              - secretName
+                            type: object
+                          keyPassphrase:
+                            properties:
+                              key:
+                                type: string
+                              secretName:
+                                type: string
+                            required:
+                              - key
+                              - secretName
+                            type: object
+                          securityProfile:
+                            properties:
+                              custom:
+                                nullable: true
+                                properties:
+                                  ciphers:
+                                    items:
+                                      type: string
+                                    type: array
+                                  minTLSVersion:
+                                    enum:
+                                      - VersionTLS10
+                                      - VersionTLS11
+                                      - VersionTLS12
+                                      - VersionTLS13
+                                    type: string
+                                type: object
+                              intermediate:
+                                nullable: true
+                                type: object
+                              modern:
+                                nullable: true
+                                type: object
+                              old:
+                                nullable: true
+                                type: object
+                              type:
+                                enum:
+                                  - Old
+                                  - Intermediate
+                                  - Modern
+                                  - Custom
+                                type: string
+                            type: object
+                        type: object
+                      type:
+                        enum:
+                          - azureMonitor
+                          - cloudwatch
+                          - elasticsearch
+                          - http
+                          - kafka
+                          - loki
+                          - lokiStack
+                          - googleCloudLogging
+                          - splunk
+                          - syslog
+                          - otlp
+                        type: string
+                    required:
+                      - name
+                      - type
+                    type: object
+                    x-kubernetes-validations:
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'azureMonitor' || has(self.azureMonitor)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'cloudwatch' || has(self.cloudwatch)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'elasticsearch' || has(self.elasticsearch)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'googleCloudLogging' || has(self.googleCloudLogging)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'http' || has(self.http)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'kafka' || has(self.kafka)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'loki' || has(self.loki)
+                      - message: Additional type specific spec is required for the output type
+                        rule: self.type != 'lokiStack' || has(self.lokiStack)
+                      - message: Additional type specific spec is required the for output type
+                        rule: self.type != 'splunk' || has(self.splunk)
+                      - message: Additional type specific spec is required the for output type
+                        rule: self.type != 'syslog' || has(self.syslog)
+                      - message: Additional type specific spec is required the for output type
+                        rule: self.type != 'otlp' || has(self.otlp)
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                pipelines:
+                  items:
+                    properties:
+                      filterRefs:
+                        items:
+                          type: string
+                        type: array
+                      inputRefs:
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
+                      name:
+                        pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+                        type: string
+                      outputRefs:
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
+                    required:
+                      - inputRefs
+                      - name
+                      - outputRefs
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                serviceAccount:
+                  properties:
+                    name:
+                      pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
+                      type: string
+                  required:
+                    - name
+                  type: object
+              required:
+                - outputs
+                - pipelines
+                - serviceAccount
+              type: object
+            status:
+              properties:
+                conditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                filterConditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                inputConditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                outputConditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                pipelineConditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+              type: object
+          type: object
+          x-kubernetes-validations:
+            - message: Name must be a valid DNS1035 label
+              rule: self.metadata.name.matches('^[a-z][a-z0-9-]{1,61}[a-z0-9]$')
+      served: true
+      storage: true
+      subresources:
+        status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null

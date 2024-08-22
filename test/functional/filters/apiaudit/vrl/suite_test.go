@@ -59,7 +59,7 @@ var _ = AfterSuite(func() {
 
 // Helpers for the tests
 
-func Filtered(policy *obs.KubeApiAudit, event Event) *Event {
+func Filtered(policy *obs.KubeAPIAudit, event Event) *Event {
 	fillEvent(&event)
 	event.GetObjectKind().SetGroupVersionKind(runtime.GroupVersionKind(&event))
 	b, err := json.Marshal(event)
@@ -74,7 +74,7 @@ func Filtered(policy *obs.KubeApiAudit, event Event) *Event {
 	return e2
 }
 
-func FilteredBytes(policy *obs.KubeApiAudit, b []byte) []byte {
+func FilteredBytes(policy *obs.KubeAPIAudit, b []byte) []byte {
 	cmd := vectorCmd(policy)
 	cmd.Stdin = bytes.NewReader(b)
 	out, err := cmd.Output()
@@ -82,7 +82,7 @@ func FilteredBytes(policy *obs.KubeApiAudit, b []byte) []byte {
 	return out
 }
 
-func vectorCmd(p *obs.KubeApiAudit) *exec.Cmd {
+func vectorCmd(p *obs.KubeAPIAudit) *exec.Cmd {
 	vrl, err := apiaudit.NewFilter(p).VRL()
 	Expect(err).NotTo(HaveOccurred(), "%#v", *p)
 	conf := fmt.Sprintf(`
@@ -126,10 +126,10 @@ func HaveLevel(level Level) types.GomegaMatcher {
 	return WithTransform(checkLevel, Equal(level))
 }
 
-func readPolicy(path string) *obs.KubeApiAudit {
+func readPolicy(path string) *obs.KubeAPIAudit {
 	b, err := os.ReadFile(path)
 	test.Must(err)
-	policy := &obs.KubeApiAudit{}
+	policy := &obs.KubeAPIAudit{}
 	test.Must(yaml.Unmarshal(b, policy))
 	return policy
 }

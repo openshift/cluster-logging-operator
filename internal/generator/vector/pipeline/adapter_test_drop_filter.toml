@@ -3,14 +3,14 @@
 type = "filter"
 inputs = ["input_app_in_container_meta","input_infra_in_container_meta","input_infra_in_journal_meta"]
 condition = '''
-(.log_source == "node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "container" || .log_type == "audit"
+(.log_source == "Node" && .PRIORITY != "7" && .PRIORITY != 7)  || .log_source == "Container" || .log_type == "audit"
 '''
 
 [transforms.pipeline_mypipeline_viaq_1]
 type = "remap"
 inputs = ["pipeline_mypipeline_viaqjournal_0"]
 source = '''
-if .log_source == "container" {
+if .log_source == "Container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
     .level = "default"
@@ -94,7 +94,7 @@ if .log_source == "container" {
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
-if .log_source == "node" {
+if .log_source == "Node" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
 
@@ -190,7 +190,7 @@ condition = '''
 type = "remap"
 inputs = ["pipeline_mypipeline_my_drop_filter_2"]
 source = '''
-  if .log_source == "container" {
+  if .log_source == "Container" {
     if exists(.kubernetes.namespace_labels) {
       ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
       for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {

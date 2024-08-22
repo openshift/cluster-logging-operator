@@ -116,7 +116,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 func authConfig(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
-		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
+		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyID)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
 	}
 	return authConfig
@@ -137,14 +137,14 @@ func NormalizeStreamName(componentID string, inputs []string) Element {
 if ( .log_type == "audit" ) {
  .stream_name = (.hostname +"."+ downcase(.log_source)) ?? .stream_name
 }
-if ( .log_source == "container" ) {
+if ( .log_source == "Container" ) {
   k = .kubernetes
   .stream_name = (k.namespace_name+"_"+k.pod_name+"_"+k.container_name) ?? .stream_name
 }
 if ( .log_type == "infrastructure" ) {
  .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 }
-if ( .log_source == "node" ) {
+if ( .log_source == "Node" ) {
  .stream_name =  ( .hostname + ".journal.system" ) ?? .stream_name
 }
 del(.tag)

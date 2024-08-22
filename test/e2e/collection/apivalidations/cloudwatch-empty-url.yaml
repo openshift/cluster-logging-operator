@@ -11,7 +11,7 @@ kind: ClusterLogForwarder
 metadata:
   name: clf-validation-test
 spec:
-  managementState: managed
+  managementState: Managed
   outputs:
     - name: cloudwatch-aosqe
       cloudwatch:
@@ -21,7 +21,7 @@ spec:
         authentication:
           type: awsAccessKey
           awsAccessKey:
-            keyId:
+            keyID:
               key: aws_access_key_id
               secretName: to-cloudwatch-secret-4884
             keySecret:

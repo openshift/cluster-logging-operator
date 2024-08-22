@@ -85,8 +85,8 @@ var _ = Describe("vector syslog clf output", func() {
 				Facility:   "kern",
 				Severity:   "critical",
 				AppName:    "appName",
-				MsgId:      "msgID",
-				ProcId:     "procID",
+				MsgID:      "msgID",
+				ProcID:     "procID",
 				PayloadKey: "{.plKey}",
 			}
 		}),
@@ -98,8 +98,8 @@ var _ = Describe("vector syslog clf output", func() {
 				Facility:   "$$.message.facility",
 				Severity:   "$$.message.severity",
 				AppName:    `{.app_name||"none"}`,
-				MsgId:      `{.msg_id||"none"}`,
-				ProcId:     `{.proc_id||"none"}`,
+				MsgID:      `{.msg_id||"none"}`,
+				ProcID:     `{.proc_id||"none"}`,
 				PayloadKey: `{.payload_key}`,
 			}
 		}),

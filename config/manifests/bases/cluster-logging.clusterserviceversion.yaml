@@ -104,7 +104,7 @@ spec:
         displayName: Keep Match Expression
         path: filters[0].drop[0].test[0].notMatches
       - displayName: Kubernetes API Audit Filter
-        path: filters[0].kubeApiAudit
+        path: filters[0].kubeAPIAudit
       - description: Name used to refer to the filter from a "pipeline".
         displayName: Filter Name
         path: filters[0].name
@@ -332,18 +332,18 @@ spec:
           used for authentication.
         displayName: Access Key
         path: outputs[0].cloudwatch.authentication.awsAccessKey
-      - description: KeyId points to the AWS access key id to be used for authentication.
+      - description: KeyID points to the AWS access key id to be used for authentication.
         displayName: Secret with Access Key ID
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID
       - description: Key contains the name of the key inside the referenced Secret.
         displayName: Key Name
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId.key
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.key
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: SecretName contains the name of the Secret containing the referenced
           value.
         displayName: Secret Name
-        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyId.secretName
+        path: outputs[0].cloudwatch.authentication.awsAccessKey.keyID.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: KeySecret points to the AWS access key secret to be used for
@@ -579,8 +579,8 @@ spec:
         path: outputs[0].googleCloudLogging.id.value
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "LogId is the log ID to which to publish logs. This identifies
-          log stream. \n The LogId can be a combination of static and dynamic values
+      - description: "LogID is the log ID to which to publish logs. This identifies
+          log stream. \n The LogID can be a combination of static and dynamic values
           consisting of field paths followed by `||` followed by another field path
           or a static value. \n A dynamic value is encased in single curly brackets
           `{}` and MUST end with a static fallback value separated with `||`. \n Static
@@ -588,7 +588,7 @@ spec:
           dots and forward slashes. \n Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"}
           \n 3. foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}"
         displayName: Log Stream ID
-        path: outputs[0].googleCloudLogging.logId
+        path: outputs[0].googleCloudLogging.logID
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Tuning specs tuning for the output
@@ -1224,8 +1224,8 @@ spec:
         path: outputs[0].syslog.facility
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "MsgId is MSGID part of the syslog-msg header. This supports
-          template syntax to allow dynamic per-event values. \n The MsgId can be a
+      - description: "MsgID is MSGID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The MsgID can be a
           combination of static and dynamic values consisting of field paths followed
           by `||` followed by another field path or a static value. \n A dynamic value
           is encased in single curly brackets `{}` and MUST end with a static fallback
@@ -1233,10 +1233,10 @@ spec:
           characters along with dashes, underscores, dots and forward slashes. \n
           Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
           foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-          \n MsgId needs to be specified if using rfc5424.  The maximum length of
+          \n MsgID needs to be specified if using rfc5424.  The maximum length of
           the final values is truncated to 32"
         displayName: MSGID
-        path: outputs[0].syslog.msgId
+        path: outputs[0].syslog.msgID
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: "PayloadKey specifies record field to use as payload. This supports
@@ -1249,8 +1249,8 @@ spec:
         path: outputs[0].syslog.payloadKey
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: "ProcId is PROCID part of the syslog-msg header. This supports
-          template syntax to allow dynamic per-event values. \n The ProcId can be
+      - description: "ProcID is PROCID part of the syslog-msg header. This supports
+          template syntax to allow dynamic per-event values. \n The ProcID can be
           a combination of static and dynamic values consisting of field paths followed
           by `||` followed by another field path or a static value. \n A dynamic value
           is encased in single curly brackets `{}` and MUST end with a static fallback
@@ -1258,10 +1258,10 @@ spec:
           characters along with dashes, underscores, dots and forward slashes. \n
           Example: \n 1. foo-{.bar||\"none\"} \n 2. {.foo||.bar||\"missing\"} \n 3.
           foo.{.bar.baz||.qux.quux.corge||.grault||\"nil\"}-waldo.fred{.plugh||\"none\"}
-          \n ProcId needs to be specified if using rfc5424. The maximum length of
+          \n ProcID needs to be specified if using rfc5424. The maximum length of
           the final values is truncated to 128"
         displayName: PROCID
-        path: outputs[0].syslog.procId
+        path: outputs[0].syslog.procID
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Syslog RFC

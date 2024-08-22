@@ -175,7 +175,7 @@ A DropTestsSpec contains an array of tests which contains an array of conditions
 |kubeApiAudit|object|  
 |name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 
-|openshiftLabels|object|  Labels applied to log records passing through a pipeline.
+|openShiftLabels|object|  Labels applied to log records passing through a pipeline.
 These labels appear in the `openshift.labels` map in the log record.
 
 |prune|object|  The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
@@ -404,7 +404,7 @@ Type:: array
 
 Type:: array
 
-=== .spec.filters[].openshiftLabels
+=== .spec.filters[].openShiftLabels
 
 Type:: object
 

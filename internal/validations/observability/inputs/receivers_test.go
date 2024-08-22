@@ -52,7 +52,7 @@ var _ = Describe("#ValidateReceiver", func() {
 		It("should pass for a valid HTTP receiver spec", func() {
 			spec.Receiver.Type = obs.ReceiverTypeHTTP
 			spec.Receiver.HTTP = &obs.HTTPReceiver{
-				Format: obs.HTTPReceiverFormatKubeApiAudit,
+				Format: obs.HTTPReceiverFormatKubeAPIAudit,
 			}
 			conds := ValidateReceiver(spec, secrets, configMaps, utils.NoOptions)
 			Expect(conds).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))

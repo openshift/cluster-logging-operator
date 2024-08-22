@@ -3,6 +3,7 @@ package conf
 import (
 	_ "embed"
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -188,7 +189,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 							Type: obs.ReceiverTypeHTTP,
 							Port: 7777,
 							HTTP: &obs.HTTPReceiver{
-								Format: obs.HTTPReceiverFormatKubeApiAudit,
+								Format: obs.HTTPReceiverFormatKubeAPIAudit,
 							},
 							TLS: &obs.InputTLSSpec{
 								Certificate: &obs.ValueReference{

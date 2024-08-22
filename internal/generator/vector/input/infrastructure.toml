@@ -18,7 +18,7 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_infrastructure_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "infrastructure"
 '''
 
@@ -30,6 +30,6 @@ journal_directory = "/var/log/journal"
 type = "remap"
 inputs = ["input_infrastructure_journal"]
 source = '''
-  .log_source = "node"
+  .log_source = "Node"
   .log_type = "infrastructure"
 '''

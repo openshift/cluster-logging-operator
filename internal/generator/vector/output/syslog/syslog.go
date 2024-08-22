@@ -176,17 +176,17 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 			VRLString: commontemplate.TransformUserTemplateToVRL(s.AppName),
 		})
 	}
-	if s.MsgId != "" {
+	if s.MsgID != "" {
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "msg_id",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.MsgId),
+			VRLString: commontemplate.TransformUserTemplateToVRL(s.MsgID),
 		})
 	}
 
-	if s.ProcId != "" {
+	if s.ProcID != "" {
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "proc_id",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.ProcId),
+			VRLString: commontemplate.TransformUserTemplateToVRL(s.ProcID),
 		})
 	}
 

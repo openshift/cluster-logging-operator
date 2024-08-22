@@ -13,8 +13,8 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 			Name: "gcl-out",
 			Type: obs.OutputTypeGoogleCloudLogging,
 			GoogleCloudLogging: &obs.GoogleCloudLogging{
-				ID: obs.GoogleCloudLoggingId{
-					Type:  obs.GoogleCloudLoggingIdTypeBillingAccount,
+				ID: obs.GoogleCloudLoggingID{
+					Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 					Value: "billingAccountID",
 				},
 			},
@@ -40,8 +40,8 @@ var _ = Describe("Pipeline validation #verifyHostNameNotFilteredForGCL", func() 
 			Name: "gcl-out",
 			Type: obs.OutputTypeGoogleCloudLogging,
 			GoogleCloudLogging: &obs.GoogleCloudLogging{
-				ID: obs.GoogleCloudLoggingId{
-					Type:  obs.GoogleCloudLoggingIdTypeBillingAccount,
+				ID: obs.GoogleCloudLoggingID{
+					Type:  obs.GoogleCloudLoggingIDTypeBillingAccount,
 					Value: "billingAccountID",
 				},
 			},

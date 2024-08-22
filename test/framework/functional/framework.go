@@ -3,12 +3,13 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
@@ -43,7 +44,7 @@ import (
 )
 
 var TestAPIAdapterConfigVisitor = func(conf string) string {
-	conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
+	conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestAPIAdapter\n", 1)
 	return conf
 }
 

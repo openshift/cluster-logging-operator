@@ -65,7 +65,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						Authentication: &obs.CloudwatchAuthentication{
 							Type: obs.CloudwatchAuthTypeAccessKey,
 							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
-								KeyId: obs.SecretReference{
+								KeyID: obs.SecretReference{
 									Key:        constants.AWSAccessKeyID,
 									SecretName: secretName,
 								},

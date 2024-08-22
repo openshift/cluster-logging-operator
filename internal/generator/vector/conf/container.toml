@@ -32,7 +32,7 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_myinfra_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "infrastructure"
 '''
 
@@ -56,7 +56,7 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_mytestapp_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "application"
 '''
 
@@ -64,7 +64,7 @@ source = '''
 type = "remap"
 inputs = ["input_myinfra_container_meta","input_mytestapp_container_meta"]
 source = '''
-if .log_source == "container" {
+if .log_source == "Container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
     .level = "default"
@@ -161,7 +161,7 @@ source = '''
 type = "remap"
 inputs = ["pipeline_mypipeline_my_labels_1"]
 source = '''
-  if .log_source == "container" {
+  if .log_source == "Container" {
     if exists(.kubernetes.namespace_labels) {
       ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
       for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {

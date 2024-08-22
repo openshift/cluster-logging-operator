@@ -2,7 +2,7 @@
 type = "remap"
 inputs = ["input_app_in_container_meta"]
 source = '''
-if .log_source == "container" {
+if .log_source == "Container" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
    if !exists(.level) {
     .level = "default"
@@ -115,7 +115,7 @@ for_each(in) -> |_index, val| {
 type = "remap"
 inputs = ["pipeline_mypipeline_my_prune_1"]
 source = '''
-  if .log_source == "container" {
+  if .log_source == "Container" {
     if exists(.kubernetes.namespace_labels) {
       ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
       for_each(object!(.kubernetes.namespace_labels)) -> |key,value| {

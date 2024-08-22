@@ -13,6 +13,6 @@ ca_file = "/var/run/ocp-collector/config/instance-myreceiver/ca.crt"
 type = "remap"
 inputs = ["input_myreceiver"]
 source = '''
-  .log_source = "node"
+  .log_source = "Node"
   .log_type = "infrastructure"
 '''

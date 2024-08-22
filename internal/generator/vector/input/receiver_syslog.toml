@@ -14,6 +14,6 @@ key_pass = "foo"
 type = "remap"
 inputs = ["input_myreceiver"]
 source = '''
-  .log_source = "node"
+  .log_source = "Node"
   .log_type = "infrastructure"
 '''

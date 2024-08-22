@@ -1,0 +1,641 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: clusterlogforwarders.logging.openshift.io
+spec:
+  group: logging.openshift.io
+  names:
+    categories:
+      - logging
+    kind: ClusterLogForwarder
+    listKind: ClusterLogForwarderList
+    plural: clusterlogforwarders
+    shortNames:
+      - clf
+    singular: clusterlogforwarder
+  scope: Namespaced
+  versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              properties:
+                filters:
+                  items:
+                    properties:
+                      drop:
+                        items:
+                          properties:
+                            test:
+                              items:
+                                properties:
+                                  field:
+                                    type: string
+                                  matches:
+                                    type: string
+                                  notMatches:
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                        type: array
+                      kubeAPIAudit:
+                        properties:
+                          omitResponseCodes:
+                            items:
+                              type: integer
+                            type: array
+                          omitStages:
+                            items:
+                              type: string
+                            type: array
+                          rules:
+                            items:
+                              properties:
+                                level:
+                                  type: string
+                                namespaces:
+                                  items:
+                                    type: string
+                                  type: array
+                                nonResourceURLs:
+                                  items:
+                                    type: string
+                                  type: array
+                                omitManagedFields:
+                                  type: boolean
+                                omitStages:
+                                  items:
+                                    type: string
+                                  type: array
+                                resources:
+                                  items:
+                                    properties:
+                                      group:
+                                        type: string
+                                      resourceNames:
+                                        items:
+                                          type: string
+                                        type: array
+                                      resources:
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  type: array
+                                userGroups:
+                                  items:
+                                    type: string
+                                  type: array
+                                users:
+                                  items:
+                                    type: string
+                                  type: array
+                                verbs:
+                                  items:
+                                    type: string
+                                  type: array
+                              required:
+                                - level
+                              type: object
+                            type: array
+                        type: object
+                      name:
+                        type: string
+                      prune:
+                        properties:
+                          in:
+                            items:
+                              type: string
+                            type: array
+                          notIn:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      type:
+                        enum:
+                          - kubeAPIAudit
+                          - drop
+                          - prune
+                        type: string
+                    required:
+                      - name
+                      - type
+                    type: object
+                  type: array
+                inputs:
+                  items:
+                    properties:
+                      application:
+                        properties:
+                          containerLimit:
+                            properties:
+                              maxRecordsPerSecond:
+                                format: int64
+                                type: integer
+                            type: object
+                          excludes:
+                            items:
+                              properties:
+                                container:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
+                          includes:
+                            items:
+                              properties:
+                                container:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
+                          namespaces:
+                            items:
+                              type: string
+                            type: array
+                          selector:
+                            properties:
+                              matchExpressions:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    operator:
+                                      type: string
+                                    values:
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                    - key
+                                    - operator
+                                  type: object
+                                type: array
+                              matchLabels:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                            x-kubernetes-map-type: atomic
+                        type: object
+                      audit:
+                        properties:
+                          sources:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      infrastructure:
+                        properties:
+                          sources:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      name:
+                        type: string
+                      receiver:
+                        properties:
+                          http:
+                            properties:
+                              format:
+                                enum:
+                                  - kubeAPIAudit
+                                type: string
+                              port:
+                                default: 8443
+                                format: int32
+                                maximum: 65535
+                                minimum: 1024
+                                type: integer
+                            required:
+                              - format
+                            type: object
+                          syslog:
+                            properties:
+                              port:
+                                default: 10514
+                                format: int32
+                                maximum: 65535
+                                minimum: 1024
+                                type: integer
+                            type: object
+                          type:
+                            type: string
+                        type: object
+                    required:
+                      - name
+                    type: object
+                  type: array
+                outputDefaults:
+                  properties:
+                    elasticsearch:
+                      properties:
+                        enableStructuredContainerLogs:
+                          type: boolean
+                        structuredTypeKey:
+                          type: string
+                        structuredTypeName:
+                          type: string
+                      type: object
+                  type: object
+                outputs:
+                  items:
+                    properties:
+                      azureMonitor:
+                        properties:
+                          azureResourceId:
+                            type: string
+                          customerId:
+                            type: string
+                          host:
+                            type: string
+                          logType:
+                            type: string
+                        type: object
+                      cloudwatch:
+                        properties:
+                          groupBy:
+                            enum:
+                              - logType
+                              - namespaceName
+                              - namespaceUUID
+                            type: string
+                          groupPrefix:
+                            type: string
+                          region:
+                            type: string
+                        type: object
+                      elasticsearch:
+                        properties:
+                          enableStructuredContainerLogs:
+                            type: boolean
+                          structuredTypeKey:
+                            type: string
+                          structuredTypeName:
+                            type: string
+                          version:
+                            minimum: 6
+                            type: integer
+                        type: object
+                      fluentdForward:
+                        type: object
+                      googleCloudLogging:
+                        properties:
+                          billingAccountId:
+                            type: string
+                          folderId:
+                            type: string
+                          logId:
+                            type: string
+                          organizationId:
+                            type: string
+                          projectId:
+                            type: string
+                        type: object
+                      http:
+                        properties:
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          method:
+                            enum:
+                              - GET
+                              - HEAD
+                              - POST
+                              - PUT
+                              - DELETE
+                              - OPTIONS
+                              - TRACE
+                              - PATCH
+                            type: string
+                          timeout:
+                            type: integer
+                        type: object
+                      kafka:
+                        properties:
+                          brokers:
+                            items:
+                              type: string
+                            type: array
+                          topic:
+                            type: string
+                        type: object
+                      limit:
+                        properties:
+                          maxRecordsPerSecond:
+                            format: int64
+                            type: integer
+                        type: object
+                      loki:
+                        properties:
+                          labelKeys:
+                            items:
+                              type: string
+                            type: array
+                          tenantKey:
+                            type: string
+                        type: object
+                      name:
+                        type: string
+                      secret:
+                        properties:
+                          name:
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      splunk:
+                        properties:
+                          fields:
+                            items:
+                              type: string
+                            type: array
+                          indexKey:
+                            type: string
+                          indexName:
+                            type: string
+                        type: object
+                      syslog:
+                        properties:
+                          addLogSource:
+                            type: boolean
+                          appName:
+                            type: string
+                          facility:
+                            type: string
+                          msgID:
+                            type: string
+                          payloadKey:
+                            type: string
+                          procID:
+                            type: string
+                          rfc:
+                            default: RFC5424
+                            enum:
+                              - RFC3164
+                              - RFC5424
+                            type: string
+                          severity:
+                            type: string
+                          tag:
+                            type: string
+                          trimPrefix:
+                            type: string
+                        type: object
+                      tls:
+                        properties:
+                          insecureSkipVerify:
+                            type: boolean
+                          securityProfile:
+                            properties:
+                              custom:
+                                nullable: true
+                                properties:
+                                  ciphers:
+                                    items:
+                                      type: string
+                                    type: array
+                                  minTLSVersion:
+                                    enum:
+                                      - VersionTLS10
+                                      - VersionTLS11
+                                      - VersionTLS12
+                                      - VersionTLS13
+                                    type: string
+                                type: object
+                              intermediate:
+                                nullable: true
+                                type: object
+                              modern:
+                                nullable: true
+                                type: object
+                              old:
+                                nullable: true
+                                type: object
+                              type:
+                                enum:
+                                  - Old
+                                  - Intermediate
+                                  - Modern
+                                  - Custom
+                                type: string
+                            type: object
+                        type: object
+                      tuning:
+                        properties:
+                          compression:
+                            enum:
+                              - gzip
+                              - none
+                              - snappy
+                              - zlib
+                              - zstd
+                              - lz4
+                            type: string
+                          delivery:
+                            enum:
+                              - AtLeastOnce
+                              - AtMostOnce
+                            type: string
+                          maxRetryDuration:
+                            format: int64
+                            type: integer
+                          maxWrite:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          minRetryDuration:
+                            format: int64
+                            type: integer
+                        type: object
+                      type:
+                        enum:
+                          - syslog
+                          - fluentdForward
+                          - elasticsearch
+                          - kafka
+                          - cloudwatch
+                          - loki
+                          - googleCloudLogging
+                          - splunk
+                          - http
+                          - azureMonitor
+                        type: string
+                      url:
+                        pattern: ^$|[a-zA-z]+:\/\/.*
+                        type: string
+                    required:
+                      - name
+                      - type
+                    type: object
+                  type: array
+                pipelines:
+                  items:
+                    properties:
+                      detectMultilineErrors:
+                        type: boolean
+                      filterRefs:
+                        items:
+                          type: string
+                        type: array
+                      inputRefs:
+                        items:
+                          type: string
+                        type: array
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      name:
+                        type: string
+                      outputRefs:
+                        items:
+                          type: string
+                        type: array
+                      parse:
+                        enum:
+                          - json
+                        type: string
+                    required:
+                      - inputRefs
+                      - outputRefs
+                    type: object
+                  type: array
+                serviceAccountName:
+                  type: string
+              type: object
+            status:
+              properties:
+                conditions:
+                  items:
+                    properties:
+                      lastTransitionTime:
+                        format: date-time
+                        type: string
+                      message:
+                        type: string
+                      reason:
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    required:
+                      - status
+                      - type
+                    type: object
+                  type: array
+                filters:
+                  additionalProperties:
+                    items:
+                      properties:
+                        lastTransitionTime:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                        - status
+                        - type
+                      type: object
+                    type: array
+                  type: object
+                inputs:
+                  additionalProperties:
+                    items:
+                      properties:
+                        lastTransitionTime:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                        - status
+                        - type
+                      type: object
+                    type: array
+                  type: object
+                outputs:
+                  additionalProperties:
+                    items:
+                      properties:
+                        lastTransitionTime:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                        - status
+                        - type
+                      type: object
+                    type: array
+                  type: object
+                pipelines:
+                  additionalProperties:
+                    items:
+                      properties:
+                        lastTransitionTime:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                        - status
+                        - type
+                      type: object
+                    type: array
+                  type: object
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null

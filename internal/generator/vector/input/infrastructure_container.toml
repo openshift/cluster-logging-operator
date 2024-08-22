@@ -18,6 +18,6 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_myinfra_container"]
 source = '''
-  .log_source = "container"
+  .log_source = "Container"
   .log_type = "infrastructure"
 '''

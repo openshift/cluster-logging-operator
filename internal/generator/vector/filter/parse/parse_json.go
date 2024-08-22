@@ -8,7 +8,7 @@ func NewParseFilter() Filter {
 
 func (f Filter) VRL() (string, error) {
 	return `
-	if .log_source == "container" {
+	if .log_source == "Container" {
 		parsed, err = parse_json(.message)
 		if err == null {
 			.structured = parsed

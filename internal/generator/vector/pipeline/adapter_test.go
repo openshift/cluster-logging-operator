@@ -137,8 +137,8 @@ var _ = Describe("pipeline/adapter.go", func() {
 				filter.NewInternalFilterMap(map[string]*obs.FilterSpec{
 					"my-audit": {
 						Name: "my-audit",
-						Type: obs.FilterTypeKubeApiAudit,
-						KubeApiAudit: &obs.KubeApiAudit{
+						Type: obs.FilterTypeKubeAPIAudit,
+						KubeAPIAudit: &obs.KubeAPIAudit{
 							Rules: []auditv1.PolicyRule{
 								{Level: auditv1.LevelRequestResponse, Users: []string{"*apiserver"}}, // Keep full event for user ending in *apiserver
 								{Level: auditv1.LevelNone, Verbs: []string{"get"}},                   // Drop other GET requests

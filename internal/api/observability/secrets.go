@@ -2,11 +2,13 @@ package observability
 
 import (
 	"fmt"
+	"hash/fnv"
+	"sort"
+
+	corev1 "k8s.io/api/core/v1"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"hash/fnv"
-	corev1 "k8s.io/api/core/v1"
-	"sort"
 )
 
 // NewSecretReference returns a SecretReference with the given key name and secret
@@ -23,7 +25,6 @@ type Secrets map[string]*corev1.Secret
 // Hash64a returns an FNV-1a representation of the secrets
 func (s Secrets) Hash64a() string {
 	names := s.Names()
-	sort.Strings(names)
 	buffer := fnv.New64a()
 	for _, name := range names {
 		secret := s[name]
@@ -45,10 +46,11 @@ func (s Secrets) Hash64a() string {
 }
 
 func (s Secrets) Names() (names []string) {
-
 	for name := range s {
 		names = append(names, name)
 	}
+
+	sort.Strings(names)
 	return names
 }
 

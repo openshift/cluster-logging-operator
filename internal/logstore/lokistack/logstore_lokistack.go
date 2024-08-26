@@ -177,6 +177,7 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 	inPipelines := spec.Pipelines
 	pipelines := []loggingv1.PipelineSpec{}
 
+	pi := 0
 	for _, p := range inPipelines {
 		if !slices.Contains(p.OutputRefs, loggingv1.OutputNameDefault) {
 			// Skip pipelines that do not reference "default" output
@@ -205,7 +206,8 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 
 			// Can no longer have empty pipeline names
 			if pOut.Name == "" {
-				pOut.Name = fmt.Sprintf("%s_%d_", "default_loki_pipeline", i)
+				pOut.Name = fmt.Sprintf("%s_%d_", "default_loki_pipeline", pi)
+				pi += 1
 				// Generate new name for named pipelines as duplicate names are not allowed
 			} else if pOut.Name != "" && i > 0 {
 				pOut.Name = fmt.Sprintf("%s-%d", pOut.Name, i)

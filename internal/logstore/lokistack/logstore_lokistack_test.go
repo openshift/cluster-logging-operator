@@ -352,6 +352,74 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "multiple tenants 2- single output",
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+						},
+					},
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameInfrastructure,
+						},
+					},
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameAudit,
+						},
+					},
+				},
+			},
+			wantOutputs: []loggingv1.OutputSpec{
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-apps",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+				},
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-audit",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/audit",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+				},
+				{
+					Name: loggingv1.OutputNameDefault + "-loki-infra",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure",
+					Secret: &loggingv1.OutputSecretSpec{
+						Name: constants.LogCollectorToken,
+					},
+				},
+			},
+			wantPipelines: []loggingv1.PipelineSpec{
+				{
+					Name:       "default_loki_pipeline_0_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-apps"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+				},
+				{
+					Name:       "default_loki_pipeline_1_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-infra"},
+					InputRefs:  []string{loggingv1.InputNameInfrastructure},
+				},
+				{
+					Name:       "default_loki_pipeline_2_",
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-audit"},
+					InputRefs:  []string{loggingv1.InputNameAudit},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {

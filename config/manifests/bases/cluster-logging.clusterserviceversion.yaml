@@ -104,7 +104,7 @@ spec:
         displayName: Keep Match Expression
         path: filters[0].drop[0].test[0].notMatches
       - displayName: Kubernetes API Audit Filter
-        path: filters[0].kubeApiAudit
+        path: filters[0].kubeAPIAudit
       - description: Name used to refer to the filter from a "pipeline".
         displayName: Filter Name
         path: filters[0].name

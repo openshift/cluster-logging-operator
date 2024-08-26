@@ -16,14 +16,14 @@ package v1
 
 // FilterType specifies the type of filter used in a pipeline
 //
-// +kubebuilder:validation:Enum:=openshiftLabels;detectMultilineException;drop;kubeApiAudit;parse;prune
+// +kubebuilder:validation:Enum:=openshiftLabels;detectMultilineException;drop;kubeAPIAudit;parse;prune
 type FilterType string
 
 // Filter type constants, must match JSON tags of FilterTypeSpec fields.
 const (
 	FilterTypeDetectMultiline FilterType = "detectMultilineException"
 	FilterTypeDrop            FilterType = "drop"
-	FilterTypeKubeApiAudit    FilterType = "kubeApiAudit"
+	FilterTypeKubeAPIAudit    FilterType = "kubeAPIAudit"
 	FilterTypeOpenshiftLabels FilterType = "openshiftLabels"
 	FilterTypeParse           FilterType = "parse"
 	FilterTypePrune           FilterType = "prune"
@@ -34,7 +34,7 @@ var (
 		FilterTypeOpenshiftLabels,
 		FilterTypeDetectMultiline,
 		FilterTypeDrop,
-		FilterTypeKubeApiAudit,
+		FilterTypeKubeAPIAudit,
 		FilterTypeParse,
 		FilterTypePrune,
 	}
@@ -51,7 +51,7 @@ type FieldPath string
 
 // FilterSpec defines a filter for log messages.
 //
-// +kubebuilder:validation:XValidation:rule="self.type != 'kubeApiAudit' || has(self.kubeApiAudit)", message="Additional type specific spec is required for the filter type"
+// +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'drop' || has(self.drop)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'prune' || has(self.prune)", message="Additional type specific spec is required for the filter type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'openshiftLabels' || has(self.openshiftLabels)", message="Additional type specific spec is required for the filter type"
@@ -70,7 +70,7 @@ type FilterSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kubernetes API Audit Filter"
-	KubeApiAudit *KubeApiAudit `json:"kubeApiAudit,omitempty"`
+	KubeAPIAudit *KubeAPIAudit `json:"kubeAPIAudit,omitempty"`
 
 	// A drop filter applies a sequence of tests to a log record and drops the record if any test passes.
 	// Each test contains a sequence of conditions, all conditions must be true for the test to pass.

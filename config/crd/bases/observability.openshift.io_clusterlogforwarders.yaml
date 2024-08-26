@@ -199,8 +199,8 @@ spec:
                             type: array
                         type: object
                       type: array
-                    kubeApiAudit:
-                      description: "KubeApiAudit filter Kube API server audit logs,
+                    kubeAPIAudit:
+                      description: "KubeAPIAudit filter Kube API server audit logs,
                         as described in [Kubernetes Auditing]. \n # Policy Filtering
                         \n Policy event rules are the same format as the [Kube Audit
                         Policy] with some minor extensions. The extensions are described
@@ -264,7 +264,7 @@ spec:
                             be recorded at. A request may match multiple rules, in
                             which case the FIRST matching rule is used. PolicyRules
                             are strictly ordered. \n If Rules is empty or missing
-                            default rules apply, see [KubeApiAudit]"
+                            default rules apply, see [KubeAPIAudit]"
                           items:
                             description: PolicyRule maps requests based off metadata
                               to an audit Level. Requests must match the rules of
@@ -454,7 +454,7 @@ spec:
                       - openshiftLabels
                       - detectMultilineException
                       - drop
-                      - kubeApiAudit
+                      - kubeAPIAudit
                       - parse
                       - prune
                       type: string
@@ -465,7 +465,7 @@ spec:
                   x-kubernetes-validations:
                   - message: Additional type specific spec is required for the filter
                       type
-                    rule: self.type != 'kubeApiAudit' || has(self.kubeApiAudit)
+                    rule: self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)
                   - message: Additional type specific spec is required for the filter
                       type
                     rule: self.type != 'drop' || has(self.drop)
@@ -649,7 +649,7 @@ spec:
                             format:
                               description: Format is the format of incoming log data.
                               enum:
-                              - kubeApiAudit
+                              - kubeAPIAudit
                               type: string
                           required:
                           - format
@@ -795,12 +795,12 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               managementState:
-                default: managed
+                default: Managed
                 description: Indicator if the resource is 'Managed' or 'Unmanaged'
                   by the operator.
                 enum:
-                - managed
-                - unmanaged
+                - Managed
+                - Unmanaged
                 type: string
               outputs:
                 description: Outputs are named destinations for log messages.
@@ -858,8 +858,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1045,8 +1045,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1181,8 +1181,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1288,8 +1288,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1429,8 +1429,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1558,8 +1558,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxWrite:
                               anyOf:
@@ -1709,8 +1709,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -1903,8 +1903,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -2024,8 +2024,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -2136,8 +2136,8 @@ spec:
                               description: DeliveryMode sets the delivery mode for
                                 log forwarding.
                               enum:
-                              - atLeastOnce
-                              - atMostOnce
+                              - AtLeastOnce
+                              - AtMostOnce
                               type: string
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
@@ -2196,8 +2196,8 @@ spec:
                           description: Enrichment is an additional modification the
                             log message before forwarding it to the receiver
                           enum:
-                          - none
-                          - kubernetesMinimal
+                          - None
+                          - KubernetesMinimal
                           type: string
                         facility:
                           description: "Facility to set on outgoing syslog records.
@@ -2256,8 +2256,8 @@ spec:
                           description: SyslogRFCType sets which RFC the generated
                             messages conform to.
                           enum:
-                          - rfc3164
-                          - rfc5424
+                          - RFC3164
+                          - RFC5424
                           type: string
                         severity:
                           description: "Severity to set on outgoing syslog records.

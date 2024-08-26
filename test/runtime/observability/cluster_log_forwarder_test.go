@@ -74,7 +74,7 @@ outputs:
   type: elasticsearch
 - name: syslog
   syslog:
-    rfc: rfc5424
+    rfc: RFC5424
     url: tcp://127.0.0.1:24224
   type: syslog
 pipelines:
@@ -163,7 +163,7 @@ outputs:
 - name: other
   type: syslog
   syslog:
-    rfc: rfc5424
+    rfc: RFC5424
     url: tcp://0.0.0.0:24225
 pipelines:
 - inputRefs:

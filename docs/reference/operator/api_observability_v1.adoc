@@ -172,7 +172,7 @@ Type:: array
 Each test contains a sequence of conditions, all conditions must be true for the test to pass.
 A DropTestsSpec contains an array of tests which contains an array of conditions
 
-|kubeApiAudit|object|  
+|kubeAPIAudit|object|  
 |name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 
 |openshiftLabels|object|  Labels applied to log records passing through a pipeline.
@@ -219,9 +219,9 @@ Must define only one of matches or notMatches
 
 |======================
 
-=== .spec.filters[].kubeApiAudit
+=== .spec.filters[].kubeAPIAudit
 
-KubeApiAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
+KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
 
 # Policy Filtering
 
@@ -290,18 +290,18 @@ Note that this can also be specified per rule in which case the union of both ar
 A request may match multiple rules, in which case the FIRST matching rule is used.
 PolicyRules are strictly ordered.
 
-If Rules is empty or missing default rules apply, see [KubeApiAudit]
+If Rules is empty or missing default rules apply, see [KubeAPIAudit]
 |======================
 
-=== .spec.filters[].kubeApiAudit.omitResponseCodes
+=== .spec.filters[].kubeAPIAudit.omitResponseCodes
 
 Type:: int
 
-=== .spec.filters[].kubeApiAudit.omitStages[]
+=== .spec.filters[].kubeAPIAudit.omitStages[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[]
+=== .spec.filters[].kubeAPIAudit.rules[]
 
 Type:: array
 
@@ -340,23 +340,23 @@ An empty list implies every user.
 An empty list implies every verb.
 |======================
 
-=== .spec.filters[].kubeApiAudit.rules[].namespaces[]
+=== .spec.filters[].kubeAPIAudit.rules[].namespaces[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].nonResourceURLs[]
+=== .spec.filters[].kubeAPIAudit.rules[].nonResourceURLs[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].omitManagedFields
+=== .spec.filters[].kubeAPIAudit.rules[].omitManagedFields
 
 Type:: bool
 
-=== .spec.filters[].kubeApiAudit.rules[].omitStages[]
+=== .spec.filters[].kubeAPIAudit.rules[].omitStages[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].resources[]
+=== .spec.filters[].kubeAPIAudit.rules[].resources[]
 
 Type:: array
 
@@ -384,23 +384,23 @@ overlap with each other.
 An empty list implies all resources and subresources in this API groups apply.
 |======================
 
-=== .spec.filters[].kubeApiAudit.rules[].resources[].resourceNames[]
+=== .spec.filters[].kubeAPIAudit.rules[].resources[].resourceNames[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].resources[].resources[]
+=== .spec.filters[].kubeAPIAudit.rules[].resources[].resources[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].userGroups[]
+=== .spec.filters[].kubeAPIAudit.rules[].userGroups[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].users[]
+=== .spec.filters[].kubeAPIAudit.rules[].users[]
 
 Type:: array
 
-=== .spec.filters[].kubeApiAudit.rules[].verbs[]
+=== .spec.filters[].kubeAPIAudit.rules[].verbs[]
 
 Type:: array
 

@@ -215,7 +215,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 							Type: obs.ReceiverTypeHTTP,
 							Port: 8080,
 							HTTP: &obs.HTTPReceiver{
-								Format: obs.HTTPReceiverFormatKubeApiAudit,
+								Format: obs.HTTPReceiverFormatKubeAPIAudit,
 							},
 						},
 					},

@@ -11,7 +11,7 @@ kind: ClusterLogForwarder
 metadata:
   name: clf-validation-test
 spec:
-  managementState: managed
+  managementState: Managed
   outputs:
     - name: cloudwatch-aosqe
       cloudwatch:

@@ -13,7 +13,7 @@ spec:
   filters:
     - name: detectmultiline
       type: detectMultilineException
-  managementState: managed
+  managementState: Managed
   outputs:
     - name: splunk-aosqe
       splunk:

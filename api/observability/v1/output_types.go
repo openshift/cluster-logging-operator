@@ -199,18 +199,18 @@ type BaseOutputTuningSpec struct {
 
 // DeliveryMode sets the delivery mode for log forwarding.
 //
-// +kubebuilder:validation:Enum:=atLeastOnce;atMostOnce
+// +kubebuilder:validation:Enum:=AtLeastOnce;AtMostOnce
 type DeliveryMode string
 
 const (
 	// DeliveryModeAtLeastOnce: if the forwarder crashes or is re-started, any logs that were read before
 	// the crash but not sent to their destination will be re-read and re-sent. Note it is possible
 	// that some logs are duplicated in the event of a crash - log records are delivered at-least-once.
-	DeliveryModeAtLeastOnce DeliveryMode = "atLeastOnce"
+	DeliveryModeAtLeastOnce DeliveryMode = "AtLeastOnce"
 
 	// DeliveryModeAtMostOnce: The forwarder makes no effort to recover logs lost during a crash. This mode may give
 	// better throughput, but could result in more log loss.
-	DeliveryModeAtMostOnce DeliveryMode = "atMostOnce"
+	DeliveryModeAtMostOnce DeliveryMode = "AtMostOnce"
 )
 
 // HTTPAuthentication provides options for setting common authentication credentials.
@@ -988,12 +988,12 @@ type Splunk struct {
 
 // SyslogRFCType sets which RFC the generated messages conform to.
 //
-// +kubebuilder:validation:Enum:=rfc3164;rfc5424
+// +kubebuilder:validation:Enum:=RFC3164;RFC5424
 type SyslogRFCType string
 
 const (
-	SyslogRFC3164 SyslogRFCType = "rfc3164"
-	SyslogRFC5424 SyslogRFCType = "rfc5424"
+	SyslogRFC3164 SyslogRFCType = "RFC3164"
+	SyslogRFC5424 SyslogRFCType = "RFC5424"
 )
 
 // Syslog provides optional extra properties for output type `syslog`
@@ -1139,17 +1139,17 @@ type Syslog struct {
 	Enrichment EnrichmentType `json:"enrichment,omitempty"`
 }
 
-// +kubebuilder:validation:Enum:=none;kubernetesMinimal
+// +kubebuilder:validation:Enum:=None;KubernetesMinimal
 type EnrichmentType string
 
 const (
 	// EnrichmentTypeNone add no additional enrichment to the record
-	EnrichmentTypeNone EnrichmentType = "none"
+	EnrichmentTypeNone EnrichmentType = "None"
 
 	// EnrichmentTypeKubernetesMinimal adds namespace_name, pod_name, and collector_name to the beginning of the message
 	// body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).  This may
 	// result in the message body being an invalid JSON structure
-	EnrichmentTypeKubernetesMinimal EnrichmentType = "kubernetesMinimal"
+	EnrichmentTypeKubernetesMinimal EnrichmentType = "KubernetesMinimal"
 )
 
 type OTLPTuningSpec struct {

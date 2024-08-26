@@ -23,7 +23,7 @@ import (
 type ClusterLogForwarderSpec struct {
 	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator.
 	//
-	// +kubebuilder:default:=managed
+	// +kubebuilder:default:=Managed
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Management State"
 	ManagementState ManagementState `json:"managementState,omitempty"`
 
@@ -89,15 +89,15 @@ type ServiceAccount struct {
 
 // ManagementState controls whether the operator's reconciliation is active for the given resource.
 //
-// +kubebuilder:validation:Enum:=managed;unmanaged
+// +kubebuilder:validation:Enum:=Managed;Unmanaged
 type ManagementState string
 
 const (
 	// ManagementStateManaged means that the operator is actively managing its operands and resources and driving them to meet the desired spec.
-	ManagementStateManaged ManagementState = "managed"
+	ManagementStateManaged ManagementState = "Managed"
 
 	// ManagementStateUnmanaged means that the operator will not take any action related to the component
-	ManagementStateUnmanaged ManagementState = "unmanaged"
+	ManagementStateUnmanaged ManagementState = "Unmanaged"
 )
 
 // CollectorSpec is spec to define scheduling and resources for a collector

@@ -22,7 +22,7 @@ type JournalLog types.JournalLog
 // +kubebuilder:object:root=true
 // +docgen:displayname=Viaq Data Model for kubernetes api events
 // nolint:govet
-type ApiEvent struct {
+type APIEvent struct {
 	types.ViaQCommon `json:",inline,omitempty"`
 	eventv1.Event    `json:",inline,omitempty"`
 }

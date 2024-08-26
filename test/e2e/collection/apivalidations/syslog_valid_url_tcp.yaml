@@ -6,7 +6,7 @@ spec:
   outputs:
     - name: syslog
       syslog:
-        rfc: rfc5424
+        rfc: RFC5424
         url: tcp://someplance:100
       type: syslog
   pipelines:

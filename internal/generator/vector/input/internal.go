@@ -11,23 +11,26 @@ import (
 )
 
 const (
-	setEnvelope = `. = {"_internal": .}`
-
 	fmtLogType = `
 ._internal.log_source = %q
 ._internal.log_type = %q
 `
 	ParseStructured = `._internal.structured = parse_json!(string!(._internal.message))`
+	
+	setEnvelope       = `. = {"_internal": .}`
+	setHostName       = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
+	setClusterID      = `._internal.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`
+	setTimestampField = `ts = del(._internal.timestamp); if !exists(._internal."@timestamp") {._internal."@timestamp" = ts}`
 )
 
 func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
 	vrls := []string{
 		setEnvelope,
 		fmt.Sprintf(fmtLogType, logSource, logType),
-		`._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`,
-		viaq.SetClusterID,
-		viaq.SetTimestampField,
-		viaq.FixLogLevel,
+		setHostName,
+		setClusterID,
+		setTimestampField,
+		viaq.SetLogLevel,
 	}
 	for _, vrl := range addVRLs {
 		vrls = append(vrls, vrl)

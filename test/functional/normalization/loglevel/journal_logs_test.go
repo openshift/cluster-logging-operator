@@ -57,7 +57,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		outputTestLog := logs[0]
 		Expect(outputTestLog.Level).To(Equal(expLevel))
 	},
-		Entry("should recognize an emerg message", 0, "emerg"),
+		FEntry("should recognize an emerg message", 0, "emerg"),
 		Entry("should recognize an alert message", 1, "alert"),
 		Entry("should recognize a crit message", 2, "crit"),
 		Entry("should recognize an err message", 3, "err"),

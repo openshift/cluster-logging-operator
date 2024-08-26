@@ -1,7 +1,7 @@
 package viaq
 
 const (
-	FixLogLevel = `
+	SetLogLevel = `
 if !exists(._internal.level) {
   level = "default"
   message = ._internal.message
@@ -59,23 +59,20 @@ if !exists(._internal.level) {
 	RemoveFile           = `del(.file)`
 	RemoveSourceType     = `del(.source_type)`
 	HandleEventRouterLog = `
-pod_name = string!(.kubernetes.pod_name)
+pod_name = string!(.internal.kubernetes.pod_name)
 if starts_with(pod_name, "eventrouter-") {
-  parsed, err = parse_json(.message)
+  parsed, err = parse_json(.internal.message)
   if err != null {
     log("Unable to process EventRouter log: " + err, level: "info")
   } else {
-    ., err = merge(.,parsed)
-    if err == null && exists(.event) && is_object(.event) {
-        if exists(.verb) {
-          .event.verb = .verb
-          del(.verb)
+    .internal.structured = parsed
+    if exists(.internal.structured.event) && is_object(.internal.structured.event) {
+        if exists(.internal.structured.verb) {
+          .internal.event.verb = .internal.structured.verb
         }
-        .kubernetes.event = del(.event)
-        .message = del(.kubernetes.event.message)
-        . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
-        del(.kubernetes.event.metadata.creationTimestamp)
-		. = compact(., nullish: true)
+        .internal.structured.kubernetes.event = del(.internal.event)
+        .internal.message = del(.internal.kubernetes.event.message)
+        .internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
     } else {
       log("Unable to merge EventRouter log message into record: " + err, level: "info")
     }

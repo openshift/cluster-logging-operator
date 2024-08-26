@@ -31,8 +31,8 @@ func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Eleme
 	vrls = auditKube(vrls, inputSpecs)
 	vrls = auditOpenShift(vrls, inputSpecs)
 	vrls = auditOVN(vrls, inputSpecs)
-	//vrls = containerSource(vrls, inputSpecs)
-	//vrls = journalSource(vrls, inputSpecs)
+	vrls = containerSource(vrls, inputSpecs)
+	vrls = journalSource(vrls, inputSpecs)
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
@@ -46,18 +46,8 @@ if .log_source == "%s" {
   %s
 }
 `, obs.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
-		SetClusterID,
-		FixLogLevel,
 		HandleEventRouterLog,
-		RemovePartial,
-		RemoveFile,
-		RemoveSourceType,
-		HandleStream,
-		RemovePodIPs,
-		RemoveNodeLabels,
-		RemoveTimestampEnd,
-		SetTimestampField,
-		SetOpenShiftSequence,
+		VRLDedotLabels,
 	}), "\n"))
 }
 

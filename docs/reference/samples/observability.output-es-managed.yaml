@@ -7,12 +7,12 @@ spec:
   serviceAccount:
     name: logcollector
   outputs:
-    - name: es-managed
+    - name: es-output-by-label
       type: elasticsearch
       elasticsearch:
         url: https://elasticsearch:9200
         version: 6
-        index: 'test-{.log_type||"nologformat"}-write'
+        index: '{.openshift.label.my-log-index||"app"}-write'
       tls:
         ca:
           key: ca-bundle.crt
@@ -26,12 +26,29 @@ spec:
   filters:
     - name: my-parse
       type: parse
+    - name: my-app-label
+      type: openshiftLabels
+      openshiftLabels:
+        my-log-index: app
+    - name: my-infra-label
+      type: openshiftLabels
+      openshiftLabels:
+        my-log-index: infra
   pipelines:
-    - name: my-pipeline
+    - name: my-app
       inputRefs:
         - application
+      filterRefs:
+        - my-parse
+        - my-app-label
+      outputRefs:
+        - es-output-by-label
+    - name: my-infra
+      inputRefs:
         - infrastructure
       filterRefs:
         - my-parse
+        - my-infra-label
       outputRefs:
-        - es-managed
+        - es-output-by-label
+

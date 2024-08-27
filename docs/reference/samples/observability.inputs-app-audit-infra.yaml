@@ -39,3 +39,16 @@ spec:
         sources:
           - kubeAPI
           - openshiftAPI
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - app-logs
+        - infra-logs
+        - audit-logs
+      outputRefs:
+        - my-output
+  outputs:
+    - name: my-output
+      type: http
+      http:
+        url: http://my-log-output:80

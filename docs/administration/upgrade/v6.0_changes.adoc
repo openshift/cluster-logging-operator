@@ -86,6 +86,7 @@ metadata:
 spec:
   serviceAccount:
     name: logcollector
+...
 ----
 Using the existing service account (i.e. *logcollector*) from a previous release requires creating the following *ClusterRoleBinding*:
 
@@ -104,11 +105,13 @@ oc adm policy add-cluster-role-to-user collect-audit-logs -z logcollector
 Configuration of the management state (i.e. managed, unmanaged), resource request and limits, tolerations, and node selection
 are part of the new ClusterLogForwarder API.
 
-.Previously part of 'ClusterLogging' (5.9)
+.Previously part of the resource *ClusterLogging* (v5.9)
 [source, yaml]
 ----
 apiVersion: logging.openshift.io/v1
 kind: ClusterLogging
+metadata:
+  name: instance
 spec:
   managementState: Managed
   collection:
@@ -118,11 +121,13 @@ spec:
     nodeSelector: {}
     tolerations: {}
 ----
-.Now spec'd in the 6.0 'ClusterLogForwarder' along with inputs, outputs, filters and pipelines
+.Now part of v6.0 *ClusterLogForwarder* along with inputs, outputs, filters and pipelines
 [source, yaml]
 ----
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
+metadata:
+  name: instance
 spec:
   managementState: Managed
   collector:
@@ -134,72 +139,64 @@ spec:
 ...
 ----
 
-==== Input Specifications
+==== Inputs Specifications
 
-The input spec is an optional part of the *ClusterLogForwarder* spec where administrators can continue to use the pre-defined values of *application*, *infrastructure*, and *audit* to collect those sources. See the
-https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/logs-observability-openshift-io-apis.md#api-extensions[enhancement] document for definitions of these values.  The spec, otherwise, has largely remained unchanged.
+The input spec is an optional part of the *ClusterLogForwarder* spec where administrators can continue to use the pre-defined values of *application*, *infrastructure*, and *audit* to collect those sources.
+See the https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/operator/api_observability_v1.adoc#specinputs[Input Spec] document for definitions of these values.
+The spec, otherwise, has largely remained unchanged.
 
 ===== Application Inputs
-Namespace and container inclusion and exclusions were collapsed into a single field
+Simplified namespace and container inclusion and exclusions are now collapsed into a single field
 
-.5.9 Application Input with Namespace and Container Includes and Excludes
+.v5.9 (Previous)
 [source, yaml]
 ----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   inputs:
-   - name: app-logs
-     type: application
-     application:
-       namespaces:
-       - foo
-       - bar
-       includes:
-       - namespace: my-important
-         container: main
-       excludes:
-       - container: too-verbose
-       containerLimit:
-         maxRecordsPerSecond: 500
+  - name: app-logs
+    type: application
+    application:
+      namespaces:
+      - foo
+      - bar
+      includes:
+      - namespace: my-important
+        container: main
+      excludes:
+      - container: too-verbose
+...
 ----
 
-.6.0 Application Input with Namespace and Container Includes and Excludes
+.v6.0 Simplified Grouping of Includes and Excludes (New)
 [source, yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   inputs:
-   - name: app-logs
-     type: application
-     application:
-       includes:
-       - namespace: foo
-       - namespace: bar
-       - namespace: my-important
-         container: main
-       excludes:
-       - container: too-verbose
-       tuning:
-          rateLimitPerContainer:
-            - maxRecordsPerSecond: 500
+  - name: app-logs
+    type: application
+    application:
+      includes:
+      - namespace: foo
+      - namespace: bar
+      - namespace: my-important
+        container: main
+      excludes:
+      - container: too-verbose
+...
 ----
 
 NOTE: *application*, *infrastructure*, and *audit* are reserved words and can not be used for the name when defining an input
 
 ===== Input Receivers
 
-Input receiver changes:
+Input receivers now require explicit configuration of the `type` and `port` at the receiver level
 
-* Explicit configuration of the type at the receiver level
-* Moves the port to the receiver level.
-
-.5.9 Input Receivers
+.v5.9 (Previous)
 [source, yaml]
 ----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   inputs:
   - name: an-http
@@ -212,13 +209,13 @@ spec:
       type: syslog
       syslog:
         port: 9442
+...
 ----
 
-.6.0 Input Receivers
+.v6.0 Explicit Type and Port (New)
 [source, yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   inputs:
   - name: an-http
@@ -233,6 +230,7 @@ spec:
     receiver:
       type: syslog
       port: 9442
+...
 ----
 
 ==== Output Specifications
@@ -245,133 +243,70 @@ The high-level output spec changes:
 * Requires explicit configuration of keys and secret/configmap for TLS and authentication
 
 ==== Secrets & TLS Configuration
-Secrets and TLS configuration are separated into authentication and TLS configuration for each output. They
-are now explicitly defined in the specification instead of relying upon
-administrators to define secrets with recognized https://github.com/openshift/cluster-logging-operator/blob/release-5.9/docs/reference/operator/secrets.adoc[keys].
+Secrets and TLS configuration are separated into `authentication` and `tls` configuration for each output.
+They are now explicitly defined instead of relying upon administrators to specify secrets with recognized https://github.com/openshift/cluster-logging-operator/blob/release-5.9/docs/reference/operator/secrets.adoc[keys].
 
-Upgrading TLS and authorization configuration will require administrators to understand the previously recognized
-keys in order to continue to use existing secrets. Examples in the following sections will provide details
-how to configure a ClusterLogForwarder secrets to forward to existing Red Hat managed log storage solutions.
+NOTE: The new configuration requires administrators to understand the previously recognized keys in order to continue to use the existing secrets.
 
-===== Red Hat Managed Elasticsearch
-.v5.9 Forwarding to Red Hat Managed Elasticsearch
+.v6.0 Output Authentication and TLS Example
 [source, yaml]
 ----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogging
-metadata:
-  name: instance
-  namespace: openshift-logging
+...
 spec:
-  logStore:
-    type: elasticsearch
-----
-
-.v6.0 Forwarding to Red Hat Managed Elasticsearch
-[source, yaml]
-----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  serviceAccount:
-    name: my-account
   outputs:
-    - name: default-elasticsearch
-      type: elasticsearch
-      elasticsearch:
-        url: https://elasticsearch:9200
-        version: 6
-        index: '{.log_type||"unknown"}-write'   <1>
-      tls:
-        ca:
-          key: ca-bundle.crt
-          secretName: collector
-        certificate:
-          key: tls.crt
-          secretName: collector
-        key:
-          key: tls.key
-          secretName: collector
-  pipelines:
-    - name: my-pipeline
-      outputRefs:
-        - default-elasticsearch
-      inputRefs:
-        - application
-        - infrastructure
-----
-. `index` can be a combination of dynamic and static values. Dynamic values are enclosed in curly brackets `{}`
-and MUST end with a "quoted" static fallback value separated with `||`.
-
-More details use: `oc explain clf.spec.outputs.elasticsearch.index`
-
-
-NOTE: In this example, application logs are written to the 'application-write' and 'infrastructure-write' index.
-Previous versions without the `index` spec, would have instead written to 'app-write', 'infra-write'.
-
-
-===== Red Hat Managed LokiStack
-.v5.9 Forwarding to Red Hat Managed LokiStack
-[source, yaml]
-----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogging
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  logStore:
-    type: lokistack
-    lokistack:
-      name: logging-loki
+  - name: my-output
+    type: http
+    http:
+      url: https://my-secure-output:8080
+    authentication:
+      password:
+        key: pass
+        secretName: my-secret
+      username:
+        key: user
+        secretName: my-secret
+    tls:
+      ca:
+        key: ca-bundle.crt
+        secretName: collector
+      certificate:
+        key: tls.crt
+        secretName: collector
+      key:
+        key: tls.key
+        secretName: collector
+...
 ----
 
-.v6.0 Forwarding to Red Hat Managed LokiStack
+.v6.0 Authentication using ServiceAccount token
 [source,yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
-metadata:
-  name: instance
-  namespace: openshift-logging
+...
 spec:
-  serviceAccount:
-    name: logcollector
   outputs:
-  - name: default-lokistack
-    type: lokiStack
-    lokiStack:
-      target:
-        name: logging-loki
-        namespace: openshift-logging
-      authentication:
-        token:
-          from: serviceAccount
+  - name: my-output
+    type: http
+    http:
+      url: https://my-secure-output:8080
+    authentication:
+      token:
+        from: serviceAccount
     tls:
       ca:
         key: service-ca.crt
         configMapName: openshift-service-ca.crt
-  pipelines:
-  - name: my-pipeline
-    outputRefs:
-    - default-lokistack
-    inputRefs:
-    - application
-    - infrastructure
+...
 ----
 
 ==== Filters & Pipeline Configuration
-Pipeline configuration only provides defines routing of input sources to their output destination with any transformations needed in between.  All attributes of pipelines in previous releases have been converted to
-filters in this release.  Individual filters are defined in the "filters" spec and referenced by a pipeline
 
-.5.9 Filters
+All attributes of pipelines in previous releases have been converted to filters in this release.
+Individual filters are defined in the "filters" spec and referenced by a pipeline
+
+.v5.9 Filters (Previous)
 [source, yaml]
 ----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   pipelines:
   - name: app-logs
@@ -379,13 +314,13 @@ spec:
     parse: json
     labels:
       foo: bar
+...
 ----
 
-.6.0 Filter Configuration
+.v6.0 Filter and Pipeline Spec (New)
 [source, yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   filters:
   - name: my-multiline
@@ -402,12 +337,13 @@ spec:
     - my-multiline
     - my-parse
     - my-labels
+...
 ----
 NOTE: Drop filter, Prune filter and KubeAPIAudit filters remain unchanged
+
 [source, yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+...
 spec:
   filters:
   - name: drop-debug-logs
@@ -429,9 +365,12 @@ spec:
       omitResponseCodes:
       - 404
       - 409
+...
 ----
+
+
 ==== Validation & Status
-Most validations are enforced when a resource is created or updated which provides immediate feedback.  This is
+Most validations are now enforced when a resource is created or updated which provides immediate feedback.  This is
 a departure from previous releases where all validation occurred post creation requiring inspection of the resource status location.  Some validation still occurs post resource creation for cases where is not possible to do so at creation or update time.
 
 Instances of the **ClusterLogForwarder.observability.openshift.io** must satisfy the following before
@@ -443,11 +382,10 @@ the operator will deploy the log collector:
 
 All must evaluate to `status: "True"`
 
-.6.0 Status "True" Conditions Example
+.v6.0 Status "True" Conditions Example
 [source, yaml]
 ----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+...
 status:
   conditions:
   - message: "permitted to collect log types: [application]"
@@ -481,14 +419,15 @@ status:
     reason: ValidationSuccess
     status: "True"
     type: observability.openshift.io/ValidPipeline-app-logs
+...
 ----
 
-NOTE: Conditions that are satisfied have a "status" value of "True".  Conditions that
-have a "status" other than "True" provide a reason and a message identifying the failure.
+NOTE: Conditions that have a "status" other than "True" will provide information identifying the failure.
 
 .6.0 Status "False" Example
 [source, yaml]
 ----
+...
 status:
   conditions:
   - message: insufficient permissions on service account, not authorized to collect 'application' logs
@@ -499,14 +438,14 @@ status:
     reason: ValidationFailure
     status: "False"
     type: Ready
+...
 ----
 
 == Examples & Common Use Cases
 
 === Forwarding to CloudWatch
-
 ====
-.Forwarding to CloudWatch using long-lived static key and secret
+.Complete spec using long-lived static credentials from a secret
 [source, yaml]
 ----
 apiVersion: observability.openshift.io/v1
@@ -532,16 +471,18 @@ spec:
             secretName: cw-secret
             key: aws_secret_access_key
   pipelines:
-    - name: my-cw-logs
-      inputRefs:
-        - application
-        - infrastructure
-      outputRefs:
-        - my-cw
+  - name: my-cw-logs
+    inputRefs:
+      - application
+      - infrastructure
+    outputRefs:
+      - my-cw
 ----
-.Alternative CW Auth spec using Short-Lived Token (SA Token)
+.Alternative CW Auth snippet using short-lived token (SA Token)
 [source, yaml]
 ----
+...
+    cloudwatch:
       authentication:
         type: iamRole
         iamRole:
@@ -552,9 +493,11 @@ spec:
             from: serviceAccount
 ...
 ----
-.Alternative CW Auth spec using role and static token
+.Alternative CW Auth snippet using role and static token (Self-Generated Token)
 [source, yaml]
 ----
+...
+    cloudwatch:
       authentication:
         type: iamRole
         iamRole:
@@ -569,94 +512,198 @@ spec:
 ...
 ----
 ====
-=== Forwarding to the Red Hat Managed Elasticsearch
-====
 
-.v5 ClusterLogging
-[source, yaml]
+
+=== Forwarding to Red Hat Managed LokiStack
+====
+.Complete spec using service account authentication and tls
+[source,yaml]
 ----
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogging
-metadata:
-  name: instance
-  namespace: openshift-logging
-spec:
-  logStore:
-    type: elasticsearch
-    elasticsearch:
-      nodeCount: 3
-      resources:
-        requests:
-          memory: 2Gi
-      redundancyPolicy: ZeroRedundancy
-  visualization:
-    type: kibana
-    kibana:
-      replicas: 1
-  collection:
-    type: vector
-----
-.v5 ClusterLogForwarder
-[source, yaml]
-----
-apiVersion: logging.openshift.io/v1
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  name: instance
-  namespace: openshift-logging
+  name: my-forwarder
 spec:
+  serviceAccount:
+    name: my-user
   outputs:
-    - name: default
-      type: elasticsearch
-      elasticsearch:
-        enableStructuredContainerLogs: true
-        structuredTypeKey: kubernetes.namespace_name
-        structuredTypeName: nologformat
+  - name: default-lokistack
+    type: lokiStack
+    lokiStack:
+      target:
+        name: logging-loki
+        namespace: openshift-logging
+      authentication:
+        token:
+          from: serviceAccount
+    tls:
+      ca:
+        key: service-ca.crt
+        configMapName: openshift-service-ca.crt
   pipelines:
-    - inputRefs:
-        - application
-      name: to-default
-      parse: json
-      outputRefs:
-        - default
+  - name: my-pipeline
+    outputRefs:
+    - default-lokistack
+    inputRefs:
+    - application
+    - infrastructure
+    - audit
 ----
-.v6 ClusterLogForwarder
+====
+
+
+=== Forwarding to External Elasticsearch
+====
+.Complete spec including url, version and custom index
 [source, yaml]
 ----
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  name: instance
-  namespace: openshift-logging
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-user
+  outputs:
+  - name: es-external
+    type: elasticsearch
+    elasticsearch:
+      url: https://external-es-service:9200
+      version: 8
+      index: '{.log_type||"nologformat"}-write'
+    tls:
+      ca:
+        key: bundle.crt
+        secretName: my-tls-secret
+      certificate:
+        key: tls.crt
+        secretName: my-tls-secret
+      key:
+        key: tls.key
+        secretName: my-tls-secret
+  filters:
+  - name: my-parse
+    type: parse
+  pipelines:
+  - name: my-pipeline
+    inputRefs:
+    - application
+    - infrastructure
+    filterRefs:
+    - my-parse
+    outputRefs:
+    - es-external
+----
+`index` can be a combination of dynamic and static values. Dynamic values are enclosed in curly brackets `{}`
+and MUST end with a "quoted" static fallback value separated with `||`.
+
+More details use: `oc explain clf.spec.outputs.elasticsearch.index`
+
+NOTE: In this example, application logs are written to the 'application-write' and 'infrastructure-write' index.
+Previous versions without the `index` spec, would have instead written to 'app-write' and 'infra-write'.
+====
+
+
+=== Forwarding to Red Hat Managed Elasticsearch
+====
+.Complete spec including url, version and index values from labels
+[source, yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
 spec:
   serviceAccount:
     name: logcollector
   outputs:
-    - name: es-managed
+  - name: es-output-by-label # <1>
+    type: elasticsearch
+    elasticsearch:
+      url: https://elasticsearch:9200
+      version: 6
+      index: '{.openshift.label.my-log-index||"app"}-write' # <2>
+    tls:
+      ca:
+        key: ca-bundle.crt
+        secretName: collector
+      certificate:
+        key: tls.crt
+        secretName: collector
+      key:
+        key: tls.key
+        secretName: collector
+  filters:
+  - name: my-parse
+    type: parse
+  - name: my-app-label # <3>
+    type: openshiftLabels
+    openshiftLabels:
+      my-log-index: app
+  - name: my-infra-label # <4>
+    type: openshiftLabels
+    openshiftLabels:
+      my-log-index: infra
+  pipelines:
+  - name: my-app # <5>
+    inputRefs:
+    - application
+    filterRefs:
+    - my-parse
+    - my-app-label
+    outputRefs:
+    - es-output-by-label
+  - name: my-infra # <6>
+    inputRefs:
+    - infrastructure
+    filterRefs:
+    - my-parse
+    - my-infra-label
+    outputRefs:
+    - es-output-by-label
+----
+. `es-output-by-label` is the output used in both pipelines
+. `index` is set to read the value from `.openshift.label.my-log-index` and prepend to the string "-write" or fallback to "app-write"
+. `my-app-label` filter is used to set the label "my-log-index:app" in the pipeline
+. `my-infra-label` filter is used to set the label "my-log-index:infra" in the pipeline
+. pipeline `my-app` includes application logs and labels them `app`
+. pipeline `my-infra` includes infrastructure logs and labels them `infra`
+
+NOTE: In order to forward logs to the default RH-managed Elasticsearch, the `index` values must be one of `app-write`, `infra-write` or `audit-write`.
+This is achieved by adding a label (filter) to each pipeline, and setting the label value to the corresponding input type.
+====
+
+=== Additional info on ES Custom Index
+====
+Custom ES indices in v5.9 was achieved via `structuredTypeKey` and `structuredTypeName` options
+
+.v5.9 Snippet (Previous)
+[source, yaml]
+----
+...
+spec:
+  outputs:
+    - name: default
       type: elasticsearch
       elasticsearch:
-        url: https://elasticsearch:9200
-        version: 6
-        index: '{.kubernetes.namespace_name||"nologformat"}-write'
-      tls:
-        ca:
-          key: ca-bundle.crt
-          secretName: collector
-        certificate:
-          key: tls.crt
-          secretName: collector
-        key:
-          key: tls.key
-          secretName: collector
-  filters:
-    - name: my-parse
-      type: parse
-  pipelines:
-    - name: my-pipeline
-      inputRefs:
-        - application
-      filterRefs:
-        - my-parse
-      outputRefs:
-        - es-managed
+        structuredTypeKey: kubernetes.namespace_name
+        structuredTypeName: nologformat
+...
 ----
+.v6.0 Custom Index Snippet (New)
+[source, yaml]
+----
+...
+spec:
+  outputs:
+  - name: es-output
+    type: elasticsearch
+    elasticsearch:
+      url: https://elasticsearch:9200
+      version: 6
+      index: '{ .kubernetes.namespace_name || "nologformat" }' # <1>
+...
+----
+. `index` is set to read the field value `.kubernetes.namespace_name` and falls back to "nologformat" if not found
+
+====

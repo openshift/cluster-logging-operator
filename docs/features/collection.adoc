@@ -36,7 +36,7 @@ Following is a list of possible log sources that are collected from each node in
 a|
 - v6.8.1
 - v7.12.2
-- v8.6.1||✓
+- v8.6.1
 |Google Cloud Logging||
 
 |Kafka|kafka 0.11
@@ -45,14 +45,12 @@ a| - kafka 2.4.1
 
 
 |Loki|REST over HTTP(S)|Loki 2.3.0
-|Splunk|HEC|v9.0.0||✓
+|Splunk|HEC|v9.0.0
 |Syslog|RFC3164,RFC5424|rsyslog 8.39.0
 |Http|Http 1.1
 a|
 - vector 0.28-1
 - vector 0.34-1
-- fluentd 1.14.6
-- fluentd 1.16.2
 |======
 
 === Authorization and Authentication

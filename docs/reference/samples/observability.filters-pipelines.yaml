@@ -40,4 +40,4 @@ spec:
     - name: my-output
       type: http
       http:
-        url: http://my-log-output
+        url: http://my-log-output:80

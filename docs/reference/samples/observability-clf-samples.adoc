@@ -1,13 +1,22 @@
-[id="log6x-clf-cr-samples_{context}"]
+[id="observability-clf-samples_{context}"]
 :_mod-docs-content-type: REFERENCE
-= ClusterLogForwarder CR Sample Configurations for Common Logging Use Cases
+= Sample Configurations for Common Logging Use Cases
 
-This reference module provides sample configurations for the ClusterLogForwarder custom resource (CR) to address common logging use cases. These examples help administrators and developers manage log forwarding, aggregation, and storage. Each configuration is commented with necessary explanations.
+This reference module provides sample configurations for the ClusterLogForwarder custom resource (CR) to address common logging use cases.
+These examples help administrators and developers manage log collection and forwarding.
+Each configuration is commented with necessary explanations.
 
 ////
-This document was created with the intent of single sourcing engineering owned and validated CR samples for inclusion in product documentation. New use cases should be added here and then included in product docs. Orphan code sample blocks should not be created.
+This document was created with the intent of single sourcing engineering owned and validated CR samples for inclusion in product documentation.
+New use cases should be added here and then included in product docs. Orphan code sample blocks should not be created.
 
-To enable each sample to be included individually, we're creating tagged regions. tag directives (e.g., tag::name[] and end::name[]) must follow a word boundary and precede a space character or the end of line. The tag name must not be empty and must consist exclusively of non-space characters. Tag directives must be placed after a line comment as defined by the language of the source file. for [source,yaml] and [source,terminal] tags should begin with `# `, for [source, text] and plain asciidoc, tags should begin with `// `. Note the space following the comment line indicator.
+To enable each sample to be included individually, we're creating tagged regions.
+tag directives (e.g., tag::name[] and end::name[]) must follow a word boundary and precede a space character or the end of line.
+The tag name must not be empty and must consist exclusively of non-space characters.
+Tag directives must be placed after a line comment as defined by the language of the source file.
+for [source,yaml] and [source,terminal] tags should begin with `# `,
+for [source, text] and plain asciidoc, tags should begin with `// `.
+Note the space following the comment line indicator.
 ////
 
 // tag::proof[]
@@ -21,6 +30,8 @@ To enable each sample to be included individually, we're creating tagged regions
     name: collector # <1>
     namespace: openshift-logging # <2>
   spec:
+    serviceAccount:
+      name: logcollector
     inputs:
     - name: mylogqa1
       type: application
@@ -43,15 +54,15 @@ To enable each sample to be included individually, we're creating tagged regions
       type: cloudwatch
       cloudwatch:
         authentication:
-          type: accessKey
+          type: awsAccessKey
           awsAccessKey:
-            keyID:
+            keyId:
               key: aws_access_key_id
               secretName: cloudwatch-credentials
             keySecret:
               key: aws_secret_access_key
               secretName: cloudwatch-credentials
-        groupName: <default-value>
+        groupName: my-logs-{.log_type||"unknown"}
         region: us-east-2
     - name: lokistack
       type: lokiStack
@@ -63,11 +74,12 @@ To enable each sample to be included individually, we're creating tagged regions
               key: token
               name: secret-to-lokistack
         labelKeys:
-        - .hostname
-        - .log_type
-        - .kubernetes_container_name
-        - .kubernetes_namespace_name
-        - .kubernetes_pod_name
+          global:
+          - .hostname
+          - .log_type
+          - .kubernetes_container_name
+          - .kubernetes_namespace_name
+          - .kubernetes_pod_name
         target:
           name: lokistack-sample
           namespace: openshift-logging
@@ -90,8 +102,6 @@ To enable each sample to be included individually, we're creating tagged regions
       - mylogqa1
       outputRefs:
       - aws-cloudwatch
-    serviceAccount:
-      name: logcollector
 ----
 <1> Callouts should be commented out.
 <2> Content goes down here next to the relevant number.
@@ -103,7 +113,8 @@ To enable each sample to be included individually, we're creating tagged regions
 //include::uri-of-raw-version-on-github[tag(s)=name(s)]
 
 ////
-For further info: https://github.com/openshift/openshift-docs/blob/main/contributing_to_docs/doc_guidelines.adoc#embedding-an-external-file
+For further info:
+https://github.com/openshift/openshift-docs/blob/main/contributing_to_docs/doc_guidelines.adoc#embedding-an-external-file
 https://docs.asciidoctor.org/asciidoc/latest/directives/include-tagged-regions/
 ///
 

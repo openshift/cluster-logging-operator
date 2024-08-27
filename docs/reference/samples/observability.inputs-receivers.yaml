@@ -12,7 +12,7 @@ spec:
         type: http
         port: 8443
         http:
-          format: kubeApiAudit
+          format: kubeAPIAudit
         tls:
           ca:
             configMapName: my-configmap
@@ -44,3 +44,24 @@ spec:
           keyPassphrase:
             secretName: my-secret
             key: passphrase
+  pipelines:
+    - name: my-http
+      inputRefs:
+        - http-receiver
+      outputRefs:
+        - my-http-output
+    - name: my-syslog
+      inputRefs:
+        - syslog-receiver
+      outputRefs:
+        - my-sys-out
+  outputs:
+    - name: my-http-output
+      type: http
+      http:
+        url: http://my-log-output:80
+    - name: my-sys-out
+      type: syslog
+      syslog:
+        rfc: RFC5424
+        url: tcp://127.0.0.1:24224

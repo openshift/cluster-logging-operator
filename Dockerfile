@@ -20,6 +20,15 @@ USER 0
 RUN make build
 
 FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
+
+RUN case $(uname -m) in \
+    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
+    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
+    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
+    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
+    *) echo "Unsupported architecture"; exit 1 ;; \
+esac
+
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV APP_DIR=/opt/apt-root/src
@@ -39,7 +48,7 @@ RUN INSTALL_PKGS=" \
 
 COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
 
-COPY --from=origincli /usr/share/openshift/linux_amd64/oc.rhel9 /usr/bin/oc
+COPY --from=origincli /tmp/oc /usr/bin/oc
 
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 

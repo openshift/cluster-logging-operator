@@ -2,11 +2,12 @@ package collector
 
 import (
 	"fmt"
+	"strings"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -109,18 +110,14 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
-	ds.Spec.Template.Annotations = map[string]string{
-		constants.AnnotationSecretHash: f.Secrets.Hash64a(),
-	}
+	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return ds
 }
 
 func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.Deployment {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
-	dpl.Spec.Template.Annotations = map[string]string{
-		constants.AnnotationSecretHash: f.Secrets.Hash64a(),
-	}
+	dpl.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return dpl
 }
 

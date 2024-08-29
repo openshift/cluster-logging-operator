@@ -1,15 +1,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: logging-collector-logs-writer
+  name: cluster-logging-write-infrastructure-logs
 rules:
 - apiGroups:
   - loki.grafana.com
   resourceNames:
   - logs
   resources:
-  - application
-  - audit
   - infrastructure
   verbs:
   - create

@@ -7,7 +7,9 @@ resources:
 - collect-application-logs-clusterrole.yaml
 - collect-audit-logs-clusterrole.yaml
 - collect-infrastructure-logs-clusterrole.yaml
-- logging-collector-logs-writer.yaml
+- write-application-logs-clusterrole.yaml
+- write-audit-logs-clusterrole.yaml
+- write-infrastructure-logs-clusterrole.yaml
 #- leader_election_role.yaml
 #- leader_election_role_binding.yaml
 # Comment the following 4 lines if you want to disable

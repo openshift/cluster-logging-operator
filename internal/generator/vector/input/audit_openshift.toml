@@ -4,6 +4,9 @@ type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
+ignore_older_secs = 3600
+max_read_bytes = 3145728
+rotate_wait_secs = 5
 
 [transforms.input_myaudit_openshift_meta]
 type = "remap"

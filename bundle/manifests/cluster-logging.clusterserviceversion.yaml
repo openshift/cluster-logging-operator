@@ -1769,7 +1769,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: cluster-logging-operator
                 - name: RELATED_IMAGE_VECTOR
-                  value: quay.io/openshift-logging/vector:6.0
+                  value: quay.io/vparfono/vector:0.40.1_1
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:6.0
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
@@ -1816,7 +1816,7 @@ spec:
   provider:
     name: Red Hat, Inc
   relatedImages:
-  - image: quay.io/openshift-logging/vector:6.0
+  - image: quay.io/vparfono/vector:0.40.1_1
     name: vector
   - image: quay.io/openshift-logging/log-file-metric-exporter:6.0
     name: log-file-metric-exporter

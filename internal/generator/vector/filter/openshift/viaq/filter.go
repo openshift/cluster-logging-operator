@@ -14,6 +14,8 @@ const (
 	Viaq        = "viaq"
 	ViaqJournal = "viaqjournal"
 	ViaqDedot   = "viaqdedot"
+
+	logSourceContainer = string(obs.ApplicationSourceContainer)
 )
 
 func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
@@ -23,9 +25,7 @@ func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Eleme
 		SetHostnameOnRoot,
 		SetLogTypeOnRoot,
 		SetLogSourceOnRoot,
-		MergeStructuredIntoRoot,
 		SetOpenShiftOnRoot,
-		`."@timestamp" = ._internal."@timestamp"`,
 	}
 	vrls = auditHost(vrls, inputSpecs)
 	vrls = auditKube(vrls, inputSpecs)
@@ -33,6 +33,9 @@ func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Eleme
 	vrls = auditOVN(vrls, inputSpecs)
 	vrls = containerSource(vrls, inputSpecs)
 	vrls = journalSource(vrls, inputSpecs)
+	vrls = append(vrls, MergeStructuredIntoRoot,
+		`."@timestamp" = ._internal."@timestamp"`,
+		`.level = ._internal.level`)
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
@@ -45,9 +48,11 @@ func containerLogs() string {
 if .log_source == "%s" {
   %s
 }
-`, obs.InfrastructureSourceContainer, strings.Join(helpers.TrimSpaces([]string{
+`, logSourceContainer, strings.Join(helpers.TrimSpaces([]string{
 		HandleEventRouterLog,
 		VRLDedotLabels,
+		SetKubernetesOnRoot,
+		SetMessageOnRoot,
 	}), "\n"))
 }
 

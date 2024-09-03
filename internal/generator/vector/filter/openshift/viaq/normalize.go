@@ -1,7 +1,27 @@
 package viaq
 
 const (
-	SetLogLevel = `
+	HandleEventRouterLog = `
+pod_name = string!(._internal.kubernetes.pod_name)
+if starts_with(pod_name, "eventrouter-") {
+  parsed, err = parse_json(._internal.message)
+  if err != null {
+    log("Unable to process EventRouter log: " + err, level: "info")
+  } else {
+    ._internal.event = parsed
+    if exists(._internal.event.event) && is_object(._internal.event.event) {
+        ._internal.kubernetes.event = del(._internal.event.event)
+		._internal.kubernetes.event.verb = ._internal.event.verb
+        ._internal.message = del(._internal.kubernetes.event.message)
+        ._internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
+    } else {
+      log("Unable to merge EventRouter log message into record: " + err, level: "info")
+    }
+  }
+}
+`
+	MergeStructuredIntoRoot = "if exists(._internal.structured) {. = merge!(.,._internal.structured) }"
+	SetLogLevel             = `
 if !exists(._internal.level) {
   level = "default"
   message = ._internal.message
@@ -55,39 +75,21 @@ if !exists(._internal.level) {
   ._internal.level = level
 }
 `
-	RemovePartial        = `del(._partial)`
-	RemoveFile           = `del(.file)`
-	RemoveSourceType     = `del(.source_type)`
-	HandleEventRouterLog = `
-pod_name = string!(.internal.kubernetes.pod_name)
-if starts_with(pod_name, "eventrouter-") {
-  parsed, err = parse_json(.internal.message)
-  if err != null {
-    log("Unable to process EventRouter log: " + err, level: "info")
-  } else {
-    .internal.structured = parsed
-    if exists(.internal.structured.event) && is_object(.internal.structured.event) {
-        if exists(.internal.structured.verb) {
-          .internal.event.verb = .internal.structured.verb
-        }
-        .internal.structured.kubernetes.event = del(.internal.event)
-        .internal.message = del(.internal.kubernetes.event.message)
-        .internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
-    } else {
-      log("Unable to merge EventRouter log message into record: " + err, level: "info")
-    }
-  }
+
+	SetLogTypeOnRoot    = ".log_type = ._internal.log_type"
+	SetHostnameOnRoot   = `.hostname = ._internal.hostname`
+	SetLogSourceOnRoot  = ".log_source = ._internal.log_source"
+	SetKubernetesOnRoot = `
+.kubernetes = ._internal.kubernetes
+del(.kubernetes.node_labels)
+del(.kubernetes.container_image_id)
+del(.kubernetes.pod_ips)
+`
+	SetMessageOnRoot = `
+if !exists(._internal.structured) {
+  .message = ._internal.message
 }
 `
-	HandleStream       = `.kubernetes.container_iostream = del(.stream)`
-	RemovePodIPs            = `del(.kubernetes.pod_ips)`
-	RemoveNodeLabels        = `del(.kubernetes.node_labels)`
-	RemoveTimestampEnd      = `del(.timestamp_end)`
-	MergeStructuredIntoRoot = "if exists(._internal.structured) {. = merge!(.,._internal.structured) }"
-	SetLogTypeOnRoot        = ".log_type = ._internal.log_type"
-	SetLogSourceOnRoot      = ".log_source = ._internal.log_source"
-	ParseAndFlatten         = `. = merge(., parse_json!(string!(.message))) ?? .
-del(.message)
-`
-	SetHostnameOnRoot = `.hostname = ._internal.hostname`
+	SetOpenShiftOnRoot   = `if exists(._internal.openshift) {.openshift = ._internal.openshift}`
+	SetOpenShiftSequence = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
 )

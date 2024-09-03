@@ -35,7 +35,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		framework.Cleanup()
 	})
 
-	FIt("should parse application log format correctly", func() {
+	It("should parse application log format correctly", func() {
 
 		// Log message data
 		message := "Functional test message"

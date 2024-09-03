@@ -11,7 +11,6 @@ const (
 	VRLDedotLabels = `
 if ._internal.log_source == "container" {
   if exists(._internal.kubernetes.namespace_labels) {
-    ._internal.kubernetes.namespace_labels = .kubernetes.namespace_labels
     for_each(object!(._internal.kubernetes.namespace_labels)) -> |key,value| { 
       newkey = replace(key, r'[\./]', "_") 
       ._internal.kubernetes.namespace_labels = set!(._internal.kubernetes.namespace_labels,[newkey],value)

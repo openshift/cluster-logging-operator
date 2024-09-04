@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	AddHostName      = `.hostname = del(.internal.host)`
+	AddHostName      = `.hostname = del(._internal.host)`
 	AddJournalLogTag = `.tag = ".journal.system"`
-	AddTime          = `.time = format_timestamp!(.internal.timestamp, format: "%FT%T%:z")`
+	AddTime          = `.time = ._internal."@timestamp"`
 
 	FixJournalLogLevel = `
 if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
@@ -30,18 +30,8 @@ if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
 	}
 }
 `
-	DeleteJournalLogFields = `
-del(.source_type)
-del(._CPU_USAGE_NSEC)
-del(.__REALTIME_TIMESTAMP)
-del(.__MONOTONIC_TIMESTAMP)
-del(._SOURCE_REALTIME_TIMESTAMP)
-del(.JOB_RESULT)
-del(.JOB_TYPE)
-del(.TIMESTAMP_BOOTTIME)
-del(.TIMESTAMP_MONOTONIC)
-`
-	SystemK = `
+	SetJournalMessage = `if exists(._internal.MESSAGE) {._internal.message = del(._internal.MESSAGE)}`
+	SystemK           = `
 # systemd’s kernel-specific metadata.
 # .systemd.k = {}
 if exists(._internal.KERNEL_DEVICE) { ._internal.systemd.k.KERNEL_DEVICE = del(._internal.KERNEL_DEVICE) }
@@ -100,7 +90,7 @@ func NewJournal(id string, inputs ...string) framework.Element {
 
 func journalLogs() string {
 	return fmt.Sprintf(`
-if .log_source == "%s" {
+if ._internal.log_source == "%s" {
   %s
 }
 `, obs.InfrastructureSourceNode, journalLogsVRL())
@@ -113,6 +103,7 @@ func journalLogsVRL() string {
 		AddHostName,
 		AddTime,
 		`.systemd = ._internal.systemd`,
+		SetMessageOnRoot,
 	}), "\n\n")
 }
 
@@ -120,6 +111,6 @@ func DropJournalDebugLogs(id string, inputs ...string) framework.Element {
 	return Filter{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		Condition:   `(.internal.log_source == "node" && .internal.PRIORITY != "7" && .internal.PRIORITY != 7)  || .internal.log_source == "container" || .internal.log_type == "audit"`,
+		Condition:   `(._internal.log_source == "node" && ._internal.PRIORITY != "7" && ._internal.PRIORITY != 7)  || ._internal.log_source == "container" || ._internal.log_type == "audit"`,
 	}
 }

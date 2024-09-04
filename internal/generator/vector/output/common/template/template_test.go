@@ -11,7 +11,7 @@ var _ = Describe("Vector Output Template", func() {
 	DescribeTable("transforms template syntax to VRL compatible string", func(expVRL, template string) {
 		Expect(TransformUserTemplateToVRL(template)).To(EqualTrimLines(expVRL))
 	},
-		FEntry("should transform template with static and dynamic values into VRL compatible syntax",
+		Entry("should transform template with static and dynamic values into VRL compatible syntax",
 			`"foo-" + to_string!(._internal.log_type||"none") + "." + to_string!(._internal.bar.foo.test||"missing) + "_" + to_string!(._internal.log_type||"none")`,
 			`foo-{.log_type||"none"}.{.bar.foo.test||"missing}_{.log_type||"none"}`),
 

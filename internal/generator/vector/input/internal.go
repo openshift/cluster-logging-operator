@@ -15,14 +15,15 @@ const (
 ._internal.log_source = %q
 ._internal.log_type = %q
 `
-	ParseStructured = `._internal.structured = parse_json!(string!(._internal.message))`
-	
+	parseStructured = `._internal.structured = parse_json!(string!(._internal.message))`
+
+	setClusterID      = `._internal.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`
 	setEnvelope       = `. = {"_internal": .}`
 	setHostName       = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
-	setClusterID      = `._internal.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`
 	setTimestampField = `ts = del(._internal.timestamp); if !exists(._internal."@timestamp") {._internal."@timestamp" = ts}`
 )
 
+// NewInternalNormalization returns configuration elements to normalize log entries to an internal, common data model
 func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
 	vrls := []string{
 		setEnvelope,
@@ -32,9 +33,7 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		setTimestampField,
 		viaq.SetLogLevel,
 	}
-	for _, vrl := range addVRLs {
-		vrls = append(vrls, vrl)
-	}
+	vrls = append(vrls, addVRLs...)
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs),

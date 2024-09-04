@@ -14,6 +14,7 @@ func NewJournalSource(input obs.InputSpec) ([]Element, []string) {
 	el := []Element{
 		source.NewJournalLog(id),
 		NewInternalNormalization(metaID, string(obs.InfrastructureSourceNode), string(obs.InputTypeInfrastructure), id,
+			viaq.SetJournalMessage,
 			viaq.SystemK,
 			viaq.SystemT,
 			viaq.SystemU,

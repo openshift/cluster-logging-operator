@@ -3,13 +3,14 @@ package observability
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"regexp"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -26,7 +27,7 @@ const (
 	allNamespaces = ""
 )
 
-var infraNamespaces = regexp.MustCompile(`^default|openshift.*|kube.*$`)
+var infraNamespaces = regexp.MustCompile(`^default$|^openshift.*$|^kube.*$`)
 
 // ValidatePermissions validates the serviceAccount for the CLF has the needed permissions to collect the desired inputs
 func ValidatePermissions(context internalcontext.ForwarderContext) {

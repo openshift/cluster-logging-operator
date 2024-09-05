@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"fmt"
+
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 
 	. "github.com/onsi/ginkgo"
@@ -277,6 +278,37 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			})
 
 			Context("when service account only has collect-application-logs permission", func() {
+				It("should pass validation for non-infra namespaces that include infra keywords kube, default, openshift", func() {
+					namespaces := []string{"sample-kube-namespace", "my-default-ns", "custom-openshift-namespace", "default-custom"}
+					var includes []obs.NamespaceContainerSpec
+					for _, ns := range namespaces {
+						includes = append(includes, obs.NamespaceContainerSpec{Namespace: ns})
+					}
+					appInput := "my-app"
+					customClf.Spec = obs.ClusterLogForwarderSpec{
+						ServiceAccount: obs.ServiceAccount{
+							Name: clfServiceAccount.Name,
+						},
+						Inputs: []obs.InputSpec{
+							{
+								Name: appInput,
+								Type: obs.InputTypeApplication,
+								Application: &obs.Application{
+									Includes: includes,
+								},
+							},
+						},
+						Pipelines: []obs.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appInput,
+								},
+							},
+						},
+					}
+					expectValidateToSucceed(true, "")
+				})
 				DescribeTable("application input with infrastructure namespaces included", func(infraNS []string) {
 					var includes []obs.NamespaceContainerSpec
 					for _, ns := range infraNS {

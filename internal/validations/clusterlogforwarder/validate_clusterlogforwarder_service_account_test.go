@@ -255,6 +255,29 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			})
 
 			Context("when service account only has collect-application-logs permission", func() {
+				It("should pass validation for non-infra namespaces", func() {
+					appInput := "my-app"
+					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
+						ServiceAccountName: clfServiceAccount.Name,
+						Inputs: []loggingv1.InputSpec{
+							{
+								Name: appInput,
+								Application: &loggingv1.Application{
+									Namespaces: []string{"sample-kube-namespace", "my-default-ns", "custom-openshift-namespace", "default-custom"},
+								},
+							},
+						},
+						Pipelines: []loggingv1.PipelineSpec{
+							{
+								Name: "pipeline1",
+								InputRefs: []string{
+									appInput,
+								},
+							},
+						},
+					}
+					Expect(ValidateServiceAccount(customClf, k8sAppClient, extras)).To(Succeed(), "should pass validation for non-infra namespaces")
+				})
 				DescribeTable("application input with infrastructure namespaces included", func(infraNS []string) {
 					customClf.Spec = loggingv1.ClusterLogForwarderSpec{
 						ServiceAccountName: clfServiceAccount.Name,

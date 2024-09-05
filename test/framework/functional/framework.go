@@ -135,9 +135,9 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 			if err != nil {
 				log.Error(err, "Unable to retrieve logs", "container", container.Name)
 			}
-			fmt.Fprintln(test.Writer(), logs)
+			fmt.Fprintln(f.delayedWriter, logs)
 		}
-		f.delayedWriter.Flush()
+		f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName, g.LineNumber))
 	}
 	f.closeClient()
 }

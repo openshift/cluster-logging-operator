@@ -1,12 +1,15 @@
 package log
 
 import (
+	"fmt"
 	logger "github.com/ViaQ/logerr/v2/log"
 	"github.com/go-logr/logr"
 	"io"
 	"os"
+	"path"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"strings"
 	"sync"
 )
 
@@ -23,11 +26,30 @@ type BufferedLogWriter struct {
 }
 
 func NewBufferedLogWriter() *BufferedLogWriter {
-	return &BufferedLogWriter{
+	w := &BufferedLogWriter{
 		log:    logger.NewLogger("internal"),
 		out:    os.Stdout,
 		buffer: []byte{},
 	}
+	return w
+}
+
+func (w *BufferedLogWriter) FlushToArtifactsDir(name string) {
+	if dir := os.Getenv("ARTIFACT_DIR"); dir != "" {
+		if parts := strings.SplitAfter(name, "/test/"); len(parts) == 2 {
+			name = strings.ReplaceAll(parts[1], "/", "_")
+			fullPath := path.Join(dir, name)
+			if file, err := os.Create(fullPath); err != nil {
+				w.out = os.Stdout
+				w.log.Error(err, fmt.Sprintf("Unable to flush logs to file: %s", fullPath))
+			} else {
+				w.out = file
+				defer file.Close()
+			}
+		}
+
+	}
+	w.Flush()
 }
 
 // Flush the contents of the sink

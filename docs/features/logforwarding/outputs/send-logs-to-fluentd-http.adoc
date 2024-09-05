@@ -65,12 +65,11 @@
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  labels:
-    pod-security.kubernetes.io/enforce: privileged
-    security.openshift.io/scc.podSecurityLabelSync: "false"
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
   - http:
       url: https://fluent-receiver.openshift-logging.svc:24224/logs/app

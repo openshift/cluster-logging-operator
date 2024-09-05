@@ -16,6 +16,8 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
     - name: external-es
       type: elasticsearch
@@ -76,6 +78,8 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
     - name: external-es
       type: elasticsearch
@@ -89,7 +93,7 @@ spec:
           password:
             key: password
             secretName: es-secret
-        index: '{.kubernetes.namespace_name || .log_type || "missing"}' <1>
+        index: '{.log_type || "unknown"}' <1>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -99,4 +103,4 @@ spec:
         - external-es
 ----
 +
-<1> Use the namespace name for the index or fallback to the log type
+<1> Use the `log_type` value for the index or fallback to use "unknown"

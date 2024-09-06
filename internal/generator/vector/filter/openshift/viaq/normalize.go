@@ -68,7 +68,7 @@ if !exists(._internal.level) {
       level = "info"
     } else if match!(message, r'Debug|DEBUG|<debug>') {
       .level = "debug"
-    } else if match!(.message, r'Trace|TRACE|<trace>') {
+    } else if match!(message, r'Trace|TRACE|<trace>') {
       .level = "trace"
     }
   }

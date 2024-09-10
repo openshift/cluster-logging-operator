@@ -1420,7 +1420,9 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |headers|object|  Headers specify optional headers to be sent with the request
 
-|method|string|  Method specifies the Http method to be used for sending logs. If not set, &#39;POST&#39; is used.
+|method|string|  Method specifies the HTTP method to be used for sending logs. If not set, &#39;POST&#39; is used.
+
+|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 
 |timeout|int|  Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
 
@@ -1908,6 +1910,15 @@ Type:: object
 |Property|Type|Description
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|dataModel|string|  DataModel can be used to customize how log data is stored in LokiStack.
+
+There are two different models to choose from:
+
+- Viaq
+ - Otel
+
+When the data model is not set, it currently defaults to the &#34;Viaq&#34; data model.
 
 |labelKeys|object|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 
@@ -2458,11 +2469,24 @@ The value can be a decimal integer or one of these case-insensitive keywords:
 
 Emergency Alert Critical Error Warning Notice Informational Debug
 
+|tuning|object|  Tuning specs tuning for the output
+
 |url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
 For example, to send syslog records using secure UDP:
 
 url: udps://syslog.example.com:1234
 
+|======================
+
+=== .spec.outputs[].syslog.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|deliveryMode|string|  
 |======================
 
 === .spec.outputs[].tls

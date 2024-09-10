@@ -811,24 +811,37 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|azureMonitor|object|  
-|cloudwatch|object|  
-|elasticsearch|object|  
-|googleCloudLogging|object|  
-|http|object|  
-|kafka|object|  
-|loki|object|  
-|lokiStack|object|  
+|azureMonitor|object|  AzureMonitor configures forwarding log events to the Azure Monitor Logs service
+
+|cloudwatch|object|  Cloudwatch configures forwarding log events to AWS Cloudwatch logs
+
+|elasticsearch|object|  Elasticsearch configures forwarding log events to an Elasticsearch cluster
+
+|googleCloudLogging|object|  GoogleCloudLogging configures forwarding log events to GCP (formally Stackdriver) Operations
+
+|http|object|  HTTP configures forwarding log events to an HTTP server
+
+|kafka|object|  Kafka configures forwarding log events to Apache Kafka topics
+
+|loki|object|  Loki configures forwarding log events to a Loki aggregation system
+
+|lokiStack|object|  LokiStack configures forwarding log events to a Red Hat managed Loki deployment
+using the Red Hat tenancy model
+
 |name|string|  Name used to refer to the output from a `pipeline`.
 
-|otlp|object|  
+|otlp|object|  OTLP configures forwarding log events to a receiver using the OpenTelemetry Protocol
+with Red Openshift logging semantic conventions (ref: https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md)
+
 |rateLimit|object|  Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded
 to this output from any given collector container. The total log flow from an individual collector
 container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node
 Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
 
-|splunk|object|  
-|syslog|object|  
+|splunk|object|  Splunk configures forwarding log events to Splunk&#39;s HTTP event collector
+
+|syslog|object|  Syslog configures forwarding log events to a receiver using the syslog protocol
+
 |tls|object|  TLS contains settings for controlling options on TLS client connections.
 
 |type|string|  Type of output sink.
@@ -1420,7 +1433,9 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |headers|object|  Headers specify optional headers to be sent with the request
 
-|method|string|  Method specifies the Http method to be used for sending logs. If not set, &#39;POST&#39; is used.
+|method|string|  Method specifies the HTTP method to be used for sending logs. If not set, &#39;POST&#39; is used.
+
+|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 
 |timeout|int|  Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
 

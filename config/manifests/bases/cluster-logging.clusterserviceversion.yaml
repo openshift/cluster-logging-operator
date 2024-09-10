@@ -803,7 +803,7 @@ spec:
       - description: Headers specify optional headers to be sent with the request
         displayName: Headers
         path: outputs[0].http.headers
-      - description: Method specifies the Http method to be used for sending logs.
+      - description: Method specifies the HTTP method to be used for sending logs.
           If not set, 'POST' is used.
         displayName: HTTP Method
         path: outputs[0].http.method

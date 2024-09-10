@@ -1395,7 +1395,7 @@ spec:
                             with the request
                           type: object
                         method:
-                          description: Method specifies the Http method to be used
+                          description: Method specifies the HTTP method to be used
                             for sending logs. If not set, 'POST' is used.
                           enum:
                           - GET
@@ -1406,6 +1406,10 @@ spec:
                           - OPTIONS
                           - TRACE
                           - PATCH
+                          type: string
+                        proxyURL:
+                          description: ProxyURL if specified is used to proxy HTTP
+                            and HTTPS traffic.
                           type: string
                         timeout:
                           description: Timeout specifies the Http request timeout

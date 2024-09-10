@@ -1420,7 +1420,9 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |headers|object|  Headers specify optional headers to be sent with the request
 
-|method|string|  Method specifies the Http method to be used for sending logs. If not set, &#39;POST&#39; is used.
+|method|string|  Method specifies the HTTP method to be used for sending logs. If not set, &#39;POST&#39; is used.
+
+|proxyURL|string|  ProxyURL if specified is used to proxy HTTP and HTTPS traffic.
 
 |timeout|int|  Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
 

@@ -1395,7 +1395,7 @@ spec:
                             with the request
                           type: object
                         method:
-                          description: Method specifies the Http method to be used
+                          description: Method specifies the HTTP method to be used
                             for sending logs. If not set, 'POST' is used.
                           enum:
                           - GET
@@ -1407,6 +1407,13 @@ spec:
                           - TRACE
                           - PATCH
                           type: string
+                        proxyURL:
+                          description: ProxyURL if specified is used to proxy HTTP
+                            and HTTPS traffic.
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: self == '' ||  isURL(self)
                         timeout:
                           description: Timeout specifies the Http request timeout
                             in seconds. If not set, 10secs is used.

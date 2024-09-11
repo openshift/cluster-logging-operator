@@ -13,7 +13,7 @@ var (
 
 	DefaultRequestMemory = resource.MustParse("64Mi")
 	DefaultRequestCpu    = resource.MustParse("500m")
-	DefaultLimitMemory   = resource.MustParse("1024Mi")
+	DefaultLimitMemory   = resource.MustParse("2048Mi")
 	DefaultLimitCpu      = resource.MustParse("6000m")
 )
 

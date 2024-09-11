@@ -14,7 +14,7 @@ var _ = Describe("#Resources", func() {
 		forwarder    obs.ClusterLogForwarder
 		expResources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("1024Mi"),
+				v1.ResourceMemory: resource.MustParse("2048Mi"),
 				v1.ResourceCPU:    resource.MustParse("6000m"),
 			},
 			Requests: v1.ResourceList{
@@ -42,7 +42,7 @@ var _ = Describe("#Resources", func() {
 	It("should apply the spec'd resources when defined", func() {
 		resources := &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
-				v1.ResourceMemory: resource.MustParse("1024Mi"),
+				v1.ResourceMemory: resource.MustParse("2048Mi"),
 				v1.ResourceCPU:    resource.MustParse("6000m"),
 			},
 			Requests: v1.ResourceList{

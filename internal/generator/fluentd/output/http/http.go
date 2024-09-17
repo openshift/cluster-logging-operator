@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -26,6 +27,7 @@ type Http struct {
 	SecurityConfig []Element
 	BufferConfig   []Element
 	ContentType    string
+	Timeout        string
 
 	// Encoding is set by plugin according to
 }
@@ -40,6 +42,9 @@ func (h Http) Template() string {
 endpoint {{.URI}}
 http_method {{.Method}}
 content_type {{.ContentType}}
+{{if (ne .Timeout "") -}}
+keepalive_timeout {{.Timeout}}
+{{end -}}
 {{kv  .Headers -}}
 {{compose .SecurityConfig}}
 {{compose .BufferConfig}}
@@ -71,6 +76,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 			Method:         Method(o.Http),
 			Headers:        Headers(o),
 			ContentType:    ContentType(o),
+			Timeout:        Timeout(o),
 			SecurityConfig: SecurityConfig(o, secret),
 			BufferConfig:   output.Buffer(output.NOKEYS, bufspec, storeID, &o),
 		},
@@ -89,6 +95,13 @@ func ContentType(o logging.OutputSpec) string {
 		return "application/x-ndjson"
 	}
 	return o.Http.Headers["Content-Type"]
+}
+
+func Timeout(o logging.OutputSpec) string {
+	if o.Http != nil && o.Http.Timeout != 0 {
+		return fmt.Sprintf("%ds", o.Http.Timeout)
+	}
+	return ""
 }
 
 func Method(h *logging.Http) string {

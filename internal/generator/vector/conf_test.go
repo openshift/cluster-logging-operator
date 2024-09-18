@@ -29,6 +29,9 @@ import (
 //go:embed conf_test/complex.toml
 var ExpectedComplexToml string
 
+//go:embed conf_test/complex_threshold.toml
+var ExpectedThresholdToml string
+
 //go:embed conf_test/complex_es_no_ver.toml
 var ExpectedComplexEsNoVerToml string
 
@@ -336,6 +339,53 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			ExpectedConf: ExpectedComplexOTELToml,
+		}),
+
+		Entry("with complex spec with MaxRecordsPerSecond", testhelpers.ConfGenerateTest{
+			Options: generator.Options{
+				generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil),
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "limited-rates-1",
+						Application: &logging.Application{
+							Namespaces: []string{"test-project-1", "test-project-2"},
+							ContainerLimit: &logging.LimitSpec{
+								MaxRecordsPerSecond: 0,
+							},
+						},
+					},
+					{
+						Name: "app-logs",
+						Application: &logging.Application{
+							Namespaces: []string{"test-project-3", "test-project-4"},
+						},
+					},
+					{
+						Name: "limited-rates-2",
+						Application: &logging.Application{
+							Namespaces: []string{"test-project-5"},
+							ContainerLimit: &logging.LimitSpec{
+								MaxRecordsPerSecond: 10,
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							"limited-rates-1",
+							"limited-rates-2",
+							"app-logs",
+							logging.InputNameInfrastructure,
+						},
+						OutputRefs: []string{"default"},
+						Name:       "to-default",
+					},
+				},
+			},
+			ExpectedConf: ExpectedThresholdToml,
 		}),
 	)
 

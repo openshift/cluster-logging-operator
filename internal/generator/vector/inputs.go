@@ -151,7 +151,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 
 		userDefined := spec.InputMap()
 		for _, inRef := range keys {
-			if input, ok := userDefined[inRef]; ok && input.HasPolicy() && input.GetMaxRecordsPerSecond() > 0 {
+			if input, ok := userDefined[inRef]; ok && input.HasPolicy() && input.GetMaxRecordsPerSecond() >= 0 {
 				// Vector Throttle component cannot have zero threshold
 				el = append(el, AddThrottle(input)...)
 			}

@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cluster-logging-operator
+spec:
+  groups:
+  - name: cluster_logging_operator.alerts
+    rules:
+    - alert: RedHatOpenShiftLoggingRemovalWarning
+      annotations:
+        message: Red Hat OpenShift Logging 5.8 will be removed from the catalog on
+          November 2025.
+        summary: Red Hat OpenShift Logging 5.8 is supported on OCP 4.16 and 4.17 to
+          help customers upgrade and migrate to Red Hat OpenShift Logging 6.0.  Logging
+          5.8 will be End of Life in November 2025. At that time, it will no longer
+          be available or supported.
+      expr: |
+        last_over_time((max by(version) (csv_succeeded{exported_namespace="openshift-logging", name=~"clusterlogging.*", version=~"5.8.*"}) * on() group_left() group(cluster_version{version=~"4.1[6-9].*", type="current"}))[5m:]) > 0
+      for: 1m
+      labels:
+        namespace: openshift-logging
+        severity: warning

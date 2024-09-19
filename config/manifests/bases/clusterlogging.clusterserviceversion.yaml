@@ -298,6 +298,10 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:logFileMetricsExporterConditions
       version: v1alpha1
   description: |-
+    ### Notice for OCP 4.16 and 4.17 Only
+
+    Logging 5.8 is supported on OCP 4.16 and 4.17 to help customers upgrade and migrate to Logging 6.0. **Logging 5.8 will be End of Life in November 2025.**  At that time, it will no longer be available or supported.
+
     # Red Hat OpenShift Logging
     The Red Hat OpenShift Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
 

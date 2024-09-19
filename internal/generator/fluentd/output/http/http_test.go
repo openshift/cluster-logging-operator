@@ -136,6 +136,7 @@ var _ = Describe("Generate fluentd config", func() {
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
 	content_type application/x-ndjson
+    keepalive_timeout 50s
 	headers {"k1":"v1","k2":"v2"}
 	<auth>
 	  method basic
@@ -215,6 +216,7 @@ var _ = Describe("Generate fluentd config", func() {
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
 	content_type application/x-ndjson
+    keepalive_timeout 50s
 	headers {"k1":"v1","k2":"v2"}
 	<auth>
 	  method basic
@@ -292,6 +294,7 @@ var _ = Describe("Generate fluentd config", func() {
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
 	content_type application/json
+    keepalive_timeout 50s
 	headers {"Content-Type":"application/json","k1":"v1","k2":"v2"}
 	<auth>
 	  method basic

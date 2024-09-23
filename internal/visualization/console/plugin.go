@@ -19,7 +19,7 @@ func ReconcilePlugin(k8sClient client.Client, cl *logging.ClusterLogging, owner 
 	if cl != nil && cl.Spec.Visualization != nil {
 		visSpec = cl.Spec.Visualization
 	}
-	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, korrel8rNN.Name, korrel8rNN.Namespace, FeaturesForOCP(clusterVersion)), visSpec)
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, korrel8rNN.Name, korrel8rNN.Namespace, FeaturesForOCP(clusterVersion), clusterVersion), visSpec)
 	if lokiService != "" {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())

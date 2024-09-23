@@ -22,6 +22,7 @@ type Config struct {
 	Korrel8rNamespace string        // Namespace of korrel8r service.
 	Korrel8rPort      int32         // Port of the Korrel8r service.
 	Features          []string      // The features enabled for the plugin
+	ClusterVersion    string        // The cluster version
 }
 
 func (cf *Config) Namespace() string        { return cf.Owner.GetNamespace() }
@@ -30,7 +31,7 @@ func (cf *Config) defaultMode() *int32      { return utils.GetPtr[int32](420) }
 func (cf *Config) pluginBackendPort() int32 { return 9443 }
 
 // NewConfig returns a config with default settings.
-func NewConfig(owner client.Object, lokiService, korrel8rName, korrel8rNS string, features []string) Config {
+func NewConfig(owner client.Object, lokiService, korrel8rName, korrel8rNS string, features []string, clusterVersion string) Config {
 	return Config{
 		Owner:             owner,
 		Name:              Name,
@@ -41,5 +42,6 @@ func NewConfig(owner client.Object, lokiService, korrel8rName, korrel8rNS string
 		Korrel8rNamespace: korrel8rNS,
 		Korrel8rPort:      8443,
 		Features:          features,
+		ClusterVersion:    clusterVersion,
 	}
 }

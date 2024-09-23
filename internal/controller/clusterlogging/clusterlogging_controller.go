@@ -2,9 +2,10 @@ package clusterlogging
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogging"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/migrations/clusterlogging"
 
 	"github.com/openshift/cluster-logging-operator/internal/hostedcontrolplane"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
@@ -16,8 +17,10 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validationerrors "github.com/openshift/cluster-logging-operator/internal/validations/errors"
 
+	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -197,22 +200,40 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 			}))
 
 	// Only register Watcher for ConsolePlugin if it is available in cluster
-	if console.CapabilityEnabled(context.TODO(), mgr.GetClient()) {
-		controllerBuilder.Watches(&consolev1alpha1.ConsolePlugin{},
-			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
-				// Schedule a reconciliation for ClusterLogging if "our" ConsolePlugin was changed
-				if obj.GetName() == console.Name {
-					return []reconcile.Request{
-						{
-							NamespacedName: types.NamespacedName{
-								Namespace: constants.OpenshiftNS,
-								Name:      constants.SingletonName,
+	if console.CapabilityEnabled(context.TODO(), mgr.GetClient(), r.ClusterVersion) {
+		if utils.IsVersionAheadOrEqual(r.ClusterVersion, "v4.17") {
+			controllerBuilder.Watches(&consolev1.ConsolePlugin{},
+				handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
+					// Schedule a reconciliation for ClusterLogging if "our" ConsolePlugin was changed
+					if obj.GetName() == console.Name {
+						return []reconcile.Request{
+							{
+								NamespacedName: types.NamespacedName{
+									Namespace: constants.OpenshiftNS,
+									Name:      constants.SingletonName,
+								},
 							},
-						},
+						}
 					}
-				}
-				return nil
-			}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+					return nil
+				}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		} else {
+			controllerBuilder.Watches(&consolev1alpha1.ConsolePlugin{},
+				handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
+					// Schedule a reconciliation for ClusterLogging if "our" ConsolePlugin was changed
+					if obj.GetName() == console.Name {
+						return []reconcile.Request{
+							{
+								NamespacedName: types.NamespacedName{
+									Namespace: constants.OpenshiftNS,
+									Name:      constants.SingletonName,
+								},
+							},
+						}
+					}
+					return nil
+				}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		}
 	}
 
 	return controllerBuilder.Complete(r)

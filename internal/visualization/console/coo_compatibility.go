@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,12 +56,23 @@ func (r *Reconciler) checkObservabilityOperator(ctx context.Context) (bool, erro
 }
 
 func (r *Reconciler) isManagedByObservabilityOperator(ctx context.Context) (bool, error) {
+	var err error
 	key := client.ObjectKey{
 		Name: Name,
 	}
 
-	plugin := &consolev1alpha1.ConsolePlugin{}
-	err := r.c.Get(ctx, key, plugin)
+	var plugin metav1.Object
+
+	if utils.IsVersionAheadOrEqual(r.ClusterVersion, "v4.17") {
+		consolePlugin := &consolev1.ConsolePlugin{}
+		err = r.c.Get(ctx, key, consolePlugin)
+		plugin = consolePlugin
+	} else {
+		legacyConsolePlugin := &consolev1alpha1.ConsolePlugin{}
+		err = r.c.Get(ctx, key, legacyConsolePlugin)
+		plugin = legacyConsolePlugin
+	}
+
 	switch {
 	case apierrors.IsNotFound(err):
 		return false, nil
@@ -70,7 +83,7 @@ func (r *Reconciler) isManagedByObservabilityOperator(ctx context.Context) (bool
 	}
 }
 
-func hasUIPluginOwner(plugin *consolev1alpha1.ConsolePlugin) bool {
+func hasUIPluginOwner(plugin metav1.Object) bool {
 	ownerRef := metav1.GetControllerOf(plugin)
 	if ownerRef == nil {
 		return false

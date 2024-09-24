@@ -28,7 +28,7 @@ if is_string(._internal.structured.auditID) && is_string(._internal.structured.v
     true) {
     ._internal.structured.level = "{{.Level}}"
   {{- with .OmitStages}}
-    if includes({{. | json}}, ._internal.structured.stage) { ._internal.structured = "None" }
+    if includes({{. | json}}, ._internal.structured.stage) { ._internal.structured.level = "None" }
   {{- end}}
   } else {{end -}}
   {

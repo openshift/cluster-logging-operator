@@ -75,6 +75,11 @@ if !exists(._internal.level) {
   ._internal.level = level
 }
 `
+	SetLogLevelOnRoot = `
+if ._internal.log_type != "audit" {
+  .level = ._internal.level
+}
+`
 
 	SetLogTypeOnRoot    = ".log_type = ._internal.log_type"
 	SetHostnameOnRoot   = `.hostname = ._internal.hostname`

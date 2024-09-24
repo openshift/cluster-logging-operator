@@ -35,7 +35,8 @@ func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Eleme
 	vrls = journalSource(vrls, inputSpecs)
 	vrls = append(vrls, MergeStructuredIntoRoot,
 		`."@timestamp" = ._internal."@timestamp"`,
-		`.level = ._internal.level`)
+		SetLogLevelOnRoot,
+	)
 	return elements.Remap{
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),

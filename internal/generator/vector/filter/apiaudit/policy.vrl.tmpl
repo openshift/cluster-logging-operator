@@ -1,69 +1,69 @@
 {{- /*Generate VRL policy from audit.Policy, see Go comment on var policyVRLTemplate.*/ -}}
-if is_string(.auditID) && is_string(.verb) {
-  res = if is_null(.objectRef.resource) { "" } else { string!(.objectRef.resource) }
-  sub = if is_null(.objectRef.subresource) { "" } else { string!(.objectRef.subresource) }
-  namespace = if is_null(.objectRef.namespace) { "" } else { string!(.objectRef.namespace) }
-  username = if is_null(.user.username) { "" } else { string!(.user.username) }
+if is_string(._internal.structured.auditID) && is_string(._internal.structured.verb) {
+  res = if is_null(._internal.structured.objectRef.resource) { "" } else { string!(._internal.structured.objectRef.resource) }
+  sub = if is_null(._internal.structured.objectRef.subresource) { "" } else { string!(._internal.structured.objectRef.subresource) }
+  namespace = if is_null(._internal.structured.objectRef.namespace) { "" } else { string!(._internal.structured.objectRef.namespace) }
+  username = if is_null(._internal.structured.user.username) { "" } else { string!(._internal.structured.user.username) }
   if sub != "" { res = res + "/" + sub }
   {{with .OmitStages -}}
-  if includes({{. | json}}, .stage) { # Policy OmitStages
-    .level = "None"
+  if includes({{. | json}}, ._internal.structured.stage) { # Policy OmitStages
+    ._internal.structured.level = "None"
   } else {{end -}}
   {{with .OmitResponseCodes -}}
-  if includes({{. | json}}, .responseStatus.code) { # Omit by response code.
-    .level = "None"
+  if includes({{. | json}}, ._internal.structured.responseStatus.code) { # Omit by response code.
+    ._internal.structured.level = "None"
   } else {{end -}}
   {{- range $.Rules -}}
   if (
-    {{- with .Verbs}}includes({{. | json}}, .verb) && {{end}}
+    {{- with .Verbs}}includes({{. | json}}, ._internal.structured.verb) && {{end}}
     {{- with .Users}}username != "" && match(username, {{matchAny .}}) && {{end}}
-    {{- with .UserGroups}}!is_null(.user.groups) && match_array(array!(.user.groups), {{matchAny .}}) && {{end}}
+    {{- with .UserGroups}}!is_null(._internal.structured.user.groups) && match_array(array!(._internal.structured.user.groups), {{matchAny .}}) && {{end}}
     {{- with .Namespaces}}namespace != "" && match(namespace, {{matchAny .}}) && {{end}}
-    {{- with .NonResourceURLs}}.objectRef == null && !is_null(.requestURI) && match(string!(.requestURI), {{matchAnyPath .}}) && {{end}}
+    {{- with .NonResourceURLs}}._internal.structured.objectRef == null && !is_null(._internal.structured.requestURI) && match(string!(._internal.structured.requestURI), {{matchAnyPath .}}) && {{end}}
     {{- with .Resources}}(
       {{- range $i, $gr := .}}
 	{{- if $i}} || {{end}}({{template "groupResource" .}})
       {{- end -}}
     ) && {{end -}}
     true) {
-    .level = "{{.Level}}"
+    ._internal.structured.level = "{{.Level}}"
   {{- with .OmitStages}}
-    if includes({{. | json}}, .stage) { .level = "None" }
+    if includes({{. | json}}, ._internal.structured.stage) { ._internal.structured = "None" }
   {{- end}}
   } else {{end -}}
   {
     # No rule matched, apply default rules for system events.
     if match(username, r'^$|^system:.*') { # System events
       readonly = r'get|list|watch|head|options'
-      if match(string!(.verb), readonly) {
-	.level = "None" # Drop read-only system events.
-      } else if ((int(.responseStatus.code) < 300 ?? true) && starts_with(username, "system:serviceaccount:"+namespace)) {
-	.level = "None" # Drop write events by service account for same namespace as resource or for non-namespaced resource.
+      if match(string!(._internal.structured.verb), readonly) {
+	._internal.structured.level = "None" # Drop read-only system events.
+      } else if ((int(._internal.structured.responseStatus.code) < 300 ?? true) && starts_with(username, "system:serviceaccount:"+namespace)) {
+	._internal.structured.level = "None" # Drop write events by service account for same namespace as resource or for non-namespaced resource.
       }
-      if .level == "RequestResponse" {
-	.level = "Request" # Downgrade RequestResponse system events.
+      if ._internal.structured.level == "RequestResponse" {
+	._internal.structured.level = "Request" # Downgrade RequestResponse system events.
       }
     }
   }
   # Update the event
-  if .level == "None" {
+  if ._internal.structured.level == "None" {
     abort
   } else {
-    if .level == "Metadata" {
-      del(.responseObject)
-      del(.requestObject)
-    } else if .level == "Request" {
-      del(.responseObject)
+    if ._internal.structured.level == "Metadata" {
+      del(._internal.structured.responseObject)
+      del(._internal.structured.requestObject)
+    } else if ._internal.structured.level == "Request" {
+      del(._internal.structured.responseObject)
     }
   }
 }
 
 {{- define "groupResource" -}}
    {{ if .Group -}}
-     .objectRef.apiGroup == "{{.Group}}"
+     ._internal.structured.objectRef.apiGroup == "{{.Group}}"
    {{- else -}}
-     (is_null(.objectRef.apiGroup) || string!(.objectRef.apiGroup) == "")
+     (is_null(._internal.structured.objectRef.apiGroup) || string!(._internal.structured.objectRef.apiGroup) == "")
    {{- end -}}
-   {{- with .ResourceNames}} && match(string(.objectRef.name)??"", {{matchAny .}}){{end -}}
+   {{- with .ResourceNames}} && match(string(._internal.structured.objectRef.name)??"", {{matchAny .}}){{end -}}
    {{- with .Resources}} && match(res, {{matchAny .}}){{end -}}
 {{- end -}}

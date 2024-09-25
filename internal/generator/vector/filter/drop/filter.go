@@ -20,7 +20,7 @@ func (f *Filter) VRL() (string, error) {
 	for _, test := range f.tests {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
-			field := fmt.Sprintf("_.internal%s", cond.Field)
+			field := fmt.Sprintf("._internal%s", cond.Field)
 			if cond.Matches != "" {
 				condList = append(condList, fmt.Sprintf(`match(to_string(%s) ?? "", r'%s')`, field, cond.Matches))
 			} else {

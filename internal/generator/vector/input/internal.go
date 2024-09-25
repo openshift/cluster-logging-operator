@@ -15,7 +15,10 @@ const (
 ._internal.log_source = %q
 ._internal.log_type = %q
 `
-	parseStructured = `._internal.structured = parse_json!(string!(._internal.message))`
+	parseStructured = `
+._internal.structured = parse_json!(string!(._internal.message))
+._internal = merge!(._internal,._internal.structured)
+`
 
 	setClusterID      = `._internal.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`
 	setEnvelope       = `. = {"_internal": .}`

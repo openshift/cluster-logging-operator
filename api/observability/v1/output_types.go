@@ -593,12 +593,17 @@ type HTTP struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Timeout",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Timeout int `json:"timeout,omitempty"`
 
-	// Method specifies the Http method to be used for sending logs. If not set, 'POST' is used.
+	// Method specifies the HTTP method to be used for sending logs. If not set, 'POST' is used.
 	//
 	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="HTTP Method"
 	Method string `json:"method,omitempty"`
+
+	// ProxyURL if specified is used to proxy HTTP and HTTPS traffic.
+	//
+	// +kubebuilder:validation:Optional
+	ProxyURL string `json:"proxyURL,omitempty"`
 }
 
 type KafkaTuningSpec struct {

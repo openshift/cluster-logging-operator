@@ -16,31 +16,10 @@ export GOFLAGS=
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
-ifdef OVERLAY
-$(if $(wildcard $(OVERLAY)),,$(error "OVERLAY file '$(OVERLAY)' does not exist"))
-# Set variables from overlay file instead of environment variables.
-KUSTOMIZE_VALUE=$(shell grep '$(1): *' $(OVERLAY)/kustomization.yaml | sed 's/^.*$(1): *//')
-IMAGE_NAME=$(or $(call KUSTOMIZE_VALUE,newName),$(call KUSTOMIZE_VALUE,name))
-VERSION=$(call KUSTOMIZE_VALUE,newTag)
-NAMESPACE=$(shell awk '/namespace:/{print $$2}' $(OVERLAY)/kustomization.yaml)
-
-# Get operand image names from the deployment patch in the overlay.
-DEPLOY_ENV=$(shell awk '/name:/ {NAME = $$NF} /value: / { if (NAME == "$(1)") { print $$NF; exit 0; }  }' $(OVERLAY)/deployment_patch.yaml)
-IMAGE_LOGGING_VECTOR=$(call DEPLOY_ENV,RELATED_IMAGE_VECTOR)
-IMAGE_LOGFILEMETRICEXPORTER=$(call DEPLOY_ENV,RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER)
-
-export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
-BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
-LOGGING_VERSION=$(shell echo "$(VERSION)" | grep -o '^[0-9]\+\.[0-9]\+')
-ES_LOGGING_VERSION?=5.8
-
-else
 # Set variables from environment or hard-coded default
-
 export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
-BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
 export LOGGING_VERSION?=6.1
 export VERSION=$(LOGGING_VERSION).0
@@ -49,7 +28,6 @@ export NAMESPACE?=openshift-logging
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:6.1
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.1
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.3
-endif # ifdef OVERLAY
 
 REPLICAS?=0
 export E2E_TEST_EXCLUDES?=flowcontrol
@@ -274,7 +252,7 @@ test-cluster:
 OPENSHIFT_VERSIONS?="v4.14-v4.17"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
-CHANNEL=$(or $(filename $(OVERLAY)),stable-${LOGGING_VERSION})
+CHANNEL=stable-${LOGGING_VERSION}
 BUNDLE_CHANNELS := --channels=$(CHANNEL)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(CHANNEL)
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
@@ -293,19 +271,10 @@ endif
 .PHONY: bundle
 bundle: $(GEN_TIMESTAMP) $(KUSTOMIZE) $(find config -name *.yaml) ## Generate operator bundle.
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	$(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	hack/revert-bundle.sh
 	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 	$(OPERATOR_SDK) bundle validate ./bundle
-	@touch $@
-
-.PHONY: deploy-bundle
-deploy-bundle: bundle bundle.Dockerfile
-	podman build -t $(BUNDLE_TAG) -f bundle.Dockerfile .
-	podman push --tls-verify=false ${BUNDLE_TAG}
-	@echo "To run the bundle without this Makefile:"
-	@echo "    oc create ns $(NAMESPACE)"
-	@echo "    $(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG)"
 	@touch $@
 
 .PHONY: clean-bundle
@@ -319,15 +288,10 @@ WAIT_FOR_OPERATOR=oc wait -n $(NAMESPACE) --for=condition=available deployment/c
 namespace:
 	echo '{"apiVersion": "v1", "kind": "Namespace","metadata":{"name":"$(NAMESPACE)","labels":{"openshift.io/cluster-monitoring":"true"}}}' | oc apply -f -
 
-.PHONY: run-bundle
-run-bundle: namespace $(OPERATOR_SDK) ## Run the overlay bundle image, assumes it has been pushed
-	$(OPERATOR_SDK) cleanup --delete-all cluster-logging || true
-	$(WATCH_EVENTS)	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG); $(WAIT_FOR_OPERATOR)
-
 .PHONY: apply
 apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
+	$(WATCH_EVENTS) $(KUSTOMIZE) build config/manifests | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
 .PHONY: test-upgrade
 test-upgrade: $(JUNITREPORT)
@@ -342,7 +306,7 @@ test-e2e: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
-	EXCLUDES="$(E2E_TEST_EXCLUDES)" CLF_EXCLUDES="$(CLF_TEST_EXCLUDES)" LOG_LEVEL=3 ES_LOGGING_VERSION=$(ES_LOGGING_VERSION) hack/test-e2e-olm.sh
+	EXCLUDES="$(E2E_TEST_EXCLUDES)" CLF_EXCLUDES="$(CLF_TEST_EXCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image

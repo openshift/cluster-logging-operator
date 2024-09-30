@@ -20,8 +20,11 @@ if starts_with(pod_name, "eventrouter-") {
   }
 }
 `
-	MergeStructuredIntoRoot = "if exists(._internal.structured) {. = merge!(.,._internal.structured) }"
-	SetLogLevel             = `
+	MergeStructuredIntoRoot = `
+if ._internal.log_type == "audit" && exists(._internal.structured) {. = merge!(.,._internal.structured) }
+if ._internal.log_source == "container" && exists(._internal.structured) {.structured = ._internal.structured }
+`
+	SetLogLevel = `
 if !exists(._internal.level) {
   level = "default"
   message = ._internal.message

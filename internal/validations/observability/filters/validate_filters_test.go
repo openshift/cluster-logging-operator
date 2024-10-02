@@ -174,7 +174,7 @@ var _ = Describe("[internal][validations][observability][filters]", func() {
 	})
 
 	Context("#validatePruneFilter", func() {
-		var requiredFields = []obs.FieldPath{".log_type", ".message"}
+		var requiredFields = []obs.FieldPath{".log_type", ".message", ".log_source"}
 		DescribeTable("invalid field paths", func(pruneFilter obs.PruneFilterSpec, errMsg string) {
 			spec := obs.FilterSpec{
 				Name:            myPrune,

@@ -40,19 +40,21 @@ decoding.codec = "json"
 `
 }
 
-func NewSplitTransform(id, inputs string) (framework.Element, string) {
-	splitID := helpers.MakeID(id, "split")
-	return elements.Remap{
-		ComponentID: splitID,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         `if exists(.items) && is_array(.items) {. = unnest!(.items)} else {.}`,
-	}, splitID
-}
 func NewItemsTransform(id, inputs string) (framework.Element, string) {
 	itemsID := helpers.MakeID(id, "items")
 	return elements.Remap{
 		ComponentID: itemsID,
 		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         `if exists(.items) {. = .items} else {.}`,
+		VRL: `
+if exists(.items) {
+    r = array([])
+    for_each(array!(.items)) -> |_index, i| {
+      r = push(r, {"_internal": {"structured": i}})
+    }
+    . = r
+} else {
+  . = {"_internal": {"structured": .}}
+}
+`,
 	}, itemsID
 }

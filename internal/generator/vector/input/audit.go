@@ -23,7 +23,7 @@ func NewK8sAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewK8sAuditLog(id),
-		NewInternalNormalization(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id, parseStructured),
+		NewAuditInternalNormalization(metaID, obs.AuditSourceKube, id, true),
 	}
 	return el, []string{metaID}
 }
@@ -33,7 +33,7 @@ func NewOpenshiftAuditSource(input obs.InputSpec, op generator.Options) ([]gener
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOpenshiftAuditLog(id),
-		NewInternalNormalization(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id, parseStructured),
+		NewAuditInternalNormalization(metaID, obs.AuditSourceOpenShift, id, true),
 	}
 	return el, []string{metaID}
 }
@@ -43,7 +43,7 @@ func NewOVNAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOVNAuditLog(id),
-		NewInternalNormalization(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id, parseStructured),
+		NewAuditInternalNormalization(metaID, obs.AuditSourceOVN, id, true),
 	}
 	return el, []string{metaID}
 }

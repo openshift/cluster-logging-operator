@@ -13,7 +13,8 @@ func NewJournalSource(input obs.InputSpec) ([]Element, []string) {
 	metaID := helpers.MakeID(id, "meta")
 	el := []Element{
 		source.NewJournalLog(id),
-		NewInternalNormalization(metaID, string(obs.InfrastructureSourceNode), string(obs.InputTypeInfrastructure), id,
+		NewJournalInternalNormalization(metaID, obs.InfrastructureSourceNode, setEnvelope, id,
+			viaq.FixJournalLogLevel,
 			viaq.SetJournalMessage,
 			viaq.SystemK,
 			viaq.SystemT,

@@ -22,6 +22,7 @@ if starts_with(pod_name, "eventrouter-") {
 `
 	MergeStructuredIntoRoot = `
 if ._internal.log_type == "audit" && exists(._internal.structured) {. = merge!(.,._internal.structured) }
+if ._internal.log_source == "syslog" && exists(._internal.structured) {. = merge!(.,._internal.structured) }
 if ._internal.log_source == "container" && exists(._internal.structured) {.structured = ._internal.structured }
 `
 	SetLogLevel = `

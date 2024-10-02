@@ -99,7 +99,6 @@ if ._internal.log_source == "%s" {
 func journalLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
 		AddJournalLogTag,
-		FixJournalLogLevel,
 		AddHostName,
 		AddTime,
 		`.systemd = ._internal.systemd`,

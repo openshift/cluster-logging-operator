@@ -122,10 +122,10 @@ func validateFieldPath(fieldPath obs.FieldPath) string {
 }
 
 func validateRequiredFields(fieldList []obs.FieldPath, pruneType string) string {
-	requiredFields := set.New[obs.FieldPath](".log_type", ".message")
+	requiredFields := set.New[obs.FieldPath](".log_type", ".message", ".log_source")
 
 	if pruneType == "in" {
-		foundInList := []obs.FieldPath{}
+		var foundInList []obs.FieldPath
 		for _, field := range fieldList {
 			if requiredFields.Has(field) {
 				foundInList = append(foundInList, field)

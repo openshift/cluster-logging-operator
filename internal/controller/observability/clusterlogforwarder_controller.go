@@ -2,8 +2,9 @@ package observability
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -72,6 +73,13 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 		readyCond.Reason = obsv1.ReasonManagementStateUnmanaged
 		readyCond.Message = "Updates are ignored when the managementState is Unmanaged"
 		return defaultRequeue, nil
+	}
+
+	// Pre validate Forwarder,
+	// One use case for now, validate outputs for lokistack OTLP data model
+	if !preValidateForwarder(r.ForwarderContext) {
+		readyCond.Reason = obsv1.ReasonValidationFailure
+		return defaultRequeue, err
 	}
 
 	readyCond.Status = obsv1.ConditionFalse
@@ -194,6 +202,11 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 	}
 	internalobs.SetCondition(&forwarderContext.Forwarder.Status.Conditions, validCond)
 	return valid
+}
+
+func preValidateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {
+	validations.PreValidateClusterLogForwarder(forwarderContext)
+	return internalobs.IsValidLokistackOTLPAnnotation(*forwarderContext.Forwarder)
 }
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {

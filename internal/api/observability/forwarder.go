@@ -1,10 +1,11 @@
 package observability
 
 import (
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 // NameList provides a list of names for any resource implementing Names
@@ -31,6 +32,18 @@ func IsValid(forwarder obs.ClusterLogForwarder) bool {
 		isValid(obs.ConditionTypeValidOutputPrefix, status.OutputConditions, len(forwarder.Spec.Outputs)) &&
 		isValid(obs.ConditionTypeValidPipelinePrefix, status.PipelineConditions, len(forwarder.Spec.Pipelines)) &&
 		isValid(obs.ConditionTypeValidFilterPrefix, status.FilterConditions, len(forwarder.Spec.Filters))
+}
+
+func IsValidLokistackOTLPAnnotation(forwarder obs.ClusterLogForwarder) bool {
+	// Check if lokistacks designated to receive OTEL data has the OTEL tp annotation
+	validOutputs := true
+	for _, cond := range forwarder.Status.Conditions {
+		if cond.Type == obs.ConditionTypeValidLokistackOTLPOutputs && cond.Status == obs.ConditionFalse {
+			validOutputs = false
+		}
+	}
+
+	return validOutputs
 }
 
 func isValid(prefix string, conditions []metav1.Condition, expConditions int) bool {

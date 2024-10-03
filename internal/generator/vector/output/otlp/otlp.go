@@ -62,6 +62,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			elements.Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+
 	// TODO: create a pattern to filter by input so all this is not necessary
 	var els []Element
 	// Creates reroutes for 'container','node','auditd','kubeAPI','openshiftAPI','ovn'

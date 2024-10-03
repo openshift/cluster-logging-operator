@@ -26,6 +26,16 @@ source = '''
       {"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
       {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
   )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
+  )
+  # Append backward compatibility attributes for container logs
+  resource.attributes = append( resource.attributes,
+      [{"key": "kubernetes_pod_name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
+      {"key": "kubernetes_container_name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
+      {"key": "kubernetes_namespace_name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+  )
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -97,6 +107,10 @@ source = '''
       [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
+  )
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -155,6 +169,10 @@ source = '''
       [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
+  )
   # Append auditd host attributes
   resource.attributes = append( resource.attributes,
       [{"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
@@ -201,6 +219,10 @@ source = '''
   resource.attributes = append( resource.attributes,
       [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
   )
   # Create logRecord object
   r = {}
@@ -256,6 +278,10 @@ source = '''
       [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
   )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
+  )
   # Create logRecord object
   r = {}
   r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
@@ -309,6 +335,10 @@ source = '''
   resource.attributes = append( resource.attributes,
       [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
       {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+  )
+  # Append backward compatibility attributes
+  resource.attributes = append( resource.attributes,
+      [{"key": "log_type", "value": {"stringValue": .log_type}}]
   )
   # Create logRecord object
   r = {}

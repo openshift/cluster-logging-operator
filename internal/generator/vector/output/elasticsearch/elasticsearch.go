@@ -238,8 +238,8 @@ func BasicAuth(id string, o logging.OutputSpec, secret *corev1.Secret) []Element
 		if common.HasUsernamePassword(secret) {
 			hasBasicAuth = true
 			up := UserNamePass{
-				Username: common.GetFromSecret(secret, constants.ClientUsername),
-				Password: common.GetFromSecret(secret, constants.ClientPassword),
+				Username: strings.TrimRight(common.GetFromSecret(secret, constants.ClientUsername), "\n"),
+				Password: strings.TrimRight(common.GetFromSecret(secret, constants.ClientPassword), "\n"),
 			}
 			conf = append(conf, up)
 		}

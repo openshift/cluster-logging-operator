@@ -49,8 +49,7 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	for name, f := range filters {
 		pipeline.filterMap[name] = *f
 	}
-	addPrefilters(pipeline)
-	addPostfilters(pipeline)
+	addPostFilters(pipeline)
 
 	for i, filterName := range pipeline.FilterRefs {
 		pipeline.initFilter(i, filterName)
@@ -83,11 +82,11 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	return pipeline
 }
 
-// TODO: add migration to treat like any other
-func addPrefilters(p *Pipeline) {
-	prefilters := []string{}
+func addPostFilters(p *Pipeline) {
+
+	var postFilters []string
 	if viaq.HasJournalSource(p.inputSpecs) {
-		prefilters = append(prefilters, viaq.ViaqJournal)
+		postFilters = append(postFilters, viaq.ViaqJournal)
 		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
 			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
 			SuppliesTransform: true,
@@ -97,7 +96,7 @@ func addPrefilters(p *Pipeline) {
 		}
 	}
 
-	prefilters = append(prefilters, viaq.Viaq)
+	postFilters = append(postFilters, viaq.Viaq)
 	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
 		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
 		SuppliesTransform: true,
@@ -106,20 +105,17 @@ func addPrefilters(p *Pipeline) {
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
-	p.FilterRefs = append(prefilters, p.FilterRefs...)
-}
-
-func addPostfilters(p *Pipeline) {
-	postfilters := []string{}
-	postfilters = append(postfilters, viaq.ViaqDedot)
-	p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
-		FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
-		SuppliesTransform: true,
-		TranformFactory: func(id string, inputs ...string) framework.Element {
-			return viaq.NewDedot(id, inputs...)
-		},
+	if viaq.HasContainerSource(p.inputSpecs) {
+		postFilters = append(postFilters, viaq.ViaqDedot)
+		p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
+			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
+			SuppliesTransform: true,
+			TranformFactory: func(id string, inputs ...string) framework.Element {
+				return viaq.NewDedot(id, inputs...)
+			},
+		}
 	}
-	p.FilterRefs = append(p.FilterRefs, postfilters...)
+	p.FilterRefs = append(p.FilterRefs, postFilters...)
 }
 
 func (p *Pipeline) Name() string {

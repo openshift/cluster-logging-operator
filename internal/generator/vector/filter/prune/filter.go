@@ -22,7 +22,7 @@ var (
 	//go:embed prune.vrl.tmpl
 	pruneVRLTemplateStr string
 
-	dedottedFields = []string{".kubernetes.labels.", ".kubernetes.namespace_labels."}
+	dedottedFields = []string{"._internal.kubernetes.labels.", "._internal.kubernetes.namespace_labels."}
 )
 
 type PruneFilter obs.PruneFilterSpec
@@ -53,7 +53,8 @@ func generateQuotedPathSegmentArrayStr(fieldPathArray []obs.FieldPath) string {
 	for _, fieldPath := range fieldPathArray {
 		f := func(path obs.FieldPath) string {
 			splitPathSegments := splitPath(string(path))
-			pathArray := quotePathSegments(splitPathSegments)
+			pathArray := []string{`"_internal"`}
+			pathArray = append(pathArray, quotePathSegments(splitPathSegments)...)
 			return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
 		}
 		quotedPathArray = append(quotedPathArray, f(fieldPath))

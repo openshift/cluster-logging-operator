@@ -1,24 +1,19 @@
-package loglevel
+package normalization
 
 import (
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-var _ = Describe("[functional][normalization][loglevel] tests for message format of journal logs", func() {
+var _ = Describe("[functional][normalization] ViaQ message format of journal logs", func() {
 	var (
 		framework *functional.CollectorFunctionalFramework
-	)
-
-	const (
-		expReadFail = "failread"
 	)
 
 	BeforeEach(func() {
@@ -32,36 +27,27 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		framework.Cleanup()
 	})
 
-	DescribeTable("when evaluating a journal log entry", func(priority int, expLevel string, options ...string) {
+	It("should format ViaQ journal logs", func() {
+
+		expLog := functional.NewJournalInfrastructureLogTemplate()
+
 		// Write log line as input to collector
-		logline := functional.NewJournalLog(priority, "*", "*")
+		logline := functional.NewJournalLog(2, "here is my message", "*")
 		Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
 
 		// Read line from Log Forward output
 		raw, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeElasticsearch))
-		if sets.NewString(options...).Has(expReadFail) {
-			Expect(err).To(Not(BeNil()), "Exp. to not find any logs")
-			return
-		}
-
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line
 		var logs []types.JournalLog
-		err = types.ParseLogsFrom(utils.ToJsonLogs(raw), &logs, false)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 
 		// Compare to expected template
 		outputTestLog := logs[0]
-		Expect(outputTestLog.Level).To(Equal(expLevel))
-	},
-		Entry("should recognize an emerg message", 0, "emerg"),
-		Entry("should recognize an alert message", 1, "alert"),
-		Entry("should recognize a crit message", 2, "crit"),
-		Entry("should recognize an err message", 3, "err"),
-		Entry("should recognize a warning message", 4, "warning"),
-		Entry("should recognize a notice message", 5, "notice"),
-		Entry("should recognize an info message", 6, "info"),
-		Entry("should drop debug messages", 7, "debug", expReadFail),
-	)
+		Expect(outputTestLog.ViaQCommon).To(FitLogFormatTemplate(expLog.ViaQCommon))
+		Expect(outputTestLog.Systemd.T).NotTo(Equal(types.T{}), "Exp. to be populated with something")
+		Expect(outputTestLog.Systemd.U).NotTo(Equal(types.U{}), "Exp. to be populated with something")
+	})
 })

@@ -165,14 +165,13 @@ type OpenshiftMeta struct {
 	Sequence OptionalInt `json:"sequence,omitempty"`
 }
 
-// Application Logs are container logs from all namespaces except "openshift" and "openshift-*" namespaces
+// ApplicationLog are container logs from all namespaces except "openshift" and "openshift-*" namespaces
 type ApplicationLog ContainerLog
 
 // Infrastructure logs are
 // - Journal logs
 // - logs from "openshift" and "openshift-*" namespaces
 
-// InfraContainerLog
 // InfraContainerLog logs are container logs from "openshift" and "openshift-*" namespaces
 type InfraContainerLog ContainerLog
 
@@ -265,42 +264,6 @@ type ViaQCommon struct {
 
 	// Openshift specific metadata
 	Openshift OpenshiftMeta `json:"openshift,omitempty"`
-}
-
-// JournalLog is linux journal logs
-type JournalLog struct {
-	ViaQCommon          `json:",inline,omitempty"`
-	STREAMID            string  `json:"_STREAM_ID,omitempty"`
-	SYSTEMDINVOCATIONID string  `json:"_SYSTEMD_INVOCATION_ID,omitempty"`
-	Systemd             Systemd `json:"systemd,omitempty"`
-}
-
-type T struct {
-	BOOTID              string `json:"BOOT_ID,omitempty"`
-	CAPEFFECTIVE        string `json:"CAP_EFFECTIVE,omitempty"`
-	CMDLINE             string `json:"CMDLINE,omitempty"`
-	COMM                string `json:"COMM,omitempty"`
-	EXE                 string `json:"EXE,omitempty"`
-	GID                 string `json:"GID,omitempty"`
-	MACHINEID           string `json:"MACHINE_ID,omitempty"`
-	PID                 string `json:"PID,omitempty"`
-	SELINUXCONTEXT      string `json:"SELINUX_CONTEXT,omitempty"`
-	STREAMID            string `json:"STREAM_ID,omitempty"`
-	SYSTEMDCGROUP       string `json:"SYSTEMD_CGROUP,omitempty"`
-	SYSTEMDINVOCATIONID string `json:"SYSTEMD_INVOCATION_ID,omitempty"`
-	SYSTEMDSLICE        string `json:"SYSTEMD_SLICE,omitempty"`
-	SYSTEMDUNIT         string `json:"SYSTEMD_UNIT,omitempty"`
-	TRANSPORT           string `json:"TRANSPORT,omitempty"`
-	UID                 string `json:"UID,omitempty"`
-}
-
-type U struct {
-	SYSLOGIDENTIFIER string `json:"SYSLOG_IDENTIFIER,omitempty"`
-}
-
-type Systemd struct {
-	T T `json:"t,omitempty"`
-	U U `json:"u,omitempty"`
 }
 
 // InfraLog is union of JournalLog and InfraContainerLog

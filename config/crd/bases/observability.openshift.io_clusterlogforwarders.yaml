@@ -1787,6 +1787,16 @@ spec:
                           required:
                           - token
                           type: object
+                        dataModel:
+                          description: "DataModel can be used to customize how log
+                            data is stored in LokiStack. \n There are two different
+                            models to choose from: \n - Viaq - Otel \n When the data
+                            model is not set, it currently defaults to the \"Viaq\"
+                            data model."
+                          enum:
+                          - Viaq
+                          - Otel
+                          type: string
                         labelKeys:
                           description: "LabelKeys can be used to customize which log
                             record keys are mapped to Loki stream labels. \n Note:
@@ -1929,6 +1939,14 @@ spec:
                       - authentication
                       - target
                       type: object
+                      x-kubernetes-validations:
+                      - message: '''labelKeys'' cannot be set when data model is ''Otel'''
+                        rule: '!has(self.labelKeys) || !has(self.dataModel) || self.dataModel
+                          == ''Viaq'''
+                      - message: '''snappy'' compression cannot be used when data
+                          model is ''Otel'''
+                        rule: '!has(self.tuning) || self.tuning.compression != ''snappy''
+                          || !has(self.dataModel) || self.dataModel == ''Viaq'''
                     name:
                       description: Name used to refer to the output from a `pipeline`.
                       pattern: ^[a-z][a-z0-9-]*[a-z0-9]$

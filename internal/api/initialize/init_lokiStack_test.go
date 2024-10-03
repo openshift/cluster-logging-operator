@@ -14,22 +14,26 @@ var _ = Describe("MigrateLokiStack", func() {
 	const (
 		esOut             = "es-out"
 		lokistackOut      = "lokistack-out"
+		lokistackOtlpOut  = "lokistack-otlp-out"
 		lokistackTarget   = "test-lokistack"
-		saName            = "test-sa"
 		lokistackPipeline = "test-lokistack-pipeline"
 		lokistackOutApp   = lokistackOut + "-" + string(obs.InputTypeApplication)
 		lokistackOutAudit = lokistackOut + "-" + string(obs.InputTypeAudit)
 		lokistackOutInfra = lokistackOut + "-" + string(obs.InputTypeInfrastructure)
+
+		lokistackOtlpOutApp   = lokistackOtlpOut + "-" + string(obs.InputTypeApplication)
+		lokistackOtlpOutAudit = lokistackOtlpOut + "-" + string(obs.InputTypeAudit)
+		lokistackOtlpOutInfra = lokistackOtlpOut + "-" + string(obs.InputTypeInfrastructure)
 	)
 
 	var (
 		spec    obs.ClusterLogForwarder
-		initClf = func() obs.ClusterLogForwarder {
-			return obs.ClusterLogForwarder{
+		initClf = func(outName string, isOtlp bool) obs.ClusterLogForwarder {
+			obsClf := obs.ClusterLogForwarder{
 				Spec: obs.ClusterLogForwarderSpec{
 					Outputs: []obs.OutputSpec{
 						{
-							Name: lokistackOut,
+							Name: outName,
 							Type: obs.OutputTypeLokiStack,
 							LokiStack: &obs.LokiStack{
 								Target: obs.LokiStackTarget{
@@ -46,11 +50,26 @@ var _ = Describe("MigrateLokiStack", func() {
 					},
 				},
 			}
+
+			if isOtlp {
+				obsClf.Spec.Outputs[0].LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+			}
+
+			return obsClf
+		}
+		esOutSpec = obs.OutputSpec{
+			Name: esOut,
+			Type: obs.OutputTypeElasticsearch,
+			Elasticsearch: &obs.Elasticsearch{
+				URLSpec: obs.URLSpec{
+					URL: "https://my-elastic:9200",
+				},
+			},
 		}
 	)
 
 	DescribeTable("migrate lokistack to loki outputs/pipelines", func(expSpec obs.ClusterLogForwarderSpec, visit func(spec *obs.ClusterLogForwarderSpec)) {
-		clfSpec := initClf()
+		clfSpec := initClf(lokistackOut, false)
 		if visit != nil {
 			visit(&clfSpec.Spec)
 		}
@@ -268,6 +287,7 @@ var _ = Describe("MigrateLokiStack", func() {
 					},
 				},
 				Outputs: []obs.OutputSpec{
+					esOutSpec,
 					{
 						Name: lokistackOutApp,
 						Type: obs.OutputTypeLoki,
@@ -285,6 +305,7 @@ var _ = Describe("MigrateLokiStack", func() {
 				},
 			},
 			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs, esOutSpec)
 				spec.Pipelines = []obs.PipelineSpec{
 					{
 						Name:       lokistackPipeline,
@@ -314,6 +335,7 @@ var _ = Describe("MigrateLokiStack", func() {
 					},
 				},
 				Outputs: []obs.OutputSpec{
+					esOutSpec,
 					{
 						Name: lokistackOutApp,
 						Type: obs.OutputTypeLoki,
@@ -359,6 +381,7 @@ var _ = Describe("MigrateLokiStack", func() {
 				},
 			},
 			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs, esOutSpec)
 				spec.Pipelines = []obs.PipelineSpec{
 					{
 						Name:       lokistackPipeline,
@@ -898,6 +921,921 @@ var _ = Describe("MigrateLokiStack", func() {
 						Name:       "another-" + lokistackPipeline,
 						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit)},
 						OutputRefs: []string{"foo-" + lokistackOut, "bar-" + lokistackOut},
+					},
+				}
+			},
+		),
+	)
+
+	DescribeTable("migrate lokistack to otlp outputs/pipelines", func(expSpec obs.ClusterLogForwarderSpec, visit func(spec *obs.ClusterLogForwarderSpec)) {
+		clfSpec := initClf(lokistackOtlpOut, true)
+		if visit != nil {
+			visit(&clfSpec.Spec)
+		}
+
+		spec = MigrateLokiStack(clfSpec, utils.NoOptions)
+		Expect(spec.Spec).To(Equal(expSpec))
+	},
+		Entry("single tenant, single lokistack output",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, single lokistack output",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{lokistackOtlpOutAudit},
+					},
+					{
+						Name:       lokistackPipeline + "-2",
+						InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOutInfra},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("single tenant, single lokistack & es output",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, esOut},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					esOutSpec,
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs, esOutSpec)
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOut, esOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, single lokistack & es output",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, esOut},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{lokistackOtlpOutAudit, esOut},
+					},
+					{
+						Name:       lokistackPipeline + "-2",
+						InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOutInfra, esOut},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					esOutSpec,
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs, esOutSpec)
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOut, esOut},
+					},
+				}
+			},
+		),
+		Entry("single tenant, multiple lokistack outputs in one pipeline",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, "another-" + lokistackOtlpOutApp},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: "another-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs,
+					obs.OutputSpec{
+						Name: "another-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "another-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					})
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOut, "another-" + lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, multiple lokistack outputs in one pipeline",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, "another-" + lokistackOtlpOutApp},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{lokistackOtlpOutAudit, "another-" + lokistackOtlpOutAudit},
+					},
+					{
+						Name:       lokistackPipeline + "-2",
+						InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOutInfra, "another-" + lokistackOtlpOutInfra},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: "another-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "another-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "another-" + lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs,
+					obs.OutputSpec{
+						Name: "another-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "another-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					})
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOut, "another-" + lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("single tenant, multiple pipelines, multiple lokistacks in each pipeline",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, "another-" + lokistackOtlpOutApp},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOtlpOutAudit, "bar-" + lokistackOtlpOutAudit},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: "another-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "bar-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://bar-test-lokistack-gateway-http.bar-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "foo-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://foo-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs,
+					obs.OutputSpec{
+						Name: "another-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "another-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+					obs.OutputSpec{
+						Name: "foo-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "foo-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+					obs.OutputSpec{
+						Name: "bar-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "bar-" + lokistackTarget,
+								Namespace: "bar-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+				)
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOut, "another-" + lokistackOtlpOut},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOtlpOut, "bar-" + lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, multiple pipelines, multiple lokistacks in each pipeline",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, "another-" + lokistackOtlpOutApp},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOutInfra, "another-" + lokistackOtlpOutInfra},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{"foo-" + lokistackOtlpOutApp, "bar-" + lokistackOtlpOutApp},
+					},
+					{
+						Name:       "another-" + lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOtlpOutAudit, "bar-" + lokistackOtlpOutAudit},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: "another-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "another-" + lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "bar-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://bar-test-lokistack-gateway-http.bar-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "bar-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://bar-test-lokistack-gateway-http.bar-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "foo-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://foo-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "foo-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://foo-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs,
+					obs.OutputSpec{
+						Name: "another-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "another-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+					obs.OutputSpec{
+						Name: "foo-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "foo-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+					obs.OutputSpec{
+						Name: "bar-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "bar-" + lokistackTarget,
+								Namespace: "bar-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+				)
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOut, "another-" + lokistackOtlpOut},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOtlpOut, "bar-" + lokistackOtlpOut},
+					},
+				}
+			},
+		),
+		Entry("multiple tenants, multiple pipelines, multiple lokistacks in each pipeline, only a subset to OTLP out",
+			obs.ClusterLogForwarderSpec{
+				Pipelines: []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{lokistackOtlpOutApp, "another-" + lokistackOutApp},
+					},
+					{
+						Name:       lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOutInfra, "another-" + lokistackOutInfra},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication)},
+						OutputRefs: []string{"foo-" + lokistackOutApp, "bar-" + lokistackOtlpOutApp},
+					},
+					{
+						Name:       "another-" + lokistackPipeline + "-1",
+						InputRefs:  []string{string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOutAudit, "bar-" + lokistackOtlpOutAudit},
+					},
+				},
+				Outputs: []obs.OutputSpec{
+					{
+						Name: "another-" + lokistackOutApp,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "another-" + lokistackOutInfra,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://another-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/infrastructure",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "bar-" + lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://bar-test-lokistack-gateway-http.bar-namespace.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "bar-" + lokistackOtlpOutAudit,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://bar-test-lokistack-gateway-http.bar-namespace.svc:8080/api/logs/v1/audit" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "foo-" + lokistackOutApp,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://foo-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/application",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: "foo-" + lokistackOutAudit,
+						Type: obs.OutputTypeLoki,
+						Loki: &obs.Loki{
+							URLSpec: obs.URLSpec{
+								URL: "https://foo-test-lokistack-gateway-http.foo-namespace.svc:8080/api/logs/v1/audit",
+							},
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutApp,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					{
+						Name: lokistackOtlpOutInfra,
+						Type: obs.OutputTypeOTLP,
+						OTLP: &obs.OTLP{
+							URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure" + lokiOtlpEndpoint,
+							Authentication: &obs.HTTPAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			},
+			func(spec *obs.ClusterLogForwarderSpec) {
+				spec.Outputs = append(spec.Outputs,
+					obs.OutputSpec{
+						Name: "another-" + lokistackOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "another-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					obs.OutputSpec{
+						Name: "foo-" + lokistackOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "foo-" + lokistackTarget,
+								Namespace: "foo-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+					obs.OutputSpec{
+						Name: "bar-" + lokistackOtlpOut,
+						Type: obs.OutputTypeLokiStack,
+						LokiStack: &obs.LokiStack{
+							Target: obs.LokiStackTarget{
+								Name:      "bar-" + lokistackTarget,
+								Namespace: "bar-namespace",
+							},
+							Authentication: &obs.LokiStackAuthentication{
+								Token: &obs.BearerToken{
+									From: obs.BearerTokenFromServiceAccount,
+								},
+							},
+							DataModel: obs.LokiStackDataModelOpenTelemetry,
+						},
+					},
+				)
+				spec.Pipelines = []obs.PipelineSpec{
+					{
+						Name:       lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeInfrastructure)},
+						OutputRefs: []string{lokistackOtlpOut, "another-" + lokistackOut},
+					},
+					{
+						Name:       "another-" + lokistackPipeline,
+						InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit)},
+						OutputRefs: []string{"foo-" + lokistackOut, "bar-" + lokistackOtlpOut},
 					},
 				}
 			},

@@ -1,6 +1,9 @@
 package observability
 
 import (
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
@@ -20,8 +23,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
@@ -35,6 +36,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	resourceNames := factory.ResourceNames(*context.Forwarder)
 
 	options := framework.Options{}
+
+	// Set options to any options added during initialization of CLF
+	if context.AdditionalContext != nil {
+		options = context.AdditionalContext
+	}
+
 	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
 		// temporarily create SA token until collector is capable of dynamically reloading a projected serviceaccount token
 		var sa *corev1.ServiceAccount

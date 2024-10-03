@@ -19,12 +19,24 @@ var (
 		filters.Validate,
 		pipelines.Validate,
 	}
+
+	clfPreValidators = []func(internalcontext.ForwarderContext){
+		outputs.ValidateLokistackOTLPForAnnotation,
+	}
 )
 
 // ValidateClusterLogForwarder validates the forwarder spec that can not be accomplished using api attributes and returns a set of conditions that apply to the spec
 func ValidateClusterLogForwarder(context internalcontext.ForwarderContext) {
 	for _, validate := range clfValidators {
 		validate(context)
+	}
+}
+
+// PreValidateClusterLogForwarder validates the forwarder spec before initialization
+// Currently supporting one use-case, forwarding OTEL data format to Lokistack
+func PreValidateClusterLogForwarder(context internalcontext.ForwarderContext) {
+	for _, preValidate := range clfPreValidators {
+		preValidate(context)
 	}
 }
 

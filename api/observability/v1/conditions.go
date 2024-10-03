@@ -56,6 +56,9 @@ const (
 	// ConditionTypeValidFilterPrefix prefixes a named filter to identify its validation state
 	ConditionTypeValidFilterPrefix = GroupName + "/ValidFilter"
 
+	// ConditionTypeValidLokistackOTLPOutputs identifies the validity of the lokistack OTLP outputs
+	ConditionTypeValidLokistackOTLPOutputs = GroupName + "/ValidLokistackOTLPOutputs"
+
 	// ReasonClusterRolesExist means the collector serviceAccount is bound to all the cluster roles needed to collect a log_type
 	ReasonClusterRolesExist = "ClusterRolesExist"
 

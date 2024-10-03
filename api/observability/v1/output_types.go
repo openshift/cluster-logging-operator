@@ -748,6 +748,8 @@ type LokiStackAuthentication struct {
 }
 
 // LokiStack provides optional extra properties for `type: lokistack`
+// +kubebuilder:validation:XValidation:rule="!has(self.labelKeys) || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'labelKeys' cannot be set when data model is 'Otel'"
+// +kubebuilder:validation:XValidation:rule="!has(self.tuning) || self.tuning.compression != 'snappy' || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'snappy' compression cannot be used when data model is 'Otel'"
 type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -790,6 +792,19 @@ type LokiStack struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stream Label Configuration"
 	LabelKeys *LokiStackLabelKeys `json:"labelKeys,omitempty"`
+
+	// DataModel can be used to customize how log data is stored in LokiStack.
+	//
+	// There are two different models to choose from:
+	//
+	//  - Viaq
+	//  - Otel
+	//
+	// When the data model is not set, it currently defaults to the "Viaq" data model.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Data Model"
+	DataModel LokiStackDataModel `json:"dataModel,omitempty"`
 }
 
 // LokiStackLabelKeys contains the configuration that maps log record's keys to Loki labels used to identify streams.
@@ -850,6 +865,19 @@ type LokiStackTenantLabelKeys struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Label Keys"
 	LabelKeys []string `json:"labelKeys,omitempty"`
 }
+
+// LokiStackDataModel selects which data model is used to send and store the log data.
+//
+// +kubebuilder:validation:Enum:=Viaq;Otel
+type LokiStackDataModel string
+
+const (
+	// LokiStackDataModelViaq selects the ViaQ data model for the LokiStack output.
+	LokiStackDataModelViaq LokiStackDataModel = "Viaq"
+	// LokiStackDataModelOpenTelemetry selects a data model based on the OpenTelemetry semantic conventions
+	// and uses OTLP as transport.
+	LokiStackDataModelOpenTelemetry LokiStackDataModel = "Otel"
+)
 
 // Loki provides optional extra properties for `type: loki`
 type Loki struct {

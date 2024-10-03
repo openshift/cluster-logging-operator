@@ -1,0 +1,64 @@
+= Red Hat Managed Lokistack
+
+This guide provides configuration instructions for setting up the `ClusterLogForwarder` spec to send logs to a Red Hat managed Lokistack in either the `Viaq` or `Otel (through OTLP)` data model.
+
+See `otlp-forwarding.adoc` for more information about the `Viaq` -> `Otel` data mapping as well as resources for the `OpenTelemetry OTLP Specifications`.
+
+.Technical Preview
+This feature is currently in tech-preview and an annotation is required
+
+`observability.openshift.io/tech-preview-otlp-output: "enabled"`
+
+---
+== Configuring the Forwarder
+
+.ClusterLogForwarder
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-logforwarder
+  namespace: my-app-namespace
+  annotations:
+    observability.openshift.io/tech-preview-otlp-output: "enabled" <1>
+spec:
+  outputs:
+    - type: lokistack  <2>
+      name: loki-otlp
+      lokiStack:
+        target:
+          name: my-lokistack <3>
+          namespace: openshift-logging <3>
+        dataModel: Otel <4>
+        tuning:
+          compression: none  <5>
+        authentication:
+          token:
+            from: serviceAccount  <6>
+      tls: 
+        ca:
+          key: service-ca.crt <7>
+          configMapName: openshift-service-ca.crt <7>
+  pipelines:
+   - name: my-pipeline
+     inputRefs:
+     - application
+     - infrastructure
+     outputRefs:
+     - loki-otlp
+  serviceAccount:
+    name: logger-admin
+----
+. The tech preview annotation required to enable `Otel` output.
+. Output `type` is '*lokistack*'.
+. `lokiStack` `target`, specify a valid `lokistack` instance in the appropriate namespace.
+. `lokiStack` `dataModel` is optional but `Viaq` or `Otel` can also be specified. If omitted, will default to `Viaq`.
+. `lokiStack` `tuning` `compression` is optional but can specify one of `none` or `gzip`.
+. `lokiStack` `authentication` specifies a `token` `from` and a value of "*serviceAccount*"
+.. The token can also be read from a secret
+.. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
+. `tls` spec identifies the keys and secret to the respective certificates that they represent.
+
+[NOTE]
+`lokistack` `labeKeys` cannot be used when `dataModel` is `Otel`. 

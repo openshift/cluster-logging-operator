@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessForwarderPipelines migrates the specified output type and name to appropriate outputs and pipelines
-func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputType obs.OutputType, wantedOutputName string, findByTypeAndName bool) ([]obs.OutputSpec, []obs.PipelineSpec) {
+func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec) ([]obs.OutputSpec, []obs.PipelineSpec) {
 	inPipelines := spec.Pipelines
 	pipelines := []obs.PipelineSpec{}
 	outputMap := utils.OutputMap(&spec)
@@ -20,14 +20,14 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 
 	// Remove migrated outputs
 	for _, o := range spec.Outputs {
-		if o.Type == wantedOutputType && (!findByTypeAndName || o.Name == wantedOutputName) {
+		if o.Type == obs.OutputTypeLokiStack {
 			continue
 		}
 		finalOutputs = append(finalOutputs, o)
 	}
 
 	for _, p := range inPipelines {
-		needMigrations := findSpecifiedOutputs(outputMap, p.OutputRefs, wantedOutputType, wantedOutputName, findByTypeAndName)
+		needMigrations := findLokistackOutputs(outputMap, p.OutputRefs)
 		if needMigrations.Len() == 0 {
 			pipelines = append(pipelines, p)
 			continue
@@ -35,7 +35,7 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 
 		needOutput := map[string][]obs.OutputSpec{}
 
-		// Make map of input and list of specified outputs for the input
+		// Make map of input and list of lokistacks for the input
 		for _, i := range p.InputRefs {
 			for _, outputName := range needMigrations.List() {
 				needOutput[i] = append(needOutput[i], *outputMap[outputName])
@@ -68,11 +68,8 @@ func ProcessForwarderPipelines(spec obs.ClusterLogForwarderSpec, wantedOutputTyp
 		for input, outputSpecList := range needOutput {
 			tenant := getInputTypeFromName(spec, input)
 			for _, outSpec := range outputSpecList {
-				var obsSpec obs.OutputSpec
-				switch wantedOutputType {
-				case obs.OutputTypeLokiStack:
-					obsSpec = GenerateLokiOutput(outSpec, input, tenant)
-				}
+				// Generate appropriate OTLP out or loki out
+				obsSpec := GenerateOutput(outSpec, input, tenant)
 				finalOutputs = append(finalOutputs, obsSpec)
 			}
 		}
@@ -108,12 +105,12 @@ func getInputTypeFromName(spec obs.ClusterLogForwarderSpec, inputName string) st
 	return ""
 }
 
-// findSpecifiedOutputs determines if the wanted output type and/or name is referenced and needs to be migrated
-func findSpecifiedOutputs(outputMap map[string]*obs.OutputSpec, outputRefs []string, wantedOutputType obs.OutputType, wantedOutputName string, findByNameAndType bool) *sets.String {
+// findLokistackOutputs identifies and returns a set of lokistack output names that need to be migrated
+func findLokistackOutputs(outputMap map[string]*obs.OutputSpec, outputRefs []string) *sets.String {
 	needMigrations := sets.NewString()
 	for _, outName := range outputRefs {
-		if outSpec, ok := outputMap[outName]; ok && outSpec.Type == wantedOutputType {
-			if !findByNameAndType || outSpec.Name == wantedOutputName {
+		if outSpec, ok := outputMap[outName]; ok {
+			if outSpec.Type == obs.OutputTypeLokiStack {
 				needMigrations.Insert(outSpec.Name)
 			}
 		}

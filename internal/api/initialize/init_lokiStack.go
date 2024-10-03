@@ -10,11 +10,16 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-// MigrateLokiStack migrates a lokistack output into appropriate loki outputs based on defined inputs
+const (
+	lokiOtlpEndpoint = "/otlp/v1/logs"
+)
+
+// MigrateLokiStack migrates a lokistack output into appropriate loki or OTLP outputs based on defined inputs
 func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) obs.ClusterLogForwarder {
 	var outputs []obs.OutputSpec
 	var pipelines []obs.PipelineSpec
-	outputs, pipelines = ProcessForwarderPipelines(spec.Spec, obs.OutputTypeLokiStack, "", false)
+
+	outputs, pipelines = ProcessForwarderPipelines(spec.Spec)
 
 	spec.Spec.Outputs = outputs
 	spec.Spec.Pipelines = pipelines
@@ -22,31 +27,64 @@ func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) obs.C
 	return spec
 }
 
-func GenerateLokiOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec {
-	return obs.OutputSpec{
-		Name: fmt.Sprintf("%s-%s", outSpec.Name, input),
-		Type: obs.OutputTypeLoki,
-		Loki: &obs.Loki{
-			URLSpec: obs.URLSpec{
-				URL: lokiStackURL(outSpec.LokiStack, tenant),
-			},
-			Authentication: &obs.HTTPAuthentication{
-				Token: outSpec.LokiStack.Authentication.Token,
-			},
-			Tuning:    outSpec.LokiStack.Tuning,
-			LabelKeys: lokiStackLabelKeysForTenant(outSpec.LokiStack.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
-		},
+// GenerateOutput returns either a Loki or OTLP output spec when migrating Lokistacks
+func GenerateOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec {
+	obsOut := &obs.OutputSpec{
+		Name:  fmt.Sprintf("%s-%s", outSpec.Name, input),
 		TLS:   outSpec.TLS,
 		Limit: outSpec.Limit,
 	}
+
+	if outSpec.LokiStack.DataModel == obs.LokiStackDataModelOpenTelemetry {
+		obsOut.Type = obs.OutputTypeOTLP
+		obsOut.OTLP = GenerateOtlpSpec(outSpec.LokiStack, tenant)
+	} else {
+		obsOut.Type = obs.OutputTypeLoki
+		obsOut.Loki = GenerateLokiSpec(outSpec.LokiStack, tenant)
+	}
+
+	return *obsOut
 }
 
-func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string) string {
+// GenerateLokiSpec generates and returns a Loki spec for the defined lokistack output
+func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
+	return &obs.Loki{
+		URLSpec: obs.URLSpec{
+			URL: lokiStackURL(ls, tenant, false),
+		},
+		Authentication: &obs.HTTPAuthentication{
+			Token: ls.Authentication.Token,
+		},
+		Tuning:    ls.Tuning,
+		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
+	}
+}
+
+// GenerateOtlpSpec generates and returns an OTLP spec for the defined lokistack output
+// Note: OTLP does not support compression type `snappy` where loki does
+// This also does not support LabelKeys
+func GenerateOtlpSpec(ls *obs.LokiStack, tenant string) *obs.OTLP {
+	return &obs.OTLP{
+		URL: lokiStackURL(ls, tenant, true),
+		Authentication: &obs.HTTPAuthentication{
+			Token: ls.Authentication.Token,
+		},
+		Tuning: (*obs.OTLPTuningSpec)(ls.Tuning),
+	}
+}
+
+func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string, otlp bool) string {
 	service := lokiStackGatewayService(lokiStackSpec.Target.Name)
 	if !internalobs.ReservedInputTypes.Has(tenant) {
 		return ""
 	}
-	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, lokiStackSpec.Target.Namespace, tenant)
+	baseURL := fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, lokiStackSpec.Target.Namespace, tenant)
+
+	// return OTLP endpoint appended to the base lokistack URL if output is OTLP
+	if otlp {
+		return baseURL + lokiOtlpEndpoint
+	}
+	return baseURL
 }
 
 func lokiStackGatewayService(lokiStackServiceName string) string {

@@ -43,7 +43,7 @@ if .log_source == "%s" {
 		RemovePartial,
 		RemoveFile,
 		RemoveSourceType,
-		RemoveStream,
+		HandleStream,
 		RemovePodIPs,
 		RemoveNodeLabels,
 		RemoveTimestampEnd,

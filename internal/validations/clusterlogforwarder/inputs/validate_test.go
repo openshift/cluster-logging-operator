@@ -441,8 +441,31 @@ var _ = Describe("#Validate", func() {
 				},
 			}
 			Verify(inputs, clfStatus, extras)
-			Expect(clfStatus.Inputs["custom-app-container-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "cannot have a negative limit"))
-			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "cannot have a negative limit"))
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "application input limit threshold must be more than zero"))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "application input limit threshold must be more than zero"))
+		})
+		It("should fail if input has limit threshold equals to zero", func() {
+			inputs = []loggingv1.InputSpec{
+				{
+					Name: "custom-app-container-limit",
+					Application: &loggingv1.Application{
+						ContainerLimit: &loggingv1.LimitSpec{
+							MaxRecordsPerSecond: 0,
+						},
+					},
+				},
+				{
+					Name: "custom-app-group-limit",
+					Application: &loggingv1.Application{
+						GroupLimit: &loggingv1.LimitSpec{
+							MaxRecordsPerSecond: 0,
+						},
+					},
+				},
+			}
+			Verify(inputs, clfStatus, extras)
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "application input limit threshold must be more than zero"))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition(loggingv1.ValidationCondition, true, loggingv1.ValidationFailureReason, "application input limit threshold must be more than zero"))
 		})
 	})
 })

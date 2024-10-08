@@ -28,7 +28,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 		for _, inputName := range p.InputRefs {
 			input, isUserDefined := userDefinedInputs[inputName]
 			if isUserDefined {
-				if input.HasPolicy() && input.GetMaxRecordsPerSecond() >= 0 {
+				if input.HasPolicy() && input.GetMaxRecordsPerSecond() > 0 {
 					// if threshold is zero, then don't add to pipeline
 					inputs = append(inputs, fmt.Sprintf(UserDefinedSourceThrottle, input.Name))
 				} else {

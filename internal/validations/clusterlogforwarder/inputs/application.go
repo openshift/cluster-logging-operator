@@ -20,11 +20,11 @@ func validApplication(spec loggingv1.InputSpec, status *loggingv1.ClusterLogForw
 				corev1.ConditionTrue,
 				loggingv1.ValidationFailureReason,
 				"application input must define only one of container or group limit"))
-		case spec.HasPolicy() && spec.GetMaxRecordsPerSecond() < 0:
+		case spec.HasPolicy() && spec.GetMaxRecordsPerSecond() <= 0:
 			status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
 				corev1.ConditionTrue,
 				loggingv1.ValidationFailureReason,
-				"application input cannot have a negative limit threshold"))
+				"application input limit threshold must be more than zero"))
 		case !validGlob(spec.Application.Namespaces):
 			status.Inputs.Set(spec.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
 				corev1.ConditionTrue,

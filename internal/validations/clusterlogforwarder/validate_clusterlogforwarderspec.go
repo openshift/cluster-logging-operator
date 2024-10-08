@@ -202,8 +202,8 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 			badInput("inputspec must define one or more of application, infrastructure, audit or receiver")
 		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
 			badInput("inputspec must define only one of container or group limit")
-		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
-			badInput("inputspec cannot have a negative limit threshold")
+		case input.HasPolicy() && input.GetMaxRecordsPerSecond() <= 0:
+			badInput("inputspec must have limit threshold value more than zero")
 		case input.Receiver != nil && !extras[constants.VectorName]:
 			badInput("ReceiverSpecs are only supported for the vector log collector")
 		case input.Receiver != nil && input.Receiver.HTTP == nil:

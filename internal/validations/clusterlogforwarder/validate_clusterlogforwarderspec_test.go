@@ -261,8 +261,34 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 				},
 			}
 			verifyInputs(forwarderSpec, clfStatus, extras)
-			Expect(clfStatus.Inputs["custom-app-container-limit"]).To((HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold")))
-			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold"))
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must have limit threshold value more than zero"))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must have limit threshold value more than zero"))
+		})
+
+		It("should fail if input has limit threshold equal to zero", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "custom-app-container-limit",
+						Application: &loggingv1.Application{
+							ContainerLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 0,
+							},
+						},
+					},
+					{
+						Name: "custom-app-group-limit",
+						Application: &loggingv1.Application{
+							GroupLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 0,
+							},
+						},
+					},
+				},
+			}
+			verifyInputs(forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must have limit threshold value more than zero"))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must have limit threshold value more than zero"))
 		})
 
 	})

@@ -341,7 +341,7 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  del(.stream)
+  .kubernetes.container_iostream = del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)

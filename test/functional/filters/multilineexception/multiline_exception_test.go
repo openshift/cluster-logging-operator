@@ -1,6 +1,7 @@
 package multilineexception
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 
@@ -13,9 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
-// Multiline Detect Exception test to verify proper re-assembly of
-// multi-line exceptions (e.g. java stacktrace)
-// https://issues.redhat.com/browse/LOG-1717
 var _ = Describe("[Functional][Filters][MultilineException] Multi-line exception detection", func() {
 	const (
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
@@ -76,7 +74,7 @@ created by main.main
 		framework.Cleanup()
 	})
 
-	DescribeTable("should reassemble multi-line stacktraces", func(exception string, buildLogForwarder func(framework *functional.CollectorFunctionalFramework)) {
+	DescribeTable("should reassemble multi-line stacktraces", func(stream, exception string, buildLogForwarder func(framework *functional.CollectorFunctionalFramework)) {
 
 		if buildLogForwarder == nil {
 			buildLogForwarder = func(framework *functional.CollectorFunctionalFramework) {
@@ -90,9 +88,9 @@ created by main.main
 
 		Expect(framework.Deploy()).To(BeNil())
 
-		buffer := []string{}
+		var buffer []string
 		for _, line := range strings.Split(exception, "\n") {
-			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
+			crioLine := functional.NewCRIOLogMessageWithStream(timestamp, stream, line, false)
 			buffer = append(buffer, crioLine)
 		}
 		appNamespace = framework.Pod.Namespace
@@ -108,12 +106,12 @@ created by main.main
 			Expect(logs[0].Message).To(Equal(exception))
 		}
 	},
-		Entry("of Java services", javaException, nil),
-		Entry("of JS client side exception", jsClientSideException, nil),
-		Entry("of V8 errors stack trace", jsV8Exception, nil),
-		Entry("of NodeJS services", nodeJSException, nil),
-		Entry("of GoLang services", goLangException, nil),
-		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+		Entry("of Java services to stderr stream", constants.STDERR, javaException, nil),
+		Entry("of JS client side exception to stdout stream", constants.STDOUT, jsClientSideException, nil),
+		Entry("of V8 errors stack trace to stdout stream", constants.STDOUT, jsV8Exception, nil),
+		Entry("of NodeJS services to stdout stream", constants.STDOUT, nodeJSException, nil),
+		Entry("of GoLang services to stderr stream", constants.STDERR, goLangException, nil),
+		Entry("of single application NS sources with multiple pipelines to stdout stream", constants.STDOUT, goLangException, func(framework *functional.CollectorFunctionalFramework) {
 			b := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputName("multiline-log-ns", func(spec *obs.InputSpec) {
 					spec.Type = obs.InputTypeApplication

@@ -43,7 +43,7 @@ func GroupByContainer(id string, inputs []string) Element {
 		Inputs:      helpers.MakeInputs(inputs...),
 		MaxEvents:   "250",
 		GroupBy: MakeGroupBys(".openshift.cluster_id",
-			".kubernetes.namespace_name", ".kubernetes.pod_name", ".kubernetes.container_name"),
+			".kubernetes.namespace_name", ".kubernetes.pod_name", ".kubernetes.container_name", ".kubernetes.container_iostream"),
 	}
 }
 

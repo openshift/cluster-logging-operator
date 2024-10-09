@@ -50,7 +50,8 @@ source = '''
   r.attributes = append(r.attributes,
       [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
       {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
-      {"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
+      {"key": "k8s.node.name", "value": {"stringValue": .hostname}},
+      {"key": "log.iostream", "value": {"stringValue": get!(.,["kubernetes","container_iostream"])}}]
   )
   if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
       r.attributes = append(r.attributes,
@@ -82,7 +83,7 @@ type = "reduce"
 inputs = ["output_otel_collector_container"]
 expire_after_ms = 15000
 max_events = 250
-group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name"]
+group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name",".kubernetes.container_iostream"]
 merge_strategies.resource = "retain"
 merge_strategies.logRecords = "array"
 

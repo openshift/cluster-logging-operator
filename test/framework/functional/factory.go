@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"strings"
 	"time"
 )
@@ -35,12 +36,16 @@ func NewFullCRIOLogMessage(timestamp, message string) string {
 	return NewCRIOLogMessage(timestamp, message, false)
 }
 
-func NewCRIOLogMessage(timestamp, message string, partial bool) string {
+func NewCRIOLogMessageWithStream(timestamp, stream, message string, partial bool) string {
 	fullOrPartial := "F"
 	if partial {
 		fullOrPartial = "P"
 	}
-	return fmt.Sprintf("%s stdout %s %s", timestamp, fullOrPartial, message)
+	return fmt.Sprintf("%s %s %s %s", timestamp, stream, fullOrPartial, message)
+}
+
+func NewCRIOLogMessage(timestamp, message string, partial bool) string {
+	return NewCRIOLogMessageWithStream(timestamp, constants.STDOUT, message, partial)
 }
 
 // CRIOTime returns the CRIO string format of time t.

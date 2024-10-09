@@ -77,14 +77,22 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 
-		// Write log line as input
+		// Write log line as stdout
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		// Write log line as stderr
+		applicationLogLine = fmt.Sprintf("%s stderr F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
 		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]
+		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+
+		outputLogTemplate.Kubernetes.ContainerStream = "stderr"
+		outputTestLog = logs[1]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 	})
 

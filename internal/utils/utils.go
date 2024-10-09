@@ -15,6 +15,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"golang.org/x/mod/semver"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -392,4 +393,17 @@ func GetCollectorName(collectorType logging.LogCollectionType) string {
 		return constants.VectorName
 	}
 	return "unknown"
+}
+
+func IsVersionAheadOrEqual(currentVersion, version string) bool {
+	if !strings.HasPrefix(currentVersion, "v") {
+		currentVersion = "v" + currentVersion
+	}
+	if version == "" {
+		return false
+	}
+
+	canonicalMinVersion := fmt.Sprintf("%s-0", semver.Canonical(version))
+
+	return semver.Compare(currentVersion, canonicalMinVersion) >= 0
 }

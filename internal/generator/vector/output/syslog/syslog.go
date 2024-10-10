@@ -2,10 +2,11 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"

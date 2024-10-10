@@ -61,6 +61,10 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 			t.BaseOutputTuningSpec = spec.Splunk.Tuning.BaseOutputTuningSpec
 			t.Compression = spec.Splunk.Tuning.Compression
 		}
+	case obs.OutputTypeSyslog:
+		if spec.Syslog != nil && spec.Syslog.Tuning != nil {
+			t.DeliveryMode = spec.Syslog.Tuning.DeliveryMode
+		}
 	}
 	return t
 }

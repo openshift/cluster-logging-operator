@@ -13,32 +13,43 @@ const (
 	BaseResourceAttributes = `
 # Create base resource attributes
 resource.attributes = []
-resource.attributes = append( resource.attributes, 
-    [{"key": "k8s.cluster.uid", "value": {"stringValue": get!(.,["openshift","cluster_id"])}},
-    {"key": "openshift.log.source", "value": {"stringValue": .log_source}}]
+resource.attributes = append(resource.attributes,
+  [
+    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+  ]
 )
-`
-	HostResourceAttributes = `
-# Append auditd host attributes
-resource.attributes = append( resource.attributes,
-    [{"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
-)
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
 `
 	ContainerResourceAttributes = `
-# Append container resource attributes
 resource.attributes = append( resource.attributes,
-    [{"key": "k8s.pod.name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
-    {"key": "k8s.container.name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
-    {"key": "k8s.namespace.name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+  [
+    {"key": "k8s.pod.name", "value": {"stringValue": .kubernetes.pod_name}},
+	{"key": "k8s.pod.uid", "value": {"stringValue": .kubernetes.pod_id}},
+    {"key": "k8s.container.name", "value": {"stringValue": .kubernetes.container_name}},
+    {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
+  ]
 )
+if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
+    )
+}}
 `
 	LogRecord = `
 # Create logRecord object
-r = {}
+r = {"attributes": []}
 r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
 r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
-# Convert syslog severity keyword to number, default to 9 (unknown)
-r.severityNumber = to_syslog_severity(.level) ?? 9
+`
+	LogRecordSeverity = `
+r.severityText = .level
 `
 	BodyFromMessage = `
 # Create body from original message or structured
@@ -50,59 +61,70 @@ r.body = {"stringValue": string!(value)}
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 `
-	LogAttributes = `
-# Create logRecord attributes
-r.attributes = []
-r.attributes = append(r.attributes,
-    [{"key": "openshift.log.type", "value": {"stringValue": .log_type}}]
-)
-if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
-    r.attributes = append(r.attributes,
-        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
-    )
-}}
-`
-	ContainerLogAttributes = `
-# Append kube pod labels
-r.attributes = append(r.attributes,
-    [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
-    {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
-    {"key": "k8s.node.name", "value": {"stringValue": .hostname}},
-    {"key": "log.iostream", "value": {"stringValue": get!(.,["kubernetes","container_iostream"])}}]
-)
-if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
-    r.attributes = append(r.attributes,
-        [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
-    )
-}}
-`
 	APILogAttributes = `
-# Append API logRecord attributes
-parts = split(to_string!(.requestURI), "?")
 r.attributes = append(r.attributes,
-	[{"key": "http.response.status.code", "value": {"stringValue": to_string!(get!(.,["responseStatus","code"]))}},
-	{"key": "http.request.method_original", "value": {"stringValue": .verb}},
-    {"key": "user.name", "value": {"stringValue": get!(.,["user","username"])}},
-    {"key": "user_agent.original", "value": {"stringValue": .userAgent }},
-    {"key": "url.domain", "value": {"stringValue": .hostname }},
-	{"key": "url.path", "value": {"stringValue": parts[0] }},
-	{"key": "url.query", "value": {"stringValue": parts[1] }}]
+  [
+    {"key": "k8s.audit.event.level", "value": {"stringValue": .level}},
+    {"key": "k8s.audit.event.stage", "value": {"stringValue": .stage}},
+    {"key": "k8s.audit.event.request.uri", "value": {"stringValue": .requestURI}},
+    {"key": "k8s.audit.event.request.verb", "value": {"stringValue": .verb}},
+    {"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}},
+    {"key": "k8s.audit.event.user_agent", "value": {"stringValue": .userAgent}},
+    {"key": "k8s.user.username", "value": {"stringValue": .user.username}}
+  ]
+)
+values = []
+for_each(array!(.user.groups)) -> |_index,group| {
+    .group = group
+    values = push(values,{"stringValue": group})
+}
+r.attributes = push(r.attributes,{"key": "k8s.user.groups", "value": {"arrayValue": {"values": values}}})
+if exists(.objectRef) {
+  r.attributes = append(r.attributes,[
+      {"key": "k8s.audit.event.object_ref.resource", "value": {"stringValue": .objectRef.resource}},
+      {"key": "k8s.audit.event.object_ref.name", "value": {"stringValue": .objectRef.name}},
+      {"key": "k8s.audit.event.object_ref.namespace", "value": {"stringValue": .objectRef.namespace}},
+      {"key": "k8s.audit.event.object_ref.api_version", "value": {"stringValue": .objectRef.apiVersion}},
+      {"key": "k8s.audit.event.object_ref.api_group", "value": {"stringValue": .objectRef.apiGroup}}
+    ]
+  )
+}
+if exists(.annotations) {for_each(object!(.annotations)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "k8s.audit.event.annotation." + key, "value": {"stringValue": value}}]
+    )
+}}
+`
+	LogAttributes          = ``
+	ContainerLogAttributes = `
+r.attributes = append(r.attributes,
+  [
+	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}}
+  ]
+)
+`
+	NodeResourceAttributes = `
+resource.attributes = append(resource.attributes,
+  [
+	{"key": "process.command_line", "value": {"stringValue": .systemd.t.CMDLINE}},
+	{"key": "process.executable.name", "value": {"stringValue": .systemd.t.COMM}},
+	{"key": "process.executable.path", "value": {"stringValue": .systemd.t.EXE}},
+	{"key": "process.pid", "value": {"stringValue": .systemd.t.PID}},
+	{"key": "service.name", "value": {"stringValue": .systemd.t.SYSTEMD_UNIT}}
+  ]
 )
 `
 	NodeLogAttributes = `
-# Append log attributes for node logs
-r.attributes = append(r.attributes,
-	[{"key": "syslog.facility", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_FACILITY"]))}},
-	{"key": "service.name", "value": {"stringValue": to_string!(get!(.,["systemd","u","SYSLOG_IDENTIFIER"]))}},
-	{"key": "process.command", "value": {"stringValue": to_string!(get!(.,["systemd","t","COMM"]))}},
-	{"key": "process.command_line", "value": {"stringValue": to_string!(get!(.,["systemd","t","CMDLINE"]))}},
-	{"key": "process.executable.path", "value": {"stringValue": to_string!(get!(.,["systemd","t","EXE"]))}},
-	{"key": "process.gid", "value": {"stringValue": to_string!(get!(.,["systemd","t","GID"]))}},
-	{"key": "host.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","MACHINE_ID"]))}},
-    {"key": "host.name", "value": {"stringValue": .hostname}},
-	{"key": "process.pid", "value": {"stringValue": to_string!(get!(.,["systemd","t","PID"]))}},
-	{"key": "process.user.id", "value": {"stringValue": to_string!(get!(.,["systemd","t","UID"]))}}]
-)
+if exists(.systemd.t) {for_each(object!(.systemd.t)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "systemd.t." + downcase(key), "value": {"stringValue": value}}]
+    )
+}}
+if exists(.systemd.u) {for_each(object!(.systemd.u)) -> |key,value| {
+    r.attributes = append(r.attributes,
+        [{"key": "systemd.u." + downcase(key), "value": {"stringValue": value}}]
+    )
+}}
 `
 	FinalGrouping = `
 # Openshift object for grouping (dropped before sending)
@@ -110,7 +132,7 @@ o = {
     "log_type": .log_type,
     "log_source": .log_source,
     "hostname": .hostname,
-    "cluster_id": get!(.,["openshift","cluster_id"])
+    "cluster_id": .openshift.cluster_id
 }
 . = {
   "openshift": o,
@@ -123,7 +145,7 @@ o = {
 o = {
     "log_type": .log_type,
     "log_source": .log_source,
-    "cluster_id": get!(.,["openshift","cluster_id"])
+    "cluster_id": .openshift.cluster_id
 }
 .kubernetes = {
     "namespace_name": .kubernetes.namespace_name,
@@ -141,15 +163,20 @@ o = {
 	BackwardCompatBaseResourceAttributes = `
 # Append backward compatibility attributes
 resource.attributes = append( resource.attributes,
-	[{"key": "log_type", "value": {"stringValue": .log_type}}]
+	[
+      {"key": "log_type", "value": {"stringValue": .log_type}},
+      {"key": "log_source", "value": {"stringValue": .log_source}},
+      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+    ]
 )
 `
 	BackwardCompatContainerResourceAttributes = `
 # Append backward compatibility attributes for container logs
 resource.attributes = append( resource.attributes,
-	[{"key": "kubernetes_pod_name", "value": {"stringValue": get!(.,["kubernetes","pod_name"])}},
-	{"key": "kubernetes_container_name", "value": {"stringValue": get!(.,["kubernetes","container_name"])}},
-	{"key": "kubernetes_namespace_name", "value": {"stringValue": get!(.,["kubernetes","namespace_name"])}}]
+	[{"key": "kubernetes.pod_name", "value": {"stringValue": .kubernetes.pod_name}},
+	{"key": "kubernetes.container_name", "value": {"stringValue": .kubernetes.container_name}},
+	{"key": "kubernetes.namespace_name", "value": {"stringValue": .kubernetes.namespace_name}}]
 )
 `
 )
@@ -161,6 +188,7 @@ func containerLogsVRL() string {
 		BackwardCompatBaseResourceAttributes,
 		BackwardCompatContainerResourceAttributes,
 		LogRecord,
+		LogRecordSeverity,
 		BodyFromMessage,
 		LogAttributes,
 		ContainerLogAttributes,
@@ -172,7 +200,9 @@ func nodeLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
 		BaseResourceAttributes,
 		BackwardCompatBaseResourceAttributes,
+		NodeResourceAttributes,
 		LogRecord,
+		LogRecordSeverity,
 		BodyFromMessage,
 		LogAttributes,
 		NodeLogAttributes,
@@ -184,7 +214,6 @@ func auditHostLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
 		BaseResourceAttributes,
 		BackwardCompatBaseResourceAttributes,
-		HostResourceAttributes,
 		LogRecord,
 		BodyFromInternal,
 		LogAttributes,
@@ -200,17 +229,6 @@ func auditAPILogsVRL() string {
 		BodyFromInternal,
 		LogAttributes,
 		APILogAttributes,
-		FinalGrouping,
-	}), "\n")
-}
-
-func auditOvnLogsVRL() string {
-	return strings.Join(helpers.TrimSpaces([]string{
-		BaseResourceAttributes,
-		BackwardCompatBaseResourceAttributes,
-		LogRecord,
-		BodyFromMessage,
-		LogAttributes,
 		FinalGrouping,
 	}), "\n")
 }
@@ -263,7 +281,7 @@ func TransformAuditOvn(id string, inputs []string) Element {
 		Desc:        "Normalize audit log ovn records to OTLP semantic conventions",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditOvnLogsVRL(),
+		VRL:         auditAPILogsVRL(),
 	}
 }
 

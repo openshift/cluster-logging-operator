@@ -53,7 +53,7 @@ func GroupBySource(id string, inputs []string) Element {
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
 		MaxEvents:   "250",
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.log_source"),
+		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.log_type", ".openshift.log_source"),
 	}
 }
 
@@ -63,8 +63,7 @@ func GroupByHost(id string, inputs []string) Element {
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
 		MaxEvents:   "50",
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.hostname"),
-	}
+		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.hostname", ".openshift.log_type", ".openshift.log_source")}
 }
 
 func MakeGroupBys(fields ...string) string {

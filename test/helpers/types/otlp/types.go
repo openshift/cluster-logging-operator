@@ -37,6 +37,7 @@ type LogRecord struct {
 	TimeUnixNano         string      `json:"timeUnixNano,omitempty"`
 	ObservedTimeUnixNano string      `json:"observedTimeUnixNano,omitempty"`
 	SeverityNumber       int         `json:"severityNumber,omitempty"`
+	SeverityText         string      `json:"severityText,omitempty"`
 	TraceID              string      `json:"traceId,omitempty"`
 	SpanID               string      `json:"spanId,omitempty"`
 	Body                 StringValue `json:"body,omitempty"`
@@ -44,12 +45,22 @@ type LogRecord struct {
 }
 
 type AttributeValue struct {
-	StringValue string      `json:"stringValue,omitempty"`
+	StringValue *string     `json:"stringValue,omitempty"`
 	Bool        bool        `json:"boolValue,omitempty"`
-	Int         int         `json:"intValue,omitempty"`
+	Int         *string     `json:"intValue,omitempty"` //proto example defines as a string
 	Float       float64     `json:"doubleValue,omitempty"`
 	Array       ArrayValue  `json:"arrayValue,omitempty"`
 	Map         KVListValue `json:"kvlistValue,omitempty"`
+}
+
+func (av AttributeValue) String() string {
+	switch {
+	case av.StringValue != nil:
+		return *av.StringValue
+	case av.Int != nil:
+		return *av.Int
+	}
+	return ""
 }
 
 type StringValue struct {
@@ -58,6 +69,14 @@ type StringValue struct {
 
 type ArrayValue struct {
 	Values []StringValue `json:"values,omitempty"`
+}
+
+func (v ArrayValue) List() []string {
+	var result []string
+	for _, e := range v.Values {
+		result = append(result, e.StringValue)
+	}
+	return result
 }
 
 type KVListValue struct {

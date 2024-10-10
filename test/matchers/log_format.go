@@ -59,10 +59,12 @@ func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string
 
 	ifv := reflect.ValueOf(iface)
 	ift := reflect.TypeOf(iface)
+	log.V(3).Info("Evaluating deep fields", "type", ift.Name(), "interface", test.JSONLine(iface))
 
 	for i := 0; i < ift.NumField(); i++ {
 		v := ifv.Field(i)
 		n := namePrefix + ifv.Type().Field(i).Name
+		log.V(3).Info("deep field", "fieldName", n, "kind", v.Kind().String())
 		if !v.CanInterface() {
 			continue
 		}
@@ -174,7 +176,7 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		}
 	}
 
-	log.V(3).Info("CompareLogLogic: Mismatch !!!", "fieldname", name, "templateValue", templateValueString, "value", valueString)
+	log.V(3).Info("CompareLogLogic: Mismatch !!!", "fieldname", name, "templateValue", test.JSONLine(templateValue), "value", test.JSONLine(value))
 	return false
 }
 

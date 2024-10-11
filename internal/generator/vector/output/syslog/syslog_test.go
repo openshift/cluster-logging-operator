@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
+	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -62,7 +63,7 @@ var _ = Describe("vector syslog clf output", func() {
 			},
 		}
 	)
-	DescribeTable("#New", func(expFile string, visit func(spec *obs.OutputSpec)) {
+	DescribeTable("#New", func(expFile string, visit func(spec *obs.OutputSpec), tune bool) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -71,13 +72,21 @@ var _ = Describe("vector syslog clf output", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		conf := syslog.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, nil, framework.NoOptions)
+
+		var adapter fake.Output
+
+		if tune {
+			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
+		}
+		conf := syslog.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil),
+		Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil, false),
+
 		Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
-		}),
+		}, false),
+
 		Entry("should configure UDP with every setting", "udp_with_every_setting.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
 				URL:        "udp://logserver:514",
@@ -89,7 +98,8 @@ var _ = Describe("vector syslog clf output", func() {
 				ProcId:     "procID",
 				PayloadKey: "{.plKey}",
 			}
-		}),
+		}, false),
+
 		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Syslog = &obs.Syslog{
@@ -102,7 +112,13 @@ var _ = Describe("vector syslog clf output", func() {
 				ProcId:     `{.proc_id||"none"}`,
 				PayloadKey: `{.payload_key}`,
 			}
-		}),
+		}, false),
+		Entry("should set buffer tuning parameters", "tcp_with_tuning.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tcp://logserver:514"
+			spec.Syslog.Tuning = &obs.SyslogTuningSpec{
+				DeliveryMode: obs.DeliveryModeAtLeastOnce,
+			}
+		}, true),
 	)
 
 })

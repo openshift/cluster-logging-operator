@@ -1,0 +1,25 @@
+[transforms.example_parse_encoding]
+type = "remap"
+inputs = ["application"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+'''
+
+[sinks.example]
+type = "socket"
+inputs = ["example_parse_encoding"]
+address = "logserver:514"
+mode = "tcp"
+
+[sinks.example.encoding]
+codec = "syslog"
+except_fields = ["_internal"]
+rfc = "rfc5424"
+facility = "user"
+severity = "informational"
+add_log_source = false
+
+[sinks.example.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488

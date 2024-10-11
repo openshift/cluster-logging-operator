@@ -1280,6 +1280,11 @@ spec:
         path: outputs[0].syslog.severity
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].syslog.tuning
+      - displayName: Delivery Mode
+        path: outputs[0].syslog.tuning.deliveryMode
       - description: 'An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`,
           `udp` and `udps` For example, to send syslog records using secure UDP: url:
           udps://syslog.example.com:1234'

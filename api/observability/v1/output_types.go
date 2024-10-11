@@ -1024,6 +1024,11 @@ const (
 	SyslogRFC5424 SyslogRFCType = "RFC5424"
 )
 
+type SyslogTuningSpec struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Delivery Mode"
+	DeliveryMode DeliveryMode `json:"deliveryMode,omitempty"`
+}
+
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
 
@@ -1165,6 +1170,13 @@ type Syslog struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Enrichment Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Enrichment EnrichmentType `json:"enrichment,omitempty"`
+
+	// Tuning specs tuning for the output
+	//
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
+	Tuning *SyslogTuningSpec `json:"tuning,omitempty"`
 }
 
 // +kubebuilder:validation:Enum:=None;KubernetesMinimal

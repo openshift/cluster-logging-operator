@@ -73,7 +73,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				},
 			}
 			customClf.Spec.ServiceAccount.Name = providedSAName
-			k8sClient = fake.NewClientBuilder().Build()
+			k8sClient = fake.NewFakeClient()
 			ValidatePermissions(internalcontext.ForwarderContext{
 				Client:    k8sClient,
 				Reader:    k8sClient,
@@ -94,7 +94,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 		)
 		BeforeEach(func() {
 			k8sClient = &mockSARClient{
-				fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+				fake.NewFakeClient(clfServiceAccount),
 			}
 		})
 		It("should pass validation for application logs", func() {
@@ -200,7 +200,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 
 		It("should pass validation if service account can collect audit logs and there is an HTTP receiver", func() {
 			k8sAuditClient := &mockAuditSARClient{
-				fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+				fake.NewFakeClient(clfServiceAccount),
 			}
 
 			const httpInputName = `http-receiver`
@@ -273,7 +273,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 			var k8sAppClient client.Client
 			BeforeEach(func() {
 				k8sAppClient = &mockAppSARClient{
-					fake.NewClientBuilder().WithObjects(clfServiceAccount).Build(),
+					fake.NewFakeClient(clfServiceAccount),
 				}
 			})
 

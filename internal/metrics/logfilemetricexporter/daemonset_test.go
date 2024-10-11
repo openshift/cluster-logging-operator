@@ -29,7 +29,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient( //nolint
+		reqClient = fake.NewFakeClient(
 			namespace,
 		)
 

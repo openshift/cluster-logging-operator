@@ -36,7 +36,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient( //nolint
+		reqClient = fake.NewFakeClient(
 			namespace,
 		)
 

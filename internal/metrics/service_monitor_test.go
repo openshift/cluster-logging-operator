@@ -31,7 +31,7 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient( //nolint
+		reqClient = fake.NewFakeClient(
 			namespace,
 		)
 		owner       = metav1.OwnerReference{}

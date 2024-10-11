@@ -176,6 +176,26 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			Expect(getProcID(fields)).To(Equal("bar-rec_appname"))
 			Expect(getMsgID(fields)).To(Equal("bazdefault.application"))
 		})
+		It("should send logs with delivery mode `atLeastOnce` configured", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+					output.Syslog.Tuning = &obs.SyslogTuningSpec{
+						DeliveryMode: obs.DeliveryModeAtLeastOnce,
+					}
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Log message data
+			for _, log := range JSONApplicationLogs {
+				log = functional.NewFullCRIOLogMessage(timestamp, log)
+				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
+			}
+			// Read line from Syslog output
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty(), "Expected the receiver to receive the message")
+		})
 	})
 	Context("Audit logs", func() {
 		It("should send kubernetes audit logs", func() {

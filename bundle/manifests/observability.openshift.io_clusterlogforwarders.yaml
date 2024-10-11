@@ -2283,6 +2283,18 @@ spec:
                             case-insensitive keywords: \n Emergency Alert Critical
                             Error Warning Notice Informational Debug"
                           type: string
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          nullable: true
+                          properties:
+                            deliveryMode:
+                              description: DeliveryMode sets the delivery mode for
+                                log forwarding.
+                              enum:
+                              - AtLeastOnce
+                              - AtMostOnce
+                              type: string
+                          type: object
                         url:
                           description: 'An absolute URL, with a scheme. Valid schemes
                             are: `tcp`, `tls`, `udp` and `udps` For example, to send

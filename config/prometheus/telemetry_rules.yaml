@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cluster-logging-operator-telemetry
+spec:
+  groups:
+  - name: telemetry.rules
+    rules:
+    # Number of logging pipelines in each namespace (mostly just "openshift-logging")
+    - expr: |-
+        sum by (resource_namespace, version) (log_forwarder_pipelines)
+      record: openshift_logging:log_forwarder_pipelines:sum
+    # Number of ClusterLogForwarder instances in each namespace (mostly just "openshift-logging")
+    - expr: |-
+        count by (resource_namespace, version) (log_forwarder_pipelines)
+      record: openshift_logging:log_forwarders:sum
+    # Number of inputs per namespace (mostly just "openshift-logging") and type (four types in total)
+    # Only used types will be present
+    - expr: |-
+        sum by (resource_namespace, version, input) (log_forwarder_input_type)
+      record: openshift_logging:log_forwarder_input_type:sum
+    # Number of outputs per namespace (mostly just "openshift-logging") and type (~11 types in total)
+    # Only used types will be present
+    - expr: |-
+        sum by (resource_namespace, version, output) (log_forwarder_output_type)
+      record: openshift_logging:log_forwarder_output_type:sum
+    # Total number of collected log bytes per namespace (mostly just "openshift-logging")
+    - expr: |-
+        sum by(namespace) (rate(vector_component_received_bytes_total{component_kind="source", component_type!="internal_metrics"}[5m]))
+      record: openshift_logging:vector_component_received_bytes_total:rate5m

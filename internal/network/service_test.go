@@ -27,7 +27,7 @@ var _ = Describe("Reconcile Service", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient( //nolint
+		reqClient = fake.NewFakeClient(
 			namespace,
 		)
 		portName      = "test-port"

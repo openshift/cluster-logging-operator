@@ -2,6 +2,7 @@ package reconcile_test
 
 import (
 	"context"
+
 	security "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -36,11 +37,11 @@ var _ = Describe("reconciling ", func() {
 
 		globalScheme := scheme.Scheme
 		Expect(security.Install(globalScheme)).To(Succeed())
-		builder := fake.NewClientBuilder().WithScheme(globalScheme)
+
+		k8sClient := fake.NewFakeClient()
 		if initial != nil {
-			builder.WithRuntimeObjects(initial)
+			k8sClient = fake.NewFakeClient(initial)
 		}
-		k8sClient := builder.Build()
 
 		Expect(reconcile.SecurityContextConstraints(k8sClient, &desired)).To(Succeed(), "Expect no error reconciling secrets")
 

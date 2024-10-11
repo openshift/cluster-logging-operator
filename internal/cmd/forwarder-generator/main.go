@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -65,7 +64,7 @@ func main() {
 	}
 	log.V(2).Info("Unmarshalled", "forwarder", clfYaml)
 
-	var secrets []*corev1.Secret
+	var secrets []runtime.Object
 	if *secretsFlag != "" {
 		for _, raw := range strings.Split(*secretsFlag, ":") {
 			rawentry := strings.Split(raw, "=")
@@ -80,13 +79,9 @@ func main() {
 				log.V(1).Info("Unable to create rawentry from arg", "entry", raw)
 			}
 		}
+	}
 
-	}
-	clientBuilder := fake.NewClientBuilder()
-	for _, entry := range secrets {
-		clientBuilder.WithRuntimeObjects(entry)
-	}
-	client := clientBuilder.Build()
+	client := fake.NewFakeClient(secrets...)
 	generatedConfig, err := forwarder.Generate(clfYaml, *debugOutput, client)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

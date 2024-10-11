@@ -24,7 +24,7 @@ var _ = Describe("ReconcileForDashboards", func() {
 
 		setup = func(cm *corev1.ConfigMap) {
 			if cm != nil {
-				fakeClient = fake.NewClientBuilder().WithObjects(cm).Build()
+				fakeClient = fake.NewFakeClient(cm)
 			}
 		}
 		exp     = newDashboardConfigMap()
@@ -32,7 +32,7 @@ var _ = Describe("ReconcileForDashboards", func() {
 	)
 
 	BeforeEach(func() {
-		fakeClient = fake.NewClientBuilder().Build()
+		fakeClient = fake.NewFakeClient()
 		initial = newDashboardConfigMap()
 	})
 

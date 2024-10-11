@@ -30,7 +30,7 @@ var _ = Describe("Validating tech-preview annotation for OTLP output type", func
 				},
 			}
 			forwarder.Annotations = map[string]string{"some.other.annotation/for-testing": "true"}
-			k8sClient = fake.NewClientBuilder().Build()
+			k8sClient = fake.NewFakeClient()
 			context = internalcontext.ForwarderContext{
 				Client:    k8sClient,
 				Reader:    k8sClient,

@@ -67,7 +67,8 @@ if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value
 r.attributes = append(r.attributes,
     [{"key": "k8s.pod.uid", "value": {"stringValue": get!(.,["kubernetes","pod_id"])}},
     {"key": "k8s.container.id", "value": {"stringValue": get!(.,["kubernetes","container_id"])}},
-    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}]
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}},
+    {"key": "log.iostream", "value": {"stringValue": get!(.,["kubernetes","container_iostream"])}}]
 )
 if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
     r.attributes = append(r.attributes,

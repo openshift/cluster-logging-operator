@@ -3,12 +3,13 @@ package functional
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	"strings"
-	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/url"
@@ -62,9 +63,10 @@ func (f *CollectorFunctionalFramework) ReadRawApplicationLogsFrom(outputName str
 func (f *CollectorFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, string(obs.InputTypeInfrastructure))
 }
+
 func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
-	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
-	//till this step it must be ensured that a topic is created and published in kafka-consumer-clo-app-topic container within functional pod
+	// inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
+	// till this step it must be ensured that a topic is created and published in kafka-consumer-clo-app-topic container within functional pod
 	var result string
 	outputFilename := "/shared/consumed.logs"
 	cmd := fmt.Sprintf("tail -1 %s", outputFilename)
@@ -132,11 +134,11 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			var result string
 			outputFiles, ok := outputLogFile[string(outputSpec.Type)]
 			if !ok {
-				return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
+				return nil, fmt.Errorf("cant find output of type %s in outputSpec %v", outputName, outputSpecs)
 			}
 			file, ok := outputFiles[sourceType]
 			if !ok {
-				return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
+				return nil, fmt.Errorf("can't find log of type %s", sourceType)
 			}
 
 			result, err = f.ReadFileFrom(outputName, file)

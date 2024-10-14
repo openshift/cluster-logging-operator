@@ -4,17 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-var (
-	logTypeIndexMap = map[string]string{}
-)
+var logTypeIndexMap = map[string]string{}
 
 func init() {
-
 	for _, t := range obs.InputTypes {
 		logTypeIndexMap[string(t)] = fmt.Sprintf("%v-write", t)
 	}
@@ -23,7 +21,7 @@ func init() {
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (results []string, err error) {
 	index, ok := logTypeIndexMap[outputLogType]
 	if !ok {
-		return []string{}, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
+		return []string{}, fmt.Errorf("can't find log of type %s", outputLogType)
 	}
 	return f.GetLogsFromElasticSearchIndex(outputName, index, options...)
 }
@@ -44,7 +42,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 		var result string
 		result, err = f.RunCommand(outputName, "bash", "-c", cmd)
 		if result != "" && err == nil {
-			//var elasticResult ElasticSearchResult
+			// var elasticResult ElasticSearchResult
 			var elasticResult map[string]interface{}
 			log.V(2).Info("results", "response", result)
 			err = json.Unmarshal([]byte(result), &elasticResult)

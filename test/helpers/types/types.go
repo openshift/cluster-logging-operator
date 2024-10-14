@@ -116,6 +116,10 @@ type Kubernetes struct {
 	// NamespaceLabels are the labels present on the pod namespace
 	// +optional
 	NamespaceLabels map[string]string `json:"namespace_labels,omitempty"`
+
+	// The name of the stream the log line was submitted to (e.g.: stdout, stderr)
+	// +optional
+	ContainerStream string `json:"container_iostream,omitempty"`
 }
 
 type Collector struct {

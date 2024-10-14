@@ -31,9 +31,9 @@ var _ reconcile.Reconciler = &ReconcileLogFileMetricExporter{}
 type ReconcileLogFileMetricExporter struct {
 	Client client.Client
 	Scheme *runtime.Scheme
-	//ClusterVersion is the semantic version of the cluster
+	// ClusterVersion is the semantic version of the cluster
 	ClusterVersion string
-	//ClusterID is the unique identifier of the cluster in which the operator is deployed
+	// ClusterID is the unique identifier of the cluster in which the operator is deployed
 	ClusterID string
 }
 
@@ -76,7 +76,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
-		condition := condNotReady(loggingv1alpha1.ReasonInvalid, reconcileErr.Error())
+		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "%s", reconcileErr.Error())
 		setCondition(&lfmeInstance.Status, condition)
 
 		// if cluster is set to fail to reconcile then set healthStatus as 0

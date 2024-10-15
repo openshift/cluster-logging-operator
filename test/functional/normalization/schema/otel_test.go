@@ -1,4 +1,5 @@
-// go:build vector
+//go:build vector
+
 package schema
 
 import (

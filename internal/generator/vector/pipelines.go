@@ -3,8 +3,9 @@ package vector
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -53,7 +54,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 			inputs = []string{d.ComponentID}
 		}
 		vrls := []string{}
-		if p.Labels != nil && len(p.Labels) != 0 {
+		if len(p.Labels) != 0 {
 			s, _ := json.Marshal(p.Labels)
 			vrls = append(vrls, fmt.Sprintf(".openshift.labels = %s", s))
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,7 +19,7 @@ var ElasticIndex = map[string]string{
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (results []string, err error) {
 	index, ok := ElasticIndex[outputLogType]
 	if !ok {
-		return []string{}, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
+		return []string{}, fmt.Errorf("can't find log of type %s", outputLogType)
 	}
 	return f.GetLogsFromElasticSearchIndex(outputName, index, options...)
 }
@@ -47,7 +48,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 				if elasticResult["timed_out"] == false {
 					rawHits, ok := elasticResult["hits"]
 					if !ok {
-						return false, fmt.Errorf("No hits found")
+						return false, fmt.Errorf("%s", "No hits found")
 					}
 					resultHits := rawHits.(map[string]interface{})
 					total, ok := resultHits["total"].(map[string]interface{})

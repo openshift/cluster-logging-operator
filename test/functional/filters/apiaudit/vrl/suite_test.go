@@ -1,4 +1,4 @@
-// go:build vector
+//go:build vector
 
 package apiaudit
 

@@ -2,9 +2,10 @@ package k8shandler
 
 import (
 	"context"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/k8s/loader"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -143,7 +144,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.Condition
 		return err
 	}
 
-	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, message) {
+	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, "%s", message) {
 		return clusterRequest.UpdateStatus(&instance)
 	}
 	return nil

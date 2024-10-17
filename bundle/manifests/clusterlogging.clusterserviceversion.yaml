@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-10-16T11:31:55Z"
+    createdAt: "2024-10-17T17:45:03Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -674,7 +674,7 @@ spec:
     url: https://github.com/openshift/cluster-logging-operator
   minKubeVersion: 1.18.3
   provider:
-    name: Red Hat, Inc
+    name: Red Hat
   relatedImages:
   - image: quay.io/openshift-logging/vector:latest
     name: vector

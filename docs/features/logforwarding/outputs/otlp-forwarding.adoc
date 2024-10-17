@@ -7,8 +7,9 @@ The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Ob
 
 .Technical Preview
 This feature is currently in tech-preview and an annotation is required
-
-`observability.openshift.io/tech-preview-otlp-output: "enabled"`
+----
+observability.openshift.io/tech-preview-otlp-output: "enabled"
+----
 
 ---
 == Configuring the Forwarder
@@ -23,47 +24,47 @@ metadata:
   name: my-logforwarder
   namespace: my-app-namespace
   annotations:
-    observability.openshift.io/tech-preview-otlp-output: "enabled"
+    observability.openshift.io/tech-preview-otlp-output: "enabled"  # <1>
 spec:
-  outputs:
-    - type: otlp  <1>
-      name: otel-collector
-      tls:
-        insecureSkipVerify: true  <2>
-      otlp:
-        url: 'http://my-otel-receiver-service:4318/v1/logs'  <3>
-        tuning:
-          compression: none  <4>
-        authentication:
-          token:
-            from: serviceAccount  <5>
-  pipelines:
-   - name: my-pipeline
-     inputRefs:
-     - application
-     - infrastructure
-     outputRefs:
-     - otel-collector
   serviceAccount:
     name: logger-admin
+  outputs:
+    - type: otlp  # <2>
+      name: otel-collector
+      tls:
+        insecureSkipVerify: true  # <3>
+      otlp:
+        url: 'http://my-otel-receiver-service:4318/v1/logs'  # <4>
+        tuning:
+          compression: none  # <5>
+        authentication:
+          token:
+            from: serviceAccount  # <6>
+  pipelines:
+    - name: my-pipeline
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - otel-collector
+
 ----
+. tech preview `annotation` must be enabled
 . Output `type` is '*otlp*'
 . `tls` includes the standard certificate configuration or specify `insecureSkipVerify`: '*true*'
 . `otlp` `url` specify a valid host:port of the otel receiver and *MUST* terminate with "*/v1/logs*"
 . `otlp` `tuning` `compression` default value is "*gzip*". Specify "*none*" to turn compression off.
-. `otlp` `authentication` is optional and specifies a `token` `from` and a value of "*serviceAccount*"
+. `otlp` `authentication` is optional and specifies a `token.from` and a value of "*serviceAccount*"
 .. The token can also be read from a secret
 .. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
 
 
 .TLS InsecureSkipVerify
-[NOTE]
-This option is *NOT* recommended for production configurations. If true, the client will be configured to skip validating server certificates.
+NOTE: This option is *NOT* recommended for production configurations. If true, the client will be configured to skip validating server certificates.
 
 https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/clusterlogforwarder_types.go#L244[TLS Specification] for _observability.openshift.io/v1_
 
 https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L203[HTTP Auth Specification] for _observability.openshift.io/v1_
-
 
 https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L812[Tuning Specification] for _observability.openshift.io/v1_
 
@@ -96,7 +97,7 @@ ViaQ,OTEL
 @timestamp,                       timeUnixNano
 N/A,                            observedTimeUnixNano
 level,                            severityNumber
-message/structured,          body
+message/structured,               body
 --,--
 openshift.cluster_id,             k8s.cluster.uid
 hostname,                         k8s.node.name

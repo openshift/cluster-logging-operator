@@ -23,6 +23,8 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
     - name: splunk-receiver
       type: splunk

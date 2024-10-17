@@ -1,5 +1,7 @@
 = Administration
 
+* link:upgrade/v6.0_changes.adoc[Changes doc] for the new v6.0 observability API
 * link:clusterlogforwarder.adoc[Log Collection and Forwarding]
 * Enabling event collection by link:deploy-event-router.md[Deploying the Event Router]
 * link:logfilemetricexporter.adoc[Collecting Container Log Metrics]
+* Example of a link:lokistack.adoc[complete Logging Solution] using LokiStack and UIPlugin

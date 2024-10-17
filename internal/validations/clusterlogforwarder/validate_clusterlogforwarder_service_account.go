@@ -24,7 +24,7 @@ const (
 	allNamespaces = ""
 )
 
-var infraNamespaces = regexp.MustCompile(`^default$|^openshift.*$|^kube.*$`)
+var infraNamespaces = regexp.MustCompile(`^default$|^kube$|^openshift$|^openshift-.*$|^kube-.*$`)
 
 // ValidateServiceAcccount validates the serviceaccount for the CLF has the needed permissions to collect the desired inputs
 func ValidateServiceAccount(clf loggingv1.ClusterLogForwarder, k8sClient client.Client, extras map[string]bool) (error, *loggingv1.ClusterLogForwarderStatus) {

@@ -3,6 +3,11 @@ package observability
 import (
 	"context"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -180,6 +185,14 @@ func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
 func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&obsv1.ClusterLogForwarder{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&appsv1.DaemonSet{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&appsv1.Deployment{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&v1.ServiceMonitor{}).
 		Complete(r)
 }
 

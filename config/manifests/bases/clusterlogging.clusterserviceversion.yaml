@@ -352,5 +352,5 @@ spec:
     url: https://github.com/openshift/cluster-logging-operator
   minKubeVersion: 1.18.3
   provider:
-    name: Red Hat, Inc
+    name: Red Hat
   version: 5.9.0

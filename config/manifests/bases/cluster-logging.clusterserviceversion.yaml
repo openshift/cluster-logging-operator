@@ -1897,5 +1897,5 @@ spec:
     url: https://vector.dev/
   minKubeVersion: 1.18.3
   provider:
-    name: Red Hat, Inc
+    name: Red Hat
   version: 6.1.0

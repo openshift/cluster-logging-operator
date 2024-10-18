@@ -663,7 +663,7 @@ spec:
     url: https://github.com/openshift/cluster-logging-operator
   minKubeVersion: 1.18.3
   provider:
-    name: Red Hat, Inc
+    name: Red Hat
   relatedImages:
   - image: quay.io/openshift-logging/vector:5.9.0
     name: vector

@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -29,6 +30,7 @@ import (
 )
 
 func init() {
+	utilruntime.Must(consolev1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(consolev1alpha1.AddToScheme(scheme.Scheme))
 }
 
@@ -37,19 +39,20 @@ type Reconciler struct {
 	Config
 	c client.Client
 
-	configMapHash string
-	consolePlugin consolev1alpha1.ConsolePlugin
-	configMap     corev1.ConfigMap
-	deployment    appv1.Deployment
-	service       corev1.Service
-	visSpec       *logging.VisualizationSpec
+	configMapHash       string
+	consolePlugin       consolev1.ConsolePlugin
+	legacyConsolePlugin consolev1alpha1.ConsolePlugin
+	configMap           corev1.ConfigMap
+	deployment          appv1.Deployment
+	service             corev1.Service
+	visSpec             *logging.VisualizationSpec
 }
 
 // NewReconciler creates a Reconciler using client for config.
 func NewReconciler(c client.Client, cf Config, visSpec *logging.VisualizationSpec) *Reconciler {
 	r := &Reconciler{Config: cf, c: c, visSpec: visSpec}
 	_ = r.each(func(m mutable) error {
-		if m.o == &r.consolePlugin {
+		if m.o == &r.consolePlugin || m.o == &r.legacyConsolePlugin {
 			runtime.Initialize(m.o, "", r.Name) // Plugin is Cluster scope
 		} else {
 			runtime.Initialize(m.o, r.Namespace(), r.Name)
@@ -60,20 +63,26 @@ func NewReconciler(c client.Client, cf Config, visSpec *logging.VisualizationSpe
 }
 
 // CapabilityEnabled can be used to check if ConsolePlugin is available as a resource in the Kubernetes cluster.
-func CapabilityEnabled(ctx context.Context, c client.Client) bool {
+func CapabilityEnabled(ctx context.Context, c client.Client, clusterVersion string) bool {
+	var err error
 	key := client.ObjectKey{
 		Name: Name,
 	}
 
-	current := &consolev1alpha1.ConsolePlugin{}
-	err := c.Get(ctx, key, current)
+	if utils.IsVersionAheadOrEqual(clusterVersion, "v4.17") {
+		consolePlugin := &consolev1.ConsolePlugin{}
+		err = c.Get(ctx, key, consolePlugin)
+	} else {
+		legacyConsolePlugin := &consolev1alpha1.ConsolePlugin{}
+		err = c.Get(ctx, key, legacyConsolePlugin)
+	}
 
 	return err == nil || !metaerrors.IsNoMatchError(err)
 }
 
 // Reconcile creates or updates cluster objects to match config.
 func (r *Reconciler) Reconcile(ctx context.Context) error {
-	if !CapabilityEnabled(ctx, r.c) {
+	if !CapabilityEnabled(ctx, r.c, r.ClusterVersion) {
 		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin reconciliation")
 		return nil
 	}
@@ -89,6 +98,14 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 		// No error and not managed by COO -> continue normally
 	}
 
+	var consolePlugin runtime.Object
+
+	if utils.IsVersionAheadOrEqual(r.ClusterVersion, "v4.17") {
+		consolePlugin = &r.consolePlugin
+	} else {
+		consolePlugin = &r.legacyConsolePlugin
+	}
+
 	modified := false
 	// Call CreateOrUpdate for each object.
 	err = r.each(func(m mutable) error {
@@ -102,32 +119,32 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 		})
 	})
 	if err != nil {
-		log.Error(err, "reconciling console", "plugin", runtime.ID(&r.consolePlugin))
+		log.Error(err, "reconciling console", "plugin", runtime.ID(consolePlugin))
 		_ = r.Delete(ctx) // Clear out any partial setup
 		return err
 	}
 
 	rbacModified, err := lokistack.ReconcileLokiReadRoles(r.c)
 	if err != nil {
-		log.Error(err, "reconciling LokiStack RBAC for console", "plugin", runtime.ID(&r.consolePlugin))
+		log.Error(err, "reconciling LokiStack RBAC for console", "plugin", runtime.ID(consolePlugin))
 		return err
 	}
 
 	if modified || rbacModified {
-		log.Info("reconciled console", "plugin", runtime.ID(&r.consolePlugin))
+		log.Info("reconciled console", "plugin", runtime.ID(consolePlugin))
 	}
 	return nil
 }
 
 // Delete the consoleplugin and related objects.
 func (r *Reconciler) Delete(ctx context.Context) error {
-	if !CapabilityEnabled(ctx, r.c) {
+	if !CapabilityEnabled(ctx, r.c, r.ClusterVersion) {
 		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin deletion")
 		return nil
 	}
 	var errs []error // Collect errors, don't stop on first.
 	_ = r.each(func(m mutable) error {
-		if m.o == &r.consolePlugin {
+		if m.o == &r.consolePlugin || m.o == &r.legacyConsolePlugin {
 			cooManaged, err := r.isManagedByObservabilityOperator(ctx)
 			if err != nil {
 				errs = append(errs, err)
@@ -154,16 +171,27 @@ func (r *Reconciler) Delete(ctx context.Context) error {
 
 // each calls f for each object. Stops on first error and returns it.
 func (r *Reconciler) each(f func(m mutable) error) error {
-	for _, m := range []mutable{
-		{&r.consolePlugin, r.mutateConsolePlugin},
-		{&r.configMap, r.mutateConfigMap},
-		{&r.deployment, r.mutateDeployment},
-		{&r.service, r.mutateService},
-	} {
+	var resources []mutable
+
+	if utils.IsVersionAheadOrEqual(r.ClusterVersion, "v4.17") {
+		resources = append(resources, mutable{&r.consolePlugin, r.mutateConsolePlugin})
+	} else {
+		resources = append(resources, mutable{&r.legacyConsolePlugin, r.mutateLegacyConsolePlugin})
+	}
+
+	// Add the common mutables
+	resources = append(resources,
+		mutable{&r.configMap, r.mutateConfigMap},
+		mutable{&r.deployment, r.mutateDeployment},
+		mutable{&r.service, r.mutateService},
+	)
+
+	for _, m := range resources {
 		if err := f(m); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -189,8 +217,8 @@ func (r *Reconciler) mutateOwned(o client.Object) error {
 	return controllerutil.SetControllerReference(r.Owner, o, r.c.Scheme())
 }
 
-func (r *Reconciler) mutateConsolePlugin() error {
-	o := &r.consolePlugin
+func (r *Reconciler) mutateLegacyConsolePlugin() error {
+	o := &r.legacyConsolePlugin
 	o.Spec = consolev1alpha1.ConsolePluginSpec{
 		DisplayName: "Logging Console Plugin",
 		Service: consolev1alpha1.ConsolePluginService{
@@ -223,6 +251,53 @@ func (r *Reconciler) mutateConsolePlugin() error {
 				Port:      8443,
 			},
 		})
+	}
+	r.mutateCommon(o)
+	return nil
+}
+
+func (r *Reconciler) mutateConsolePlugin() error {
+	o := &r.consolePlugin
+
+	o.Spec = consolev1.ConsolePluginSpec{
+		DisplayName: "Logging Console Plugin",
+		Backend: consolev1.ConsolePluginBackend{
+			Type: consolev1.Service,
+			Service: &consolev1.ConsolePluginService{
+				Name:      r.Name,
+				Namespace: r.Namespace(),
+				BasePath:  "/",
+				Port:      r.pluginBackendPort(),
+			},
+		},
+		Proxy: []consolev1.ConsolePluginProxy{
+			{
+				Alias:         "backend",
+				Authorization: "UserToken",
+				Endpoint: consolev1.ConsolePluginProxyEndpoint{
+					Type: consolev1.ProxyTypeService,
+					Service: &consolev1.ConsolePluginProxyServiceConfig{
+						Name:      r.LokiService,
+						Namespace: r.Namespace(),
+						Port:      r.LokiPort,
+					},
+				},
+			},
+		},
+	}
+
+	if r.Korrel8rName != "" && r.Korrel8rNamespace != "" {
+		o.Spec.Proxy = append(o.Spec.Proxy, consolev1.ConsolePluginProxy{
+			Alias:         r.Korrel8rName,
+			Authorization: "UserToken",
+			Endpoint: consolev1.ConsolePluginProxyEndpoint{
+				Type: consolev1.ProxyTypeService,
+				Service: &consolev1.ConsolePluginProxyServiceConfig{
+					Name:      r.Korrel8rName,
+					Namespace: r.Korrel8rNamespace,
+					Port:      8443,
+				},
+			}})
 	}
 	r.mutateCommon(o)
 	return nil

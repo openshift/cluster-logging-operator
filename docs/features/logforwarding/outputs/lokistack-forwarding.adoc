@@ -1,0 +1,179 @@
+== Forwarding To RH Managed LokiStack
+
+=== Service Account
+* Create a Service Account to be used by the ClusterLogForwarder
++
+.ServiceAccount named *logging-admin*
+[source]
+----
+ oc create -n openshift-logging sa logging-admin
+----
+
+=== Roles and Bindings
+* Create *collect* and *write* permissions for the service account by creating a *ClusterRoleBinding* for each role that is required for your configuration.
++
+.ClusterRoleBinding command
+[source]
+----
+  oc adm policy add-cluster-role-to-user <cluster_role> -z logging-admin
+----
++
+.*collect* cluster roles
+----
+  collect-application-logs
+  collect-infrastructure-logs
+  collect-audit-logs
+----
++
+.*write* cluster roles (forwarding to LokiStack)
+----
+  cluster-logging-write-application-logs
+  cluster-logging-write-infrastructure-logs
+  cluster-logging-write-audit-logs
+----
+NOTE: The `-z` flag used above creates a cluster role binding to the service account in the current namespace.  For the *logging-admin* service account these commands must be run in the *openshift-logging* namespace
+
+
+=== ClusterLogForwarder
+* Create a ClusterLogForwarder instance with output type *lokiStack*
++
+.ClusterLogForwarder
+[source,yaml]
+----
+    apiVersion: observability.openshift.io/v1
+    kind: ClusterLogForwarder
+    metadata:
+      name: my-forwarder
+      namespace: openshift-logging
+    spec:
+      serviceAccount:
+        name: logging-admin  # <1>
+      outputs:
+      - name: default-lokistack
+        type: lokiStack
+        lokiStack:
+          target:
+            name: logging-loki  # <2>
+            namespace: openshift-logging
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt  # <3>
+            configMapName: openshift-service-ca.crt
+      filters:
+      - name: my-multi
+        type: detectMultilineException
+      - name: my-parse
+        type: parse
+      - name: my-labels
+        type: openshiftLabels
+        openshiftLabels:
+          foo: bar
+      pipelines:
+      - name: my-pipeline
+        outputRefs:
+        - default-lokistack
+        inputRefs:
+        - application
+        - infrastructure
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+----
+<1> `serviceAccount.name` must have permissions to both *collect* AND *write* app and infra logs (see Roles and Bindings above)
+<2> `lokiStack.target` name and namespace must match your loki instance name
+<3> TLS configuration `key` and `configMapName` uses the existing openshift service config map
+
+
+== Alternatively using custom outputs and pipelines
+
+=== ClusterLogForwarder
+* Create a ClusterLogForwarder CR to forward logs to individual tenant endpoints in LokiStack
++
+.ClusterLogForwarder with custom pipelines, filtered and based on log_type
+[source,yaml]
+----
+    apiVersion: observability.openshift.io/v1
+    kind: ClusterLogForwarder
+    metadata:
+      name: my-forwarder
+      namespace: openshift-logging
+    spec:
+      serviceAccount:
+        name: logging-admin
+      outputs:
+      - name: loki-app
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      - name: loki-infra
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      - name: loki-audit
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      filters:
+      - name: my-multi
+        type: detectMultilineException
+      - name: my-parse
+        type: parse
+      - name: my-labels
+        type: openshiftLabels
+        openshiftLabels:
+          foo: bar
+      pipelines:
+      - name: send-app-logs
+        inputRefs:
+        - application
+        outputRefs:
+        - loki-app
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+      - name: send-infra-logs
+        inputRefs:
+        - infrastructure
+        outputRefs:
+        - loki-infra
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+      - name: send-audit-logs
+        inputRefs:
+        - audit
+        outputRefs:
+        - loki-audit
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+----
+For the internal loki gateway service, we use the url format *<service_name>.<namespace>.svc:8080/api/logs/v1/<log_type>*

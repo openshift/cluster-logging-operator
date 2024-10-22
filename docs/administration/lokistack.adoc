@@ -1,0 +1,399 @@
+:toc:
+:toclevels: 2
+
+= Forwarding To RH Managed LokiStack
+
+Loki Operator Guide:: https://github.com/grafana/loki/blob/main/operator/docs/user-guides/forwarding_logs_to_gateway.md
+
+Openshift LokiStack Docs:: https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html#installing-log-storage-loki
+
+== Configure LokiStack using S3 Bucket
+
+=== LokiStack Operator
+* Install the Red Hat Loki Operator from the OperatorHub
+
+=== Storage Bucket
+* Create an https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html#logging-loki-storage-aws_installing-log-storage[AWS S3 bucket] or https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html#logging-loki-storage-aws_installing-log-storage[other] storage object
++
+.Command to create a bucket named *my-bucket-logging-loki* in region *us-east-1*
+[source]
+----
+  aws s3api create-bucket --acl private --region us-east-1 --bucket my-bucket-logging-loki
+----
++
+.Addtional option required for any region other than *us-east-1*
+----
+  --create-bucket-configuration LocationConstraint="$REGION"
+----
+NOTE: Bucket names must be unique and should be prepended with an easily identifiable term (i.e. username or cluster_id)
++
+Access Control::
+AWS recommends that you turn on all options to https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html?icmpid=docs_amazons3_console[block public access] for buckets
++
+.Block configurations recommended
+----
+  BlockPublicAcls=true
+  IgnorePublicAcls=true
+  BlockPublicPolicy=true
+  RestrictPublicBuckets=true
+----
+
+=== Storage Secret
+* Create a secret for the lokistack instance (https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html#loki-create-object-storage-secret-console_installing-log-storage[docs])
++
+.Secret named *logging-loki-s3*
+[source]
+----
+  oc create -n openshift-logging secret generic logging-loki-s3 \
+    --from-literal=region="us-east-1" \
+    --from-literal=bucketnames="my-bucket-logging-loki" \
+    --from-literal=access_key_id="AKIAIOSFODNN7EXAMPLE" \
+    --from-literal=access_key_secret="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+    --from-literal=endpoint="https://s3.us-east-1.amazonaws.com"
+----
++
+or
++
+[source,yaml]
+----
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: logging-loki-s3
+      namespace: openshift-logging
+    stringData:
+      access_key_id: AKIAIOSFODNN7EXAMPLE
+      access_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      bucketnames: my-bucket-logging-loki
+      endpoint: https://s3.us-east-1.amazonaws.com
+      region: us-east-1
+----
+
+=== LokiStack Instance
+* Create an instance of lokistack
++
+.LokiStack
+[source,yaml]
+----
+    apiVersion: loki.grafana.com/v1
+    kind: LokiStack
+    metadata:
+      name: logging-loki
+      namespace: openshift-logging  # <1>
+    spec:
+      size: 1x.extra-small # <2>
+      storage:
+        schemas:
+        - version: v13
+          effectiveDate: 2024-10-23
+        secret:
+          name: logging-loki-s3
+          type: s3
+      storageClassName: gp3-csi
+      tenants:
+        mode: openshift-logging  # <3>
+----
+. lokiStack should be created in `openshift-logging` namespace
+. deployment https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html#loki-deployment-sizing_installing-log-storage[sizes] are `1x.demo`, `1x.extra-small`, `1x.small`,`1x.medium`
+. mode must be `openshift-logging`
+
+* Verify the loki pods are all running as expected (requires a few minutes):
++
+.Get pods by instance name label
+[source]
+----
+  oc get pods -n openshift-logging -l app.kubernetes.io/instance=logging-loki
+----
++
+.Pods all in *Running* status
+----
+$ oc get pods -n openshift-logging -l app.kubernetes.io/instance=logging-loki
+NAME                                                 READY   STATUS              RESTARTS   AGE
+logging-loki-compactor-0                             1/1     Running   0          3m12s
+logging-loki-distributor-76d55f48df-cmccq            1/1     Running   0          3m13s
+logging-loki-distributor-76d55f48df-f6ntn            1/1     Running   0          3m13s
+logging-loki-gateway-7c97698c8-lvc7f                 2/2     Running   0          3m12s
+logging-loki-gateway-7c97698c8-mtb7r                 2/2     Running   0          3m12s
+logging-loki-index-gateway-0                         1/1     Running   0          3m12s
+logging-loki-index-gateway-1                         1/1     Running   0          2m44s
+logging-loki-ingester-0                              1/1     Running   0          3m12s
+logging-loki-ingester-1                              1/1     Running   0          117s
+logging-loki-querier-69c4d55f98-x5llq                1/1     Running   0          3m12s
+logging-loki-querier-69c4d55f98-xm25s                1/1     Running   0          3m12s
+logging-loki-query-frontend-77f5964c66-hx8mr         1/1     Running   0          3m12s
+logging-loki-query-frontend-77f5964c66-phgf6         1/1     Running   0          3m12s
+
+----
+
+== Configure the Logging View Plugin
+=== Observability Operator
+* Install the Cluster Observability Operator according to the https://docs.openshift.com/container-platform/4.16/observability/cluster_observability_operator/installing-the-cluster-observability-operator.html[docs]
+
+=== UI plugin
+* Create an instance of the UIPlugin with name *logging* and type *Logging* (case sensitive)
++
+.UIPlugin for our named lokiStack instance
+[source,yaml]
+----
+    apiVersion: observability.openshift.io/v1alpha1
+    kind: UIPlugin
+    metadata:
+      name: logging  # <1>
+    spec:
+      type: Logging  # <2>
+      logging:
+        lokiStack:
+          name: logging-loki  # <3>
+----
+. `name` must be *logging*
+. `type` must be *Logging*
+. `name` must match the name of your lokiStack instance (and must be in openshift-logging namespace)
++
+NOTE: This will refresh your openshift console and allow you to navigate to the *Observe -> Logs* panel where you can run LogQL queries.  Logs for individual pods can also be queried directly from the pods view *Aggregated Logs* tab
++
+More information on UI plugin can be found via the https://github.com/rhobs/observability-operator/blob/main/docs/user-guides/observability-ui-plugins.md#logging[observability operator], or by using `oc explain` command
++
+.Example explain command
+[source]
+----
+  oc explain uiplugin.spec.logging
+----
++
+
+.View Permissions
+The UIPlugin instance creates three *view* roles (one for each log type)
++
+----
+  cluster-logging-application-view
+  cluster-logging-infrastructure-view
+  cluster-logging-audit-view
+----
+ClusterRoleBindings can be used to customize user access to log viewing.  More details can be found in the https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/cluster-logging-loki.html#logging-loki-log-access_cluster-logging-loki[fine-grained access docs].
+
+
+== Configure the ClusterLogForwarder
+=== Cluster Logging Operator
+* Install Red Hat Openshift Logging Operator (version 6.0) from the OperatorHub
+
+=== Service Account
+* Create a Service Account to be used by the ClusterLogForwarder
++
+.ServiceAccount named *logging-admin*
+[source]
+----
+ oc create -n openshift-logging sa logging-admin
+----
++
+
+
+=== Roles and Bindings
+* Create *collect* and *write* permissions for the service account by creating a *ClusterRoleBinding* for each role that is required for your configuration.
+
++
+.ClusterRoleBinding command
+[source]
+----
+  oc adm policy add-cluster-role-to-user <cluster_role> -z logging-admin
+----
++
+.*collect* cluster roles
+----
+  collect-application-logs
+  collect-infrastructure-logs
+  collect-audit-logs
+----
+NOTE: The `-z` flag used above creates a cluster role binding to the service account in the current namespace.  For the *logging-admin* service account these commands must be run in the *openshift-logging* namespace
++
+.*write* cluster roles (forwarding to LokiStack)
+----
+  cluster-logging-write-application-logs
+  cluster-logging-write-infrastructure-logs
+  cluster-logging-write-audit-logs
+----
+NOTE: Use `oc create clusterolebinding -h` for more explicit options when creating bindings
++
+Role permissions can be viewed using `oc describe clusterrole` command
++
+.Example command
+----
+$ oc describe clusterrole cluster-logging-write-application-logs
+Name:         cluster-logging-write-application-logs
+Labels:       olm.owner=cluster-logging.v6.0.0
+Annotations:  <none>
+PolicyRule:
+  Resources                     Non-Resource URLs  Resource Names  Verbs
+  ---------                     -----------------  --------------  -----
+  application.loki.grafana.com  []                 [logs]          [create]
+----
+
+=== ClusterLogForwarder
+* Create a ClusterLogForwarder instance with output type *lokiStack*
++
+.ClusterLogForwarder
+[source,yaml]
+----
+    apiVersion: observability.openshift.io/v1
+    kind: ClusterLogForwarder
+    metadata:
+      name: my-forwarder
+      namespace: openshift-logging
+    spec:
+      serviceAccount:
+        name: logging-admin  # <1>
+      outputs:
+      - name: default-lokistack
+        type: lokiStack
+        lokiStack:
+          target:
+            name: logging-loki  # <2>
+            namespace: openshift-logging
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt  # <3>
+            configMapName: openshift-service-ca.crt
+      filters:
+      - name: my-multi
+        type: detectMultilineException
+      - name: my-parse
+        type: parse
+      - name: my-labels
+        type: openshiftLabels
+        openshiftLabels:
+          foo: bar
+      pipelines:
+      - name: my-pipeline
+        outputRefs:
+        - default-lokistack
+        inputRefs:
+        - application
+        - infrastructure
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+----
+<1> `serviceAccount.name` must have permissions to both *collect* AND *write* app and infra logs
+<2> `lokiStack.target` name and namespace must match your loki instance name
+<3> TLS configuration `key` and `configMapName` uses the existing openshift service config map
+
+
+== Alternatively using custom outputs and pipelines
+
+=== ClusterLogForwarder
+* Create a ClusterLogForwarder CR to forward logs to individual tenant endpoints in LokiStack
++
+.ClusterLogForwarder with custom pipelines, filtered and based on log_type
+[source,yaml]
+----
+    apiVersion: observability.openshift.io/v1
+    kind: ClusterLogForwarder
+    metadata:
+      name: my-forwarder
+      namespace: openshift-logging
+    spec:
+      serviceAccount:
+        name: logging-admin
+      outputs:
+      - name: loki-app
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      - name: loki-infra
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      - name: loki-audit
+        type: loki
+        loki:
+          url: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit
+          authentication:
+            token:
+              from: serviceAccount
+        tls:
+          ca:
+            key: service-ca.crt
+            configMapName: openshift-service-ca.crt
+      filters:
+      - name: my-multi
+        type: detectMultilineException
+      - name: my-parse
+        type: parse
+      - name: my-labels
+        type: openshiftLabels
+        openshiftLabels:
+          foo: bar
+      pipelines:
+      - name: send-app-logs
+        inputRefs:
+        - application
+        outputRefs:
+        - loki-app
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+      - name: send-infra-logs
+        inputRefs:
+        - infrastructure
+        outputRefs:
+        - loki-infra
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+      - name: send-audit-logs
+        inputRefs:
+        - audit
+        outputRefs:
+        - loki-audit
+        filterRefs:
+        - my-multi
+        - my-parse
+        - my-labels
+----
+For the internal loki gateway service, we use the url format *<service_name>.<namespace>.svc:8080/api/logs/v1/<log_type>*
+
+== Command Line Options
+* The command `logcli` can be used to query lokistack (https://grafana.com/docs/loki/latest/query/logcli/[docs])
++
+.Save the route created by our lokiStack named *logging-loki*
+[source]
+----
+  export LOKI_ROUTE=$(oc get routes logging-loki -o jsonpath="{.spec.host}")
+----
++
+.Extract the certificate file created by our lokiStack (logging-loki-ca-bundle)
+[source]
+----
+  oc extract cm/logging-loki-ca-bundle --keys=service-ca.crt  --confirm
+----
++
+.Use logcli to query the infrastructure endpoint
+[source]
+----
+  logcli --tls-skip-verify --ca-cert=service-ca.crt --bearer-token="$(oc whoami -t)" --addr https://$LOKI_ROUTE/api/logs/v1/infrastructure query '{log_type=~".+a.+"}'
+----
+NOTE: Use `logcli help` and `logcli query help` to see all options for interacting with loki
+
+== Addtional References
+Loki Operator user-guide:: https://github.com/grafana/loki/blob/main/operator/docs/user-guides/forwarding_logs_to_gateway.md
+Loki Operator object-storage:: https://github.com/grafana/loki/blob/main/operator/docs/lokistack/object_storage.md
+Observability Operator plugin:: https://github.com/rhobs/observability-operator/blob/main/docs/user-guides/observability-ui-plugins.md#logging
+

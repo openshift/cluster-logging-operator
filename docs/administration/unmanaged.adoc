@@ -1,39 +1,74 @@
 = Management State
 
-There are times when it may be necessary for administrators to intervene and take over management of some aspects of
-the logging stack.  This requires setting logging into an "Unmanaged" state. The operator will no longer reconcile or
-revert changes to resources (e.g. secrets, configmaps, daemonsets) that it owns.  This allows configurations and deployments
-to be altered and managed by the administrator.
+There are times when it may be necessary for administrators to intervene and take over management of some aspects of the logging stack.  This requires setting the ClusterLogForwarder CR into an *"Unmanaged"* state.
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  managementState: Unmanaged  # <1>
+...
+----
+<1> `managementState` indicates if the resource is `Managed` (default) or `Unmanaged` by the logging operator
 
-Potential reasons for needing to go Unmanaged:
 
-* Working around a known bug by implementing solutions as advised
-* Hacking configuration for testing custom images
+IMPORTANT: Logging components in an 'Unmanaged' state are *not supported* unless a formal exception or documented workaround for a known issue exists.
+
+Reverting ::
+Operating in an unmanaged state is intended to be temporary and should be reverted once the respective issue is resolved. An unmanaged deployment will not receive updates until the `ClusterLogForwarder` custom resource is placed back into a `Managed` state.
+
+== Unmanaged State
+Running logging unmanaged allows configurations and deployments to be modified and managed by an administrator.  The operator will no longer reconcile or monitor changes to the resources it owns (e.g. secrets, configmaps, daemonsets)
+
+=== Potential reasons for needing to go Unmanaged:
+* Working around a known bug by implementing an advised solution
+* Hacking the configuration for testing custom images
 * Feature request investigation
 
-NOTE: Logging components in an unmanaged state are not supported unless a support exception exists.  This means a
-  formal exception or a documented workaround associated with a known issue.  Operating in an unmanaged state is intended
-  to be temporary and should be reverted once the respective issue is resolved.
+=== Steps
 
-NOTE: An unmanaged deployment will not receive updates until the `ClusterLogForwarder` custom resource is placed back into a managed state.
-```
-  spec:
-    managementState: Managed
-```
+NOTE: `obsclf` is the registered short-name for `clusterlogforwarder.observability.openshift.io`
 
-== Unmanaged Collector
+This first command is not required, but can be used to set the `$NAME` substitution in the examples below
+[source,bash]
+----
+  export NAME=$(oc get obsclf -o jsonpath='{.items[0].metadata.name}')
+----
 
-* Set or edit the `ClusterLogForwarder` resource to managementState of `Unmanaged`:
-```
-oc patch clusterlogforwarder.observability.openshift.io/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
-```
-
-* Edit the configuration(vector.toml) as needed
-```
-oc edit configmap/$NAME
-```
-
-* Restart the collector pods
-```
-oc delete pods -lcomponent=collector
-```
+. Set the `ClusterLogForwarder` resource to managementState of `Unmanaged`
+[source,bash]
+----
+  oc patch obsclf/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
+----
+[start=2]
+. Edit the configmap directly using `oc edit` and modify the vector.toml as needed
+[source,bash]
+----
+  oc edit configmap/$NAME-config
+----
+[sidebar]
+====
+*Alternatively*: If you prefer more controlled editing of the vector.toml file, you can extract the file, make your changes locally, then apply the updated config
+[source,bash]
+----
+  oc extract configmap/$NAME-config --keys=vector.toml  --confirm
+----
+Modify this local config file using your favorite text editor (e.g. nano)
+[source,bash]
+----
+  nano vector.toml
+----
+Use `oc set` to update the configmap with the modified vector.toml file
+[source,bash]
+----
+  oc set data configmap/$NAME-config --from-file=vector.toml=vector.toml
+----
+====
+[start=3]
+. Deleting the pods performs a rolling-restart and loads the updated vector config file
+[source,bash]
+----
+  oc delete pods -l app.kubernetes.io/component=collector
+----

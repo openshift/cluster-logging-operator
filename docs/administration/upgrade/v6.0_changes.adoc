@@ -6,106 +6,102 @@
 == Overview
 Logging version 6.0 is a major change from earlier releases and is the realization of several longstanding goals.
 
-The main highlights of these changes are:
+The following documentation is intended to assist administrators in converting exising **ClusterLogging.logging.openshift.io** and **ClusterLogForwarder.logging.openshift.io** specifications to the new observability API.
 
-* There are now distinct operators to support each separate logging components (e.g. collectors, storage, visualization)
-* The ClusterLoggingOperator no longer manages log storage or visualization of any kind including LokiStack resource or Elastic products (i.e. Elasticsearch, Kibana)
+We've provided an overview of the changes, as well as complete **ClusterLogForwarder** resource examples for several common use cases.
+
+
+=== The main change highlights are:
+* No automated upgrade from v5.x to v6.0  The new operator must be installed separately.
+* New 'ClusterLogForwarder' resource uses the new 'observability' API `ClusterLogForwarder.observability.openshift.io`
+  * replaces both `ClusterLogging.logging.openshift.io` and `ClusterLogForwarder.logging.openshift.io` resources
+* The Cluster Logging Operator no longer manages log storage or visualization of any kind, including the LokiStack resource and Elasticsearch and Kibana
 * CLO has removed support of Fluentd log collector implementation
-* Introduce the `ClusterLogForwarder.observability.openshift.io` API to replace both `ClusterLogging.logging.openshift.io` and `ClusterLogForwarder.logging.openshift.io` APIs
+
+Two 'logging' resources:
 
 .5.x
+[source,yaml]
 ----
 apiVersion: logging.openshift.io/v1
 kind: ClusterLogging
+...
 ----
+[source,yaml]
 ----
 apiVersion: logging.openshift.io/v1
 kind: ClusterLogForwarder
+...
 ----
 
-Replaced with:
+Replaced by a single custom 'observability' resource:
 
 .6.0
+[source,yaml]
 ----
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
+...
 ----
+NOTE: Distinct operators and resources now support the other logging components separately (e.g. storage, visualization)
 
-NOTE: There is no automated upgrade provided by the *cluster-logging-operator*
+=== No Automated Update
+Given the numerous combinations in which the logging solution can be configured, there is no automated upgrade provided by the *Cluster Logging Operator*. Newly created custom resources are required for v6.0, and the new operator is published under a separate channel.   The operator can be updated by changing the subscription channel in the console, or by uninstalling.
 
-Given the numerous combinations in which log collection, forwarding, and storage can be configured, there is no automated upgrade provided by the *cluster-logging-operator*.  The following documentation is intended to assist administrators in converting exising **ClusterLogging.logging.openshift.io** and **ClusterLogForwarder.logging.openshift.io** specifications to the new API.  This document includes example of migrated **ClusterLogForwarder.observability.openshift.io** resources for several common use cases.
+NOTE: Manually changing the operator channel to `stable-6.0` under the `Subscription` tab in the console, will trigger the olm process to remove v5 and install v6.0.   Following this process, your existing v5 resources will continue to run, but are no longer managed by your operator. These unmanaged resources can be removed once your new resources are ready to be created.
+
+Important::
+If using the OCP console to uninstall the v5 operator, you can continue to collect and forward logs if you *DO NOT* check the box `Delete all operand instances for this operator` when uninstalling.  This will allow your existing collector pods to continue to run until you are ready to remove them.
 
 == Changes
+The Cluster Logging Operator no longer provides a "one click" logging installation, in favor of administrators having more granular control over individual components.  Administrators must now explicitly deploy an operator for each component (log storage, visualization and collection)
 
-Cluster Logging no longer provides a "one click" installation of a complete logging solution in favor of administrators
-having more granular control over individual components.  This means administrators must explicitly deploy an operator to control
-a given component. The general steps for deploying a complete logging solution are:
+General Steps::
+. Deploy the Red Hat **Loki Operator**
+. Create an instance of **LokiStack** in the *openshift-logging* namespace
+. Deploy the Red Hat **Cluster Observability Operator**
+. Create an instance of **UIPlugin** resource for visualization in the console
+. Deploy the Red Hat **OpenShift Logging Operator**
+. Create an instance of the new **ClusterLogForwarder.observability.openshift.io** resource
 
-1. Deploy the Red Hat **cluster-observability-operator**
-2. Deploy the Red Hat **loki-operator**
-3. Create an instance of **LokiStack** in the *openshift-logging* namespace
-4. Deploy the Red Hat **cluster-logging-operator**
-5. Create an instance of the **ClusterLogForwarder.observability.openshift.io** resource
+NOTE: Please refer to individual operator documentation for install instructions.
+A more detailed summary of steps have been included in the https://github.com/openshift/cluster-logging-operator/blob/master/docs/administration/lokistack.adoc[lokistack] administration doc.
 
 === Log Storage
-The only available managed log storage solution for this release is a Loki stack that is based upon the **loki-operator**.  This
-solution was available in prior releases as the preferred alternative to the managed Elasticsearch offering.  The deployment
-of this solution remains unchanged from previous releases. Read the https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html[official] product documentation for more information.
+LokiStack is the only managed log storage solution available for this release.  It is based upon the **loki-operator** and has been available in prior releases as the preferred alternative to the managed Elasticsearch offering.  The deployment of this solution remains unchanged from previous releases. Read the https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html[official] product documentation for more information.
 
-NOTE: To continue to use an existing Red Hat managed Elasticsearch deployment provided by the **elasticsearch-operator**,
-remove the owner references from the **Elasticsearch** resource named '**elasticsearch**' in the '**openshift-logging**'
-namespace before removing the **ClusterLogging** resourced named '**instance**' in the '**openshift-logging**' namespace
+NOTE: To continue to use an existing Red Hat managed Elasticsearch deployment provided by the **elasticsearch-operator**, remove the owner references from the **Elasticsearch** resource named '**elasticsearch**' in the '**openshift-logging**' namespace before removing the **ClusterLogging** resourced named '**instance**' in the '**openshift-logging**' namespace
 
+.Example command to remove elasticsearch owner references
+[source]
+----
+  oc patch -n openshift-logging Elasticsearch elasticsearch --type=merge -p '{"metadata": {"ownerReferences": [], "labels": {"pod-template-hash":null}}}'
+----
 === Log Visualization
-The OpenShift console UI plugin that provides visualization was moved to the **cluster-observability-operator** from the
-**cluster-logging-operator**. Read the https://docs.openshift.com/container-platform/4.16/observability/cluster_observability_operator/installing-the-cluster-observability-operator.html[official] product documentation
+The OpenShift console UI plugin that provides visualization was moved to the **cluster-observability-operator** from the **cluster-logging-operator**. Read the https://docs.openshift.com/container-platform/4.16/observability/cluster_observability_operator/installing-the-cluster-observability-operator.html[official] product documentation
 for more information.
 
 NOTE: To continue to use an existing Red Hat managed Kibana deployment provided by the **elasticsearch-operator**,
 remove the owner references from the **Kibana** resource named '**kibana**' in the '**openshift-logging**'
 namespace before removing the **ClusterLogging** resourced named '**instance**' in the '**openshift-logging**' namespace
 
-=== Log Collection & Forwarding
+.Example command to remove kibana owner references
+[source]
+----
+  oc patch -n openshift-logging Kibana kibana --type=merge -p '{"metadata": {"ownerReferences": [], "labels": {"pod-template-hash":null}}}'
+----
 
+=== Log Collection & Forwarding
 Log collection and forwarding configuration is spec'd from a new link:../../reference/operator/api_observability_v1.adoc[API]
 that is included in the API group **observability.openshift.io**. The following sections highlight the differences from the
 https://github.com/openshift/cluster-logging-operator/blob/release-5.9/docs/reference/operator/api.adoc[old API] resource.
 
 NOTE: Vector is the only supported collector implementation.
 
-==== Permissions
-
-This release of Cluster Logging requires a service account to be specified.  Administrators must now *explicitly grant log collection permissions* to the service account associated with *ClusterLogForwarder*.  This was not required in previous releases for the legacy logging scenario consisting of a *ClusterLogging* and, optionally, a *ClusterLogForwarder.logging.openshift.io* resource.
-
-[source, yaml]
-----
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
-metadata:
-  name: my-forwarder
-spec:
-  serviceAccount:
-    name: logcollector
-...
-----
-Using the existing service account (i.e. *logcollector*) from a previous release requires creating the following *ClusterRoleBinding*:
-
-----
-oc adm policy add-cluster-role-to-user collect-application-logs -z logcollector
-oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z logcollector
-----
-
-Additionally, create the following *ClusterRoleBinding* if collecting audit logs:
-
-----
-oc adm policy add-cluster-role-to-user collect-audit-logs -z logcollector
-----
-
 ==== Management, Resource Allocation & Workload Scheduling
-Configuration of the management state (i.e. managed, unmanaged), resource request and limits, tolerations, and node selection
-are part of the new ClusterLogForwarder API.
+Configuration of the management state, collection resource limits and requests, tolerations, and node selection have moved to the new ClusterLogForwarder API.
 
-.Previously part of the resource *ClusterLogging* (v5.9)
+.Previously located in the *ClusterLogging* spec (v5.9)
 [source, yaml]
 ----
 apiVersion: logging.openshift.io/v1
@@ -115,32 +111,92 @@ metadata:
 spec:
   managementState: Managed
   collection:
+    type: vector
     resources:
-      limits: {}
-      requests: {}
-    nodeSelector: {}
-    tolerations: {}
+      limits:
+        cpu: 500m
+      requests:
+        memory: 1Gi
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    tolerations:
+    - key: logging
+      operator: Exists
+...
 ----
-.Now part of v6.0 *ClusterLogForwarder* along with inputs, outputs, filters and pipelines
+
+.Now moved to v6.0 *ClusterLogForwarder* spec
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1  # <1>
+kind: ClusterLogForwarder  # <2>
+metadata:
+  name: my-forwarder
+spec:
+  managementState: Managed
+  collector:  # <3>
+    resources:  # <4>
+      requests:
+        cpu: 500m
+        memory: 64Mi
+      limits:
+        cpu: 6000m
+        memory: 1024Mi
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    tolerations:
+    - key: logging
+      operator: Exists
+...
+----
+Snippet highlights::
+
+<1> apiVersion must now be *observability.openshift.io/v1*
+<2> kind is now the *ClusterLogForwarder* spec
+<3> spec *collector* now includes resources, nodeSelector and tolerations
+<4> default values shown for requests and limits
+
+CPU and memory limits::
+As with all cluster resources, use the values shown above as a reference point and adjust as necessary. If your pipeline is complex, you may need more collector resources; if you have a more straightforward pipeline, you may need less.
+* `resources.limits` describes the maximum amount of compute resources allowed
+
+* `resources.requests` describes the minimum amount of compute resources required.  Defaults to values of *limits* if not specified
+
+
+==== Permissions (Service Accounts)
+The *ClusterLogForwarder* now requires a cluster administrator to provide a service account, with correct RBAC permissions.  This service account is now a required part of the configuration.
+
+.Required Service Account
 [source, yaml]
 ----
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  name: instance
+  name: my-forwarder
 spec:
-  managementState: Managed
-  collector:
-    resources:
-      limits: {}
-      requests: {}
-    nodeSelector: {}
-    tolerations: {}
+  serviceAccount:
+    name: logging-admin
 ...
 ----
+Administrators are required to *explicitly grant log collection permissions* to the service account referenced in the *ClusterLogForwarder*.   There are 3 cluster roles that can be bound to: *collect-application-logs*, *collect-infrastructure-logs* and *collect-audit-logs*.
+
+.ClusterRoleBinding for *logging-admin*
+----
+oc adm policy add-cluster-role-to-user collect-application-logs -z logging-admin
+oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z logging-admin
+----
+
+Additionally, if collecting audit logs:
+----
+oc adm policy add-cluster-role-to-user collect-audit-logs -z logging-admin
+----
+
+.Legacy *openshift-logging*
+If your previous forwarder is deployed in the namespace *openshift-logging* and named *instance*, then you've likely been using the service account *logcollector* created by earlier versions of the operator.  You can optionally grant the new RBAC permissions to this SA.
+
+IMPORTANT: To continue using the *logcollector* service account, you still *MUST explicitly grant log collection permissions* by creating a *ClusterRoleBinding* to the necessary roles.
 
 ==== Inputs Specifications
-
 The input spec is an optional part of the *ClusterLogForwarder* spec where administrators can continue to use the pre-defined values of *application*, *infrastructure*, and *audit* to collect those sources.
 See the https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/operator/api_observability_v1.adoc#specinputs[Input Spec] document for definitions of these values.
 The spec, otherwise, has largely remained unchanged.
@@ -454,7 +510,7 @@ metadata:
   name: my-forwarder
 spec:
   serviceAccount:
-    name: my-account
+    name: logging-admin
   outputs:
   - name: my-cw
     type: cloudwatch
@@ -525,20 +581,20 @@ metadata:
   name: my-forwarder
 spec:
   serviceAccount:
-    name: my-user
+    name: logging-admin # <1>
   outputs:
   - name: default-lokistack
     type: lokiStack
     lokiStack:
       target:
-        name: logging-loki
+        name: logging-loki # <2>
         namespace: openshift-logging
       authentication:
         token:
           from: serviceAccount
     tls:
       ca:
-        key: service-ca.crt
+        key: service-ca.crt # <3>
         configMapName: openshift-service-ca.crt
   pipelines:
   - name: my-pipeline
@@ -547,9 +603,33 @@ spec:
     inputRefs:
     - application
     - infrastructure
-    - audit
 ----
 ====
+<1> `serviceAccount.name` must have permissions to *collect* AND *write* to loki gateway
+<2> `lokiStack.target` name and namespace must match your loki instance name
+<3> TLS configuration `key` and `configMapName` can use the existing openshift service config map
+
+===== Permissions
+
+.*collect* cluster roles
+----
+  collect-application-logs
+  collect-infrastructure-logs
+  collect-audit-logs
+----
+.*write* cluster roles (forwarding to LokiStack)
+----
+  cluster-logging-write-application-logs
+  cluster-logging-write-infrastructure-logs
+  cluster-logging-write-audit-logs
+----
+.ClusterRoleBinding command
+[source]
+----
+  oc adm policy add-cluster-role-to-user <cluster_role> -z logging-admin
+----
+
+NOTE: The `-z` flag used above creates a cluster role binding to the service account in the current namespace.  Use `oc create clusterolebinding -h` for more explicit options when creating bindings
 
 
 === Forwarding to External Elasticsearch
@@ -563,7 +643,7 @@ metadata:
   name: my-forwarder
 spec:
   serviceAccount:
-    name: my-user
+    name: logging-admin
   outputs:
   - name: es-external
     type: elasticsearch
@@ -615,14 +695,14 @@ metadata:
   name: my-forwarder
 spec:
   serviceAccount:
-    name: logcollector
+    name: logcollector  # <1>
   outputs:
-  - name: es-output-by-label # <1>
+  - name: es-output-by-label # <2>
     type: elasticsearch
     elasticsearch:
       url: https://elasticsearch:9200
       version: 6
-      index: '{.openshift.label.my-log-index||"app"}-write' # <2>
+      index: '{.openshift.label.my_log_index||"app"}-write'  # <3>
     tls:
       ca:
         key: ca-bundle.crt
@@ -636,16 +716,16 @@ spec:
   filters:
   - name: my-parse
     type: parse
-  - name: my-app-label # <3>
+  - name: my-app-label  # <4>
     type: openshiftLabels
     openshiftLabels:
       my-log-index: app
-  - name: my-infra-label # <4>
+  - name: my-infra-label  # <5>
     type: openshiftLabels
     openshiftLabels:
       my-log-index: infra
   pipelines:
-  - name: my-app # <5>
+  - name: my-app  # <6>
     inputRefs:
     - application
     filterRefs:
@@ -653,7 +733,7 @@ spec:
     - my-app-label
     outputRefs:
     - es-output-by-label
-  - name: my-infra # <6>
+  - name: my-infra  # <7>
     inputRefs:
     - infrastructure
     filterRefs:
@@ -662,12 +742,13 @@ spec:
     outputRefs:
     - es-output-by-label
 ----
-. `es-output-by-label` is the output used in both pipelines
-. `index` is set to read the value from `.openshift.label.my-log-index` and prepend to the string "-write" or fallback to "app-write"
-. `my-app-label` filter is used to set the label "my-log-index:app" in the pipeline
-. `my-infra-label` filter is used to set the label "my-log-index:infra" in the pipeline
-. pipeline `my-app` includes application logs and labels them `app`
-. pipeline `my-infra` includes infrastructure logs and labels them `infra`
+<1> service account `logcollector` must have the correct permissions (see Service Accounts above)
+<2> `es-output-by-label` is the output used in both pipelines
+<3> `index` is set to read the value from `.openshift.label.my-log-index` and prepend to the string "-write" or fallback to "app-write"
+<4> `my-app-label` filter is used to set the label "my-log-index=app" in the pipeline
+<5> `my-infra-label` filter is used to set the label "my-log-index=infra" in the pipeline
+<6> pipeline `my-app` includes application logs and labels them `app`
+<7> pipeline `my-infra` includes infrastructure logs and labels them `infra`
 
 NOTE: In order to forward logs to the default RH-managed Elasticsearch, the `index` values must be one of `app-write`, `infra-write` or `audit-write`.
 This is achieved by adding a label (filter) to each pipeline, and setting the label value to the corresponding input type.
@@ -686,8 +767,8 @@ spec:
     - name: default
       type: elasticsearch
       elasticsearch:
-        structuredTypeKey: kubernetes.namespace_name
-        structuredTypeName: nologformat
+        structuredTypeKey: log_type
+        structuredTypeName: unknown
 ...
 ----
 .v6.0 Custom Index Snippet (New)
@@ -701,9 +782,11 @@ spec:
     elasticsearch:
       url: https://elasticsearch:9200
       version: 6
-      index: '{ .kubernetes.namespace_name || "nologformat" }' # <1>
+      index: '{.log_type||"unknown"}' # <1>
 ...
 ----
-. `index` is set to read the field value `.kubernetes.namespace_name` and falls back to "nologformat" if not found
+<1> `index` is set to read the field value `.log_type` and falls back to "unknown" if not found
+
+NOTE: a string fallback is always required to ensure a valid index
 
 ====

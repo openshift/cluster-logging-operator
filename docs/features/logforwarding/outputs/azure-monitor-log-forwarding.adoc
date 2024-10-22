@@ -19,12 +19,14 @@
 .cluster-log-forwarder.yaml
 [source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
-kind: "ClusterLogForwarder"
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
   - name: azure-monitor-app
     type: azureMonitor
@@ -70,12 +72,14 @@ oc apply -f cluster-log-forwarder.yaml
 .cluster-log-forwarder.yaml
 [source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
-kind: "ClusterLogForwarder"
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
   - name: azure-monitor
     type: azureMonitor
@@ -104,12 +108,14 @@ oc apply -f cluster-log-forwarder.yaml
 .cluster-log-forwarder.yaml
 [source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
-kind: "ClusterLogForwarder"
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
   - name: azure-monitor
     type: azureMonitor

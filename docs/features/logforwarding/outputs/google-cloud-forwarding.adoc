@@ -36,12 +36,14 @@ Replace `project_id` and `private_key` with real values.
 +
 [source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
     - name: gcp-1
       type: googleCloudLogging

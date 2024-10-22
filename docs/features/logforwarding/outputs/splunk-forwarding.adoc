@@ -20,9 +20,11 @@
 kind: ClusterLogForwarder
 apiVersion: observability.openshift.io/v1
 metadata:
-  name: instance
+  name: my-forwarder
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
     - name: splunk-receiver
       type: splunk
@@ -32,7 +34,7 @@ spec:
             key: hecToken
             secretName: splunk-secret
         url: 'http://example-splunk-hec-service:8088'
-        index: '{.log_type || "undefined"}'
+        index: '{.log_type||"undefined"}'
   pipelines:
     - name: my-logs
       inputRefs:

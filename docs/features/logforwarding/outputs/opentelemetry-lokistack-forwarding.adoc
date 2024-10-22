@@ -1,0 +1,66 @@
+= OpenTelemetry and Red Hat Managed LokiStack
+
+This guide provides a sample `ClusterLogForwarder` configuration to send logs to a Red Hat managed Lokistack using the `Otel` (OpenTelemetry) data model
+
+See https://github.com/openshift/cluster-logging-operator/blob/master/docs/features/logforwarding/outputs/otlp-forwarding.adoc[otlp-forwarding] feature doc for more information about the `Viaq` -> `Otel` data mapping as well as resources on the OpenTelemetry https://opentelemetry.io/docs/specs/otlp/[OTLP Specification]
+
+.Technical Preview
+Sending `Otel` logs (via OTLP) is currently a tech-preview feature.  The following annotation is required
+----
+observability.openshift.io/tech-preview-otlp-output: "enabled"
+----
+
+---
+== Configuring the Forwarder
+A new `dataModel` option has been added to the `lokiStack` output spec.  Set the value to `Otel` as shown below
+
+.ClusterLogForwarder
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-logforwarder
+  namespace: my-app-namespace
+  annotations:
+    observability.openshift.io/tech-preview-otlp-output: "enabled"  # <1>
+spec:
+  outputs:
+    - type: lokiStack  # <2>
+      name: loki-otel
+      lokiStack:
+        target:
+          name: my-lokistack  # <3>
+          namespace: openshift-logging  # <3>
+        dataModel: Otel  # <4>
+        tuning:
+          compression: none  # <5>
+        authentication:
+          token:
+            from: serviceAccount  # <6>
+      tls: 
+        ca:
+          key: service-ca.crt  # <7>
+          configMapName: openshift-service-ca.crt  # <7>
+  pipelines:
+   - name: my-pipeline
+     inputRefs:
+     - application
+     - infrastructure
+     outputRefs:
+     - loki-otel
+  serviceAccount:
+    name: logger-admin
+----
+. The otlp tech preview annotation is required to enable the `Otel` data model.
+. Output `type` is '*lokiStack*'.
+. `lokiStack` `target`, specify a valid `lokistack` instance in the appropriate namespace.
+. `lokiStack` `dataModel` is optional but `Viaq` or `Otel` can also be specified. If omitted, will default to `Viaq`.
+. `lokiStack` `tuning` `compression` is optional but can specify one of `none` or `gzip`.
+. `lokiStack` `authentication` specifies a `token` `from` and a value of "*serviceAccount*"
+.. The token can also be read from a secret
+.. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
+. `tls` spec identifies the keys and secret to the respective certificates that they represent.
+
+[NOTE]
+`lokistack` `labeKeys` cannot be used when `dataModel` is `Otel`. 

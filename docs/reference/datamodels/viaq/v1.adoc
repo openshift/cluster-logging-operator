@@ -1847,6 +1847,12 @@ a|  *(optional)*
 
 a|  *(optional)* 
 
+|container_iostream
+
+|string
+
+a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
+
 |container_name
 
 |string
@@ -1944,6 +1950,16 @@ a|  PodName is the name of the pod
 ===== Description
 
 *(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_iostream
+
+===== Description
+
+*(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 =====  Type
 
@@ -2728,6 +2744,12 @@ a|  *(optional)*
 
 a|  *(optional)* 
 
+|container_iostream
+
+|string
+
+a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
+
 |container_name
 
 |string
@@ -2823,6 +2845,12 @@ a|  *(optional)*
 |string
 
 a|  *(optional)* 
+
+|container_iostream
+
+|string
+
+a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 |container_name
 
@@ -2921,6 +2949,16 @@ a|  PodName is the name of the pod
 ===== Description
 
 *(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_iostream
+
+===== Description
+
+*(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 =====  Type
 

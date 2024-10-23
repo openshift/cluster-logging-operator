@@ -1909,6 +1909,15 @@ Type:: object
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
+|dataModel|string|  DataModel can be used to customize how log data is stored in LokiStack.
+
+There are two different models to choose from:
+
+- Viaq
+ - Otel
+
+When the data model is not set, it currently defaults to the &#34;Viaq&#34; data model.
+
 |labelKeys|object|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 
 Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
@@ -2458,11 +2467,24 @@ The value can be a decimal integer or one of these case-insensitive keywords:
 
 Emergency Alert Critical Error Warning Notice Informational Debug
 
+|tuning|object|  Tuning specs tuning for the output
+
 |url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
 For example, to send syslog records using secure UDP:
 
 url: udps://syslog.example.com:1234
 
+|======================
+
+=== .spec.outputs[].syslog.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|deliveryMode|string|  
 |======================
 
 === .spec.outputs[].tls

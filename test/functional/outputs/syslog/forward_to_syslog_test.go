@@ -238,6 +238,59 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
 	})
+
+	Context("Infrastructure log logs", func() {
+		It("should send infra logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToSyslogOutput(obs.SyslogRFC5424, setSyslogSpecValues)
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Log message data
+			logline := functional.NewJournalLog(3, "*", "*")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			// Read line from Syslog output
+			outputlogs, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+			for _, o := range outputlogs {
+				fmt.Printf("log received %s\n", o)
+			}
+			fields := strings.Split(outputlogs[0], " ")
+			Expect(getAppName(fields)).To(Equal("myapp"))
+			Expect(getProcID(fields)).To(Equal("myproc"))
+			Expect(getMsgID(fields)).To(Equal("mymsg"))
+			Expect(true).To(BeFalse())
+		})
+
+		It("should take values of appname, procid, messageid from record\"", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
+					spec.Syslog.AppName = `{.systemd.t.COMM||"none"}`
+					spec.Syslog.ProcId = `{.systemd.t.PID||"none"}`
+					spec.Syslog.MsgId = `{.systemd.u.MESSAGE_ID||"none"}`
+				}))
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Log message data
+			logline := functional.NewJournalLog(3, "*", "*")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			// Read line from Syslog output
+			outputlogs, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+			for _, o := range outputlogs {
+				fmt.Printf("log received %s\n", o)
+			}
+			fields := strings.Split(outputlogs[0], " ")
+			Expect(getAppName(fields)).To(Equal("cat"))
+			Expect(getProcID(fields)).To(Equal("3194"))
+			Expect(getMsgID(fields)).To(Equal("none"))
+		})
+	})
 })
 
 var (

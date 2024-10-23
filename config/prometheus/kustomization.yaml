@@ -2,3 +2,4 @@ resources:
 - servicemonitor.yaml
 - service.yaml
 - collector_alerts.yaml
+- telemetry_rules.yaml

@@ -1,3 +1,5 @@
+//go:build vector
+
 package apiaudit
 
 import (

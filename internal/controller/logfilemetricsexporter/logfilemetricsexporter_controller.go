@@ -2,9 +2,10 @@ package logfilemetricsexporter
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -73,7 +74,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 
 	if reconcileErr != nil {
 		lfmeInstance.Status.Conditions.SetCondition(
-			condNotReady(loggingv1.ReasonInvalid, reconcileErr.Error()))
+			condNotReady(loggingv1.ReasonInvalid, "%s", reconcileErr.Error()))
 		log.V(2).Error(reconcileErr, "logfilemetricexporter-controller returning, error")
 
 		r.Recorder.Event(lfmeInstance, corev1.EventTypeWarning, string(loggingv1.ReasonInvalid), reconcileErr.Error())

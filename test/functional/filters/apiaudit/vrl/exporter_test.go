@@ -1,3 +1,5 @@
+//go:build vector
+
 // Tests ported from splunk-audit-exporter
 
 package apiaudit

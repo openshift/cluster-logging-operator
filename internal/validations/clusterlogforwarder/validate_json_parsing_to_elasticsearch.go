@@ -2,8 +2,9 @@ package clusterlogforwarder
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/api/logging/v1"
+
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder/conditions"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +28,7 @@ func validateJsonParsingToElasticsearch(clf v1.ClusterLogForwarder, k8sClient cl
 					default:
 						status := &loggingv1.ClusterLogForwarderStatus{}
 						msg := fmt.Sprintf("structuredTypeKey or structuredTypeName must be defined for Elasticsearch output named %q when JSON parsing is enabled on pipeline %q that references it", name, pipeline.Name)
-						status.Conditions.SetCondition(conditions.CondInvalid(msg))
+						status.Conditions.SetCondition(conditions.CondInvalid("%s", msg))
 						return errors.NewValidationError(msg), status
 
 					}

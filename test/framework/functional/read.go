@@ -3,10 +3,11 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -59,7 +60,7 @@ func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string
 	var result string
 	outputFilename := "/shared/consumed.logs"
 	cmd := fmt.Sprintf("tail -1 %s", outputFilename)
-	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, maxDuration, true, func(cxt context.Context) (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, maxDuration, true, func(_ context.Context) (done bool, err error) {
 		result, err = f.RunCommand(consumercontainername, "/bin/bash", "-c", cmd)
 		if result != "" && err == nil {
 			return true, nil
@@ -125,11 +126,11 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			var result string
 			outputFiles, ok := outputLogFile[outputType]
 			if !ok {
-				return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
+				return nil, fmt.Errorf("cant find output of type %s in outputSpec %v", outputName, outputSpecs)
 			}
 			file, ok := outputFiles[sourceType]
 			if !ok {
-				return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
+				return nil, fmt.Errorf("can't find log of type %s", sourceType)
 			}
 
 			result, err = f.ReadFileFrom(outputName, file)
@@ -148,7 +149,7 @@ func (f *CollectorFunctionalFramework) ReadFileFrom(outputName, filePath string)
 }
 
 func (f *CollectorFunctionalFramework) ReadFileFromWithRetryInterval(outputName, filePath string, retryInterval time.Duration) (result string, err error) {
-	err = wait.PollUntilContextTimeout(context.TODO(), retryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), retryInterval, f.GetMaxReadDuration(), true, func(_ context.Context) (done bool, err error) {
 		result, err = f.RunCommand(strings.ToLower(outputName), "cat", filePath)
 		if result != "" && err == nil {
 			return true, nil

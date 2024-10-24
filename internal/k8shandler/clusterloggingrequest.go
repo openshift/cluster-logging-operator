@@ -160,7 +160,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.Condition
 		return err
 	}
 
-	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, message) {
+	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, "%s", message) {
 		return clusterRequest.UpdateStatus(&instance)
 	}
 	return nil

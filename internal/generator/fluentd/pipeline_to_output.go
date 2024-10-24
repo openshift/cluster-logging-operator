@@ -3,10 +3,11 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"sort"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
@@ -60,7 +61,7 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 			Desc:    fmt.Sprintf("Copying pipeline %s to outputs", p.Name),
 			InLabel: helpers.LabelName(p.Name),
 		}
-		if p.Labels != nil && len(p.Labels) != 0 {
+		if len(p.Labels) != 0 {
 			// ignoring error, because pre-check stage already checked if Labels can be marshalled
 			s, _ := json.Marshal(p.Labels)
 			po.SubElements = append(po.SubElements,

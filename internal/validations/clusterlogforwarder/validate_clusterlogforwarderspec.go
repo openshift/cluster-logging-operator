@@ -136,7 +136,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 		// Don't allow empty names since this no longer mutates the spec
 		if pipeline.Name == "" {
 			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
-			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("pipeline must have a name"))
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("%s", "pipeline must have a name"))
 			names.Insert(pipeline.Name)
 			continue
 		}
@@ -151,7 +151,7 @@ func verifyPipelines(forwarderName string, spec *loggingv1.ClusterLogForwarderSp
 
 		// Verify pipeline labels
 		if _, err := json.Marshal(pipeline.Labels); err != nil {
-			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("invalid pipeline labels"))
+			status.Pipelines.Set(pipeline.Name, conditions.CondInvalid("%s", "invalid pipeline labels"))
 			continue
 		}
 
@@ -264,6 +264,7 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			status.Outputs.Set(output.Name, loggingv1.NewCondition(loggingv1.ValidationCondition,
 				corev1.ConditionTrue,
 				loggingv1.ValidationFailureReason,
+				"%s",
 				msg))
 		}
 		names.Insert(output.Name)
@@ -297,7 +298,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 		brokerUrls := []string{}
 		if output.URL != "" {
 			if u, _ := url.Parse(output.URL); output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
-				return fail(conditions.CondInvalid(notSecureUrlMsg))
+				return fail(conditions.CondInvalid("%s", notSecureUrlMsg))
 			}
 			brokerUrls = append(brokerUrls, output.URL)
 		}
@@ -305,7 +306,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 			brokerUrls = append(brokerUrls, output.Kafka.Brokers...)
 		}
 		if len(brokerUrls) == 0 {
-			return fail(conditions.CondInvalid("no broker URLs specified"))
+			return fail(conditions.CondInvalid("%s", "no broker URLs specified"))
 		}
 		for _, b := range brokerUrls {
 			u, err := url.Parse(b)
@@ -335,7 +336,7 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 			return fail(conditions.CondInvalid("invalid URL: %v", err))
 		}
 		if output.TLS != nil && !urlhelper.IsTLSScheme(u.Scheme) {
-			return fail(conditions.CondInvalid(notSecureUrlMsg))
+			return fail(conditions.CondInvalid("%s", notSecureUrlMsg))
 		}
 		if output.Type == loggingv1.OutputTypeSyslog {
 			scheme := strings.ToLower(u.Scheme)
@@ -361,7 +362,7 @@ func verifyOutputSecret(namespace string, clfClient client.Client, output *loggi
 	}
 
 	if output.Secret.Name == "" {
-		conds.Set(output.Name, conditions.CondInvalid("secret has empty name"))
+		conds.Set(output.Name, conditions.CondInvalid("%s", "secret has empty name"))
 		return false
 	}
 	// Only for ES. If default replaced, the "collector" secret will be created later

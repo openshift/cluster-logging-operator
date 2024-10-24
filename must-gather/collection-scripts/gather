@@ -91,7 +91,7 @@ else
   log "Skipping collection inspection.  No default CLO found" 2>&1 | tee "${LOGFILE_PATH}"
 fi
 
-loki_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep lokistack)||
+loki_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep lokistack)&&
 if [ "$loki_crd" != "" ] ; then
   found_lokistack="$(oc -n $LOGGING_NS get lokistack.loki.grafana.com --ignore-not-found --no-headers)"
   if [ "$found_lokistack" != "" ] ; then

@@ -13,7 +13,8 @@ include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
-max_read_bytes = 3145728
+max_line_bytes = 3145728
+max_read_bytes =  262144
 rotate_wait_secs = 5
 {{end}}`
 
@@ -28,7 +29,8 @@ include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/au
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
-max_read_bytes = 3145728
+max_line_bytes = 3145728
+max_read_bytes =  262144
 rotate_wait_secs = 5
 {{end}}
 `
@@ -44,7 +46,8 @@ include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
-max_read_bytes = 3145728
+max_line_bytes = 3145728
+max_read_bytes =  262144
 rotate_wait_secs = 5
 {{end}}
 `
@@ -60,7 +63,8 @@ include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
-max_read_bytes = 3145728
+max_line_bytes = 3145728
+max_read_bytes =  262144
 rotate_wait_secs = 5
 {{end}}
 `

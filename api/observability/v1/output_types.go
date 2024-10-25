@@ -99,46 +99,70 @@ type OutputSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Rate Limiting"
 	Limit *LimitSpec `json:"rateLimit,omitempty"`
 
+	// AzureMonitor configures forwarding log events to the Azure Monitor Logs service
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Monitor"
 	AzureMonitor *AzureMonitor `json:"azureMonitor,omitempty"`
 
+	// Cloudwatch configures forwarding log events to AWS Cloudwatch logs
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon CloudWatch"
 	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
 
+	// Elasticsearch configures forwarding log events to an Elasticsearch cluster
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch"
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 
+	// GoogleCloudLogging configures forwarding log events to GCP (formally Stackdriver) Operations
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Google Cloud Logging"
 	GoogleCloudLogging *GoogleCloudLogging `json:"googleCloudLogging,omitempty"`
 
+	// HTTP configures forwarding log events to an HTTP server
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="HTTP Output"
 	HTTP *HTTP `json:"http,omitempty"`
 
+	// Kafka configures forwarding log events to Apache Kafka topics
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Apache Kafka"
 	Kafka *Kafka `json:"kafka,omitempty"`
 
+	// Loki configures forwarding log events to a Loki aggregation system
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Grafana Loki"
 	Loki *Loki `json:"loki,omitempty"`
 
+	// LokiStack configures forwarding log events to a Red Hat managed Loki deployment
+	// using the Red Hat tenancy model
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack"
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`
 
+	// Splunk configures forwarding log events to Splunk's HTTP event collector
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Splunk"
 	Splunk *Splunk `json:"splunk,omitempty"`
 
+	// Syslog configures forwarding log events to a receiver using the syslog protocol
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog Output"
 	Syslog *Syslog `json:"syslog,omitempty"`
 
+	// OTLP configures forwarding log events to a receiver using the OpenTelemetry Protocol
+	// with Red Openshift logging semantic conventions (ref: https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md)
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OpenTelemetry Output"
 	OTLP *OTLP `json:"otlp,omitempty"`

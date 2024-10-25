@@ -839,6 +839,8 @@ spec:
                   description: OutputSpec defines a destination for log messages.
                   properties:
                     azureMonitor:
+                      description: AzureMonitor configures forwarding log events to
+                        the Azure Monitor Logs service
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -920,8 +922,8 @@ spec:
                       - customerId
                       type: object
                     cloudwatch:
-                      description: Cloudwatch provides configuration for the output
-                        type `cloudwatch`
+                      description: Cloudwatch configures forwarding log events to
+                        AWS Cloudwatch logs
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1123,6 +1125,8 @@ spec:
                       - region
                       type: object
                     elasticsearch:
+                      description: Elasticsearch configures forwarding log events
+                        to an Elasticsearch cluster
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1273,8 +1277,8 @@ spec:
                       - version
                       type: object
                     googleCloudLogging:
-                      description: GoogleCloudLogging provides configuration for sending
-                        logs to Google Cloud Logging.
+                      description: GoogleCloudLogging configures forwarding log events
+                        to GCP (formally Stackdriver) Operations
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1371,8 +1375,8 @@ spec:
                       - logId
                       type: object
                     http:
-                      description: HTTP provided configuration for sending json encoded
-                        logs to a generic HTTP endpoint.
+                      description: HTTP configures forwarding log events to an HTTP
+                        server
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1520,8 +1524,8 @@ spec:
                       - url
                       type: object
                     kafka:
-                      description: 'Kafka provides optional extra properties for `type:
-                        kafka`'
+                      description: Kafka configures forwarding log events to Apache
+                        Kafka topics
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1646,8 +1650,8 @@ spec:
                       - message: URL or brokers required
                         rule: has(self.url) || self.brokers.size() > 0
                     loki:
-                      description: 'Loki provides optional extra properties for `type:
-                        loki`'
+                      description: Loki configures forwarding log events to a Loki
+                        aggregation system
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -1827,8 +1831,9 @@ spec:
                       - url
                       type: object
                     lokiStack:
-                      description: 'LokiStack provides optional extra properties for
-                        `type: lokistack`'
+                      description: |-
+                        LokiStack configures forwarding log events to a Red Hat managed Loki deployment
+                        using the Red Hat tenancy model
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -2056,8 +2061,8 @@ spec:
                       type: string
                     otlp:
                       description: |-
-                        OTLP defines configuration for sending logs via OTLP using OTEL semantic conventions
-                        https://opentelemetry.io/docs/specs/otlp/#otlphttp
+                        OTLP configures forwarding log events to a receiver using the OpenTelemetry Protocol
+                        with Red Openshift logging semantic conventions (ref: https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md)
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -2203,9 +2208,8 @@ spec:
                       - maxRecordsPerSecond
                       type: object
                     splunk:
-                      description: |-
-                        Splunk Deliver log data to Splunk’s HTTP Event Collector
-                        Provides optional extra properties for `type: splunk_hec` ('splunk_hec_logs' after Vector 0.23
+                      description: Splunk configures forwarding log events to Splunk's
+                        HTTP event collector
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -2300,8 +2304,8 @@ spec:
                       - url
                       type: object
                     syslog:
-                      description: Syslog provides optional extra properties for output
-                        type `syslog`
+                      description: Syslog configures forwarding log events to a receiver
+                        using the syslog protocol
                       properties:
                         appName:
                           description: |

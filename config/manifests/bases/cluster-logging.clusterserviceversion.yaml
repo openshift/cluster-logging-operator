@@ -334,7 +334,9 @@ spec:
       - description: Outputs are named destinations for log messages.
         displayName: Log Forwarder Outputs
         path: outputs
-      - displayName: Azure Monitor
+      - description: AzureMonitor configures forwarding log events to the Azure Monitor
+          Logs service
+        displayName: Azure Monitor
         path: outputs[0].azureMonitor
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -400,7 +402,9 @@ spec:
           to retry after delivery a failure.
         displayName: Minimum Retry Duration
         path: outputs[0].azureMonitor.tuning.minRetryDuration
-      - displayName: Amazon CloudWatch
+      - description: Cloudwatch configures forwarding log events to AWS Cloudwatch
+          logs
+        displayName: Amazon CloudWatch
         path: outputs[0].cloudwatch
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -546,7 +550,9 @@ spec:
         path: outputs[0].cloudwatch.url
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: ElasticSearch
+      - description: Elasticsearch configures forwarding log events to an Elasticsearch
+          cluster
+        displayName: ElasticSearch
         path: outputs[0].elasticsearch
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -663,7 +669,9 @@ spec:
         path: outputs[0].elasticsearch.version
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - displayName: Google Cloud Logging
+      - description: GoogleCloudLogging configures forwarding log events to GCP (formally
+          Stackdriver) Operations
+        displayName: Google Cloud Logging
         path: outputs[0].googleCloudLogging
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -737,7 +745,8 @@ spec:
           to retry after delivery a failure.
         displayName: Minimum Retry Duration
         path: outputs[0].googleCloudLogging.tuning.minRetryDuration
-      - displayName: HTTP Output
+      - description: HTTP configures forwarding log events to an HTTP server
+        displayName: HTTP Output
         path: outputs[0].http
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -833,7 +842,8 @@ spec:
         path: outputs[0].http.url
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Apache Kafka
+      - description: Kafka configures forwarding log events to Apache Kafka topics
+        displayName: Apache Kafka
         path: outputs[0].kafka
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -935,7 +945,8 @@ spec:
         path: outputs[0].kafka.url
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Grafana Loki
+      - description: Loki configures forwarding log events to a Loki aggregation system
+        displayName: Grafana Loki
         path: outputs[0].loki
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -1093,7 +1104,10 @@ spec:
         path: outputs[0].loki.url
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: LokiStack
+      - description: |-
+          LokiStack configures forwarding log events to a Red Hat managed Loki deployment
+          using the Red Hat tenancy model
+        displayName: LokiStack
         path: outputs[0].lokiStack
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -1283,7 +1297,10 @@ spec:
       - description: Name used to refer to the output from a `pipeline`.
         displayName: Output Name
         path: outputs[0].name
-      - displayName: OpenTelemetry Output
+      - description: |-
+          OTLP configures forwarding log events to a receiver using the OpenTelemetry Protocol
+          with Red Openshift logging semantic conventions (ref: https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md)
+        displayName: OpenTelemetry Output
         path: outputs[0].otlp
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -1388,7 +1405,9 @@ spec:
         path: outputs[0].rateLimit.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
-      - displayName: Splunk
+      - description: Splunk configures forwarding log events to Splunk's HTTP event
+          collector
+        displayName: Splunk
         path: outputs[0].splunk
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
@@ -1464,7 +1483,9 @@ spec:
         path: outputs[0].splunk.url
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - displayName: Syslog Output
+      - description: Syslog configures forwarding log events to a receiver using the
+          syslog protocol
+        displayName: Syslog Output
         path: outputs[0].syslog
       - description: |-
           AppName is APP-NAME part of the syslog-msg header.

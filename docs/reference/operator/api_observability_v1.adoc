@@ -997,21 +997,19 @@ Type:: object
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
-|groupName|string|  GroupName defines the strategy for grouping logstreams
+|groupName|string|  GroupName defines the strategy for grouping logstreams. The GroupName can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
 
-The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|". 
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |region|string|  
 |tuning|object|  Tuning specs tuning for the output

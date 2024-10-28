@@ -6,6 +6,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ReasonValid is used as a reason for the condition indicating that the LogFileMetricExporter is deployed.
+const ReasonValid status.ConditionReason = "Valid"
+
 // LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
 type LogFileMetricExporterSpec struct {
 	// The resource requirements for the LogFileMetricExporter

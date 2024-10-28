@@ -39,7 +39,12 @@ type ReconcileLogFileMetricExporter struct {
 	ClusterID string
 }
 
-var condReady = status.Condition{Type: loggingv1.ConditionReady, Status: corev1.ConditionTrue}
+var condReady = status.Condition{
+	Type:    loggingv1.ConditionReady,
+	Status:  corev1.ConditionTrue,
+	Reason:  loggingv1alpha1.ReasonValid,
+	Message: "Instance is ready to use",
+}
 
 func condNotReady(r status.ConditionReason, format string, args ...interface{}) status.Condition {
 	return loggingv1.NewCondition(loggingv1.ConditionReady, corev1.ConditionFalse, r, format, args...)

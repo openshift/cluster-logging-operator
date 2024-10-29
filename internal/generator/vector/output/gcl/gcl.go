@@ -2,6 +2,7 @@ package gcl
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -76,21 +77,24 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		return []Element{}
 	}
 	componentID := vectorhelpers.MakeID(id, "log_id")
+	gclSeverityID := vectorhelpers.MakeID(id, "normalize_severity")
 	g := o.GoogleCloudLogging
 	gcl := &GoogleCloudLogging{
 		ComponentID:     id,
-		Inputs:          helpers.MakeInputs(componentID),
+		Inputs:          helpers.MakeInputs(gclSeverityID),
 		LogDestination:  LogDestination(g),
 		LogID:           componentID,
 		SeverityKey:     SeverityKey(g),
 		CredentialsPath: auth(g.Authentication, secrets),
 		RootMixin:       common.NewRootMixin(nil),
 	}
+
 	if strategy != nil {
 		strategy.VisitSink(gcl)
 	}
 	return []Element{
 		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
+		NormalizeSeverity(gclSeverityID, []string{componentID}),
 		gcl,
 		common.NewEncoding(id, ""),
 		common.NewAcknowledgments(id, strategy),
@@ -126,4 +130,30 @@ func LogDestination(g *obs.GoogleCloudLogging) Element {
 
 func SeverityKey(g *obs.GoogleCloudLogging) string {
 	return DefaultSeverityKey
+}
+
+// NormalizeSeverity normalizes log severity to conform to GCL's standard
+// Accepted Severity: DEFAULT, EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG
+// Ref: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
+func NormalizeSeverity(componentID string, inputs []string) Element {
+	var vrl = `
+# Set audit log level to 'INFO'
+if .log_type == "audit" {
+	.level = "INFO"
+} else if !exists(.level) {
+  	.level = "DEFAULT"
+} else if .level == "warn" {
+	.level = "WARNING"
+} else if .level == "trace" {
+	.level = "DEBUG"
+} else {
+	.level = upcase!(.level) 
+}
+`
+	return Remap{
+		Desc:        "Normalize GCL severity levels",
+		ComponentID: componentID,
+		Inputs:      vectorhelpers.MakeInputs(inputs...),
+		VRL:         vrl,
+	}
 }

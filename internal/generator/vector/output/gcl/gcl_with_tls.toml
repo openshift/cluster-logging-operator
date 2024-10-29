@@ -6,9 +6,28 @@ source = '''
 ._internal.gcl_1_log_id = "vector-1"
 '''
 
+# Normalize GCL severity levels
+[transforms.gcl_1_normalize_severity]
+type = "remap"
+inputs = ["gcl_1_log_id"]
+source = '''
+# Set audit log level to 'INFO'
+if .log_type == "audit" {
+	.level = "INFO"
+} else if !exists(.level) {
+  	.level = "DEFAULT"
+} else if .level == "warn" {
+	.level = "WARNING"
+} else if .level == "trace" {
+	.level = "DEBUG"
+} else {
+	.level = upcase!(.level) 
+}
+'''
+
 [sinks.gcl_1]
 type = "gcp_stackdriver_logs"
-inputs = ["gcl_1_log_id"]
+inputs = ["gcl_1_normalize_severity"]
 billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/gcl-1/google-application-credentials.json"
 log_id = "{{ _internal.gcl_1_log_id }}"

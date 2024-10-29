@@ -2,8 +2,8 @@
 # Temporarily set this to internal golang-builder until UBI 9.5 is released with
 # a go-toolset base image providing go1.22
 #
-# FROM registry.redhat.io/ubi9/go-toolset:latest AS builder
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.22-openshift-4.17 as builder
+#FROM registry.redhat.io/ubi9/go-toolset:latest AS builder
+FROM quay.io/jcantril/builder:rhel-9-golang-1.22 as builder
 
 ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
 ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-.}

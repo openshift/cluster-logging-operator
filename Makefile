@@ -249,7 +249,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.14-v4.17"
+OPENSHIFT_VERSIONS?="v4.15-v4.18"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=stable-${LOGGING_VERSION}

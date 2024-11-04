@@ -279,13 +279,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 
 			Context("when service account only has collect-application-logs permission", func() {
 				It("should pass validation for non-infra namespaces that include infra keywords kube, default, openshift", func() {
-					namespaces := []string{
-						"sample-kube-namespace",
-						"my-default-ns",
-						"custom-openshift-namespace",
-						"default-custom",
-						"kube1",
-						"openshift1"}
+					namespaces := []string{"sample-kube-namespace", "my-default-ns", "custom-openshift-namespace", "default-custom"}
 					var includes []obs.NamespaceContainerSpec
 					for _, ns := range namespaces {
 						includes = append(includes, obs.NamespaceContainerSpec{Namespace: ns})
@@ -350,12 +344,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				},
 					Entry("with default namespace", []string{"default"}),
 					Entry("with openshift namespace", []string{"openshift"}),
-					Entry("with openshift- and wildcard namespace", []string{"openshift-*"}),
+					Entry("with openshift and wildcard namespace", []string{"openshift*"}),
 					Entry("with openshift-operators-redhat namespace", []string{"openshift-operators-redhat"}),
 					Entry("with kube namespace", []string{"kube"}),
-					Entry("with kube- and wildcard namespace", []string{"kube-*"}),
+					Entry("with kube and wildcard namespace", []string{"kube*"}),
 					Entry("with kube-system namespace", []string{"kube-system"}),
-					Entry("with multiple namespaces including an infra namespace", []string{"kube-*", "custom-ns"}),
+					Entry("with multiple namespaces including an infra namespace", []string{"kube*", "custom-ns"}),
 				)
 
 				It("when including infra namespaces and excluding other namespaces", func() {

@@ -27,7 +27,7 @@ const (
 	allNamespaces = ""
 )
 
-var infraNamespaces = regexp.MustCompile(`^default$|^kube$|^openshift$|^openshift-.*$|^kube-.*$`)
+var infraNamespaces = regexp.MustCompile(`^default$|^openshift.*$|^kube.*$`)
 
 // ValidatePermissions validates the serviceAccount for the CLF has the needed permissions to collect the desired inputs
 func ValidatePermissions(context internalcontext.ForwarderContext) {

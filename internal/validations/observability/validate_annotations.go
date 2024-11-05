@@ -7,23 +7,21 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	"strings"
 )
 
-var vectorLogLevelSet = sets.NewString("trace", "debug", "info", "warn", "error", "off")
-
 func validateAnnotations(context internalcontext.ForwarderContext) {
-	// No annotations to validate
-	clf := context.Forwarder
-	if len(clf.Annotations) == 0 {
-		return
-	}
-	// log level annotation
-	if level, ok := clf.Annotations[constants.AnnotationVectorLogLevel]; ok {
-		condition := internalobs.NewCondition(obs.ConditionTypeLogLevel, obs.ConditionTrue, obs.ReasonLogLevelSupported, "log level is valid")
-		if !vectorLogLevelSet.Has(level) {
-			condition.Status = obs.ConditionFalse
-			condition.Message = fmt.Sprintf("log level %q must be one of trace, debug, info, warn, error, off.", level)
+	allowedLogLevel := sets.NewString("trace", "debug", "info", "warn", "error", "off")
+
+	if level, ok := context.Forwarder.Annotations[constants.AnnotationVectorLogLevel]; ok {
+		if !allowedLogLevel.Has(level) {
+			condition := internalobs.NewCondition(obs.ConditionTypeLogLevel, obs.ConditionFalse, obs.ReasonLogLevelSupported, "")
+			list := strings.Join(allowedLogLevel.List(), ", ")
+			condition.Message = fmt.Sprintf("log level %q must be one of [%s]", level, list)
+			internalobs.SetCondition(&context.Forwarder.Status.Conditions, condition)
+			return
 		}
-		internalobs.SetCondition(&clf.Status.Conditions, condition)
 	}
+	// Condition is only necessary when it is invalid, otherwise we can remove
+	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeLogLevel)
 }

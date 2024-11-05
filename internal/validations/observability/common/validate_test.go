@@ -17,19 +17,10 @@ var _ = Describe("#ValidateValueReference", func() {
 	)
 	var (
 		secretKeys []*obs.ValueReference
+		cmKeys     []*obs.ValueReference
 		secrets    map[string]*corev1.Secret
 		configMaps map[string]*corev1.ConfigMap
 	)
-	BeforeEach(func() {
-		secrets = map[string]*corev1.Secret{
-			"always": {
-				Data: map[string][]byte{
-					"always": []byte("somevalue"),
-				},
-			},
-		}
-	})
-
 	Context("when validating secrets", func() {
 		var (
 			secretKey = &obs.ValueReference{
@@ -63,12 +54,12 @@ var _ = Describe("#ValidateValueReference", func() {
 		})
 		It("should fail when the secret does not exist", func() {
 			secretKeys = append(secretKeys, secretKey)
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`(secret|configmap)\[.*\] not found`)))
+			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`secret\[.*\] not found`)))
 		})
 		It("should fail when the secretKey is missing from the secret", func() {
 			secretKeys = append(secretKeys, secretKeyWithKeyMissing)
 			secrets[secretKey.SecretName] = aSecret
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`(secret|configmap)\[.*\] not found`)))
+			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`secret\[.*\] not found`)))
 		})
 		It("should fail when the value identified by the key in the secret is empty", func() {
 			secretKeys = append(secretKeys, secretKey)
@@ -77,7 +68,7 @@ var _ = Describe("#ValidateValueReference", func() {
 					keyName: []byte(""),
 				},
 			}
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`(secret|configmap)\[.*\].*empty`)))
+			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`secret\[.*\].*empty`)))
 		})
 		It("should pass when the secret and secretKey exist", func() {
 			secretKeys = append(secretKeys, secretKey)
@@ -88,14 +79,15 @@ var _ = Describe("#ValidateValueReference", func() {
 			Expect(ValidateValueReference([]*obs.ValueReference{}, secrets, configMaps)).To(BeEmpty())
 		})
 	})
+
 	Context("when validating configmaps", func() {
 		const configmapName = "myconfigmap"
 		var (
-			secretKey = &obs.ValueReference{
+			cmKey = &obs.ValueReference{
 				Key:           keyName,
 				ConfigMapName: configmapName,
 			}
-			secretKeyWithKeyMissing = &obs.ValueReference{
+			cmKeyWithKeyNotFound = &obs.ValueReference{
 				Key:           missingKey,
 				ConfigMapName: configmapName,
 			}
@@ -106,7 +98,7 @@ var _ = Describe("#ValidateValueReference", func() {
 			}
 		)
 		BeforeEach(func() {
-			secretKeys = []*obs.ValueReference{
+			cmKeys = []*obs.ValueReference{
 				{
 					Key:           "always",
 					ConfigMapName: "always",
@@ -120,22 +112,26 @@ var _ = Describe("#ValidateValueReference", func() {
 				},
 			}
 		})
-		It("should fail when the configmap does not exist", func() {
-			secretKeys = append(secretKeys, secretKey)
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`(secret|configmap)\[.*\] not found`)))
+		It("should fail when one of the configmaps does not exist", func() {
+			cmKeys = append(cmKeys, cmKey)
+			Expect(ValidateValueReference(cmKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`configmap\[.*\] not found`)))
 		})
-		It("should fail when the key is missing from the configmap", func() {
-			secretKeys = append(secretKeys, secretKeyWithKeyMissing)
-			configMaps[secretKey.ConfigMapName] = aConfigMap
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`(secret|configmap)\[.*\] not found`)))
+		It("should fail when the key is not found in configmap", func() {
+			cmKeys = append(cmKeys, cmKeyWithKeyNotFound)
+			configMaps[cmKey.ConfigMapName] = aConfigMap
+			Expect(ValidateValueReference(cmKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`configmap\[.*\] not found`)))
 		})
-		It("should pass when the configmap and key exist", func() {
-			secretKeys = append(secretKeys, secretKey)
-			configMaps[secretKey.ConfigMapName] = aConfigMap
-			Expect(ValidateValueReference(secretKeys, secrets, configMaps)).To(BeEmpty())
+		It("should pass when all configmaps and keys exist", func() {
+			cmKeys = append(cmKeys, cmKey)
+			configMaps[cmKey.ConfigMapName] = aConfigMap
+			Expect(ValidateValueReference(cmKeys, secrets, configMaps)).To(BeEmpty())
 		})
-		It("should pass when there are no secrets or configmaps are spec'd", func() {
+		It("should pass when there are no keys or names are spec'd", func() {
 			Expect(ValidateValueReference([]*obs.ValueReference{}, secrets, configMaps)).To(BeEmpty())
+		})
+		It("should fail when the value in the configmap is empty", func() {
+			configMaps["always"].Data["always"] = ""
+			Expect(ValidateValueReference(cmKeys, secrets, configMaps)).To(ContainElement(MatchRegexp(`configmap\[.*\].*empty`)))
 		})
 	})
 })

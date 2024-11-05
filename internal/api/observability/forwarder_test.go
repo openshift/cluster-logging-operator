@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("[internal][api][observability]", func() {
 
-	Context("#IsValid", func() {
+	Context("#IsValidSpec", func() {
 
 		var (
 			forwarder obs.ClusterLogForwarder
@@ -46,37 +46,37 @@ var _ = Describe("[internal][api][observability]", func() {
 		})
 
 		It("should be true when the forwarder is authorized and all input, outputs, pipelines and filters are valid", func() {
-			Expect(IsValid(forwarder)).To(BeTrue())
+			Expect(IsValidSpec(forwarder)).To(BeTrue())
 		})
 		It("should be false when inputs are invalid", func() {
 			forwarder.Status.Conditions = []metav1.Condition{
 				NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, "foo", false, "", ""),
 			}
-			Expect(IsValid(forwarder)).To(BeFalse())
+			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
 		It("should be false when outputs are invalid", func() {
 			forwarder.Status.Conditions = []metav1.Condition{
 				NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, "foo", false, "", ""),
 			}
-			Expect(IsValid(forwarder)).To(BeFalse())
+			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
 		It("should be false when filters are invalid", func() {
 			forwarder.Status.Conditions = []metav1.Condition{
 				NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, "foo", false, "", ""),
 			}
-			Expect(IsValid(forwarder)).To(BeFalse())
+			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
 		It("should be false when pipelines are invalid", func() {
 			forwarder.Status.Conditions = []metav1.Condition{
 				NewConditionFromPrefix(obs.ConditionTypeValidPipelinePrefix, "foo", false, "", ""),
 			}
-			Expect(IsValid(forwarder)).To(BeFalse())
+			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
 		It("should be false when the forwarder is not authorized", func() {
 			forwarder.Status.Conditions = []metav1.Condition{
 				NewCondition(obs.ConditionTypeAuthorized, obs.ConditionFalse, "", ""),
 			}
-			Expect(IsValid(forwarder)).To(BeFalse())
+			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
 	})
 
@@ -111,35 +111,6 @@ var _ = Describe("[internal][api][observability]", func() {
 			It("should be false when there are more then just receiver inputs", func() {
 				Expect(DeployAsDeployment(forwarder)).To(BeFalse())
 			})
-		})
-	})
-
-	Context("#IsValidLokistackOTLPAnnotation", func() {
-		var (
-			forwarder obs.ClusterLogForwarder
-		)
-		BeforeEach(func() {
-			forwarder = obs.ClusterLogForwarder{
-				Spec: obs.ClusterLogForwarderSpec{
-					Outputs: []obs.OutputSpec{{}},
-				},
-				Status: obs.ClusterLogForwarderStatus{
-					Conditions: []metav1.Condition{
-						NewCondition(obs.ConditionTypeValidLokistackOTLPOutputs, obs.ConditionTrue, "", ""),
-					},
-				},
-			}
-		})
-
-		It("should be true when lokistack OTLP outputs are valid", func() {
-			Expect(IsValidLokistackOTLPAnnotation(forwarder)).To(BeTrue())
-		})
-
-		It("should be false when output is invalid", func() {
-			forwarder.Status.Conditions = []metav1.Condition{
-				NewCondition(obs.ConditionTypeValidLokistackOTLPOutputs, obs.ConditionFalse, "", ""),
-			}
-			Expect(IsValidLokistackOTLPAnnotation(forwarder)).To(BeFalse())
 		})
 	})
 })

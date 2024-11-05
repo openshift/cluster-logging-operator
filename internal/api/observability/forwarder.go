@@ -24,26 +24,14 @@ func DeployAsDeployment(forwarder obs.ClusterLogForwarder) bool {
 	return false
 }
 
-// IsValid evaluates the status conditions to determine if the spec is valid
-func IsValid(forwarder obs.ClusterLogForwarder) bool {
+// IsValidSpec evaluates the status conditions to determine if the spec is valid
+func IsValidSpec(forwarder obs.ClusterLogForwarder) bool {
 	status := forwarder.Status
 	return isAuthorized(status.Conditions) &&
 		isValid(obs.ConditionTypeValidInputPrefix, status.InputConditions, len(forwarder.Spec.Inputs)) &&
 		isValid(obs.ConditionTypeValidOutputPrefix, status.OutputConditions, len(forwarder.Spec.Outputs)) &&
 		isValid(obs.ConditionTypeValidPipelinePrefix, status.PipelineConditions, len(forwarder.Spec.Pipelines)) &&
 		isValid(obs.ConditionTypeValidFilterPrefix, status.FilterConditions, len(forwarder.Spec.Filters))
-}
-
-func IsValidLokistackOTLPAnnotation(forwarder obs.ClusterLogForwarder) bool {
-	// Check if lokistacks designated to receive OTEL data has the OTEL tp annotation
-	validOutputs := true
-	for _, cond := range forwarder.Status.Conditions {
-		if cond.Type == obs.ConditionTypeValidLokistackOTLPOutputs && cond.Status == obs.ConditionFalse {
-			validOutputs = false
-		}
-	}
-
-	return validOutputs
 }
 
 func isValid(prefix string, conditions []metav1.Condition, expConditions int) bool {

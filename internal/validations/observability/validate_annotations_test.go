@@ -40,7 +40,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder annotatio
 		DescribeTable("valid log levels", func(level string) {
 			clf.Annotations = map[string]string{constants.AnnotationVectorLogLevel: level}
 			validateAnnotations(context)
-			Expect(clf.Status.Conditions).To(HaveCondition(obs.ConditionTypeLogLevel, true, obs.ReasonLogLevelSupported, ".*"))
+			Expect(clf.Status.Conditions).To(BeEmpty())
 		},
 			Entry("should pass with level trace", "trace"),
 			Entry("should pass with level debug", "debug"),

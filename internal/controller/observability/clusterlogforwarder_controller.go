@@ -79,13 +79,6 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 		return defaultRequeue, nil
 	}
 
-	// Pre validate Forwarder,
-	// One use case for now, validate outputs for lokistack OTLP data model
-	if !preValidateForwarder(r.ForwarderContext) {
-		readyCond.Reason = obsv1.ReasonValidationFailure
-		return defaultRequeue, err
-	}
-
 	readyCond.Status = obsv1.ConditionFalse
 	if err = r.Initialize(); err != nil {
 		readyCond.Reason = obsv1.ReasonInitializationFailed
@@ -95,6 +88,7 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	if !validateForwarder(r.ForwarderContext) {
 		readyCond.Reason = obsv1.ReasonValidationFailure
+		readyCond.Message = "collector not ready"
 		if validations.MustUndeployCollector(r.Forwarder.Status.Conditions) {
 			if deleteErr := collector.Remove(r.Client, r.Forwarder.Namespace, r.Forwarder.Name); deleteErr != nil {
 				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
@@ -207,18 +201,13 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 	validations.ValidateClusterLogForwarder(forwarderContext)
 
 	validCond := internalobs.NewCondition(obsv1.ConditionTypeValid, obsv1.ConditionTrue, obsv1.ReasonValidationSuccess, "")
-	if valid = internalobs.IsValid(*forwarderContext.Forwarder); !valid {
+	if valid = internalobs.IsValidSpec(*forwarderContext.Forwarder); !valid {
 		validCond.Status = obsv1.ConditionFalse
 		validCond.Reason = obsv1.ReasonValidationFailure
-		validCond.Message = "one or more of inputs, outputs, pipelines, filters have a validation failure"
+		validCond.Message = "one or more conditions [inputs, outputs, pipelines, filters] have failed validation"
 	}
 	internalobs.SetCondition(&forwarderContext.Forwarder.Status.Conditions, validCond)
 	return valid
-}
-
-func preValidateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {
-	validations.PreValidateClusterLogForwarder(forwarderContext)
-	return internalobs.IsValidLokistackOTLPAnnotation(*forwarderContext.Forwarder)
 }
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {

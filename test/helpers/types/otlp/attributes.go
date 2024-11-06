@@ -20,6 +20,7 @@ const (
 
 	// Common to container, node(journal), auditd
 	NodeName = "k8s.node.name"
+	Level    = "level"
 
 	// Container Resource Attributes
 	K8sNamespaceName = "k8s.namespace.name"

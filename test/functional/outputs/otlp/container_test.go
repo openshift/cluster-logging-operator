@@ -117,8 +117,12 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			Expect(logRecord.ObservedTimeUnixNano).To(MatchRegexp("[0-9]*"))
 			Expect(logRecord.SeverityText).To(Equal("default"))
 
-			Expect(otlp.CollectNames(logRecord.Attributes)).To(ConsistOf([]string{otlp.LogIOStream}))
+			logAttributeNames := otlp.CollectNames(logRecord.Attributes)
+			Expect(logAttributeNames).To(ContainElement(otlp.LogIOStream), "Expect logRecord to have 'log.iostream' attribute")
 			Expect(logRecord.Attribute(otlp.LogIOStream).String()).To(Equal("stdout"))
+			// (Deprecated) compatibility attribute
+			Expect(logAttributeNames).To(ContainElement(otlp.Level), "Expect logRecord to have 'level' attribute")
+			Expect(logRecord.Attribute(otlp.Level).String()).To(Equal("default"))
 		},
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with zlib", "zlib"),

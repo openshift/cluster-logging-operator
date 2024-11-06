@@ -68,7 +68,8 @@ if (value == null) { value = encode_json(.structured) }
 r.body = {"stringValue": string!(value)}
 r.attributes = append(r.attributes,
   [
-	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}}
+	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
+	{"key": "level", "value": {"stringValue": .level}}
   ]
 )
   # Openshift and kubernetes objects for grouping containers (dropped before sending)
@@ -147,6 +148,7 @@ r.severityText = .level
 value = .message
 if (value == null) { value = encode_json(.structured) }
 r.body = {"stringValue": string!(value)}
+r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
 if exists(.systemd.t) {for_each(object!(.systemd.t)) -> |key,value| {
     r.attributes = append(r.attributes,
         [{"key": "systemd.t." + downcase(key), "value": {"stringValue": value}}]

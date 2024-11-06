@@ -99,7 +99,8 @@ if exists(.annotations) {for_each(object!(.annotations)) -> |key,value| {
 	ContainerLogAttributes = `
 r.attributes = append(r.attributes,
   [
-	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}}
+	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
+	{"key": "level", "value": {"stringValue": .level}}
   ]
 )
 `
@@ -115,6 +116,7 @@ resource.attributes = append(resource.attributes,
 )
 `
 	NodeLogAttributes = `
+r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
 if exists(.systemd.t) {for_each(object!(.systemd.t)) -> |key,value| {
     r.attributes = append(r.attributes,
         [{"key": "systemd.t." + downcase(key), "value": {"stringValue": value}}]

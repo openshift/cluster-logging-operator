@@ -97,6 +97,9 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			logAttributeNames := otlp.CollectNames(logRecord.Attributes)
 			Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.SystemTPrefix)), "Exp. some attributes with this prefix")
 			Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.SystemUPrefix)), "Exp. some attributes with this prefix")
+			// (Deprecated) compatibility attribute
+			Expect(logAttributeNames).To(ContainElement(otlp.Level), "Expect logRecord attributes to contain level")
+			Expect(logRecord.Attribute(otlp.Level).String()).To(Equal("err"))
 		})
 	})
 })

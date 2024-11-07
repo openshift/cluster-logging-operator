@@ -23,7 +23,7 @@ func NewAuditAuditdSource(input obs.InputSpec, op generator.Options) ([]generato
 	metaID := helpers.MakeID(hostID, "meta")
 	el := []generator.Element{
 		sources.NewHostAuditLog(hostID),
-		NewLogSourceAndType(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID),
+		NewLogSourceAndType(metaID, obs.AuditSourceAuditd, obs.InputTypeAudit, hostID, nil),
 	}
 	return el, []string{metaID}
 }
@@ -33,7 +33,7 @@ func NewK8sAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewK8sAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceKube, obs.InputTypeAudit, id, nil),
 	}
 	return el, []string{metaID}
 }
@@ -43,7 +43,7 @@ func NewOpenshiftAuditSource(input obs.InputSpec, op generator.Options) ([]gener
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOpenshiftAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceOpenShift, obs.InputTypeAudit, id, nil),
 	}
 	return el, []string{metaID}
 }
@@ -53,7 +53,7 @@ func NewOVNAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOVNAuditLog(id),
-		NewLogSourceAndType(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id),
+		NewLogSourceAndType(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id, nil),
 	}
 	return el, []string{metaID}
 }

@@ -3,6 +3,29 @@ type = "remap"
 inputs = ["application"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
+._internal.syslog.msg_id = .log_source
+
+if .log_type == "infrastructure" && .log_source == "node" {
+    ._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")
+    ._internal.syslog.proc_id = to_string!(.systemd.t.PID||"-")
+}
+if .log_source == "container" {
+   ._internal.syslog.app_name = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
+   ._internal.syslog.proc_id = to_string!(.kubernetes.pod_id||"-")
+   ._internal.syslog.severity = .level
+   ._internal.syslog.facility = "user"
+}
+if .log_type == "audit" {
+   ._internal.syslog.app_name = .log_source
+   ._internal.syslog.proc_id = to_string!(.auditID || "-")
+   ._internal.syslog.severity = "informational"
+   ._internal.syslog.facility = "security"
+}
+.facility = to_string!(._internal.syslog.facility || "user")
+.severity = to_string!(._internal.syslog.severity || "informational")
+.proc_id = to_string!(._internal.syslog.proc_id || "-")
+.app_name = to_string!(._internal.syslog.app_name || "-")
+.msg_id = to_string!(._internal.syslog.msg_id || "-")
 '''
 
 [sinks.example]
@@ -15,6 +38,9 @@ mode = "tcp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc5424"
-facility = "user"
-severity = "informational"
 add_log_source = false
+facility = "$$.message.facility"
+severity = "$$.message.severity"
+proc_id = "$$.message.proc_id"
+app_name = "$$.message.app_name"
+msg_id = "$$.message.msg_id"

@@ -4,9 +4,27 @@ inputs = ["application"]
 source = '''
 . = merge(., parse_json!(string!(.message))) ?? .
 
+._internal.syslog.msg_id = .log_source
+
+if .log_type == "infrastructure" && .log_source == "node" {
+    ._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")
+    ._internal.syslog.proc_id = to_string!(.systemd.t.PID||"-")
+}
+if .log_source == "container" {
+   ._internal.syslog.app_name = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
+   ._internal.syslog.proc_id = to_string!(.kubernetes.pod_id||"-")
+   ._internal.syslog.severity = .level
+   ._internal.syslog.facility = "user"
+}
+if .log_type == "audit" {
+   ._internal.syslog.app_name = .log_source
+   ._internal.syslog.proc_id = to_string!(.auditID || "-")
+   ._internal.syslog.severity = "informational"
+   ._internal.syslog.facility = "security"
+}
+.proc_id = to_string!(.proc_id||"none")
 .app_name = to_string!(.app_name||"none")
 .msg_id = to_string!(.msg_id||"none")
-.proc_id = to_string!(.proc_id||"none")
 
 if is_null(.payload_key) {
 	.payload_key = .
@@ -29,9 +47,9 @@ facility = "$$.message.facility"
 severity = "$$.message.severity"
 add_log_source = false
 payload_key = "payload_key"
+proc_id = "$$.message.proc_id"
 app_name = "$$.message.app_name"
 msg_id = "$$.message.msg_id"
-proc_id = "$$.message.proc_id"
 
 [sinks.example.tls]
 enabled = true

@@ -169,7 +169,18 @@ func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) (
 			Inputs:      helpers.MakeInputs(ids...),
 			VRL:         fmt.Sprintf(".log_type = %q", logType),
 		}
-		if logType == logging.InputNameAudit {
+
+		switch logType {
+		case logging.InputNameApplication:
+			remap.VRL = fmt.Sprintf(`
+# If namespace is infra, label log_type as infra
+if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+	.log_type = %q
+} else {
+	.log_type = %q
+}`, logging.InputNameInfrastructure,
+				logType)
+		case logging.InputNameAudit:
 			remap.VRL = strings.Join(helpers.TrimSpaces([]string{
 				remap.VRL,
 				normalize.FixHostname,

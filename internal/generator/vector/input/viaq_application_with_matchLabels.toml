@@ -100,6 +100,11 @@ source = '''
 type = "remap"
 inputs = ["input_my_app_container_viaq"]
 source = '''
-  .log_type = "application"
+  # If namespace is infra, label log_type as infra
+  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+    .log_type = "infrastructure"
+  } else {
+    .log_type = "application"
+  }
 '''
 

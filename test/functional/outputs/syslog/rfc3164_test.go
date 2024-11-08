@@ -51,8 +51,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 			Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 
 			// 134 = Facility(local0/16)*8 + Severity(Informational/6)
-			// The 1 after <134> is version, which is always set to 1
-			expectedPriority := "<134>1 "
+			expectedPriority := "<134>"
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
 		})
 	})
@@ -74,7 +73,8 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		logs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(logs).To(HaveLen(1), "Expected the receiver to receive the message")
-		expMatch := fmt.Sprintf(".*-  %s", payload)
+
+		expMatch := fmt.Sprintf(".*:\\s*%s", payload)
 		if enrichment == obs.EnrichmentTypeKubernetesMinimal {
 			expMatch = fmt.Sprintf(`namespace_name=.*, container_name=collector, pod_name=functional, message=%s`, payload)
 		}

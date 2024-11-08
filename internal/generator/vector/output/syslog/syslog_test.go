@@ -2,7 +2,6 @@ package syslog_test
 
 import (
 	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -42,6 +41,7 @@ var _ = Describe("vector syslog clf output", func() {
 				},
 			},
 		}
+
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
 				Type: obs.OutputTypeSyslog,
@@ -100,6 +100,13 @@ var _ = Describe("vector syslog clf output", func() {
 			}
 		}, false),
 
+		Entry("should configure with defaults RFC3164", "rfc3164_with_defaults.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog = &obs.Syslog{
+				URL: "udp://logserver:514",
+				RFC: obs.SyslogRFC3164,
+			}
+		}, false),
+
 		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Syslog = &obs.Syslog{
@@ -113,6 +120,7 @@ var _ = Describe("vector syslog clf output", func() {
 				PayloadKey: `{.payload_key}`,
 			}
 		}, false),
+
 		Entry("should set buffer tuning parameters", "tcp_with_tuning.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 			spec.Syslog.Tuning = &obs.SyslogTuningSpec{

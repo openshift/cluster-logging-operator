@@ -16,7 +16,7 @@ import (
 // ReconcileInputServices evaluates receiver inputs and deploys services for them
 func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader kubernetes.Reader, namespace string, owner metav1.OwnerReference, visitors func(o runtime.Object)) error {
 
-	if err := RemoveOrphanedInputServices(k8sClient, k8sReader, namespace, f.ForwarderSpec, *f.ResourceNames, owner, true); err != nil {
+	if err := RemoveOrphanedInputServices(k8sClient, k8sReader, namespace, f.ForwarderSpec, *f.ResourceNames, owner); err != nil {
 		return err
 	}
 
@@ -33,8 +33,8 @@ func (f *Factory) ReconcileInputServices(k8sClient kubernetes.Client, k8sReader 
 	return nil
 }
 
-// RemoveOrphanedInputServices removes receiver input services not owned by the given owner
-func RemoveOrphanedInputServices(client kubernetes.Client, reader kubernetes.Reader, namespace string, spec obs.ClusterLogForwarderSpec, resourceNames factory.ForwarderResourceNames, currOwner metav1.OwnerReference, removeAllServices bool) error {
+// RemoveOrphanedInputServices removes receiver input services owned by the current CLF but not defined in the spec
+func RemoveOrphanedInputServices(client kubernetes.Client, reader kubernetes.Reader, namespace string, spec obs.ClusterLogForwarderSpec, resourceNames factory.ForwarderResourceNames, currOwner metav1.OwnerReference) error {
 
 	for _, receiverType := range obs.ReceiverTypes {
 		// Get list of input services by label/ namespace
@@ -53,7 +53,7 @@ func RemoveOrphanedInputServices(client kubernetes.Client, reader kubernetes.Rea
 
 		// Remove services only if owned by current CLF and isn't defined
 		for _, item := range services.Items {
-			if utils.HasSameOwner(item.OwnerReferences, []metav1.OwnerReference{currOwner}) && (!inputs.Has(item.Name) || removeAllServices) {
+			if utils.HasSameOwner(item.OwnerReferences, []metav1.OwnerReference{currOwner}) && !inputs.Has(item.Name) {
 				if err := service.Delete(client, item.Namespace, item.Name); err != nil {
 					return err
 				}

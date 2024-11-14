@@ -226,8 +226,9 @@ var _ = Describe("Generate fluentd config", func() {
 	tls_private_key_path '/var/run/ocp-collector/secrets/http-receiver/tls.key'
 	tls_client_cert_path '/var/run/ocp-collector/secrets/http-receiver/tls.crt'
 	tls_ca_cert_path '/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt'
-  tls_private_key_passphrase "#{File.exists?('/var/run/ocp-collector/secrets/http-receiver/passphrase') ? open('/var/run/ocp-collector/secrets/http-receiver/passphrase','r') do |f|f.read end : ''}"
-	<buffer>
+    tls_private_key_passphrase "#{File.exists?('/var/run/ocp-collector/secrets/http-receiver/passphrase') ? open('/var/run/ocp-collector/secrets/http-receiver/passphrase','r') do |f|f.read end : ''}"
+	tls_verify_mode none
+     <buffer>
 	  @type file
 	  path '/var/lib/fluentd/http_receiver'
 	  flush_mode interval

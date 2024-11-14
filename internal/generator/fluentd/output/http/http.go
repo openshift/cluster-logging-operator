@@ -28,6 +28,7 @@ type Http struct {
 	BufferConfig   []Element
 	ContentType    string
 	Timeout        string
+	TlsSkipVerify  bool
 
 	// Encoding is set by plugin according to
 }
@@ -47,6 +48,9 @@ keepalive_timeout {{.Timeout}}
 {{end -}}
 {{kv  .Headers -}}
 {{compose .SecurityConfig}}
+{{if .TlsSkipVerify  -}}
+tls_verify_mode none
+{{end -}}
 {{compose .BufferConfig}}
 {{end}}`
 }
@@ -67,6 +71,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
+	tlsSkipVerify := o.TLS != nil && o.TLS.InsecureSkipVerify
 	storeID := helpers.StoreID("", o.Name, "")
 	return Match{
 		MatchTags: "**",
@@ -78,6 +83,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 			ContentType:    ContentType(o),
 			Timeout:        Timeout(o),
 			SecurityConfig: SecurityConfig(o, secret),
+			TlsSkipVerify:  tlsSkipVerify,
 			BufferConfig:   output.Buffer(output.NOKEYS, bufspec, storeID, &o),
 		},
 	}

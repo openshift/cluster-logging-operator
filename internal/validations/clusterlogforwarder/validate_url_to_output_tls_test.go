@@ -31,12 +31,12 @@ var _ = Describe("[internal][validations] ClusterLogForwarder: Output URL vs Out
 			clf.Spec.Outputs[0].TLS = nil
 			Expect(validateUrlAccordingToTls(*clf, nil, nil)).To(Succeed())
 		})
-		It("should pass validation when when not secure URL and tls.InsecureSkipVerify=false", func() {
+		It("should fail validation when when not secure URL and tls.InsecureSkipVerify=false", func() {
 			clf.Spec.Outputs[0].URL = "http://local.svc:514"
 			clf.Spec.Outputs[0].TLS = &v1.OutputTLSSpec{
 				InsecureSkipVerify: false,
 			}
-			Expect(validateUrlAccordingToTls(*clf, nil, nil)).To(Succeed())
+			Expect(validateUrlAccordingToTls(*clf, nil, nil)).To(Not(Succeed()))
 		})
 		It("should fail validation when not secure URL and exist TLS config: tls.TLSSecurityProfile", func() {
 			clf.Spec.Outputs[0].URL = "http://local.svc:514"

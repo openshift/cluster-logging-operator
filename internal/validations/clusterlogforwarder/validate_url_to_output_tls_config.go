@@ -16,7 +16,7 @@ func validateUrlAccordingToTls(clf v1.ClusterLogForwarder, k8sClient client.Clie
 		if output.URL != "" {  // some outputs not require to have output URL (e.g. Amazon CloudWatch or Google Cloud Logging) see verifyOutputURL()
 			u, _ := url.Parse(output.URL)
 			scheme := strings.ToLower(u.Scheme)
-			if !url.IsTLSScheme(scheme) && (output.TLS != nil && (output.TLS.InsecureSkipVerify || output.TLS.TLSSecurityProfile != nil)) {
+			if !url.IsTLSScheme(scheme) && output.TLS != nil {
 				log.V(3).Info("validateUrlAccordingToTls failed", "reason", "URL not secure but output has TLS configuration parameters",
 					"output URL", output.URL, "output Name", output.Name)
 				return fmt.Errorf("URL not secure: %v, but output %s has TLS configuration parameters", u, output.Name), nil

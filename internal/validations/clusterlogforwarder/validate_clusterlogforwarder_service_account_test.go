@@ -263,13 +263,7 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 							{
 								Name: appInput,
 								Application: &loggingv1.Application{
-									Namespaces: []string{
-										"sample-kube-namespace",
-										"my-default-ns",
-										"custom-openshift-namespace",
-										"default-custom",
-										"kube1",
-										"openshift1"},
+									Namespaces: []string{"sample-kube-namespace", "my-default-ns", "custom-openshift-namespace", "default-custom"},
 								},
 							},
 						},
@@ -308,12 +302,12 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder permissio
 				},
 					Entry("with default namespace", []string{"default"}),
 					Entry("with openshift namespace", []string{"openshift"}),
-					Entry("with openshift- and wildcard namespace", []string{"openshift-*"}),
+					Entry("with openshift and wildcard namespace", []string{"openshift*"}),
 					Entry("with openshift-operators-redhat namespace", []string{"openshift-operators-redhat"}),
 					Entry("with kube namespace", []string{"kube"}),
-					Entry("with kube- and wildcard namespace", []string{"kube-*"}),
+					Entry("with kube and wildcard namespace", []string{"kube*"}),
 					Entry("with kube-system namespace", []string{"kube-system"}),
-					Entry("with multiple namespaces including an infra namespace", []string{"kube-*", "custom-ns", "openshift-*"}),
+					Entry("with multiple namespaces including an infra namespace", []string{"kube*", "custom-ns"}),
 				)
 
 				It("when including infra namespaces and excluding other namespaces", func() {

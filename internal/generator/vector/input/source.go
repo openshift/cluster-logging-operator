@@ -36,8 +36,9 @@ var (
 	).AddExtensions(excludeExtensions...).
 		Build()
 	excludeExtensions = []string{"gz", "tmp", "log.*"}
-	infraNamespaces   = []string{"default", "openshift*", "kube*"}
-	infraNSRegex      = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
+	infraNamespaces   = []string{"default", "openshift", "openshift-*", "kube", "kube-*"}
+	infraNSRegex      = regexp.MustCompile(
+		`(?P<default>^default$)|(?P<openshift_dash>^openshift-.+$)|(?P<kube_dash>^kube-.+$)|(?P<openshift>^openshift$)|(?P<kube>^kube$)|(?P<openshift_all>^openshift\*$)|(?P<kube_all>^kube\*$)`)
 )
 
 // NewSource creates an input adapter to generate config for ViaQ sources to collect logs excluding the
@@ -197,8 +198,8 @@ if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.
 // since the exclusion list includes all infra namespaces by default
 // Example:
 // Include: ["openshift-logging"]
-// Default Exclude: ["default", "openshift*", "kube*"]
-// Final infra namespaces in Exclude: ["default", "kube*"]
+// Default Exclude: ["default", "openshift", "openshift-*", "kube", "kube-*"]
+// Final infra namespaces in Exclude: ["default", "openshift", "kube", "kube-*"]
 func pruneInfraNS(includes []string) []string {
 	foundInfraNamespaces := make(map[string]string)
 	for _, ns := range includes {
@@ -219,9 +220,19 @@ func pruneInfraNS(includes []string) []string {
 		case "default":
 			infraNSSet.Remove("default")
 		case "openshift":
-			infraNSSet.Remove("openshift*")
+			infraNSSet.Remove("openshift")
+		case "openshift_dash":
+			infraNSSet.Remove("openshift-*")
+		case "openshift_all":
+			infraNSSet.Remove("openshift")
+			infraNSSet.Remove("openshift-*")
 		case "kube":
-			infraNSSet.Remove("kube*")
+			infraNSSet.Remove("kube")
+		case "kube_dash":
+			infraNSSet.Remove("kube-*")
+		case "kube_all":
+			infraNSSet.Remove("kube")
+			infraNSSet.Remove("kube-*")
 		}
 	}
 	return infraNSSet.List()

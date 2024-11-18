@@ -17,51 +17,6 @@ spec:
       labels:
         service: collector
         severity: critical
-    - alert: ElasticsearchDeprecation
-      annotations:
-        description: In Red Hat OpenShift Logging Operator 6.0, support for the Red
-          Hat Elasticsearch Operator has been removed. Bug fixes and support are provided
-          only through the end of the 5.9 lifecycle. As an alternative to the Elasticsearch
-          Operator, you can use the Loki Operator instead.
-        summary: Detected Elasticsearch as the in-cluster storage, which has been
-          removed in the 6.0 release
-      expr: |
-        sum(kube_pod_labels{namespace="openshift-logging",label_component='elasticsearch'}) > 0
-      for: 5m
-      labels:
-        namespace: openshift-logging
-        service: storage
-        severity: Warning
-    - alert: FluentdDeprecation
-      annotations:
-        description: In Red Hat OpenShift Logging Operator 6.0, support for Fluentd
-          as a collector has been removed. Bug fixes and support are provided only
-          through the end of the 5.9 lifecycle. As an alternative to Fluentd, you
-          can use the Vector collector instead.
-        summary: Detected Fluentd as the collector, which has been removed in the
-          6.0 release
-      expr: |
-        sum(kube_pod_labels{namespace="openshift-logging", label_implementation='fluentd', label_app_kubernetes_io_managed_by="cluster-logging-operator"}) > 0
-      for: 5m
-      labels:
-        namespace: openshift-logging
-        service: collector
-        severity: Warning
-    - alert: KibanaDeprecation
-      annotations:
-        description: In Red Hat OpenShift Logging Operator 6.0, support for Kibana
-          as a data visualization dashboard has been removed. Bug fixes and support
-          are provided only through the end of the 5.9 lifecycle. As an alternative
-          to Kibana, you can use the Grafana Dashboard instead.
-        summary: Detected Kibana as the log data visualization, which has been removed
-          in the 6.0 release
-      expr: |
-        sum(kube_pod_labels{namespace="openshift-logging",label_component='kibana'}) > 0
-      for: 5m
-      labels:
-        namespace: openshift-logging
-        service: visualization
-        severity: Warning
     - alert: DiskBufferUsage
       annotations:
         description: 'Collectors potentially consuming too much node disk, {{ $value

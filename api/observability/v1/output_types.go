@@ -356,19 +356,19 @@ type Cloudwatch struct {
 
 	// GroupName defines the strategy for grouping logstreams
 	//
-	// The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The GroupName can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
 	//
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
 	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
 	// Example:
 	//
-	//  1. foo-{.bar||"none"}
+	//  1. foo-{.bar\|\|"none"}
 	//
-	//  2. {.foo||.bar||"missing"}
+	//  2. {.foo\|\|.bar\|\|"missing"}
 	//
-	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//  3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Group Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}

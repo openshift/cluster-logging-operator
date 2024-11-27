@@ -492,10 +492,10 @@ spec:
           GroupName defines the strategy for grouping logstreams
 
 
-          The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+          The GroupName can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
 
 
-          A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+          A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
 
 
           Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
@@ -504,13 +504,13 @@ spec:
           Example:
 
 
-           1. foo-{.bar||"none"}
+           1. foo-{.bar\|\|"none"}
 
 
-           2. {.foo||.bar||"missing"}
+           2. {.foo\|\|.bar\|\|"missing"}
 
 
-           3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+           3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
         displayName: Group Name
         path: outputs[0].cloudwatch.groupName
         x-descriptors:

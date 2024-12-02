@@ -91,21 +91,36 @@ func getInputTypeFromName(spec obs.ClusterLogForwarderSpec, inputName string) st
 		// use name as type
 		return inputName
 	}
-
 	for _, input := range spec.Inputs {
 		if input.Name == inputName {
-			if input.Application != nil {
+			switch {
+			case isApplicationInput(input):
 				return string(obs.InputTypeApplication)
-			}
-			if input.Infrastructure != nil || input.Receiver.Type == obs.ReceiverTypeSyslog {
+			case isInfrastructureInput(input):
 				return string(obs.InputTypeInfrastructure)
-			}
-			if input.Audit != nil || (input.Receiver.Type == obs.ReceiverTypeHTTP && input.Receiver.HTTP != nil && input.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit) {
+			case isAuditInput(input):
 				return string(obs.InputTypeAudit)
 			}
 		}
 	}
 	return ""
+}
+
+func isApplicationInput(input obs.InputSpec) bool {
+	return input.Application != nil
+}
+
+func isInfrastructureInput(input obs.InputSpec) bool {
+	return input.Infrastructure != nil ||
+		(input.Receiver != nil && input.Receiver.Type == obs.ReceiverTypeSyslog)
+}
+
+func isAuditInput(input obs.InputSpec) bool {
+	return input.Audit != nil ||
+		(input.Receiver != nil &&
+			input.Receiver.Type == obs.ReceiverTypeHTTP &&
+			input.Receiver.HTTP != nil &&
+			input.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit)
 }
 
 // findSpecifiedOutputs determines if the wanted output type and/or name is referenced and needs to be migrated

@@ -26,7 +26,7 @@ import (
 
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
 
-	if err = reconcile.SecurityContextConstraints(context.Client, auth.NewSCC()); err != nil {
+	if err = reconcile.SecurityContextConstraints(context.Client, context.Reader, auth.NewSCC()); err != nil {
 		log.V(3).Error(err, "reconcile.SecurityContextConstraints")
 		return err
 	}

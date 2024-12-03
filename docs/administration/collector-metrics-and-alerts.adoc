@@ -131,15 +131,6 @@ image::buffer-alert.png[Fired allert]
 === CollectorNodeDown
 Will be fired if collector component was offline for more than 10m
 
-=== ElasticsearchDeprecation
-Will fire when Elasticsearch is detected as the in-cluster storage.
-
-=== FluentdDeprecation
-Will fire when Fluentd is detected as the collector type.
-
-=== KibanaDeprecation
-Will fire when Kibana is detected as the log data visualization.
-
 == Enabling ability to collect metrics from non infrastructure namespaces
 
 To make it possible for collecting Collector metrics in namespace different from "openshift-logging"

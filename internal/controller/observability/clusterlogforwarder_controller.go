@@ -79,13 +79,6 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 		return defaultRequeue, nil
 	}
 
-	// Pre validate Forwarder,
-	// One use case for now, validate outputs for lokistack OTLP data model
-	if !preValidateForwarder(r.ForwarderContext) {
-		readyCond.Reason = obsv1.ReasonValidationFailure
-		return defaultRequeue, err
-	}
-
 	readyCond.Status = obsv1.ConditionFalse
 	if err = r.Initialize(); err != nil {
 		readyCond.Reason = obsv1.ReasonInitializationFailed
@@ -214,11 +207,6 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 	}
 	internalobs.SetCondition(&forwarderContext.Forwarder.Status.Conditions, validCond)
 	return valid
-}
-
-func preValidateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {
-	validations.PreValidateClusterLogForwarder(forwarderContext)
-	return internalobs.IsValidLokistackOTLPAnnotation(*forwarderContext.Forwarder)
 }
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {

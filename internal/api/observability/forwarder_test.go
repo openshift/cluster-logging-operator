@@ -113,33 +113,4 @@ var _ = Describe("[internal][api][observability]", func() {
 			})
 		})
 	})
-
-	Context("#IsValidLokistackOTLPAnnotation", func() {
-		var (
-			forwarder obs.ClusterLogForwarder
-		)
-		BeforeEach(func() {
-			forwarder = obs.ClusterLogForwarder{
-				Spec: obs.ClusterLogForwarderSpec{
-					Outputs: []obs.OutputSpec{{}},
-				},
-				Status: obs.ClusterLogForwarderStatus{
-					Conditions: []metav1.Condition{
-						NewCondition(obs.ConditionTypeValidLokistackOTLPOutputs, obs.ConditionTrue, "", ""),
-					},
-				},
-			}
-		})
-
-		It("should be true when lokistack OTLP outputs are valid", func() {
-			Expect(IsValidLokistackOTLPAnnotation(forwarder)).To(BeTrue())
-		})
-
-		It("should be false when output is invalid", func() {
-			forwarder.Status.Conditions = []metav1.Condition{
-				NewCondition(obs.ConditionTypeValidLokistackOTLPOutputs, obs.ConditionFalse, "", ""),
-			}
-			Expect(IsValidLokistackOTLPAnnotation(forwarder)).To(BeFalse())
-		})
-	})
 })

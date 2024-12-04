@@ -34,18 +34,6 @@ func IsValid(forwarder obs.ClusterLogForwarder) bool {
 		isValid(obs.ConditionTypeValidFilterPrefix, status.FilterConditions, len(forwarder.Spec.Filters))
 }
 
-func IsValidLokistackOTLPAnnotation(forwarder obs.ClusterLogForwarder) bool {
-	// Check if lokistacks designated to receive OTEL data has the OTEL tp annotation
-	validOutputs := true
-	for _, cond := range forwarder.Status.Conditions {
-		if cond.Type == obs.ConditionTypeValidLokistackOTLPOutputs && cond.Status == obs.ConditionFalse {
-			validOutputs = false
-		}
-	}
-
-	return validOutputs
-}
-
 func isValid(prefix string, conditions []metav1.Condition, expConditions int) bool {
 	if len(conditions) != expConditions {
 		return false

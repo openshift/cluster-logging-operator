@@ -135,6 +135,11 @@ func main() {
 		log.Error(err, "unable to retrieve the cluster version")
 		os.Exit(1)
 	}
+	clusterName, err := version.ClusterName(mgr.GetAPIReader())
+	if err != nil {
+		log.Error(err, "unable to retrieve the cluster name")
+		os.Exit(1)
+	}
 	migrateManifestResources(mgr.GetClient())
 
 	log.Info("Registering Components.")
@@ -170,6 +175,7 @@ func main() {
 			Reader:         mgr.GetAPIReader(),
 			ClusterVersion: clusterVersion,
 			ClusterID:      clusterID,
+			ClusterName:    clusterName,
 		},
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

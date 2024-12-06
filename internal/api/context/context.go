@@ -32,6 +32,9 @@ type ForwarderContext struct {
 	// ClusterVersion is the version of the cluster on which the operator is deployed
 	ClusterVersion string
 
+	// ClusterName is the name of the cluster on which the operator is deployed
+	ClusterName string
+
 	// AdditionalContext are additional context options to take pass along during reconciliation
 	AdditionalContext utils.Options
 }

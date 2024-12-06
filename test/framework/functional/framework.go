@@ -3,12 +3,13 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
@@ -270,6 +271,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	b = f.collector.BuildCollectorContainer(
 		b.AddContainer(constants.CollectorName, f.image).
 			AddEnvVar("OPENSHIFT_CLUSTER_ID", f.Name).
+			AddEnvVar("OPENSHIFT_CLUSTER_NAME", "cluster-"+f.Name).
 			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs").
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).
 		End()

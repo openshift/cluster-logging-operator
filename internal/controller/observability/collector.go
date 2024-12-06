@@ -88,7 +88,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 
 	isDaemonSet := !internalobs.DeployAsDeployment(*context.Forwarder)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
-	factory := collector.New(collectorConfHash, context.ClusterID, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
+	factory := collector.New(collectorConfHash, context.ClusterID, context.ClusterName, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
 	if err = factory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return

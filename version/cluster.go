@@ -12,6 +12,7 @@ import (
 var (
 	clusterVersion string
 	clusterID      string
+	clusterName    string
 )
 
 // ClusterVersion retrieves the ClusterVersion spec
@@ -26,6 +27,19 @@ func ClusterVersion(k8client client.Reader) (string, string, error) {
 		clusterID = string(proto.Spec.ClusterID)
 	}
 	return clusterVersion, clusterID, nil
+}
+
+// ClusterVersion retrieves the ClusterVersion spec
+func ClusterName(k8client client.Reader) (string, error) {
+	if clusterName == "" {
+		proto := &configv1.Infrastructure{}
+		key := client.ObjectKey{Name: "cluster"}
+		if err := k8client.Get(context.TODO(), key, proto); err != nil {
+			return "", err
+		}
+		clusterName = proto.Status.InfrastructureName
+	}
+	return clusterName, nil
 }
 
 // HostedClusterVersion retrieves the version info of the hosted cluster or the clustser ID where the operator is deployed

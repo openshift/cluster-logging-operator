@@ -41,7 +41,7 @@ func (k Kafka) Template() string {
 type = "kafka"
 inputs = {{.Inputs}}
 bootstrap_servers = {{.BootstrapServers}}
-topic = "{{"{{"}} _internal.{{.Topic}} {{"}}"}}"
+topic = "{{"{{"}} ._internal.{{.Topic}} {{"}}"}}"
 healthcheck.enabled = false
 {{.Compression}}
 {{end}}

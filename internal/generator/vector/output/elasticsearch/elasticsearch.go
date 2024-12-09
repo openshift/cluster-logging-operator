@@ -36,7 +36,7 @@ type = "elasticsearch"
 inputs = {{.Inputs}}
 endpoints = ["{{.Endpoint}}"]
 {{.IDKey}}
-bulk.index = "{{"{{"}} _internal.{{.Index}} {{"}}"}}"
+bulk.index = "{{"{{"}} ._internal.{{.Index}} {{"}}"}}"
 bulk.action = "create"
 {{.Compression}}
 {{- if ne .Version 0 }}

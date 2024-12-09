@@ -54,7 +54,7 @@ type = "gcp_stackdriver_logs"
 inputs = {{.Inputs}}
 {{kv .LogDestination -}}
 credentials_path = {{.CredentialsPath}}
-log_id = "{{"{{"}} _internal.{{.LogID}} {{"}}"}}"
+log_id = "{{"{{"}} ._internal.{{.LogID}} {{"}}"}}"
 severity_key = "{{.SeverityKey}}"
 
 [sinks.{{.ComponentID}}.resource]

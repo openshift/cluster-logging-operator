@@ -60,8 +60,8 @@ type = "aws_cloudwatch_logs"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
 {{.Compression}}
-group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
-stream_name = "{{"{{ stream_name }}"}}"
+group_name = "{{"{{"}} ._internal.{{.GroupName}} {{"}}"}}"
+stream_name = "{{"{{ .stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}

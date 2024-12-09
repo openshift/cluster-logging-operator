@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"regexp"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional/common"
 )

@@ -59,11 +59,15 @@ ruleset(name="test" parser=["rsyslog.rfc5424"]){
 	`
 
 	RuleSetRfc3164 = `
+# Define the RFC3164 template including <PRI>
+template(name="RFC3164WithPRI" type="string"
+         string="<%PRI%>%TIMESTAMP% %HOSTNAME% %syslogtag%%msg%\n")
+
 #### RULES ####
-ruleset(name="test" parser=["rsyslog.rfc3164"]){
-    action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+ruleset(name="test" parser=["rsyslog.rfc3164"]) {
+    action(type="omfile" file="/tmp/infra.log" Template="RFC3164WithPRI")
 }
-	`
+    `
 	// includes both rfc parsers
 	RuleSetRfc3164Rfc5424 = `
 #### RULES ####

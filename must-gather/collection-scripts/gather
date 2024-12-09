@@ -11,6 +11,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 BASE_COLLECTION_PATH="${1:-/must-gather}"
 BASE_COLLECTION_PATH=$(cd "$(dirname -- $BASE_COLLECTION_PATH)" >/dev/null; pwd -P)/$(basename -- "$BASE_COLLECTION_PATH")
+
 LOGGING_NS="${2:-openshift-logging}"
 LOGFILE_NAME="${3:-gather-debug.log}"
 LOGFILE_PATH="${BASE_COLLECTION_PATH}/${LOGFILE_NAME}" # must-gather/gather-debug.log
@@ -22,25 +23,27 @@ log "must-gather logs are located at: '${LOGFILE_PATH}'"
 mkdir ${BASE_COLLECTION_PATH}/cache-dir||:
 export KUBECACHEDIR=${BASE_COLLECTION_PATH}/cache-dir
 
-# cluster-scoped resources
-cluster_resources=(ns/openshift-operator-lifecycle-manager)
+# namespaces
+namespace_resources=(openshift-operator-lifecycle-manager)
 
 # cluster logging operator namespace
-cluster_resources+=(ns/$LOGGING_NS)
+namespace_resources+=($LOGGING_NS)
 
 # elasticsearch operator namespace
-cluster_resources+=(ns/openshift-operators-redhat)
+namespace_resources+=(openshift-operators-redhat)
 
 # multi-forwarder namespaces
 for kind in $(oc get crd -A -o custom-columns=:.metadata.name | grep clusterlogforwarder); do
   namespaces=$(oc get $kind -A -o custom-columns=:.metadata.namespace | sort -u)
   for multi in ${namespaces} ; do
       # add to the list of namespaces
-      cluster_resources+=(ns/$multi)
-      log "Adding namespace '$multi' to cluster resources list" >> "${LOGFILE_PATH}"
+      if [ "$multi" != "$LOGGING_NS" ] ; then
+        namespace_resources+=($multi)
+        log "Adding namespace '$multi' to cluster resources list" | tee -a "${LOGFILE_PATH}"
+      fi
 
       # get collector resources from the namespace
-      log "Inspecting collector resources in namespace '$multi'" | tee "${LOGFILE_PATH}"
+      log "Inspecting collector resources in namespace '$multi'" | tee -a "${LOGFILE_PATH}"
       ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" "$multi" 2>&1 >> "${LOGFILE_PATH}"
   done
 done
@@ -52,43 +55,56 @@ cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
 cluster_resources+=(clusterversion)
 cluster_resources+=(machineconfigpool)
+cluster_resources+=(uiplugin)
 cluster_resources+=(customresourcedefinitions)
 
-log "- BEGIN inspecting cluster resources..." | tee "${LOGFILE_PATH}"
+log "- BEGIN inspecting cluster resources and namespaces..." | tee -a "${LOGFILE_PATH}"
+
 for cr in "${cluster_resources[@]}" ; do
-  log "-- BEGIN inspecting cluster resource ${cr} ..." >> "${LOGFILE_PATH}"
+  log "-- BEGIN inspecting cluster resource ${cr} ..." | tee -a "${LOGFILE_PATH}"
   oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" "${cr}"  >> "${LOGFILE_PATH}" 2>&1 &
   pids+=($!)
 done
-log "- END inspecting cluster resources..." >> "${LOGFILE_PATH}"
+
+for ns in "${namespace_resources[@]}" ; do
+  log "-- BEGIN inspecting namespace ${ns} ..." | tee -a "${LOGFILE_PATH}"
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" "ns/${ns}"  >> "${LOGFILE_PATH}" 2>&1 &
+  pids+=($!)
+done
+log "- END inspecting cluster resources..." | tee -a "${LOGFILE_PATH}"
 
 # namespace-scoped resources
 resources="pods,roles,rolebindings,configmaps,serviceaccounts,events,installplans,subscriptions,clusterserviceversions,logfilemetricexporter"
 
-log "BEGIN inspecting namespaced resources ..." | tee "${LOGFILE_PATH}"
+log "BEGIN inspecting namespaced resources ..." | tee -a "${LOGFILE_PATH}"
 
-for namespace in ${cluster_resources}    ; do
+for ns in ${namespace_resources[@]}    ; do
   # grab all our namespaces -- openshift-logging, openshift-operator-lifecycle-manager, openshift-operators-redhat
   # should also include any multi-forwarder namespaces found above
-  if [[ $namespace == ns/* ]]; then
-    ns=${namespace#ns/}  # remove "ns/" prefix
-      log "-- BEGIN inspecting ${ns}/${resources} ..." >> "${LOGFILE_PATH}"
-      oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "$resources" 2>&1 | tee "${LOGFILE_PATH}"  &
-      pids+=($!)
-  fi
+  log "-- BEGIN inspecting ${ns}/${resources} ..." | tee -a "${LOGFILE_PATH}"
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "$resources" 2>&1 | tee -a "${LOGFILE_PATH}"  &
+  pids+=($!)
 
 done
-log "END inspecting namespaced resources ..." >> "${LOGFILE_PATH}"
+log "END inspecting namespaced resources ..." | tee -a "${LOGFILE_PATH}"
 
+# if the uiplugin is installed, collect the console CO
+uiplugin_found="$(oc get uiplugin --ignore-not-found --no-headers)"
+if [ "$uiplugin_found" != "" ] ; then
+  log "BEGIN gathering console resources ..." | tee -a "${LOGFILE_PATH}"
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" co/console 2>&1 | tee -a "${LOGFILE_PATH}"  &
+  pids+=($!)
+  log "END gathering console resources ..." | tee -a "${LOGFILE_PATH}"
+fi
 
 default_clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
 
 if [ "$default_clo_found" != "" ] ; then
-  log "BEGIN gathering default CLO resources ..." | tee "${LOGFILE_PATH}"
+  log "BEGIN gathering default CLO resources ..." | tee -a "${LOGFILE_PATH}"
   ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$LOGGING_NS" 2>&1 >> "${LOGFILE_PATH}"
-  log "END gathering default CLO resources ..." >> "${LOGFILE_PATH}"
+  log "END gathering default CLO resources ..." | tee -a "${LOGFILE_PATH}"
 else
-  log "Skipping collection inspection.  No default CLO found" 2>&1 | tee "${LOGFILE_PATH}"
+  log "Skipping collection inspection.  No default CLO found" 2>&1 | tee -a "${LOGFILE_PATH}"
 fi
 
 loki_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep lokistack)
@@ -97,11 +113,11 @@ if [ "$loki_crd" != "" ] ; then
   found_lokistack="$(oc -n $LOGGING_NS get lokistack.loki.grafana.com --ignore-not-found --no-headers)"
   if [ "$found_lokistack" != "" ] ; then
 
-    log "BEGIN gathering lokistack resources ..." | tee "${LOGFILE_PATH}"
-    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" 2>&1 | tee "${LOGFILE_PATH}"
-    log "END gathering logstorage resources ..."  >> "${LOGFILE_PATH}"
+    log "BEGIN gathering lokistack resources ..." | tee -a "${LOGFILE_PATH}"
+    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" 2>&1 >>  "${LOGFILE_PATH}"
+    log "END gathering logstorage resources ..."  | tee -a "${LOGFILE_PATH}"
   else
-    log "Skipping logstorage inspection.  No deployment found" 2>&1 | tee "${LOGFILE_PATH}"
+    log "Skipping logstorage inspection.  No deployment found" 2>&1 | tee -a "${LOGFILE_PATH}"
   fi
 fi
 

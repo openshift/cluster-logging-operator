@@ -495,7 +495,7 @@ source = '''
 type = "kafka"
 inputs = ["output_kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
-topic = "{{ _internal.output_kafka_receiver_topic }}"
+topic = "{{ ._internal.output_kafka_receiver_topic }}"
 healthcheck.enabled = false
 
 [sinks.output_kafka_receiver.encoding]

@@ -21,7 +21,7 @@ type = "elasticsearch"
 inputs = ["es_1_index"]
 endpoints = ["https://es.svc.infra.cluster:9200"]
 id_key = "_id"
-bulk.index = "{{ _internal.es_1_index }}"
+bulk.index = "{{ ._internal.es_1_index }}"
 bulk.action = "create"
 api_version = "v6"
 

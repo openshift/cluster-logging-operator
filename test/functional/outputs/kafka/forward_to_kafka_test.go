@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"net/url"
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -59,6 +60,29 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 			Expect(framework.WritesNApplicationLogsOfSize(20, 10, 0)).To(BeNil())
 			// Read line from Kafka output
 			outputlogs, err := framework.ReadApplicationLogsFromKafka(topic, "localhost:9092", kafka.ConsumerNameForTopic(topic))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).ToNot(BeEmpty())
+		})
+	})
+
+	Context("LOG-6487", func() {
+		It("should deliver message to a topic name from URL", func() {
+			u := url.URL{
+				Scheme: "https",
+				Host:   "localhost:9093",
+				Path:   kafka.AppLogsTopic,
+			}
+			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToKafkaOutput(func(output *obs.OutputSpec) {
+					output.Kafka.Topic = ""
+					output.Kafka.URL = u.String()
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(20, 10, 0)).To(BeNil())
+			// Read line from Kafka output
+			outputlogs, err := framework.ReadApplicationLogsFromKafka(kafka.AppLogsTopic, "localhost:9092", kafka.ConsumerNameForTopic(kafka.AppLogsTopic))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 		})

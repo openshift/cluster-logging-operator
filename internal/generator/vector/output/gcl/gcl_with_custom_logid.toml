@@ -30,7 +30,7 @@ type = "gcp_stackdriver_logs"
 inputs = ["gcl_1_normalize_severity"]
 billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/gcl-1/google-application-credentials.json"
-log_id = "{{ _internal.gcl_1_log_id }}"
+log_id = "{{ ._internal.gcl_1_log_id }}"
 severity_key = "level"
 
 [sinks.gcl_1.resource]

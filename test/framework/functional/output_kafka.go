@@ -128,6 +128,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		`{.log_type||"none"}`:     "application",
 		`foo-{.log_type||"none"}`: "foo-application",
 		`foo-{.missing||"none"}`:  "foo-none",
+		"":                        "clo-app-topic",
 	}
 	currTopic := topicMap[output.Kafka.Topic]
 	containername := kafka.ConsumerNameForTopic(currTopic)

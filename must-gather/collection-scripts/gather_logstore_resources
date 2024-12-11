@@ -18,15 +18,13 @@ NAMESPACE=${3:-openshift-logging}
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 es_folder="$CLO_COLLECTION_PATH/es"
 
-lokistack_folder="$CLO_COLLECTION_PATH/lokistack"
-
 list_es_storage() {
   local pod=$1
   local mountPath=$(oc -n $NAMESPACE get pod $pod -o jsonpath='{.spec.containers[0].volumeMounts[?(@.name=="elasticsearch-storage")].mountPath}')
   echo "-- Persistence files" >> $es_folder/$pod
 
   oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR}  exec -c elasticsearch $pod -- ls -lR $mountPath >> $es_folder/$pod
-  
+
   echo "-- Persistence  storage size " >> $es_folder/$pod-storage
 
   oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR}  exec -c elasticsearch $pod -- df -h $mountPath >> $es_folder/$pod-storage
@@ -77,11 +75,11 @@ get_elasticsearch_status() {
 }
 
 get_elasticsearch_cr() {
-  oc get -n $NAMESPACE --cache-dir=${KUBECACHEDIR} elasticsearch.logging.openshift.io elasticsearch -o yaml > $es_folder/elasticsearch_cr.yaml
+  oc adm inspect -n $NAMESPACE --cache-dir=${KUBECACHEDIR} elasticsearch.logging.openshift.io elasticsearch
 }
 
 get_lokistack_cr() {
-  oc get -n $NAMESPACE --cache-dir=${KUBECACHEDIR} lokistacks.loki.grafana.com -o yaml > $lokistack_folder/lokistack_cr.yaml
+  oc adm inspect -n $NAMESPACE --cache-dir=${KUBECACHEDIR} lokistacks.loki.grafana.com
 }
 
 log "Gathering data for logstore component"
@@ -111,7 +109,6 @@ fi
 
 if [ "$LOG_STORE_TYPE" = "lokistack" ] ; then
   log "Gathering Lokistack resources"
-  mkdir -p "$lokistack_folder"
 
   log "-- Gather Lokistack CR"
   get_lokistack_cr

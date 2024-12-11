@@ -37,6 +37,8 @@ const (
 	sourceAuditdPath                = "/var/log/audit"
 	sourceAuditOVNName              = "varlogovn"
 	sourceOVNPath                   = "/var/log/ovn"
+	sourceOAuthServerName           = "varlogoauthserver"
+	sourceOAuthServerPath           = "/var/log/oauth-server"
 	sourceOAuthAPIServerName        = "varlogoauthapiserver"
 	sourceOAuthAPIServerPath        = "/var/log/oauth-apiserver"
 	sourceOpenshiftAPIServerName    = "varlogopenshiftapiserver"
@@ -141,6 +143,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 			v1.Volume{Name: sourceJournalName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceJournalPath}}},
 			v1.Volume{Name: sourceAuditdName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceAuditdPath}}},
 			v1.Volume{Name: sourceAuditOVNName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOVNPath}}},
+			v1.Volume{Name: sourceOAuthServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthServerPath}}},
 			v1.Volume{Name: sourceOAuthAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthAPIServerPath}}},
 			v1.Volume{Name: sourceOpenshiftAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOpenshiftAPIServerPath}}},
 			v1.Volume{Name: sourceKubeAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceKubeAPIServerPath}}},
@@ -207,6 +210,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		}
 		if inputs.HasAuditSource(obs.AuditSourceOpenShift) {
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOpenshiftAPIServerName, ReadOnly: true, MountPath: sourceOpenshiftAPIServerPath})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOAuthServerName, ReadOnly: true, MountPath: sourceOAuthServerPath})
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditOVNName, ReadOnly: true, MountPath: sourceOAuthAPIServerPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceOVN) {

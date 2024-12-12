@@ -72,15 +72,12 @@ Where `url` and `rfc` parameters are mandatory other are optional
   {.foo.bar."baz/with/slashes"}
 
 . `appName`: is APP-NAME part of the syslog-msg header.
-  `appName` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 48
-  This supports template syntax to allow dynamic per-event values.
+  `appName` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 48. This supports template syntax* to allow dynamic per-event values.
 
 .  `procId`: is `PROCID` part of the syslog-msg header.
-   `procId` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 128
-   This supports template syntax to allow dynamic per-event values.
+   `procId` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 128. This supports template syntax* to allow dynamic per-event values.
 
-.  `msgId`: is `MSGID` part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
-MsgId needs to be specified if using `rfc5424`.  The maximum length of the final values is truncated to 32
+.  `msgId`: is `MSGID` part of the syslog-msg header. This supports template syntax to allow dynamic per-event values. MsgId needs to be specified if using `rfc5424`.  The maximum length of the final values is truncated to 32. This supports template syntax* to allow dynamic per-event values.
 
 . `enrichment`: `None` or `KubernetesMinimal`.
 `None` add no additional enrichment to the record.
@@ -91,7 +88,8 @@ This may result in the message body being an invalid JSON structure.
 
 [NOTE]
 ====
-Template syntax
+*Template syntax
+
 The `appName`, `msgId` and `procId` can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.

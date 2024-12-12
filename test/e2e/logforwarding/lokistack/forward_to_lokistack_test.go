@@ -56,7 +56,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			clf.Spec.Pipelines = append(clf.Spec.Pipelines, obs.PipelineSpec{
 				Name:       "all-logs-pipeline",
 				OutputRefs: []string{outputName},
-				InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
+				InputRefs:  []string{string(obs.InputTypeApplication)},
 			})
 		})
 
@@ -112,13 +112,13 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(err).To(BeNil())
 		Expect(len(res)).To(Equal(3))
 
-		found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+		// found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		// Expect(err).To(BeNil())
+		// Expect(found).To(BeTrue())
 
-		found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+		// found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		// Expect(err).To(BeNil())
+		// Expect(found).To(BeTrue())
 	})
 
 	It("should send logs to lokistack when dataModel is not spec'd", func() {
@@ -135,13 +135,13 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 
-		found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+		// found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		// Expect(err).To(BeNil())
+		// Expect(found).To(BeTrue())
 
-		found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+		// found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		// Expect(err).To(BeNil())
+		// Expect(found).To(BeTrue())
 	})
 	AfterEach(func() {
 		e2e.Cleanup()

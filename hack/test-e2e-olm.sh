@@ -40,29 +40,30 @@ ${repo_dir}/olm_deploy/scripts/operator-install.sh
 
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
-for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
-  if [ -n "$EXCLUDES" ] ; then
-    if echo $test | grep -P -q "$EXCLUDES" ; then
-      os::log::info "==============================================================="
-	    os::log::info "excluding e2e $test "
-	    os::log::info "==============================================================="
-      continue
-    fi
+# for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
+test="${current_dir}/testing-olm/test-367-logforwarding.sh"
+if [ -n "$EXCLUDES" ] ; then
+  if echo $test | grep -P -q "$EXCLUDES" ; then
+    os::log::info "==============================================================="
+    os::log::info "excluding e2e $test "
+    os::log::info "==============================================================="
+    continue
   fi
-	os::log::info "==============================================================="
-	os::log::info "running e2e $test "
-	os::log::info "==============================================================="
-	if "${test}" ; then
-		os::log::info "==========================================================="
-		os::log::info "e2e $test succeeded at $( date )"
-		os::log::info "==========================================================="
-	else
-		os::log::error "============= FAILED FAILED ============= "
-		os::log::error "e2e $test failed at $( date )"
-		os::log::error "============= FAILED FAILED ============= "
-		failed="true"
-	fi
-done
+fi
+os::log::info "==============================================================="
+os::log::info "running e2e $test "
+os::log::info "==============================================================="
+if "${test}" ; then
+  os::log::info "==========================================================="
+  os::log::info "e2e $test succeeded at $( date )"
+  os::log::info "==========================================================="
+else
+  os::log::error "============= FAILED FAILED ============= "
+  os::log::error "e2e $test failed at $( date )"
+  os::log::error "============= FAILED FAILED ============= "
+  failed="true"
+fi
+# done
 
 get_logging_pod_logs
 

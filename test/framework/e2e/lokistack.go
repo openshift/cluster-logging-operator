@@ -37,6 +37,18 @@ const (
 
 	lokiOperatorDeploymentName = "loki-operator-controller-manager"
 
+	// Stateful sets
+	lokistackCompactor    = "-compactor"
+	lokistackIndexGateway = "-index-gateway"
+	lokistackIngester     = "-ingester"
+	lokistackRuler        = "-ruler"
+
+	// Deployments
+	lokistackDistributor   = "-distributor"
+	lokistackGateway       = "-gateway"
+	lokistackQuerier       = "-querier"
+	lokistackQueryFrontend = "-query-frontend"
+
 	LokistackName       = "lokistack-dev"
 	lokiOperatorChannel = "stable-6.1"
 	minioName           = "minio"
@@ -82,6 +94,11 @@ func (tc *E2ETestFramework) DeployMinioInNamespace(namespace string) error {
 			Port:       9000,
 			TargetPort: intstr.FromInt(9000),
 		},
+		{
+			Name:       "console",
+			Port:       9001,
+			TargetPort: intstr.FromInt(9001),
+		},
 	}
 	runtime.NewServiceBuilder(service).WithServicePort(servicePorts).WithSelector(selector)
 
@@ -120,6 +137,10 @@ minio server /data --console-address ":9001"
 			{
 				Name:          "api",
 				ContainerPort: 9000,
+			},
+			{
+				Name:          "console",
+				ContainerPort: 9001,
 			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
@@ -292,11 +313,43 @@ spec:
 		return tc.KubeClient.CoreV1().Secrets(namespace).Delete(context.TODO(), minioName+"-secret", metav1.DeleteOptions{})
 	})
 
-	return logStore, tc.Client().RESTClient().Post().
+	if err = tc.Client().RESTClient().Post().
 		RequestURI(uri).
 		SetHeader("Content-Type", "application/yaml").
 		Body([]byte(yaml)).
-		Do(context.TODO()).Error()
+		Do(context.TODO()).Error(); err != nil {
+		return nil, err
+	}
+
+	// Wait stateful sets
+	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackCompactor, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackIndexGateway, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackIngester, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackRuler, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+
+	// Wait for deployments
+	if err = tc.WaitForDeployment(namespace, LokistackName+lokistackDistributor, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.WaitForDeployment(namespace, LokistackName+lokistackGateway, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.WaitForDeployment(namespace, LokistackName+lokistackQuerier, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+	if err = tc.WaitForDeployment(namespace, LokistackName+lokistackQueryFrontend, defaultRetryInterval, defaultTimeout); err != nil {
+		return nil, err
+	}
+
+	return logStore, err
 }
 
 // ExternalURL returns the URL of the external route.

@@ -44,7 +44,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
-		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.TimestampLegacy = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 
@@ -73,7 +73,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
-		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.TimestampLegacy = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 

@@ -57,6 +57,7 @@ type Factory struct {
 	ConfigHash             string
 	CollectorSpec          obs.CollectorSpec
 	ClusterID              string
+	ClusterName            string
 	ImageName              string
 	Visit                  Visitor
 	Secrets                internalobs.Secrets
@@ -85,12 +86,13 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
+func New(confHash, clusterID, clusterName string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
 	factory := &Factory{
 		ClusterID:     clusterID,
+		ClusterName:   clusterName,
 		ConfigHash:    confHash,
 		CollectorSpec: *collectorSpec,
 		ImageName:     constants.VectorName,
@@ -110,20 +112,20 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.ClusterName, tlsProfileSpec, namespace)
 	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return ds
 }
 
 func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.Deployment {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.ClusterName, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	dpl.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return dpl
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID string, tlsProfileSpec configv1.TLSProfileSpec, namespace string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID, clusterName string, tlsProfileSpec configv1.TLSProfileSpec, namespace string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -156,7 +158,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		AddServiceAccountProjectedVolume(podSpec, defaultAudience)
 	}
 
-	collector := f.NewCollectorContainer(spec.Inputs, spec.Outputs, secretVolumes, configmapVolumes, clusterID)
+	collector := f.NewCollectorContainer(spec.Inputs, spec.Outputs, secretVolumes, configmapVolumes, clusterID, clusterName)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
@@ -171,7 +173,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs internalobs.Outputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
+func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs internalobs.Outputs, secretVolumes, configmapVolumes []string, clusterID, clusterName string) *v1.Container {
 	collector := runtime.NewContainer(constants.CollectorName, utils.GetComponentImage(f.ImageName), v1.PullIfNotPresent, f.CollectorSpec.Resources)
 	collector.Ports = []v1.ContainerPort{
 		{
@@ -185,6 +187,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		{Name: "K8S_NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "OPENSHIFT_CLUSTER_ID", Value: clusterID},
+		{Name: "OPENSHIFT_CLUSTER_NAME", Value: clusterName},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 		{Name: "POD_IPS", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
 	}

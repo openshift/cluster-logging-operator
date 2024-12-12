@@ -16,13 +16,13 @@ spec:
     syslog:
       rfc: RFC3164 # <1>
       url: http://my-syslog.com # <2>
-      severity: informational # <3>
-      facility: user # <4>
-      payloadKey: message # <5>
-      appName: myApp # <6>
-      procId: 3144 # <7>
-      msgId: MsgID # <8>
-      enrichment: KubernetesMinimal # <8>
+      severity: informational # OPTIONAL parameter can be skipped will be calculated automatically <3>
+      facility: user # OPTIONAL parameter can be skipped will be calculated automatically <4>
+      payloadKey: message # OPTIONAL parameter can be skipped will be calculated automatically <5>
+      appName: myApp # OPTIONAL parameter can be skipped will be calculated automatically <6>
+      procId: 3144 # OPTIONAL parameter can be skipped will be calculated automatically <7>
+      msgId: MsgID # OPTIONAL parameter can be skipped will be calculated automatically <8>
+      enrichment: KubernetesMinimal # <9>
     type: syslog
   pipelines:
     - name: demo-logs
@@ -74,42 +74,34 @@ Where `url` and `rfc` parameters are mandatory other are optional
 . `appName`: is APP-NAME part of the syslog-msg header.
   `appName` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 48
   This supports template syntax to allow dynamic per-event values.
-  The `appName` can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-  A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-  Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-  Examples:
-
-  foo-{.bar||"none"}
-  {.foo||.bar||"missing"}
-  foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 
 .  `procId`: is `PROCID` part of the syslog-msg header.
    `procId` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 128
    This supports template syntax to allow dynamic per-event values.
-   The `procId` can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-   A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-   Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example:
-
-   foo-{.bar||"none"}
-   {.foo||.bar||"missing"}
-   foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 
 .  `msgId`: is `MSGID` part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 MsgId needs to be specified if using `rfc5424`.  The maximum length of the final values is truncated to 32
-The MsgId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
-Example:
-
-    foo-{.bar||"none"}
-    {.foo||.bar||"missing"}
-    foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 
 . `enrichment`: `None` or `KubernetesMinimal`.
 `None` add no additional enrichment to the record.
-`KubernetesMinimal` adds `namespace_name`, `pod_name`, and `collector_name` to the beginning of the message
+`KubernetesMinimal` adds `namespace_name`, `pod_name`, and `container_name` to the beginning of the message
 body (e.g. `+namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}+`).
 This may result in the message body being an invalid JSON structure.
+
+
+[NOTE]
+====
+Template syntax
+The `appName`, `msgId` and `procId` can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+Examples:
+
+  foo-{.bar||"none"}
+  {.foo||.bar||"missing"}
+  foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+====
 
 === Defaults value of Syslog fields
 Will be calculating during processing log event if values not set:

@@ -63,7 +63,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			// Compare to expected template
 			Expect(logs).To(HaveLen(2), "Expected Elasticsearch to have received all the records")
 			sort.Slice(logs, func(i, j int) bool {
-				return logs[i].Timestamp.Before(logs[j].Timestamp)
+				return logs[i].TimestampLegacy.Before(logs[j].TimestampLegacy)
 			})
 			Expect(logs[1].Message).To(Equal(appMsg))
 		})

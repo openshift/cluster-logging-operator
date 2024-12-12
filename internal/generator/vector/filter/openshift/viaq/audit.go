@@ -22,9 +22,10 @@ if err == null {
   sp, err = split(match2.ts_record,":")
   if err == null && length(sp) == 2 {
       ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+      if ts != "" { .timestamp = ts }
+      ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
       envelop |= {"record_id": sp[1]}
       . |= {"audit.linux" : envelop}
-      . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
   }
 } else {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)

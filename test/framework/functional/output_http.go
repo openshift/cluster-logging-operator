@@ -92,7 +92,6 @@ type = "remap"
 inputs = ["my_source"]
 source = '''
   del(.source_type)
-  del(.timestamp)
 '''
 
 [sinks.my_sink]

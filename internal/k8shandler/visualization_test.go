@@ -78,7 +78,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 			Kibana: &logging.KibanaSpec{},
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}, cr.ClusterVersion), nil)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	deploymentNSName := types.NamespacedName{Name: r.Name, Namespace: r.Namespace()}
@@ -124,7 +124,7 @@ func TestConsolePluginIsCreatedAndDeleted_WithoutLokiStack(t *testing.T) {
 			Type: logging.VisualizationTypeOCPConsole,
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}, cr.ClusterVersion), nil)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {
@@ -166,7 +166,7 @@ func TestConsolePluginIsCreatedAndDeleted_WithoutKorrel8rPreview(t *testing.T) {
 			Kibana: &logging.KibanaSpec{},
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), nil)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}, cr.ClusterVersion), nil)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestConsolePluginIsCreatedAndDeleted_WithCustomNodeSelectorAndToleration(t 
 			},
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}), cl.Spec.Visualization)
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", constants.Korrel8rNamespace, constants.Korrel8rName, []string{}, cr.ClusterVersion), cl.Spec.Visualization)
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	deploymentNSName := types.NamespacedName{Name: r.Name, Namespace: r.Namespace()}

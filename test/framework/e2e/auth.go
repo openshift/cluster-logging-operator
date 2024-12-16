@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -15,6 +16,8 @@ var (
 	ClusterRoleCollectApplicationLogs    = fmt.Sprintf(roleFmt, obsv1.InputTypeApplication)
 	ClusterRoleCollectInfrastructureLogs = fmt.Sprintf(roleFmt, obsv1.InputTypeInfrastructure)
 	ClusterRoleCollectAuditLogs          = fmt.Sprintf(roleFmt, obsv1.InputTypeAudit)
+	ClusterRoleAllLogsWriter             = "logging-collector-logs-writer"
+	ClusterRoleAllLogsReader             = "logging-collector-logs-reader"
 )
 
 type AuthorizationBuilder struct {
@@ -122,4 +125,22 @@ func (tc *E2ETestFramework) createRbac(namespace, name string) (err error) {
 	})
 
 	return tc.Test.Recreate(roleBinding)
+}
+
+func (tc *E2ETestFramework) createClusterRole(name string, apiGroups, resources, resourceNames, verbs []string) (err error) {
+	saCRole := runtime.NewClusterRole(
+		name,
+		runtime.NewPolicyRules(
+			runtime.NewPolicyRule(
+				apiGroups,
+				resources,
+				resourceNames,
+				verbs,
+			),
+		)...,
+	)
+	tc.AddCleanup(func() error {
+		return tc.Test.Delete(saCRole)
+	})
+	return tc.Test.Recreate(saCRole)
 }

@@ -95,11 +95,11 @@ func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets ob
 
 func FixTimestampFormat(componentID string, inputs []string) Element {
 	var vrl = `
-ts, err = parse_timestamp(.@timestamp,"%+")
+.timestamp, err = parse_timestamp(.@timestamp,"%+")
 if err != null {
 	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
 } else {
-	.@timestamp = ts
+	.@timestamp = .timestamp
 }
 `
 	return Remap{

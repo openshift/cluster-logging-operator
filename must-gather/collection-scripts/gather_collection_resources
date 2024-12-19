@@ -28,7 +28,7 @@ crs="$(oc get clusterLogForwarder.observability.openshift.io -n $NAMESPACE -o cu
 for collector in ${crs}; do
   log "-- Gathering data for ClusterLogForwarder: $collector"
   mkdir -p $collector_folder
-  oc -n $NAMESPACE get clusterLogForwarder.observability.openshift.io/$collector -o yaml > $collector_folder/$collector.yaml --cache-dir=${KUBECACHEDIR} 2>&1
+  oc adm inspect -n $NAMESPACE clusterLogForwarders.observability.openshift.io --cache-dir=${KUBECACHEDIR} 2>&1
 
   # find daemonset
   log "--- Describe Daemonset ds/$collector"

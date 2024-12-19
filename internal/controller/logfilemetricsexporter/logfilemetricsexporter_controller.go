@@ -29,8 +29,9 @@ import (
 var _ reconcile.Reconciler = &ReconcileLogFileMetricExporter{}
 
 type ReconcileLogFileMetricExporter struct {
-	Client client.Client
-	Scheme *runtime.Scheme
+	Client         client.Client
+	UncachedReader client.Reader
+	Scheme         *runtime.Scheme
 	// ClusterVersion is the semantic version of the cluster
 	ClusterVersion string
 	// ClusterID is the unique identifier of the cluster in which the operator is deployed
@@ -73,7 +74,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, utils.AsOwner(lfmeInstance))
+	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.UncachedReader, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "%s", reconcileErr.Error())

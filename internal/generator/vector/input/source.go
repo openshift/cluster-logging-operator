@@ -2,17 +2,19 @@ package input
 
 import (
 	"fmt"
+	"regexp"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
-	"regexp"
 )
 
 const (
@@ -166,7 +168,20 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 			ExcludePaths:       excludes,
 			ExtraLabelSelector: source.LabelSelectorFrom(selector),
 		},
-		NewLogSourceAndType(metaID, logSource, logType, base),
+		NewLogSourceAndType(metaID, logSource, logType, base, func(remap *elements.Remap) {
+			remap.VRL = fmt.Sprintf(
+				`
+.log_source = %q
+# If namespace is infra, label log_type as infra
+if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+    .log_type = %q
+} else {
+    .log_type = %q
+}`,
+				logSource,
+				obs.InputTypeInfrastructure,
+				obs.InputTypeApplication)
+		}),
 	}
 	inputID := metaID
 	//TODO: DETERMINE IF key field is correct and actually works

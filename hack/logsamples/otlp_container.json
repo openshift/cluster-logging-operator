@@ -4,9 +4,9 @@
       "resource": {
         "attributes": [
           {
-            "key": "cluster.id",
+            "key": "openshift.cluster.uid",
             "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
             }
           },
           {
@@ -16,21 +16,147 @@
             }
           },
           {
+            "key": "openshift.log.type",
+            "value": {
+              "stringValue": "infrastructure"
+            }
+          },
+          {
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-33-46.ec2.internal"
+            }
+          },
+          {
+            "key": "openshift.label.test_data",
+            "value": {
+              "stringValue": "viaq"
+            }
+          },
+          {
             "key": "k8s.pod.name",
             "value": {
-              "stringValue": "network-operator-67845fb87b-qgmlm"
+              "stringValue": "alertmanager-main-1"
+            }
+          },
+          {
+            "key": "k8s.pod.uid",
+            "value": {
+              "stringValue": "9d6619c0-5989-45ac-8d86-c68d2ed2785e"
             }
           },
           {
             "key": "k8s.container.name",
             "value": {
-              "stringValue": "network-operator"
+              "stringValue": "kube-rbac-proxy-web"
             }
           },
           {
             "key": "k8s.namespace.name",
             "value": {
-              "stringValue": "openshift-network-operator"
+              "stringValue": "openshift-monitoring"
+            }
+          },
+          {
+            "key": "k8s.pod.label.alertmanager",
+            "value": {
+              "stringValue": "main"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_component",
+            "value": {
+              "stringValue": "alert-router"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_instance",
+            "value": {
+              "stringValue": "main"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_managed-by",
+            "value": {
+              "stringValue": "prometheus-operator"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_name",
+            "value": {
+              "stringValue": "alertmanager"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_part-of",
+            "value": {
+              "stringValue": "openshift-monitoring"
+            }
+          },
+          {
+            "key": "k8s.pod.label.app_kubernetes_io_version",
+            "value": {
+              "stringValue": "0.26.0"
+            }
+          },
+          {
+            "key": "k8s.pod.label.apps_kubernetes_io_pod-index",
+            "value": {
+              "stringValue": "1"
+            }
+          },
+          {
+            "key": "k8s.pod.label.controller-revision-hash",
+            "value": {
+              "stringValue": "alertmanager-main-7597957f9b"
+            }
+          },
+          {
+            "key": "k8s.pod.label.statefulset_kubernetes_io_pod-name",
+            "value": {
+              "stringValue": "alertmanager-main-1"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "infrastructure"
+            }
+          },
+          {
+            "key": "log_source",
+            "value": {
+              "stringValue": "container"
+            }
+          },
+          {
+            "key": "openshift.cluster_id",
+            "value": {
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-33-46.ec2.internal"
+            }
+          },
+          {
+            "key": "kubernetes.pod_name",
+            "value": {
+              "stringValue": "alertmanager-main-1"
+            }
+          },
+          {
+            "key": "kubernetes.container_name",
+            "value": {
+              "stringValue": "kube-rbac-proxy-web"
+            }
+          },
+          {
+            "key": "kubernetes.namespace_name",
+            "value": {
+              "stringValue": "openshift-monitoring"
             }
           }
         ]
@@ -40,41 +166,23 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1720030236198577105",
-              "observedTimeUnixNano": "1720030236205386392",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636396953344557",
+              "observedTimeUnixNano": "1734636396959671971",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 18:10:36.198521       1 log.go:194] Apply / Create of (apps/v1, Kind=DaemonSet) openshift-multus/network-metrics-daemon was successful"
+                "stringValue": "I1219 19:26:36.953313       1 log.go:245] http: TLS handshake error from 10.131.0.8:34950: write tcp 10.131.0.16:9095-\u003e10.131.0.8:34950: write: connection reset by peer"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "log.iostream",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "stderr"
                   }
                 },
                 {
-                  "key": "k8s.container.id",
+                  "key": "level",
                   "value": {
-                    "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
-                  }
-                },
-                {
-                  "key": "k8s.pod.uid",
-                  "value": {
-                    "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.name",
-                  "value": {
-                    "stringValue": "network-operator"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.pod-template-hash",
-                  "value": {
-                    "stringValue": "67845fb87b"
+                    "stringValue": "info"
                   }
                 }
               ],
@@ -82,41 +190,23 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030236198752971",
-              "observedTimeUnixNano": "1720030236205482536",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636397621653432",
+              "observedTimeUnixNano": "1734636397991993706",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 18:10:36.198574       1 log.go:194] reconciling (monitoring.coreos.com/v1, Kind=ServiceMonitor) openshift-multus/monitor-network"
+                "stringValue": "I1219 19:26:37.621619       1 log.go:245] http: TLS handshake error from 10.128.2.5:36340: write tcp 10.131.0.16:9095-\u003e10.128.2.5:36340: write: connection reset by peer"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "log.iostream",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "stderr"
                   }
                 },
                 {
-                  "key": "k8s.container.id",
+                  "key": "level",
                   "value": {
-                    "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
-                  }
-                },
-                {
-                  "key": "k8s.pod.uid",
-                  "value": {
-                    "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.name",
-                  "value": {
-                    "stringValue": "network-operator"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.pod-template-hash",
-                  "value": {
-                    "stringValue": "67845fb87b"
+                    "stringValue": "info"
                   }
                 }
               ],
@@ -124,41 +214,23 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030236402214183",
-              "observedTimeUnixNano": "1720030236468017294",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636407635032181",
+              "observedTimeUnixNano": "1734636407638952206",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 18:10:36.402167       1 log.go:194] Apply / Create of (monitoring.coreos.com/v1, Kind=ServiceMonitor) openshift-multus/monitor-network was successful"
+                "stringValue": "I1219 19:26:47.634990       1 log.go:245] http: TLS handshake error from 10.128.2.5:47484: write tcp 10.131.0.16:9095-\u003e10.128.2.5:47484: write: connection reset by peer"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "log.iostream",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "stderr"
                   }
                 },
                 {
-                  "key": "k8s.container.id",
+                  "key": "level",
                   "value": {
-                    "stringValue": "cri-o://cefaff301bd30b3fbf3a58e442d580f88ceed863899cec55bcef3cc82457a60f"
-                  }
-                },
-                {
-                  "key": "k8s.pod.uid",
-                  "value": {
-                    "stringValue": "7e4b89ea-436c-4661-9dcc-302dc99bf4cf"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.name",
-                  "value": {
-                    "stringValue": "network-operator"
-                  }
-                },
-                {
-                  "key": "k8s.pod.label.pod-template-hash",
-                  "value": {
-                    "stringValue": "67845fb87b"
+                    "stringValue": "info"
                   }
                 }
               ],

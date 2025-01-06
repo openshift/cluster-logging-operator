@@ -4,15 +4,93 @@
       "resource": {
         "attributes": [
           {
-            "key": "cluster.id",
+            "key": "openshift.cluster.uid",
             "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
             }
           },
           {
             "key": "openshift.log.source",
             "value": {
               "stringValue": "node"
+            }
+          },
+          {
+            "key": "openshift.log.type",
+            "value": {
+              "stringValue": "infrastructure"
+            }
+          },
+          {
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-74-191"
+            }
+          },
+          {
+            "key": "openshift.label.test_compression",
+            "value": {
+              "stringValue": "empty"
+            }
+          },
+          {
+            "key": "openshift.label.test_data_model",
+            "value": {
+              "stringValue": "viaq"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "infrastructure"
+            }
+          },
+          {
+            "key": "log_source",
+            "value": {
+              "stringValue": "node"
+            }
+          },
+          {
+            "key": "openshift.cluster_id",
+            "value": {
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-74-191"
+            }
+          },
+          {
+            "key": "process.command_line",
+            "value": {
+              "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip=0.0.0.0 --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --image-credential-provider-bin-dir=/usr/libexec/kubelet-image-credential-provider-plugins --image-credential-provider-config=/etc/kubernetes/credential-providers/ecr-credential-provider.yaml --hostname-override=ip-10-0-74-191.ec2.internal --provider-id=aws:///us-east-1c/i-01ed4249ccc76ce92 --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4a762fd5863a28b818a820868f7005687d507c12585eebc9c4c21ca4df97fad8 --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
+            }
+          },
+          {
+            "key": "process.executable.name",
+            "value": {
+              "stringValue": "kubelet"
+            }
+          },
+          {
+            "key": "process.executable.path",
+            "value": {
+              "stringValue": "/usr/bin/kubelet"
+            }
+          },
+          {
+            "key": "process.pid",
+            "value": {
+              "stringValue": "2226"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "kubelet.service"
             }
           }
         ]
@@ -22,69 +100,123 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1720028484897905000",
-              "observedTimeUnixNano": "1720028485207090400",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636561939874000",
+              "observedTimeUnixNano": "1734636561955985745",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 17:41:24.897867    1319 kubelet_getters.go:187] \"Pod status updated\" pod=\"openshift-kube-controller-manager/kube-controller-manager-ip-10-0-39-145.ec2.internal\" status=Running"
+                "stringValue": "I1219 19:29:21.939812    2226 reconciler_common.go:300] \"Volume detached for volume \\\"kube-api-access-l2mxx\\\" (UniqueName: \\\"kubernetes.io/projected/070dff82-d7c6-4ae3-a8c2-0645e19d16f8-kube-api-access-l2mxx\\\") on node \\\"ip-10-0-74-191.ec2.internal\\\" DevicePath \\\"\\\"\""
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "level",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "info"
                   }
                 },
                 {
-                  "key": "system.cmdline",
+                  "key": "systemd.t.boot_id",
                   "value": {
-                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip= --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --hostname-override=ip-10-0-39-145.ec2.internal --provider-id=aws:///us-east-1c/i-0f0314e7c0c8b6dca --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:44cf90fa2c8a7fcf25cda5280b6aabac79e66f434e33f5341fe868db3d0c779c --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
+                    "stringValue": "266270ac87eb4a9faf294fbc754a3175"
                   }
                 },
                 {
-                  "key": "syslog.procid",
+                  "key": "systemd.t.cap_effective",
                   "value": {
-                    "stringValue": "1319"
+                    "stringValue": "1ffffffffff"
                   }
                 },
                 {
-                  "key": "system.cgroup",
+                  "key": "systemd.t.cmdline",
                   "value": {
-                    "stringValue": "/system.slice/kubelet.service"
+                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip=0.0.0.0 --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --image-credential-provider-bin-dir=/usr/libexec/kubelet-image-credential-provider-plugins --image-credential-provider-config=/etc/kubernetes/credential-providers/ecr-credential-provider.yaml --hostname-override=ip-10-0-74-191.ec2.internal --provider-id=aws:///us-east-1c/i-01ed4249ccc76ce92 --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4a762fd5863a28b818a820868f7005687d507c12585eebc9c4c21ca4df97fad8 --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
                   }
                 },
                 {
-                  "key": "system.invocation.id",
+                  "key": "systemd.t.comm",
                   "value": {
-                    "stringValue": "7956cbfdbea14d6dbaaa2b2f5e4d0a6b"
+                    "stringValue": "kubelet"
                   }
                 },
                 {
-                  "key": "system.slice",
+                  "key": "systemd.t.exe",
                   "value": {
-                    "stringValue": "system.slice"
+                    "stringValue": "/usr/bin/kubelet"
                   }
                 },
                 {
-                  "key": "system.unit",
-                  "value": {
-                    "stringValue": "kubelet.service"
-                  }
-                },
-                {
-                  "key": "system.uid",
+                  "key": "systemd.t.gid",
                   "value": {
                     "stringValue": "0"
                   }
                 },
                 {
-                  "key": "syslog.facility",
+                  "key": "systemd.t.machine_id",
+                  "value": {
+                    "stringValue": "ec2ca18c26387c64cd4fb24e5cd32dd1"
+                  }
+                },
+                {
+                  "key": "systemd.t.pid",
+                  "value": {
+                    "stringValue": "2226"
+                  }
+                },
+                {
+                  "key": "systemd.t.selinux_context",
+                  "value": {
+                    "stringValue": "system_u:system_r:kubelet_t:s0-s0:c0.c1023"
+                  }
+                },
+                {
+                  "key": "systemd.t.stream_id",
+                  "value": {
+                    "stringValue": "2953a2d4ac224ea7b64c1e39262617fd"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_cgroup",
+                  "value": {
+                    "stringValue": "/system.slice/kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_invocation_id",
+                  "value": {
+                    "stringValue": "16e422849e3b44efa96774435e962292"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_slice",
+                  "value": {
+                    "stringValue": "system.slice"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_unit",
+                  "value": {
+                    "stringValue": "kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.transport",
+                  "value": {
+                    "stringValue": "stdout"
+                  }
+                },
+                {
+                  "key": "systemd.t.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "systemd.u.syslog_facility",
                   "value": {
                     "stringValue": "3"
                   }
                 },
                 {
-                  "key": "syslog.identifier",
+                  "key": "systemd.u.syslog_identifier",
                   "value": {
                     "stringValue": "kubenswrapper"
                   }
@@ -94,75 +226,123 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720028484898531000",
-              "observedTimeUnixNano": "1720028485209518789",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636562413617000",
+              "observedTimeUnixNano": "1734636562730006390",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 17:41:24.897947    1319 kubelet_getters.go:187] \"Pod status updated\" pod=\"openshift-etcd/etcd-ip-10-0-39-145.ec2.internal\" status=Running"
+                "stringValue": "I1219 19:29:22.413588    2226 generic.go:334] \"Generic (PLEG): container finished\" podID=\"070dff82-d7c6-4ae3-a8c2-0645e19d16f8\" containerID=\"90fe9a5786e89494b46bf5edff2930f41a60f0a9b8fda25110efbe6c2f74f3ce\" exitCode=0"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "level",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "info"
                   }
                 },
                 {
-                  "key": "system.cmdline",
+                  "key": "systemd.t.boot_id",
                   "value": {
-                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip= --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --hostname-override=ip-10-0-39-145.ec2.internal --provider-id=aws:///us-east-1c/i-0f0314e7c0c8b6dca --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:44cf90fa2c8a7fcf25cda5280b6aabac79e66f434e33f5341fe868db3d0c779c --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
+                    "stringValue": "266270ac87eb4a9faf294fbc754a3175"
                   }
                 },
                 {
-                  "key": "syslog.procid",
+                  "key": "systemd.t.cap_effective",
                   "value": {
-                    "stringValue": "1319"
+                    "stringValue": "1ffffffffff"
                   }
                 },
                 {
-                  "key": "system.stream.id",
+                  "key": "systemd.t.cmdline",
                   "value": {
-                    "stringValue": "dc0ef47d2b234a9d88517239b1355b40"
+                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip=0.0.0.0 --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --image-credential-provider-bin-dir=/usr/libexec/kubelet-image-credential-provider-plugins --image-credential-provider-config=/etc/kubernetes/credential-providers/ecr-credential-provider.yaml --hostname-override=ip-10-0-74-191.ec2.internal --provider-id=aws:///us-east-1c/i-01ed4249ccc76ce92 --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4a762fd5863a28b818a820868f7005687d507c12585eebc9c4c21ca4df97fad8 --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
                   }
                 },
                 {
-                  "key": "system.cgroup",
+                  "key": "systemd.t.comm",
                   "value": {
-                    "stringValue": "/system.slice/kubelet.service"
+                    "stringValue": "kubelet"
                   }
                 },
                 {
-                  "key": "system.invocation.id",
+                  "key": "systemd.t.exe",
                   "value": {
-                    "stringValue": "7956cbfdbea14d6dbaaa2b2f5e4d0a6b"
+                    "stringValue": "/usr/bin/kubelet"
                   }
                 },
                 {
-                  "key": "system.slice",
-                  "value": {
-                    "stringValue": "system.slice"
-                  }
-                },
-                {
-                  "key": "system.unit",
-                  "value": {
-                    "stringValue": "kubelet.service"
-                  }
-                },
-                {
-                  "key": "system.uid",
+                  "key": "systemd.t.gid",
                   "value": {
                     "stringValue": "0"
                   }
                 },
                 {
-                  "key": "syslog.facility",
+                  "key": "systemd.t.machine_id",
+                  "value": {
+                    "stringValue": "ec2ca18c26387c64cd4fb24e5cd32dd1"
+                  }
+                },
+                {
+                  "key": "systemd.t.pid",
+                  "value": {
+                    "stringValue": "2226"
+                  }
+                },
+                {
+                  "key": "systemd.t.selinux_context",
+                  "value": {
+                    "stringValue": "system_u:system_r:kubelet_t:s0-s0:c0.c1023"
+                  }
+                },
+                {
+                  "key": "systemd.t.stream_id",
+                  "value": {
+                    "stringValue": "2953a2d4ac224ea7b64c1e39262617fd"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_cgroup",
+                  "value": {
+                    "stringValue": "/system.slice/kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_invocation_id",
+                  "value": {
+                    "stringValue": "16e422849e3b44efa96774435e962292"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_slice",
+                  "value": {
+                    "stringValue": "system.slice"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_unit",
+                  "value": {
+                    "stringValue": "kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.transport",
+                  "value": {
+                    "stringValue": "stdout"
+                  }
+                },
+                {
+                  "key": "systemd.t.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "systemd.u.syslog_facility",
                   "value": {
                     "stringValue": "3"
                   }
                 },
                 {
-                  "key": "syslog.identifier",
+                  "key": "systemd.u.syslog_identifier",
                   "value": {
                     "stringValue": "kubenswrapper"
                   }
@@ -172,75 +352,123 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720028484898531000",
-              "observedTimeUnixNano": "1720028485209922274",
-              "severityNumber": 6,
+              "timeUnixNano": "1734636562413617000",
+              "observedTimeUnixNano": "1734636562730247631",
+              "severityText": "info",
               "body": {
-                "stringValue": "I0703 17:41:24.897997    1319 kubelet_getters.go:187] \"Pod status updated\" pod=\"openshift-kube-scheduler/openshift-kube-scheduler-ip-10-0-39-145.ec2.internal\" status=Running"
+                "stringValue": "I1219 19:29:22.413625    2226 kubelet.go:2469] \"SyncLoop (PLEG): event for pod\" pod=\"openshift-marketplace/redhat-marketplace-8txxh\" event={\"ID\":\"070dff82-d7c6-4ae3-a8c2-0645e19d16f8\",\"Type\":\"ContainerDied\",\"Data\":\"90fe9a5786e89494b46bf5edff2930f41a60f0a9b8fda25110efbe6c2f74f3ce\"}"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "level",
                   "value": {
-                    "stringValue": "infrastructure"
+                    "stringValue": "info"
                   }
                 },
                 {
-                  "key": "system.cmdline",
+                  "key": "systemd.t.boot_id",
                   "value": {
-                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip= --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --hostname-override=ip-10-0-39-145.ec2.internal --provider-id=aws:///us-east-1c/i-0f0314e7c0c8b6dca --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:44cf90fa2c8a7fcf25cda5280b6aabac79e66f434e33f5341fe868db3d0c779c --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
+                    "stringValue": "266270ac87eb4a9faf294fbc754a3175"
                   }
                 },
                 {
-                  "key": "syslog.procid",
+                  "key": "systemd.t.cap_effective",
                   "value": {
-                    "stringValue": "1319"
+                    "stringValue": "1ffffffffff"
                   }
                 },
                 {
-                  "key": "system.stream.id",
+                  "key": "systemd.t.cmdline",
                   "value": {
-                    "stringValue": "dc0ef47d2b234a9d88517239b1355b40"
+                    "stringValue": "/usr/bin/kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime-endpoint=/var/run/crio/crio.sock --runtime-cgroups=/system.slice/crio.service --node-labels=node-role.kubernetes.io/control-plane,node-role.kubernetes.io/master,node.openshift.io/os_id=rhcos --node-ip=0.0.0.0 --minimum-container-ttl-duration=6m0s --cloud-provider=external --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec --image-credential-provider-bin-dir=/usr/libexec/kubelet-image-credential-provider-plugins --image-credential-provider-config=/etc/kubernetes/credential-providers/ecr-credential-provider.yaml --hostname-override=ip-10-0-74-191.ec2.internal --provider-id=aws:///us-east-1c/i-01ed4249ccc76ce92 --register-with-taints=node-role.kubernetes.io/master=:NoSchedule --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4a762fd5863a28b818a820868f7005687d507c12585eebc9c4c21ca4df97fad8 --system-reserved=cpu=500m,memory=1Gi,ephemeral-storage=1Gi --v=2"
                   }
                 },
                 {
-                  "key": "system.cgroup",
+                  "key": "systemd.t.comm",
                   "value": {
-                    "stringValue": "/system.slice/kubelet.service"
+                    "stringValue": "kubelet"
                   }
                 },
                 {
-                  "key": "system.invocation.id",
+                  "key": "systemd.t.exe",
                   "value": {
-                    "stringValue": "7956cbfdbea14d6dbaaa2b2f5e4d0a6b"
+                    "stringValue": "/usr/bin/kubelet"
                   }
                 },
                 {
-                  "key": "system.slice",
-                  "value": {
-                    "stringValue": "system.slice"
-                  }
-                },
-                {
-                  "key": "system.unit",
-                  "value": {
-                    "stringValue": "kubelet.service"
-                  }
-                },
-                {
-                  "key": "system.uid",
+                  "key": "systemd.t.gid",
                   "value": {
                     "stringValue": "0"
                   }
                 },
                 {
-                  "key": "syslog.facility",
+                  "key": "systemd.t.machine_id",
+                  "value": {
+                    "stringValue": "ec2ca18c26387c64cd4fb24e5cd32dd1"
+                  }
+                },
+                {
+                  "key": "systemd.t.pid",
+                  "value": {
+                    "stringValue": "2226"
+                  }
+                },
+                {
+                  "key": "systemd.t.selinux_context",
+                  "value": {
+                    "stringValue": "system_u:system_r:kubelet_t:s0-s0:c0.c1023"
+                  }
+                },
+                {
+                  "key": "systemd.t.stream_id",
+                  "value": {
+                    "stringValue": "2953a2d4ac224ea7b64c1e39262617fd"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_cgroup",
+                  "value": {
+                    "stringValue": "/system.slice/kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_invocation_id",
+                  "value": {
+                    "stringValue": "16e422849e3b44efa96774435e962292"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_slice",
+                  "value": {
+                    "stringValue": "system.slice"
+                  }
+                },
+                {
+                  "key": "systemd.t.systemd_unit",
+                  "value": {
+                    "stringValue": "kubelet.service"
+                  }
+                },
+                {
+                  "key": "systemd.t.transport",
+                  "value": {
+                    "stringValue": "stdout"
+                  }
+                },
+                {
+                  "key": "systemd.t.uid",
+                  "value": {
+                    "stringValue": "0"
+                  }
+                },
+                {
+                  "key": "systemd.u.syslog_facility",
                   "value": {
                     "stringValue": "3"
                   }
                 },
                 {
-                  "key": "syslog.identifier",
+                  "key": "systemd.u.syslog_identifier",
                   "value": {
                     "stringValue": "kubenswrapper"
                   }

@@ -6,7 +6,7 @@ The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Ob
 *OTLP* describes the *protocol* for encoding, transporting, and delivering telemetry data between sources using the https://opentelemetry.io/docs/specs/otlp/[OpenTelemetry OTLP Specification]
 
 .Technical Preview
-This feature is currently in tech-preview and an annotation is required
+This feature is tech-preview and an annotation is required to enable it
 ----
 observability.openshift.io/tech-preview-otlp-output: "enabled"
 ----
@@ -31,15 +31,15 @@ spec:
   outputs:
     - type: otlp  # <2>
       name: otel-collector
-      tls:
-        insecureSkipVerify: true  # <3>
       otlp:
-        url: 'http://my-otel-receiver-service:4318/v1/logs'  # <4>
-        tuning:
-          compression: none  # <5>
+        url: 'http://my-otel-receiver-service:4318/v1/logs'  # <3>
         authentication:
           token:
-            from: serviceAccount  # <6>
+            from: serviceAccount  # <4>
+        tuning:
+          compression: gzip  # <5>
+      tls:
+        insecureSkipVerify: true  # <6>
   pipelines:
     - name: my-pipeline
       inputRefs:
@@ -49,98 +49,43 @@ spec:
         - otel-collector
 
 ----
-. tech preview `annotation` must be enabled
-. Output `type` is '*otlp*'
-. `tls` includes the standard certificate configuration or specify `insecureSkipVerify`: '*true*'
+. Tech preview `annotation` must be enabled
+. `type` is '*otlp*'
 . `otlp` `url` specify a valid host:port of the otel receiver and *MUST* terminate with "*/v1/logs*"
-. `otlp` `tuning` `compression` default value is "*none*". Specify "*gzip*" to turn compression on.
-. `otlp` `authentication` is optional and specifies a `token.from` and a value of "*serviceAccount*"
+. `otlp` `authentication` is optional and specifies a `token.from` and a value of '*serviceAccount*'
 .. The token can also be read from a secret
 .. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
+. `otlp` `tuning` is optional and includes standard http tuning options in addition to `compression`: '*gzip*'.
+. `tls` includes the standard certificate configuration or specify `insecureSkipVerify`: '*true*'
 
 
 .TLS InsecureSkipVerify
 NOTE: This option is *NOT* recommended for production configurations. If true, the client will be configured to skip validating server certificates.
 
-https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/clusterlogforwarder_types.go#L244[TLS Specification] for _observability.openshift.io/v1_
-
-https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L203[HTTP Auth Specification] for _observability.openshift.io/v1_
-
-https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L812[Tuning Specification] for _observability.openshift.io/v1_
+.API Details for _observability.openshift.io/v1_
+* https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/clusterlogforwarder_types.go#L261[TLS Spec]
+* https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L242[HTTP Auth Spec]
+* https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L201[HTTP Tuning Spec]
+* https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/output_types.go#L1225[OTLP Tuning Spec]
 
 
 == Data Model
 
 === Semantic Convention
-The Semantic Conventions in OpenTelemetry define a *Resource* as an immutable representation of the entity producing telemetry as *Attributes*.
+The Semantic Conventions in OpenTelemetry (OTel) define a *Resource* as an immutable representation of the entity producing telemetry as *Attributes*.
 
-For example, a process producing telemetry that is running in a container has a container_name, a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
+All *Attributes* are included in the *Resource* object. For example, a process producing telemetry that is running in a container has a container_name, a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
 
-All of these *Attributes* are included in the *Resource* object.  This grouping and reducing of common attributes is a key aspect of sending logs via OpenTelemetry.
+The grouping and reducing of common resource attributes is a key aspect of sending logs via OpenTelemetry.
 
-.OTEL References
+.Cluster Logging Reference Docs
+* https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md[OTel Data Model]
+* https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-otel-support.md[OTel Enhancement Doc]
+* https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/datamodels/viaq/v1.adoc[ViaQ Data Model]
+* https://github.com/openshift/cluster-logging-operator/tree/master/hack/logsamples[Example Logs]
+
+.OTel References
+* https://opentelemetry.io/docs/specs/otlp/[OTLP Specification]
 * https://opentelemetry.io/docs/specs/semconv/[Semantic Conventions]
-* https://opentelemetry.io/docs/specs/otel/logs/data-model/[Logs Data Model]
+* https://opentelemetry.io/docs/specs/otel/logs/data-model/[OTel Logs Data Model]
 * https://opentelemetry.io/docs/specs/semconv/general/logs/[General Logs Attributes]
-
-=== Data Mapping
-This document is not a complete spec and is mainly used as a guide.
-
-==== JSON Encoding
-OpenShift Logging uses Vector Remap Language https://vector.dev/docs/reference/vrl/[(VRL)] to map and enrich the logging data in order to the follow the semantic conventions of OpenTelemetry and its https://opentelemetry.io/docs/specs/otel/logs/data-model/[Logs Data Model]
-
-https://github.com/open-telemetry/opentelemetry-proto/blob/v1.3.1/examples/logs.json[Example JSON Encoded Logs] provide a visual representation of the data structure
-
-[%header,format=csv]
-|===
-ViaQ,OTEL
-@timestamp,                       timeUnixNano
-N/A,                            observedTimeUnixNano
-level,                            severityNumber
-message/structured,               body
---,--
-openshift.cluster_id,             k8s.cluster.uid
-hostname,                         k8s.node.name
-kubernetes.container_name,        k8s.container.name
-kubernetes.namespace_name,        k8s.namespace.name
-kubernetes.pod_name,              k8s.pod.name
-kubernetes.container_id,          k8s.container.id
-kubernetes.pod_id,                k8s.pod.uid
-kubernetes.namespace_labels.*,    k8s.namespace.label.*
-kubernetes.labels.*,              k8s.pod.label.*
-openshift.labels.*,               openshift.label.*
-log_type,                         openshift.log.type
-log_source,                       openshift.log.source
-hostname,                         url.domain
-requestURI (split),               url.path
-requestURI (split),               url.query
-responseStatus.code,              http.response.status.code
-verb,                             http.request.method_original
-userAgent,                        user_agent.original
-user.username,                    user.name
-systemd.u.SYSLOG_FACILITY,        syslog.facility
-systemd.u.SYSLOG_IDENTIFIER,      service.name
-systemd.t.COMM,                   process.command
-systemd.t.CMDLINE,                process.command_line
-systemd.t.EXE,                    process.executable.path
-systemd.t.GID,                    process.gid
-systemd.t.MACHINE_ID,             host.id
-systemd.t.PID,                    process.pid
-systemd.t.UID,                    process.user.id
-|===
-
-Please note:  More work to refine this list is ongoing and it will likely change a few times.  This table does not represent a data model.
-
-
-.ViaQ Data Model
-* https://github.com/openshift/cluster-logging-operator/blob/master/docs/reference/datamodels/viaq/v1.adoc
-
-=== References
-* https://opentelemetry.io/docs/specs/otlp/
-* https://opentelemetry.io/docs/specs/semconv/resource/container/
-* https://opentelemetry.io/docs/specs/semconv/attributes-registry/k8s/
-* https://opentelemetry.io/docs/specs/semconv/attributes-registry/process/
-* https://opentelemetry.io/docs/specs/semconv/attributes-registry/http/
-* https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/
-
-* https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#rfc5424-syslog

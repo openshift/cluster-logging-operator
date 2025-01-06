@@ -4,15 +4,57 @@
       "resource": {
         "attributes": [
           {
-            "key": "cluster.id",
+            "key": "openshift.cluster.uid",
             "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
             }
           },
           {
             "key": "openshift.log.source",
             "value": {
               "stringValue": "kubeAPI"
+            }
+          },
+          {
+            "key": "openshift.log.type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
+            }
+          },
+          {
+            "key": "openshift.label.test_data",
+            "value": {
+              "stringValue": "viaq"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "log_source",
+            "value": {
+              "stringValue": "kubeAPI"
+            }
+          },
+          {
+            "key": "openshift.cluster_id",
+            "value": {
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
             }
           }
         ]
@@ -22,35 +64,109 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1720030693259728306",
-              "observedTimeUnixNano": "1720030693260275310",
-              "severityNumber": 9,
+              "timeUnixNano": "1734635994839162050",
+              "observedTimeUnixNano": "1734635994840605008",
               "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"de2572ba-ed44-4c69-a564-b8d277309d67\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-authentication/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-authentication\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.188679Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.193650Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"90aab58a-d0c7-4c4c-9cba-b28799b9cd7d\",\"stage\":\"ResponseStarted\",\"requestURI\":\"/apis/k8s.cni.cncf.io/v1/network-attachment-definitions?allowWatchBookmarks=true\\u0026resourceVersion=168887\\u0026timeout=7m34s\\u0026timeoutSeconds=454\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:multus:ip-10-0-74-191.ec2.internal\",\"groups\":[\"system:multus\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.33.68\"],\"userAgent\":\"multus-daemon/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"network-attachment-definitions\",\"apiGroup\":\"k8s.cni.cncf.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-12-19T19:19:54.793861Z\",\"stageTimestamp\":\"2024-12-19T19:19:54.794283Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"multus-group\\\" of ClusterRole \\\"multus\\\" to Group \\\"system:multus\\\"\"}}"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "k8s.audit.event.level",
                   "value": {
-                    "stringValue": "audit"
+                    "stringValue": "Metadata"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.stage",
                   "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-authentication/subscriptions"
+                    "stringValue": "ResponseStarted"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.request.uri",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "/apis/k8s.cni.cncf.io/v1/network-attachment-definitions?allowWatchBookmarks=true\u0026resourceVersion=168887\u0026timeout=7m34s\u0026timeoutSeconds=454\u0026watch=true"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.request.verb",
                   "value": {
-                    "stringValue": "list"
+                    "stringValue": "watch"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.response.code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.user_agent",
+                  "value": {
+                    "stringValue": "multus-daemon/v0.0.0 (linux/amd64) kubernetes/$Format"
+                  }
+                },
+                {
+                  "key": "k8s.user.username",
+                  "value": {
+                    "stringValue": "system:multus:ip-10-0-74-191.ec2.internal"
+                  }
+                },
+                {
+                  "key": "k8s.user.groups",
+                  "value": {
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "system:multus"
+                        },
+                        {
+                          "stringValue": "system:authenticated"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.resource",
+                  "value": {
+                    "stringValue": "network-attachment-definitions"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.name",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.namespace",
+                  "value": {
+                    "stringValue": ""
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.api_version",
+                  "value": {
+                    "stringValue": "v1"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.api_group",
+                  "value": {
+                    "stringValue": "k8s.cni.cncf.io"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/decision",
+                  "value": {
+                    "stringValue": "allow"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/reason",
+                  "value": {
+                    "stringValue": "RBAC: allowed by ClusterRoleBinding \"multus-group\" of ClusterRole \"multus\" to Group \"system:multus\""
                   }
                 }
               ],
@@ -58,168 +174,112 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030693524553652",
-              "observedTimeUnixNano": "1720030693525410597",
-              "severityNumber": 9,
+              "timeUnixNano": "1734635994839165799",
+              "observedTimeUnixNano": "1734635994840716190",
               "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"23bae90d-bdfa-4bbf-a16f-a379b40fb8ec\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-machine-config-operator/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-machine-config-operator\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.390145Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.395668Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"5d313e2b-0db0-4df4-a799-74c36bfbef61\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/coordination.k8s.io/v1/namespaces/openshift-cluster-csi-drivers/leases/external-resizer-ebs-csi-aws-com\",\"verb\":\"get\",\"user\":{\"username\":\"system:serviceaccount:openshift-cluster-csi-drivers:aws-ebs-csi-driver-controller-sa\",\"uid\":\"ce2554eb-0111-4036-bfc8-46695d2d674a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-cluster-csi-drivers\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"aws-ebs-csi-driver-controller-5cc77b968d-654jx\"],\"authentication.kubernetes.io/pod-uid\":[\"eb3da955-8937-4116-9906-f9cd39eb6704\"]}},\"sourceIPs\":[\"10.130.0.12\"],\"userAgent\":\"csi-resizer/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"leases\",\"namespace\":\"openshift-cluster-csi-drivers\",\"name\":\"external-resizer-ebs-csi-aws-com\",\"apiGroup\":\"coordination.k8s.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-12-19T19:19:54.824255Z\",\"stageTimestamp\":\"2024-12-19T19:19:54.827910Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by RoleBinding \\\"aws-ebs-csi-driver-lease-leader-election/openshift-cluster-csi-drivers\\\" of Role \\\"aws-ebs-csi-driver-lease-leader-election\\\" to ServiceAccount \\\"aws-ebs-csi-driver-controller-sa/openshift-cluster-csi-drivers\\\"\"}}"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "k8s.audit.event.level",
                   "value": {
-                    "stringValue": "audit"
+                    "stringValue": "Metadata"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.stage",
                   "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-machine-config-operator/subscriptions"
+                    "stringValue": "ResponseComplete"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.request.uri",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "/apis/coordination.k8s.io/v1/namespaces/openshift-cluster-csi-drivers/leases/external-resizer-ebs-csi-aws-com"
                   }
                 },
                 {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "list"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030693524583018",
-              "observedTimeUnixNano": "1720030693525461963",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"815da3ac-63e7-4985-a9d6-6246d4bb59df\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=6s\",\"verb\":\"get\",\"user\":{\"username\":\"system:kube-controller-manager\",\"groups\":[\"system:authenticated\"]},\"sourceIPs\":[\"10.0.1.201\"],\"userAgent\":\"kube-controller-manager/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed/leader-election\",\"objectRef\":{\"resource\":\"leases\",\"namespace\":\"kube-system\",\"name\":\"kube-controller-manager\",\"apiGroup\":\"coordination.k8s.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.447328Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.451953Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"system:kube-controller-manager\\\" of ClusterRole \\\"system:kube-controller-manager\\\" to User \\\"system:kube-controller-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=6s"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.request.verb",
                   "value": {
                     "stringValue": "get"
                   }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030693524635136",
-              "observedTimeUnixNano": "1720030693525495835",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"6851ce8f-89d9-4aca-b1ae-f8be22de241e\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=6s\",\"verb\":\"update\",\"user\":{\"username\":\"system:kube-controller-manager\",\"groups\":[\"system:authenticated\"]},\"sourceIPs\":[\"10.0.1.201\"],\"userAgent\":\"kube-controller-manager/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed/leader-election\",\"objectRef\":{\"resource\":\"leases\",\"namespace\":\"kube-system\",\"name\":\"kube-controller-manager\",\"uid\":\"7cefce48-faf0-49fb-b636-b56902a34215\",\"apiGroup\":\"coordination.k8s.io\",\"apiVersion\":\"v1\",\"resourceVersion\":\"172886\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.453360Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.461501Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"system:kube-controller-manager\\\" of ClusterRole \\\"system:kube-controller-manager\\\" to User \\\"system:kube-controller-manager\\\"\"}}"
-              },
-              "attributes": [
+                },
                 {
-                  "key": "openshift.log.type",
+                  "key": "k8s.audit.event.response.code",
                   "value": {
-                    "stringValue": "audit"
+                    "intValue": "200"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.user_agent",
                   "value": {
-                    "stringValue": "/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=6s"
+                    "stringValue": "csi-resizer/v0.0.0 (linux/amd64) kubernetes/$Format"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.user.username",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "system:serviceaccount:openshift-cluster-csi-drivers:aws-ebs-csi-driver-controller-sa"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.user.groups",
                   "value": {
-                    "stringValue": "update"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030693592445982",
-              "observedTimeUnixNano": "1720030693593443244",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"8ef745e0-d6ac-4841-aef3-381d2ebf8f51\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-storage-operator/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-cluster-storage-operator\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.588708Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.591902Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "system:serviceaccounts"
+                        },
+                        {
+                          "stringValue": "system:serviceaccounts:openshift-cluster-csi-drivers"
+                        },
+                        {
+                          "stringValue": "system:authenticated"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.object_ref.resource",
                   "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-storage-operator/subscriptions"
+                    "stringValue": "leases"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.object_ref.name",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "external-resizer-ebs-csi-aws-com"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.object_ref.namespace",
                   "value": {
-                    "stringValue": "list"
+                    "stringValue": "openshift-cluster-csi-drivers"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.api_version",
+                  "value": {
+                    "stringValue": "v1"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.object_ref.api_group",
+                  "value": {
+                    "stringValue": "coordination.k8s.io"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/decision",
+                  "value": {
+                    "stringValue": "allow"
+                  }
+                },
+                {
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/reason",
+                  "value": {
+                    "stringValue": "RBAC: allowed by RoleBinding \"aws-ebs-csi-driver-lease-leader-election/openshift-cluster-csi-drivers\" of Role \"aws-ebs-csi-driver-lease-leader-election\" to ServiceAccount \"aws-ebs-csi-driver-controller-sa/openshift-cluster-csi-drivers\""
                   }
                 }
               ],
@@ -227,700 +287,106 @@
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030693853536201",
-              "observedTimeUnixNano": "1720030693854411501",
-              "severityNumber": 9,
+              "timeUnixNano": "1734635995099958642",
+              "observedTimeUnixNano": "1734635995100985503",
               "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"f289f5db-8265-4520-8e64-bbf00fa1c1b6\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/coordination.k8s.io/v1/namespaces/openshift-network-node-identity/leases/ovnkube-identity\",\"verb\":\"get\",\"user\":{\"username\":\"system:serviceaccount:openshift-network-node-identity:network-node-identity\",\"uid\":\"049f0eb5-9e4e-40da-99b5-6c539db2a74d\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-network-node-identity\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"network-node-identity-8xp25\"],\"authentication.kubernetes.io/pod-uid\":[\"693facf3-faf8-4333-8131-adc6802be958\"]}},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"ovnkube-identity/v0.27.4 (linux/amd64) kubernetes/$Format/leader-election\",\"objectRef\":{\"resource\":\"leases\",\"namespace\":\"openshift-network-node-identity\",\"name\":\"ovnkube-identity\",\"apiGroup\":\"coordination.k8s.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.776430Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.784354Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by RoleBinding \\\"network-node-identity-leases/openshift-network-node-identity\\\" of Role \\\"network-node-identity-leases\\\" to ServiceAccount \\\"network-node-identity/openshift-network-node-identity\\\"\"}}"
+                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"4e7a95f1-d2a2-4ff5-89f7-6a2d592b37e7\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/api/v1/namespaces/default/endpoints/kubernetes\",\"verb\":\"get\",\"user\":{\"username\":\"system:apiserver\",\"uid\":\"8b0a6eec-933e-48bf-aee4-e7d92013b78a\",\"groups\":[\"system:masters\"]},\"sourceIPs\":[\"::1\"],\"userAgent\":\"kube-apiserver/v1.29.7+4510e9c (linux/amd64) kubernetes/22026a0\",\"objectRef\":{\"resource\":\"endpoints\",\"namespace\":\"default\",\"name\":\"kubernetes\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-12-19T19:19:54.974692Z\",\"stageTimestamp\":\"2024-12-19T19:19:54.977199Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"\"}}"
               },
               "attributes": [
                 {
-                  "key": "openshift.log.type",
+                  "key": "k8s.audit.event.level",
                   "value": {
-                    "stringValue": "audit"
+                    "stringValue": "Metadata"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.stage",
                   "value": {
-                    "stringValue": "/apis/coordination.k8s.io/v1/namespaces/openshift-network-node-identity/leases/ovnkube-identity"
+                    "stringValue": "ResponseComplete"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.request.uri",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "/api/v1/namespaces/default/endpoints/kubernetes"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.request.verb",
                   "value": {
                     "stringValue": "get"
                   }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030693853567707",
-              "observedTimeUnixNano": "1720030693854477599",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"379b9288-3f22-42db-be1d-4a73232ea08c\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/coordination.k8s.io/v1/namespaces/openshift-network-node-identity/leases/ovnkube-identity\",\"verb\":\"update\",\"user\":{\"username\":\"system:serviceaccount:openshift-network-node-identity:network-node-identity\",\"uid\":\"049f0eb5-9e4e-40da-99b5-6c539db2a74d\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-network-node-identity\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"network-node-identity-8xp25\"],\"authentication.kubernetes.io/pod-uid\":[\"693facf3-faf8-4333-8131-adc6802be958\"]}},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"ovnkube-identity/v0.27.4 (linux/amd64) kubernetes/$Format/leader-election\",\"objectRef\":{\"resource\":\"leases\",\"namespace\":\"openshift-network-node-identity\",\"name\":\"ovnkube-identity\",\"uid\":\"c7ab86ee-398c-42ca-899f-8ca241ced61b\",\"apiGroup\":\"coordination.k8s.io\",\"apiVersion\":\"v1\",\"resourceVersion\":\"172795\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.787039Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.794238Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by RoleBinding \\\"network-node-identity-leases/openshift-network-node-identity\\\" of Role \\\"network-node-identity-leases\\\" to ServiceAccount \\\"network-node-identity/openshift-network-node-identity\\\"\"}}"
-              },
-              "attributes": [
+                },
                 {
-                  "key": "openshift.log.type",
+                  "key": "k8s.audit.event.response.code",
                   "value": {
-                    "stringValue": "audit"
+                    "intValue": "200"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.user_agent",
                   "value": {
-                    "stringValue": "/apis/coordination.k8s.io/v1/namespaces/openshift-network-node-identity/leases/ovnkube-identity"
+                    "stringValue": "kube-apiserver/v1.29.7+4510e9c (linux/amd64) kubernetes/22026a0"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.user.username",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "system:apiserver"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.user.groups",
                   "value": {
-                    "stringValue": "update"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030693853576099",
-              "observedTimeUnixNano": "1720030693854518123",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"c0dde988-acad-490d-b50a-486f11a14fa1\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-node/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-node\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.789228Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.795014Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "system:masters"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.object_ref.resource",
                   "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-node/subscriptions"
+                    "stringValue": "endpoints"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.object_ref.name",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": "kubernetes"
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.object_ref.namespace",
                   "value": {
-                    "stringValue": "list"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694115495797",
-              "observedTimeUnixNano": "1720030694116179779",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"3045a70c-c0c3-413f-bf9c-aabd9be4b173\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-version/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-cluster-version\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:13.988666Z\",\"stageTimestamp\":\"2024-07-03T18:18:13.994056Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
+                    "stringValue": "default"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.object_ref.api_version",
                   "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-version/subscriptions"
+                    "stringValue": "v1"
                   }
                 },
                 {
-                  "key": "http.response.status.code",
+                  "key": "k8s.audit.event.object_ref.api_group",
                   "value": {
-                    "stringValue": "200"
+                    "stringValue": ""
                   }
                 },
                 {
-                  "key": "http.request.method",
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/decision",
                   "value": {
-                    "stringValue": "list"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030694115522809",
-              "observedTimeUnixNano": "1720030694116241362",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"d851aa9a-3b8c-48dd-a618-bcf55f6072ef\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/api/v1/namespaces/openshift-kube-apiserver/configmaps?allowWatchBookmarks=true\\u0026fieldSelector=metadata.name%3Dopenshift-service-ca.crt\\u0026resourceVersion=170538\\u0026timeout=6m22s\\u0026timeoutSeconds=382\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:node:ip-10-0-1-110.ec2.internal\",\"groups\":[\"system:nodes\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"kubelet/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed\",\"objectRef\":{\"resource\":\"configmaps\",\"namespace\":\"openshift-kube-apiserver\",\"name\":\"openshift-service-ca.crt\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:11:52.069933Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.071019Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
+                    "stringValue": "allow"
                   }
                 },
                 {
-                  "key": "url.full",
+                  "key": "k8s.audit.event.annotation.authorization.k8s.io/reason",
                   "value": {
-                    "stringValue": "/api/v1/namespaces/openshift-kube-apiserver/configmaps?allowWatchBookmarks=true\u0026fieldSelector=metadata.name%3Dopenshift-service-ca.crt\u0026resourceVersion=170538\u0026timeout=6m22s\u0026timeoutSeconds=382\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694115528975",
-              "observedTimeUnixNano": "1720030694116278232",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"8d8fb5e0-cc09-4fb0-8c56-808d0b364c56\",\"stage\":\"ResponseStarted\",\"requestURI\":\"/api/v1/namespaces/openshift-kube-apiserver/configmaps?allowWatchBookmarks=true\\u0026fieldSelector=metadata.name%3Dopenshift-service-ca.crt\\u0026resourceVersion=172880\\u0026timeout=5m24s\\u0026timeoutSeconds=324\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:node:ip-10-0-1-110.ec2.internal\",\"groups\":[\"system:nodes\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"kubelet/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed\",\"objectRef\":{\"resource\":\"configmaps\",\"namespace\":\"openshift-kube-apiserver\",\"name\":\"openshift-service-ca.crt\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.077688Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.079457Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/api/v1/namespaces/openshift-kube-apiserver/configmaps?allowWatchBookmarks=true\u0026fieldSelector=metadata.name%3Dopenshift-service-ca.crt\u0026resourceVersion=172880\u0026timeout=5m24s\u0026timeoutSeconds=324\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694249030850",
-              "observedTimeUnixNano": "1720030694249813092",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"e051655a-d631-4bfa-a29f-9fe8e871abaa\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-node-tuning-operator/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"openshift-cluster-node-tuning-operator\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.189429Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.201122Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/openshift-cluster-node-tuning-operator/subscriptions"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "list"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030694382271505",
-              "observedTimeUnixNano": "1720030694382843171",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"0160fb52-ccab-4599-8126-2960a1ed27aa\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/api/v1/nodes/ip-10-0-1-110.ec2.internal?resourceVersion=0\\u0026timeout=10s\",\"verb\":\"get\",\"user\":{\"username\":\"system:node:ip-10-0-1-110.ec2.internal\",\"groups\":[\"system:nodes\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"kubelet/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed\",\"objectRef\":{\"resource\":\"nodes\",\"name\":\"ip-10-0-1-110.ec2.internal\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.375960Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.377271Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"system:sdn-readers\\\" of ClusterRole \\\"system:sdn-reader\\\" to Group \\\"system:nodes\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/api/v1/nodes/ip-10-0-1-110.ec2.internal?resourceVersion=0\u0026timeout=10s"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "get"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694399342112",
-              "observedTimeUnixNano": "1720030694399956501",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"406492f4-9e35-4aae-b4ea-db80878c64a4\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/operators.coreos.com/v1alpha1/namespaces/test-app/subscriptions\",\"verb\":\"list\",\"user\":{\"username\":\"system:serviceaccount:openshift-operator-lifecycle-manager:olm-operator-serviceaccount\",\"uid\":\"8db85e38-e0af-41af-9578-bf21ed5a828a\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-operator-lifecycle-manager\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"catalog-operator-6ff4485759-24fln\"],\"authentication.kubernetes.io/pod-uid\":[\"b932ecf2-888e-45a9-a075-ee6f2765893c\"]}},\"sourceIPs\":[\"10.128.0.32\"],\"userAgent\":\"catalog/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subscriptions\",\"namespace\":\"test-app\",\"apiGroup\":\"operators.coreos.com\",\"apiVersion\":\"v1alpha1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.389150Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.392255Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"olm-operator-binding-openshift-operator-lifecycle-manager\\\" of ClusterRole \\\"system:controller:operator-lifecycle-manager\\\" to ServiceAccount \\\"olm-operator-serviceaccount/openshift-operator-lifecycle-manager\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/operators.coreos.com/v1alpha1/namespaces/test-app/subscriptions"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "list"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694407735558",
-              "observedTimeUnixNano": "1720030694408341475",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"8e1d7c87-9c36-4d37-95e0-e8b95b06cdd8\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/api/v1/namespaces/openshift-authentication/configmaps?allowWatchBookmarks=true\\u0026fieldSelector=metadata.name%3Dv4-0-config-system-trusted-ca-bundle\\u0026resourceVersion=169372\\u0026timeout=9m56s\\u0026timeoutSeconds=596\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:node:ip-10-0-39-145.ec2.internal\",\"groups\":[\"system:nodes\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"kubelet/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed\",\"objectRef\":{\"resource\":\"configmaps\",\"namespace\":\"openshift-authentication\",\"name\":\"v4-0-config-system-trusted-ca-bundle\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:08:18.403217Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.404530Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/api/v1/namespaces/openshift-authentication/configmaps?allowWatchBookmarks=true\u0026fieldSelector=metadata.name%3Dv4-0-config-system-trusted-ca-bundle\u0026resourceVersion=169372\u0026timeout=9m56s\u0026timeoutSeconds=596\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030694411080225",
-              "observedTimeUnixNano": "1720030694411677932",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"94b635b1-6c9d-4f81-a210-340ad4a8b4d8\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/route.openshift.io/v1/namespaces/openshift-image-registry/routes?allowWatchBookmarks=true\\u0026resourceVersion=169389\\u0026timeout=9m59s\\u0026timeoutSeconds=599\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:serviceaccount:openshift-image-registry:cluster-image-registry-operator\",\"uid\":\"9ffdc693-d1fa-4b99-8f1c-7e58538b18f7\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-image-registry\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"cluster-image-registry-operator-7dddcb9559-hw96t\"],\"authentication.kubernetes.io/pod-uid\":[\"3648828e-ea1e-486a-b100-0cbb07581d6d\"]}},\"sourceIPs\":[\"10.128.0.20\"],\"userAgent\":\"cluster-image-registry-operator/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"routes\",\"namespace\":\"openshift-image-registry\",\"apiGroup\":\"route.openshift.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:08:15.400371Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.407815Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"default-account-cluster-image-registry-operator\\\" of ClusterRole \\\"cluster-image-registry-operator\\\" to ServiceAccount \\\"cluster-image-registry-operator/openshift-image-registry\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/route.openshift.io/v1/namespaces/openshift-image-registry/routes?allowWatchBookmarks=true\u0026resourceVersion=169389\u0026timeout=9m59s\u0026timeoutSeconds=599\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694411102207",
-              "observedTimeUnixNano": "1720030694411727883",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"817d6472-42a2-410b-87e4-f13864c00016\",\"stage\":\"ResponseStarted\",\"requestURI\":\"/api/v1/namespaces/openshift-authentication/configmaps?allowWatchBookmarks=true\\u0026fieldSelector=metadata.name%3Dv4-0-config-system-trusted-ca-bundle\\u0026resourceVersion=172880\\u0026timeout=9m26s\\u0026timeoutSeconds=566\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:node:ip-10-0-39-145.ec2.internal\",\"groups\":[\"system:nodes\",\"system:authenticated\"]},\"sourceIPs\":[\"10.0.24.201\"],\"userAgent\":\"kubelet/v1.27.6+b49f9d1 (linux/amd64) kubernetes/f3ec0ed\",\"objectRef\":{\"resource\":\"configmaps\",\"namespace\":\"openshift-authentication\",\"name\":\"v4-0-config-system-trusted-ca-bundle\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.407812Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.408994Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/api/v1/namespaces/openshift-authentication/configmaps?allowWatchBookmarks=true\u0026fieldSelector=metadata.name%3Dv4-0-config-system-trusted-ca-bundle\u0026resourceVersion=172880\u0026timeout=9m26s\u0026timeoutSeconds=566\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694419947631",
-              "observedTimeUnixNano": "1720030694420396392",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"e1d571b6-dc81-4536-b6dd-e47d761c7403\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/authorization.k8s.io/v1/subjectaccessreviews?timeout=10s\",\"verb\":\"create\",\"user\":{\"username\":\"system:serviceaccount:openshift-apiserver:openshift-apiserver-sa\",\"uid\":\"f9d19654-21ee-4759-b274-ce34d302a877\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-apiserver\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"apiserver-7998bfbbf8-bbjg9\"],\"authentication.kubernetes.io/pod-uid\":[\"84074faa-9c90-42b7-9951-30ee3323dfa4\"]}},\"sourceIPs\":[\"10.0.23.88\"],\"userAgent\":\"openshift-apiserver/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subjectaccessreviews\",\"apiGroup\":\"authorization.k8s.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":201},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.412863Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.416926Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"system:openshift:openshift-apiserver\\\" of ClusterRole \\\"cluster-admin\\\" to ServiceAccount \\\"openshift-apiserver-sa/openshift-apiserver\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/authorization.k8s.io/v1/subjectaccessreviews?timeout=10s"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "201"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "create"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "kubeAPI"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030694422892789",
-              "observedTimeUnixNano": "1720030694423316900",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"e35b4c49-43d4-4561-91db-c2f0333eda33\",\"stage\":\"ResponseStarted\",\"requestURI\":\"/apis/route.openshift.io/v1/namespaces/openshift-image-registry/routes?allowWatchBookmarks=true\\u0026resourceVersion=172870\\u0026timeout=9m49s\\u0026timeoutSeconds=589\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:serviceaccount:openshift-image-registry:cluster-image-registry-operator\",\"uid\":\"9ffdc693-d1fa-4b99-8f1c-7e58538b18f7\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-image-registry\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"cluster-image-registry-operator-7dddcb9559-hw96t\"],\"authentication.kubernetes.io/pod-uid\":[\"3648828e-ea1e-486a-b100-0cbb07581d6d\"]}},\"sourceIPs\":[\"10.128.0.20\"],\"userAgent\":\"cluster-image-registry-operator/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"routes\",\"namespace\":\"openshift-image-registry\",\"apiGroup\":\"route.openshift.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.409876Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.419898Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"default-account-cluster-image-registry-operator\\\" of ClusterRole \\\"cluster-image-registry-operator\\\" to ServiceAccount \\\"cluster-image-registry-operator/openshift-image-registry\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/route.openshift.io/v1/namespaces/openshift-image-registry/routes?allowWatchBookmarks=true\u0026resourceVersion=172870\u0026timeout=9m49s\u0026timeoutSeconds=589\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694431622921",
-              "observedTimeUnixNano": "1720030694432110309",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"a6973f49-66c7-4c44-a1c1-d43f1df5d55a\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/image.openshift.io/v1/imagestreams?allowWatchBookmarks=true\\u0026resourceVersion=169620\\u0026timeout=9m16s\\u0026timeoutSeconds=556\\u0026watch=true\",\"verb\":\"watch\",\"user\":{\"username\":\"system:serviceaccount:openshift-image-registry:cluster-image-registry-operator\",\"uid\":\"9ffdc693-d1fa-4b99-8f1c-7e58538b18f7\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-image-registry\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"cluster-image-registry-operator-7dddcb9559-hw96t\"],\"authentication.kubernetes.io/pod-uid\":[\"3648828e-ea1e-486a-b100-0cbb07581d6d\"]}},\"sourceIPs\":[\"10.128.0.20\"],\"userAgent\":\"cluster-image-registry-operator/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"imagestreams\",\"apiGroup\":\"image.openshift.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":200},\"requestReceivedTimestamp\":\"2024-07-03T18:08:58.421381Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.429081Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"default-account-cluster-image-registry-operator\\\" of ClusterRole \\\"cluster-image-registry-operator\\\" to ServiceAccount \\\"cluster-image-registry-operator/openshift-image-registry\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/image.openshift.io/v1/imagestreams?allowWatchBookmarks=true\u0026resourceVersion=169620\u0026timeout=9m16s\u0026timeoutSeconds=556\u0026watch=true"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "200"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "watch"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030694439422381",
-              "observedTimeUnixNano": "1720030694439972143",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "{\"kind\":\"Event\",\"apiVersion\":\"audit.k8s.io/v1\",\"level\":\"Metadata\",\"auditID\":\"6a0b92ad-7bb0-41de-90fb-bafbf366ac9b\",\"stage\":\"ResponseComplete\",\"requestURI\":\"/apis/authorization.k8s.io/v1/subjectaccessreviews?timeout=10s\",\"verb\":\"create\",\"user\":{\"username\":\"system:serviceaccount:openshift-apiserver:openshift-apiserver-sa\",\"uid\":\"f9d19654-21ee-4759-b274-ce34d302a877\",\"groups\":[\"system:serviceaccounts\",\"system:serviceaccounts:openshift-apiserver\",\"system:authenticated\"],\"extra\":{\"authentication.kubernetes.io/pod-name\":[\"apiserver-7998bfbbf8-bbjg9\"],\"authentication.kubernetes.io/pod-uid\":[\"84074faa-9c90-42b7-9951-30ee3323dfa4\"]}},\"sourceIPs\":[\"10.0.23.88\"],\"userAgent\":\"openshift-apiserver/v0.0.0 (linux/amd64) kubernetes/$Format\",\"objectRef\":{\"resource\":\"subjectaccessreviews\",\"apiGroup\":\"authorization.k8s.io\",\"apiVersion\":\"v1\"},\"responseStatus\":{\"metadata\":{},\"code\":201},\"requestReceivedTimestamp\":\"2024-07-03T18:18:14.432323Z\",\"stageTimestamp\":\"2024-07-03T18:18:14.434293Z\",\"annotations\":{\"authorization.k8s.io/decision\":\"allow\",\"authorization.k8s.io/reason\":\"RBAC: allowed by ClusterRoleBinding \\\"system:openshift:openshift-apiserver\\\" of ClusterRole \\\"cluster-admin\\\" to ServiceAccount \\\"openshift-apiserver-sa/openshift-apiserver\\\"\"}}"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                },
-                {
-                  "key": "url.full",
-                  "value": {
-                    "stringValue": "/apis/authorization.k8s.io/v1/subjectaccessreviews?timeout=10s"
-                  }
-                },
-                {
-                  "key": "http.response.status.code",
-                  "value": {
-                    "stringValue": "201"
-                  }
-                },
-                {
-                  "key": "http.request.method",
-                  "value": {
-                    "stringValue": "create"
+                    "stringValue": ""
                   }
                 }
               ],

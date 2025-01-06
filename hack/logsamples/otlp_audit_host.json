@@ -4,9 +4,9 @@
       "resource": {
         "attributes": [
           {
-            "key": "cluster.id",
+            "key": "openshift.cluster.uid",
             "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
             }
           },
           {
@@ -16,9 +16,45 @@
             }
           },
           {
-            "key": "node.name",
+            "key": "openshift.log.type",
             "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
+            }
+          },
+          {
+            "key": "openshift.label.test_data",
+            "value": {
+              "stringValue": "viaq"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "log_source",
+            "value": {
+              "stringValue": "auditd"
+            }
+          },
+          {
+            "key": "openshift.cluster_id",
+            "value": {
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
             }
           }
         ]
@@ -28,56 +64,29 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1720030470306000000",
-              "observedTimeUnixNano": "1720030478644632314",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636080974000000",
+              "observedTimeUnixNano": "1734636086790965567",
               "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.306:5507): prog-id=2815 op=LOAD"
+                "stringValue": "type=BPF msg=audit(1734636080.974:4487): prog-id=2292 op=LOAD"
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030470307000000",
-              "observedTimeUnixNano": "1720030478644709659",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636080974000000",
+              "observedTimeUnixNano": "1734636086791014997",
               "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.307:5508): prog-id=2816 op=LOAD"
+                "stringValue": "type=BPF msg=audit(1734636080.974:4488): prog-id=2293 op=LOAD"
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030470307000000",
-              "observedTimeUnixNano": "1720030478644752269",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636080974000000",
+              "observedTimeUnixNano": "1734636086791053464",
               "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.307:5508): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c00010d908 a2=78 a3=0 items=0 ppid=645075 pid=645076 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
+                "stringValue": "type=SYSCALL msg=audit(1734636080.974:4488): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c00016b8a8 a2=78 a3=0 items=0 ppid=500829 pid=500830 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             }
@@ -89,9 +98,9 @@
       "resource": {
         "attributes": [
           {
-            "key": "cluster.id",
+            "key": "openshift.cluster.uid",
             "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
             }
           },
           {
@@ -101,94 +110,45 @@
             }
           },
           {
-            "key": "node.name",
+            "key": "openshift.log.type",
             "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470307000000",
-              "observedTimeUnixNano": "1720030478644792292",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.307:5508): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F356261326661396436646430646234306263393234"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478644858359",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.308:5509): prog-id=2817 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478644897419",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.308:5509): arch=c000003e syscall=321 success=yes exit=16 a0=5 a1=c00010d6a0 a2=78 a3=0 items=0 ppid=645075 pid=645076 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
+              "stringValue": "audit"
             }
           },
           {
-            "key": "openshift.log.source",
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
+            }
+          },
+          {
+            "key": "openshift.label.test_data",
+            "value": {
+              "stringValue": "viaq"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "log_source",
             "value": {
               "stringValue": "auditd"
             }
           },
           {
-            "key": "node.name",
+            "key": "openshift.cluster_id",
             "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
+              "stringValue": "b8af9b52-4ef1-444a-9b62-3b7bd2ab02f6"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-74-191.ec2.internal"
             }
           }
         ]
@@ -198,481 +158,29 @@
           "scope": {},
           "logRecords": [
             {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478644936691",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636084533000000",
+              "observedTimeUnixNano": "1734636086792277299",
               "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.308:5509): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F356261326661396436646430646234306263393234"
+                "stringValue": "type=BPF msg=audit(1734636084.533:4507): prog-id=2301 op=UNLOAD"
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478644974054",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636084533000000",
+              "observedTimeUnixNano": "1734636086792306043",
               "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.308:5510): prog-id=0 op=UNLOAD"
+                "stringValue": "type=BPF msg=audit(1734636084.533:4508): prog-id=2303 op=LOAD"
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             },
             {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478645012695",
-              "severityNumber": 9,
+              "timeUnixNano": "1734636084533000000",
+              "observedTimeUnixNano": "1734636086792335165",
               "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.308:5511): prog-id=0 op=UNLOAD"
+                "stringValue": "type=SYSCALL msg=audit(1734636084.533:4508): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c000169b00 a2=78 a3=0 items=0 ppid=500992 pid=500993 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
               },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "auditd"
-            }
-          },
-          {
-            "key": "node.name",
-            "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478645099352",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.308:5512): prog-id=2818 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478645140219",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.308:5512): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c00010db60 a2=78 a3=0 items=0 ppid=645075 pid=645076 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470308000000",
-              "observedTimeUnixNano": "1720030478645179383",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.308:5512): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F356261326661396436646430646234306263393234"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "auditd"
-            }
-          },
-          {
-            "key": "node.name",
-            "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470759000000",
-              "observedTimeUnixNano": "1720030478645215627",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.759:5513): prog-id=2819 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478645255646",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.760:5514): prog-id=2820 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478645291429",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.760:5514): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c00010d908 a2=78 a3=0 items=0 ppid=645123 pid=645124 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "auditd"
-            }
-          },
-          {
-            "key": "node.name",
-            "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478645329071",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.760:5514): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F383130346366343730376636623433663763396263"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478645364838",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.760:5515): prog-id=2821 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478645401088",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.760:5515): arch=c000003e syscall=321 success=yes exit=16 a0=5 a1=c00010d6a0 a2=78 a3=0 items=0 ppid=645123 pid=645124 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "auditd"
-            }
-          },
-          {
-            "key": "node.name",
-            "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470760000000",
-              "observedTimeUnixNano": "1720030478657592517",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.760:5515): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F383130346366343730376636623433663763396263"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470761000000",
-              "observedTimeUnixNano": "1720030478657648735",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.761:5516): prog-id=0 op=UNLOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470762000000",
-              "observedTimeUnixNano": "1720030478657688141",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.762:5517): prog-id=0 op=UNLOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "cluster.id",
-            "value": {
-              "stringValue": "f60911fd-2b21-4214-8b6f-f742e075b144"
-            }
-          },
-          {
-            "key": "openshift.log.source",
-            "value": {
-              "stringValue": "auditd"
-            }
-          },
-          {
-            "key": "node.name",
-            "value": {
-              "stringValue": "ip-10-0-23-88.ec2.internal"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {},
-          "logRecords": [
-            {
-              "timeUnixNano": "1720030470762000000",
-              "observedTimeUnixNano": "1720030478657730405",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=BPF msg=audit(1720030470.762:5518): prog-id=2822 op=LOAD"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470762000000",
-              "observedTimeUnixNano": "1720030478657768034",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=SYSCALL msg=audit(1720030470.762:5518): arch=c000003e syscall=321 success=yes exit=14 a0=5 a1=c00010db60 a2=78 a3=0 items=0 ppid=645123 pid=645124 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=\"runc\" exe=\"/usr/bin/runc\" subj=system_u:system_r:container_runtime_t:s0 key=(null)\u001dARCH=x86_64 SYSCALL=bpf AUID=\"unset\" UID=\"root\" GID=\"root\" EUID=\"root\" SUID=\"root\" FSUID=\"root\" EGID=\"root\" SGID=\"root\" FSGID=\"root\""
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
-              "traceId": "",
-              "spanId": ""
-            },
-            {
-              "timeUnixNano": "1720030470762000000",
-              "observedTimeUnixNano": "1720030478657805572",
-              "severityNumber": 9,
-              "body": {
-                "stringValue": "type=PROCTITLE msg=audit(1720030470.762:5518): proctitle=2F7573722F62696E2F72756E63002D2D73797374656D642D6367726F7570002D2D726F6F743D2F72756E2F72756E6300637265617465002D2D62756E646C65002F72756E2F636F6E7461696E6572732F73746F726167652F6F7665726C61792D636F6E7461696E6572732F383130346366343730376636623433663763396263"
-              },
-              "attributes": [
-                {
-                  "key": "openshift.log.type",
-                  "value": {
-                    "stringValue": "audit"
-                  }
-                }
-              ],
               "traceId": "",
               "spanId": ""
             }

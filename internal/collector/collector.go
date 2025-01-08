@@ -211,7 +211,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		if inputs.HasAuditSource(obs.AuditSourceOpenShift) {
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOpenshiftAPIServerName, ReadOnly: true, MountPath: sourceOpenshiftAPIServerPath})
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOAuthServerName, ReadOnly: true, MountPath: sourceOAuthServerPath})
-			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditOVNName, ReadOnly: true, MountPath: sourceOAuthAPIServerPath})
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceOAuthAPIServerName, ReadOnly: true, MountPath: sourceOAuthAPIServerPath})
 		}
 		if inputs.HasAuditSource(obs.AuditSourceOVN) {
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditOVNName, ReadOnly: true, MountPath: sourceOVNPath})

@@ -173,7 +173,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
-	collector := f.NewCollectorContainer(secretNames, clusterID, receiverInputs)
+	collector := f.NewCollectorContainer(forwarderSpec.Inputs, secretNames, clusterID, receiverInputs)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle, f.ResourceNames.CaTrustBundle)
 
@@ -190,7 +190,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, receiverInputs []string) *v1.Container {
+func (f *Factory) NewCollectorContainer(inputs logging.InputSpecs, secretNames []string, clusterID string, receiverInputs []string) *v1.Container {
 
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
@@ -217,17 +217,31 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string, 
 	}
 
 	if f.isDaemonset {
-		collector.VolumeMounts = append(collector.VolumeMounts,
-			v1.VolumeMount{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
-			v1.VolumeMount{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
-			v1.VolumeMount{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
-			v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
-			v1.VolumeMount{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
-			v1.VolumeMount{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
-			v1.VolumeMount{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
-			v1.VolumeMount{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
-			v1.VolumeMount{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
-		)
+		if inputs.HasContainerSource() {
+			collector.VolumeMounts = append(collector.VolumeMounts,
+				v1.VolumeMount{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+				v1.VolumeMount{Name: logPods, ReadOnly: true, MountPath: logPodsValue})
+		}
+		if inputs.HasJournalSource() {
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logJournal, ReadOnly: true, MountPath: logJournalValue})
+		}
+		if inputs.HasAuditSource(logging.AuditSourceAuditd) {
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logAudit, ReadOnly: true, MountPath: logAuditValue})
+		}
+		if inputs.HasAuditSource(logging.AuditSourceKube) {
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue})
+		}
+		if inputs.HasAuditSource(logging.AuditSourceOpenShift) {
+			collector.VolumeMounts = append(collector.VolumeMounts,
+				v1.VolumeMount{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+				v1.VolumeMount{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+				v1.VolumeMount{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+			)
+		}
+		if inputs.HasAuditSource(logging.AuditSourceOVN) {
+			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: logOvn, ReadOnly: true, MountPath: logOvnValue})
+		}
+
 		AddSecurityContextTo(&collector)
 	}
 

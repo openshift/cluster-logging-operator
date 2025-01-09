@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+	"k8s.io/utils/set"
 )
 
 // Reserved input names.
@@ -302,4 +303,45 @@ func (receiver *ReceiverSpec) GetHTTPFormat() (ret string) {
 		ret = receiver.HTTP.Format
 	}
 	return
+}
+
+type InputSpecs []InputSpec
+
+func (inputs InputSpecs) HasJournalSource() bool {
+	for _, i := range inputs {
+		if i.Infrastructure != nil && (len(i.Infrastructure.Sources) == 0 || set.New(i.Infrastructure.Sources...).Has(InfrastructureSourceNode)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (inputs InputSpecs) HasContainerSource() bool {
+	for _, i := range inputs {
+		if i.Application != nil {
+			return true
+		}
+		if i.Infrastructure != nil && (len(i.Infrastructure.Sources) == 0 || set.New(i.Infrastructure.Sources...).Has(InfrastructureSourceContainer)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (inputs InputSpecs) HasAnyAuditSource() bool {
+	for _, i := range inputs {
+		if i.Audit != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (inputs InputSpecs) HasAuditSource(logSource string) bool {
+	for _, i := range inputs {
+		if i.Audit != nil && (set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) {
+			return true
+		}
+	}
+	return false
 }

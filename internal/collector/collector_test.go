@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
@@ -27,29 +28,29 @@ import (
 )
 
 var _ = Describe("Factory#Daemonset", func() {
-	var (
-		podSpec   v1.PodSpec
-		collector v1.Container
-
-		factory *Factory
-	)
-	BeforeEach(func() {
-		factory = &Factory{
-			CollectorType: logging.LogCollectionTypeFluentd,
-			ImageName:     constants.FluentdName,
-			Visit:         fluentd.CollectorVisitor,
-			ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
-			isDaemonset:   true,
-			CommonLabelInitializer: func(o runtime.Object) {
-				runtime.SetCommonLabels(o, string(logging.LogCollectionTypeFluentd), "test", constants.CollectorName)
-			},
-			PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
-		}
-		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-		collector = podSpec.Containers[0]
-	})
-
 	Context("NewPodSpec", func() {
+		var (
+			podSpec   v1.PodSpec
+			collector v1.Container
+
+			factory *Factory
+		)
+		BeforeEach(func() {
+			factory = &Factory{
+				CollectorType: logging.LogCollectionTypeFluentd,
+				ImageName:     constants.FluentdName,
+				Visit:         fluentd.CollectorVisitor,
+				ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+				isDaemonset:   true,
+				CommonLabelInitializer: func(o runtime.Object) {
+					runtime.SetCommonLabels(o, string(logging.LogCollectionTypeFluentd), "test", constants.CollectorName)
+				},
+				PodLabelVisitor: func(o runtime.Object) {}, //do noting for fluentd
+			}
+			podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+			collector = podSpec.Containers[0]
+		})
+
 		Describe("when creating of the collector container", func() {
 
 			It("should provide the pod IP as an environment var", func() {
@@ -245,17 +246,171 @@ var _ = Describe("Factory#Daemonset", func() {
 				})
 			})
 		})
-	})
-
-	Context("NewDaemonset", func() {
-		const targetAnnotation = "target.workload.openshift.io/management"
-		It("should have required annotations", func() {
-			actDs := factory.NewDaemonSet(constants.OpenshiftNS, "test", nil, tls.GetClusterTLSProfileSpec(nil), nil)
-			Expect(actDs.Spec.Template.Annotations).To(HaveKey(constants.AnnotationSecretHash))
-			Expect(actDs.Spec.Template.Annotations).To(HaveKey(targetAnnotation))
+		Context("NewDaemonset", func() {
+			const targetAnnotation = "target.workload.openshift.io/management"
+			It("should have required annotations", func() {
+				actDs := factory.NewDaemonSet(constants.OpenshiftNS, "test", nil, tls.GetClusterTLSProfileSpec(nil), nil)
+				Expect(actDs.Spec.Template.Annotations).To(HaveKey(constants.AnnotationSecretHash))
+				Expect(actDs.Spec.Template.Annotations).To(HaveKey(targetAnnotation))
+			})
 		})
 	})
+	Context("CollectorContainerVolumeMounts", func() {
 
+		DescribeTable("when CLF specs inputs", func(inputs []logging.InputSpec, numVolumeMounts int, expVolumeMounts []v1.VolumeMount) {
+			factory := &Factory{
+				CollectorType: logging.LogCollectionTypeFluentd,
+				ImageName:     constants.FluentdName,
+				Visit:         fluentd.CollectorVisitor,
+				ResourceNames: coreFactory.GenerateResourceNames(*runtime.NewClusterLogForwarder(constants.OpenshiftNS, constants.SingletonName)),
+				isDaemonset:   true,
+				CommonLabelInitializer: func(o runtime.Object) {
+					runtime.SetCommonLabels(o, string(logging.LogCollectionTypeFluentd), "test", constants.CollectorName)
+				},
+				PodLabelVisitor: func(o runtime.Object) {},
+			}
+			podSpec := *factory.NewPodSpec(nil,
+				logging.ClusterLogForwarderSpec{
+					Inputs: inputs,
+				},
+				"1234",
+				"",
+				tls.GetClusterTLSProfileSpec(nil),
+				nil,
+				constants.OpenshiftNS)
+			collector := podSpec.Containers[0]
+
+			// Check VolumeMounts
+			Expect(collector.VolumeMounts).To(HaveLen(numVolumeMounts))
+			for _, vm := range expVolumeMounts {
+				Expect(collector.VolumeMounts).To(ContainElement(vm))
+			}
+		},
+			Entry("should mount all volumes if all reserved input types are spec'd empty",
+				[]logging.InputSpec{
+					{Application: &logging.Application{}},
+					{Infrastructure: &logging.Infrastructure{}},
+					{Audit: &logging.Audit{}},
+				},
+				15,
+				[]v1.VolumeMount{
+					{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+					{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+					{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+					{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
+					{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+					{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+					{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+					{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+					{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
+				}),
+			Entry("should only mount container/pod sources when application is spec'd empty",
+				[]logging.InputSpec{
+					{Application: &logging.Application{}},
+				},
+				8,
+				[]v1.VolumeMount{
+					{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+					{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+				}),
+			Entry("should mount journal & container sources when infrastructure is spec'd empty",
+				[]logging.InputSpec{
+					{Infrastructure: &logging.Infrastructure{}},
+				},
+				9,
+				[]v1.VolumeMount{
+					{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+					{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+					{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+				}),
+			Entry("should only mount container sources when infrastructure is spec'd with container source",
+				[]logging.InputSpec{
+					{Infrastructure: &logging.Infrastructure{Sources: []string{logging.InfrastructureSourceContainer}}},
+				},
+				8,
+				[]v1.VolumeMount{
+					{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+					{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+				}),
+			Entry("should only mount journal sources when infrastructure is spec'd with node source",
+				[]logging.InputSpec{
+					{Infrastructure: &logging.Infrastructure{Sources: []string{logging.InfrastructureSourceNode}}},
+				},
+				7,
+				[]v1.VolumeMount{
+					{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+				}),
+			Entry("should mount all audit sources when audit is spec'd empty",
+				[]logging.InputSpec{
+					{Audit: &logging.Audit{}},
+				},
+				12,
+				[]v1.VolumeMount{
+					{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
+					{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+					{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+					{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+					{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+					{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
+				}),
+			Entry("should mount audit logs when audit is spec'd with auditd source",
+				[]logging.InputSpec{
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceAuditd}}},
+				},
+				7,
+				[]v1.VolumeMount{
+					{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
+				}),
+			Entry("should mount kubeApi logs when audit is spec'd with kubeAPI source",
+				[]logging.InputSpec{
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceKube}}},
+				},
+				7,
+				[]v1.VolumeMount{
+					{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+				}),
+			Entry("should mount openshiftAPI logs when audit is spec'd with openshiftAPI source",
+				[]logging.InputSpec{
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceOpenShift}}},
+				},
+				9,
+				[]v1.VolumeMount{
+					{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+					{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+					{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+				}),
+			Entry("should mount OVN logs when audit is spec'd with OVN source",
+				[]logging.InputSpec{
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceOVN}}},
+				},
+				7,
+				[]v1.VolumeMount{
+					{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
+				}),
+			Entry("should mount journal and openshiftAPI sources if infra is spec'd with node and audit spec'd with openshiftAPI",
+				[]logging.InputSpec{
+					{Infrastructure: &logging.Infrastructure{Sources: []string{logging.InfrastructureSourceNode}}},
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceOpenShift}}},
+				},
+				10,
+				[]v1.VolumeMount{
+					{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+					{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+					{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
+					{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+				}),
+			Entry("should mount container and kubeAPI sources if application is spec'd and audit spec'd with kubeAPI",
+				[]logging.InputSpec{
+					{Application: &logging.Application{}},
+					{Audit: &logging.Audit{Sources: []string{logging.AuditSourceKube}}},
+				},
+				9,
+				[]v1.VolumeMount{
+					{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+					{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+					{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+				}))
+	})
 })
 
 var _ = Describe("Factory#Deployment", func() {

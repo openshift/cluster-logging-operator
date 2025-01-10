@@ -80,8 +80,25 @@ func GroupVersionKind(o runtime.Object) schema.GroupVersionKind {
 	return gvk
 }
 
-// Labels returns the labels map for object, guaratneed to be non-nil.
-func Labels(o runtime.Object) map[string]string {
+type ObjectLabels map[string]string
+
+// Includes compares an object labels to those given and returns true if
+// the object set includes the keys and also matches the values
+func (objLabels ObjectLabels) Includes(other ObjectLabels) bool {
+	for includeKey, includeValue := range other {
+		if value, found := objLabels[includeKey]; found {
+			if value != includeValue {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+// Labels returns the labels map for object, guaranteed to be non-nil.
+func Labels(o runtime.Object) ObjectLabels {
 	m := Meta(o)
 	l := m.GetLabels()
 	if l == nil {

@@ -4,8 +4,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"github.com/openshift/cluster-logging-operator/version"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +35,37 @@ var _ = Describe("Object", func() {
 		},
 		Entry("YAML string ns", test.YAMLString(nsFoo), nsFoo),
 		Entry("JSON string ns", test.JSONLine(nsFoo), nsFoo),
+	)
+
+	DescribeTable("#Labels.Includes",
+		func(success bool, matches map[string]string) {
+			obj := NewNamespace("test")
+			obj.Labels = map[string]string{
+				"foo":                       "bar",
+				constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+				constants.LabelK8sVersion:   version.Version,
+			}
+			Expect(Labels(obj).Includes(matches)).To(Equal(success))
+		},
+		Entry("matches a subset", true, map[string]string{
+			constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+			constants.LabelK8sVersion:   version.Version,
+		}),
+		Entry("matches entire set", true, map[string]string{
+			"foo":                       "bar",
+			constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+			constants.LabelK8sVersion:   version.Version,
+		}),
+		Entry("fails a superset", false, map[string]string{
+			"foo":                       "bar",
+			constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+			constants.LabelK8sVersion:   version.Version,
+			"xyz":                       "abc",
+		}),
+		Entry("fails a subset", false, map[string]string{
+			constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
+			constants.LabelK8sVersion:   "someother",
+		}),
 	)
 
 	It("panics on bad manifest string", func() {

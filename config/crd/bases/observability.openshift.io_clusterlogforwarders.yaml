@@ -1998,13 +1998,12 @@ spec:
                               pattern: ^[a-z][a-z0-9-]{2,62}[a-z0-9]$
                               type: string
                             namespace:
-                              description: |-
-                                Namespace of the in-cluster LokiStack resource.
-
-                                If unset, this defaults to "openshift-logging".
+                              description: Namespace of the in-cluster LokiStack resource.
+                              minLength: 3
                               type: string
                           required:
                           - name
+                          - namespace
                           type: object
                         tuning:
                           description: Tuning specs tuning for the output

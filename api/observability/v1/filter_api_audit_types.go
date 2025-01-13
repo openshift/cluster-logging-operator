@@ -44,6 +44,10 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // For example namespace 'openshift-*' matches 'openshift-apiserver' or 'openshift-authentication.
 // Resource '*/status' matches 'Pod/status' or 'Deployment/status'
 //
+// Events which include both a 'resource' and 'subresource' are evaluated by combing those
+// fields with a forward slash.  This means rules that rely upon a resource type that may or
+// may not include the subresource should be adjusted to cover all the required use-cases (i.e. ['pod','pod/*']).
+//
 // ## Default Rules
 //
 // Events that do not match any rule in the policy are filtered as follows:

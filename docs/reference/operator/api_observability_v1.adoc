@@ -253,6 +253,10 @@ Names of users, groups, namespaces, and resources can have a leading or trailing
 For example namespace &#39;openshift-*&#39; matches &#39;openshift-apiserver&#39; or &#39;openshift-authentication.
 Resource &#39;*/status&#39; matches &#39;Pod/status&#39; or &#39;Deployment/status&#39;
 
+Events which include both a &#39;resource&#39; and &#39;subresource&#39; are evaluated by combing those
+fields with a forward slash.  This means rules that rely upon a resource type that may or
+may not include the subresource should be adjusted to cover all the required use-cases (i.e. [&#39;pod&#39;,&#39;pod/*&#39;]).
+
 ## Default Rules
 
 Events that do not match any rule in the policy are filtered as follows:

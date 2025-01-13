@@ -82,6 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
+    createdAt: "2025-01-13T19:29:18Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1340,11 +1341,7 @@ spec:
         path: outputs[0].lokiStack.target.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: |-
-          Namespace of the in-cluster LokiStack resource.
-
-
-          If unset, this defaults to "openshift-logging".
+      - description: Namespace of the in-cluster LokiStack resource.
         displayName: LokiStack Namespace
         path: outputs[0].lokiStack.target.namespace
         x-descriptors:

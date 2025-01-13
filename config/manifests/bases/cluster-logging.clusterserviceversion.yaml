@@ -1264,11 +1264,7 @@ spec:
         path: outputs[0].lokiStack.target.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: |-
-          Namespace of the in-cluster LokiStack resource.
-
-
-          If unset, this defaults to "openshift-logging".
+      - description: Namespace of the in-cluster LokiStack resource.
         displayName: LokiStack Namespace
         path: outputs[0].lokiStack.target.namespace
         x-descriptors:

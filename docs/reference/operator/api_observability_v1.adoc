@@ -2103,8 +2103,6 @@ Type:: object
 
 |namespace|string|  Namespace of the in-cluster LokiStack resource.
 
-If unset, this defaults to &#34;openshift-logging&#34;.
-
 |======================
 
 === .spec.outputs[].lokiStack.tuning

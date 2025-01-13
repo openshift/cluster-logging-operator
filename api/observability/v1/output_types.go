@@ -753,9 +753,8 @@ type LokiTuningSpec struct {
 type LokiStackTarget struct {
 	// Namespace of the in-cluster LokiStack resource.
 	//
-	// If unset, this defaults to "openshift-logging".
-	//
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength:=3
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack Namespace",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Namespace string `json:"namespace,omitempty"`
 

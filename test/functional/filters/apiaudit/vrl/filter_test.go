@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test"
 	authv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -30,6 +31,33 @@ var _ = Describe("Policy to VRL Filter", func() {
 	})
 
 	Context("omit stages", func() {
+		It("for LOG-5607 should drop events when rules with omitStages have multiple stages and the ref object has a subresource", func() {
+			p := &obs.KubeAPIAudit{
+				OmitStages: []Stage{StageRequestReceived},
+				Rules: []PolicyRule{
+					{
+						Level: LevelRequest,
+						Resources: []GroupResources{
+							{Resources: []string{"configmaps", "secrets"}},
+						},
+						Verbs: []string{"create", "delete", "get", "update"},
+					},
+					{
+						Level:      LevelNone,
+						OmitStages: []Stage{StageResponseComplete},
+						Resources: []GroupResources{
+							{Group: "policy.open-cluster-management.io", Resources: []string{"configurationpolicies", "configurationpolicies/*"}},
+						},
+						Verbs: []string{"update"},
+					},
+				},
+			}
+			content, err := jsonContent.ReadFile("log5607_sample.json")
+			Expect(err).To(BeNil())
+			e := &Event{}
+			test.MustUnmarshal(string(content), e)
+			Expect(Filtered(p, *e)).To(BeNil())
+		})
 		It("omits using policy setting", func() {
 			p := &obs.KubeAPIAudit{OmitStages: []Stage{StageRequestReceived}}
 			Expect(Filtered(p, Event{Stage: StageRequestReceived})).To(BeNil())

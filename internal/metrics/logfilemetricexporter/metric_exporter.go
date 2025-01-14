@@ -20,6 +20,7 @@ import (
 )
 
 func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
+	reader client.Reader,
 	requestClient client.Client,
 	owner metav1.OwnerReference) error {
 
@@ -28,7 +29,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		runtime.SetCommonLabels(o, constants.LogfilesmetricexporterName, lfmeInstance.Name, constants.LogfilesmetricexporterName)
 	}
 
-	if err := reconcile.SecurityContextConstraints(requestClient, auth.NewSCC()); err != nil {
+	if err := reconcile.SecurityContextConstraints(reader, requestClient, auth.NewSCC()); err != nil {
 		log.V(9).Error(err, "logfilemetricexporter.SecurityContextConstraints")
 		return err
 	}

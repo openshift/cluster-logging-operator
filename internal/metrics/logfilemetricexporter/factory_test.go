@@ -77,7 +77,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		}
 
 		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, utils.AsOwner(lfmeInstance))).To(Succeed())
+		Expect(Reconcile(lfmeInstance, reqClient, reqClient, utils.AsOwner(lfmeInstance))).To(Succeed())
 
 		// Daemonset
 		// Get and check the daemonset

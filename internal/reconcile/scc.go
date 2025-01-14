@@ -11,11 +11,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func SecurityContextConstraints(k8Client client.Client, desired *security.SecurityContextConstraints) error {
+func SecurityContextConstraints(reader client.Reader, k8Client client.Client, desired *security.SecurityContextConstraints) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &security.SecurityContextConstraints{}
 		key := client.ObjectKey{Name: desired.Name}
-		if err := k8Client.Get(context.TODO(), key, current); err != nil {
+		if err := reader.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				return k8Client.Create(context.TODO(), desired)
 			}

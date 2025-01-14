@@ -30,6 +30,11 @@ var _ reconcile.Reconciler = &ReconcileLogFileMetricExporter{}
 
 type ReconcileLogFileMetricExporter struct {
 	Client client.Client
+
+	// Reader is a read only client for retrieving kubernetes resources. This
+	// client hits the API server directly, by-passing the controller cache
+	Reader client.Reader
+
 	Scheme *runtime.Scheme
 	// ClusterVersion is the semantic version of the cluster
 	ClusterVersion string
@@ -73,7 +78,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, utils.AsOwner(lfmeInstance))
+	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Reader, r.Client, utils.AsOwner(lfmeInstance))
 
 	if reconcileErr != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "%s", reconcileErr.Error())

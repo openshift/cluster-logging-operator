@@ -142,6 +142,7 @@ func main() {
 	// The Log File Metric Exporter Controller
 	if err = (&logfilemetricsexporter.ReconcileLogFileMetricExporter{
 		Client:         mgr.GetClient(),
+		Reader:         mgr.GetAPIReader(),
 		Scheme:         mgr.GetScheme(),
 		ClusterVersion: clusterVersion,
 		ClusterID:      clusterID,

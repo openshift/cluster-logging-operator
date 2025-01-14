@@ -43,7 +43,7 @@ var _ = Describe("reconciling ", func() {
 			k8sClient = fake.NewFakeClient(initial)
 		}
 
-		Expect(reconcile.SecurityContextConstraints(k8sClient, &desired)).To(Succeed(), "Expect no error reconciling secrets")
+		Expect(reconcile.SecurityContextConstraints(k8sClient, k8sClient, &desired)).To(Succeed(), "Expect no error reconciling secrets")
 
 		key := client.ObjectKey{Name: desired.Name}
 		act := &security.SecurityContextConstraints{}

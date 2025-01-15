@@ -49,8 +49,10 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 		Expect(records).To(HaveCap(1), "Exp. the record to be ingested")
 
 		expLabels := map[string]string{
-			"kubernetes_host": f.Pod.Spec.NodeName,
-			"log_type":        "audit",
+			"kubernetes_host":    f.Pod.Spec.NodeName,
+			"log_type":           string(obs.InputTypeAudit),
+			"openshift_log_type": string(obs.InputTypeAudit),
+			"k8s_node_name":      f.Pod.Spec.NodeName,
 		}
 		actualLabels := r[0].Stream
 		Expect(actualLabels).To(BeEquivalentTo(expLabels), "Exp. labels to be added to the log record")

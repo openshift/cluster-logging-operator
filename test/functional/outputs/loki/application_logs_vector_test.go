@@ -44,13 +44,14 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 		})
 		It("should accept not ordered event", func() {
 			now := time.Now()
+			ts := functional.CRIOTime(now.Add(-5 * time.Minute))
+			msg := functional.NewFullCRIOLogMessage(ts, "A few minutes ago...")
+
+			tsThen := functional.CRIOTime(now.Add(-50 * time.Minute))
+			msgOld := functional.NewFullCRIOLogMessage(tsThen, "A little while ago in a galaxy far, far away....")
+
 			tsNow := functional.CRIOTime(now)
-			duration, _ := time.ParseDuration("-5.5h") //time back
-			then := now.Add(duration)
-			tsThen := then.UTC().Format(time.RFC3339Nano)
-			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
-			msgOld := functional.NewFullCRIOLogMessage(tsThen, "A long time ago in a galaxy far, far away....")
-			msgNew := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), "Present days")
+			msgNew := functional.NewFullCRIOLogMessage(tsNow, "Present time")
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(Succeed())
 			Expect(f.WriteMessagesToApplicationLog(msgOld, 1)).To(Succeed())
 			Expect(f.WriteMessagesToApplicationLog(msgNew, 1)).To(Succeed())
@@ -58,15 +59,16 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			query := fmt.Sprintf(`{kubernetes_namespace_name=%q, kubernetes_pod_name=%q}`, f.Namespace, f.Name)
 			result, err := l.QueryUntil(query, "", 3)
 			Expect(err).To(BeNil())
-			Expect(result).NotTo(BeNil())
 			Expect(len(result)).To(Equal(1))
+
 			lines := result[0].Lines()
 			Expect(len(lines)).To(Equal(3))
-			Expect(strings.Contains(lines[0], "Present days")).To(BeTrue())
-			Expect(strings.Contains(lines[1], "A long time ago in a galaxy far, far away....")).To(BeTrue())
-			Expect(strings.Contains(lines[2], "Present days")).To(BeTrue())
+			Expect(strings.Contains(lines[0], "A little while ago in a galaxy far, far away....")).To(BeTrue())
+			Expect(strings.Contains(lines[1], "A few minutes ago...")).To(BeTrue())
+			Expect(strings.Contains(lines[2], "Present time")).To(BeTrue())
 		})
 	})
+
 	Context("when label keys are defined that include slashes and dashes. Ref(LOG-4095, LOG-4460)", func() {
 		const myValue = "foobarvalue"
 		BeforeEach(func() {
@@ -101,6 +103,9 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				"kubernetes_labels_prefix_cloud_com_platform_stage": "dev",
 				"kubernetes_host":                                   f.Pod.Spec.NodeName,
 			}
+			// quick fix since unable to disable service_name discovery via functional test arguments
+			want["service_name"] = "unknown_service"
+
 			labels := result[0].Stream
 			Expect(labels).To(BeEquivalentTo(want))
 		})

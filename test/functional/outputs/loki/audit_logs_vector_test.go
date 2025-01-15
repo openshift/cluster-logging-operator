@@ -52,6 +52,9 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			"kubernetes_host": f.Pod.Spec.NodeName,
 			"log_type":        "audit",
 		}
+		// quick fix since unable to disable service_name discovery via functional test arguments
+		expLabels["service_name"] = "unknown_service"
+
 		actualLabels := r[0].Stream
 		Expect(actualLabels).To(BeEquivalentTo(expLabels), "Exp. labels to be added to the log record")
 	}

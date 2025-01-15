@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	Image        = "grafana/loki:2.8.4"
+	Image = "grafana/loki:3.3.2"
+
 	Port         = int32(3100)
 	lokiReceiver = "loki-receiver"
 )
@@ -51,6 +52,8 @@ func NewReceiver(ns, name string) *Receiver {
 		ready:   make(chan struct{}),
 	}
 	runtime.Labels(r.Pod)[lokiReceiver] = name
+	// TODO: need a custom config in order to disable service_name discovery
+	// "-validation.discover-service-name=" empty list does not work as expected using flag
 	r.Pod.Spec.Containers = []corev1.Container{{
 		Name:  name,
 		Image: Image,
@@ -61,6 +64,7 @@ func NewReceiver(ns, name string) *Receiver {
 			"-server.grpc-max-recv-msg-size-bytes", "20971520",
 			"-distributor.ingestion-rate-limit-mb", "200",
 			"-distributor.ingestion-burst-size-mb", "200",
+			"-validation.discover-log-levels=false",
 		},
 		SecurityContext: &corev1.SecurityContext{
 			AllowPrivilegeEscalation: utils.GetPtr(false),
@@ -230,7 +234,7 @@ func (sv StreamValues) Lines() (lines []string) {
 }
 
 // Records extracts log lines and parses as JSON maps.
-// Lines that are not valid JSON are are returned as: {"INVALID <error-message>": "original line"}
+// Lines that are not valid JSON are returned as: {"INVALID <error-message>": "original line"}
 func (sv StreamValues) Records() (records []map[string]interface{}) {
 	for _, l := range sv.Lines() {
 		m := map[string]interface{}{}

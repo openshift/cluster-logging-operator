@@ -41,8 +41,9 @@ var _ = Describe("reconciling ", func() {
 			builder.WithRuntimeObjects(initial)
 		}
 		k8sClient := builder.Build()
+		reader := k8sClient.(client.Reader)
 
-		Expect(reconcile.SecurityContextConstraints(k8sClient, &desired)).To(Succeed(), "Expect no error reconciling secrets")
+		Expect(reconcile.SecurityContextConstraints(k8sClient, reader, &desired)).To(Succeed(), "Expect no error reconciling secrets")
 
 		key := client.ObjectKey{Name: desired.Name}
 		act := &security.SecurityContextConstraints{}

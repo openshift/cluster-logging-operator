@@ -3,6 +3,7 @@ package logfilemetricexporter
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -39,6 +40,8 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		reqClient = fake.NewFakeClient( //nolint
 			namespace,
 		)
+
+		reader = reqClient.(client.Reader)
 
 		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{}
 
@@ -77,7 +80,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		}
 
 		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, utils.AsOwner(lfmeInstance))).To(Succeed())
+		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
 
 		// Daemonset
 		// Get and check the daemonset

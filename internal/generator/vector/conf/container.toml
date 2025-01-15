@@ -33,7 +33,12 @@ type = "remap"
 inputs = ["input_myinfra_container"]
 source = '''
   .log_source = "container"
-  .log_type = "infrastructure"
+  # If namespace is infra, label log_type as infra
+  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      .log_type = "infrastructure"
+  } else {
+      .log_type = "application"
+  }
 '''
 
 # Logs from containers (including openshift containers)
@@ -57,7 +62,12 @@ type = "remap"
 inputs = ["input_mytestapp_container"]
 source = '''
   .log_source = "container"
-  .log_type = "application"
+  # If namespace is infra, label log_type as infra
+  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      .log_type = "infrastructure"
+  } else {
+      .log_type = "application"
+  }
 '''
 
 [transforms.pipeline_mypipeline_viaq_0]

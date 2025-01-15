@@ -2,8 +2,9 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
@@ -14,7 +15,6 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -27,6 +27,13 @@ const (
 	lokiLabelKubernetesHost          = "kubernetes.host"
 	lokiLabelKubernetesContainerName = "kubernetes.container_name"
 	podNamespace                     = "kubernetes.namespace_name"
+
+	// OTel
+	otellogType                          = "openshift.log_type"
+	otellokiLabelKubernetesNamespaceName = "k8s.namespace_name"
+	otellokiLabelKubernetesPodName       = "k8s.pod_name"
+	otellokiLabelKubernetesContainerName = "k8s.container_name"
+	otellokiLabelKubernetesNodeName      = "k8s.node_name"
 )
 
 var (
@@ -38,6 +45,12 @@ var (
 		lokiLabelKubernetesNamespaceName,
 		lokiLabelKubernetesPodName,
 		lokiLabelKubernetesContainerName,
+
+		// OTel labels
+		otellogType,
+		otellokiLabelKubernetesNamespaceName,
+		otellokiLabelKubernetesPodName,
+		otellokiLabelKubernetesContainerName,
 	}
 
 	containerLabels = []string{
@@ -47,7 +60,15 @@ var (
 	}
 
 	requiredLabelKeys = []string{
+		otellokiLabelKubernetesNodeName,
 		lokiLabelKubernetesHost,
+	}
+
+	viaqOtelLabelMap = map[string]string{
+		logType:                          otellogType,
+		lokiLabelKubernetesNamespaceName: otellokiLabelKubernetesNamespaceName,
+		lokiLabelKubernetesPodName:       otellokiLabelKubernetesPodName,
+		lokiLabelKubernetesContainerName: otellokiLabelKubernetesContainerName,
 	}
 )
 
@@ -173,6 +194,8 @@ func lokiLabelKeys(l *obs.Loki) []string {
 	var keys sets.String
 	if l != nil && len(l.LabelKeys) != 0 {
 		keys = *sets.NewString(l.LabelKeys...)
+		// Determine which of the OTel labels need to also be added based on spec'd custom labels
+		keys.Insert(addOtelEquivalentLabels(l.LabelKeys)...)
 	} else {
 		keys = *sets.NewString(DefaultLabelKeys...)
 	}
@@ -190,15 +213,49 @@ func lokiLabels(lo *obs.Loki) []Label {
 			Name:  name,
 			Value: formatLokiLabelValue(k),
 		}
-		if k == lokiLabelKubernetesHost {
-			l.Value = "${VECTOR_SELF_NODE_NAME}"
+		// some labels need custom values. e.g. host, otel labels
+		if val := generateCustomLabelValues(k); val != "" {
+			l.Value = val
 		}
-		if k == lokiLabelKubernetesNamespaceName {
-			l.Value = fmt.Sprintf("{{%s}}", podNamespace)
-		}
+
 		ls = append(ls, l)
 	}
 	return ls
+}
+
+// addOtelEquivalentLabels checks spec'd custom label keys to add matching otel labels
+// e.g kubernetes.namespace_name = k8s.namespace_name
+func addOtelEquivalentLabels(customLabelKeys []string) []string {
+	matchingLabels := []string{}
+
+	for _, label := range customLabelKeys {
+		if val, ok := viaqOtelLabelMap[label]; ok {
+			matchingLabels = append(matchingLabels, val)
+		}
+	}
+	return matchingLabels
+}
+
+// generateCustomLabelValues generates custom values for specific labels like kubernetes.host, k8s_* labels
+func generateCustomLabelValues(value string) string {
+	var labelVal string
+
+	switch value {
+	case otellogType:
+		labelVal = logType
+	case otellokiLabelKubernetesContainerName:
+		labelVal = lokiLabelKubernetesContainerName
+	case lokiLabelKubernetesNamespaceName, otellokiLabelKubernetesNamespaceName:
+		labelVal = podNamespace
+	case otellokiLabelKubernetesPodName:
+		labelVal = lokiLabelKubernetesPodName
+	// Special case for the kubernetes node name (same as kubernetes.host)
+	case lokiLabelKubernetesHost, otellokiLabelKubernetesNodeName:
+		return "${VECTOR_SELF_NODE_NAME}"
+	default:
+		return ""
+	}
+	return fmt.Sprintf("{{%s}}", labelVal)
 }
 
 func remapLabelsVrl(labels []string) string {
@@ -227,7 +284,7 @@ func formatLokiLabelValue(value string) string {
 func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
 	return Remap{
 		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
+		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         remapLabelsVrl(containerLabels),
 	}
 }
@@ -253,7 +310,7 @@ func Tenant(l *obs.Loki, tenant string) Element {
 func CleanupFields(id string, inputs []string) Element {
 	return Remap{
 		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
+		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         "del(.tag)",
 	}
 }

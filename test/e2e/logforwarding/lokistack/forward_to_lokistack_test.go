@@ -154,6 +154,48 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 	})
+
+	It("should send logs to lokistack with otel equivalent default labels when data model is viaq", func() {
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+		}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(err.Error())
+		}
+
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+
+		key := `k8s_pod_name`
+		res, err := lokistackReceiver.GetApplicationLogsByKeyValue(serviceAccount.Name, key, logGenName, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(res).ToNot(BeEmpty())
+		Expect(len(res)).To(Equal(1))
+
+		// Check stream values here - len and contents
+		stream := res[0].Stream
+		Expect(len(stream)).To(Equal(10))
+		wantStreamLabels := []string{
+			"k8s_container_name",
+			"k8s_namespace_name",
+			"k8s_pod_name",
+			"k8s_node_name",
+			"kubernetes_container_name",
+			"kubernetes_namespace_name",
+			"kubernetes_pod_name",
+			"kubernetes_host",
+			"log_type",
+			"openshift_log_type"}
+
+		for _, key := range wantStreamLabels {
+			_, ok := stream[key]
+			Expect(ok).To(BeTrue())
+		}
+	})
+
 	AfterEach(func() {
 		e2e.Cleanup()
 		e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})

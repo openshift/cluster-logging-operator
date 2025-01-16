@@ -125,7 +125,7 @@ func main() {
 
 	// Clean up
 	defer func() {
-		if err := cleanUpResources(mgr.GetClient()); err != nil {
+		if err := cleanUpResources(mgr.GetClient(), mgr.GetAPIReader()); err != nil {
 			log.V(3).Error(err, "error with resource cleanup")
 		}
 	}()
@@ -220,9 +220,9 @@ func migrateManifestResources(k8sClient client.Client) {
 	}
 }
 
-func cleanUpResources(k8sClient client.Client) error {
+func cleanUpResources(k8sClient client.Client, apiReader client.Reader) error {
 	// Remove the dashboard config map
-	if err := dashboard.RemoveDashboardConfigMap(k8sClient); err != nil {
+	if err := dashboard.RemoveDashboardConfigMap(k8sClient, apiReader); err != nil {
 		return err
 	}
 	return nil

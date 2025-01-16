@@ -4,18 +4,20 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-
 	staticlog "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
+	"github.com/openshift/cluster-logging-operator/version"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -60,7 +62,9 @@ func newDashboardConfigMap() *corev1.ConfigMap {
 	)
 	runtime.NewConfigMapBuilder(cm).
 		AddLabel("console.openshift.io/dashboard", "true").
-		AddLabel(DashboardHashName, hash)
+		AddLabel(DashboardHashName, hash).
+		AddLabel(constants.LabelK8sVersion, version.Version).
+		AddLabel(constants.LabelK8sManagedBy, constants.ClusterLoggingOperator)
 	return cm
 }
 
@@ -83,14 +87,25 @@ func ReconcileForDashboards(k8sClient client.Client, reader client.Reader) error
 }
 
 // RemoveDashboardConfigMap removes the config map in the grafana dashboard
-func RemoveDashboardConfigMap(c client.Client) (err error) {
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      DashboardName,
-			Namespace: DashboardNS,
-		},
+func RemoveDashboardConfigMap(c client.Client, r client.Reader) (err error) {
+	cm := newDashboardConfigMap()
+	s := labels.NewSelector()
+	for k, v := range cm.Labels {
+		r, _ := labels.NewRequirement(k, selection.Equals, []string{v})
+		s = s.Add(*r)
 	}
-	return c.Delete(context.TODO(), cm)
+	options := &client.ListOptions{
+		LabelSelector: s,
+		Namespace:     DashboardNS,
+	}
+	configMaps := &corev1.ConfigMapList{}
+	if err := r.List(context.TODO(), configMaps, options); err != nil {
+		return err
+	}
+	if len(configMaps.Items) > 0 {
+		return c.Delete(context.TODO(), cm)
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager

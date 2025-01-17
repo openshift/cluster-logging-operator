@@ -1215,7 +1215,7 @@ const (
 	// EnrichmentTypeNone add no additional enrichment to the record
 	EnrichmentTypeNone EnrichmentType = "None"
 
-	// EnrichmentTypeKubernetesMinimal adds namespace_name, pod_name, and collector_name to the beginning of the message
+	// EnrichmentTypeKubernetesMinimal adds namespace_name, pod_name, and container_name to the beginning of the message
 	// body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).  This may
 	// result in the message body being an invalid JSON structure
 	EnrichmentTypeKubernetesMinimal EnrichmentType = "KubernetesMinimal"

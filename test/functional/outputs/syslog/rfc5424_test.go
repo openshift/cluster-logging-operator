@@ -113,6 +113,29 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			expectedPriority := "<134>1 "
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
 		})
+
+		It("should use numeric value", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
+					spec.Syslog.Facility = "16"
+					spec.Syslog.Severity = "6"
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			record := `{"index":1,"timestamp":1}`
+			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
+			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+
+			// 134 = Facility(local0/16)*8 + Severity(Informational/6)
+			// The 1 after <134> is version, which is always set to 1
+			expectedPriority := "<134>1 "
+			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
+		})
 	})
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).

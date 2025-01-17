@@ -1,0 +1,148 @@
+== Forwarding to Syslog
+
+Create a Cluster Log Forwarder instance by specifying corresponding parameters.
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+  - name: syslog
+    syslog:
+      rfc: RFC3164 # <1>
+      url: http://my-syslog.com # <2>
+      severity: informational # OPTIONAL parameter can be skipped will be calculated automatically <3>
+      facility: user # OPTIONAL parameter can be skipped will be calculated automatically <4>
+      payloadKey: message # OPTIONAL parameter can be skipped will be calculated automatically <5>
+      appName: myApp # OPTIONAL parameter can be skipped will be calculated automatically <6>
+      procId: 3144 # OPTIONAL parameter can be skipped will be calculated automatically <7>
+      msgId: MsgID # OPTIONAL parameter can be skipped will be calculated automatically <8>
+      enrichment: KubernetesMinimal # <9>
+    type: syslog
+  pipelines:
+    - name: demo-logs
+      inputRefs:
+        - application
+        - infrastructure
+        - audit
+      outputRefs:
+        - syslog
+  serviceAccount:
+    name: mine
+----
+Where `url` and `rfc` parameters are mandatory other are optional
+
+. `rfc`: Syslog RFC specification:  `RFC3164` or `RFC5424`
+. `url`: an absolute URL, with a scheme. Valid schemes are: `http`, `https`, `tcp`, `tls`, `udp` and `udps`
+. `severity`: values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+  The value can be a decimal integer or one of these case-insensitive keywords:
+
+     Emergency
+     Alert
+     Critical
+     Error
+     Warning
+     Notice
+     Informational
+     Debug
+
+. `facility`: values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+  The value can be a decimal integer. Facility keywords are not standardized,
+  this API recognizes at least the following case-insensitive keywords
+  (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
+
+    kernel user mail daemon auth syslog lpr news
+    uucp cron authpriv ftp ntp security console solaris-cron
+    local0 local1 local2 local3 local4 local5 local6 local7
+
+
+. `payloadKey`: specifies record field to use as payload. This supports template syntax to allow dynamic per-event values.
+  The `payloadKey` must be a single field path encased in single curly brackets `{}`.
+  Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+  If left empty, Syslog will use  the whole message as the payload.
+  Examples:
+
+  {.bar}
+  {.foo.bar.baz}
+  {.foo.bar."baz/with/slashes"}
+
+. `appName`: is APP-NAME part of the syslog-msg header.
+  `appName` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 48. This supports template syntax* to allow dynamic per-event values.
+
+.  `procId`: is `PROCID` part of the syslog-msg header.
+   `procId` needs to be specified if using `rfc5424`. The maximum length of the final values is truncated to 128. This supports template syntax* to allow dynamic per-event values.
+
+.  `msgId`: is `MSGID` part of the syslog-msg header. This supports template syntax to allow dynamic per-event values. MsgId needs to be specified if using `rfc5424`.  The maximum length of the final values is truncated to 32. This supports template syntax* to allow dynamic per-event values.
+
+. `enrichment`: `None` or `KubernetesMinimal`.
+Take in account that it applies only to container logs.
+`None` add no additional enrichment to the record.
+`KubernetesMinimal` adds `namespace_name`, `pod_name`, and `container_name` to the beginning of the message
+body (e.g. `+namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}+`).
+This may result in the message body being an invalid JSON structure.
+
+
+[NOTE]
+====
+*Template syntax
+
+The `appName`, `msgId` and `procId` can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+Examples:
+
+  foo-{.bar||"none"}
+  {.foo||.bar||"missing"}
+  foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+====
+
+=== Defaults value of Syslog fields
+Will be calculating during processing log event if values not set:
+
+==== RFC3164
+
+Format: `+<PRI>TIMESTAMP HOSTNAME TAG: MESSAGE+`
+
+Example: `+<34>Oct 11 22:14:15 mymachine su[1234]: 'su root' failed for lonvick on /dev/pts/+`
+
+|===
+| | Infrastructure Journal |Infrastructure/Application Container|Audit|Note
+|AppName|SYSLOG_IDENTIFIER*|namespacePodContainer|.log_source|
+|ProcId|_PID*|N/A|.auditID (if available)|will have no effect in settings
+|MsgId|N/A|N/A|N/A|will have no effect in settings
+|Payloadkey|.message|.message|.message|
+|Severity|N/A|.level|information (6)|
+|Facility|N/A|user (1)|security (13)6|
+|===
+*If `ProcId` available, it will aggregate with `AppName` in the `.tag` field: `appname[procid]`
+
+== RFC5424
+
+Format: `+<PRI> VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID [STRUCTURED-DATA] MESSAGE+`
+
+
+|===
+| |Infrastructure Journal|Infrastructure/Application Container|Audit
+|AppName|SYSLOG_IDENTIFIER|namespace_pod_container|.log_source
+|ProcId	|_PID|pod_id|.auditID (if available)
+|MsgId	|.log_source|.log_source|.log_source
+|Payloadkey|.message|.message|.message
+|Severity|N/A|.level|information (6)
+|Facility|N/A|user (1)|security(13)
+|===
+
+
+
+
+
+
+
+
+
+

@@ -67,9 +67,10 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(strings.Contains(lines[2], "Present days")).To(BeTrue())
 		})
 	})
-	Context("when label keys are defined that include slashes and dashes. Ref(LOG-4095, LOG-4460)", func() {
+
+	Context("labelKeys", func() {
 		const myValue = "foobarvalue"
-		BeforeEach(func() {
+		It("should handle the configuration so the collector starts when label keys are defined that include slashes and dashes. Ref(LOG-4095, LOG-4460)", func() {
 			f.Labels["app.kubernetes.io/name"] = myValue
 			f.Labels["prefix-cloud_com_platform-stage"] = "dev"
 			f.Forwarder.Spec.Outputs[0].Loki.LabelKeys = []string{
@@ -79,8 +80,6 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				"kubernetes.labels.prefix-cloud_com_platform-stage",
 			}
 			Expect(f.Deploy()).To(BeNil())
-		})
-		It("should handle the configuration so the collector starts", func() {
 			now := time.Now()
 			tsNow := functional.CRIOTime(now)
 			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
@@ -95,6 +94,9 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(len(lines)).To(Equal(1))
 
 			want := map[string]string{
+				"k8s_namespace_name":                                f.Namespace,
+				"k8s_pod_name":                                      f.Pod.Name,
+				"k8s_node_name":                                     f.Pod.Spec.NodeName,
 				"kubernetes_namespace_name":                         f.Namespace,
 				"kubernetes_pod_name":                               f.Pod.Name,
 				"kubernetes_labels_app_kubernetes_io_name":          myValue,
@@ -102,6 +104,39 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				"kubernetes_host":                                   f.Pod.Spec.NodeName,
 			}
 			labels := result[0].Stream
+			Expect(len(labels)).To(Equal(8))
+			Expect(labels).To(BeEquivalentTo(want))
+		})
+
+		It("should add all otel equivalent default labels when loki.LabelKeys are not defined", func() {
+			Expect(f.Deploy()).To(BeNil())
+			now := time.Now()
+			tsNow := functional.CRIOTime(now)
+			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(Succeed())
+
+			query := fmt.Sprintf(`{openshift_log_type=%q}`, obs.InputTypeApplication)
+			result, err := l.QueryUntil(query, "", 1)
+			Expect(err).To(BeNil())
+			Expect(result).NotTo(BeNil())
+			Expect(len(result)).To(Equal(1))
+			lines := result[0].Lines()
+			Expect(len(lines)).To(Equal(1))
+
+			want := map[string]string{
+				"k8s_container_name":        f.Pod.Spec.Containers[0].Name,
+				"k8s_namespace_name":        f.Namespace,
+				"k8s_pod_name":              f.Pod.Name,
+				"k8s_node_name":             f.Pod.Spec.NodeName,
+				"kubernetes_container_name": f.Pod.Spec.Containers[0].Name,
+				"kubernetes_namespace_name": f.Namespace,
+				"kubernetes_pod_name":       f.Pod.Name,
+				"kubernetes_host":           f.Pod.Spec.NodeName,
+				"log_type":                  string(obs.InputTypeApplication),
+				"openshift_log_type":        string(obs.InputTypeApplication),
+			}
+			labels := result[0].Stream
+			Expect(len(labels)).To(Equal(10))
 			Expect(labels).To(BeEquivalentTo(want))
 		})
 	})

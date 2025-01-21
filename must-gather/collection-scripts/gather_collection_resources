@@ -22,13 +22,13 @@ collector_folder="$CLO_COLLECTION_PATH/namespaces/$NAMESPACE"
 log "- BEGIN <gather_collection_resources> for namespace: $NAMESPACE ..."
 
 log "-- Exporting ClusterLogForwarder.observability.openshift.io resources"
-crs="$(oc get clusterLogForwarder.observability.openshift.io -n $NAMESPACE -o custom-columns=:.metadata.name)"
+crs="$(oc get clusterLogForwarder.observability.openshift.io -n $NAMESPACE -o custom-columns=:.metadata.name --ignore-not-found)"
 
 # get name of collector from CR name
 for collector in ${crs}; do
   log "-- Gathering data for ClusterLogForwarder: $collector"
   mkdir -p $collector_folder
-  oc adm inspect -n $NAMESPACE clusterLogForwarders.observability.openshift.io --cache-dir=${KUBECACHEDIR} 2>&1
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n $NAMESPACE clusterLogForwarders.observability.openshift.io 2>&1
 
   # find daemonset
   log "--- Describe Daemonset ds/$collector"
@@ -38,7 +38,7 @@ for collector in ${crs}; do
   fi
 
   # gathering collector pods
-  pods="$(oc -n $NAMESPACE get pods -lapp.kubernetes.io/instance=$collector -lapp.kubernetes.io/component=collector -o custom-columns=:.metadata.name)"
+  pods="$(oc -n $NAMESPACE get pods -lapp.kubernetes.io/instance=$collector -lapp.kubernetes.io/component=collector -o custom-columns=:.metadata.name --ignore-not-found)"
   for pod in $pods
   do
       log "--- Describe collector pod: $pod"

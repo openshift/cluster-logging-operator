@@ -1,10 +1,11 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
@@ -148,11 +149,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 # Basic Auth Config
 [sinks.loki_receiver.auth]
@@ -258,6 +264,8 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_labels_app = "{{kubernetes.labels.\"app\"}}"
@@ -367,11 +375,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 # Basic Auth Config
 [sinks.loki_receiver.auth]
@@ -474,11 +487,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 # Bearer Auth Config
 [sinks.loki_receiver.auth]
@@ -582,11 +600,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
 verify_certificate = false
@@ -680,11 +703,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
 verify_certificate = false
@@ -787,11 +815,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 [sinks.loki_receiver.tls]
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
@@ -901,11 +934,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.default_loki_apps.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 [sinks.default_loki_apps.tls]
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

@@ -4,12 +4,13 @@ package loki
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
-	"time"
 )
 
 var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
@@ -61,8 +62,10 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 		Expect(records).To(HaveCap(1), "Exp. the record to be ingested")
 
 		expLabels := map[string]string{
-			"kubernetes_host": f.Pod.Spec.NodeName,
-			"log_type":        "audit",
+			"kubernetes_host":    f.Pod.Spec.NodeName,
+			"log_type":           logging.InputNameAudit,
+			"openshift_log_type": logging.InputNameAudit,
+			"k8s_node_name":      f.Pod.Spec.NodeName,
 		}
 		actualLabels := r[0].Stream
 		Expect(actualLabels).To(BeEquivalentTo(expLabels), "Exp. labels to be added to the log record")

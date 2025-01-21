@@ -75,11 +75,11 @@ get_elasticsearch_status() {
 }
 
 get_elasticsearch_cr() {
-  oc adm inspect -n $NAMESPACE --cache-dir=${KUBECACHEDIR} elasticsearch.logging.openshift.io elasticsearch
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n $NAMESPACE elasticsearch.logging.openshift.io elasticsearch
 }
 
 get_lokistack_cr() {
-  oc adm inspect -n $NAMESPACE --cache-dir=${KUBECACHEDIR} lokistacks.loki.grafana.com
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n $NAMESPACE lokistacks.loki.grafana.com
 }
 
 log "Gathering data for logstore component"

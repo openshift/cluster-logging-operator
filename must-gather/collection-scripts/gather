@@ -32,6 +32,9 @@ namespace_resources+=($LOGGING_NS)
 # elasticsearch operator namespace
 namespace_resources+=(openshift-operators-redhat)
 
+# uiplugin namespace
+namespace_resources+=(openshift-operators)
+
 # multi-forwarder namespaces
 for kind in $(oc get crd -A -o custom-columns=:.metadata.name | grep clusterlogforwarder); do
   namespaces=$(oc get $kind -A -o custom-columns=:.metadata.namespace | sort -u)
@@ -55,7 +58,6 @@ cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
 cluster_resources+=(clusterversion)
 cluster_resources+=(machineconfigpool)
-cluster_resources+=(uiplugin)
 cluster_resources+=(customresourcedefinitions)
 
 log "- BEGIN inspecting cluster resources and namespaces..." | tee -a "${LOGFILE_PATH}"
@@ -88,13 +90,22 @@ for ns in ${namespace_resources[@]}    ; do
 done
 log "END inspecting namespaced resources ..." | tee -a "${LOGFILE_PATH}"
 
-# if the uiplugin is installed, collect the console CO
-uiplugin_found="$(oc get uiplugin --ignore-not-found --no-headers)"
-if [ "$uiplugin_found" != "" ] ; then
-  log "BEGIN gathering console resources ..." | tee -a "${LOGFILE_PATH}"
-  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" co/console 2>&1 | tee -a "${LOGFILE_PATH}"  &
-  pids+=($!)
-  log "END gathering console resources ..." | tee -a "${LOGFILE_PATH}"
+# if the uiplugin is installed, collect it and the console CO
+uiplugin_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep uiplugin) || true
+if [ "$uiplugin_crd" != "" ] ; then
+  uiplugin_found="$(oc get uiplugin --ignore-not-found --no-headers)" || true
+  if [ "$uiplugin_found" != "" ] ; then
+    log "BEGIN gathering uiplugin and console resources ..." | tee -a "${LOGFILE_PATH}"
+    oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" uiplugin  >> "${LOGFILE_PATH}" 2>&1 &
+    pids+=($!)
+    oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" co/console 2>&1 | tee -a "${LOGFILE_PATH}"  &
+    pids+=($!)
+    log "END gathering uiplugin and console resources ..." | tee -a "${LOGFILE_PATH}"
+  else
+    log "UIPlugin not configured" 2>&1 | tee -a "${LOGFILE_PATH}"
+  fi
+else
+  log "UIPlugin not installed" 2>&1 | tee -a "${LOGFILE_PATH}"
 fi
 
 default_clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
@@ -107,7 +118,7 @@ else
   log "Skipping collection inspection.  No default CLO found" 2>&1 | tee -a "${LOGFILE_PATH}"
 fi
 
-loki_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep lokistack)
+loki_crd=$(oc get crd -A -o custom-columns=:.metadata.name | grep lokistack) || true
 
 if [ "$loki_crd" != "" ] ; then
   found_lokistack="$(oc -n $LOGGING_NS get lokistack.loki.grafana.com --ignore-not-found --no-headers)"

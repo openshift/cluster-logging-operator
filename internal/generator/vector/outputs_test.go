@@ -116,11 +116,16 @@ when_full = "block"
 retry_attempts = 17
 
 [sinks.default_loki_apps.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"
 
 [sinks.default_loki_apps.tls]
 min_tls_version = "` + defaultTLS + `"

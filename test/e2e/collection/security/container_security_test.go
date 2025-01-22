@@ -121,7 +121,10 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 		By("having all sysctls disabled")
 		result, _ = runInCollectorContainer("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0")
-		Expect(result).To(ContainSubstring("sysctl: no such file"))
+		Expect(result).To(Or(
+			ContainSubstring("sysctl: no such file"),
+			ContainSubstring("executable file `/usr/sbin/sysctl` not found in $PATH"),
+		))
 
 		By("disabling privilege escalation")
 		result, err = runInCollectorContainer("cat", "/proc/1/status")

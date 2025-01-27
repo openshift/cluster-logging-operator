@@ -6,13 +6,15 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
+var _ = Describe("Validating outputs", func() {
 
 	var (
 		foo = "foo"
@@ -52,6 +54,12 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 			Forwarder: &obs.ClusterLogForwarder{
 				Spec: obs.ClusterLogForwarderSpec{
 					Outputs: outputs,
+					Pipelines: []obs.PipelineSpec{
+						{
+							Name:       "dummy",
+							OutputRefs: internalobs.Outputs(outputs).Names(),
+						},
+					},
 				},
 			},
 			Secrets: map[string]*corev1.Secret{
@@ -107,8 +115,8 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 		}
 	}
 
-	Context("", func() {
-		DescribeTable("",
+	Context("with multiple CloudWatch", func() {
+		DescribeTable("when validating auth",
 			func(outputs []obs.OutputSpec, expectedMessages []string) {
 				context := createContext(outputs)
 				Validate(context)
@@ -138,5 +146,24 @@ var _ = Describe("Validating multiple CloudWatch outputs auth", func() {
 				[]string{"is valid", "is valid", ErrVariousRoleARNAuth},
 			),
 		)
+	})
+	Context("when not referenced by any pipeline", func() {
+		It("should generate a failure validation message", func() {
+			outputName := "unreferenced"
+			context := createContext([]obs.OutputSpec{
+				{
+					Name: outputName,
+					Type: obs.OutputTypeHTTP,
+					HTTP: &obs.HTTP{
+						URLSpec: obs.URLSpec{
+							URL: "http://nowhere",
+						},
+					},
+				},
+			})
+			context.Forwarder.Spec.Pipelines[0].OutputRefs = []string{}
+			Validate(context)
+			Expect(context.Forwarder.Status.OutputConditions[0]).To(matchers.MatchCondition(outputName, false, obs.ReasonValidationFailure, ".*"))
+		})
 	})
 })

@@ -21,7 +21,7 @@ export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
-export LOGGING_VERSION?=6.1
+export LOGGING_VERSION?=6.2
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
@@ -249,7 +249,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.15-v4.18"
+OPENSHIFT_VERSIONS?="v4.16-v4.19"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=stable-${LOGGING_VERSION}

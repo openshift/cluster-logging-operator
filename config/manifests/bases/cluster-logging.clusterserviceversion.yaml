@@ -18,7 +18,7 @@ metadata:
     features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
-    olm.skipRange: '>=5.9.0-0 <6.1.0'
+    olm.skipRange: '>=6.0.0-0 <6.2.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/initialization-resource: |
       {
@@ -1915,4 +1915,4 @@ spec:
   minKubeVersion: 1.18.3
   provider:
     name: Red Hat
-  version: 6.1.0
+  version: 6.2.0

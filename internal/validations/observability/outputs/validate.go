@@ -10,6 +10,7 @@ import (
 )
 
 func Validate(context internalcontext.ForwarderContext) {
+	pipelines := internalobs.Pipelines(context.Forwarder.Spec.Pipelines)
 	for _, out := range context.Forwarder.Spec.Outputs {
 		messages := []string{}
 		configs := internalobs.SecretReferencesAsValueReferences(out)
@@ -18,6 +19,7 @@ func Validate(context internalcontext.ForwarderContext) {
 			configs = append(configs, internalobs.ValueReferences(out.TLS.TLSSpec)...)
 		}
 		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
+		messages = append(messages, validateOutputIsReferencedByPipelines(out, pipelines)...)
 		// Validate by output type
 		// Note: type 'lokiStack' becomes 'otlp' output type when sending Otel otherwise it becomes 'loki'
 		switch out.Type {
@@ -37,4 +39,11 @@ func Validate(context internalcontext.ForwarderContext) {
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}
+}
+
+func validateOutputIsReferencedByPipelines(output obs.OutputSpec, pipelines internalobs.Pipelines) (results []string) {
+	if !pipelines.ReferenceOutput(output) {
+		return append(results, "not referenced by any pipeline")
+	}
+	return results
 }

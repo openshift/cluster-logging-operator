@@ -3,7 +3,6 @@ filters:
   ".*":
     approvers:
       - jcantrill
-      - periklis
       - alanconway
       - cahartma
       - xperimental

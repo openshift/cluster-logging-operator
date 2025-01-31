@@ -57,7 +57,12 @@ severity_key = "{{.SeverityKey}}"
 [sinks.{{.ComponentID}}.resource]
 type = "k8s_node"
 node_name = "{{"{{hostname}}"}}"
+encoding.except_fields = ["_internal"]
 {{end}}`
+}
+
+type GoogleCloudLoggingEncoding struct {
+	ComponentID string
 }
 
 func (g *GoogleCloudLogging) SetCompression(algo string) {

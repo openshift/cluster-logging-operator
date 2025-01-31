@@ -41,6 +41,7 @@ host = "{{.Host}}"
 {{- end }}
 log_type = "{{.LogType}}"
 shared_key = "{{.SharedKey}}"
+encoding.except_fields = ["_internal"]
 {{end}}`
 }
 

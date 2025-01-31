@@ -31,3 +31,4 @@ customer_id = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
 host = "ods.opinsights.azure.cn"
 log_type = "myLogType"
 shared_key = "z9ndQSFH1RLDnS6WR35m84u326p3"
+encoding.except_fields = ["_internal"]

@@ -101,7 +101,9 @@ source = '''
   # If namespace is infra, label log_type as infra
   if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
     .log_type = "infrastructure"
-  } else {
+    ._internal.log_source = "node"
+   } else {
     .log_type = "application"
+    ._internal.log_source = "container"
   }
 '''

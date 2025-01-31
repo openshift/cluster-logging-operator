@@ -62,6 +62,7 @@ group_name = "{{"{{ group_name }}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
 {{- end}}

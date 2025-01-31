@@ -53,6 +53,7 @@ source = '''
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "kubeAPI"
   .k8s_audit_level = .level
 '''
 
@@ -74,6 +75,7 @@ source = '''
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "openshiftAPI"
   .openshift_audit_level = .level
 '''
 

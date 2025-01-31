@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
-	tls "github.com/openshift/cluster-logging-operator/internal/tls"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -90,6 +90,7 @@ severity_key = "level"
 [sinks.gcl_1.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+encoding.except_fields = ["_internal"]
 `,
 		}),
 		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
@@ -164,6 +165,7 @@ severity_key = "level"
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+encoding.except_fields = ["_internal"]
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"
@@ -243,6 +245,7 @@ severity_key = "level"
 [sinks.gcl_tls.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"
+encoding.except_fields = ["_internal"]
 
 [sinks.gcl_tls.tls]
 min_tls_version = "` + defaultTLS + `"

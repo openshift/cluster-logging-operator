@@ -82,6 +82,7 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 `
 	cwBufferAndRequest = `
@@ -99,6 +100,7 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -116,6 +118,7 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -140,6 +143,7 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -162,6 +166,7 @@ stream_name = "{{ stream_name }}"
 auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -187,6 +192,7 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -210,6 +216,7 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -235,6 +242,7 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]
@@ -258,6 +266,7 @@ group_name = "{{ group_name }}"
 stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
+encoding.except_fields = ["_internal"]
 healthcheck.enabled = false
 
 [sinks.cw.request]

@@ -1,0 +1,40 @@
+[transforms.example_parse_encoding]
+type = "remap"
+inputs = ["pipelineName"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+if .log_type == "infrastructure" && ._internal.log_source == "node" {
+    ._internal.syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
+    ._internal.syslog.proc_id = to_string!(.systemd.t.PID || "")
+}
+if ._internal.log_source == "container" {
+    ._internal.syslog.tag = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
+    ._internal.syslog.severity = .level
+    ._internal.syslog.facility = "user"
+     #Remove non-alphanumeric characters
+   	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
+	#Truncate the sanitized tag to 32 characters
+	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
+}
+if .log_type == "audit" {
+    ._internal.syslog.tag = ._internal.log_source
+    ._internal.syslog.severity = "informational"
+    ._internal.syslog.facility = "security"
+}
+'''
+
+[sinks.example]
+type = "socket"
+inputs = ["example_parse_encoding"]
+address = "logserver:514"
+mode = "udp"
+
+[sinks.example.encoding]
+codec = "syslog"
+except_fields = ["_internal"]
+rfc = "rfc3164"
+facility = "kern"
+severity = "critical"
+proc_id = "procID"
+tag = "tag[procID]"
+add_log_source = true

@@ -66,6 +66,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			if err := e2e.CreateClusterLogging(cr); err != nil {
 				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 			}
+			e2e.ClusterLogging = cr
 		})
 		Describe("with rfc5424", func() {
 			BeforeEach(func() {

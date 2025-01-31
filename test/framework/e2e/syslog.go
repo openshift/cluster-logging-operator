@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	v1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"log"
 	"strconv"
 	"strings"
@@ -77,12 +78,16 @@ func (e SyslogRfc) String() string {
 	}
 }
 
-func GenerateRsyslogConf(conf string, rfc SyslogRfc) string {
+func GenerateRsyslogConf(conf string, rfc SyslogRfc, collector v1.LogCollectionType) string {
 	switch rfc {
 	case RFC5424:
 		return strings.Join([]string{conf, RuleSetRfc5424}, "\n")
 	case RFC3164:
-		return strings.Join([]string{conf, RuleSetRfc3164}, "\n")
+		if collector == v1.LogCollectionTypeFluentd { //fluentd impl not fully support RFC3164 spec
+			return strings.Join([]string{conf, RuleSetRfc3164}, "\n")
+		} else {
+			return strings.Join([]string{conf, RuleSetRfc3164WithPRI}, "\n")
+		}
 	case RFC3164RFC5424:
 		return strings.Join([]string{conf, RuleSetRfc3164Rfc5424}, "\n")
 	}
@@ -381,7 +386,8 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		})
 	}
 
-	rsyslogConf = GenerateRsyslogConf(rsyslogConf, rfc)
+	//syslog config template can depend on that format supported by collector
+	rsyslogConf = GenerateRsyslogConf(rsyslogConf, rfc, tc.ClusterLogging.Spec.Collection.Type)
 
 	cOpts := metav1.CreateOptions{}
 	config := k8shandler.NewConfigMap(container.Name, constants.OpenshiftNS, map[string]string{

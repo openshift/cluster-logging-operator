@@ -169,7 +169,7 @@ func AddSplunkEncodeExceptFields(s *logging.Splunk) Element {
 		return Nil
 	}
 
-	return KV("except_fields", "[\"write_index\"]")
+	return KV("except_fields", "[\"write_index\", \"_internal\"]")
 }
 
 func Encoding(id string, o logging.OutputSpec) Element {

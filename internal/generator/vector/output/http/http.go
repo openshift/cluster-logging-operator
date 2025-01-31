@@ -61,6 +61,7 @@ func (h HttpEncoding) Template() string {
 	return `{{define "` + h.Name() + `" -}}
 [sinks.{{.ComponentID}}.encoding]
 codec = {{.Codec}}
+except_fields = ["_internal"]
 {{end}}`
 }
 

@@ -56,12 +56,15 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Expect(outputlogs[0]).To(MatchRegexp(`{"index":.*1,.*"timestamp":.*1,.*"tag_key":.*"rec_tag"}`), "Exp to find the original message in received message")
 	},
 
-		Entry("should use the value from the record and include the message", "$.message.tag_key", "rec_tag", false),
+		Entry("should use the value from the record and include the message", "$.message.tag_key", "rec_tag", true),
 		Entry("should use the value from the complete tag and include the message", "tag", `kubernetes\.var\.log.pods\..*`, true),
 		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", `kubernetes#.*`, true),
 	)
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
+			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
+				Skip("Test requires fluentd")
+			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {

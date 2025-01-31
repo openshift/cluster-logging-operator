@@ -333,7 +333,7 @@ index = "{{ write_index }}"
 timestamp_key = "@timestamp"
 [sinks.splunk_hec.encoding]
 codec = "json"
-except_fields = ["write_index"]
+except_fields = ["write_index", "_internal"]
 `
 
 				splunkSinkIndexKey = `

@@ -43,7 +43,7 @@ func NewOVNAuditSource(input obs.InputSpec, op generator.Options) ([]generator.E
 	metaID := helpers.MakeID(id, "meta")
 	el := []generator.Element{
 		sources.NewOVNAuditLog(id),
-		NewAuditInternalNormalization(metaID, obs.AuditSourceOVN, id, true),
+		NewInternalNormalization(metaID, obs.AuditSourceOVN, obs.InputTypeAudit, id),
 	}
 	return el, []string{metaID}
 }

@@ -25,20 +25,19 @@ const (
 	setEnvelope             = `. = {"_internal": .}`
 	setEnvelopeToStructured = `. = {"_internal": {"structured": .}}`
 	setHostName             = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
-	setTimestampField       = `ts = del(._internal.timestamp); if !exists(._internal."@timestamp") {._internal."@timestamp" = ts}`
+	setTimestampField       = `if exists(._internal.timestamp) {._internal."@timestamp" = ._internal.timestamp}`
 )
 
 // NewAuditInternalNormalization returns configuration elements to normalize audit log entries to an internal, common data model
 func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs string, parseIntoStructured bool, addVRLs ...string) framework.Element {
-	var vrls []string
+	vrls := []string{setEnvelope}
 	if parseIntoStructured {
-		vrls = append(vrls, setEnvelope, parseStructured)
+		vrls = append(vrls, parseStructured)
 	}
 	vrls = append(vrls,
 		fmt.Sprintf(fmtLogType, logSource, obs.InputTypeAudit),
 		setHostName,
 		setClusterID,
-		setTimestampField,
 	)
 	vrls = append(vrls, addVRLs...)
 	return elements.Remap{
@@ -55,7 +54,6 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		fmt.Sprintf(fmtLogType, logSource, logType),
 		setHostName,
 		setClusterID,
-		setTimestampField,
 		viaq.SetLogLevel,
 	}
 	vrls = append(vrls, addVRLs...)
@@ -64,10 +62,6 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		Inputs:      helpers.MakeInputs(inputs),
 		VRL:         strings.Join(vrls, "\n"),
 	}
-	if visit != nil {
-		visit(&ele)
-	}
-	return ele
 }
 
 // NewJournalInternalNormalization returns configuration elements to normalize journal log entries to an internal, common data model
@@ -75,7 +69,6 @@ func NewJournalInternalNormalization(id string, logSource interface{}, envelopeV
 	vrls := []string{
 		envelopeVrl,
 		fmt.Sprintf(fmtLogType, logSource, obs.InputTypeInfrastructure),
-		setTimestampField,
 		setClusterID,
 	}
 	vrls = append(vrls, addVRLs...)

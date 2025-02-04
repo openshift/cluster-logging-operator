@@ -20,11 +20,10 @@ if err == null {
   sp, err = split(match2.ts_record,":")
   if err == null && length(sp) == 2 {
       ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
-      if ts != "" { .timestamp = ts }
-      ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
+      if ts != "" { ._internal.timestamp = ts }
       envelop |= {"record_id": sp[1]}
       ._internal |= {"audit.linux" : envelop}
-      ._internal."@timestamp" =  format_timestamp(ts,"%+") ?? ""
+      ._internal.timestamp =  format_timestamp(ts,"%+") ?? ""
   }
 } else {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
@@ -70,5 +69,13 @@ if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
 }
 
 func auditOVNLogs() string {
-	return ""
+	return fmt.Sprintf(`
+if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
+%s
+}
+`, string(obs.InputTypeAudit), obs.AuditSourceOVN,
+		strings.Join(helpers.TrimSpaces([]string{
+			SetMessageOnRoot,
+			`.level = ._internal.level`,
+		}), "\n"))
 }

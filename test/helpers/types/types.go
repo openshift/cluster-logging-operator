@@ -336,18 +336,16 @@ type AuditLinux struct {
 
 // OVN Audit log
 type OVNAuditLog struct {
-	Hostname         string           `json:"hostname"`
-	Message          string           `json:"message,omitempty"`
-	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
-	TimestampLegacy  time.Time        `json:"@timestamp,omitempty"`
-	Timestamp        time.Time        `json:"timestamp,omitempty"`
-	LogType          string           `json:"log_type,omitempty"`
-	LogSource        string           `json:"log_source,omitempty"`
-	ViaqIndexName    string           `json:"viaq_index_name"`
-	ViaqMsgID        string           `json:"viaq_msg_id"`
-	Kubernetes       Kubernetes       `json:"kubernetes"`
-	Openshift        OpenshiftMeta    `json:"openshift"`
-	Level            string           `json:"level,omitempty"`
+	Hostname        string        `json:"hostname"`
+	Message         string        `json:"message,omitempty"`
+	TimestampLegacy time.Time     `json:"@timestamp,omitempty"`
+	Timestamp       time.Time     `json:"timestamp,omitempty"`
+	LogType         string        `json:"log_type,omitempty"`
+	LogSource       string        `json:"log_source,omitempty"`
+	ViaqIndexName   string        `json:"viaq_index_name,omitempty"`
+	ViaqMsgID       string        `json:"viaq_msg_id,omitempty"`
+	Openshift       OpenshiftMeta `json:"openshift,omitempty"`
+	Level           string        `json:"level,omitempty"`
 }
 
 // AuditLogCommon is common to k8s and openshift auditlogs

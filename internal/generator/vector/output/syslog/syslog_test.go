@@ -1,6 +1,8 @@
 package syslog
 
 import (
+	_ "embed"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -9,260 +11,24 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	corev1 "k8s.io/api/core/v1"
 )
 
+//go:embed xyz_defaults.toml
+var xyzDefaults string
+
+//go:embed tls_with_field_references.toml
+var tlsWithLogRecordReferences string
+
+//go:embed udp_with_every_setting.toml
+var udpEverySetting string
+
+//go:embed tcp_with_defaults.toml
+var tcpDefaults string
+
+//go:embed tls_insecure.toml
+var tlsInsecure string
+
 var _ = Describe("vector syslog clf output", func() {
-	const (
-		xyzDefaults = `
-[transforms.example_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-
-'''
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
-[sinks.example]
-type = "socket"
-inputs = ["example_json"]
-address = "logserver:514"
-mode = "xyz"
-
-[sinks.example.encoding]
-codec = "syslog"
-rfc = "rfc5424"
-facility = "user"
-severity = "informational"
-`
-		tcpDefaults = `
-[transforms.example_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
-[sinks.example]
-type = "socket"
-inputs = ["example_json"]
-address = "logserver:514"
-mode = "tcp"
-
-[sinks.example.encoding]
-codec = "syslog"
-rfc = "rfc5424"
-facility = "user"
-severity = "informational"
-`
-		tlsInsecure = `
-[transforms.example_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
-[sinks.example]
-type = "socket"
-inputs = ["example_json"]
-address = "logserver:514"
-mode = "tcp"
-
-[sinks.example.encoding]
-codec = "syslog"
-rfc = "rfc5424"
-facility = "user"
-severity = "informational"
-
-[sinks.example.tls]
-enabled = true
-verify_certificate = false
-verify_hostname = false
-`
-		udpEverySetting = `
-[transforms.example_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
-[sinks.example]
-type = "socket"
-inputs = ["example_json"]
-address = "logserver:514"
-mode = "udp"
-
-[sinks.example.encoding]
-codec = "syslog"
-rfc = "rfc3164"
-facility = "kern"
-severity = "critical"
-app_name = "app$$Name"
-msg_id = "msgID"
-proc_id = "procID"
-tag = "tag"
-add_log_source = true
-`
-
-		tlsWithLogRecordReferences = `
-[transforms.example_dedot]
-type = "remap"
-inputs = ["pipelineName"]
-source = '''
-  .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-  if exists(.kubernetes.namespace_labels) {
-	  for_each(object!(.kubernetes.namespace_labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.namespace_labels = set!(.kubernetes.namespace_labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.namespace_labels = remove!(.kubernetes.namespace_labels,[key],true)
-		}
-	  }
-  }
-  if exists(.kubernetes.labels) {
-	  for_each(object!(.kubernetes.labels)) -> |key,value| { 
-		newkey = replace(key, r'[\./]', "_") 
-		.kubernetes.labels = set!(.kubernetes.labels,[newkey],value)
-		if newkey != key {
-		  .kubernetes.labels = remove!(.kubernetes.labels,[key],true)
-		}
-	  }
-  }
-'''
-
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
-[sinks.example]
-type = "socket"
-inputs = ["example_json"]
-address = "logserver:6514"
-mode = "tcp"
-
-[sinks.example.encoding]
-codec = "syslog"
-rfc = "rfc5424"
-facility = "$$.message.facility"
-severity = "$$.message.severity"
-app_name = "$$.message.app_name"
-msg_id = "$$.message.msg_id"
-proc_id = "$$.message.proc_id"
-tag = "$$.message.tag"
-add_log_source = true
-
-[sinks.example.tls]
-enabled = true
-key_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/syslog-tls/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/syslog-tls/ca-bundle.crt"
-key_pass = "mysecretpassword"
-`
-	)
 
 	var g framework.Generator
 
@@ -346,8 +112,6 @@ key_pass = "mysecretpassword"
 							RFC:          "rfc3164",
 							Facility:     "kern",
 							Severity:     "critical",
-							AppName:      "app$Name",
-							MsgID:        "msgID",
 							ProcID:       "procID",
 							Tag:          "tag",
 							AddLogSource: true,
@@ -374,7 +138,6 @@ key_pass = "mysecretpassword"
 							AppName:      "$.message.app_name",
 							MsgID:        "$.message.msg_id",
 							ProcID:       "$.message.proc_id",
-							Tag:          "$.message.tag",
 							AddLogSource: true,
 						},
 					},
@@ -383,6 +146,7 @@ key_pass = "mysecretpassword"
 					},
 				}, []string{"pipelineName"}, secrets["syslog-tls"], nil, nil)
 			results, err := g.GenerateConf(element...)
+			println(results)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(tlsWithLogRecordReferences))
 		})

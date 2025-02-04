@@ -109,6 +109,7 @@ func (le LokiEncoding) Template() string {
 	return `{{define "` + le.Name() + `" -}}
 [sinks.{{.ComponentID}}.encoding]
 codec = {{.Codec}}
+except_fields = ["_internal"]
 {{end}}`
 }
 

@@ -84,12 +84,13 @@ if starts_with(pod_name, "eventrouter-") {
   }
 }
 `
-	RemoveStream       = `del(.stream)`
-	RemovePodIPs       = `del(.kubernetes.pod_ips)`
-	RemoveNodeLabels   = `del(.kubernetes.node_labels)`
-	RemoveTimestampEnd = `del(.timestamp_end)`
-
-	ParseHostAuditLogs = `
+	RemoveStream                = `del(.stream)`
+	RemovePodIPs                = `del(.kubernetes.pod_ips)`
+	RemoveNodeLabels            = `del(.kubernetes.node_labels)`
+	RemoveTimestampEnd          = `del(.timestamp_end)`
+	LosSourceK8sAuditLogs       = `._internal.log_source = "kubeAPI"`
+	LosSourceOpenshiftAuditLogs = `._internal.log_source = "openshiftAPI"`
+	ParseHostAuditLogs          = `
 match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
 envelop = {}
 envelop |= {"type": match1.type}
@@ -172,6 +173,7 @@ func NormalizeK8sAuditLogs(inputs, id string) []framework.Element {
 				ClusterID,
 				AddK8sAuditTag,
 				ParseAndFlatten,
+				LosSourceK8sAuditLogs,
 				FixK8sAuditLevel,
 			}), "\n"),
 		},
@@ -187,6 +189,7 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []framework.Element {
 				ClusterID,
 				AddOpenAuditTag,
 				ParseAndFlatten,
+				LosSourceOpenshiftAuditLogs,
 				FixOpenshiftAuditLevel,
 			}), "\n"),
 		},

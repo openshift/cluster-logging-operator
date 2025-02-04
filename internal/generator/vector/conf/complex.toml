@@ -62,6 +62,7 @@ source = '''
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "kubeAPI"
   .k8s_audit_level = .level
 '''
 
@@ -83,6 +84,7 @@ source = '''
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "openshiftAPI"
   .openshift_audit_level = .level
 '''
 
@@ -353,6 +355,7 @@ source = '''
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  ._internal.log_source = "node"
 '''
 
 # Set log_type
@@ -468,8 +471,10 @@ source = '''
   # If namespace is infra, label log_type as infra
   if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
     .log_type = "infrastructure"
+    ._internal.log_source = "node"
   } else {
     .log_type = "application"
+    ._internal.log_source = "container"
   }
 '''
 
@@ -516,6 +521,7 @@ topic = "topic"
 [sinks.output_kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.output_kafka_receiver.tls]
 enabled = true

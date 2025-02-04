@@ -87,6 +87,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 headers = {"h1"="v1","h2"="v2"}
@@ -163,6 +164,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 headers = {"h1"="v1","h2"="v2"}
@@ -236,6 +238,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 
 [sinks.http_receiver.request]
@@ -311,6 +314,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 timeout_secs = 50
@@ -391,6 +395,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 timeout_secs = 50
@@ -468,6 +473,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 timeout_secs = 50
@@ -586,6 +592,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
 headers = {"h1"="v1","h2"="v2"}
@@ -655,6 +662,7 @@ method = "post"
 
 [sinks.http_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 # Basic Auth Config
 [sinks.http_receiver.auth]

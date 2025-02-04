@@ -54,6 +54,7 @@ healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
+except_fields = ["_internal"]
 
 [sinks.loki_receiver.labels]
 k8s_container_name = "{{kubernetes.container_name}}"

@@ -147,6 +147,7 @@ func Encoding(id string, op Options) Element {
 [sinks.{{.ComponentID}}.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 {{end}}
 			`,
 	}

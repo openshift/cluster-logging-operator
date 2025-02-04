@@ -41,7 +41,7 @@ inputs = {{.Inputs}}
 endpoints = ["{{.Endpoint}}"]
 bulk.index = "{{ "{{ write_index }}" }}"
 bulk.action = "create"
-encoding.except_fields = ["write_index"]
+encoding.except_fields = ["write_index", "_internal"]
 id_key = "_id"
 {{.Compression}}
 {{- if ne .Version 0 }}

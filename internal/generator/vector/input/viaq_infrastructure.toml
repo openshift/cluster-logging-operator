@@ -190,6 +190,7 @@ source = '''
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  ._internal.log_source = "node"
 '''
 
 # Set log_type

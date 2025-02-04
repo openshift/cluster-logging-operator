@@ -16,6 +16,7 @@ source = '''
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "openshiftAPI"
   .openshift_audit_level = .level
 '''
 

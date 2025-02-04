@@ -177,8 +177,10 @@ func addLogType(spec logging.InputSpec, els []framework.Element, ids []string) (
 # If namespace is infra, label log_type as infra
 if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
 	.log_type = %q
+    ._internal.log_source = "node"
 } else {
 	.log_type = %q
+    ._internal.log_source = "container"
 }`, logging.InputNameInfrastructure,
 				logType)
 		case logging.InputNameAudit:

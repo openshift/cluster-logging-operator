@@ -28,7 +28,7 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 	if output.Syslog != nil && output.Syslog.RFC != "" {
 		rfc = e2e.MustParseRFC(output.Syslog.RFC)
 	}
-	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, rfc)
+	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, rfc, logging.LogCollectionType(f.collector.String()))
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"rsyslog.conf": rsyslogConf,

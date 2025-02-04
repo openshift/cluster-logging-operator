@@ -110,8 +110,10 @@ source = '''
   # If namespace is infra, label log_type as infra
   if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
     .log_type = "infrastructure"
+    ._internal.log_source = "node"
   } else {
     .log_type = "application"
+    ._internal.log_source = "container"
   }
 '''
 
@@ -170,6 +172,7 @@ source = '''
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "kubeAPI"
   .k8s_audit_level = .level
 '''
 
@@ -191,6 +194,7 @@ source = '''
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  ._internal.log_source = "openshiftAPI"
   .openshift_audit_level = .level
 '''
 
@@ -461,6 +465,7 @@ source = '''
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  ._internal.log_source = "node"
 '''
 
 # Set log_type
@@ -541,7 +546,7 @@ inputs = ["output_default_dedot_and_flatten"]
 endpoints = ["https://elasticsearch:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
-encoding.except_fields = ["write_index"]
+encoding.except_fields = ["write_index", "_internal"]
 
 id_key = "_id"
 api_version = "v6"
@@ -628,7 +633,7 @@ inputs = ["output_es_1_dedot_and_flatten"]
 endpoints = ["https://es-1.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
-encoding.except_fields = ["write_index"]
+encoding.except_fields = ["write_index", "_internal"]
 id_key = "_id"
 api_version = "v6"
 
@@ -716,7 +721,7 @@ inputs = ["output_es_2_dedot_and_flatten"]
 endpoints = ["https://es-2.svc.messaging.cluster.local:9200"]
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
-encoding.except_fields = ["write_index"]
+encoding.except_fields = ["write_index", "_internal"]
 
 id_key = "_id"
 api_version = "v8"

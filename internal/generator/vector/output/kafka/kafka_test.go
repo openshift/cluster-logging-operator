@@ -84,6 +84,7 @@ topic = "build_complete"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 # SASL Config
 [sinks.kafka_receiver.sasl]
@@ -158,6 +159,7 @@ topic = "build_complete"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -238,6 +240,7 @@ topic = "build_complete"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -310,6 +313,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -381,6 +385,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -450,6 +455,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.librdkafka_options]
 "enable.ssl.certificate.verification" = "false"
@@ -516,6 +522,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 
 [sinks.kafka_receiver.tls]
 enabled = true
@@ -569,6 +576,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 `,
 		}),
 		Entry("with plain TLS - no secret", helpers.ConfGenerateTest{
@@ -618,6 +626,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 `,
 		}),
 		Entry("without security", helpers.ConfGenerateTest{
@@ -667,6 +676,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 `,
 		}),
 		Entry("brokers, no URL, with tls key,cert,ca-bundle", helpers.ConfGenerateTest{
@@ -732,6 +742,7 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
+except_fields = ["_internal"]
 `,
 		}),
 	)

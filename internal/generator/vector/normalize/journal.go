@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	AddHostName      = `.hostname = del(.host)`
-	AddJournalLogTag = `.tag = ".journal.system"`
-	AddTime          = `.time = format_timestamp!(.timestamp, format: "%FT%T%:z")`
+	AddHostName       = `.hostname = del(.host)`
+	AddJournalLogTag  = `.tag = ".journal.system"`
+	LogSourceTypeNode = `._internal.log_source = "node"`
+	AddTime           = `.time = format_timestamp!(.timestamp, format: "%FT%T%:z")`
 
 	FixJournalLogLevel = `
 if .PRIORITY == "8" || .PRIORITY == 8 {
@@ -108,6 +109,7 @@ func JournalLogs(inputs, id string) []framework.Element {
 				SystemU,
 				AddTime,
 				FixTimestampField,
+				LogSourceTypeNode,
 			}), "\n\n"),
 		},
 	}

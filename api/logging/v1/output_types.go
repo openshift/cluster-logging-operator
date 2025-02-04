@@ -83,6 +83,11 @@ const (
 	LogGroupByNamespaceUUID LogGroupByType = "namespaceUUID"
 )
 
+const (
+	SyslogRFC3164 string = "RFC3164"
+	SyslogRFC5424 string = "RFC5424"
+)
+
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
 	// Severity to set on outgoing syslog records.

@@ -90,6 +90,7 @@ if ._internal.log_type != "audit" {
 	SetLogSourceOnRoot  = ".log_source = ._internal.log_source"
 	SetKubernetesOnRoot = `
 .kubernetes = ._internal.kubernetes
+.kubernetes.container_iostream = ._internal.stream
 del(.kubernetes.node_labels)
 del(.kubernetes.container_image_id)
 del(.kubernetes.pod_ips)

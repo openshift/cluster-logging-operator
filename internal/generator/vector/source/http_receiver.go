@@ -49,11 +49,11 @@ func NewItemsTransform(id, inputs string) (framework.Element, string) {
 if exists(.items) {
     r = array([])
     for_each(array!(.items)) -> |_index, i| {
-      r = push(r, {"_internal": {"structured": i}})
+      r = push(r, {"structured": i})
     }
     . = r
 } else {
-  . = {"_internal": {"structured": .}}
+  . = {"structured": .}
 }
 `,
 	}, itemsID

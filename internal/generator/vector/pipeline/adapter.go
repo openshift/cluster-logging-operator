@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
 	"os"
 	"strconv"
@@ -85,7 +86,8 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 func addPostFilters(p *Pipeline) {
 
 	var postFilters []string
-	if viaq.HasJournalSource(p.inputSpecs) {
+	inputs := internalobs.Inputs(p.inputSpecs)
+	if inputs.HasJournalSource() {
 		postFilters = append(postFilters, viaq.ViaqJournal)
 		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
 			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
@@ -105,7 +107,7 @@ func addPostFilters(p *Pipeline) {
 			return viaq.New(id, inputs, p.inputSpecs)
 		},
 	}
-	if viaq.HasContainerSource(p.inputSpecs) {
+	if inputs.HasContainerSource() {
 		postFilters = append(postFilters, viaq.ViaqDedot)
 		p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
 			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},

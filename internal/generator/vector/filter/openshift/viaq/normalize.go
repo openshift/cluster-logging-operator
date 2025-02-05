@@ -2,8 +2,8 @@ package viaq
 
 const (
 	HandleEventRouterLog = `
-pod_name = string!(._internal.kubernetes.pod_name)
-if starts_with(pod_name, "eventrouter-") {
+
+if exists(._internal.kubernetes.pod_name) && starts_with(string!(._internal.kubernetes.pod_name), "eventrouter-") {
   parsed, err = parse_json(._internal.message)
   if err != null {
     log("Unable to process EventRouter log: " + err, level: "info")
@@ -86,7 +86,7 @@ if ._internal.log_type != "audit" {
 `
 
 	SetLogTypeOnRoot    = ".log_type = ._internal.log_type"
-	SetHostnameOnRoot   = `.hostname = ._internal.hostname`
+	SetHostnameOnRoot   = ` if exists(._internal.hostname) { .hostname = ._internal.hostname }`
 	SetLogSourceOnRoot  = ".log_source = ._internal.log_source"
 	SetKubernetesOnRoot = `
 .kubernetes = ._internal.kubernetes

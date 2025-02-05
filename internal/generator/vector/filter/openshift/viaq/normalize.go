@@ -71,9 +71,9 @@ if !exists(._internal.level) {
     } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
       level = "info"
     } else if match!(message, r'Debug|DEBUG|<debug>') {
-      .level = "debug"
+      level = "debug"
     } else if match!(message, r'Trace|TRACE|<trace>') {
-      .level = "trace"
+      level = "trace"
     }
   }
   ._internal.level = level

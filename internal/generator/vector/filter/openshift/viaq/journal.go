@@ -5,7 +5,6 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -84,10 +83,6 @@ if exists(._internal.UNIT) { ._internal.systemd.u.UNIT = del(._internal.UNIT) }
 `
 )
 
-func NewJournal(id string, inputs ...string) framework.Element {
-	return DropJournalDebugLogs(id, inputs...)
-}
-
 func journalLogs() string {
 	return fmt.Sprintf(`
 if ._internal.log_source == "%s" {
@@ -104,12 +99,4 @@ func journalLogsVRL() string {
 		`.systemd = ._internal.systemd`,
 		SetMessageOnRoot,
 	}), "\n\n")
-}
-
-func DropJournalDebugLogs(id string, inputs ...string) framework.Element {
-	return Filter{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		Condition:   `(._internal.log_source == "node" && ._internal.PRIORITY != "7" && ._internal.PRIORITY != 7)  || ._internal.log_source == "container" || ._internal.log_type == "audit"`,
-	}
 }

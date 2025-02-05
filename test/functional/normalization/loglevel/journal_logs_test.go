@@ -1,6 +1,7 @@
 package loglevel
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -40,7 +41,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		// Read line from Log Forward output
 		raw, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeElasticsearch))
 		if sets.NewString(options...).Has(expReadFail) {
-			Expect(err).To(Not(BeNil()), "Exp. to not find any logs")
+			Expect(err).To(Not(BeNil()), fmt.Sprintf("Exp. to not find any logs: %v", raw))
 			return
 		}
 
@@ -62,6 +63,6 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		Entry("should recognize a warning message", 4, "warning"),
 		Entry("should recognize a notice message", 5, "notice"),
 		Entry("should recognize an info message", 6, "info"),
-		Entry("should drop debug messages", 7, "debug", expReadFail),
+		Entry("should recognize a debug messages", 7, "debug"),
 	)
 })

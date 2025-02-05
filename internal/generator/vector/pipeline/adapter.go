@@ -85,20 +85,8 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 
 func addPostFilters(p *Pipeline) {
 
-	var postFilters []string
 	inputs := internalobs.Inputs(p.inputSpecs)
-	if inputs.HasJournalSource() {
-		postFilters = append(postFilters, viaq.ViaqJournal)
-		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
-			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
-			SuppliesTransform: true,
-			TranformFactory: func(id string, inputs ...string) framework.Element {
-				return viaq.NewJournal(id, inputs...)
-			},
-		}
-	}
-
-	postFilters = append(postFilters, viaq.Viaq)
+	postFilters := []string{viaq.Viaq}
 	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
 		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
 		SuppliesTransform: true,

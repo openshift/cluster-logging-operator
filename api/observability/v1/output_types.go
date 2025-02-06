@@ -477,6 +477,10 @@ type Elasticsearch struct {
 	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
+	// When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app|infra|audit)-write$
+	// where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
+	// with the openshiftLabels filter. See the product documentation for examples.
+	//
 	// Example:
 	//
 	//  1. foo-{.bar||"none"}

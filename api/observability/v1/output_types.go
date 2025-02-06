@@ -776,7 +776,7 @@ type LokiStackAuthentication struct {
 
 // LokiStack provides optional extra properties for `type: lokistack`
 // +kubebuilder:validation:XValidation:rule="!has(self.labelKeys) || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'labelKeys' cannot be set when data model is 'Otel'"
-// +kubebuilder:validation:XValidation:rule="!has(self.tuning) || self.tuning.compression != 'snappy' || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'snappy' compression cannot be used when data model is 'Otel'"
+// +kubebuilder:validation:XValidation:rule="!has(self.tuning) || !has(self.tuning.compression) || self.tuning.compression != 'snappy' || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'snappy' compression cannot be used when data model is 'Otel'"
 type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//

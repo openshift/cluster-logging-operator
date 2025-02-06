@@ -5,14 +5,13 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 const (
 	AddHostName      = `.hostname = del(._internal.host)`
 	AddJournalLogTag = `.tag = ".journal.system"`
-	AddTime          = `.time = ._internal."@timestamp"`
+	AddTime          = `.time = ._internal.timestamp`
 
 	FixJournalLogLevel = `
 if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {

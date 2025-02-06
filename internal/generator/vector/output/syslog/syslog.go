@@ -73,15 +73,15 @@ func (ser SyslogEncodingRemap) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
 
 {{if eq .RFC "RFC3164" -}}
-if .log_type == "infrastructure" && .log_source == "node" {
-    ._internal.syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
-	._internal.syslog.proc_id = to_string!(.systemd.t.PID || "")
+if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
+    ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
+	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
 }
-if .log_source == "container" {
-   	._internal.syslog.tag = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
+if ._internal.log_source == "container" {
+   	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
    	._internal.syslog.severity = .level
    	._internal.syslog.facility = "user"
    	#Remove non-alphanumeric characters
@@ -91,28 +91,28 @@ if .log_source == "container" {
 
 }
 if .log_type == "audit" {
-   ._internal.syslog.tag = .log_source
+   ._internal.syslog.tag = ._internal.log_source
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security" 
 }
 {{end}}
 
 {{if eq .RFC "RFC5424" -}}
-._internal.syslog.msg_id = .log_source
+._internal.syslog.msg_id = ._internal.log_source
 
-if .log_type == "infrastructure" && .log_source == "node" {
-	._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")
-	._internal.syslog.proc_id = to_string!(.systemd.t.PID||"-")
+if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
+	._internal.syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER||"-")
+	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID||"-")
 }
-if .log_source == "container" {
-   ._internal.syslog.app_name = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
-   ._internal.syslog.proc_id = to_string!(.kubernetes.pod_id||"-")
-   ._internal.syslog.severity = .level
+if ._internal.log_source == "container" {
+   ._internal.syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+   ._internal.syslog.proc_id = to_string!(._internal.kubernetes.pod_id||"-")
+   ._internal.syslog.severity = ._internal.level
    ._internal.syslog.facility = "user"
 }
-if .log_type == "audit" {
-   ._internal.syslog.app_name = .log_source
-   ._internal.syslog.proc_id = to_string!(.auditID || "-")
+if ._internal.log_type == "audit" {
+   ._internal.syslog.app_name = ._internal.log_source
+   ._internal.syslog.proc_id = to_string!(._internal.auditID || "-")
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security"
 }
@@ -125,8 +125,8 @@ if .log_type == "audit" {
 {{end}}
 
 {{if eq .RFC "RFC3164" -}}
-if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
- .tag = .tag + "[" + .proc_id  + "]"
+if exists(._internal.syslog.proc_id) && ._internal.syslog.proc_id != "-" && ._internal.syslog.proc_id != "" {
+  .tag = to_string!(._internal.syslog.tag||"") + "[" + to_string!(._internal.syslog.proc_id)  + "]"
 }
 {{end}}
 
@@ -228,19 +228,19 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 	if s.Facility == "" {
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "facility",
-			VRLString: commontemplate.TransformUserTemplateToVRL(`{._internal.syslog.facility || "user"}`),
+			VRLString: commontemplate.TransformUserTemplateToVRL(`{.syslog.facility || "user"}`),
 		})
 	}
 
 	if s.Severity == "" {
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "severity",
-			VRLString: commontemplate.TransformUserTemplateToVRL(`{._internal.syslog.severity || "informational"}`),
+			VRLString: commontemplate.TransformUserTemplateToVRL(`{.syslog.severity || "informational"}`),
 		})
 	}
 
 	if s.ProcId == "" {
-		s.ProcId = `{._internal.syslog.proc_id || "-"}`
+		s.ProcId = `{.syslog.proc_id || "-"}`
 	}
 	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 		Field:     "proc_id",
@@ -249,7 +249,7 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 
 	if s.RFC == obs.SyslogRFC3164 {
 		if s.AppName == "" {
-			s.AppName = `{._internal.syslog.tag || ""}`
+			s.AppName = `{.syslog.tag || ""}`
 		}
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "tag",
@@ -258,7 +258,7 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 
 	} else {
 		if s.AppName == "" {
-			s.AppName = `{._internal.syslog.app_name || "-"}`
+			s.AppName = `{.syslog.app_name || "-"}`
 		}
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "app_name",
@@ -266,7 +266,7 @@ func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
 		})
 
 		if s.MsgId == "" {
-			s.MsgId = `{._internal.syslog.msg_id || "-"}`
+			s.MsgId = `{.syslog.msg_id || "-"}`
 		}
 		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
 			Field:     "msg_id",

@@ -24,24 +24,24 @@ spec:
       elasticsearch:
         url: 'https://example-elasticsearch-secure.com:9200'
         version: 8  # <1>
-        index: '{.log_type||"undefined"}'  # <2>
+        index: '{.log_type||"undefined"}'  # <2> <3>
         authentication:
           username:
             key: username
-            secretName: es-secret  # <3>
+            secretName: es-secret  # <4>
           password:
             key: password
-            secretName: es-secret  # <3>
+            secretName: es-secret  # <4>
       tls:
         ca:
-          key: ca-bundle.crt       # <4>
+          key: ca-bundle.crt       # <5>
           secretName: es-secret
         certificate:
           key: tls.crt
-          secretName: es-secret    # <4>
+          secretName: es-secret    # <5>
         key:
           key: tls.key
-          secretName: es-secret    # <4>
+          secretName: es-secret    # <5>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -53,8 +53,11 @@ spec:
 +
 <1> Forwarding to an external Elasticsearch of version 8.x or greater requires the `version` field to be specified otherwise this can be omitted.
 <2> `index` is set to read the field value `.log_type` and falls back to "unknown" if not found
-<3> Use username and password to authenticate to the server
-<4> Enable Mutual Transport Layer Security (mTLS) between collector and elasticsearch, the spec identifies the keys and secret to the respective certificates that they represent.
+<3> When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern `^(app|infra|audit)-write$`
+    where the prefix depends upon the `log_type`. This requires defining a distinct output for each log type or distinct
+    pipelines with the `openshiftLabels` filter. See the product documentation for examples.
+<4> Use username and password to authenticate to the server
+<5> Enable Mutual Transport Layer Security (mTLS) between collector and elasticsearch, the spec identifies the keys and secret to the respective certificates that they represent.
 
 == Custom Index Configuration
 

@@ -1,0 +1,32 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  outputs:
+    - lokiStack:
+        authentication:
+          token:
+            from: serviceAccount
+        target:
+          name: lokistack-dev
+          namespace: openshift-logging
+        tuning:
+          compression: snappy
+        dataModel: Otel
+      name: logging-loki
+      tls:
+        ca:
+          configMapName: openshift-service-ca.crt
+          key: service-ca.crt
+      type: lokiStack
+  pipelines:
+      - inputRefs:
+          - application
+          - infrastructure
+          - audit
+        name: logs-to-loki
+        outputRefs:
+          - logging-loki
+  serviceAccount:
+    name: clf-validation-test

@@ -82,7 +82,7 @@ if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
 }
 if ._internal.log_source == "container" {
    	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-   	._internal.syslog.severity = .level
+   	._internal.syslog.severity = ._internal.level
    	._internal.syslog.facility = "user"
    	#Remove non-alphanumeric characters
    	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
@@ -125,8 +125,8 @@ if ._internal.log_type == "audit" {
 {{end}}
 
 {{if eq .RFC "RFC3164" -}}
-if exists(._internal.syslog.proc_id) && ._internal.syslog.proc_id != "-" && ._internal.syslog.proc_id != "" {
-  .tag = to_string!(._internal.syslog.tag||"") + "[" + to_string!(._internal.syslog.proc_id)  + "]"
+if .proc_id != "-" && .proc_id != "" {
+  .tag = to_string(.tag||"") + "[" + to_string(.proc_id)  + "]"
 }
 {{end}}
 

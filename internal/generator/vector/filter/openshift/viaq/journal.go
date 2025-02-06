@@ -11,7 +11,6 @@ import (
 const (
 	AddHostName      = `.hostname = del(._internal.host)`
 	AddJournalLogTag = `.tag = ".journal.system"`
-	AddTime          = `.time = ._internal.timestamp`
 
 	FixJournalLogLevel = `
 if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
@@ -94,7 +93,6 @@ func journalLogsVRL() string {
 	return strings.Join(helpers.TrimSpaces([]string{
 		AddJournalLogTag,
 		AddHostName,
-		AddTime,
 		`.systemd = ._internal.systemd`,
 		SetMessageOnRoot,
 	}), "\n\n")

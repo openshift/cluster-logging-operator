@@ -107,7 +107,7 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 func NewJournalInfrastructureLogTemplate() types.JournalLog {
 	return types.JournalLog{
 		ViaQCommon: types.ViaQCommon{
-			TimestampLegacy:  time.Time{},
+			TimestampLegacy: time.Time{},
 
 			Timestamp: time.Time{},
 			Message:   "*",

@@ -212,7 +212,8 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {
 	internalobs.SetCondition(&instance.Status.Conditions, ready)
-	if err := k8Client.Status().Update(context.TODO(), instance); err != nil {
+	patch := client.MergeFrom(instance.DeepCopy())
+	if err := k8Client.Status().Patch(context.TODO(), instance, patch); err != nil {
 		log.Error(err, "clusterlogforwarder-controller error updating status", "status", instance.Status)
 	}
 }

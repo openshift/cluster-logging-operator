@@ -1,12 +1,5 @@
 package viaq
 
-import (
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
-)
-
 const (
 	VRLDedotLabels = `
 if ._internal.log_source == "container" {
@@ -32,16 +25,3 @@ if exists(._internal.openshift.labels) {for_each(object!(._internal.openshift.la
 }}
 `
 )
-
-func NewDedot(id string, inputs ...string) Element {
-	return DedotLabels(id, inputs...)
-}
-
-// DedotLabels replaces dots and forward slashes with underscores
-func DedotLabels(id string, inputs ...string) Element {
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         strings.Join([]string{VRLDedotLabels}, "\n"),
-	}
-}

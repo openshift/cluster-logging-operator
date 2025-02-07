@@ -11,9 +11,7 @@ import (
 )
 
 const (
-	Viaq      = "viaq"
-	ViaqDedot = "viaqdedot"
-
+	Viaq               = "viaq"
 	logSourceContainer = string(obs.ApplicationSourceContainer)
 )
 
@@ -51,6 +49,7 @@ if .log_source == "%s" {
 }
 `, logSourceContainer, strings.Join(helpers.TrimSpaces([]string{
 		HandleEventRouterLog,
+		VRLDedotLabels,
 		SetKubernetesOnRoot,
 		SetMessageOnRoot,
 	}), "\n"))

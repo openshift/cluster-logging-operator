@@ -112,8 +112,8 @@ var _ = Describe("vector syslog clf output", func() {
 			spec.Syslog = &obs.Syslog{
 				URL:        "tls://logserver:6514",
 				RFC:        obs.SyslogRFC5424,
-				Facility:   "$$.message.facility",
-				Severity:   "$$.message.severity",
+				Facility:   `{.facility||"none"}`,
+				Severity:   `{.severity||"none"}`,
 				AppName:    `{.app_name||"none"}`,
 				MsgId:      `{.msg_id||"none"}`,
 				ProcId:     `{.proc_id||"none"}`,

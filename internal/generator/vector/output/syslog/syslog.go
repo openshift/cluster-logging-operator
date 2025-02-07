@@ -161,12 +161,6 @@ func (se SyslogEncoding) Template() string {
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "{{.RFC}}"
-{{ if .Facility }}
-facility = "{{.Facility}}"
-{{ end }}
-{{ if .Severity }}
-severity = "{{.Severity}}"
-{{ end }}
 {{ .AddLogSource }}
 {{ .PayloadKey }}
 {{end}}`
@@ -183,7 +177,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		}
 	}
 	parseEncodingID := vectorhelpers.MakeID(id, "parse_encoding")
-	templateFieldPairs := getEncodingTemplatesAndFields(o.Syslog)
+	templateFieldPairs := getEncodingTemplatesAndFields(*o.Syslog)
 	u, _ := url.Parse(o.Syslog.URL)
 	sink := Output(id, o, []string{parseEncodingID}, secrets, op, u.Scheme, u.Host)
 	if strategy != nil {
@@ -220,24 +214,26 @@ func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.
 
 // getEncodingTemplatesAndFields determines which encoding fields are templated
 // so that the templates can be parsed to appropriate VRL
-func getEncodingTemplatesAndFields(s *obs.Syslog) EncodingTemplateField {
+func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 	templateFields := EncodingTemplateField{
 		FieldVRLList: []FieldVRLStringPair{},
 	}
 
 	if s.Facility == "" {
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "facility",
-			VRLString: commontemplate.TransformUserTemplateToVRL(`{._internal.syslog.facility || "user"}`),
-		})
+		s.Facility = `{._internal.syslog.facility || "user"}`
 	}
+	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+		Field:     "facility",
+		VRLString: commontemplate.TransformUserTemplateToVRL(s.Facility),
+	})
 
 	if s.Severity == "" {
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "severity",
-			VRLString: commontemplate.TransformUserTemplateToVRL(`{._internal.syslog.severity || "informational"}`),
-		})
+		s.Severity = `{._internal.syslog.severity || "informational"}`
 	}
+	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+		Field:     "severity",
+		VRLString: commontemplate.TransformUserTemplateToVRL(s.Severity),
+	})
 
 	if s.ProcId == "" {
 		s.ProcId = `{._internal.syslog.proc_id || "-"}`

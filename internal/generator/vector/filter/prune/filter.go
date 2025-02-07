@@ -22,7 +22,7 @@ var (
 	//go:embed prune.vrl.tmpl
 	pruneVRLTemplateStr string
 
-	dedottedFields = []string{"._internal.kubernetes.labels.", "._internal.kubernetes.namespace_labels."}
+	dedottedFields = []string{".kubernetes.labels.", ".kubernetes.namespace_labels."}
 )
 
 type PruneFilter obs.PruneFilterSpec

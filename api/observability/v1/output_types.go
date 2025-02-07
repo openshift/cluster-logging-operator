@@ -1083,6 +1083,7 @@ type Syslog struct {
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Severity",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Severity string `json:"severity,omitempty"`
 
@@ -1099,6 +1100,7 @@ type Syslog struct {
 	//     local0 local1 local2 local3 local4 local5 local6 local7
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Facility",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Facility string `json:"facility,omitempty"`
 

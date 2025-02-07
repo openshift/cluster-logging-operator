@@ -21,6 +21,8 @@ if .log_type == "audit" {
     ._internal.syslog.severity = "informational"
     ._internal.syslog.facility = "security"
 }
+.facility = "kern"
+.severity = "critical"
 .proc_id = "procID"
 .tag = "appName"
 if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
@@ -43,9 +45,9 @@ mode = "udp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc3164"
-facility = "kern"
-severity = "critical"
 add_log_source = false
 payload_key = "payload_key"
+facility = "$$.message.facility"
+severity = "$$.message.severity"
 proc_id = "$$.message.proc_id"
 tag = "$$.message.tag"

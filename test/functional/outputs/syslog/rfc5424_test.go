@@ -95,8 +95,8 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
 				ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
-					spec.Syslog.Facility = "$.message.facility_key"
-					spec.Syslog.Severity = "$.message.severity_key"
+					spec.Syslog.Facility = `{.facility_key||"notfound"}`
+					spec.Syslog.Severity = `{.severity_key||"notfound"}`
 				})
 			Expect(framework.Deploy()).To(BeNil())
 

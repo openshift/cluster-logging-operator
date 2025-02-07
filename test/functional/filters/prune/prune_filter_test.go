@@ -152,7 +152,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(err).To(Succeed())
 		})
 
-		FIt("should send to Kafka", func() {
+		It("should send to Kafka", func() {
 			pipelineBuilder.ToKafkaOutput()
 			f.Secrets = append(f.Secrets, kafka.NewBrokerSecret(f.Namespace))
 
@@ -166,7 +166,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeKafka)
 		})
 
-		FIt("should send to HTTP", func() {
+		It("should send to HTTP", func() {
 			pipelineBuilder.ToHttpOutput()
 			Expect(f.Deploy()).To(BeNil())
 
@@ -178,7 +178,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(raw).ToNot(BeEmpty())
 		})
 
-		FIt("should send to Syslog", func() {
+		It("should send to Syslog", func() {
 			pipelineBuilder.ToSyslogOutput(obs.SyslogRFC5424)
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)

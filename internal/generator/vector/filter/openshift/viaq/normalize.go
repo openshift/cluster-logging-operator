@@ -92,7 +92,7 @@ if ._internal.log_type != "audit" {
 .kubernetes = ._internal.kubernetes
 .kubernetes.container_iostream = ._internal.stream
 if exists(._internal.dedot_labels) {.kubernetes.labels = del(._internal.dedot_labels) }
-if exists(._internal.dedot_namespace_labels) {.kubernetes.labels = del(._internal.dedot_namespace_labels) }
+if exists(._internal.dedot_namespace_labels) {.kubernetes.namespace_labels = del(._internal.dedot_namespace_labels) }
 del(.kubernetes.node_labels)
 del(.kubernetes.container_image_id)
 del(.kubernetes.pod_ips)

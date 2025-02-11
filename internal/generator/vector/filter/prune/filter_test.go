@@ -38,7 +38,7 @@ var _ = Describe("prune functions", func() {
 			expectedString := `[["_internal","kubernetes","labels","foo"]]`
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 		})
-		FIt("should generate path segments for the original and dedotted labels", func() {
+		It("should generate path segments for the original and dedotted labels", func() {
 			pathExpression := []obs.FieldPath{`.kubernetes.labels."bar/baz0-9.test"`}
 			expectedString := `[["_internal","kubernetes","labels","bar/baz0-9.test"],["_internal","kubernetes","labels","bar_baz0-9_test"]]`
 			Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString), generateQuotedPathSegmentArrayStr(pathExpression))

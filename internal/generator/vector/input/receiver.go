@@ -22,7 +22,7 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourc
 		els = append(els,
 			source.NewSyslogSource(base, resNames.GenerateInputServiceName(spec.Name), spec),
 			tlsConfig,
-			NewJournalInternalNormalization(metaID, obs.ReceiverTypeSyslog, setEnvelopeToStructured, base,
+			NewJournalInternalNormalization(metaID, obs.InfrastructureSourceNode, setEnvelopeToStructured, base,
 				`._internal.level = ._internal.severity || "unknown"`,
 			),
 		)

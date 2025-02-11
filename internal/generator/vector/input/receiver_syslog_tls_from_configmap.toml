@@ -13,6 +13,9 @@ ca_file = "/var/run/ocp-collector/config/instance-myreceiver/ca.crt"
 type = "remap"
 inputs = ["input_myreceiver"]
 source = '''
-  .log_source = "node"
-  .log_type = "infrastructure"
+  . = {"_internal": {"structured": .}}
+  ._internal.log_source = "node"
+  ._internal.log_type = "infrastructure"
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.level = ._internal.severity || "unknown"
 '''

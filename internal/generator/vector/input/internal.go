@@ -12,9 +12,15 @@ import (
 )
 
 const (
-	fmtLogType = `
-._internal.log_source = %q
-._internal.log_type = %q
+	fmtLogSource     = `._internal.log_source = %q`
+	fmtLogType       = `._internal.log_type = %q`
+	logTypeContainer = `
+  # If namespace is infra, label log_type as infra
+  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      .log_type = "infrastructure"
+  } else {
+      .log_type = "application"
+  }
 `
 	parseStructured = `
 ._internal.structured = parse_json!(string!(._internal.message))
@@ -25,7 +31,6 @@ const (
 	setEnvelope             = `. = {"_internal": .}`
 	setEnvelopeToStructured = `. = {"_internal": {"structured": .}}`
 	setHostName             = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
-	setTimestampField       = `if exists(._internal.timestamp) {._internal."@timestamp" = ._internal.timestamp}`
 )
 
 // NewAuditInternalNormalization returns configuration elements to normalize audit log entries to an internal, common data model
@@ -35,7 +40,8 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 		vrls = append(vrls, parseStructured)
 	}
 	vrls = append(vrls,
-		fmt.Sprintf(fmtLogType, logSource, obs.InputTypeAudit),
+		fmt.Sprintf(fmtLogSource, logSource),
+		fmt.Sprintf(fmtLogType, obs.InputTypeAudit),
 		setHostName,
 		setClusterID,
 	)
@@ -49,9 +55,14 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 
 // NewInternalNormalization returns configuration elements to normalize log entries to an internal, common data model
 func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
+	logTypeVRL := fmt.Sprintf(fmtLogType, logType)
+	if logSource == obs.InfrastructureSourceContainer {
+		logTypeVRL = logTypeContainer
+	}
 	vrls := []string{
 		setEnvelope,
-		fmt.Sprintf(fmtLogType, logSource, logType),
+		fmt.Sprintf(fmtLogSource, logSource),
+		logTypeVRL,
 		setHostName,
 		setClusterID,
 		viaq.SetLogLevel,
@@ -68,7 +79,8 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 func NewJournalInternalNormalization(id string, logSource interface{}, envelopeVrl, inputs string, addVRLs ...string) framework.Element {
 	vrls := []string{
 		envelopeVrl,
-		fmt.Sprintf(fmtLogType, logSource, obs.InputTypeInfrastructure),
+		fmt.Sprintf(fmtLogSource, logSource),
+		fmt.Sprintf(fmtLogType, obs.InputTypeInfrastructure),
 		setClusterID,
 	}
 	vrls = append(vrls, addVRLs...)

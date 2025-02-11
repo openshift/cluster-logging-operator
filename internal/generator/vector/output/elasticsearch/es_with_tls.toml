@@ -13,7 +13,7 @@ source = '''
 type = "remap"
 inputs = ["es_1_add_id"]
 source = '''
-._internal.es_1_index = to_string!(.log_type||"none")
+._internal.es_1_index = to_string!(._internal.log_type||"none")
 '''
 
 [sinks.es_1]

@@ -16,10 +16,10 @@ const (
 	fmtLogType       = `._internal.log_type = %q`
 	logTypeContainer = `
   # If namespace is infra, label log_type as infra
-  if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      .log_type = "infrastructure"
+  if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+      ._internal.log_type = "infrastructure"
   } else {
-      .log_type = "application"
+      ._internal.log_type = "application"
   }
 `
 	parseStructured = `

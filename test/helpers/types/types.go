@@ -169,14 +169,13 @@ type OpenshiftMeta struct {
 	Sequence OptionalInt `json:"sequence,omitempty"`
 }
 
-// Application Logs are container logs from all namespaces except "openshift" and "openshift-*" namespaces
+// ApplicationLog are container logs from all namespaces except "openshift" and "openshift-*" namespaces
 type ApplicationLog ContainerLog
 
 // Infrastructure logs are
 // - Journal logs
 // - logs from "openshift" and "openshift-*" namespaces
 
-// InfraContainerLog
 // InfraContainerLog logs are container logs from "openshift" and "openshift-*" namespaces
 type InfraContainerLog ContainerLog
 
@@ -285,42 +284,6 @@ type ViaQCommon struct {
 	Openshift OpenshiftMeta `json:"openshift,omitempty"`
 }
 
-// JournalLog is linux journal logs
-type JournalLog struct {
-	ViaQCommon          `json:",inline,omitempty"`
-	STREAMID            string  `json:"_STREAM_ID,omitempty"`
-	SYSTEMDINVOCATIONID string  `json:"_SYSTEMD_INVOCATION_ID,omitempty"`
-	Systemd             Systemd `json:"systemd,omitempty"`
-}
-
-type T struct {
-	BOOTID              string `json:"BOOT_ID,omitempty"`
-	CAPEFFECTIVE        string `json:"CAP_EFFECTIVE,omitempty"`
-	CMDLINE             string `json:"CMDLINE,omitempty"`
-	COMM                string `json:"COMM,omitempty"`
-	EXE                 string `json:"EXE,omitempty"`
-	GID                 string `json:"GID,omitempty"`
-	MACHINEID           string `json:"MACHINE_ID,omitempty"`
-	PID                 string `json:"PID,omitempty"`
-	SELINUXCONTEXT      string `json:"SELINUX_CONTEXT,omitempty"`
-	STREAMID            string `json:"STREAM_ID,omitempty"`
-	SYSTEMDCGROUP       string `json:"SYSTEMD_CGROUP,omitempty"`
-	SYSTEMDINVOCATIONID string `json:"SYSTEMD_INVOCATION_ID,omitempty"`
-	SYSTEMDSLICE        string `json:"SYSTEMD_SLICE,omitempty"`
-	SYSTEMDUNIT         string `json:"SYSTEMD_UNIT,omitempty"`
-	TRANSPORT           string `json:"TRANSPORT,omitempty"`
-	UID                 string `json:"UID,omitempty"`
-}
-
-type U struct {
-	SYSLOGIDENTIFIER string `json:"SYSLOG_IDENTIFIER,omitempty"`
-}
-
-type Systemd struct {
-	T T `json:"t,omitempty"`
-	U U `json:"u,omitempty"`
-}
-
 // InfraLog is union of JournalLog and InfraContainerLog
 type InfraLog struct {
 	Docker              Docker           `json:"docker,omitempty"`
@@ -373,18 +336,16 @@ type AuditLinux struct {
 
 // OVN Audit log
 type OVNAuditLog struct {
-	Hostname         string           `json:"hostname"`
-	Message          string           `json:"message,omitempty"`
-	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
-	TimestampLegacy  time.Time        `json:"@timestamp,omitempty"`
-	Timestamp        time.Time        `json:"timestamp,omitempty"`
-	LogType          string           `json:"log_type,omitempty"`
-	LogSource        string           `json:"log_source,omitempty"`
-	ViaqIndexName    string           `json:"viaq_index_name"`
-	ViaqMsgID        string           `json:"viaq_msg_id"`
-	Kubernetes       Kubernetes       `json:"kubernetes"`
-	Openshift        OpenshiftMeta    `json:"openshift"`
-	Level            string           `json:"level,omitempty"`
+	Hostname        string        `json:"hostname"`
+	Message         string        `json:"message,omitempty"`
+	TimestampLegacy time.Time     `json:"@timestamp,omitempty"`
+	Timestamp       time.Time     `json:"timestamp,omitempty"`
+	LogType         string        `json:"log_type,omitempty"`
+	LogSource       string        `json:"log_source,omitempty"`
+	ViaqIndexName   string        `json:"viaq_index_name,omitempty"`
+	ViaqMsgID       string        `json:"viaq_msg_id,omitempty"`
+	Openshift       OpenshiftMeta `json:"openshift,omitempty"`
+	Level           string        `json:"level,omitempty"`
 }
 
 // AuditLogCommon is common to k8s and openshift auditlogs

@@ -170,9 +170,9 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")
 			Expect(getPri(fields)).To(Equal(PRI_15))
-			Expect(getAppName(fields)).To(Equal("rec_appname"))
-			Expect(getProcID(fields)).To(Equal("rec_procid"))
-			Expect(getMsgID(fields)).To(Equal("rec_msgid"))
+			Expect(getAppName(fields)).To(Equal("rec_appname"), outputlogs[0])
+			Expect(getProcID(fields)).To(Equal("rec_procid"), outputlogs[0])
+			Expect(getMsgID(fields)).To(Equal("rec_msgid"), outputlogs[0])
 		})
 
 		It("RFC5424: should allow combination of static + dynamic setting of appname, procid, messageid from record", func() {
@@ -506,7 +506,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			for _, o := range outputlogs {
 				fmt.Printf("log received %s\n", o)
 			}
-			Expect(getTag(outputlogs[0])).To(Equal("myapp[1234]"))
+			Expect(getTag(outputlogs[0])).To(Equal("myapp[1234]"), outputlogs[0])
 		})
 
 		It("RFC5424: should take default values of appname, procid, messageid", func() {
@@ -553,7 +553,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			for _, o := range outputlogs {
 				fmt.Printf("log received %s\n", o)
 			}
-			Expect(getTag(outputlogs[0])).To(Equal("google-chrome.desktop[3194]"))
+			Expect(getTag(outputlogs[0])).To(Equal("google-chrome.desktop[3194]"), fmt.Sprintf("payload: %s", outputlogs[0]))
 
 		})
 	})

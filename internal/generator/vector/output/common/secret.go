@@ -20,8 +20,8 @@ func (sec VectorSecret) Template() string {
 	return `{{define "` + sec.Name() + `" -}}
 # {{.Desc}}
 [secret.{{.ComponentID}}]
-type = "directory"
-path = "{{.BasePath}}"
+type = "file"
+base_path = "{{.BasePath}}"
 {{end}}`
 }
 

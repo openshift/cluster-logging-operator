@@ -9,7 +9,7 @@ import (
 )
 
 var _ = Describe("prune functions", func() {
-	DescribeTable("generates correct array of path segments", func(path string, expectedArray []string) {
+	DescribeTable("#splitPath generates correct array of path segments", func(path string, expectedArray []string) {
 		Expect(splitPath(path)).To(Equal(expectedArray))
 	},
 		Entry("with single segment", `.foo`, []string{"foo"}),
@@ -19,19 +19,19 @@ var _ = Describe("prune functions", func() {
 		Entry("with 2 non quoted segments and one quoted segment ", `.foo.bar."baz111-22/333"`, []string{"foo", "bar", `"baz111-22/333"`}),
 		Entry("with multiple quoted and unquoted segments", `.foo."@some"."d.f.g.o111-22/333".foo_bar`, []string{"foo", `"@some"`, `"d.f.g.o111-22/333"`, "foo_bar"}))
 
-	DescribeTable("generates array with path segments quoted", func(pathSegments []string, expectedArray []string) {
+	DescribeTable("#quotePathSegments generates array with path segments quoted", func(pathSegments []string, expectedArray []string) {
 		Expect(quotePathSegments(pathSegments)).To(Equal(expectedArray))
 	},
 		Entry("", []string{"foo"}, []string{`"foo"`}),
 		Entry("", []string{"foo", "bar", `"foo-bar"`}, []string{`"foo"`, `"bar"`, `"foo-bar"`}),
 	)
 
-	It("should generate string of an array of quoted path segments from dot-delimited path expressions", func() {
+	It("#generateQuotedPathSegmentArrayStr should generate string of an array of quoted path segments from dot-delimited path expressions", func() {
 		pathExpression := []obs.FieldPath{`.foo.bar."foo.bar.baz-ok".foo123."bar/baz0-9.test"`, `.foo.bar`}
 		expectedString := `[["_internal","foo","bar","foo.bar.baz-ok","foo123","bar/baz0-9.test"],["_internal","foo","bar"]]`
 		Expect(generateQuotedPathSegmentArrayStr(pathExpression)).To(Equal(expectedString))
 	})
-	Context("for explicitly dedoted fields", func() {
+	Context("#generateQuotedPathSegmentArrayStr for explicitly dedoted fields", func() {
 
 		It("should do nothing special for path segments where the dedotted labels dont have dots", func() {
 			pathExpression := []obs.FieldPath{`.kubernetes.labels.foo`}
@@ -58,7 +58,7 @@ var _ = Describe("prune functions", func() {
 				NotIn: []obs.FieldPath{`.kubernetes.labels."foo-bar/baz"`, ".level"},
 			}
 			Expect(NewFilter(spec).VRL()).To(matchers.EqualTrimLines(`
-notIn = [["_internal","kubernetes","labels","foo-bar/baz"],["_internal","level"]]
+notIn = [["_internal","kubernetes","labels","foo-bar/baz"],["_internal","kubernetes","labels","foo-bar_baz"],["_internal","level"]]
 
 # Prune keys not in notIn list
 new_object = {}

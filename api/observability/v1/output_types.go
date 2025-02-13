@@ -210,15 +210,41 @@ type BaseOutputTuningSpec struct {
 
 	// MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 	//
+	// A duration string is a sequence of decimal numbers and unit suffixes,
+	// such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Minimum Retry Duration"
 	MinRetryDuration *time.Duration `json:"minRetryDuration,omitempty"`
 
 	// MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 	//
+	// A duration string is a sequence of decimal numbers and unit suffixes,
+	// such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Maximum Retry Duration"
 	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`
+
+	// MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+	// It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+	//
+	// NOTE: It is not recommended to set this field unless you understand the disk space
+	// requirements, and have done tests to validate performance under realistic conditions.
+	//
+	// The following are potential risks to bear in mind:
+	//
+	// - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+	//   Filling up that file system can have severe consequences for the entire node.
+	//   The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+	//
+	// - Larger buffers can increase latency and recovery times from a period of overload.
+	//   If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+	//   If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+	//
+	// [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+	// [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+	MaxBufferSize *resource.Quantity `json:"maxBufferSize,omitempty"`
 }
 
 // DeliveryMode sets the delivery mode for log forwarding.
@@ -650,6 +676,13 @@ type KafkaTuningSpec struct {
 	// +kubebuilder:validation:Enum:=none;snappy;zstd;lz4
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
+
+	// MessageTimeout messages that are waiting to be sent are dropped after this timeout.
+	// Used to ensure that newer messages are not blocked indefinitely by older ones.
+	//
+	// A duration string is a sequence of decimal numbers and a unit suffix,
+	// such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	MessageTimeout *time.Duration `json:"messageTimeout,omitempty"`
 }
 
 // KafkaAuthentication contains configuration for authenticating requests to a Kafka output.

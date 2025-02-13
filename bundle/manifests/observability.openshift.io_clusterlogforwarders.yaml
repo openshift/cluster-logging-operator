@@ -686,7 +686,7 @@ spec:
                               description: |-
                                 Format is the format of incoming log data.
 
-                                The current supported format is `kubeAPIAudit`.
+                                The only currently supported format is `kubeAPIAudit`.
                               enum:
                               - kubeAPIAudit
                               type: string
@@ -913,9 +913,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -927,8 +955,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -1106,9 +1137,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -1120,8 +1179,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -1255,9 +1317,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -1269,8 +1359,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -1370,9 +1463,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -1384,8 +1505,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -1518,9 +1642,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -1532,8 +1684,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -1661,6 +1816,15 @@ spec:
                                 terms of bytes of a single "send" to the output.
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
+                            messageTimeout:
+                              description: |-
+                                MessageTimeout messages that are waiting to be sent are dropped after this timeout.
+                                Used to ensure that newer messages are not blocked indefinitely by older ones.
+
+                                A duration string is a sequence of decimal numbers and a unit suffix,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+                              format: int64
+                              type: integer
                           type: object
                         url:
                           description: |-
@@ -1825,9 +1989,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -1839,8 +2031,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -2049,9 +2244,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -2063,8 +2286,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -2180,9 +2406,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -2194,8 +2448,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object
@@ -2297,9 +2554,37 @@ spec:
                               - AtLeastOnce
                               - AtMostOnce
                               type: string
+                            maxBufferSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+                                It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+                                NOTE: It is not recommended to set this field unless you understand the disk space
+                                requirements, and have done tests to validate performance under realistic conditions.
+
+                                The following are potential risks to bear in mind:
+
+                                - With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+                                  Filling up that file system can have severe consequences for the entire node.
+                                  The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+                                - Larger buffers can increase latency and recovery times from a period of overload.
+                                  If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+                                  If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+                                [Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+                                [Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             maxRetryDuration:
-                              description: MaxRetryDuration is the maximum time to
-                                wait between retry attempts after a delivery failure.
+                              description: |-
+                                MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                             maxWrite:
@@ -2311,8 +2596,11 @@ spec:
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
                             minRetryDuration:
-                              description: MinRetryDuration is the minimum time to
-                                wait between attempts to retry after delivery a failure.
+                              description: |-
+                                MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+                                A duration string is a sequence of decimal numbers and unit suffixes,
+                                such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
                               format: int64
                               type: integer
                           type: object

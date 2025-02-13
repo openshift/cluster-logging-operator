@@ -384,7 +384,7 @@ spec:
           Format is the format of incoming log data.
 
 
-          The current supported format is `kubeAPIAudit`.
+          The only currently supported format is `kubeAPIAudit`.
         displayName: Data Format
         path: inputs[0].receiver.http.format
       - description: Port the Receiver listens on. It must be a value between 1024
@@ -481,16 +481,24 @@ spec:
         path: outputs[0].azureMonitor.tuning
       - displayName: Delivery Mode
         path: outputs[0].azureMonitor.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].azureMonitor.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].azureMonitor.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].azureMonitor.tuning.minRetryDuration
       - description: Cloudwatch configures forwarding log events to AWS Cloudwatch
@@ -620,16 +628,24 @@ spec:
         path: outputs[0].cloudwatch.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].cloudwatch.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].cloudwatch.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].cloudwatch.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].cloudwatch.tuning.minRetryDuration
       - description: |-
@@ -738,16 +754,24 @@ spec:
         path: outputs[0].elasticsearch.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].elasticsearch.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].elasticsearch.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].elasticsearch.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].elasticsearch.tuning.minRetryDuration
       - description: |-
@@ -829,16 +853,24 @@ spec:
         path: outputs[0].googleCloudLogging.tuning
       - displayName: Delivery Mode
         path: outputs[0].googleCloudLogging.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].googleCloudLogging.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].googleCloudLogging.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].googleCloudLogging.tuning.minRetryDuration
       - description: HTTP configures forwarding log events to an HTTP server
@@ -918,16 +950,24 @@ spec:
         path: outputs[0].http.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].http.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].http.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].http.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].http.tuning.minRetryDuration
       - description: |-
@@ -1180,16 +1220,24 @@ spec:
         path: outputs[0].loki.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].loki.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].loki.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].loki.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].loki.tuning.minRetryDuration
       - description: |-
@@ -1374,16 +1422,24 @@ spec:
         path: outputs[0].lokiStack.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].lokiStack.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].lokiStack.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].lokiStack.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].lokiStack.tuning.minRetryDuration
       - description: Name used to refer to the output from a `pipeline`.
@@ -1458,16 +1514,24 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:text
       - displayName: Delivery Mode
         path: outputs[0].otlp.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].otlp.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].otlp.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].otlp.tuning.minRetryDuration
       - description: |-
@@ -1555,16 +1619,24 @@ spec:
         path: outputs[0].splunk.tuning.compression
       - displayName: Delivery Mode
         path: outputs[0].splunk.tuning.deliveryMode
-      - description: MaxRetryDuration is the maximum time to wait between retry attempts
-          after a delivery failure.
+      - description: |-
+          MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Maximum Retry Duration
         path: outputs[0].splunk.tuning.maxRetryDuration
       - description: MaxWrite limits the maximum payload in terms of bytes of a single
           "send" to the output.
         displayName: Batch Size
         path: outputs[0].splunk.tuning.maxWrite
-      - description: MinRetryDuration is the minimum time to wait between attempts
-          to retry after delivery a failure.
+      - description: |-
+          MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+
+          A duration string is a sequence of decimal numbers and unit suffixes,
+          such as "300ms" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
         displayName: Minimum Retry Duration
         path: outputs[0].splunk.tuning.minRetryDuration
       - description: |-

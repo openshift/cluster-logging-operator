@@ -386,6 +386,7 @@ uri = "http://localhost:4318/v1/logs"
 method = "post"
 payload_prefix = "{\"resourceLogs\":"
 payload_suffix = "}"
+compression = "gzip"
 
 [sinks.output_otel_collector.encoding]
 codec = "json"

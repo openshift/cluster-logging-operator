@@ -2,9 +2,10 @@ package otlp
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -81,13 +82,14 @@ var _ = Describe("Generate vector config", func() {
 			nil,
 			"otlp_all.toml",
 		),
-		Entry("with tuning",
+		Entry("with base tuning and compression",
 			nil,
 			framework.NoOptions,
 			true,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Tuning = &obs.OTLPTuningSpec{
 					BaseOutputTuningSpec: *baseTune,
+					Compression:          "gzip",
 				}
 			},
 			"otlp_tuning.toml",

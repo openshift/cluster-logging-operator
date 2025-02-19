@@ -53,7 +53,7 @@ spec:
 . Output `type` is '*otlp*'
 . `tls` includes the standard certificate configuration or specify `insecureSkipVerify`: '*true*'
 . `otlp` `url` specify a valid host:port of the otel receiver and *MUST* terminate with "*/v1/logs*"
-. `otlp` `tuning` `compression` default value is "*gzip*". Specify "*none*" to turn compression off.
+. `otlp` `tuning` `compression` default value is "*none*". Specify "*gzip*" to turn compression on.
 . `otlp` `authentication` is optional and specifies a `token.from` and a value of "*serviceAccount*"
 .. The token can also be read from a secret
 .. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)

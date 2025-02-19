@@ -18,10 +18,10 @@ import (
 )
 
 type Otlp struct {
-	ComponentID      string
-	Inputs           string
-	URI              string
-	common.RootMixin //TODO: remove??
+	ComponentID string
+	Inputs      string
+	URI         string
+	common.RootMixin
 }
 
 func (p Otlp) Name() string {
@@ -42,7 +42,6 @@ payload_suffix = "}"
 `
 }
 
-// TODO: test this for otlp
 func (p *Otlp) SetCompression(algo string) {
 	p.Compression.Value = algo
 }
@@ -62,6 +61,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			elements.Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+
 	// TODO: create a pattern to filter by input so all this is not necessary
 	var els []Element
 	// Creates reroutes for 'container','node','auditd','kubeAPI','openshiftAPI','ovn'

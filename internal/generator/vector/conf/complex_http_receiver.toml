@@ -216,10 +216,11 @@ if .log_type == "audit" && .log_source == "auditd" {
   if err == null {
     sp, err = split(match2.ts_record,":")
     if err == null && length(sp) == 2 {
-        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
-        envelop |= {"record_id": sp[1]}
-        . |= {"audit.linux" : envelop}
-        . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+          ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+          if ts != "" { .timestamp = ts }
+          ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
+          envelop |= {"record_id": sp[1]}
+          . |= {"audit.linux" : envelop}
     }
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
@@ -227,7 +228,7 @@ if .log_type == "audit" && .log_source == "auditd" {
 
   .level = "default"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "kubeAPI" {
@@ -239,7 +240,7 @@ if .log_type == "audit" && .log_source == "kubeAPI" {
   del(.message)
   .k8s_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "openshiftAPI" {
@@ -251,7 +252,7 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
   del(.message)
   .openshift_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "ovn" {
@@ -309,7 +310,7 @@ if .log_type == "audit" && .log_source == "ovn" {
     }
   }
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "container" {
@@ -393,7 +394,7 @@ if .log_source == "container" {
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "node" {
@@ -476,7 +477,7 @@ if .log_source == "node" {
 
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

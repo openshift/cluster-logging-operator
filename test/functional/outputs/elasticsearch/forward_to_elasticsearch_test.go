@@ -60,7 +60,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			Expect(len(logs)).To(Equal(2))
 			//sort log by time before matching
 			sort.Slice(logs, func(i, j int) bool {
-				return logs[i].Timestamp.Before(logs[j].Timestamp)
+				return logs[i].TimestampLegacy.Before(logs[j].TimestampLegacy)
 			})
 
 			Expect(logs[0].Message).To(Equal(ukr + jp + ch))

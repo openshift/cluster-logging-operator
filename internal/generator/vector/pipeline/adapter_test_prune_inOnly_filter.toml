@@ -83,7 +83,7 @@ if .log_source == "container" {
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

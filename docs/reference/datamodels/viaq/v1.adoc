@@ -119,7 +119,24 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
+
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 |message
 
@@ -685,7 +702,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -772,6 +789,23 @@ a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipelin
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
 |viaq_index_name
 
 |string
@@ -811,7 +845,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 
@@ -1112,6 +1146,27 @@ Version is collector version information
 
 * string
 
+=== .timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
+=====  Type
+
+* string
+
 === .viaq_index_name
 
 ===== Description
@@ -1165,7 +1220,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -1251,6 +1306,23 @@ a|  Openshift specific metadata
 a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
+
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 |viaq_index_name
 
@@ -1321,7 +1393,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -1408,6 +1480,23 @@ a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipelin
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
 |viaq_index_name
 
 |string
@@ -1447,7 +1536,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 
@@ -1743,6 +1832,27 @@ ReceivedAt the time the collector received the log entry
 ===== Description
 
 Version is collector version information
+
+=====  Type
+
+* string
+
+=== .timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 
@@ -2091,7 +2201,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -2177,6 +2287,23 @@ a|  Openshift specific metadata
 a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
+
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 |viaq_index_name
 
@@ -2234,7 +2361,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -2321,6 +2448,23 @@ a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipelin
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
 |viaq_index_name
 
 |string
@@ -2360,7 +2504,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 
@@ -2661,6 +2805,27 @@ Version is collector version information
 
 * string
 
+=== .timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
+=====  Type
+
+* string
+
 === .viaq_index_name
 
 ===== Description
@@ -2727,6 +2892,12 @@ a|  *(optional)*
 |string
 
 a|  *(optional)* 
+
+|container_iostream
+
+|string
+
+a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 |container_name
 
@@ -2823,6 +2994,12 @@ a|  *(optional)*
 |string
 
 a|  *(optional)* 
+
+|container_iostream
+
+|string
+
+a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 |container_name
 
@@ -2921,6 +3098,16 @@ a|  PodName is the name of the pod
 ===== Description
 
 *(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_iostream
+
+===== Description
+
+*(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
 =====  Type
 
@@ -3616,7 +3803,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -3702,6 +3889,23 @@ a|  Openshift specific metadata
 a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
+
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 |viaq_index_name
 
@@ -3764,7 +3968,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 |hostname
 
@@ -3851,6 +4055,23 @@ a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipelin
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
+|timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
+
 |viaq_index_name
 
 |string
@@ -3890,7 +4111,7 @@ format:
 * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
 * dateOptionalTime
 
-example: `2015-01-24 14:06:05.071000000 Z`
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 
@@ -4186,6 +4407,27 @@ ReceivedAt the time the collector received the log entry
 ===== Description
 
 Version is collector version information
+
+=====  Type
+
+* string
+
+=== .timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+Value derived from legacy `@timestamp` for forward compatibility.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2024-11-24T14:06:05.071000000Z`
 
 =====  Type
 

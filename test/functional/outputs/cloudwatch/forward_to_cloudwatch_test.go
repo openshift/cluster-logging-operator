@@ -36,6 +36,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
+		framework.MaxReadDuration = utils.GetPtr(time.Second * 45)
 
 		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
 		secret = runtime.NewSecret(framework.Namespace, functional.CloudwatchSecret,
@@ -197,7 +198,8 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Write audit logs
-			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
+			ts := functional.CRIOTime(time.Now().Add(-12 * time.Hour)) // must be less than 14 days old
+			tstamp, _ := time.Parse(time.RFC3339Nano, ts)
 			auditLogLine := functional.NewAuditHostLog(tstamp)
 			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, numLogsSent)
 			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")

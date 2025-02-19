@@ -18,10 +18,10 @@ import (
 )
 
 type Otlp struct {
-	ComponentID      string
-	Inputs           string
-	URI              string
-	common.RootMixin //TODO: remove??
+	ComponentID string
+	Inputs      string
+	URI         string
+	common.RootMixin
 }
 
 func (p Otlp) Name() string {
@@ -42,7 +42,6 @@ payload_suffix = "}"
 `
 }
 
-// TODO: test this for otlp
 func (p *Otlp) SetCompression(algo string) {
 	p.Compression.Value = algo
 }

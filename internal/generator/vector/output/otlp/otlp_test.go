@@ -82,13 +82,14 @@ var _ = Describe("Generate vector config", func() {
 			nil,
 			"otlp_all.toml",
 		),
-		Entry("with tuning",
+		Entry("with base tuning and compression",
 			nil,
 			framework.NoOptions,
 			true,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Tuning = &obs.OTLPTuningSpec{
 					BaseOutputTuningSpec: *baseTune,
+					Compression:          "gzip",
 				}
 			},
 			"otlp_tuning.toml",

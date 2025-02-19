@@ -31,7 +31,7 @@ var (
 		FlatLabels:       []string{"*"},
 		NamespaceLabels:  map[string]string{"*": "*"},
 		Annotations:      map[string]string{"*": "*"},
-		ContainerStream:  "stdout",
+		ContainerStream:  "*",
 	}
 	templateForInfraKubernetes = types.Kubernetes{
 		ContainerID:       "**optional**",
@@ -55,13 +55,14 @@ var (
 func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
 		ViaQCommon: types.ViaQCommon{
-			Timestamp: time.Time{},
-			Message:   "*",
-			LogType:   "application",
-			LogSource: "container",
-			Level:     "*",
-			Hostname:  "*",
-			ViaqMsgID: "**optional**",
+			TimestampLegacy: time.Time{},
+			Timestamp:       time.Time{},
+			Message:         "*",
+			LogType:         "application",
+			LogSource:       "container",
+			Level:           "*",
+			Hostname:        "*",
+			ViaqMsgID:       "**optional**",
 			Openshift: types.OpenshiftMeta{
 				Labels:    map[string]string{"*": "*"},
 				Sequence:  types.NewOptionalInt(""),
@@ -80,13 +81,14 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
 		ViaQCommon: types.ViaQCommon{
-			Timestamp: time.Time{},
-			Message:   "*",
-			LogType:   "infrastructure",
-			LogSource: "container",
-			Level:     "*",
-			Hostname:  "*",
-			ViaqMsgID: "**optional**",
+			TimestampLegacy: time.Time{},
+			Timestamp:       time.Time{},
+			Message:         "*",
+			LogType:         "infrastructure",
+			LogSource:       "container",
+			Level:           "*",
+			Hostname:        "*",
+			ViaqMsgID:       "**optional**",
 			Openshift: types.OpenshiftMeta{
 				Labels:    map[string]string{"*": "*"},
 				Sequence:  types.NewOptionalInt(""),
@@ -105,7 +107,7 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 func NewJournalInfrastructureLogTemplate() types.JournalLog {
 	return types.JournalLog{
 		ViaQCommon: types.ViaQCommon{
-
+			TimestampLegacy:  time.Time{},
 			Timestamp:        time.Time{},
 			Message:          "*",
 			LogSource:        "node",

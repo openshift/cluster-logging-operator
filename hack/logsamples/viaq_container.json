@@ -1,5 +1,6 @@
 {
   "@timestamp": "2023-10-17T20:35:14.908544681Z",
+  "timestamp": "2023-10-17T20:35:14.908544681Z",
   "hostname": "ip-10-0-1-167.ec2.internal",
   "kubernetes": {
     "annotations": {

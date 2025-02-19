@@ -1,5 +1,5 @@
 {
-  "@timestamp": "2023-10-17T20:46:29.048949Z",
+  "timestamp": "2023-10-17T20:46:29.048949Z",
   "SYSLOG_TIMESTAMP": "Oct 17 20:46:29 ",
   "_RUNTIME_SCOPE": "system",
   "_SYSTEMD_INVOCATION_ID": "7c6f11847b8548d4b1bf7dc417a97819",

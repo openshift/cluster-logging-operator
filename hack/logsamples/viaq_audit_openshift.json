@@ -1,5 +1,6 @@
 {
   "@timestamp": "2023-10-18T17:34:31.892301560Z",
+  "timestamp": "2023-10-18T17:34:31.892301560Z",
   "annotations": {
     "authorization.k8s.io/decision": "allow",
     "authorization.k8s.io/reason": ""

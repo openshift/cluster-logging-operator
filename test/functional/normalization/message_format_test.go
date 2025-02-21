@@ -39,12 +39,13 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 		// Log message data
 		message := "Functional test message"
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
+		timestamp := "2024-11-04T18:13:59.061892+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.TimestampLegacy = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 
@@ -74,6 +75,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.TimestampLegacy = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 

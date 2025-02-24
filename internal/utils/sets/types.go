@@ -24,10 +24,11 @@ func (s *String) DeepCopyInto(in *String) {
 		in.Set.Insert(entry)
 	})
 }
-func (s *String) Insert(values ...string) {
+func (s *String) Insert(values ...string) *String {
 	for _, v := range values {
 		s.Set.Insert(v)
 	}
+	return s
 }
 
 func (s *String) DeepCopy() *String {

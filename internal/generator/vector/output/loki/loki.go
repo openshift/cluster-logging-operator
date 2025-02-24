@@ -180,7 +180,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 }
 
 func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
-
 	return &Loki{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),

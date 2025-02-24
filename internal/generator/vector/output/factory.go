@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/lokistack"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/otlp"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -39,6 +40,8 @@ func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, s
 		els = append(els, kafka.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeLoki:
 		els = append(els, loki.New(baseID, o, inputs, secrets, strategy, op)...)
+	case obs.OutputTypeLokiStack:
+		els = append(els, lokistack.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeElasticsearch:
 		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeCloudwatch:

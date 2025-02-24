@@ -1,4 +1,4 @@
-package initialize
+package lokistack
 
 import (
 	"fmt"
@@ -7,34 +7,19 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
 	lokiOtlpEndpoint = "/otlp/v1/logs"
 )
 
-// MigrateLokiStack migrates a lokistack output into appropriate loki or OTLP outputs based on defined inputs
-func MigrateLokiStack(spec obs.ClusterLogForwarder, options utils.Options) obs.ClusterLogForwarder {
-	var outputs []obs.OutputSpec
-	var pipelines []obs.PipelineSpec
-
-	outputs, pipelines = ProcessForwarderPipelines(spec.Spec)
-
-	spec.Spec.Outputs = outputs
-	spec.Spec.Pipelines = pipelines
-
-	return spec
-}
-
 // GenerateOutput returns either a Loki or OTLP output spec when migrating Lokistacks
-func GenerateOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec {
-	obsOut := &obs.OutputSpec{
-		Name:  fmt.Sprintf("%s-%s", outSpec.Name, input),
+func GenerateOutput(outSpec obs.OutputSpec, tenant string) obs.OutputSpec {
+	obsOut := obs.OutputSpec{
+		Name:  fmt.Sprintf("%s-%s", outSpec.Name, tenant),
 		TLS:   outSpec.TLS,
 		Limit: outSpec.Limit,
 	}
-
 	if outSpec.LokiStack.DataModel == obs.LokiStackDataModelOpenTelemetry {
 		obsOut.Type = obs.OutputTypeOTLP
 		obsOut.OTLP = GenerateOtlpSpec(outSpec.LokiStack, tenant)
@@ -43,7 +28,7 @@ func GenerateOutput(outSpec obs.OutputSpec, input, tenant string) obs.OutputSpec
 		obsOut.Loki = GenerateLokiSpec(outSpec.LokiStack, tenant)
 	}
 
-	return *obsOut
+	return obsOut
 }
 
 // GenerateLokiSpec generates and returns a Loki spec for the defined lokistack output

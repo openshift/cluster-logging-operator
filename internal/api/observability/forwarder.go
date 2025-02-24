@@ -1,6 +1,7 @@
 package observability
 
 import (
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -26,6 +27,7 @@ func DeployAsDeployment(forwarder obs.ClusterLogForwarder) bool {
 
 // IsValidSpec evaluates the status conditions to determine if the spec is valid
 func IsValidSpec(forwarder obs.ClusterLogForwarder) bool {
+	log.V(3).Info("IsValidSpec", "outputs", forwarder.Spec.Outputs)
 	status := forwarder.Status
 	return isAuthorized(status.Conditions) &&
 		isValid(obs.ConditionTypeValidInputPrefix, status.InputConditions, len(forwarder.Spec.Inputs)) &&
@@ -35,6 +37,7 @@ func IsValidSpec(forwarder obs.ClusterLogForwarder) bool {
 }
 
 func isValid(prefix string, conditions []metav1.Condition, expConditions int) bool {
+	log.V(3).Info("isValid Args", "prefix", prefix, "conditions", conditions, "exp", expConditions)
 	if len(conditions) != expConditions {
 		return false
 	}
@@ -44,6 +47,7 @@ func isValid(prefix string, conditions []metav1.Condition, expConditions int) bo
 			conditionTrue++
 		}
 	}
+	log.V(3).Info("isValid", "prefix", prefix, "act", conditionTrue, "exp", expConditions)
 	return conditionTrue == expConditions
 }
 

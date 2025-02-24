@@ -468,7 +468,7 @@ o = {
 # Merge audit api and node logs and group by log_source
 [transforms.output_otel_collector_groupby_source]
 type = "reduce"
-inputs = ["output_otel_collector_kubeapi","output_otel_collector_node","output_otel_collector_openshiftapi","output_otel_collector_ovn"]
+inputs = ["output_otel_collector_kubeapi","output_otel_collector_openshiftapi","output_otel_collector_ovn"]
 expire_after_ms = 15000
 max_events = 250
 group_by = [".openshift.cluster_id",".openshift.log_type",".openshift.log_source"]
@@ -478,7 +478,7 @@ merge_strategies.logRecords = "array"
 # Merge auditd host logs and group by hostname
 [transforms.output_otel_collector_groupby_host]
 type = "reduce"
-inputs = ["output_otel_collector_auditd"]
+inputs = ["output_otel_collector_auditd","output_otel_collector_node"]
 expire_after_ms = 15000
 max_events = 50
 group_by = [".openshift.cluster_id",".openshift.hostname",".openshift.log_type",".openshift.log_source"]

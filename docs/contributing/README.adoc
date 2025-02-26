@@ -9,7 +9,7 @@
   sudo dnf install -y podman
 `
 
-== Makefile tagets
+== Makefile targets
 
 Quick summary of main targets only, see below and the Makefile itself for more details.
 

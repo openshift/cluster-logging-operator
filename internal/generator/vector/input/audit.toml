@@ -13,8 +13,84 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_audit_host"]
 source = '''
-  .log_source = "auditd"
-  .log_type = "audit"
+  . = {"_internal": .}
+  ._internal.log_source = "auditd"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+  if !exists(._internal.level) {
+    level = "default"
+    message = ._internal.message
+
+    # Match on well known structured patterns
+    # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+    if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+      level = "emergency"
+    } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+      level = "alert"
+    } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+      level = "critical"
+    } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+      level = "error"
+    } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+      level = "warn"
+    } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+      level = "notice"
+    } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+      level = "info"
+    } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+      level = "debug"
+    } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+      level = "trace"
+    }
+
+    # Match on unstructured keywords in same order
+
+    if level == "default" {
+      if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+        level = "emergency"
+      } else if match!(message, r'Alert|ALERT|<alert>') {
+        level = "alert"
+      } else if match!(message, r'Critical|CRITICAL|<critical>') {
+        level = "critical"
+      } else if match!(message, r'Error|ERROR|<error>') {
+        level = "error"
+      } else if match!(message, r'Warning|WARN|<warn>') {
+        level = "warn"
+      } else if match!(message, r'Notice|NOTICE|<notice>') {
+        level = "notice"
+      } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+        level = "info"
+      } else if match!(message, r'Debug|DEBUG|<debug>') {
+        level = "debug"
+      } else if match!(message, r'Trace|TRACE|<trace>') {
+        level = "trace"
+      }
+    }
+    ._internal.level = level
+  }
+
+
+  match1 = parse_regex(._internal.message, r'type=(?P<type>[^ ]+)') ?? {}
+  envelop = {}
+  envelop |= {"type": match1.type}
+
+  match2, err = parse_regex(._internal.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
+  if err == null {
+    sp, err = split(match2.ts_record,":")
+    if err == null && length(sp) == 2 {
+        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+        if ts != "" { ._internal.timestamp = ts }
+        envelop |= {"record_id": sp[1]}
+        ._internal |= {"audit.linux" : envelop}
+        ._internal.timestamp =  format_timestamp(ts,"%+") ?? ""
+    }
+  } else {
+    log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
+  }
+
 '''
 
 # Logs from kubernetes audit
@@ -32,8 +108,15 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_audit_kube"]
 source = '''
-  .log_source = "kubeAPI"
-  .log_type = "audit"
+  . = {"_internal": .}
+
+  ._internal.structured = parse_json!(string!(._internal.message))
+  ._internal = merge!(._internal,._internal.structured)
+
+  ._internal.log_source = "kubeAPI"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
 '''
 
 # Logs from openshift audit
@@ -51,8 +134,15 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_audit_openshift"]
 source = '''
-  .log_source = "openshiftAPI"
-  .log_type = "audit"
+  . = {"_internal": .}
+
+  ._internal.structured = parse_json!(string!(._internal.message))
+  ._internal = merge!(._internal,._internal.structured)
+
+  ._internal.log_source = "openshiftAPI"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
 '''
 
 # Logs from ovn audit
@@ -70,6 +160,63 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_audit_ovn"]
 source = '''
-  .log_source = "ovn"
-  .log_type = "audit"
+  . = {"_internal": .}
+  ._internal.log_source = "ovn"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+
+  if !exists(._internal.level) {
+    level = "default"
+    message = ._internal.message
+
+    # Match on well known structured patterns
+    # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
+
+    if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
+      level = "emergency"
+    } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
+      level = "alert"
+    } else if match!(message, r'^C[0-9]+|level=critical|Value:critical|"level":"critical"') {
+      level = "critical"
+    } else if match!(message, r'^E[0-9]+|level=error|Value:error|"level":"error"') {
+      level = "error"
+    } else if match!(message, r'^W[0-9]+|level=warn|Value:warn|"level":"warn"') {
+      level = "warn"
+    } else if match!(message, r'^N[0-9]+|level=notice|Value:notice|"level":"notice"') {
+      level = "notice"
+    } else if match!(message, r'^I[0-9]+|level=info|Value:info|"level":"info"') {
+      level = "info"
+    } else if match!(message, r'^D[0-9]+|level=debug|Value:debug|"level":"debug"') {
+      level = "debug"
+    } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
+      level = "trace"
+    }
+
+    # Match on unstructured keywords in same order
+
+    if level == "default" {
+      if match!(message, r'Emergency|EMERGENCY|<emergency>') {
+        level = "emergency"
+      } else if match!(message, r'Alert|ALERT|<alert>') {
+        level = "alert"
+      } else if match!(message, r'Critical|CRITICAL|<critical>') {
+        level = "critical"
+      } else if match!(message, r'Error|ERROR|<error>') {
+        level = "error"
+      } else if match!(message, r'Warning|WARN|<warn>') {
+        level = "warn"
+      } else if match!(message, r'Notice|NOTICE|<notice>') {
+        level = "notice"
+      } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
+        level = "info"
+      } else if match!(message, r'Debug|DEBUG|<debug>') {
+        level = "debug"
+      } else if match!(message, r'Trace|TRACE|<trace>') {
+        level = "trace"
+      }
+    }
+    ._internal.level = level
+  }
+
 '''

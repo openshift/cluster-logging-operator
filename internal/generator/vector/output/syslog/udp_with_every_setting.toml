@@ -2,36 +2,39 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-if .log_type == "infrastructure" && .log_source == "node" {
-    ._internal.syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
-    ._internal.syslog.proc_id = to_string!(.systemd.t.PID || "")
+._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
+
+if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
+    ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
+	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
 }
-if .log_source == "container" {
-    ._internal.syslog.tag = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
-    ._internal.syslog.severity = .level
-    ._internal.syslog.facility = "user"
-     #Remove non-alphanumeric characters
+if ._internal.log_source == "container" {
+   	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
+   	._internal.syslog.severity = ._internal.level
+   	._internal.syslog.facility = "user"
+   	#Remove non-alphanumeric characters
    	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
 	#Truncate the sanitized tag to 32 characters
 	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
+
 }
 if .log_type == "audit" {
-    ._internal.syslog.tag = .log_source
-    ._internal.syslog.severity = "informational"
-    ._internal.syslog.facility = "security"
+   ._internal.syslog.tag = ._internal.log_source
+   ._internal.syslog.severity = "informational"
+   ._internal.syslog.facility = "security"
 }
+
 .facility = "kern"
 .severity = "critical"
 .proc_id = "procID"
 .tag = "appName"
-if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
-   .tag = .tag + "[" + .proc_id  + "]"
+if .proc_id != "-" && .proc_id != "" {
+  .tag = to_string(.tag||"") + "[" + to_string(.proc_id)  + "]"
 }
 if is_null(.plKey) {
-	.payload_key = .
+    .payload_key = .
 } else {
-	.payload_key = .plKey
+    .payload_key = .plKey
 }
 '''
 

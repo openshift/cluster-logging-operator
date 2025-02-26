@@ -2,13 +2,12 @@ package pipeline
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 	"os"
 	"strconv"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
@@ -32,7 +31,7 @@ func (o *Pipeline) Elements() []framework.Element {
 	return elements
 }
 
-func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec, inputSpecs []obs.InputSpec) *Pipeline {
+func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*output.Output, filters map[string]*filter.InternalFilterSpec, inputSpecs []obs.InputSpec, addPostFilters func(p *Pipeline)) *Pipeline {
 	pipeline := &Pipeline{
 		PipelineSpec: p,
 		index:        index,
@@ -49,8 +48,7 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	for name, f := range filters {
 		pipeline.filterMap[name] = *f
 	}
-	addPrefilters(pipeline)
-	addPostfilters(pipeline)
+	addPostFilters(pipeline)
 
 	for i, filterName := range pipeline.FilterRefs {
 		pipeline.initFilter(i, filterName)
@@ -83,43 +81,18 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	return pipeline
 }
 
-// TODO: add migration to treat like any other
-func addPrefilters(p *Pipeline) {
-	prefilters := []string{}
-	if viaq.HasJournalSource(p.inputSpecs) {
-		prefilters = append(prefilters, viaq.ViaqJournal)
-		p.filterMap[viaq.ViaqJournal] = filter.InternalFilterSpec{
-			FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqJournal},
-			SuppliesTransform: true,
-			TranformFactory: func(id string, inputs ...string) framework.Element {
-				return viaq.NewJournal(id, inputs...)
-			},
-		}
-	}
+func AddPostFilters(p *Pipeline) {
 
-	prefilters = append(prefilters, viaq.Viaq)
-	p.filterMap[viaq.Viaq] = filter.InternalFilterSpec{
-		FilterSpec:        &obs.FilterSpec{Type: viaq.Viaq},
+	postFilters := []string{v1.Viaq}
+	p.filterMap[v1.Viaq] = filter.InternalFilterSpec{
+		FilterSpec:        &obs.FilterSpec{Type: v1.Viaq},
 		SuppliesTransform: true,
 		TranformFactory: func(id string, inputs ...string) framework.Element {
 			// Build all log_source VRL
-			return viaq.New(id, inputs, p.inputSpecs)
+			return v1.New(id, inputs, p.inputSpecs)
 		},
 	}
-	p.FilterRefs = append(prefilters, p.FilterRefs...)
-}
-
-func addPostfilters(p *Pipeline) {
-	postfilters := []string{}
-	postfilters = append(postfilters, viaq.ViaqDedot)
-	p.filterMap[viaq.ViaqDedot] = filter.InternalFilterSpec{
-		FilterSpec:        &obs.FilterSpec{Type: viaq.ViaqDedot},
-		SuppliesTransform: true,
-		TranformFactory: func(id string, inputs ...string) framework.Element {
-			return viaq.NewDedot(id, inputs...)
-		},
-	}
-	p.FilterRefs = append(p.FilterRefs, postfilters...)
+	p.FilterRefs = append(p.FilterRefs, postFilters...)
 }
 
 func (p *Pipeline) Name() string {
@@ -141,80 +114,5 @@ func (p *Pipeline) initFilter(index int, filterRef string) {
 			}
 			p.Filters = append(p.Filters, pf)
 		}
-	}
-}
-
-// PipelineFilter is an adapter between CLF pipeline filter instance and config generation
-type PipelineFilter struct {
-	pipeline obs.PipelineSpec
-	ids      []string
-	Next     []helpers.InputComponent
-	vrl      string
-	// Distinguish between a Remap or Filter element
-	isFilterElement bool
-
-	//transformFactory is a function that takes input IDs and returns a transform
-	transformFactory func(...string) framework.Element
-}
-
-func (pf *PipelineFilter) ID() string {
-	return pf.ids[0]
-}
-func (pf *PipelineFilter) InputIDs() []string {
-	return pf.ids
-}
-
-func (pf *PipelineFilter) AddInputFrom(n helpers.InputComponent) {
-	pf.Next = append(pf.Next, n)
-}
-
-func NewPipelineFilter(pipelineName, filterRef string, spec filter.InternalFilterSpec, pipeline obs.PipelineSpec) *PipelineFilter {
-	ids := []string{helpers.MakePipelineID(pipelineName, filterRef)}
-	if spec.SuppliesTransform {
-		return &PipelineFilter{
-			ids: ids,
-			transformFactory: func(inputs ...string) framework.Element {
-				return spec.TranformFactory(ids[0], inputs...)
-			},
-		}
-	}
-
-	if vrl, err := spec.RemapFilter.VRL(); err != nil {
-		log.Error(err, "bad filter", "filterRef", filterRef, "spec.type", spec.Type, "spec.Name", spec.Name)
-		return nil
-	} else {
-		return &PipelineFilter{
-			pipeline: pipeline,
-			ids:      ids,
-			vrl:      vrl,
-			isFilterElement: func() bool {
-				return spec.Type == obs.FilterTypeDrop
-			}(),
-		}
-	}
-}
-
-func (o *PipelineFilter) Element() framework.Element {
-	inputs := []string{}
-	for _, n := range o.Next {
-		if n != nil {
-			inputs = append(inputs, n.InputIDs()...)
-		}
-	}
-	if o.transformFactory != nil {
-		return o.transformFactory(inputs...)
-	}
-
-	if o.isFilterElement {
-		return elements.Filter{
-			ComponentID: o.ids[0],
-			Inputs:      helpers.MakeInputs(inputs...),
-			Condition:   o.vrl,
-		}
-	}
-	return elements.Remap{
-		ComponentID: o.ids[0],
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         o.vrl,
 	}
 }

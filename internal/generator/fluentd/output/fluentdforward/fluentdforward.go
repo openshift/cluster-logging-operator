@@ -47,6 +47,7 @@ func (ff FluentdForward) Template() string {
 heartbeat_type none
 keepalive true
 keepalive_timeout 30s
+expire_dns_cache 30s
 {{compose .SecurityConfig}}
 {{compose .BufferConfig}}
 {{- end}}

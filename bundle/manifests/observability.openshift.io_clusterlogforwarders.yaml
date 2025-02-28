@@ -2067,8 +2067,9 @@ spec:
                           == ''Viaq'''
                       - message: '''snappy'' compression cannot be used when data
                           model is ''Otel'''
-                        rule: '!has(self.tuning) || self.tuning.compression != ''snappy''
-                          || !has(self.dataModel) || self.dataModel == ''Viaq'''
+                        rule: '!has(self.tuning) || !has(self.tuning.compression)
+                          || self.tuning.compression != ''snappy'' || !has(self.dataModel)
+                          || self.dataModel == ''Viaq'''
                     name:
                       description: Name used to refer to the output from a `pipeline`.
                       pattern: ^[a-z][a-z0-9-]*[a-z0-9]$

@@ -686,7 +686,7 @@ Previous versions without the `index` spec, would have instead written to 'app-w
 
 === Forwarding to Red Hat Managed Elasticsearch
 ====
-.Complete spec including url, version and index values from labels
+.Complete spec including url, version and separate index for each log type
 [source, yaml]
 ----
 apiVersion: observability.openshift.io/v1
@@ -697,12 +697,12 @@ spec:
   serviceAccount:
     name: logcollector  # <1>
   outputs:
-  - name: es-output-by-label # <2>
+  - name: es-app-output # <2>
     type: elasticsearch
     elasticsearch:
       url: https://elasticsearch:9200
       version: 6
-      index: '{.openshift.label.my_log_index||"app"}-write'  # <3>
+      index: 'app-write'  # <3>
     tls:
       ca:
         key: ca-bundle.crt
@@ -713,45 +713,63 @@ spec:
       key:
         key: tls.key
         secretName: collector
-  filters:
-  - name: my-parse
-    type: parse
-  - name: my-app-label  # <4>
-    type: openshiftLabels
-    openshiftLabels:
-      my-log-index: app
-  - name: my-infra-label  # <5>
-    type: openshiftLabels
-    openshiftLabels:
-      my-log-index: infra
+  - name: es-infra-output # <2>
+    type: elasticsearch
+    elasticsearch:
+      url: https://elasticsearch:9200
+      version: 6
+      index: 'infra-write'  # <3>
+    tls:
+      ca:
+        key: ca-bundle.crt
+        secretName: collector
+      certificate:
+        key: tls.crt
+        secretName: collector
+      key:
+        key: tls.key
+        secretName: collector
+  - name: es-audit-output # <2>
+    type: elasticsearch
+    elasticsearch:
+      url: https://elasticsearch:9200
+      version: 6
+      index: 'audit-write'  # <3>
+    tls:
+      ca:
+        key: ca-bundle.crt
+        secretName: collector
+      certificate:
+        key: tls.crt
+        secretName: collector
+      key:
+        key: tls.key
+        secretName: collector
   pipelines:
-  - name: my-app  # <6>
+  - name: my-app  # <4>
     inputRefs:
     - application
-    filterRefs:
-    - my-parse
-    - my-app-label
     outputRefs:
-    - es-output-by-label
-  - name: my-infra  # <7>
+    - es-app-output
+  - name: my-infra  # <5>
     inputRefs:
     - infrastructure
-    filterRefs:
-    - my-parse
-    - my-infra-label
     outputRefs:
-    - es-output-by-label
+    - es-infra-output
+  - name: my-audit  # <6>
+    inputRefs:
+    - audit
+    outputRefs:
+    - es-audit-output
 ----
 <1> service account `logcollector` must have the correct permissions (see Service Accounts above)
-<2> `es-output-by-label` is the output used in both pipelines
-<3> `index` is set to read the value from `.openshift.label.my-log-index` and prepend to the string "-write" or fallback to "app-write"
-<4> `my-app-label` filter is used to set the label "my-log-index=app" in the pipeline
-<5> `my-infra-label` filter is used to set the label "my-log-index=infra" in the pipeline
-<6> pipeline `my-app` includes application logs and labels them `app`
-<7> pipeline `my-infra` includes infrastructure logs and labels them `infra`
+<2> `es-app-output`, `es-infra-output` and `es-audit-output` are the outputs used in pipelines for route logs by log type
+<3> `index` must follow naming scheme `app-*`, `infra-*`  or `audit-*`
+<4> pipeline `my-app` includes application logs and route them to the `es-app-output`
+<5> pipeline `my-infra` includes infrastructure logs and route them to the `es-infra-output`
+<6> pipeline `my-audit` includes audit logs and route them to the `es-audit-output`
 
 NOTE: In order to forward logs to the default RH-managed Elasticsearch, the `index` values must be one of `app-write`, `infra-write` or `audit-write`.
-This is achieved by adding a label (filter) to each pipeline, and setting the label value to the corresponding input type.
 ====
 
 === Additional info on ES Custom Index

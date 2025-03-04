@@ -2,15 +2,17 @@ package outputs
 
 import (
 	"fmt"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
-	"strings"
 )
 
 func Validate(context internalcontext.ForwarderContext) {
 	for _, out := range context.Forwarder.Spec.Outputs {
+		pipelines := internalobs.Pipelines(context.Forwarder.Spec.Pipelines)
 		messages := []string{}
 		configs := internalobs.SecretReferencesAsValueReferences(out)
 		if out.TLS != nil {
@@ -18,6 +20,7 @@ func Validate(context internalcontext.ForwarderContext) {
 			configs = append(configs, internalobs.ValueReferences(out.TLS.TLSSpec)...)
 		}
 		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
+		messages = append(messages, validateOutputIsReferencedByPipelines(out, pipelines)...)
 		// Validate by output type
 		switch out.Type {
 		case obs.OutputTypeCloudwatch:
@@ -36,4 +39,11 @@ func Validate(context internalcontext.ForwarderContext) {
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}
+}
+
+func validateOutputIsReferencedByPipelines(output obs.OutputSpec, pipelines internalobs.Pipelines) (results []string) {
+	if !pipelines.ReferenceOutput(output) {
+		return append(results, "not referenced by any pipeline")
+	}
+	return results
 }

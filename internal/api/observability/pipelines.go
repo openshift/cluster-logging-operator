@@ -1,6 +1,9 @@
 package observability
 
-import obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"k8s.io/utils/set"
+)
 
 type Pipelines []obs.PipelineSpec
 
@@ -19,4 +22,14 @@ func (pipeline Pipelines) Map() map[string]obs.PipelineSpec {
 		m[p.Name] = p
 	}
 	return m
+}
+
+// ReferenceOutput iterates through the list of pipelines to see if any reference the given output
+func (pipeline Pipelines) ReferenceOutput(output obs.OutputSpec) bool {
+	for _, i := range pipeline {
+		if set.New(i.OutputRefs...).Has(output.Name) {
+			return true
+		}
+	}
+	return false
 }

@@ -2,9 +2,11 @@ package observability
 
 import (
 	"context"
+	"encoding/json"
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"time"
@@ -211,9 +213,12 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 }
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {
+	jsonPatch, _ := json.Marshal(map[string]interface{}{
+		"status": instance.Status,
+	})
 	internalobs.SetCondition(&instance.Status.Conditions, ready)
-	if err := k8Client.Status().Update(context.TODO(), instance); err != nil {
-		log.Error(err, "clusterlogforwarder-controller error updating status", "status", instance.Status)
+	if err := k8Client.Status().Patch(context.TODO(), instance, client.RawPatch(types.MergePatchType, jsonPatch)); err != nil {
+		log.Error(err, "Error updating status", "status", instance.Status)
 	}
 }
 

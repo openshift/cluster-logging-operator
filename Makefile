@@ -19,6 +19,7 @@ export GODEBUG=x509ignoreCN=0
 # Set variables from environment or hard-coded default
 export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
+export SHA_COMMIT=$(shell git rev-parse --short HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
 export LOGGING_VERSION?=6.2
@@ -176,7 +177,7 @@ $(GEN_TIMESTAMP): $(shell find api -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_G
 	@$(CONTROLLER_GEN) object paths="./api/logging/v1alpha1"
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/observability/..." output:crd:artifacts:config=config/crd/bases
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/logging/v1alpha1" output:crd:artifacts:config=config/crd/bases
-	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(VERSION))\"" > version/version.go
+	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(BUILD_VERSION))\"" > version/version.go
 	@$(MAKE) fmt
 	@touch $@
 
@@ -251,10 +252,18 @@ test-cluster:
 
 OPENSHIFT_VERSIONS?="v4.16-v4.19"
 # Generate bundle manifests and metadata, then validate generated files.
+ifeq ($(USE_FAST),true)
+BUILD_VERSION=$(VERSION)-$(shell date +"%Y%m%d%H%M%S")-$(SHA_COMMIT)
+BUNDLE_VERSION?=$(BUILD_VERSION)
+BUNDLE_CHANNELS := --channels=fast
+BUNDLE_DEFAULT_CHANNEL := --default-channel=fast
+else
+BUILD_VERSION=$(VERSION)
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=stable-${LOGGING_VERSION}
 BUNDLE_CHANNELS := --channels=$(CHANNEL)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(CHANNEL)
+endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
@@ -273,7 +282,7 @@ bundle: $(GEN_TIMESTAMP) $(KUSTOMIZE) $(find config -name *.yaml) ## Generate op
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	hack/revert-bundle.sh
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
+	OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
 	$(OPERATOR_SDK) bundle validate ./bundle
 	@touch $@
 

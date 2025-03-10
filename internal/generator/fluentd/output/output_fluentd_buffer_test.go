@@ -584,6 +584,7 @@ var _ = Describe("Generating fluentd config", func() {
             heartbeat_type none
             keepalive true
             keepalive_timeout 30s
+	    expire_dns_cache 30s
             <buffer>
             @type file
             path '/var/lib/fluentd/secureforward_receiver'
@@ -634,6 +635,7 @@ var _ = Describe("Generating fluentd config", func() {
           heartbeat_type none
           keepalive true
           keepalive_timeout 30s
+	  expire_dns_cache 30s
 
           <buffer>
           @type file

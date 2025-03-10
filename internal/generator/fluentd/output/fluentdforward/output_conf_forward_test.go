@@ -79,6 +79,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
     heartbeat_type none
     keepalive true
     keepalive_timeout 30s
+    expire_dns_cache 30s
     transport tls
     tls_verify_hostname false
     tls_version 'TLSv1_2'
@@ -134,6 +135,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
     heartbeat_type none
     keepalive true
     keepalive_timeout 30s
+    expire_dns_cache 30s
     transport tls
     tls_verify_hostname false
     tls_version 'TLSv1_2'
@@ -186,6 +188,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
     heartbeat_type none
     keepalive true
     keepalive_timeout 30s
+    expire_dns_cache 30s
     transport tls
     tls_verify_hostname false
     tls_version 'TLSv1_2'
@@ -255,6 +258,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
     heartbeat_type none
     keepalive true
     keepalive_timeout 30s
+    expire_dns_cache 30s
     <buffer>
       @type file
       path '/var/lib/fluentd/secureforward_receiver'

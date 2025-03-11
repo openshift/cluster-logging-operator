@@ -6,6 +6,7 @@
   "hostname": "ip-10-0-1-188",
   "level": "notice",
   "log_type": "infrastructure",
+  "log_source": "node",
   "message": "ovs|00523|connmgr|INFO|br-ex<->unix#1741: 2 flow_mods in the last 0 s (2 adds)",
   "openshift": {
     "cluster_id": "4732cbd5-56e8-4e0d-b52f-998f089afe3e"

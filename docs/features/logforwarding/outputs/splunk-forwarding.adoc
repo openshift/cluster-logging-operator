@@ -1,6 +1,7 @@
 === Steps to forward to Splunk HTTP Event Collector (HEC)
 
-(https://dev.splunk.com/enterprise/docs/devtools/httpeventcollector/)
+More information about format of Splunk HTTP Event you can read in this document:
+https://docs.splunk.com/Documentation/Splunk/latest/Data/FormateventsforHTTPEventCollector[Format events for HTTP Event Collector]
 
 . Create a secret containing your `hecToken` using the following command:
 +
@@ -30,11 +31,15 @@ spec:
       type: splunk
       splunk:
         authentication:
-          token:
+          token: # <1>
             key: hecToken
             secretName: splunk-secret
-        url: 'http://example-splunk-hec-service:8088'
-        index: '{.log_type||"undefined"}'
+        url: 'http://example-splunk-hec-service:8088' # <2>
+        index: '{.log_type||"undefined"}' # <3>
+        tuning:
+            compression: gzip # <4>
+            source: '{.log_source}' # <5>
+            indexedFields: ['.log_type', '.log_source'] # <6>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -43,5 +48,113 @@ spec:
       outputRefs:
         - splunk-receiver
 ----
+1. Token points to the secret containing the Splunk HEC token used for authenticating requests.
+2. The base URL of the Splunk instance.
+3. Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used.
+4. Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
+5. Optional. The source of events sent to this sink.
+6. Optional. Fields to be added to Splunk index.
 
-NOTE: This will forward logs to the log type of the message.  The default index of the splunk server configuration is used when 'index' is not defined
+=== `source`
+In Splunk, the `source` field typically identifies the origin of a log event.
+To ensure consistency and meaningful categorization, the `source` value can be dynamically derived from the `log_type` and `log_source` fields,
+following Cluster Log Forwarder's conventions.
+
+Below the table with default value depends on log_type and log_source will be used if not set in configuration.
+
+|===
+| |pass:[Infrastructure Journal <br/><em>log_type:infrastructure<br/>log_source:node</em>]|pass:[Infrastructure/Application Container<br/><em>log_type:infrastructure\|application<br/>log_source:container</em>]|pass:[Audit<br/><em>log_type:audit<br/>log_source:auditd\|ovn\|openshiftAPI\|kubeAPI<em/>]|Note
+|`source`|SYSLOG_IDENTIFIER*|ns_name_podName_containerName|.log_source|
+|===
+
+=== `indexed_fields`
+
+In Splunk, `indexed_fields` are fields that are extracted at *index time*, rather than at *search time*. This means their values are stored directly in the index alongside the raw event data, allowing for *faster search performance* on those fields.
+
+However, because `indexed_fields` increase storage usage, they should be used *sparingly* and only for *high-value fields* that provide significant search benefits.
+
+Since logs processed by Vector are typically *well-structured JSON*, Splunk can dynamically extract fields at search time. As a result, the use of `indexed_fields` is *not necessary by default*. That said, they may be valuable in *specific use cases*, such as *large datasets with frequent queries on specific fields*.
+In such cases, users can configure the required fields manually.
+
+==== Limitations
+
+* Only *top-level fields* are supported.
+* Field names may only include *letters, digits, dashes (`-`)*, and *underscores (`_`)*.
+* Only *string values* are allowed.
+
+==== Extended Support via Remap
+
+To provide more flexibility, we extend the functionality with a *custom remap function*.
+This allows you to *work around some of these limitations* by transforming field names and values before forwarding.
+
+With this remapping:
+
+* *Nested fields* can be flattened into top-level fields.
+* Field *paths* are flattened using *dot notation*, and unsupported characters are replaced with underscores (`_`).
+* *Non-string values* are automatically converted to strings.
+* *Objects* are serialized as JSON strings.
+
+==== Examples
+
+[source,json]
+----
+{
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": "foo_bar"
+  }
+}
+----
+
+Becomes:
+
+[source,json]
+----
+{
+  "annotations_authorization_k8s_io_decision": "allow",
+  "annotations_authorization_k8s_io_reason": "foo_bar"
+}
+----
+
+Non-string values:
+
+[source,json]
+----
+{
+  "retries": 3,
+  "success": true
+}
+----
+
+Becomes:
+
+[source,json]
+----
+{
+  "retries": "3",
+  "success": "true"
+}
+----
+
+Nested object values:
+
+[source,json]
+----
+{
+  "objectRef": {
+    "resource": {
+      "status": 200,
+      "statusText": "OK"
+    }
+  }
+}
+----
+
+Becomes:
+
+[source,json]
+----
+{
+  "objectRef_resource": "{\"status\":200,\"statusText\":\"OK\"}"
+}
+----

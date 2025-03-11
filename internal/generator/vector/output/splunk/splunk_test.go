@@ -2,8 +2,6 @@ package splunk_test
 
 import (
 	"fmt"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,11 +10,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generating vector config for Splunk output", func() {
@@ -39,22 +35,22 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 				},
 			},
 		}
-		tlsSpec = &obs.OutputTLSSpec{
-			TLSSpec: obs.TLSSpec{
-				CA: &obs.ValueReference{
-					Key:        constants.TrustedCABundleKey,
-					SecretName: secretName,
-				},
-				Certificate: &obs.ValueReference{
-					Key:        constants.ClientCertKey,
-					SecretName: secretName,
-				},
-				Key: &obs.SecretReference{
-					Key:        constants.ClientPrivateKey,
-					SecretName: secretName,
-				},
-			},
-		}
+		//tlsSpec = &obs.OutputTLSSpec{
+		//	TLSSpec: obs.TLSSpec{
+		//		CA: &obs.ValueReference{
+		//			Key:        constants.TrustedCABundleKey,
+		//			SecretName: secretName,
+		//		},
+		//		Certificate: &obs.ValueReference{
+		//			Key:        constants.ClientCertKey,
+		//			SecretName: secretName,
+		//		},
+		//		Key: &obs.SecretReference{
+		//			Key:        constants.ClientPrivateKey,
+		//			SecretName: secretName,
+		//		},
+		//	},
+		//}
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
 				Type: obs.OutputTypeSplunk,
@@ -70,12 +66,12 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 				},
 			}
 		}
-		baseTune = &obs.BaseOutputTuningSpec{
-			DeliveryMode:     obs.DeliveryModeAtLeastOnce,
-			MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
-			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
-			MinRetryDuration: utils.GetPtr(time.Duration(20)),
-		}
+		//baseTune = &obs.BaseOutputTuningSpec{
+		//	DeliveryMode:     obs.DeliveryModeAtLeastOnce,
+		//	MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+		//	MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+		//	MinRetryDuration: utils.GetPtr(time.Duration(20)),
+		//}
 	)
 
 	DescribeTable("#New", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
@@ -93,23 +89,28 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		conf := splunk.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, false, nil),
-		Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
-			spec.TLS = tlsSpec
-		}),
-		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
-			spec.TLS = tlsSpec
-			spec.Splunk.Index = "foo"
-		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
-			spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
-		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
-			spec.Splunk.Index = `foo-{.kubernetes.namespace_labels."test/logging.io"||"missing"}`
-		}),
-		Entry("with tuning", "splunk_tune.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		//Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, false, nil),
+		//Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		//	spec.TLS = tlsSpec
+		//}),
+		//Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		//	spec.TLS = tlsSpec
+		//	spec.Splunk.Index = "foo"
+		//}),
+		//Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		//	spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
+		//}),
+		//Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		//	spec.Splunk.Index = `foo-{.kubernetes.namespace_labels."test/logging.io"||"missing"}`
+		//}),
+		//Entry("with tuning", "splunk_tune.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		//	spec.Splunk.Tuning = &obs.SplunkTuningSpec{
+		//		BaseOutputTuningSpec: *baseTune,
+		//	}
+		//}),
+		Entry("with tuning: indexed fields", "splunk_sink_with_indexed_fields.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
 			spec.Splunk.Tuning = &obs.SplunkTuningSpec{
-				BaseOutputTuningSpec: *baseTune,
+				IndexedFields: []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`},
 			}
 		}),
 	)

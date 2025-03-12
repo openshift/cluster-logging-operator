@@ -159,3 +159,14 @@ Becomes:
   "objectRef_resource": "{\"status\":200,\"statusText\":\"OK\"}"
 }
 ----
+
+
+=== `sourceType` and `host`
+
+The `sourceType` and `host` fields are *not configurable* through the Cluster Log Forwarder API. They are set automatically as described below, independent of the `.log_type` or `.log_source` values.
+
+* `sourceType`: Set to `_json`
+This reflects the fact that all log events are forwarded as structured JSON objects.
+
+* `host`: Set to the value of `.hostname`
+This ensures that each log event carries the correct *originating host* information.

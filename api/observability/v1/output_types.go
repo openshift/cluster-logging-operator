@@ -996,13 +996,6 @@ type SplunkTuningSpec struct {
 	// +kubebuilder:validation:Enum:=none;gzip
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
-
-	//Fields to be added to Splunk index.
-	//
-	// +nullable
-	// +kubebuilder:validation:Optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,indexedFields="Indexed Fields"
-	IndexedFields []FieldPath `json:"indexedFields,omitempty"`
 }
 
 // SplunkAuthentication contains configuration for authenticating requests to a Splunk output.

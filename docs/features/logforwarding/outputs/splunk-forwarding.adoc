@@ -36,10 +36,11 @@ spec:
             secretName: splunk-secret
         url: 'http://example-splunk-hec-service:8088' # <2>
         index: '{.log_type||"undefined"}' # <3>
+        source: '{.log_source}' # <4>
+        indexedFields: ['.log_type', '.log_source'] # <5>
         tuning:
-            compression: gzip # <4>
-            source: '{.log_source}' # <5>
-            indexedFields: ['.log_type', '.log_source'] # <6>
+            compression: gzip # <6>
+
   pipelines:
     - name: my-logs
       inputRefs:
@@ -48,12 +49,12 @@ spec:
       outputRefs:
         - splunk-receiver
 ----
-1. Token points to the secret containing the Splunk HEC token used for authenticating requests.
-2. The base URL of the Splunk instance.
-3. Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used.
-4. Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
-5. Optional. The source of events sent to this sink.
-6. Optional. Fields to be added to Splunk index.
+1. `token` - Points to the secret containing the Splunk HEC token used for authenticating requests.
+2. `url` - The base URL of the Splunk instance.
+3. `index` - Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used. This supports template syntax to allow dynamic per-event values.
+4. `source` - Optional. The source of events sent to this sink. This supports template syntax to allow dynamic per-event values.
+5. `indexedFields` - Optional. Fields to be added to Splunk index.
+6. `compression` - Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
 
 === `source`
 In Splunk, the `source` field typically identifies the origin of a log event.

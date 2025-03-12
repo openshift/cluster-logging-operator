@@ -258,6 +258,13 @@ type InputTLSSpec TLSSpec
 type ReceiverSpec struct {
 	// Type of Receiver plugin.
 	//
+	// Supported Receiver types are:
+	//
+	// 1. http
+	//    - Currently only supports kubernetes audit logs (log_type = "audit")
+	// 2. syslog
+	//    - Currently only supports node infrastucture logs (log_type = "infrastructure")
+	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Receiver Type"
 	Type ReceiverType `json:"type"`
@@ -296,6 +303,8 @@ const (
 // HTTPReceiver receives encoded logs as a HTTP endpoint.
 type HTTPReceiver struct {
 	// Format is the format of incoming log data.
+	//
+	// The only currently supported format is `kubeAPIAudit`.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Data Format"

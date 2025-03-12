@@ -683,7 +683,10 @@ spec:
                             endpoint.
                           properties:
                             format:
-                              description: Format is the format of incoming log data.
+                              description: |-
+                                Format is the format of incoming log data.
+
+                                The current supported format is `kubeAPIAudit`.
                               enum:
                               - kubeAPIAudit
                               type: string
@@ -791,7 +794,15 @@ spec:
                               type: object
                           type: object
                         type:
-                          description: Type of Receiver plugin.
+                          description: |-
+                            Type of Receiver plugin.
+
+                            Supported Receiver types are:
+
+                            1. http
+                               - Currently only supports kubernetes audit logs (log_type = "audit")
+                            2. syslog
+                               - Currently only supports node infrastucture logs (log_type = "infrastructure")
                           enum:
                           - http
                           - syslog

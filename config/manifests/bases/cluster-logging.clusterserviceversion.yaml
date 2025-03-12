@@ -303,7 +303,11 @@ spec:
         path: inputs[0].receiver
       - displayName: HTTP Receiver Configuration
         path: inputs[0].receiver.http
-      - description: Format is the format of incoming log data.
+      - description: |-
+          Format is the format of incoming log data.
+
+
+          The current supported format is `kubeAPIAudit`.
         displayName: Data Format
         path: inputs[0].receiver.http.format
       - description: Port the Receiver listens on. It must be a value between 1024
@@ -321,7 +325,17 @@ spec:
           the collector. The collector is configured to use the public and private key provided by the service
         displayName: TLS Options
         path: inputs[0].receiver.tls
-      - description: Type of Receiver plugin.
+      - description: |-
+          Type of Receiver plugin.
+
+
+          Supported Receiver types are:
+
+
+          1. http
+             - Currently only supports kubernetes audit logs (log_type = "audit")
+          2. syslog
+             - Currently only supports node infrastucture logs (log_type = "infrastructure")
         displayName: Receiver Type
         path: inputs[0].receiver.type
       - description: Type of output sink.

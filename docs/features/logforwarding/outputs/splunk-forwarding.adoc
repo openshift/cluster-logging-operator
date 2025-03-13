@@ -1,4 +1,4 @@
-=== Steps to forward to Splunk HTTP Event Collector (HEC)
+== Steps to forward to Splunk HTTP Event Collector (HEC)
 
 More information about format of Splunk HTTP Event you can read in this document:
 https://docs.splunk.com/Documentation/Splunk/latest/Data/FormateventsforHTTPEventCollector[Format events for HTTP Event Collector]
@@ -61,14 +61,7 @@ In Splunk, the `source` field typically identifies the origin of a log event.
 To ensure consistency and meaningful categorization, the `source` value can be dynamically derived from the `log_type` and `log_source` fields,
 following Cluster Log Forwarder's conventions.
 
-Below the table with default value depends on log_type and log_source will be used if not set in configuration.
-
-|===
-| |pass:[Infrastructure Journal <br/><em>log_type:infrastructure<br/>log_source:node</em>]|pass:[Infrastructure/Application Container<br/><em>log_type:infrastructure\|application<br/>log_source:container</em>]|pass:[Audit<br/><em>log_type:audit<br/>log_source:auditd\|ovn\|openshiftAPI\|kubeAPI<em/>]|Note
-|`source`|SYSLOG_IDENTIFIER*|ns_name_podName_containerName|.log_source|
-|===
-
-=== `indexed_fields`
+=== `indexedFields`
 
 In Splunk, `indexed_fields` are fields that are extracted at *index time*, rather than at *search time*. This means their values are stored directly in the index alongside the raw event data, allowing for *faster search performance* on those fields.
 
@@ -175,3 +168,16 @@ This reflects the fact that all log events are forwarded as structured JSON obje
 
 * `host`: Set to the value of `.hostname`
 This ensures that each log event carries the correct *originating host* information.
+
+== Default settings
+Below the table with default value depends on log_type and log_source will be used if not set in configuration.
+
+|===
+| |pass:[Infrastructure Journal <br/><em>log_type:infrastructure<br/>log_source:node</em>]|pass:[Infrastructure/Application Container<br/><em>log_type:infrastructure\|application<br/>log_source:container</em>]|pass:[Audit<br/><em>log_type:audit<br/>log_source:auditd\|ovn\|openshiftAPI\|kubeAPI<em/>]|Note
+|`index`|||| not configured by default
+|`source`|SYSLOG_IDENTIFIER|ns_name_podName_containerName|.log_source|
+|`indexedFields`|||| not configured by default
+|`sourceType`|`_json`|`_json`|`_json`|
+|`host`|`.hostname`|`.hostname`|`.hostname`|
+
+|===

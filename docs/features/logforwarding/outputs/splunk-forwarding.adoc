@@ -159,6 +159,11 @@ Becomes:
   "objectRef_resource": "{\"status\":200,\"statusText\":\"OK\"}"
 }
 ----
+[IMPORTANT]
+====
+After remapping, the *original fields* will be removed to avoid duplication.
+Only the transformed, top-level fields will be retained in the final log event.
+====
 
 
 === `sourceType` and `host`

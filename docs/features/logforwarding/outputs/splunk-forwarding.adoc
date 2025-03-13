@@ -177,7 +177,7 @@ Below the table with default value depends on log_type and log_source will be us
 |`index`|||| not configured by default
 |`source`|SYSLOG_IDENTIFIER|ns_name_podName_containerName|.log_source|
 |`indexedFields`|||| not configured by default
-|`sourceType`|`_json`|`_json`|`_json`|
-|`host`|`.hostname`|`.hostname`|`.hostname`|
+|`sourceType`|`_json`|`_json`|`_json`| *not configurable*
+|`host`|`.hostname`|`.hostname`|`.hostname`|*not configurable*
 
 |===

@@ -1074,6 +1074,12 @@ type Syslog struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 
+	// The RFC to which the generated messages conform to.
+	//
+	// Supported values are:
+	// 1. RFC3164
+	// 2. RFC5424
+	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog RFC"
 	RFC SyslogRFCType `json:"rfc"`
@@ -1200,7 +1206,14 @@ type Syslog struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="MSGID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	MsgId string `json:"msgId,omitempty"`
 
-	// Enrichment is an additional modification the log message before forwarding it to the receiver
+	// Enrichment is an additional modification to the log message before forwarding it to the receiver.
+	//
+	// Supported values are:
+	// 1. None
+	//    - Adds no additional enrichment to the record
+	// 2. KubernetesMinimal
+	//    - Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
+	// This may result in the message body being an invalid JSON structure.
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Enrichment Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}

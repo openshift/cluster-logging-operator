@@ -385,7 +385,11 @@ spec:
                     nullable: true
                     type: array
                   type:
-                    description: The type of Log Collection to configure
+                    description: |-
+                      The type of Log Collection to configure
+                      Supported values are:
+                      1. vector
+                      2. fluentd
                     type: string
                 type: object
               curation:
@@ -1225,7 +1229,11 @@ spec:
                     nullable: true
                     type: array
                   type:
-                    description: The type of Visualization to configure
+                    description: |-
+                      The type of Visualization to configure
+                      Supported values are:
+                      1. ocp-console
+                      2. kibana
                     enum:
                     - ocp-console
                     - kibana

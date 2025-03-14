@@ -41,7 +41,7 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
 outputs:
 - name: elasticsearch
   elasticsearch:
-    index: '{.log_type}-write'
+    index: '{.log_type||"notfound"}-write'
     version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch
@@ -68,7 +68,7 @@ serviceAccount:
 outputs:
 - name: elasticsearch
   elasticsearch:
-    index: '{.log_type}-write'
+    index: '{.log_type||"notfound"}-write'
     version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch
@@ -207,7 +207,7 @@ inputs:
 outputs:
 - name: elasticsearch
   elasticsearch:
-    index: '{.log_type}-write'
+    index: '{.log_type||"notfound"}-write'
     version: 8
     url: http://0.0.0.0:9200
   type: elasticsearch

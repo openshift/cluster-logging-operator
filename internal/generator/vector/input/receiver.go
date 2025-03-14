@@ -22,18 +22,16 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourc
 		els = append(els,
 			source.NewSyslogSource(base, resNames.GenerateInputServiceName(spec.Name), spec),
 			tlsConfig,
-			NewLogSourceAndType(metaID, obs.InfrastructureSourceNode, obs.InputTypeInfrastructure, base, nil),
+			NewReceiverInternalNormalization(metaID, obs.ReceiverTypeSyslog, setEnvelopeToStructured, base),
 		)
 	case obs.ReceiverTypeHTTP:
 		el, id := source.NewHttpSource(base, resNames.GenerateInputServiceName(spec.Name), spec)
-		split, splitID := source.NewSplitTransform(base, id)
-		items, itemsID := source.NewItemsTransform(base, splitID)
+		items, itemsID := source.NewItemsTransform(base, id)
 		els = append(els,
 			el,
 			tlsConfig,
-			split,
 			items,
-			NewLogSourceAndType(metaID, obs.AuditSourceKube, obs.InputTypeAudit, itemsID, nil),
+			NewAuditInternalNormalization(metaID, obs.AuditSourceKube, itemsID, false),
 		)
 	}
 	return els, []string{metaID}

@@ -3,7 +3,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal.gcl_1_log_id = "my-id" + to_string!(.log_type||"none")
+._internal.gcl_1_log_id = "my-id" + to_string!(._internal.log_type||"none")
 '''
 
 # Normalize GCL severity levels

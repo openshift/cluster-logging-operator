@@ -47,7 +47,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 					spec.Type = obs.FilterTypePrune
 					spec.PruneFilterSpec = &obs.PruneFilterSpec{
 						In:    []obs.FieldPath{".kubernetes.namespace_name", ".kubernetes.container_name", `.kubernetes.labels."foo-bar/baz"`},
-						NotIn: []obs.FieldPath{".log_type", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
+						NotIn: []obs.FieldPath{".log_type", ".log_source", ".message", ".kubernetes", ".openshift", `."@timestamp"`},
 					}
 				}).
 				ToElasticSearchOutput()
@@ -79,7 +79,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 		})
 	})
 
-	Context("minimal set of fields for each output", func() {
+	Context("minimal set of fields (.log_type, .log_source, .message, .timestamp) for each output", func() {
 
 		var (
 			pipelineBuilder *testruntime.PipelineBuilder
@@ -96,11 +96,11 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				FromInput(obs.InputTypeApplication).
 				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
 					spec.Type = obs.FilterTypePrune
-					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []obs.FieldPath{".log_type", ".message"}}
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []obs.FieldPath{".log_type", ".log_source", ".message", ".timestamp"}}
 				})
 		})
 
-		It("should send to Elasticsearch with only .log_type and .message", func() {
+		It("should send to Elasticsearch", func() {
 			pipelineBuilder.ToElasticSearchOutput()
 			Expect(f.Deploy()).To(BeNil())
 
@@ -112,7 +112,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
 		})
 
-		It("should send to Splunk with only .log_type and .message", func() {
+		It("should send to Splunk", func() {
 			pipelineBuilder.ToSplunkOutput(*secretKey)
 			secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,
 				map[string][]byte{
@@ -133,7 +133,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(logs).ToNot(BeEmpty())
 		})
 
-		It("should send to Loki with only .log_type and .message", func() {
+		It("should send to Loki", func() {
 			l := loki.NewReceiver(f.Namespace, "loki-server")
 			Expect(l.Create(f.Test.Client)).To(Succeed())
 			pipelineBuilder.ToOutputWithVisitor(func(spec *obs.OutputSpec) {
@@ -152,7 +152,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(err).To(Succeed())
 		})
 
-		It("should send to Kafka with only .log_type and .message", func() {
+		It("should send to Kafka", func() {
 			pipelineBuilder.ToKafkaOutput()
 			f.Secrets = append(f.Secrets, kafka.NewBrokerSecret(f.Namespace))
 
@@ -166,7 +166,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeKafka)
 		})
 
-		It("should send to HTTP with only .log_type and .message", func() {
+		It("should send to HTTP", func() {
 			pipelineBuilder.ToHttpOutput()
 			Expect(f.Deploy()).To(BeNil())
 
@@ -178,7 +178,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(raw).ToNot(BeEmpty())
 		})
 
-		It("should send to Syslog with only .log_type and .message", func() {
+		It("should send to Syslog", func() {
 			pipelineBuilder.ToSyslogOutput(obs.SyslogRFC5424)
 			Expect(f.Deploy()).To(BeNil())
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
@@ -188,7 +188,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(outputlogs).ToNot(BeEmpty())
 		})
 
-		It("should send to AzureMonitor with only .log_type and .message", func() {
+		It("should send to AzureMonitor", func() {
 			pipelineBuilder.ToAzureMonitorOutput(func(output *obs.OutputSpec) {
 				output.AzureMonitor.CustomerId = customerId
 			})
@@ -214,7 +214,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(appLogs).ToNot(BeNil())
 		})
 
-		It("should send to CloudWatch with only .log_type and .message", func() {
+		It("should send to CloudWatch", func() {
 			pipelineBuilder.ToCloudwatchOutput(obs.CloudwatchAuthentication{
 				Type: obs.CloudwatchAuthTypeAccessKey,
 				AWSAccessKey: &obs.CloudwatchAWSAccessKey{

@@ -80,18 +80,10 @@ var _ = Describe("[Functional][Inputs][SysLog] Functional tests", func() {
 			for _, line := range lines {
 				record := map[string]interface{}{}
 				Expect(json.Unmarshal([]byte(line), &record)).To(BeNil())
-				message, ok := record["message"].(string)
-				Expect(ok).To(BeTrue())
-				Expect(message).To(BeEquivalentTo(msg))
-				hostname, ok := record["hostname"].(string)
-				Expect(ok).To(BeTrue())
-				Expect(hostname).To(BeEquivalentTo(host))
-				procid, ok := record["procid"].(float64)
-				Expect(ok).To(BeTrue())
-				Expect(procid).To(BeEquivalentTo(pid))
-				logType, ok := record["log_type"].(string)
-				Expect(ok).To(BeTrue())
-				Expect(logType).To(BeEquivalentTo("infrastructure"))
+				Expect(record).To(HaveKeyWithValue("message", msg))
+				Expect(record).To(HaveKeyWithValue("hostname", host))
+				Expect(record).To(HaveKeyWithValue("procid", float64(pid)))
+				Expect(record).To(HaveKeyWithValue("log_type", string(obs.InputTypeInfrastructure)))
 			}
 		})
 

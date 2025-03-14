@@ -14,6 +14,9 @@ key_pass = "foo"
 type = "remap"
 inputs = ["input_myreceiver"]
 source = '''
-  .log_source = "node"
-  .log_type = "infrastructure"
+  . = {"_internal": {"structured": .}}
+  ._internal.log_source = "syslog"
+  ._internal.log_type = "receiver"
+  ._internal.timestamp = del(._internal.structured.timestamp)
+  ._internal.message = del(._internal.structured.message)
 '''

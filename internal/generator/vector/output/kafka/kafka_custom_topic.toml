@@ -3,7 +3,7 @@
 type = "remap"
 inputs = ["pipeline_1","pipeline_2"]
 source = '''
-._internal.kafka_receiver_topic = "foo-bar" + to_string!(.log_type||"none")
+._internal.kafka_receiver_topic = "foo-bar" + to_string!(._internal.log_type||"none")
 '''
 
 [sinks.kafka_receiver]

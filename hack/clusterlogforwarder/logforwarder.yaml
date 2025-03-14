@@ -6,10 +6,19 @@ metadata:
 spec:
   serviceAccount:
     name: foo
+  filters:
+    - name: mydrop
+      type: drop
+      drop:
+        - test:
+          - field: .kubernetes.labels."foo-bar/baz"
+            matches: avalue
   inputs:
-    - name: infrastructure
-      type: infrastructure
-      infrastructure: {}
+    - name: audit
+      type: audit
+      audit:
+        sources:
+          - openshiftAPI
   outputs:
     - name: myhttp
       type: http
@@ -18,6 +27,8 @@ spec:
   pipelines:
    - name: application-logs 
      inputRefs: 
-     - application
+     - audit
+     filterRefs:
+     - mydrop
      outputRefs:
      - myhttp

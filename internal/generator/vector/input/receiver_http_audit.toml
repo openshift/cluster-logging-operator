@@ -8,24 +8,30 @@ enabled = true
 key_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/instance-myreceiver/tls.crt"
 
-[transforms.input_myreceiver_split]
+[transforms.input_myreceiver_items]
 type = "remap"
 inputs = ["input_myreceiver"]
 source = '''
-  if exists(.items) && is_array(.items) {. = unnest!(.items)} else {.}
-'''
 
-[transforms.input_myreceiver_items]
-type = "remap"
-inputs = ["input_myreceiver_split"]
-source = '''
-  if exists(.items) {. = .items} else {.}
+  if exists(.items) {
+      r = array([])
+      for_each(array!(.items)) -> |_index, i| {
+        r = push(r, {"structured": i})
+      }
+      . = r
+  } else {
+    . = {"structured": .}
+  }
+
 '''
 
 [transforms.input_myreceiver_meta]
 type = "remap"
 inputs = ["input_myreceiver_items"]
 source = '''
-  .log_source = "kubeAPI"
-  .log_type = "audit"
+  . = {"_internal": .}
+  ._internal.log_source = "kubeAPI"
+  ._internal.log_type = "audit"
+  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
 '''

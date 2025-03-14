@@ -703,6 +703,15 @@ the collector. The collector is configured to use the public and private key pro
 
 |type|string|  Type of Receiver plugin.
 
+Supported Receiver types are:
+
+1. http
+
+- Currently only supports kubernetes audit logs (log_type = &#34;audit&#34;)
+2. syslog
+
+- Currently only supports node infrastucture logs (log_type = &#34;infrastructure&#34;)
+
 |======================
 
 === .spec.inputs[].receiver.http
@@ -716,6 +725,8 @@ Type:: object
 |Property|Type|Description
 
 |format|string|  Format is the format of incoming log data.
+
+The only currently supported format is `kubeAPIAudit`.
 
 |======================
 
@@ -920,12 +931,106 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
+
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.outputs[].azureMonitor.tuning.maxBufferSize.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
 |======================
 
 === .spec.outputs[].azureMonitor.tuning.maxRetryDuration
@@ -1176,11 +1281,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 It is an error if the compression type is not supported by the output.
@@ -1208,6 +1341,10 @@ The Index can be a combination of static and dynamic values consisting of field 
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app|infra|audit)-write$
+where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
+with the openshiftLabels filter. See the product documentation for examples.
 
 Example:
 
@@ -1315,11 +1452,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
@@ -1411,11 +1576,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |======================
 
@@ -1542,11 +1735,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
@@ -1674,6 +1895,11 @@ Type:: object
 |deliveryMode|string|  
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
+|messageTimeout|Duration|  MessageTimeout messages that are waiting to be sent are dropped after this timeout.
+Used to ensure that newer messages are not blocked indefinitely by older ones.
+
+A duration string is a sequence of decimal numbers and a unit suffix,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 |======================
 
 === .spec.outputs[].kafka.tuning.maxWrite
@@ -1741,6 +1967,10 @@ Type:: int
 |scale|int|  
 |value|int|  
 |======================
+
+=== .spec.outputs[].kafka.tuning.messageTimeout
+
+Type:: Duration
 
 === .spec.outputs[].loki
 
@@ -1906,11 +2136,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
@@ -2142,11 +2400,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
@@ -2267,11 +2553,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 It is an error if the compression type is not supported by the output.
@@ -2367,11 +2681,39 @@ Type:: object
 |Property|Type|Description
 
 |deliveryMode|string|  
+|maxBufferSize|object|  MaxBufferSize is the maximum size in bytes allowed for buffering unsent data to an output.
+It is written as a [Kubernetes quantity], for example: 128974848, 129e6, 129M,  123Mi
+
+NOTE: It is not recommended to set this field unless you understand the disk space
+requirements, and have done tests to validate performance under realistic conditions.
+
+The following are potential risks to bear in mind:
+
+- With `deliveryMode: AtLeastOnce`, buffers are created on the local node `/var` file system.
+
+Filling up that file system can have severe consequences for the entire node.
+
+The disk space required on each node is the sum of all persistent output buffers, for all deployed ClusterLogForwarder instances.
+
+- Larger buffers can increase latency and recovery times from a period of overload.
+
+If buffers fill up under heavy load, it takes longer for logs to get to the head of the buffer to be delivered.
+
+If logs are not sent much faster than they are collected, the buffers may take a long time to drain.
+
+[Kubernetes quanitity]: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+[Kubernetes resource limits]: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#meaning-of-memory
 |maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
 
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+A duration string is a sequence of decimal numbers and unit suffixes,
+such as &#34;300ms&#34; or &#34;2h45m&#34;. Valid time units are &#34;ns&#34;, &#34;us&#34; (or &#34;µs&#34;), &#34;ms&#34;, &#34;s&#34;, &#34;m&#34;, &#34;h&#34;.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 

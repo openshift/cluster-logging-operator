@@ -118,7 +118,7 @@ metadata:
     certified: "false"
     console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2024-10-24T09:59:21Z"
+    createdAt: "2025-03-14T20:19:21Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
     features.operators.openshift.io/cnf: "false"
@@ -309,7 +309,11 @@ spec:
         path: collection.tolerations
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
-      - description: The type of Log Collection to configure
+      - description: |-
+          The type of Log Collection to configure
+          Supported values are:
+          1. vector
+          2. fluentd
         displayName: Collector Implementation
         path: collection.type
         x-descriptors:

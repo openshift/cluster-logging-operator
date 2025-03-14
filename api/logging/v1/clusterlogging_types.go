@@ -102,6 +102,9 @@ type ClusterLoggingStatus struct {
 type VisualizationSpec struct {
 
 	// The type of Visualization to configure
+	// Supported values are:
+	// 1. ocp-console
+	// 2. kibana
 	//
 	// +kubebuilder:validation:Enum=ocp-console;kibana
 	Type VisualizationType `json:"type"`
@@ -291,6 +294,10 @@ type CollectionSpec struct {
 	// TODO make type required in v2 once Logs is removed. For now assume default which is vector
 
 	// The type of Log Collection to configure
+	// Supported values are:
+	// 1. vector
+	// 2. fluentd
+	//
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Implementation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:fluentd","urn:alm:descriptor:com.tectonic.ui:select:vector"}
 	// +kubebuilder:validation:Optional
 	Type LogCollectionType `json:"type"`

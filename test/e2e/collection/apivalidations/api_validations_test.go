@@ -47,6 +47,12 @@ var _ = Describe("", func() {
 		_, err = buffer.ReadFrom(reader)
 		assert(buffer.String(), err)
 	},
+		Entry("should pass for LokiStack with empty tuning", "lokistack-empty-tuning.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for LokiStack with snappy compression", "lokistack-snappy-compression-otel.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp(".'snappy' compression cannot be used when data model is 'Otel'"))
+		}),
 		Entry("should pass for syslog with valid udp URL", "syslog_valid_url_udp.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),

@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	VectorHttpSourceBenchmarkConfTemplate = "" +
-		`[sources.my_source]
+	VectorHttpSourceBenchmarkConfTemplate = `
+[sources.my_source]
 type = "http_server"
 address = "127.0.0.1:8090"
 decoding.codec = "json"
@@ -45,7 +45,7 @@ crt_file = "/tmp/secrets/http/tls.crt"
 type = "remap"
 inputs = ["my_source"]
 source = '''
- .epoc_out = to_float(now())
+ epoc_out = to_float(now())
  mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.fZ")
  if err != null {
    mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.f%z")
@@ -53,8 +53,23 @@ source = '''
      log("Unable to parse @timestamp: " + err, level: "error")
    }
  }
- .epoc_in = to_float(mytime)
+ epoc_in = to_float(mytime)
 
+ content = parse_regex!(.message,r'(?<sub>goloader seq - functional\.[0-9A-Z]* - (?<seqid>[0-9]{10}))')
+ message = to_string(content.sub)
+ container_name = .kubernetes.container_name
+  message_size = length!(.message)
+  payload_size = length(encode_json(.))
+
+ . = {
+    "epoc_in": epoc_in,
+    "epoc_out": epoc_out,
+    "message": to_string(message),
+    "container_name": container_name,
+    "message_size": message_size,
+    "payload_size": payload_size,
+    "seqid": to_int!(content.seqid)
+  }
 '''
 
 [sinks.my_sink]
@@ -227,7 +242,7 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 }
 
 func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output obs.OutputSpec, image string) error {
-	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, Option{"path", "/tmp/{{kubernetes.container_name}}.log"}, Option{"template", VectorHttpSourceBenchmarkConfTemplate}); err != nil {
+	if err := f.AddVectorHttpOutputWithConfig(b, output, "", nil, Option{"path", "/tmp/{{.container_name}}.log"}, Option{"template", VectorHttpSourceBenchmarkConfTemplate}); err != nil {
 		return err
 	}
 	b.GetContainer(string(obs.OutputTypeHTTP)).WithImage(image).Update()

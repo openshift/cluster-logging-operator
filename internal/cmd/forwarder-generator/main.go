@@ -19,7 +19,7 @@ import (
 
 // HACK - This command is for development use only
 func main() {
-	utils.InitLogger("forwarder-generator")
+	utils.InitStaticLogger("forwarder-generator")
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	debugOutput := flag.Bool("debug-output", false, "Generate config normally, but replace output plugins with @stdout plugin, so that records can be printed in collector logs.")

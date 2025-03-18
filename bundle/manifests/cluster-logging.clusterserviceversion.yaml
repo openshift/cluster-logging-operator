@@ -2161,6 +2161,13 @@ spec:
           - list
           - use
           - watch
+        - apiGroups:
+          - hypershift.openshift.io
+          resources:
+          - hostedcontrolplanes
+          verbs:
+          - list
+          - get
         serviceAccountName: cluster-logging-operator
       deployments:
       - name: cluster-logging-operator

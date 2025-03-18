@@ -1,6 +1,7 @@
-=== Steps to forward to Splunk HTTP Event Collector (HEC)
+== Steps to forward to Splunk HTTP Event Collector (HEC)
 
-(https://dev.splunk.com/enterprise/docs/devtools/httpeventcollector/)
+More information about format of Splunk HTTP Event you can read in this document:
+https://docs.splunk.com/Documentation/Splunk/latest/Data/FormateventsforHTTPEventCollector[Format events for HTTP Event Collector]
 
 . Create a secret containing your `hecToken` using the following command:
 +
@@ -30,11 +31,16 @@ spec:
       type: splunk
       splunk:
         authentication:
-          token:
+          token: # <1>
             key: hecToken
             secretName: splunk-secret
-        url: 'http://example-splunk-hec-service:8088'
-        index: '{.log_type||"undefined"}'
+        url: 'http://example-splunk-hec-service:8088' # <2>
+        index: '{.log_type||"main"}' # <3>
+        source: '{.log_source||"undefined"}' # <4>
+        indexedFields: ['.log_type', '.log_source'] # <5>
+        payloadKey: '.kubernetes' # <6>
+        tuning:
+            compression: gzip # <7>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -43,5 +49,148 @@ spec:
       outputRefs:
         - splunk-receiver
 ----
+1. `token`: Points to the secret containing the Splunk HEC token used for authenticating requests.
+2. `url`: The base URL of the Splunk instance.
+3. `index`: Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used. This supports template syntax to allow dynamic per-event values.
+4. `source`: Optional. The source of events sent to this sink. This supports template syntax to allow dynamic per-event values.
+5. `indexedFields`: Optional. Fields to be added to Splunk index.
+6. `payloadKey`: Optional. Specifies record field to use as payload.
+7. `compression`: Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
 
-NOTE: This will forward logs to the log type of the message.  The default index of the splunk server configuration is used when 'index' is not defined
+=== `source`
+In Splunk, the `source` field typically identifies the origin of a log event.
+To ensure consistency and meaningful categorization, the `source` value can be dynamically derived from the `log_type` and `log_source` fields,
+following Cluster Log Forwarder's conventions.
+
+=== `indexedFields`
+
+In Splunk, `indexed_fields` are fields that are extracted at *index time*, rather than at *search time*. This means their values are stored directly in the index alongside the raw event data, allowing for *faster search performance* on those fields.
+
+However, because `indexed_fields` increase storage usage, they should be used *sparingly* and only for *high-value fields* that provide significant search benefits.
+
+Since logs processed by Vector are typically *well-structured JSON*, Splunk can dynamically extract fields at search time. As a result, the use of `indexed_fields` is *not necessary by default*. That said, they may be valuable in *specific use cases*, such as *large datasets with frequent queries on specific fields*.
+In such cases, users can configure the required fields manually.
+
+==== Indexed Fields Transformation Rules
+
+To support the use of complex and nested fields as indexed fields, field names and values are automatically transformed to meet requirements:
+
+* Nested fields are flattened into top-level fields.
+* Field paths are joined using dot notation, and unsupported characters are replaced with underscores (`_`).
+* Non-string values are automatically converted to strings (e.g., `3` → `"3"`, `true` → `"true"`).
+* Object values are serialized as JSON strings (e.g., `{ status: 200 }` → `"{\"status\":200}"`).
+
+These transformations allow for flexible field selection without requiring changes to the original log structure.
+
+=== Examples
+
+==== Example 1: Nested key
+
+ClusterLogForwarder configuration:
+[source,yaml]
+----
+indexedFields: [".annotations.authorization.k8s.io/decision", ".annotations.authorization.k8s.io/reason"]
+----
+
+Original log structure:
+[source,json]
+----
+"annotations": {
+  "authorization.k8s.io/decision": "allow",
+  "authorization.k8s.io/reason": "foo_bar"
+}
+----
+
+Transformed fields:
+[source,json]
+----
+"annotations_authorization_k8s_io_decision": "allow",
+"annotations_authorization_k8s_io_reason": "foo_bar"
+----
+
+==== Example 2: Numeric and Boolean Values
+
+ClusterLogForwarder configuration:
+[source,yaml]
+----
+indexedFields: [".status_code", ".success"]
+----
+
+Original log structure:
+[source,json]
+----
+"status_code": 200,
+"success": true
+----
+
+Transformed fields:
+[source,json]
+----
+"status_code": "200",
+"success": "true"
+----
+
+==== Example 3: Embedded Object
+
+ClusterLogForwarder configuration:
+[source,yaml]
+----
+indexedFields: [".objectRef.resource"]
+----
+
+Original log structure:
+[source,json]
+----
+"objectRef": {
+  "resource": {
+    "status": 200,
+    "statusText": "OK"
+  }
+}
+----
+
+Transformed field:
+[source,json]
+----
+"objectRef_resource": "{\"status\":200,\"statusText\":\"OK\"}"
+----
+
+[IMPORTANT]
+====
+After remapping, the *original fields* will be removed to avoid duplication.
+Only the transformed, top-level fields will be retained in the final log event.
+====
+
+=== `payloadKey`
+
+By default, `payloadKey` is not set, which means the complete log record is forwarded as the payload.
+
+
+NOTE: Use `payloadKey` carefully. Selecting a single field as the payload may cause other important information in the log to be dropped, potentially leading to inconsistent or incomplete log events.
+
+
+=== `sourceType` and `host`
+
+The `sourceType` and `host` fields are *not configurable* through the Cluster Log Forwarder API. They are set automatically as described below, independent of the `.log_type` or `.log_source` values.
+
+* `sourceType`:
+Determined automatically based on the type of the final event payload.
+** `_json` — used when `payloadKey` is not set or when `payloadKey` points to an object.
+** `generic_single_line` — when the payload is a primitive value (e.g., string, number, boolean).
+
+* `host`: Set to the value of `.hostname`
+This ensures that each log event carries the correct *originating host* information.
+
+== Default settings
+Below the table with default value depends on log_type and log_source will be used if not set in configuration.
+
+|===
+| |pass:[Infrastructure Journal <br/><em>log_type:infrastructure<br/>log_source:node</em>]|pass:[Infrastructure/Application Container<br/><em>log_type:infrastructure\|application<br/>log_source:container</em>]|pass:[Audit<br/><em>log_type:audit<br/>log_source:auditd\|ovn\|openshiftAPI\|kubeAPI<em/>]|Note
+|`index`|||| not configured by default
+|`source`|SYSLOG_IDENTIFIER|ns_name_podName_containerName|.log_source|
+|`indexedFields`|||| not configured by default
+|`sourceType`|`_json` or `generic_single_line`|`_json` or `generic_single_line`|`_json` or `generic_single_line`| Determined automatically based on the type of the final event payload
+|`host`|`.hostname`|`.hostname`|`.hostname`|not configurable
+|`payloadKey`|||| not configured by default
+
+|===

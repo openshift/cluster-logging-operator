@@ -87,7 +87,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	logger := utils.InitLogger("cluster-logging-operator")
+	logger := utils.InitStaticLogger("cluster-logging-operator")
 	// LOG-5136 Fixes error caused by updates to controller-runtime
 	ctrl.SetLogger(logger)
 

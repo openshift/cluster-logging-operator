@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
@@ -60,7 +59,7 @@ func (r *ClusterRunner) Deploy() {
 			testClient.Close()
 		}
 	}
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testClient.Test, cleanup, r.Verbosity)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testClient.Test, cleanup, 0)
 	r.framework.Conf = r.CollectorConfig
 
 	obsruntime.NewClusterLogForwarderBuilder(r.framework.Forwarder).
@@ -68,7 +67,17 @@ func (r *ClusterRunner) Deploy() {
 			spec.Type = obs.InputTypeApplication
 			spec.Application = &obs.Application{
 				Includes: []obs.NamespaceContainerSpec{
-					{Namespace: r.Namespace()},
+					{
+						Namespace: r.Namespace(),
+					},
+				},
+				Excludes: []obs.NamespaceContainerSpec{
+					{
+						Container: "collector",
+					},
+					{
+						Container: "http",
+					},
 				},
 			}
 		}).

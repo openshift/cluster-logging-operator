@@ -167,3 +167,10 @@ rules:
   - list
   - use
   - watch
+- apiGroups:
+  - hypershift.openshift.io
+  resources:
+  - hostedcontrolplanes
+  verbs:
+  - list
+  - get

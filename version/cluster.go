@@ -28,7 +28,7 @@ func ClusterVersion(k8client client.Reader) (string, string, error) {
 	return clusterVersion, clusterID, nil
 }
 
-// HostedClusterVersion retrieves the version info of the hosted cluster or the clustser ID where the operator is deployed
+// HostedClusterVersion retrieves the version info of the hosted cluster or the cluster ID where the operator is deployed
 // upon error
 func HostedClusterVersion(ctx context.Context, k8client client.Reader, namespace string) (version, id string) {
 	version, id, err := ClusterVersion(k8client)
@@ -40,6 +40,5 @@ func HostedClusterVersion(ctx context.Context, k8client client.Reader, namespace
 	if info := hostedcontrolplane.GetVersionID(ctx, k8client, namespace); info != nil {
 		return info.Version, info.ID
 	}
-	// Otherwise use the cluster-ID established at start-up.
 	return version, id
 }

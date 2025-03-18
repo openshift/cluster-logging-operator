@@ -16,8 +16,6 @@ const (
 )
 
 // InitLogger creates a logger and optionally initializes the verbosity with the value in LOG_LEVEL.
-//
-// It also replaces the static logger with the newly-created logger.
 func InitLogger(component string) logr.Logger {
 	verbosity := defaultLoggerVerbosity
 	if rawVerbosity, ok := os.LookupEnv(envLogLevel); ok {
@@ -28,8 +26,13 @@ func InitLogger(component string) logr.Logger {
 
 		verbosity = envVerbosity
 	}
+	return log.NewLogger(component, log.WithVerbosity(verbosity))
+}
 
-	logger := log.NewLogger(component, log.WithVerbosity(verbosity))
+// InitStaticLogger creates a logger and optionally initializes the verbosity with the value in LOG_LEVEL
+// and replaces the static logger with the newly-created logger.
+func InitStaticLogger(component string) logr.Logger {
+	logger := InitLogger(component)
 	static.SetLogger(logger)
 	return logger
 }

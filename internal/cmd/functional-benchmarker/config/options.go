@@ -24,7 +24,6 @@ type Options struct {
 	Image               string
 	TotalMessages       int
 	MsgSize             int
-	Verbosity           int
 	BaseLine            bool
 	DoCleanup           bool
 	Sample              bool
@@ -53,7 +52,6 @@ func InitOptions() Options {
 	//fs.IntVar(&options.TotalMessages, "tot-messages", 10000, "The number of messages to write per stressor")
 	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
-	fs.IntVar(&options.Verbosity, "verbosity", 0, "The output log level")
 	fs.BoolVar(&options.DoCleanup, "do-cleanup", true, "set to false to preserve the namespace")
 	//fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
 	//fs.StringVar(&options.Platform, "platform", "cluster", "The runtime environment: cluster, local. local requires podman")

@@ -686,7 +686,7 @@ spec:
                               description: |-
                                 Format is the format of incoming log data.
 
-                                The current supported format is `kubeAPIAudit`.
+                                The only currently supported format is `kubeAPIAudit`.
                               enum:
                               - kubeAPIAudit
                               type: string
@@ -2356,8 +2356,15 @@ spec:
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         enrichment:
-                          description: Enrichment is an additional modification the
-                            log message before forwarding it to the receiver
+                          description: |-
+                            Enrichment is an additional modification to the log message before forwarding it to the receiver.
+
+                            Supported values are:
+                            1. None
+                               - Adds no additional enrichment to the record
+                            2. KubernetesMinimal
+                               - Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
+                            This may result in the message body being an invalid JSON structure.
                           enum:
                           - None
                           - KubernetesMinimal
@@ -2439,8 +2446,12 @@ spec:
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         rfc:
-                          description: SyslogRFCType sets which RFC the generated
-                            messages conform to.
+                          description: |-
+                            The RFC to which the generated messages conform to.
+
+                            Supported values are:
+                            1. RFC3164
+                            2. RFC5424
                           enum:
                           - RFC3164
                           - RFC5424

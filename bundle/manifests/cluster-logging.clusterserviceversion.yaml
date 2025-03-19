@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-03-18T15:57:33Z"
+    createdAt: "2025-03-19T18:09:36Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -269,7 +269,19 @@ spec:
           NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
         displayName: Fields to be kept
         path: filters[0].prune.notIn
-      - description: Type of filter.
+      - description: |-
+          Type of filter.
+
+
+          Possible filter types are:
+
+
+          1. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required.
+          2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
+          3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
+          4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
+          5. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+          6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
         displayName: Filter Type
         path: filters[0].type
       - description: |-

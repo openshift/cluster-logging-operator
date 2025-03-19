@@ -64,6 +64,15 @@ type FilterSpec struct {
 
 	// Type of filter.
 	//
+	// Possible filter types are:
+	//
+	// 1. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required.
+	// 2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
+	// 3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
+	// 4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
+	// 5. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+	// 6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
+	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Filter Type"
 	Type FilterType `json:"type"`

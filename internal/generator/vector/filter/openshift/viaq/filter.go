@@ -2,12 +2,13 @@ package viaq
 
 import (
 	"fmt"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"k8s.io/utils/set"
-	"strings"
 )
 
 const (
@@ -117,7 +118,11 @@ func hasContainerSource(inputSpecs []obs.InputSpec) bool {
 
 func hasAuditSource(inputSpecs []obs.InputSpec, logSource obs.AuditSource) bool {
 	for _, i := range inputSpecs {
-		if i.Type == obs.InputTypeAudit && i.Audit != nil && (set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) {
+		if i.Type == obs.InputTypeAudit && i.Audit != nil &&
+			(set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) ||
+			// Also true if HTTP input receiver with `kubeApiAudit` format is defined and logSource == `kubeAPI`
+			(logSource == obs.AuditSourceKube &&
+				(i.Type == obs.InputTypeReceiver && i.Receiver != nil && i.Receiver.HTTP != nil && i.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit)) {
 			return true
 		}
 	}

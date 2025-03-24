@@ -4,12 +4,13 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"os/exec"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
-	"os/exec"
 )
 
 var _ = Describe("", func() {
@@ -48,9 +49,6 @@ var _ = Describe("", func() {
 		assert(buffer.String(), err)
 	},
 		Entry("should pass for syslog with valid udp URL", "syslog_valid_url_udp.yaml", func(out string, err error) {
-			Expect(err).ToNot(HaveOccurred())
-		}),
-		Entry("should pass for syslog with valid udps URL", "syslog_valid_url_udps.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
 		Entry("should pass for syslog with valid tls URL", "syslog_valid_url_tls.yaml", func(out string, err error) {

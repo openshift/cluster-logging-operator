@@ -1,12 +1,13 @@
 package functional
 
 import (
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strconv"
 	"strings"
 
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/url"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 )

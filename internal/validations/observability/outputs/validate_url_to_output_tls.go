@@ -2,10 +2,11 @@ package outputs
 
 import (
 	"fmt"
+	"strings"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/url"
-	"strings"
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 )
 
 // validateURLAccordingToTLS validate that if Output has TLS configuration Output URL scheme must be secure e.g. https, tls etc

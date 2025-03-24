@@ -38,7 +38,7 @@ spec:
 Where `url` and `rfc` parameters are mandatory other are optional
 
 . `rfc`: Syslog RFC specification:  `RFC3164` or `RFC5424`
-. `url`: an absolute URL, with a scheme. Valid schemes are: `http`, `https`, `tcp`, `tls`, `udp` and `udps`
+. `url`: an absolute URL, with a scheme. Valid schemes are: `http`, `https`, `tcp`, `tls`, `udp`
 . `severity`: values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
   The value can be a decimal integer or one of these case-insensitive keywords:
 

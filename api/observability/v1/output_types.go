@@ -1065,9 +1065,9 @@ type SyslogTuningSpec struct {
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
 
-	// An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
-	// For example, to send syslog records using secure UDP:
-	//     url: udps://syslog.example.com:1234
+	// An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+	// For example, to send syslog records using UDP:
+	//     url: udp://syslog.example.com:514
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"

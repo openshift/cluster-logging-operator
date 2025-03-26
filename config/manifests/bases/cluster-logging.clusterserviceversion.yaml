@@ -1543,9 +1543,9 @@ spec:
       - displayName: Delivery Mode
         path: outputs[0].syslog.tuning.deliveryMode
       - description: |-
-          An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
-          For example, to send syslog records using secure UDP:
-              url: udps://syslog.example.com:1234
+          An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+          For example, to send syslog records using UDP:
+              url: udp://syslog.example.com:514
         displayName: Destination URL
         path: outputs[0].syslog.url
         x-descriptors:

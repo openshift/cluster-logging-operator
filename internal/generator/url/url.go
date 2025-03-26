@@ -3,9 +3,10 @@ package url
 
 import (
 	"fmt"
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"net/url"
 	"strings"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 // CheckAbsolute returns an error if Scheme or Host is empty.
@@ -23,7 +24,6 @@ func CheckAbsolute(u *URL) error {
 
 var secureSchemes = map[string]string{
 	"https": "http",
-	"udps":  "udp",
 	"tls":   "tcp",
 	"ssl":   "tcp",
 }

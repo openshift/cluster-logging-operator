@@ -19,8 +19,7 @@ scheme. For those output types we use these special schemes:
 * tcp: insecure TCP connection.
 * tls: secure TLS over TCP connection.
 * udp: insecure UDP packets.
-* udps: secure TLS over UDP packets.
 
-If the url scheme is a TLS secure scheme (https, tls, udps) then the
+If the url scheme is a TLS secure scheme (https, tls) then the
 `output.tls` MUST NOT be empty, it provides the TLS certificates. If the URL
 scheme is insecure, then `output.tls` is empty.

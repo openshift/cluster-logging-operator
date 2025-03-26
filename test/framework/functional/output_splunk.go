@@ -130,11 +130,28 @@ func GenerateConfigmapData() (data map[string]string, err error) {
 	return data, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(namespace, name, logType string) (results []string, err error) {
+func (f *CollectorFunctionalFramework) ReadSplunkStatus(namespace, podName string) (string, error) {
+	var output string
+	cmd := "/opt/splunk/bin/splunk status"
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		output, err = oc.Exec().WithNamespace(namespace).Pod(podName).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		if output == "" || err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return err.Error(), err
+	}
+	return output, nil
+}
+
+func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(namespace, podName, logType string) (results []string, err error) {
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search log_type=%s -auth "admin:%s"`, logType, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		output, err = oc.Exec().WithNamespace(namespace).Pod(podName).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
 		if output == "" || err != nil {
 			return false, err
 		}
@@ -149,11 +166,11 @@ func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(namespace, name,
 	return results, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(namespace, name, index string) (results []string, err error) {
+func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(namespace, podName, index string) (results []string, err error) {
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search index=%s -auth "admin:%s"`, index, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
-		output, err = oc.Exec().WithNamespace(namespace).Pod(name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		output, err = oc.Exec().WithNamespace(namespace).Pod(podName).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
 		if output == "" || err != nil {
 			return false, err
 		}
@@ -164,6 +181,50 @@ func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(namespace, n
 		return nil, err
 	}
 
+	results = strings.Split(output, "\n")
+	return results, nil
+}
+
+func (f *CollectorFunctionalFramework) ReadStatsForFieldByIndexFromSplunk(namespace, podName, index, field, format string) (results string, err error) {
+	if format == "" {
+		format = "raw"
+	}
+	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search 'index=%s | stats count by %s' -auth "admin:%s" -output %s`, index, field, AdminPassword, format)
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		results, err = oc.Exec().WithNamespace(namespace).Pod(podName).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		if results == "" || err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	println("\n\n\n\n\n\n\n")
+	println(results)
+	println("\n\n\n\n\n\n\n")
+	return results, nil
+}
+
+func (f *CollectorFunctionalFramework) ReadFieldByIndexFromSplunk(namespace, podName, index, field, format string) (results []string, err error) {
+	var output string
+	if format == "" {
+		format = "raw"
+	}
+
+	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search 'index=%s | table %s' -auth "admin:%s" -output %s`, index, field, AdminPassword, format)
+	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		output, err = oc.Exec().WithNamespace(namespace).Pod(podName).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		if output == "" || err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
 	results = strings.Split(output, "\n")
 	return results, nil
 }

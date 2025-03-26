@@ -1045,6 +1045,49 @@ type Splunk struct {
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index,omitempty"`
+
+	//Fields to be added to Splunk index
+	//
+	//Examples: [`.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`]
+	//
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Indexed Fields"
+	IndexedFields []FieldPath `json:"indexedFields,omitempty"`
+
+	// Source identifies the origin of a log event.
+	//
+	// The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	//
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Source",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Source string `json:"source,omitempty"`
+
+	// PayloadKey specifies record field to use as payload.
+	// The PayloadKey must be a single field path.
+	//
+	// Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+	//
+	// If left empty, will use the whole message as the payload key
+	//
+	// Examples: `.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Payload Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	PayloadKey FieldPath `json:"payloadKey,omitempty"`
 }
 
 // SyslogRFCType sets which RFC the generated messages conform to.

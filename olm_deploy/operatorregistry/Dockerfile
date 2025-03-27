@@ -1,7 +1,8 @@
 FROM quay.io/operator-framework/upstream-registry-builder AS registry-builder
 
-FROM registry.redhat.io/ubi8:8.5
-
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+USER 0
+RUN microdnf install gettext -y
 WORKDIR /
 COPY bundle/manifests/ /manifests
 COPY bundle/metadata /metadata/

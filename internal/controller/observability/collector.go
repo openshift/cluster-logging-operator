@@ -72,6 +72,17 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
+	credCm, err := collector.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+	if err != nil {
+		log.V(9).Error(err, "collector.ReconcileAWSProfileConfig")
+		return err
+	}
+
+	// Add generated credentials configmap to contexts to be mounted in pod
+	if credCm != nil {
+		context.ConfigMaps[credCm.Name] = credCm
+	}
+
 	var collectorConfig string
 	if collectorConfig, err = GenerateConfig(context.Client, *context.Forwarder, *resourceNames, context.Secrets, options); err != nil {
 		log.V(9).Error(err, "collector.GenerateConfig")

@@ -136,13 +136,13 @@ var _ = Describe("Validating outputs", func() {
 				[]obs.OutputSpec{createIAMRoleSpec("output1", foo), createIAMRoleSpec("output2", foo)},
 				[]string{"is valid", "is valid"},
 			),
-			Entry("should reject multiple CloudWatch outputs with different IAM roles",
+			Entry("should accept multiple CloudWatch outputs with different IAM roles",
 				[]obs.OutputSpec{createIAMRoleSpec("output1", foo), createIAMRoleSpec("output2", bar)},
-				[]string{"is valid", ErrVariousRoleARNAuth},
+				[]string{"is valid", "is valid"},
 			),
-			Entry("should reject multiple CloudWatch outputs with different IAM roles and static key",
+			Entry("should accept multiple CloudWatch outputs with different IAM roles and static key",
 				[]obs.OutputSpec{createIAMRoleSpec("output1", foo), createAccessKeySpec("output2", bar), createIAMRoleSpec("output3", bar)},
-				[]string{"is valid", "is valid", ErrVariousRoleARNAuth},
+				[]string{"is valid", "is valid", "is valid"},
 			),
 		)
 	})

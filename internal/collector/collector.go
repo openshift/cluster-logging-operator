@@ -166,7 +166,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
 	f.Visit(collector, podSpec, f.ResourceNames, namespace, f.LogLevel)
-	addWebIdentityForCloudwatch(collector, spec, f.Secrets)
 
 	podSpec.Containers = []v1.Container{
 		*collector,

@@ -1,13 +1,11 @@
 package outputs
 
 import (
-	"github.com/golang-collections/collections/set"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,9 +14,9 @@ var _ = Describe("validating CloudWatch auth", func() {
 	Context("#ValidateCloudWatchAuth", func() {
 
 		var (
-			myRoleArn    = "arn:aws:iam::123456789012:role/my-role-to-assume"
-			otherRoleArn = "arn:aws:iam::123456789012:role/other-role-to-assume"
-			spec         = obs.OutputSpec{
+			myRoleArn      = "arn:aws:iam::123456789012:role/my-role-to-assume"
+			invalidRoleARN = "arn:aws:iam::123456789:role/other-role-to-assume"
+			spec           = obs.OutputSpec{
 				Name: "output",
 				Type: obs.OutputTypeCloudwatch,
 				Cloudwatch: &obs.Cloudwatch{
@@ -43,6 +41,7 @@ var _ = Describe("validating CloudWatch auth", func() {
 				},
 				Data: map[string][]byte{
 					constants.AWSCredentialsKey: []byte(myRoleArn),
+					"invalidRoleARN":            []byte(invalidRoleARN),
 				},
 			}
 			context = internalcontext.ForwarderContext{
@@ -57,25 +56,17 @@ var _ = Describe("validating CloudWatch auth", func() {
 			}
 		)
 
-		It("should fail validation if meet different Role ARN", func() {
-			roleARNs := set.New(otherRoleArn)
-			context.AdditionalContext = utils.Options{
-				RoleARNsOpt: roleARNs,
-			}
-			res := ValidateCloudWatchAuth(spec, context)
-			Expect(res).ToNot(BeEmpty())
-			Expect(len(res)).To(BeEquivalentTo(1))
-			Expect(res[0]).To(BeEquivalentTo(ErrVariousRoleARNAuth))
-		})
-
-		It("should pass validation if Role ARNs are equals", func() {
-			roleARNs := set.New(myRoleArn)
-			context.AdditionalContext = utils.Options{
-				RoleARNsOpt: roleARNs,
-			}
+		It("should pass with valid role arn", func() {
 			res := ValidateCloudWatchAuth(spec, context)
 			Expect(res).To(BeEmpty())
 		})
 
+		It("should fail if Role ARN is invalid", func() {
+			spec.Cloudwatch.Authentication.IAMRole.RoleARN.Key = "invalidRoleARN"
+			res := ValidateCloudWatchAuth(spec, context)
+			Expect(res).ToNot(BeEmpty())
+			Expect(len(res)).To(BeEquivalentTo(1))
+			Expect(res[0]).To(BeEquivalentTo(ErrInvalidRoleARN))
+		})
 	})
 })

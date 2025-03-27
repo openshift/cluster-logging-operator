@@ -2,7 +2,9 @@ package factory
 
 import (
 	"fmt"
+
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
 type ForwarderResourceNames struct {
@@ -16,6 +18,7 @@ type ForwarderResourceNames struct {
 	ServiceAccountTokenSecret        string
 	ForwarderName                    string
 	Secrets                          string
+	AwsCredentialsFile               string
 }
 
 func (f *ForwarderResourceNames) DaemonSetName() string {
@@ -41,5 +44,6 @@ func ResourceNames(clf obsv1.ClusterLogForwarder) *ForwarderResourceNames {
 		InternalLogStoreSecret:           clf.Spec.ServiceAccount.Name + "-default",
 		ServiceAccountTokenSecret:        clf.Spec.ServiceAccount.Name + "-token",
 		Secrets:                          resBaseName + "-secrets",
+		AwsCredentialsFile:               resBaseName + "-" + constants.AWSCredentialsConfigMapName,
 	}
 }

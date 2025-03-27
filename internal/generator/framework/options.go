@@ -12,6 +12,7 @@ const (
 
 	URL                                 = "url"
 	OptionServiceAccountTokenSecretName = "serviceAccountTokenSecretName"
+	OptionForwarderName                 = "forwarderName"
 )
 
 // Options is a map of Options used to customize the config generation. E.g. Debugging, legacy config generation

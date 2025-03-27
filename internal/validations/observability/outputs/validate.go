@@ -2,11 +2,12 @@ package outputs
 
 import (
 	"fmt"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
-	"strings"
 )
 
 func Validate(context internalcontext.ForwarderContext) {

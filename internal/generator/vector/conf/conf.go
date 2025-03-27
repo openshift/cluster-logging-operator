@@ -1,9 +1,10 @@
 package conf
 
 import (
+	"sort"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"sort"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -69,6 +70,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 	}
 
 	outputMap := map[string]*output.Output{}
+	op[framework.OptionForwarderName] = forwarderName
 	for _, spec := range clfspec.Outputs {
 		o := output.NewOutput(spec, secrets, op)
 		outputMap[spec.Name] = o

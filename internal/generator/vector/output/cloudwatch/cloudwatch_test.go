@@ -95,6 +95,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				secretWithCredentials: {
 					Data: map[string][]byte{
 						constants.AWSCredentialsKey:  []byte("[default]\nrole_arn = " + roleArn + "\nweb_identity_token_file = /var/run/secrets/token"),
+						"my_role_arn":                []byte(roleArn),
 						constants.ClientPrivateKey:   []byte("-- key-- "),
 						constants.TrustedCABundleKey: []byte("-- ca-bundle -- "),
 					},
@@ -123,6 +124,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			if tune {
 				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
 			}
+			op[framework.OptionForwarderName] = "my-forwarder"
 			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, adapter, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
@@ -145,6 +147,20 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					IAMRole: &obs.CloudwatchIAMRole{
 						RoleARN: obs.SecretReference{
 							Key:        constants.AWSCredentialsKey,
+							SecretName: secretWithCredentials,
+						},
+						Token: obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
+						},
+					},
+				}
+			}, false, framework.NoOptions, "cw_groupname_with_aws_credentials.toml"),
+			Entry("when a role_arn is provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
+				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						RoleARN: obs.SecretReference{
+							Key:        "my_role_arn",
 							SecretName: secretWithCredentials,
 						},
 						Token: obs.BearerToken{

@@ -8,6 +8,7 @@ type Auth struct {
 	KeyID           OptionalPair
 	KeySecret       OptionalPair
 	CredentialsPath OptionalPair
+	Profile         OptionalPair
 }
 
 func NewAuth() Auth {
@@ -15,6 +16,7 @@ func NewAuth() Auth {
 		KeyID:           NewOptionalPair("auth.access_key_id", nil),
 		KeySecret:       NewOptionalPair("auth.secret_access_key", nil),
 		CredentialsPath: NewOptionalPair("auth.credentials_file", nil),
+		Profile:         NewOptionalPair("auth.profile", nil),
 	}
 }
 
@@ -27,5 +29,6 @@ func (a Auth) Template() string {
 {{.KeyID}}
 {{.KeySecret}}
 {{.CredentialsPath}}
+{{.Profile}}
 {{- end}}`
 }

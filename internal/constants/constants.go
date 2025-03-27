@@ -24,8 +24,9 @@ const (
 	AWSSecretAccessKey           = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID               = "aws_access_key_id"
 	AWSRoleSessionName           = "cluster-logging" // identifier for role logging session
-	AWSCredentialsKey            = "credentials"     // credrequest key to check for sts-formatted secret
-	AWSWebIdentityRoleKey        = "role_arn"        // manual key to check for sts-formatted secret
+	AWSCredentialsConfigMapName  = "aws-creds"
+	AWSCredentialsKey            = "credentials" // credrequest key to check for sts-formatted secret
+	AWSWebIdentityRoleKey        = "role_arn"    // manual key to check for sts-formatted secret
 	AWSRegionEnvVarKey           = "AWS_REGION"
 	AWSRoleArnEnvVarKey          = "AWS_ROLE_ARN"
 	AWSRoleSessionEnvVarKey      = "AWS_ROLE_SESSION_NAME"

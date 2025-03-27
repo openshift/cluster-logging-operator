@@ -803,32 +803,6 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 		}
 	})
 	Context("when collector has a secret containing a credentials key", func() {
-
-		It("should add the AWS web identity env vars in the container", func() {
-			podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
-				Outputs:   outputs,
-				Pipelines: pipelines,
-			}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
-			collector := podSpec.Containers[0]
-
-			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				Name:  constants.AWSRegionEnvVarKey,
-				Value: outputs[0].Cloudwatch.Region,
-			}))
-			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				Name:  constants.AWSRoleArnEnvVarKey,
-				Value: roleArn,
-			}))
-			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				Name:  constants.AWSRoleSessionEnvVarKey,
-				Value: constants.AWSRoleSessionName,
-			}))
-			Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{
-				Name:  constants.AWSWebIdentityTokenEnvVarKey,
-				Value: path.Join(constants.ServiceAccountSecretPath, constants.TokenKey),
-			}))
-		})
-
 		It("should mount the secret for the bearer token when spec'd", func() {
 			outputs[0].Cloudwatch.Authentication.IAMRole.Token = bearerToken
 			podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{

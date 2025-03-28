@@ -32,7 +32,7 @@ func WaitOnSplunk(f *functional.CollectorFunctionalFramework) {
 		ContainSubstring("splunkd is running"),
 		ContainSubstring("splunk helpers are running"),
 	))
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 }
 
 var _ = Describe("Forwarding to Splunk", func() {

@@ -108,6 +108,10 @@ else
   log "UIPlugin not installed" 2>&1 | tee -a "${LOGFILE_PATH}"
 fi
 
+log "BEGIN gathering alerts ..." | tee -a "${LOGFILE_PATH}"
+${SCRIPT_DIR}/gather_monitoring "$BASE_COLLECTION_PATH" 2>&1 | tee -a "${LOGFILE_PATH}"  &
+pids+=($!)
+
 default_clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
 
 if [ "$default_clo_found" != "" ] ; then

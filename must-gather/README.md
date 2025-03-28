@@ -41,6 +41,8 @@ The `clusterlogging` and `clusterlogforwarder` resources, and also `installplans
 
 The `deployments`, `daemonsets` and `secrets` are also found under `namespaces/[namespace_name]/` and can also be seen using the [`omc`](https://github.com/gmeghnag/omc/) tool.
 
+The cluster alerts are now in the `monitoring/prometheus/` directory, and can be checked with `omc prometheus alertrule` and `oc prometheus alertrule -s firing` (for the firing ones only.
+
 Example must-gather for cluster-logging output (use `tree` for up-to-date structure):
 ```
 ├── cluster-logging
@@ -78,7 +80,11 @@ Example must-gather for cluster-logging output (use `tree` for up-to-date struct
 ├── [...]
 ├── event-filter.html
 ├── gather-debug.log
-└── namespaces
+├── monitoring                                                                                                         
+│   └── prometheus                                                                                                     
+│       ├── rules.json                                                                                                 
+│       └── rules.stderr                                                                                               
+├── namespaces
 │  ├── [namespace_name]       ## including openshift-logging
 │  │  ├── apps
 │  │  │  ├── daemonsets.yaml

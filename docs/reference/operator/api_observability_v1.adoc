@@ -182,6 +182,15 @@ These labels appear in the `openshift.labels` map in the log record.
 
 |type|string|  Type of filter.
 
+Possible filter types are:
+
+1. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required.
+2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
+3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
+4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
+5. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
+
 |======================
 
 === .spec.filters[].drop[]
@@ -703,6 +712,15 @@ the collector. The collector is configured to use the public and private key pro
 
 |type|string|  Type of Receiver plugin.
 
+Supported Receiver types are:
+
+1. http
+
+- Currently only supports kubernetes audit logs (log_type = &#34;audit&#34;)
+2. syslog
+
+- Currently only supports node infrastucture logs (log_type = &#34;infrastructure&#34;)
+
 |======================
 
 === .spec.inputs[].receiver.http
@@ -716,6 +734,8 @@ Type:: object
 |Property|Type|Description
 
 |format|string|  Format is the format of incoming log data.
+
+The only currently supported format is `kubeAPIAudit`.
 
 |======================
 
@@ -1208,6 +1228,10 @@ The Index can be a combination of static and dynamic values consisting of field 
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app|infra|audit)-write$
+where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
+with the openshiftLabels filter. See the product documentation for examples.
 
 Example:
 
@@ -2407,7 +2431,16 @@ Example:
 3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
 
 TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of &#34;tag&#34; when this is empty
-|enrichment|string|  Enrichment is an additional modification the log message before forwarding it to the receiver
+|enrichment|string|  Enrichment is an additional modification to the log message before forwarding it to the receiver.
+
+Supported values are:
+1. None
+
+- Adds no additional enrichment to the record
+2. KubernetesMinimal
+
+- Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={&#34;foo&#34;:&#34;bar&#34;}).
+This may result in the message body being an invalid JSON structure.
 
 |facility|string|  Facility to set on outgoing syslog records.
 
@@ -2475,7 +2508,12 @@ Example:
 
 ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 
-|rfc|string|  
+|rfc|string|  The RFC to which the generated messages conform to.
+
+Supported values are:
+1. RFC3164
+2. RFC5424
+
 |severity|string|  Severity to set on outgoing syslog records.
 
 Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
@@ -2486,10 +2524,10 @@ Emergency Alert Critical Error Warning Notice Informational Debug
 
 |tuning|object|  Tuning specs tuning for the output
 
-|url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp` and `udps`
-For example, to send syslog records using secure UDP:
+|url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+For example, to send syslog records using UDP:
 
-url: udps://syslog.example.com:1234
+url: udp://syslog.example.com:514
 
 |======================
 

@@ -20,7 +20,7 @@ import (
 )
 
 func WaitOnSplunk(f *functional.CollectorFunctionalFramework) {
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 	Eventually(func() string {
 		// Run the Splunk CLI status command to check if splunkd is running
 		output, err := f.ReadSplunkStatus()
@@ -32,7 +32,7 @@ func WaitOnSplunk(f *functional.CollectorFunctionalFramework) {
 		ContainSubstring("splunkd is running"),
 		ContainSubstring("splunk helpers are running"),
 	))
-	time.Sleep(15 * time.Second)
+	time.Sleep(10 * time.Second)
 }
 
 var _ = Describe("Forwarding to Splunk", func() {

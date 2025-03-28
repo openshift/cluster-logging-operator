@@ -3,13 +3,14 @@ package observability
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -19,12 +20,12 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
+	"github.com/openshift/cluster-logging-operator/version"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/set"
-
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/set"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -180,6 +181,13 @@ func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
 
 	if r.ConfigMaps, err = MapConfigMaps(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
 		return err
+	}
+
+	// Determine if on HCP and use the appropriate cluster Version/id
+	clusterVersion, clusterID := version.HostedClusterVersion(context.TODO(), r.Reader, r.Forwarder.Namespace)
+	if clusterVersion != "" && clusterID != "" {
+		r.ClusterVersion = clusterVersion
+		r.ClusterID = clusterID
 	}
 	return nil
 }

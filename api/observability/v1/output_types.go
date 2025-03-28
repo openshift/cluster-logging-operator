@@ -1046,22 +1046,24 @@ type Splunk struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index,omitempty"`
 
-	//Fields to be added to Splunk index
+	// IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits.
+	// Nested fields are flattened into top-level fields.
+	// Field paths are joined using dot notation, and unsupported characters are replaced with underscores (_).
+	// Non-string values are automatically converted to strings (e.g., 3 → "3", true → "true").
+	// Object values serialized as JSON strings (e.g., { status: 200 } → "{\"status\":200}").
 	//
-	//Examples: [`.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`]
-	//
+	// Examples: [`.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`]
 	// +nullable
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Indexed Fields"
 	IndexedFields []FieldPath `json:"indexedFields,omitempty"`
 
 	// Source identifies the origin of a log event.
-	//
 	// The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-	//
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// If not specified will be detected according to .log_source and .log_type value.
+	// Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 	//
 	// Example:
 	//
@@ -1081,7 +1083,9 @@ type Splunk struct {
 	//
 	// Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
 	//
-	// If left empty, will use the whole message as the payload key
+	// By default, payloadKey is not set, which means the complete log record is forwarded as the payload.
+	// Use payloadKey carefully. Selecting a single field as the payload may cause other important information in the
+	// log to be dropped, potentially leading to inconsistent or incomplete log events.
 	//
 	// Examples: `.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
 	//

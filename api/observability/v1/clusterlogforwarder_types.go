@@ -338,7 +338,7 @@ type ClusterLogForwarderList struct {
 	Items           []ClusterLogForwarder `json:"items"`
 }
 
-// FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
+// FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
 // valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
 // The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
 // If segments contain characters outside of this range, the segment must be quoted.

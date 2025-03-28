@@ -86,7 +86,7 @@ func SecretFrom(secretKey *v1.SecretReference) string {
 	return ""
 }
 
-// generateQuotedPathSegmentArrayStr generates the final string of the array of array of path segments
+// GenerateQuotedPathSegmentArrayStr generates the final string of the array of array of path segments
 // and array of flattened path with replaced not allowed symbols to feed into VRL
 // E.g
 // [.kubernetes.namespace_labels."bar/baz0-9.test"] -> ([["kubernetes","namespace_labels","bar/baz0-9.test"]], ["_kubernetes_namespace_labels_bar_baz0-9_test"])

@@ -125,7 +125,10 @@ func (inputs Inputs) HasAnyAuditSource() bool {
 
 func (inputs Inputs) HasAuditSource(logSource obs.AuditSource) bool {
 	for _, i := range inputs {
-		if i.Type == obs.InputTypeAudit && i.Audit != nil && (set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) {
+		if i.Type == obs.InputTypeAudit && i.Audit != nil && (set.New(i.Audit.Sources...).Has(logSource) || len(i.Audit.Sources) == 0) ||
+			// Also true if HTTP input receiver with `kubeApiAudit` format is defined and logSource == `kubeAPI`
+			(logSource == obs.AuditSourceKube &&
+				(i.Type == obs.InputTypeReceiver && i.Receiver != nil && i.Receiver.HTTP != nil && i.Receiver.HTTP.Format == obs.HTTPReceiverFormatKubeAPIAudit)) {
 			return true
 		}
 	}

@@ -11,22 +11,35 @@ if err != null {
 }
 
 '''
+
 [transforms.splunk_hec_metadata]
 type = "remap"
 inputs = ["splunk_hec_timestamp"]
 source = '''
-# Splunk 'source' field detection
-if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._internal.splunk.source = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
-}
-if ._internal.log_source == "container" {
-   	._internal.splunk.source = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
-}
-if ._internal.log_type == "audit" {
-   ._internal.splunk.source = ._internal.log_source
-}
+._internal.splunk.source = to_string!(._internal.foo||"missing")
 ._internal.splunk.sourcetype = "_json"
+
+# Splunk indexed fields
+indexed_fields = [["log_source"],["kubernetes","namespace_labels","bar/baz0-9.test"],["annotations","authorization.k8s.io/decision"]]
+for_each(indexed_fields) -> |_, field| {
+    value = get!(., field)
+    if !is_null(value) {
+        new_key = replace(join!(field,"_"), r'[\./]', "_")
+        if !is_string(value) {
+          if is_object(value) {
+            value = encode_json(value)
+          } else {
+            value = to_string!(value)
+          }
+        }
+        . = remove!(., field, true)
+        . = set!(., [new_key], value)
+    } else {
+        log("Path " + join!(field, ".") + " not found in log event", level: "warn")
+    }
+}
 '''
+
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]
@@ -34,6 +47,7 @@ endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
 timestamp_key = "@timestamp"
+indexed_fields = ["log_source","kubernetes_namespace_labels_bar_baz0-9_test","annotations_authorization_k8s_io_decision"]
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
 host_key = "hostname"

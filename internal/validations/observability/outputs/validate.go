@@ -29,6 +29,8 @@ func Validate(context internalcontext.ForwarderContext) {
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
 		case obs.OutputTypeOTLP:
 			messages = append(messages, ValidateTechPreviewAnnotation(context)...)
+		case obs.OutputTypeSplunk:
+			messages = append(messages, ValidateSplunk(out)...)
 		}
 		// Set condition
 		if len(messages) > 0 {

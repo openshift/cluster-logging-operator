@@ -1,10 +1,9 @@
 package splunk
 
 import (
-	"testing"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"testing"
 )
 
 func TestFunctionalOutputSplunk(t *testing.T) {

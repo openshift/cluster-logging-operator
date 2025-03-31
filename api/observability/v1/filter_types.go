@@ -40,15 +40,6 @@ var (
 	}
 )
 
-// FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
-// valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
-// The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
-// If segments contain characters outside of this range, the segment must be quoted.
-// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
-//
-// +kubebuilder:validation:Pattern:=`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`
-type FieldPath string
-
 // FilterSpec defines a filter for log messages.
 //
 // +kubebuilder:validation:XValidation:rule="self.type != 'kubeAPIAudit' || has(self.kubeAPIAudit)", message="Additional type specific spec is required for the filter type"

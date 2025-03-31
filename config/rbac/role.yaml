@@ -164,9 +164,8 @@ rules:
   verbs:
   - create
   - get
-  - list
   - use
-  - watch
+  - update
 - apiGroups:
   - hypershift.openshift.io
   resources:

@@ -43,19 +43,29 @@ const (
 	SystemUPrefix = "systemd.u."
 
 	// Audit (Kubernetes Events) LogRecord Attributes
-	K8sEventLevel               = "k8s.audit.event.level"
-	K8sEventStage               = "k8s.audit.event.stage"
-	K8sEventUserAgent           = "k8s.audit.event.user_agent"
-	K8sEventRequestURI          = "k8s.audit.event.request.uri"
-	K8sEventResponseCode        = "k8s.audit.event.response.code"
-	K8sEventAnnotationPrefix    = "k8s.audit.event.annotation."
-	K8sEventObjectRefResource   = "k8s.audit.event.object_ref.resource"
-	K8sEventObjectRefName       = "k8s.audit.event.object_ref.name"
-	K8sEventObjectRefNamespace  = "k8s.audit.event.object_ref.namespace"
-	K8sEventObjectRefAPIGroup   = "k8s.audit.event.object_ref.api_group"
-	K8sEventObjectRefAPIVersion = "k8s.audit.event.object_ref.api_version"
-	K8sUserUsername             = "k8s.user.username"
-	K8sUserGroups               = "k8s.user.groups"
+	K8sEventLevel                           = "k8s.audit.event.level"
+	K8sEventStage                           = "k8s.audit.event.stage"
+	K8sEventUserAgent                       = "k8s.audit.event.user_agent"
+	K8sEventRequestURI                      = "k8s.audit.event.request.uri"
+	K8sEventResponseCode                    = "k8s.audit.event.response.code"
+	K8sEventAnnotationPrefix                = "k8s.audit.event.annotation."
+	K8sEventObjectRefResource               = "k8s.audit.event.object_ref.resource"
+	K8sEventObjectRefName                   = "k8s.audit.event.object_ref.name"
+	K8sEventObjectRefNamespace              = "k8s.audit.event.object_ref.namespace"
+	K8sEventObjectRefAPIGroup               = "k8s.audit.event.object_ref.api_group"
+	K8sEventObjectRefAPIVersion             = "k8s.audit.event.object_ref.api_version"
+	K8sUserUsername                         = "k8s.user.username"
+	K8sUserGroups                           = "k8s.user.groups"
+	K8sEventAnnotationAuthorizationDecision = "k8s.audit.event.annotation.authorization.k8s.io/decision"
+	K8sEventAnnotationAuthorizationReason   = "k8s.audit.event.annotation.authorization.k8s.io/reason"
+
+	// Audit OVN LogRecord Attributes
+	K8sOVNSequence  = "k8s.ovn.sequence"
+	K8sOVNComponent = "k8s.ovn.component"
+
+	// Auditd LogRecord Attributes
+	AuditdSequence = "auditd.sequence"
+	AuditdType     = "auditd.type"
 )
 
 func (r Resource) Attribute(name string) AttributeValue {

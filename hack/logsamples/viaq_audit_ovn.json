@@ -1,0 +1,13 @@
+{
+  "@timestamp": "2025-04-01T14:06:20.483403752Z",
+  "timestamp": "2025-04-01T14:06:20.483403752Z",
+  "hostname": "ip-10-0-67-214.ec2.internal",
+  "level": "info",
+  "log_source": "ovn",
+  "log_type": "audit",
+  "message": "2025-04-01T14:06:06.626226879Z|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop",
+  "openshift": {
+    "cluster_id": "d24a392b-dd87-4eb8-a1a9-7384423567e3",
+    "sequence": 1743516380484021390
+  }
+}

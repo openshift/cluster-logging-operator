@@ -257,6 +257,7 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
 }
 if .log_type == "audit" && .log_source == "ovn" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  ._internal.message = .message
   del(.file)
   del(.source_type)
   if !exists(.level) {

@@ -95,6 +95,27 @@ if exists(.annotations) {for_each(object!(.annotations)) -> |key,value| {
     )
 }}
 `
+	OVNLogAttributes = `
+# Fill up OVN logRecord object
+if exists(.level) { r.severityText = .level } 
+ovnTokens = split(to_string!(get!(.,["_internal","message"])),"|")
+if 0 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "k8s.ovn.sequence", "value": {"stringValue": ovnTokens[1] }})}
+if 1 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "k8s.ovn.component", "value": {"stringValue": ovnTokens[2] }})}
+`
+	HostLogAttributes = `
+# Fill up auditd logRecord object
+if exists(.level) { r.severityText = .level } 
+kv = parse_key_value!(to_string!(get!(.,["_internal","message"])))
+if exists(kv.type) {
+  r.attributes = push(r.attributes, {"key": "auditd.type", "value": {"stringValue": kv.type }})
+}
+if exists(kv.msg) {
+  trimmed = slice!(kv.msg, find!(kv.msg, "(") + 1, -2)
+  parts = split!(trimmed, ":")
+  r.attributes = push(r.attributes, {"key": "auditd.sequence", "value": {"stringValue": parts[1] }})
+}
+`
+
 	LogAttributes          = ``
 	ContainerLogAttributes = `
 r.attributes = append(r.attributes,
@@ -219,6 +240,7 @@ func auditHostLogsVRL() string {
 		LogRecord,
 		BodyFromInternal,
 		LogAttributes,
+		HostLogAttributes,
 		FinalGrouping,
 	}), "\n")
 }
@@ -231,6 +253,18 @@ func auditAPILogsVRL() string {
 		BodyFromInternal,
 		LogAttributes,
 		APILogAttributes,
+		FinalGrouping,
+	}), "\n")
+}
+
+func auditOVNLogsVRL() string {
+	return strings.Join(helpers.TrimSpaces([]string{
+		BaseResourceAttributes,
+		BackwardCompatBaseResourceAttributes,
+		LogRecord,
+		BodyFromInternal,
+		LogAttributes,
+		OVNLogAttributes,
 		FinalGrouping,
 	}), "\n")
 }
@@ -283,7 +317,7 @@ func TransformAuditOvn(id string, inputs []string) Element {
 		Desc:        "Normalize audit log ovn records to OTLP semantic conventions",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditAPILogsVRL(),
+		VRL:         auditOVNLogsVRL(),
 	}
 }
 

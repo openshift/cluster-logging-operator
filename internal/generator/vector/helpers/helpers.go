@@ -5,7 +5,9 @@ import (
 	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -13,6 +15,9 @@ import (
 )
 
 const VectorSecretID = "kubernetes_secret"
+
+// Match quoted strings like "foo" or "foo/bar-baz"
+var quoteRegex = regexp.MustCompile(`^".+"$`)
 
 var (
 	Replacer         = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
@@ -79,4 +84,72 @@ func SecretFrom(secretKey *v1.SecretReference) string {
 			secretKey.Key)
 	}
 	return ""
+}
+
+// GenerateQuotedPathSegmentArrayStr generates the final string of the array of array of path segments
+// and array of flattened path with replaced not allowed symbols to feed into VRL
+// E.g
+// [.kubernetes.namespace_labels."bar/baz0-9.test"] -> ([["kubernetes","namespace_labels","bar/baz0-9.test"]], ["_kubernetes_namespace_labels_bar_baz0-9_test"])
+func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, string) {
+	var quotedPathArray []string
+	var flattenedArray []string
+
+	for _, fieldPath := range fieldPathArray {
+		pathStr := string(fieldPath)
+
+		if strings.ContainsAny(pathStr, "/.") {
+			flat := strings.NewReplacer(".", "_", "\"", "", "/", "_").Replace(pathStr)
+			flat = strings.TrimPrefix(flat, "_")
+			flattenedArray = append(flattenedArray, strconv.Quote(flat))
+		}
+
+		splitSegments := SplitPath(pathStr)
+		quotedSegments := QuotePathSegments(splitSegments)
+		quotedPathArray = append(quotedPathArray, fmt.Sprintf("[%s]", strings.Join(quotedSegments, ",")))
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ",")),
+		fmt.Sprintf("[%s]", strings.Join(flattenedArray, ","))
+}
+
+// SplitPath splits a fieldPath by `.` and reassembles the quoted path segments that also contain `.`
+// Example: `.foo."@some"."d.f.g.o111-22/333".foo_bar`
+// Resultant Array: ["foo","@some",`"d.f.g.o111-22/333"`,"foo_bar"]
+func SplitPath(path string) []string {
+	var result []string
+
+	segments := strings.Split(path, ".")
+
+	var currSegment string
+	for _, part := range segments {
+		if part == "" {
+			continue
+		} else if strings.HasPrefix(part, `"`) && strings.HasSuffix(part, `"`) {
+			result = append(result, part)
+		} else if strings.HasPrefix(part, `"`) {
+			currSegment = part
+		} else if strings.HasSuffix(part, `"`) {
+			currSegment += "." + part
+			result = append(result, currSegment)
+			currSegment = ""
+		} else if currSegment != "" {
+			currSegment += "." + part
+		} else {
+			result = append(result, part)
+		}
+	}
+	return result
+}
+
+// QuotePathSegments quotes all path segments as needed for VRL
+func QuotePathSegments(pathArray []string) []string {
+	for i, field := range pathArray {
+		// Don't surround in quotes if already quoted
+		if quoteRegex.MatchString(field) {
+			continue
+		}
+		// Put quotes around path segments
+		pathArray[i] = fmt.Sprintf("%q", field)
+	}
+	return pathArray
 }

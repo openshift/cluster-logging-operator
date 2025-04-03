@@ -2,8 +2,6 @@ package splunk_test
 
 import (
 	"fmt"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -17,6 +15,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"time"
 )
 
 var _ = Describe("Generating vector config for Splunk output", func() {
@@ -112,5 +111,14 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}),
-	)
+		Entry("with indexed fields", "splunk_sink_with_indexed_fields.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
+		}),
+		Entry("with indexed fields & source", "splunk_sink_with_indexed_fields_and_source.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Splunk.Source = `{.foo||"missing"}`
+			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
+		}),
+		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Splunk.PayloadKey = ".openshift"
+		}))
 })

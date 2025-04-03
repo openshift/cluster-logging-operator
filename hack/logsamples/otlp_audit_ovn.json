@@ -1,0 +1,97 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "openshift.cluster.uid",
+            "value": {
+              "stringValue": "d24a392b-dd87-4eb8-a1a9-7384423567e3"
+            }
+          },
+          {
+            "key": "openshift.log.source",
+            "value": {
+              "stringValue": "ovn"
+            }
+          },
+          {
+            "key": "openshift.log.type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "k8s.node.name",
+            "value": {
+              "stringValue": "ip-10-0-36-191.ec2.internal"
+            }
+          },
+          {
+            "key": "openshift.label.foo",
+            "value": {
+              "stringValue": "bar"
+            }
+          },
+          {
+            "key": "log_type",
+            "value": {
+              "stringValue": "audit"
+            }
+          },
+          {
+            "key": "log_source",
+            "value": {
+              "stringValue": "ovn"
+            }
+          },
+          {
+            "key": "openshift.cluster_id",
+            "value": {
+              "stringValue": "d24a392b-dd87-4eb8-a1a9-7384423567e3"
+            }
+          },
+          {
+            "key": "kubernetes.host",
+            "value": {
+              "stringValue": "ip-10-0-36-191.ec2.internal"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {
+
+          },
+          "logRecords": [
+            {
+              "timeUnixNano": "1743529186060055281",
+              "observedTimeUnixNano": "1743529186061086933",
+              "severityText": "info",
+              "body": {
+                "stringValue": "2025-04-01T17:39:31.507054686Z|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop"
+              },
+              "attributes": [
+                {
+                  "key": "k8s.ovn.sequence",
+                  "value": {
+                    "stringValue": "00004"
+                  }
+                },
+                {
+                  "key": "k8s.ovn.component",
+                  "value": {
+                    "stringValue": "acl_log(ovn_pinctrl0)"
+                  }
+                }
+              ],
+              "traceId": "",
+              "spanId": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

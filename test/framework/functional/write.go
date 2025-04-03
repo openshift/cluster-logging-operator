@@ -110,7 +110,6 @@ func (f *CollectorFunctionalFramework) WriteMessagesToOAuthAuditLog(msg string, 
 }
 
 func (f *CollectorFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, numOfLogs int) error {
-
 	filename := fmt.Sprintf("%s/acl-audit-log.log", fileLogPaths[ovnAuditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }

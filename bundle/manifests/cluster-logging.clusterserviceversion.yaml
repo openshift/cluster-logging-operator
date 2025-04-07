@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-03-31T19:37:39Z"
+    createdAt: "2025-04-07T20:20:21Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -140,6 +140,10 @@ spec:
         path: collector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Define scheduling rules that influence pod placement based on
+          node or pod affinity/anti-affinity constraints.
+        displayName: Affinity
+        path: collector.affinity
       - description: Define nodes for scheduling the pods.
         displayName: Node Selector
         path: collector.nodeSelector

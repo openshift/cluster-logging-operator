@@ -85,6 +85,10 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
+func (f *Factory) Affinity() *v1.Affinity {
+	return f.CollectorSpec.Affinity
+}
+
 func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
@@ -131,6 +135,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
 		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
+		Affinity:                      f.Affinity(),
 		Volumes: []v1.Volume{
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},

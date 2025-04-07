@@ -122,6 +122,12 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tolerations"
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Define scheduling rules that influence pod placement based on node or pod affinity/anti-affinity constraints.
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Affinity"
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // PipelineSpec links a set of inputs and transformations to a set of outputs.

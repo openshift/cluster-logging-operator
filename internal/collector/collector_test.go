@@ -174,7 +174,91 @@ var _ = Describe("Factory#Daemonset", func() {
 					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 					Expect(podSpec.NodeSelector).To(Equal(expSelector))
 				})
+			})
 
+			Context("and evaluating affinity", func() {
+				It("should not add affinity when not defined", func() {
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(podSpec.Affinity).To(BeNil())
+				})
+
+				It("should add node affinity when defined", func() {
+					nodeAffin := &v1.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+							NodeSelectorTerms: []v1.NodeSelectorTerm{
+								{
+									MatchExpressions: []v1.NodeSelectorRequirement{
+										{
+											Key:      "foobar",
+											Operator: v1.NodeSelectorOpExists,
+											Values: []string{
+												"foo",
+												"bar",
+											},
+										},
+									},
+								},
+							},
+						},
+					}
+					expNodeAffinity := &v1.Affinity{
+						NodeAffinity: nodeAffin,
+					}
+					factory.CollectorSpec = obs.CollectorSpec{
+						Affinity: &v1.Affinity{
+							NodeAffinity: nodeAffin,
+						},
+					}
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(podSpec.Affinity).To(Equal(expNodeAffinity))
+				})
+
+				It("should add pod affinity when defined", func() {
+					pAff := &v1.PodAffinity{
+						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+							{
+								Weight: 1,
+								PodAffinityTerm: v1.PodAffinityTerm{
+									Namespaces: []string{"foo", "bar"},
+								},
+							},
+						},
+					}
+					expPodAffinity := &v1.Affinity{
+						PodAffinity: pAff,
+					}
+					factory.CollectorSpec = obs.CollectorSpec{
+						Affinity: &v1.Affinity{
+							PodAffinity: pAff,
+						},
+					}
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(podSpec.Affinity).To(Equal(expPodAffinity))
+				})
+
+				It("should add pod anti-affinity when defined", func() {
+					pAAff := &v1.PodAntiAffinity{
+						PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+							{
+								Weight: 10,
+								PodAffinityTerm: v1.PodAffinityTerm{
+									TopologyKey:    "foo.io/bar",
+									MatchLabelKeys: []string{"foo", "bar", "baz"},
+								},
+							},
+						},
+					}
+					expPodAntiAffinity := &v1.Affinity{
+						PodAntiAffinity: pAAff,
+					}
+					factory.CollectorSpec = obs.CollectorSpec{
+						Affinity: &v1.Affinity{
+							PodAntiAffinity: pAAff,
+						},
+					}
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(podSpec.Affinity).To(Equal(expPodAntiAffinity))
+				})
 			})
 
 			Context("and the proxy config exists", func() {

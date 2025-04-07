@@ -36,5 +36,10 @@ NOTE: The status section of the ClusterLogForwarder may provide useful informati
 Some log forwarding deployments may require the administrator to modify the resources or scheduling of the collector.  This
 is accomplished by modifying the following fields:
 
-* spec.collection
 * spec.managementState
+* spec.collector
+** Currently supported:
+... link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/quotas#quotas-resources-managed_quotas-setting-per-project[spec.collector.resources]
+... link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/nodes/controlling-pod-placement-onto-nodes-scheduling#nodes-scheduler-node-selectors[spec.collector.nodeSelector]
+... link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/nodes/controlling-pod-placement-onto-nodes-scheduling#nodes-scheduler-taints-tolerations-about_nodes-scheduler-taints-tolerations[spec.collector.tolerations]
+... link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/nodes/controlling-pod-placement-onto-nodes-scheduling#nodes-scheduler-node-affinity[spec.collector.affinity]

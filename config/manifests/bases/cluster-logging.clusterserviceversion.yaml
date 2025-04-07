@@ -63,6 +63,10 @@ spec:
         path: collector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Define scheduling rules that influence pod placement based on
+          node or pod affinity/anti-affinity constraints.
+        displayName: Affinity
+        path: collector.affinity
       - description: Define nodes for scheduling the pods.
         displayName: Node Selector
         path: collector.nodeSelector

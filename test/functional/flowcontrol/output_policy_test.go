@@ -5,7 +5,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"

@@ -13,7 +13,7 @@ import (
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	apps "k8s.io/api/apps/v1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

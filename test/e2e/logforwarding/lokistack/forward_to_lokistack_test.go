@@ -8,7 +8,7 @@ import (
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	corev1 "k8s.io/api/core/v1"

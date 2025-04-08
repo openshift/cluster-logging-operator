@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"

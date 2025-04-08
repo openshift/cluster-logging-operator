@@ -1,10 +1,10 @@
-package runtime
+package runtime_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -15,22 +15,22 @@ import (
 
 var _ = Describe("Object", func() {
 	var (
-		nsFoo = NewNamespace("foo")
+		nsFoo = runtime.NewNamespace("foo")
 	)
 
 	It("generates ID", func() {
-		var o Object
-		o = NewNamespace("foo")
-		Expect(ID(o)).To(Equal("/v1/namespaces/foo"))
-		o = NewDaemonSet("foo", "name")
-		Expect(ID(o)).To(Equal("apps/v1/namespaces/foo/daemonsets/name"))
+		var o runtime.Object
+		o = runtime.NewNamespace("foo")
+		Expect(runtime.ID(o)).To(Equal("/v1/namespaces/foo"))
+		o = runtime.NewDaemonSet("foo", "name")
+		Expect(runtime.ID(o)).To(Equal("apps/v1/namespaces/foo/daemonsets/name"))
 		o = &corev1.PodList{}
-		Expect(ID(o)).To(Equal("/v1, Kind=PodList"))
+		Expect(runtime.ID(o)).To(Equal("/v1, Kind=PodList"))
 	})
 
 	DescribeTable("Decode",
-		func(manifest string, o Object) {
-			got := Decode(manifest)
+		func(manifest string, o runtime.Object) {
+			got := runtime.Decode(manifest)
 			Expect(got).To(EqualDiff(o), "%#v", manifest)
 		},
 		Entry("YAML string ns", test.YAMLString(nsFoo), nsFoo),
@@ -39,13 +39,13 @@ var _ = Describe("Object", func() {
 
 	DescribeTable("#Labels.Includes",
 		func(success bool, matches map[string]string) {
-			obj := NewNamespace("test")
+			obj := runtime.NewNamespace("test")
 			obj.Labels = map[string]string{
 				"foo":                       "bar",
 				constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
 				constants.LabelK8sVersion:   version.Version,
 			}
-			Expect(Labels(obj).Includes(matches)).To(Equal(success))
+			Expect(runtime.Labels(obj).Includes(matches)).To(Equal(success))
 		},
 		Entry("matches a subset", true, map[string]string{
 			constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
@@ -69,21 +69,21 @@ var _ = Describe("Object", func() {
 	)
 
 	It("panics on bad manifest string", func() {
-		Expect(func() { _ = Decode("bad manifest") }).To(Panic())
+		Expect(func() { _ = runtime.Decode("bad manifest") }).To(Panic())
 	})
 
 	DescribeTable("New",
-		func(got, want Object) { Expect(got).To(EqualDiff(want)) },
-		Entry("NewNamespace", NewNamespace("foo"), &corev1.Namespace{
+		func(got, want runtime.Object) { Expect(got).To(EqualDiff(want)) },
+		Entry("NewNamespace", runtime.NewNamespace("foo"), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 			TypeMeta:   metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
 		}),
-		Entry("NewConfigMap", NewConfigMap("ns", "foo", nil), &corev1.ConfigMap{
+		Entry("NewConfigMap", runtime.NewConfigMap("ns", "foo", nil), &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},
 			TypeMeta:   metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 			Data:       map[string]string{},
 		}),
-		Entry("NewServiceMonitor", NewServiceMonitor("ns", "foo"), &monitoringv1.ServiceMonitor{
+		Entry("NewServiceMonitor", runtime.NewServiceMonitor("ns", "foo"), &monitoringv1.ServiceMonitor{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},
 			TypeMeta:   metav1.TypeMeta{Kind: "ServiceMonitor", APIVersion: "monitoring.coreos.com/v1"},
 		}),

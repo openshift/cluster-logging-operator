@@ -16,8 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 
 	"github.com/google/go-cmp/cmp"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 )

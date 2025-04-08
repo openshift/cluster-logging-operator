@@ -5,7 +5,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/client"

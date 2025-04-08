@@ -3,8 +3,7 @@ package oc_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -33,6 +32,5 @@ spec:
 
 func TestOC(t *testing.T) {
 	RegisterFailHandler(Fail)
-	config.DefaultReporterConfig.SlowSpecThreshold = 120
 	RunSpecs(t, "Test OC Commands")
 }

@@ -2,8 +2,7 @@ package source
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"

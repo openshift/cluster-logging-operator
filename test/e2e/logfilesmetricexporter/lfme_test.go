@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"

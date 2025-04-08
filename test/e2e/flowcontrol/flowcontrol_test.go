@@ -6,7 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"

@@ -128,7 +128,7 @@ func (f *CollectorFunctionalFramework) AddSecret(secret *corev1.Secret) *Collect
 }
 
 func (f *CollectorFunctionalFramework) Cleanup() {
-	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed() {
 		for _, container := range f.Pod.Spec.Containers {
 			log.Info("Dumping logs for container", "container", container.Name)
 			logs, err := oc.Logs().WithNamespace(f.Namespace).WithPod(f.Pod.Name).WithContainer(container.Name).Run()
@@ -137,7 +137,7 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 			}
 			fmt.Fprintln(f.delayedWriter, logs)
 		}
-		f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName, g.LineNumber))
+		f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName(), g.LineNumber()))
 	}
 	f.closeClient()
 }

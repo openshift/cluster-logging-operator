@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/client-go/kubernetes/scheme"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

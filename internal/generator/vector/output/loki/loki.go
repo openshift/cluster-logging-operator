@@ -10,7 +10,7 @@ import (
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	auth "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -114,14 +114,14 @@ codec = {{.Codec}}
 {{end}}`
 }
 
-type Label struct {
+type LokiLabel struct {
 	Name  string
 	Value string
 }
 
 type LokiLabels struct {
 	ComponentID string
-	Labels      []Label
+	Labels      []LokiLabel
 }
 
 func (l LokiLabels) Name() string {
@@ -173,7 +173,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
 		common.NewRequest(id, strategy),
-		Labels(id, o),
+		NewLabels(id, o),
 		tls.New(id, o.TLS, secrets, op),
 		auth.HTTPAuth(id, o.Loki.Authentication, secrets, op),
 	}
@@ -203,12 +203,12 @@ func lokiLabelKeys(l *obs.Loki) []string {
 	return keys.List()
 }
 
-func lokiLabels(lo *obs.Loki) []Label {
-	ls := []Label{}
+func lokiLabels(lo *obs.Loki) []LokiLabel {
+	ls := []LokiLabel{}
 	for _, k := range lokiLabelKeys(lo) {
 		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
 		name := r.Replace(k)
-		l := Label{
+		l := LokiLabel{
 			Name:  name,
 			Value: formatLokiLabelValue(k),
 		}
@@ -288,7 +288,7 @@ func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
 	}
 }
 
-func Labels(id string, o obs.OutputSpec) Element {
+func NewLabels(id string, o obs.OutputSpec) Element {
 	return LokiLabels{
 		ComponentID: id,
 		Labels:      lokiLabels(o.Loki),

@@ -1,8 +1,9 @@
-package runtime
+package runtime_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -11,7 +12,7 @@ var _ = Describe("ConfigMapBuilder", func() {
 
 	var (
 		configmap *corev1.ConfigMap
-		builder   *ConfigMapBuilder
+		builder   *runtime.ConfigMapBuilder
 		expLabels = map[string]string{"foo": "bar"}
 	)
 
@@ -19,7 +20,7 @@ var _ = Describe("ConfigMapBuilder", func() {
 		configmap = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{},
 		}
-		builder = NewConfigMapBuilder(configmap)
+		builder = runtime.NewConfigMapBuilder(configmap)
 	})
 
 	Context("#AddLabel", func() {

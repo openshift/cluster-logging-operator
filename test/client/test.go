@@ -21,7 +21,7 @@ type Test struct {
 
 // Close removes the test namespace unless called from a failed test.
 func (t *Test) Close() {
-	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed() {
 		fmt.Printf("\n\n============\n")
 		fmt.Printf("Not removing functional test namespace since test failed. Run \"oc delete ns %s\" to delete namespace manually\n", t.NS.Name)
 		fmt.Printf("To delete all lingering functional test namespaces, run \"oc delete ns -ltest-client=true\"\n")

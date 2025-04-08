@@ -12,7 +12,7 @@ import (
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/test"

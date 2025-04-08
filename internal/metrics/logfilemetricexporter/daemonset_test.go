@@ -3,7 +3,7 @@ package logfilemetricexporter
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"

@@ -74,7 +74,7 @@ for dir in $(eval echo $TEST_DIR); do
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
     SUCCESS_TIMEOUT=10m \
-    go test -count=1 -parallel=1 -timeout=90m "$dir" -ginkgo.noColor -ginkgo.trace -ginkgo.slowSpecThreshold=600.0 ${GINKGO_OPTS} | tee -a "$artifact_dir/test.log" ; then
+    ginkgo -p -procs=1 -v --no-color --trace --slowSpecThreshold=600 --timeout=90m ${GINKGO_OPTS} "$dir" | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Logforwarding $dir passed"
     os::log::info "======================================================="

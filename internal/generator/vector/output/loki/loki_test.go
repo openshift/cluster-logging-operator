@@ -3,8 +3,7 @@ package loki
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
@@ -27,7 +26,7 @@ var _ = Describe("Loki generator helpers", func() {
 			LabelKeys: []string{label},
 		}
 		labels := lokiLabels(lo)
-		Expect(labels).To(ContainElement(Label{
+		Expect(labels).To(ContainElement(LokiLabel{
 			Name:  expKey,
 			Value: expValue,
 		}))

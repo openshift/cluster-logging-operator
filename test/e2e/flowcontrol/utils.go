@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"io"
 	"k8s.io/apimachinery/pkg/util/wait"

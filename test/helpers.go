@@ -18,7 +18,7 @@ import (
 	"unsafe"
 
 	"github.com/go-logr/logr"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/format"
 	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
 	"golang.org/x/net/html"
@@ -30,6 +30,7 @@ func init() {
 	if os.Getenv("TEST_UNTRUNCATED_DIFF") != "" || os.Getenv("TEST_FULL_DIFF") != "" {
 		format.TruncatedDiff = false
 	}
+	ginkgo.GinkgoWriter.TeeTo(os.Stderr)
 }
 
 func marshalString(b []byte, err error) string {
@@ -98,20 +99,16 @@ func UniqueName(prefix string) string {
 
 // GinkgoCurrentTest tries to get the current Ginkgo test description.
 // Returns true if successful, false if not in a ginkgo test.
-func GinkgoCurrentTest() (g ginkgo.GinkgoTestDescription, ok bool) {
+func GinkgoCurrentTest() (g ginkgo.SpecReport, ok bool) {
 	defer func() { _ = recover() }()
-	g = ginkgo.CurrentGinkgoTestDescription() // May panic if not in a ginkgo test.
-	return g, g.ComponentTexts != nil
+	g = ginkgo.CurrentSpecReport() // May panic if not in a ginkgo test.
+	return g, g.ContainerHierarchyTexts != nil
 }
 
 // Writer for log or error output from tests when there is nowhere better to send it.
-// Returns GinkgoWriter if available, os.Stderr otherwise.
+// Returns GinkgoWriter
 func Writer() io.Writer {
-	w := ginkgo.GinkgoWriter
-	if w == nil {
-		w = os.Stderr
-	}
-	return w
+	return ginkgo.GinkgoWriter
 }
 
 // UniqueNameForTest generates a unique name for a test.

@@ -12,8 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"

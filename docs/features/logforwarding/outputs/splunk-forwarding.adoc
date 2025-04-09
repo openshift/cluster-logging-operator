@@ -80,6 +80,13 @@ To support the use of complex and nested fields as indexed fields, field names a
 * Non-string values are automatically converted to strings (e.g., `3` → `"3"`, `true` → `"true"`).
 * Object values are serialized as JSON strings (e.g., `{ status: 200 }` → `"{\"status\":200}"`).
 
+
+[IMPORTANT]
+====
+After remapping, the *original fields* will be removed to avoid duplication.
+====
+
+
 These transformations allow for flexible field selection without requiring changes to the original log structure.
 
 === Examples
@@ -154,12 +161,6 @@ Transformed field:
 ----
 "objectRef_resource": "{\"status\":200,\"statusText\":\"OK\"}"
 ----
-
-[IMPORTANT]
-====
-After remapping, the *original fields* will be removed to avoid duplication.
-Only the transformed, top-level fields will be retained in the final log event.
-====
 
 === `payloadKey`
 

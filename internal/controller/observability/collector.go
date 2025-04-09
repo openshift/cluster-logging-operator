@@ -10,6 +10,7 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -71,6 +72,17 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
+
+	credCm, err := cloudwatch.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+	if err != nil {
+		log.V(9).Error(err, "collector.ReconcileAWSProfileConfig")
+		return err
+	}
+
+	// Add generated credentials configmap to contexts to be mounted in pod
+	if credCm != nil {
+		context.ConfigMaps[credCm.Name] = credCm
+	}
 
 	var collectorConfig string
 	if collectorConfig, err = GenerateConfig(context.Client, *context.Forwarder, *resourceNames, context.Secrets, options); err != nil {

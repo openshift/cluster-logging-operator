@@ -2,9 +2,12 @@ package cloudwatch
 
 import (
 	_ "embed"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"regexp"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -107,17 +110,22 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		Region:         region,
 		GroupName:      groupName,
-		SecurityConfig: authConfig(o.Cloudwatch.Authentication, secrets),
+		SecurityConfig: authConfig(o.Name, o.Cloudwatch.Authentication, op),
 		EndpointConfig: endpointConfig(o.Cloudwatch),
 		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 
-func authConfig(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) Element {
+func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
+	} else if auth != nil && auth.Type == obs.CloudwatchAuthTypeIAMRole {
+		if forwarderName, found := utils.GetOption(options, OptionForwarderName, ""); found {
+			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AWSCredentialsConfigMapName, constants.AWSCredentialsKey), `"`)
+			authConfig.Profile.Value = "output_" + outputName
+		}
 	}
 	return authConfig
 }

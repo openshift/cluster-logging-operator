@@ -40,9 +40,10 @@ func (p Otlp) Template() string {
 [sinks.{{.ComponentID}}]
 type = "opentelemetry"
 inputs = {{.Inputs}}
+protocol.type = "http"
 protocol.uri = "{{.URI}}"
 protocol.method = "post"
-protocol.encoding = "json"
+protocol.encoding.codec = "json"
 protocol.payload_prefix = "{\"resourceLogs\":"
 protocol.payload_suffix = "}"
 {{end}}
@@ -152,7 +153,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		els,
 		[]Element{
 			sink,
-			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),
 			common.NewBuffer(id, strategy),

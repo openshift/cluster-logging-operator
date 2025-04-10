@@ -106,9 +106,9 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 
 		},
 			Entry("with kubeAPI source", obs.AuditSourceKube, writeK8sAuditLog, validateK8sAPILogs),
-			//Entry("with openshiftAPI source", obs.AuditSourceOpenShift, writeOpenshiftAuditLog, validateOpenshiftAPILogs),
-			//Entry("with OVN source", obs.AuditSourceOVN, writeOvnAuditLog, validateOvnLog),
-			//Entry("with auditd (host) source", obs.AuditSourceAuditd, writeAuditHostLog, validateHostLog),
+			Entry("with openshiftAPI source", obs.AuditSourceOpenShift, writeOpenshiftAuditLog, validateOpenshiftAPILogs),
+			Entry("with OVN source", obs.AuditSourceOVN, writeOvnAuditLog, validateOvnLog),
+			Entry("with auditd (host) source", obs.AuditSourceAuditd, writeAuditHostLog, validateHostLog),
 		)
 
 	})

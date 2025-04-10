@@ -38,13 +38,14 @@ func (p Otlp) Name() string {
 func (p Otlp) Template() string {
 	return `{{define "` + p.Name() + `" -}}
 [sinks.{{.ComponentID}}]
-type = "http"
+type = "opentelemetry"
 inputs = {{.Inputs}}
-uri = "{{.URI}}"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
-{{.Compression}}
+protocol.type = "http"
+protocol.uri = "{{.URI}}"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 {{end}}
 `
 }
@@ -152,7 +153,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		els,
 		[]Element{
 			sink,
-			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
 			common.NewBatch(id, strategy),
 			common.NewBuffer(id, strategy),

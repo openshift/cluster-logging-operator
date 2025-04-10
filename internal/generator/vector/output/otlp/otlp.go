@@ -38,13 +38,13 @@ func (p Otlp) Name() string {
 func (p Otlp) Template() string {
 	return `{{define "` + p.Name() + `" -}}
 [sinks.{{.ComponentID}}]
-type = "http"
+type = "opentelemetry"
 inputs = {{.Inputs}}
-uri = "{{.URI}}"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
-{{.Compression}}
+protocol.uri = "{{.URI}}"
+protocol.method = "post"
+protocol.encoding = "json"
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 {{end}}
 `
 }

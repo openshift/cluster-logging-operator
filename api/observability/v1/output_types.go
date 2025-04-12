@@ -1045,6 +1045,53 @@ type Splunk struct {
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index,omitempty"`
+
+	// IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits.
+	// Nested fields are flattened into top-level fields.
+	// Field paths are joined using dot notation, and unsupported characters are replaced with underscores (_).
+	// Non-string values are automatically converted to strings (e.g., 3 → "3", true → "true").
+	// Object values serialized as JSON strings (e.g., { status: 200 } → "{\"status\":200}").
+	//
+	// Examples: [`.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`]
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Indexed Fields"
+	IndexedFields []FieldPath `json:"indexedFields,omitempty"`
+
+	// Source identifies the origin of a log event.
+	// The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// If not specified will be detected according to .log_source and .log_type value.
+	// Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+	//
+	// Example:
+	//
+	//  1. foo-{.bar||"none"}
+	//
+	//  2. {.foo||.bar||"missing"}
+	//
+	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Source",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Source string `json:"source,omitempty"`
+
+	// PayloadKey specifies record field to use as payload.
+	// The PayloadKey must be a single field path.
+	//
+	// Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+	//
+	// By default, payloadKey is not set, which means the complete log record is forwarded as the payload.
+	// Use payloadKey carefully. Selecting a single field as the payload may cause other important information in the
+	// log to be dropped, potentially leading to inconsistent or incomplete log events.
+	//
+	// Examples: `.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Payload Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	PayloadKey FieldPath `json:"payloadKey,omitempty"`
 }
 
 // SyslogRFCType sets which RFC the generated messages conform to.

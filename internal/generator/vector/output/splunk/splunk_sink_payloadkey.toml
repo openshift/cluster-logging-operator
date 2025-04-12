@@ -26,6 +26,23 @@ if ._internal.log_type == "audit" {
    ._internal.splunk.source = ._internal.log_source
 }
 ._internal.splunk.sourcetype = "_json"
+payloadKey = ["openshift"]
+if !is_null(payloadKey) {
+	value = get!(., payloadKey)
+	if !is_null(value) {
+        internal = ._internal
+        . = {}
+        . = set!(., payloadKey, value)
+        ._internal = internal
+		if is_object(value) {
+			._internal.splunk.sourcetype = "_json"
+		} else {
+			._internal.splunk.sourcetype = "generic_single_line"
+		}
+	} else {
+		._internal.splunk.sourcetype = "_json"
+	}
+}
 '''
 [sinks.splunk_hec]
 type = "splunk_hec_logs"

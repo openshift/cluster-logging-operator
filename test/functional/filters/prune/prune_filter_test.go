@@ -128,7 +128,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
 			// Get logs
-			logs, err := f.ReadAppLogsByIndexFromSplunk(f.Namespace, f.Name, "*")
+			logs, err := f.ReadAppLogsByIndexFromSplunk("*")
 			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())
 		})

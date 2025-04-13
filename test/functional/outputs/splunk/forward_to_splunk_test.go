@@ -2,33 +2,57 @@ package splunk
 
 import (
 	"fmt"
-	"strings"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-
 	v1 "k8s.io/api/core/v1"
+	"strings"
 )
 
+const SplunkSecretName = "splunk-secret"
+
+func WaitOnSplunk(f *functional.CollectorFunctionalFramework) {
+	time.Sleep(20 * time.Second)
+	Eventually(func() string {
+		// Run the Splunk CLI status command to check if splunkd is running
+		output, err := f.SplunkHealthCheck()
+		if err != nil {
+			return output
+		}
+		return output
+	}, 90*time.Second, 3*time.Second).Should(ContainSubstring("HEC is healthy"))
+	time.Sleep(1 * time.Second)
+	Eventually(func() string {
+		// Run the Splunk CLI status command to check if splunkd is running
+		output, err := f.ReadSplunkStatus()
+		if err != nil {
+			return output
+		}
+		return output
+	}, 15*time.Second, 3*time.Second).Should(SatisfyAll(
+		ContainSubstring("splunkd is running"),
+		ContainSubstring("splunk helpers are running"),
+	))
+}
+
 var _ = Describe("Forwarding to Splunk", func() {
-	const splunkSecretName = "splunk-secret"
 	var (
 		framework    *functional.CollectorFunctionalFramework
 		secret       *v1.Secret
-		hecSecretKey = *internalobs.NewSecretReference(constants.SplunkHECTokenKey, splunkSecretName)
+		hecSecretKey = *internalobs.NewSecretReference(constants.SplunkHECTokenKey, SplunkSecretName)
 	)
+
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		secret = runtime.NewSecret(framework.Namespace, splunkSecretName,
+		secret = runtime.NewSecret(framework.Namespace, SplunkSecretName,
 			map[string][]byte{
 				"hecToken": functional.HecToken,
 			},
@@ -49,7 +73,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Wait for splunk to be ready
-		time.Sleep(90 * time.Second)
+		WaitOnSplunk(framework)
 
 		// Write app logs
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -57,7 +81,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 		// Read app logs
-		logs, err := framework.ReadLogsByTypeFromSplunk(framework.Namespace, framework.Name, string(obs.InputTypeApplication))
+		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
 		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 		Expect(logs).ToNot(BeEmpty())
 
@@ -81,7 +105,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Wait for splunk to be ready
-		time.Sleep(90 * time.Second)
+		WaitOnSplunk(framework)
 
 		// Write audit logs
 		timestamp, _ := time.Parse(time.RFC3339Nano, "2024-04-16T09:46:19.116+00:00")
@@ -90,7 +114,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing audit logs")
 
 		// Read audit logs
-		logs, err := framework.ReadLogsByTypeFromSplunk(framework.Namespace, framework.Name, string(obs.InputTypeAudit))
+		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeAudit))
 		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 		Expect(logs).ToNot(BeEmpty())
 
@@ -125,7 +149,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			time.Sleep(90 * time.Second)
+			WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -133,7 +157,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 			// Read app logs
-			logs, err := framework.ReadAppLogsByIndexFromSplunk(framework.Namespace, framework.Name, expIndex)
+			logs, err := framework.ReadAppLogsByIndexFromSplunk(expIndex)
 			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())
 
@@ -168,7 +192,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			time.Sleep(90 * time.Second)
+			WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -176,7 +200,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 			// Read app logs
-			logs, err := framework.ReadLogsByTypeFromSplunk(framework.Namespace, framework.Name, string(obs.InputTypeApplication))
+			logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
 
 			Expect(err).To(BeNil(), "expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())
@@ -194,4 +218,5 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Entry("should pass with no compression", ""),
 		)
 	})
+
 })

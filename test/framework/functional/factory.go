@@ -21,7 +21,7 @@ func NewKubeAuditLog(eventTime time.Time) string {
 
 func NewAuditHostLog(eventTime time.Time) string {
 	now := fmt.Sprintf("%.3f", float64(eventTime.UnixNano())/float64(time.Second))
-	return fmt.Sprintf(`type=DAEMON_START msg=audit(%s:2914): op=start ver=3.0 format=enriched kernel=4.18.0-240.15.1.el8_3.x86_64 auid=4294967295 pid=1396 uid=0 ses=4294967295 subj=system_u:system_r:auditd_t:s0 res=successAUID="unset" UID="root"`, now)
+	return fmt.Sprintf(`type=DAEMON_START msg=audit(%s:2914): op=start ver=3.0 format=enriched kernel=4.18.0-240.15.1.el8_3.x86_64 auid=4294967295 pid=1396 uid=0 ses=4294967295 subj=system_u:system_r:auditd_t:s0 res=successAUID="unset" UID="root" msg="PAM:authentication"`, now)
 }
 func NewOVNAuditLog(eventTime time.Time) string {
 	now := CRIOTime(eventTime)

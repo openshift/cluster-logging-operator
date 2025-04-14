@@ -215,7 +215,13 @@ if exists(kv.type) {
     r.attributes = push(r.attributes, {"key": "auditd.type", "value": {"stringValue": kv.type }})
 }
 if exists(kv.msg) {
-    trimmed = slice!(kv.msg, find!(kv.msg, "(") + 1, -2)
+    msg_str = ""
+    if is_array(kv.msg) {
+        msg_str = kv.msg[0]
+    } else {
+        msg_str = kv.msg
+    }
+    trimmed = slice!(msg_str, find!(msg_str, "(") + 1, -2)
     parts = split!(trimmed, ":")
     r.attributes = push(r.attributes, {"key": "auditd.sequence", "value": {"stringValue": parts[1] }})
 }

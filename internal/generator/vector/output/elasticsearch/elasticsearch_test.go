@@ -22,6 +22,7 @@ var _ = Describe("Generate Vector config", func() {
 		secretName = "es-1"
 		aUserName  = "testuser"
 		aPassword  = "testpass"
+		aToken     = "my-token"
 	)
 	var (
 		adapter fake.Output
@@ -71,6 +72,7 @@ var _ = Describe("Generate Vector config", func() {
 				Data: map[string][]byte{
 					constants.ClientUsername: []byte(aUserName),
 					constants.ClientPassword: []byte(aPassword),
+					constants.TokenKey:       []byte(aToken),
 				},
 			},
 		}
@@ -98,6 +100,26 @@ var _ = Describe("Generate Vector config", func() {
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with username,password", nil, false, framework.NoOptions, "es_with_auth_username_password.toml"),
+		Entry("with custom bearer token", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
+					Secret: &obs.BearerTokenSecretKey{
+						Name: secretName,
+						Key:  constants.TokenKey,
+					},
+				},
+			}
+		}, false, framework.NoOptions, "es_with_auth_custom_bearer_token.toml"),
+		Entry("with serviceaccount token", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				},
+			}
+		}, false, framework.Options{
+			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
+		}, "es_with_auth_serviceaccount_token.toml"),
 		Entry("with tls key,cert,ca-bundle", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.TLS = tlsSpec

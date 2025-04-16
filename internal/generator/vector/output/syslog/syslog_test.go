@@ -1,6 +1,7 @@
 package syslog
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -9,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("vector syslog clf output", func() {
@@ -38,18 +38,11 @@ source = '''
 		}
 	  }
   }
-
-'''
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
 '''
 
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "xyz"
 
@@ -85,16 +78,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "tcp"
 
@@ -130,16 +116,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "tcp"
 
@@ -180,16 +159,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "udp"
 
@@ -235,7 +207,17 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+_tmp, err = parse_json(string!(.message)) 
+if err != null {
+    log(err, level: "error") 
+} else {
+	.severity = _tmp.severity
+	.facility = _tmp.facility
+	.tag = _tmp.tag
+	.app_name = _tmp.app_name
+	.proc_id = _tmp.proc_id
+	.msg_id = _tmp.msg_id
+}
 '''
 
 [sinks.example]

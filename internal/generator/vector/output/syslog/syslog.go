@@ -38,16 +38,9 @@ func (s Syslog) Name() string {
 
 func (s Syslog) Template() string {
 	return `{{define "` + s.Name() + `" -}}
-[transforms.{{.ComponentID}}_json]
-type = "remap"
-inputs = {{.Inputs}}
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.{{.ComponentID}}]
 type = "socket"
-inputs = ["{{.ComponentID}}_json"]
+inputs = {{.Inputs}}
 address = "{{.Address}}"
 mode = "{{.Mode}}"
 {{end}}`
@@ -64,6 +57,62 @@ type SyslogEncoding struct {
 	Tag          Element
 	AddLogSource Element
 	PayloadKey   Element
+}
+
+func CopyFieldsFromPayload(id, input string, s *logging.Syslog) (Element, bool) {
+	var needToRemap = false
+	if s == nil {
+		return Nil, false
+	}
+	var builder strings.Builder
+	fields := []string{
+		s.Severity,
+		s.Facility,
+		s.Tag,
+		s.AppName,
+		s.ProcID,
+		s.MsgID,
+	}
+
+	payloadKey := "message"
+	if s.PayloadKey != "" {
+		payloadKey = s.PayloadKey
+	}
+
+	tmpl := `_tmp, err = parse_json(string!(.%s))
+if err != null { 
+	log(err, level: "error") 
+} else {
+   `
+	builder.WriteString(fmt.Sprintf(tmpl, payloadKey))
+
+	for _, field := range fields {
+		if IsKeyExpr(field) {
+			needToRemap = true
+			last := trimFirstSegment(field)
+			builder.WriteString(fmt.Sprintf(".%s = _tmp.%s\n", last, last))
+		}
+	}
+
+	builder.WriteString("}\n")
+
+	if needToRemap {
+		return Remap{
+			ComponentID: id,
+			Inputs:      fmt.Sprintf("[%q]", input),
+			VRL:         builder.String(),
+		}, needToRemap
+	}
+	return Nil, needToRemap
+}
+
+func trimFirstSegment(keyExpr string) string {
+	keyExpr = strings.TrimPrefix(keyExpr, "$.")
+	parts := strings.Split(keyExpr, ".")
+	if len(parts) <= 1 {
+		return keyExpr
+	}
+	return strings.Join(parts[1:], ".")
 }
 
 func (se SyslogEncoding) Name() string {
@@ -98,13 +147,25 @@ func New(id string, o logging.OutputSpec, inputs []string, secret *corev1.Secret
 	}
 	u, _ := url.Parse(o.URL)
 	dedottedID := vectorhelpers.MakeID(id, "dedot")
-	sink := Output(id, o, []string{dedottedID}, secret, op, u.Scheme, u.Host)
+	dedot := normalize.DedotLabels(dedottedID, inputs)
+
+	sinkInput := dedottedID
+
+	jsonID := vectorhelpers.MakeID(id, "json")
+	merge, needToRemap := CopyFieldsFromPayload(jsonID, dedottedID, o.Syslog)
+	if needToRemap {
+		sinkInput = jsonID
+	}
+
+	sink := Output(id, o, []string{sinkInput}, secret, op, u.Scheme, u.Host)
+
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 	return MergeElements(
 		[]Element{
-			normalize.DedotLabels(dedottedID, inputs),
+			dedot,
+			merge,
 			sink,
 			Encoding(id, o),
 			common.NewAcknowledgments(id, strategy),

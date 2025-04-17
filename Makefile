@@ -221,7 +221,7 @@ test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/... \
-		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator

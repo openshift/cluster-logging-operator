@@ -3,12 +3,13 @@ package functional
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
@@ -156,6 +157,13 @@ func (f *CollectorFunctionalFramework) RunCommand(container string, cmd ...strin
 	return out, err
 }
 
+func (f *CollectorFunctionalFramework) RunCommandInPod(pod *corev1.Pod, container string, cmd ...string) (string, error) {
+	log.V(2).Info("Running", "container", container, "cmd", cmd)
+	out, err := testruntime.ExecOc(pod, strings.ToLower(container), cmd[0], cmd[1:]...)
+	log.V(2).Info("Exec'd", "out", out, "err", err)
+	return out, err
+}
+
 func (f *CollectorFunctionalFramework) AddOutputContainersVisitors() []runtime.PodBuilderVisitor {
 	visitors := []runtime.PodBuilderVisitor{
 		func(b *runtime.PodBuilder) error {
@@ -274,8 +282,10 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).
 		End()
 	for _, visit := range visitors {
-		if err = visit(b); err != nil {
-			return err
+		if visit != nil {
+			if err = visit(b); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -417,7 +427,7 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 				return err
 			}
 		case obs.OutputTypeElasticsearch:
-			if err := f.AddES7Output(b, output); err != nil {
+			if err := f.AddESOutput(ElasticsearchVersion(output.Elasticsearch.Version), b, output, nil); err != nil {
 				return err
 			}
 		case obs.OutputTypeHTTP:

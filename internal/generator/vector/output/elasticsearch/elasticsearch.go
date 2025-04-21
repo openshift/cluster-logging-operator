@@ -83,8 +83,13 @@ if exists(.kubernetes.event.metadata.uid) {
 		common.NewBuffer(id, strategy),
 		common.NewRequest(id, strategy),
 		tls.New(id, o.TLS, secrets, op, Option{Name: URL, Value: o.Elasticsearch.URL}),
-		auth.HTTPAuth(id, o.Elasticsearch.Authentication, secrets, op),
 	)
+
+	if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil {
+		outputs = append(outputs, NewBearerToken(id, o.Elasticsearch.Authentication, secrets, op))
+	} else if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Username != nil && o.Elasticsearch.Authentication.Password != nil {
+		outputs = append(outputs, auth.NewBasic(id, o.Elasticsearch.Authentication, secrets))
+	}
 
 	return outputs
 }

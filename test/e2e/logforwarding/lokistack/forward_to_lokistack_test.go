@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
@@ -61,6 +62,13 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 				OutputRefs: []string{outputName},
 				InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
 			})
+			clf.Spec.Collector = &obs.CollectorSpec{
+				Resources: &corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceMemory: resource.MustParse("500m"),
+					},
+				},
+			}
 		})
 
 		lokiStackOut = &obs.OutputSpec{

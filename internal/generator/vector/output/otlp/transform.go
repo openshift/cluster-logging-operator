@@ -68,11 +68,13 @@ r.attributes = append(r.attributes,
     {"key": "k8s.audit.event.stage", "value": {"stringValue": .stage}},
     {"key": "k8s.audit.event.request.uri", "value": {"stringValue": .requestURI}},
     {"key": "k8s.audit.event.request.verb", "value": {"stringValue": .verb}},
-    {"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}},
     {"key": "k8s.audit.event.user_agent", "value": {"stringValue": .userAgent}},
     {"key": "k8s.user.username", "value": {"stringValue": .user.username}}
   ]
 )
+if exists(.responseStatus.code) {
+  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
+}
 values = []
 for_each(array!(.user.groups)) -> |_index,group| {
     .group = group

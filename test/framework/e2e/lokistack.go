@@ -274,7 +274,7 @@ metadata:
   name: %s
   namespace: %s
 spec:
-  size: 1x.pico
+  size: 1x.demo
   storage:
     schemas:
     - version: v13
@@ -293,6 +293,11 @@ spec:
     namespaceSelector:
       matchLabels:
         openshift.io/cluster-monitoring: "true"
+  limits:
+    global:
+      ingestion:
+        ingestionBurstSize: 10
+        ingestionRate: 10
 `, LokistackName, namespace, minioName+"-secret")
 
 	uri := fmt.Sprintf(lokistackURI, namespace, LokistackName)

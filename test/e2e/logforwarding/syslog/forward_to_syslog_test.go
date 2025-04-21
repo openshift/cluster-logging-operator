@@ -208,6 +208,69 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				Entry("with new syslog plugin, with TLS, with UDP", false, true, corev1.ProtocolTCP),
 			)
 		})
+		Describe("LOG-7009:when inside the application log exists a field with log_type : openshift_audit", func() {
+			BeforeEach(func() {
+				generatorPayload = map[string]string{
+					"log_type":   "openshift_audit",
+					"event type": "Sign on Success",
+					"userName":   "XXXXX",
+				}
+				forwarder = testruntime.NewClusterLogForwarder()
+				forwarder.Spec = logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{
+							Name: "syslogout",
+							Type: "syslog",
+							OutputTypeSpec: logging.OutputTypeSpec{
+								Syslog: &logging.Syslog{
+									Facility: "user",
+									Severity: "debug",
+									AppName:  "myapp",
+									ProcID:   "myproc",
+									MsgID:    "mymsg",
+								},
+							},
+						},
+					},
+					Pipelines: []logging.PipelineSpec{
+						{
+							Name:       "test-app",
+							OutputRefs: []string{"syslogout"},
+							InputRefs:  []string{"application"},
+						},
+					},
+				}
+			})
+			DescribeTable("should be able to send logs to syslog receiver", func(rfc string) {
+				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.MustParseRFC(rfc)); err != nil {
+					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+				}
+
+				forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+
+				forwarder.Spec.Outputs[0].Syslog.RFC = rfc
+
+				if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+					Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+				}
+				components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
+				for _, component := range components {
+					if err := e2e.WaitFor(component); err != nil {
+						Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+					}
+				}
+				logStore := e2e.LogStores[syslogDeployment.GetName()]
+				_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
+
+				applicationLogs := fmt.Sprintf(`count=$(grep %s %%s | grep pod_name | grep -vc "\"log_type\":\"application\""); if [ "$count" -eq 0 ]; then echo OK; else echo FAIL; fi`, logGenPod)
+				res, err := logStore.GrepLogs(applicationLogs, framework.DefaultWaitForLogsTimeout)
+				Expect(err).To(BeNil())
+				Expect(res).To(BeEquivalentTo("OK"))
+			},
+				Entry("with RFC3164", "RFC3164"),
+				Entry("with RFC5424", "RFC5424"),
+			)
+		})
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})

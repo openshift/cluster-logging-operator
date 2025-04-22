@@ -1333,7 +1333,7 @@ spec:
                             NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
                           items:
                             description: |-
-                              FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
+                              FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
                               valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
                               The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
                               If segments contain characters outside of this range, the segment must be quoted.
@@ -1366,7 +1366,7 @@ spec:
                             NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
                           items:
                             description: |-
-                              FieldPath represents a path to find a value for a given field.  The format must a value that can be converted to a
+                              FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
                               valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
                               The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
                               If segments contain characters outside of this range, the segment must be quoted.
@@ -3174,6 +3174,58 @@ spec:
                             A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
                             Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+                            Example:
+
+                             1. foo-{.bar||"none"}
+
+                             2. {.foo||.bar||"missing"}
+
+                             3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
+                          type: string
+                        indexedFields:
+                          description: |-
+                            IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits.
+                            Nested fields are flattened into top-level fields.
+                            Field paths are joined using dot notation, and unsupported characters are replaced with underscores (_).
+                            Non-string values are automatically converted to strings (e.g., 3 → "3", true → "true").
+                            Object values serialized as JSON strings (e.g., { status: 200 } → "{\"status\":200}").
+
+                            Examples: [`.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`]
+                          items:
+                            description: |-
+                              FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
+                              valid collector configuration. It is a dot delimited path to a field in the log record. It must start with a `.`.
+                              The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+                              If segments contain characters outside of this range, the segment must be quoted.
+                              Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+                            pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
+                            type: string
+                          nullable: true
+                          type: array
+                        payloadKey:
+                          description: |-
+                            PayloadKey specifies record field to use as payload.
+                            The PayloadKey must be a single field path.
+
+                            Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+
+                            By default, payloadKey is not set, which means the complete log record is forwarded as the payload.
+                            Use payloadKey carefully. Selecting a single field as the payload may cause other important information in the
+                            log to be dropped, potentially leading to inconsistent or incomplete log events.
+
+                            Examples: `.kubernetes`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
+                          pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
+                          type: string
+                        source:
+                          description: |-
+                            Source identifies the origin of a log event.
+                            The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+                            A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+                            Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+                            If not specified will be detected according to .log_source and .log_type value.
+                            Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 
                             Example:
 

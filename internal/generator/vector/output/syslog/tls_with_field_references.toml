@@ -2,10 +2,8 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-
+#calculate defaults
 ._internal.syslog.msg_id = .log_source
-
 if .log_type == "infrastructure" && .log_source == "node" {
     ._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")
     ._internal.syslog.proc_id = to_string!(.systemd.t.PID||"-")
@@ -22,11 +20,21 @@ if .log_type == "audit" {
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security"
 }
-.facility = to_string!(.facility||"none")
-.severity = to_string!(.severity||"none")
-.proc_id = to_string!(.proc_id||"none")
-.app_name = to_string!(.app_name||"none")
-.msg_id = to_string!(.msg_id||"none")
+
+_tmp, err = parse_json(string!(.message))
+if err != null {
+  _tmp = .
+  log(err, level: "error")
+} else {
+  _tmp = merge!(.,_tmp)
+}
+parsed_msg = _tmp
+
+.facility = to_string!(parsed_msg.facility||"none")
+.severity = to_string!(parsed_msg.severity||"none")
+.proc_id = to_string!(parsed_msg.proc_id||"none")
+.app_name = to_string!(parsed_msg.app_name||"none")
+.msg_id = to_string!(parsed_msg.msg_id||"none")
 
 if is_null(.payload_key) {
 	.payload_key = .

@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	TCP = `tcp`
-	TLS = `tls`
+	TCP       = `tcp`
+	TLS       = `tls`
+	ParsedMsg = "parsed_msg"
 )
 
 type Syslog struct {
@@ -68,13 +69,12 @@ func (ser SyslogEncodingRemap) Name() string {
 }
 
 func (ser SyslogEncodingRemap) Template() string {
-	return `{{define "` + ser.Name() + `" -}}
+	return fmt.Sprintf(`{{define "`+ser.Name()+`" -}}
 [transforms.{{.ComponentID}}]
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-
+#calculate defaults
 {{if eq .RFC "RFC3164" -}}
 if .log_type == "infrastructure" && .log_source == "node" {
     ._internal.syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
@@ -118,7 +118,16 @@ if .log_type == "audit" {
 }
 {{end}}
 
+
 {{if .EncodingFields.FieldVRLList -}}
+_tmp, err = parse_json(string!(.message))
+if err != null {
+  _tmp = .
+  log(err, level: "error")
+} else {
+  _tmp = merge!(.,_tmp)
+}
+%s = _tmp
 {{range $templatePair := .EncodingFields.FieldVRLList -}}
 	.{{$templatePair.Field}} = {{$templatePair.VRLString}}
 {{end -}}
@@ -139,7 +148,7 @@ if is_null({{.PayloadKey}}) {
 {{end}}
 '''
 {{end -}}
-`
+`, ParsedMsg)
 }
 
 type SyslogEncoding struct {
@@ -219,55 +228,30 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 		FieldVRLList: []FieldVRLStringPair{},
 	}
 
-	if s.Facility == "" {
-		s.Facility = `{._internal.syslog.facility || "user"}`
+	appendField := func(fieldName string, value *string, defaultVal string) {
+		if *value == "" {
+			*value = defaultVal
+			templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+				Field:     fieldName,
+				VRLString: commontemplate.TransformUserTemplateToVRL(*value),
+			})
+		} else {
+			templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+				Field:     fieldName,
+				VRLString: commontemplate.TransformUserTemplateToVRL(*value, ParsedMsg),
+			})
+		}
 	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "facility",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.Facility),
-	})
 
-	if s.Severity == "" {
-		s.Severity = `{._internal.syslog.severity || "informational"}`
-	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "severity",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.Severity),
-	})
-
-	if s.ProcId == "" {
-		s.ProcId = `{._internal.syslog.proc_id || "-"}`
-	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "proc_id",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.ProcId),
-	})
+	appendField("facility", &s.Facility, `{._internal.syslog.facility || "user"}`)
+	appendField("severity", &s.Severity, `{._internal.syslog.severity || "informational"}`)
+	appendField("proc_id", &s.ProcId, `{._internal.syslog.proc_id || "-"}`)
 
 	if s.RFC == obs.SyslogRFC3164 {
-		if s.AppName == "" {
-			s.AppName = `{._internal.syslog.tag || ""}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "tag",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.AppName),
-		})
-
+		appendField("tag", &s.AppName, `{._internal.syslog.tag || ""}`)
 	} else {
-		if s.AppName == "" {
-			s.AppName = `{._internal.syslog.app_name || "-"}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "app_name",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.AppName),
-		})
-
-		if s.MsgId == "" {
-			s.MsgId = `{._internal.syslog.msg_id || "-"}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "msg_id",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.MsgId),
-		})
+		appendField("app_name", &s.AppName, `{._internal.syslog.app_name || "-"}`)
+		appendField("msg_id", &s.MsgId, `{._internal.syslog.msg_id || "-"}`)
 	}
 
 	return templateFields

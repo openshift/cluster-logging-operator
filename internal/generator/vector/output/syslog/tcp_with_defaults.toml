@@ -2,7 +2,6 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
 ._internal.syslog.msg_id = .log_source
 
 if .log_type == "infrastructure" && .log_source == "node" {
@@ -21,6 +20,7 @@ if .log_type == "audit" {
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security"
 }
+
 .facility = to_string!(._internal.syslog.facility || "user")
 .severity = to_string!(._internal.syslog.severity || "informational")
 .proc_id = to_string!(._internal.syslog.proc_id || "-")

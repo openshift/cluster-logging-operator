@@ -2,7 +2,6 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
 ._internal.syslog.msg_id = .log_source
 if .log_type == "infrastructure" && .log_source == "node" {
     ._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")

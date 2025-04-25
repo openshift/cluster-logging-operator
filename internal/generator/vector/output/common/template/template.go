@@ -47,9 +47,12 @@ func TemplateRemap(componentID string, inputs []string, userTemplate, field, des
 
 // TransformUserTemplateToVRL converts the user entered template to VRL compatible syntax
 // Example: foo-{.log_type||"none"} -> "foo-" + to_string!(.log_type||"none")
-func TransformUserTemplateToVRL(userTemplate string) string {
+func TransformUserTemplateToVRL(userTemplate string, suffix ...string) string {
 	// Finds and replaces expressions defined in `{}` with to_string!()
 	replacedUserTemplate := ReplaceBracketWithToString(userTemplate, "to_string!(%s)")
+	if len(suffix) > 0 && suffix[0] != "" {
+		replacedUserTemplate = ReplaceBracketWithToString(userTemplate, "to_string!("+suffix[0]+"%s)")
+	}
 
 	// Finding all matches of to_string!() returning their start + end indices
 	matchedIndices := splitRegex.FindAllStringSubmatchIndex(replacedUserTemplate, -1)

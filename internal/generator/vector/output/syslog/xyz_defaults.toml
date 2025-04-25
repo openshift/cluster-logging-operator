@@ -2,7 +2,6 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-#calculate defaults
 ._internal.syslog.msg_id = .log_source
 if .log_type == "infrastructure" && .log_source == "node" {
     ._internal.syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER||"-")
@@ -20,15 +19,6 @@ if .log_type == "audit" {
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security"
 }
-
-_tmp, err = parse_json(string!(.message))
-if err != null {
-  _tmp = .
-  log(err, level: "error")
-} else {
-  _tmp = merge!(.,_tmp)
-}
-parsed_msg = _tmp
 
 .facility = to_string!(._internal.syslog.facility || "user")
 .severity = to_string!(._internal.syslog.severity || "informational")

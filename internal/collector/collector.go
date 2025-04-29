@@ -209,7 +209,8 @@ func (f *Factory) NewCollectorContainer(inputs logging.InputSpecs, secretNames [
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 		{Name: "POD_IPS", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
 	}
-	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
+
+	collector.Env = append(collector.Env, utils.GetProxyEnvVars(f.CollectorSpec.Type)...)
 
 	collector.VolumeMounts = []v1.VolumeMount{
 		{Name: f.ResourceNames.SecretMetrics, ReadOnly: true, MountPath: metricsVolumePath},

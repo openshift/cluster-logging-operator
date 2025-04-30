@@ -20,8 +20,42 @@ import (
 )
 
 const (
-	TCP = `tcp`
-	TLS = `tls`
+	TCP         = `tcp`
+	TLS         = `tls`
+	defFacility = `to_string!(._internal.syslog.facility || "user")`
+	defSeverity = `to_string!(._internal.syslog.severity || "informational")`
+	defProcId   = `to_string!(._internal.syslog.proc_id || "-")`
+	defTag      = `to_string!(._internal.syslog.tag || "")`
+	defAppName  = `to_string!(._internal.syslog.app_name || "-")`
+	defMsgId    = `to_string!(._internal.syslog.msg_id || "-")`
+
+	nodeAppName       = `._internal.syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "-")`
+	nodeTag           = `._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")`
+	nodeProcIdRFC3164 = `._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")`
+	nodeProcIdRFC5424 = `._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")`
+
+	containerAppName  = `._internal.syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")`
+	containerFacility = `._internal.syslog.facility = "user"`
+	containerSeverity = `._internal.syslog.severity = ._internal.level`
+	containerProcId   = `._internal.syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")`
+	containerTag      = `._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
+#Remove non-alphanumeric characters
+._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
+#Truncate the sanitized tag to 32 characters
+._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
+`
+
+	auditTag      = `._internal.syslog.tag = ._internal.log_source`
+	auditSeverity = `._internal.syslog.severity = "informational"`
+	auditFacility = `._internal.syslog.facility = "security"`
+	auditAppName  = `._internal.syslog.app_name = ._internal.log_source`
+	auditProcId   = `._internal.syslog.proc_id = to_string!(._internal.auditID || "-")`
+
+	msgId = `._internal.syslog.msg_id = ._internal.log_source`
+
+	isInfrastructureNodeLogCond = `._internal.log_type == "infrastructure" && ._internal.log_source == "node"`
+	isContainerLogCond          = `._internal.log_source == "container"`
+	isAuditLogCond              = `._internal.log_type == "audit"`
 )
 
 type Syslog struct {
@@ -61,6 +95,7 @@ type SyslogEncodingRemap struct {
 	EncodingFields EncodingTemplateField
 	PayloadKey     string
 	RFC            string
+	Defaults       string
 }
 
 func (ser SyslogEncodingRemap) Name() string {
@@ -73,51 +108,9 @@ func (ser SyslogEncodingRemap) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
-
-{{if eq .RFC "RFC3164" -}}
-if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
-	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
-}
-if ._internal.log_source == "container" {
-   	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-   	._internal.syslog.severity = ._internal.level
-   	._internal.syslog.facility = "user"
-   	#Remove non-alphanumeric characters
-   	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
-	#Truncate the sanitized tag to 32 characters
-	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
-
-}
-if .log_type == "audit" {
-   ._internal.syslog.tag = ._internal.log_source
-   ._internal.syslog.severity = "informational"
-   ._internal.syslog.facility = "security" 
-}
+{{if .Defaults}}
+{{.Defaults}}
 {{end}}
-
-{{if eq .RFC "RFC5424" -}}
-._internal.syslog.msg_id = ._internal.log_source
-
-if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-	._internal.syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER||"-")
-	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID||"-")
-}
-if ._internal.log_source == "container" {
-   ._internal.syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
-   ._internal.syslog.proc_id = to_string!(._internal.kubernetes.pod_id||"-")
-   ._internal.syslog.severity = ._internal.level
-   ._internal.syslog.facility = "user"
-}
-if ._internal.log_type == "audit" {
-   ._internal.syslog.app_name = ._internal.log_source
-   ._internal.syslog.proc_id = to_string!(._internal.auditID || "-")
-   ._internal.syslog.severity = "informational"
-   ._internal.syslog.facility = "security"
-}
-{{end}}
-
 {{if .EncodingFields.FieldVRLList -}}
 {{range $templatePair := .EncodingFields.FieldVRLList -}}
 	.{{$templatePair.Field}} = {{$templatePair.VRLString}}
@@ -125,8 +118,8 @@ if ._internal.log_type == "audit" {
 {{end}}
 
 {{if eq .RFC "RFC3164" -}}
-if .proc_id != "-" && .proc_id != "" {
-  .tag = to_string(.tag||"") + "[" + to_string(.proc_id)  + "]"
+if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
+ .tag = .tag + "[" + .proc_id + "]"
 }
 {{end}}
 
@@ -219,55 +212,29 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 		FieldVRLList: []FieldVRLStringPair{},
 	}
 
-	if s.Facility == "" {
-		s.Facility = `{.syslog.facility || "user"}`
+	appendField := func(fieldName string, value string, defaultVal string) {
+		if value == "" {
+			templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+				Field:     fieldName,
+				VRLString: defaultVal,
+			})
+		} else {
+			templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
+				Field:     fieldName,
+				VRLString: commontemplate.TransformUserTemplateToVRL(value),
+			})
+		}
 	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "facility",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.Facility),
-	})
 
-	if s.Severity == "" {
-		s.Severity = `{.syslog.severity || "informational"}`
-	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "severity",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.Severity),
-	})
-
-	if s.ProcId == "" {
-		s.ProcId = `{.syslog.proc_id || "-"}`
-	}
-	templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-		Field:     "proc_id",
-		VRLString: commontemplate.TransformUserTemplateToVRL(s.ProcId),
-	})
+	appendField("facility", s.Facility, defFacility)
+	appendField("severity", s.Severity, defSeverity)
+	appendField("proc_id", s.ProcId, defProcId)
 
 	if s.RFC == obs.SyslogRFC3164 {
-		if s.AppName == "" {
-			s.AppName = `{.syslog.tag || ""}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "tag",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.AppName),
-		})
-
+		appendField("tag", s.AppName, defTag)
 	} else {
-		if s.AppName == "" {
-			s.AppName = `{.syslog.app_name || "-"}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "app_name",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.AppName),
-		})
-
-		if s.MsgId == "" {
-			s.MsgId = `{.syslog.msg_id || "-"}`
-		}
-		templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-			Field:     "msg_id",
-			VRLString: commontemplate.TransformUserTemplateToVRL(s.MsgId),
-		})
+		appendField("app_name", s.AppName, defAppName)
+		appendField("msg_id", s.MsgId, defMsgId)
 	}
 
 	return templateFields
@@ -304,6 +271,7 @@ func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateFie
 		EncodingFields: templatePairs,
 		PayloadKey:     PayloadKey(o.PayloadKey),
 		RFC:            string(o.RFC),
+		Defaults:       buildDefaults(o),
 	}
 }
 
@@ -344,4 +312,135 @@ var keyre = regexp.MustCompile(`^\$(\.[[:word:]]*)+$`)
 
 func IsKeyExpr(str string) bool {
 	return keyre.MatchString(str)
+}
+
+// defaultRule defines the structure for syslog default configuration rules
+type defaultRule struct {
+	cond     string
+	appName  string
+	procId   string
+	severity string
+	facility string
+	msgId    string
+}
+
+// buildDefaults generates syslog default rules based on the provided configuration
+func buildDefaults(o *obs.Syslog) string {
+	if o == nil {
+		return ""
+	}
+
+	var builder strings.Builder
+	var defaultRules []defaultRule
+
+	switch o.RFC {
+	case obs.SyslogRFC3164:
+		buildRFC3164Rules(o, &defaultRules)
+	case obs.SyslogRFC5424:
+		buildRFC5424Rules(o, &defaultRules)
+	default:
+	}
+
+	writeRulesToBuilder(&builder, defaultRules)
+
+	return builder.String()
+}
+
+// buildRFC3164Rules constructs the default rules for RFC3164 format
+func buildRFC3164Rules(o *obs.Syslog, rules *[]defaultRule) {
+	if o.ProcId == "" || o.AppName == "" {
+		*rules = append(*rules, defaultRule{
+			cond:    isInfrastructureNodeLogCond,
+			appName: emptyToValue(o.AppName, nodeTag),
+			procId:  emptyToValue(o.ProcId, nodeProcIdRFC3164),
+		})
+	}
+
+	if o.AppName == "" || o.Severity == "" || o.Facility == "" {
+		*rules = append(*rules,
+			defaultRule{
+				cond:     isContainerLogCond,
+				appName:  emptyToValue(o.AppName, containerTag),
+				severity: emptyToValue(o.Severity, containerSeverity),
+				facility: emptyToValue(o.Facility, containerFacility),
+			},
+			defaultRule{
+				cond:     isAuditLogCond,
+				appName:  emptyToValue(o.AppName, auditTag),
+				severity: emptyToValue(o.Severity, auditSeverity),
+				facility: emptyToValue(o.Facility, auditFacility),
+			},
+		)
+	}
+}
+
+// buildRFC5424Rules constructs the default rules for RFC5424 format
+func buildRFC5424Rules(o *obs.Syslog, rules *[]defaultRule) {
+	if o.MsgId == "" {
+		*rules = append(*rules, defaultRule{
+			cond:  "",
+			msgId: msgId,
+		})
+	}
+
+	if o.ProcId == "" || o.AppName == "" {
+		*rules = append(*rules, defaultRule{
+			cond:    isInfrastructureNodeLogCond,
+			appName: emptyToValue(o.AppName, nodeAppName),
+			procId:  emptyToValue(o.ProcId, nodeProcIdRFC5424),
+		})
+	}
+
+	if o.AppName == "" || o.ProcId == "" || o.Severity == "" || o.Facility == "" {
+		*rules = append(*rules,
+			defaultRule{
+				cond:     isContainerLogCond,
+				appName:  emptyToValue(o.AppName, containerAppName),
+				procId:   emptyToValue(o.ProcId, containerProcId),
+				severity: emptyToValue(o.Severity, containerSeverity),
+				facility: emptyToValue(o.Facility, containerFacility),
+			},
+			defaultRule{
+				cond:     isAuditLogCond,
+				appName:  emptyToValue(o.AppName, auditAppName),
+				procId:   emptyToValue(o.ProcId, auditProcId),
+				severity: emptyToValue(o.Severity, auditSeverity),
+				facility: emptyToValue(o.Facility, auditFacility),
+			},
+		)
+	}
+}
+
+// writeRulesToBuilder converts the rules collection into formatted string
+func writeRulesToBuilder(builder *strings.Builder, rules []defaultRule) {
+	for _, rule := range rules {
+
+		if rule.cond != "" {
+			builder.WriteString(fmt.Sprintf("if %s {\n", rule.cond))
+		}
+
+		writeIfNotEmpty(builder, rule.appName)
+		writeIfNotEmpty(builder, rule.procId)
+		writeIfNotEmpty(builder, rule.severity)
+		writeIfNotEmpty(builder, rule.facility)
+		writeIfNotEmpty(builder, rule.msgId)
+
+		if rule.cond != "" {
+			builder.WriteString("}\n")
+		}
+	}
+}
+
+func emptyToValue(val, defaultVal string) string {
+	if val == "" {
+		return defaultVal
+	}
+	return ""
+}
+
+// writeIfNotEmpty adds a string followed by newline to the builder if string is not empty
+func writeIfNotEmpty(builder *strings.Builder, s string) {
+	if s != "" {
+		builder.WriteString(s + "\n")
+	}
 }

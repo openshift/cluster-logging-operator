@@ -2,23 +2,20 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
-
 if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
-	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
+   ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
+   ._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
 }
 if ._internal.log_source == "container" {
    	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-   	._internal.syslog.severity = ._internal.level
-   	._internal.syslog.facility = "user"
    	#Remove non-alphanumeric characters
    	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
 	#Truncate the sanitized tag to 32 characters
 	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
-
+   	._internal.syslog.severity = ._internal.level
+   	._internal.syslog.facility = "user"
 }
-if .log_type == "audit" {
+if ._internal.log_type == "audit" {
    ._internal.syslog.tag = ._internal.log_source
    ._internal.syslog.severity = "informational"
    ._internal.syslog.facility = "security"
@@ -28,9 +25,8 @@ if .log_type == "audit" {
 .severity = to_string!(._internal.syslog.severity || "informational")
 .proc_id = to_string!(._internal.syslog.proc_id || "-")
 .tag = to_string!(._internal.syslog.tag || "")
-
-if .proc_id != "-" && .proc_id != "" {
-  .tag = to_string(.tag||"") + "[" + to_string(.proc_id)  + "]"
+if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
+    .tag = .tag + "[" + .proc_id + "]"
 }
 '''
 

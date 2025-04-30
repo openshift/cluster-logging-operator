@@ -38,18 +38,11 @@ source = '''
 		}
 	  }
   }
-
-'''
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
 '''
 
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "xyz"
 
@@ -85,16 +78,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "tcp"
 
@@ -130,16 +116,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "tcp"
 
@@ -180,16 +159,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:514"
 mode = "udp"
 
@@ -231,16 +203,9 @@ source = '''
   }
 '''
 
-[transforms.example_json]
-type = "remap"
-inputs = ["example_dedot"]
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.example]
 type = "socket"
-inputs = ["example_json"]
+inputs = ["example_dedot"]
 address = "logserver:6514"
 mode = "tcp"
 

@@ -1,7 +1,6 @@
 package syslog
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -53,8 +52,6 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
-		expMatch := fmt.Sprintf(`( %s )`, expInfo)
-		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to match the appname/procid/msgid in received message")
 		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
 	},
 
@@ -62,31 +59,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Entry("should use the value from the complete tag and include the message", "tag", "mymsg", "myproc", `kubernetes\.var\.log.pods\..*myproc mymsg`, true),
 		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", "mymsg", "myproc", `kubernetes#.*myproc mymsg`, true),
 	)
-	Describe("configured with values for facility,severity", func() {
-		It("should use values from the record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-					spec.Syslog.Facility = "$.message.facility_key"
-					spec.Syslog.Severity = "$.message.severity_key"
-					spec.Syslog.RFC = e2e.RFC5424.String()
-				}, logging.OutputTypeSyslog)
-			Expect(framework.Deploy()).To(BeNil())
 
-			record := `{"index":1,"timestamp":1,"facility_key":"local0","severity_key":"Informational"}`
-			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
-			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
-
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
-
-			// 134 = Facility(local0/16)*8 + Severity(Informational/6)
-			// The 1 after <134> is version, which is always set to 1
-			expectedPriority := "<134>1 "
-			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
-		})
-	})
 	It("should be able to send a large payload", func() {
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

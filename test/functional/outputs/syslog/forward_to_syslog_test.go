@@ -131,30 +131,6 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getProcID(fields)).To(Equal("myproc"))
 			Expect(getMsgID(fields)).To(Equal("mymsg"))
 		})
-		It("should take values of appname, procid, messageid from record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {
-					spec.Syslog.AppName = "$.message.appname_key"
-					spec.Syslog.ProcID = "$.message.procid_key"
-					spec.Syslog.MsgID = "$.message.msgid_key"
-				}), logging.OutputTypeSyslog)
-			Expect(framework.Deploy()).To(BeNil())
-
-			// Log message data
-			for _, log := range JSONApplicationLogs {
-				log = functional.NewFullCRIOLogMessage(timestamp, log)
-				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
-			}
-			// Read line from Syslog output
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).ToNot(BeEmpty())
-			fields := strings.Split(outputlogs[0], " ")
-			Expect(getAppName(fields)).To(Equal("rec_appname"))
-			Expect(getProcID(fields)).To(Equal("rec_procid"))
-			Expect(getMsgID(fields)).To(Equal("rec_msgid"))
-		})
 		It("should take values from fluent tag", func() {
 			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
 				Skip("Test requires fluentd")

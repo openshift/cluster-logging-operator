@@ -38,16 +38,9 @@ func (s Syslog) Name() string {
 
 func (s Syslog) Template() string {
 	return `{{define "` + s.Name() + `" -}}
-[transforms.{{.ComponentID}}_json]
-type = "remap"
-inputs = {{.Inputs}}
-source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-'''
-
 [sinks.{{.ComponentID}}]
 type = "socket"
-inputs = ["{{.ComponentID}}_json"]
+inputs = {{.Inputs}}
 address = "{{.Address}}"
 mode = "{{.Mode}}"
 {{end}}`

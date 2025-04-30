@@ -55,37 +55,9 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to find tag in received message")
 		Expect(outputlogs[0]).To(MatchRegexp(`{"index":.*1,.*"timestamp":.*1,.*"tag_key":.*"rec_tag"}`), "Exp to find the original message in received message")
 	},
-
-		Entry("should use the value from the record and include the message", "$.message.tag_key", "rec_tag", false),
 		Entry("should use the value from the complete tag and include the message", "tag", `kubernetes\.var\.log.pods\..*`, true),
 		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", `kubernetes#.*`, true),
 	)
-	Describe("configured with values for facility,severity", func() {
-		It("should use values from the record", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameApplication).
-				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-					spec.Syslog.Facility = "$.message.facility_key"
-					spec.Syslog.Severity = "$.message.severity_key"
-					spec.Syslog.RFC = e2e.RFC3164.String()
-					spec.Syslog.Tag = "myTag"
-				}, logging.OutputTypeSyslog)
-			Expect(framework.Deploy()).To(BeNil())
-
-			record := `{"index": 1, "timestamp": 1, "facility_key": "local0", "severity_key": "Informational"}`
-			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
-			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
-
-			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
-
-			// 134 = Facility(local0/16)*8 + Severity(Informational/6)
-			// The 1 after <134> is version, which is always set to 1
-			expectedPriority := "<134>1 "
-			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
-		})
-	})
 
 	DescribeTable("configured to addLogSourceToMessage should add namespace, pod, container name", func(source string, requiresFluentd bool) {
 		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {

@@ -173,39 +173,48 @@ var _ = Describe("Factory#Daemonset", func() {
 					Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
 				}
 
-				It("should add the proxy variables to the collector", func() {
-					_httpProxy := os.Getenv("http_proxy")
-					_httpsProxy := os.Getenv("https_proxy")
-					_noProxy := os.Getenv("no_proxy")
-					cleanup := func() {
-						_ = os.Setenv("http_proxy", _httpProxy)
-						_ = os.Setenv("https_proxy", _httpsProxy)
-						_ = os.Setenv("no_proxy", _noProxy)
-					}
-					defer cleanup()
+				DescribeTable("should add the proxy variables to the collector",
+					func(collectorType logging.LogCollectionType, setHttpProxy, setHttpsProxy, setNoProxy, expectedHttpProxy, expectedHttpsProxy, expectedNoProxy string) {
+						_httpProxy := os.Getenv(setHttpProxy)
+						_httpsProxy := os.Getenv(setHttpsProxy)
+						_noProxy := os.Getenv(setNoProxy)
+						cleanup := func() {
+							_ = os.Setenv(setHttpProxy, _httpProxy)
+							_ = os.Setenv(setHttpsProxy, _httpsProxy)
+							_ = os.Setenv(setNoProxy, _noProxy)
+						}
+						defer cleanup()
 
-					httpproxy := "http://proxy-user@test.example.com/3128/"
-					noproxy := ".cluster.local,localhost"
-					_ = os.Setenv("http_proxy", httpproxy)
-					_ = os.Setenv("https_proxy", httpproxy)
-					_ = os.Setenv("no_proxy", noproxy)
-					caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
-					podSpec = *factory.NewPodSpec(&v1.ConfigMap{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: "openshift-logging",
-							Name:      constants.CollectorTrustedCAName,
-						},
-						Data: map[string]string{
-							constants.TrustedCABundleKey: caBundle,
-						},
-					}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-					collector = podSpec.Containers[0]
+						httpproxy := "http://proxy-user@test.example.com/3128/"
+						noproxy := ".cluster.local,localhost"
+						_ = os.Setenv(setHttpProxy, httpproxy)
+						_ = os.Setenv(setHttpsProxy, httpproxy)
+						_ = os.Setenv(setNoProxy, noproxy)
+						caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
+						factory.CollectorSpec = logging.CollectionSpec{
+							Type: collectorType,
+						}
+						podSpec = *factory.NewPodSpec(&v1.ConfigMap{
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: "openshift-logging",
+								Name:      constants.CollectorTrustedCAName,
+							},
+							Data: map[string]string{
+								constants.TrustedCABundleKey: caBundle,
+							},
+						}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
+						collector = podSpec.Containers[0]
 
-					verifyEnvVar(collector, "http_proxy", httpproxy)
-					verifyEnvVar(collector, "https_proxy", httpproxy)
-					verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
-					verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
-				})
+						verifyEnvVar(collector, expectedHttpProxy, httpproxy)
+						verifyEnvVar(collector, expectedHttpsProxy, httpproxy)
+						verifyEnvVar(collector, expectedNoProxy, "elasticsearch,"+noproxy)
+						verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
+					},
+					Entry("Fluentd expect environment variable name in lowercase", logging.LogCollectionTypeFluentd, "http_proxy", "https_proxy", "no_proxy", "http_proxy", "https_proxy", "no_proxy"),
+					Entry("Fluentd expects existing uppercase environment variable values to be lowercased", logging.LogCollectionTypeFluentd, "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy"),
+					Entry("Vector expect environment variable in uppercase", logging.LogCollectionTypeVector, "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"),
+					Entry("Vector expects existing lowercase environment variable values to be uppercased", logging.LogCollectionTypeVector, "http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"),
+				)
 			})
 
 			Context("and using custom named ClusterLogForwarder", func() {
@@ -544,53 +553,6 @@ var _ = Describe("Factory#Deployment", func() {
 					Expect(podSpec.NodeSelector).To(Equal(expSelector))
 				})
 
-			})
-
-			Context("and the proxy config exists", func() {
-
-				var verifyEnvVar = func(container v1.Container, name, value string) {
-					for _, elem := range container.Env {
-						if elem.Name == name {
-							Expect(elem.Value).To(Equal(value), "Exp. collector to have env var %s: %s:", name, value)
-							return
-						}
-					}
-					Fail(fmt.Sprintf("Exp. collector to include env var: %s", name))
-				}
-
-				It("should add the proxy variables to the collector", func() {
-					_httpProxy := os.Getenv("http_proxy")
-					_httpsProxy := os.Getenv("https_proxy")
-					_noProxy := os.Getenv("no_proxy")
-					cleanup := func() {
-						_ = os.Setenv("http_proxy", _httpProxy)
-						_ = os.Setenv("https_proxy", _httpsProxy)
-						_ = os.Setenv("no_proxy", _noProxy)
-					}
-					defer cleanup()
-
-					httpproxy := "http://proxy-user@test.example.com/3128/"
-					noproxy := ".cluster.local,localhost"
-					_ = os.Setenv("http_proxy", httpproxy)
-					_ = os.Setenv("https_proxy", httpproxy)
-					_ = os.Setenv("no_proxy", noproxy)
-					caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
-					podSpec = *factory.NewPodSpec(&v1.ConfigMap{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: "openshift-logging",
-							Name:      constants.CollectorTrustedCAName,
-						},
-						Data: map[string]string{
-							constants.TrustedCABundleKey: caBundle,
-						},
-					}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetClusterTLSProfileSpec(nil), nil, constants.OpenshiftNS)
-					collector = podSpec.Containers[0]
-
-					verifyEnvVar(collector, "http_proxy", httpproxy)
-					verifyEnvVar(collector, "https_proxy", httpproxy)
-					verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
-					verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
-				})
 			})
 
 			Context("and using custom named ClusterLogForwarder", func() {

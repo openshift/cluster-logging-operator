@@ -341,7 +341,7 @@ func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelec
 		resource1.Divisor.Cmp(resource2.Divisor) == 0
 }
 
-func GetProxyEnvVars() []v1.EnvVar {
+func GetProxyEnvVars(collectionType logging.LogCollectionType) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
 	for _, envvar := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
 		if value := os.Getenv(envvar); value != "" {
@@ -350,8 +350,14 @@ func GetProxyEnvVars() []v1.EnvVar {
 					value = strings.Join(constants.ExtraNoProxyList, ",") + "," + value
 				}
 			}
+			switch collectionType {
+			case logging.LogCollectionTypeVector:
+				envvar = strings.ToUpper(envvar)
+			case logging.LogCollectionTypeFluentd:
+				envvar = strings.ToLower(envvar)
+			}
 			envVars = append(envVars, v1.EnvVar{
-				Name:  strings.ToLower(envvar),
+				Name:  envvar,
 				Value: value,
 			})
 		}

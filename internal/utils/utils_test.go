@@ -1,7 +1,9 @@
 package utils
 
 import (
+	logging "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	"os"
+	"strings"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -145,22 +147,35 @@ var _ = Describe("GetProxyEnvVars", func() {
 	var (
 		envvars = map[string]string{}
 	)
-	BeforeEach(func() {
-		for _, envvar := range []string{"https_proxy", "http_proxy", "no_proxy"} {
-			envvars[envvar] = os.Getenv(envvar)
-			Expect(os.Setenv(envvar, envvar)).To(Succeed())
-		}
-	})
 	AfterEach(func() {
 		for k, v := range envvars {
 			Expect(os.Setenv(k, v)).To(Succeed())
 		}
 	})
-	It("should retrieve the proxy settings from the operators ENV variables", func() {
-		envvars := GetProxyEnvVars()
+	It("should retrieve the proxy settings from the operators ENV variables for Fluentd should be in lowercase", func() {
+		for _, envvar := range []string{"https_proxy", "http_proxy", "no_proxy"} {
+			envvars[envvar] = os.Getenv(envvar)
+			Expect(os.Setenv(envvar, envvar)).To(Succeed())
+		}
+		envvars := GetProxyEnvVars(logging.LogCollectionTypeFluentd)
 		Expect(envvars).To(HaveLen(3)) //proxy,noproxy vars
 		for _, envvar := range envvars {
-			if envvar.Name == "NO_PROXY" || envvar.Name == "no_proxy" {
+			if envvar.Name == "no_proxy" {
+				Expect(envvar.Value).To(Equal("elasticsearch,"+envvar.Name), "Exp. the value to be set to the name for the test with elasticsearch prepended")
+			} else {
+				Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+			}
+		}
+	})
+	It("should retrieve the proxy settings from the operators ENV variables for Vector should be in uppercase", func() {
+		for _, envvar := range []string{"https_proxy", "http_proxy", "no_proxy"} {
+			envvars[envvar] = os.Getenv(envvar)
+			Expect(os.Setenv(envvar, strings.ToUpper(envvar))).To(Succeed())
+		}
+		envvars := GetProxyEnvVars(logging.LogCollectionTypeVector)
+		Expect(envvars).To(HaveLen(3)) //proxy,noproxy vars
+		for _, envvar := range envvars {
+			if envvar.Name == "NO_PROXY" {
 				Expect(envvar.Value).To(Equal("elasticsearch,"+envvar.Name), "Exp. the value to be set to the name for the test with elasticsearch prepended")
 			} else {
 				Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")

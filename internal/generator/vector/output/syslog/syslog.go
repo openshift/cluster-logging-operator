@@ -42,7 +42,14 @@ func (s Syslog) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+    log(err, level: "error") 
+} else {
+	if is_object(obj) {
+		.message = obj
+	}
+}
 '''
 
 [sinks.{{.ComponentID}}]
@@ -157,7 +164,7 @@ func Facility(s *logging.Syslog) string {
 		return "user"
 	}
 	if IsKeyExpr(s.Facility) {
-		return fmt.Sprintf("$%s", s.Facility)
+		return fmt.Sprintf("$$.%s", s.Facility[2:])
 	}
 	return vectorhelpers.EscapeDollarSigns(s.Facility)
 }
@@ -167,7 +174,7 @@ func Severity(s *logging.Syslog) string {
 		return "informational"
 	}
 	if IsKeyExpr(s.Severity) {
-		return fmt.Sprintf("$%s", s.Severity)
+		return fmt.Sprintf("$$.%s", s.Severity[2:])
 	}
 	return vectorhelpers.EscapeDollarSigns(s.Severity)
 }
@@ -194,7 +201,7 @@ func AppName(s *logging.Syslog) Element {
 		return Nil
 	}
 	if IsKeyExpr(s.AppName) {
-		return KV(appname, fmt.Sprintf(`"$%s"`, s.AppName))
+		return KV(appname, fmt.Sprintf(`"$$.%s"`, s.AppName[2:]))
 	}
 	if s.AppName == "tag" {
 		return KV(appname, "${tag}")
@@ -208,7 +215,7 @@ func Tag(s *logging.Syslog) Element {
 	}
 	tag := "tag"
 	if IsKeyExpr(s.Tag) {
-		return KV(tag, fmt.Sprintf(`"$%s"`, s.Tag))
+		return KV(tag, fmt.Sprintf(`"$$.%s"`, s.Tag[2:]))
 	}
 	return KV(tag, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.Tag)))
 }
@@ -219,7 +226,7 @@ func MsgID(s *logging.Syslog) Element {
 	}
 	msgid := "msg_id"
 	if IsKeyExpr(s.MsgID) {
-		return KV(msgid, fmt.Sprintf(`"$%s"`, s.MsgID))
+		return KV(msgid, fmt.Sprintf(`"$$.%s"`, s.MsgID[2:]))
 	}
 	return KV(msgid, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.MsgID)))
 }
@@ -230,7 +237,7 @@ func ProcID(s *logging.Syslog) Element {
 	}
 	procid := "proc_id"
 	if IsKeyExpr(s.ProcID) {
-		return KV(procid, fmt.Sprintf(`"$%s"`, s.ProcID))
+		return KV(procid, fmt.Sprintf(`"$$.%s"`, s.ProcID[2:]))
 	}
 	return KV(procid, fmt.Sprintf(`"%s"`, vectorhelpers.EscapeDollarSigns(s.ProcID)))
 }

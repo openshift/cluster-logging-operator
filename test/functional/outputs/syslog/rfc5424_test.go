@@ -55,7 +55,10 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		expMatch := fmt.Sprintf(`( %s )`, expInfo)
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to match the appname/procid/msgid in received message")
-		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"index":.*1`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"appname_key":.*"rec_appname"`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"msgid_key":.*"rec_msgid"`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"procid_key":.*"rec_procid"`), "Exp to find the original message in received message")
 	},
 
 		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid", false),

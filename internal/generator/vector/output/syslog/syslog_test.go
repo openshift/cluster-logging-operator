@@ -44,7 +44,14 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+  log(err, level: "error") 
+} else {
+  if is_object(obj) {
+    .message = obj
+  }
+}
 '''
 
 [sinks.example]
@@ -89,7 +96,14 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+  log(err, level: "error") 
+} else {
+  if is_object(obj) {
+    .message = obj
+  }
+}
 '''
 
 [sinks.example]
@@ -134,7 +148,14 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+  log(err, level: "error") 
+} else {
+  if is_object(obj) {
+    .message = obj
+  }
+}
 '''
 
 [sinks.example]
@@ -184,7 +205,14 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+  log(err, level: "error") 
+} else {
+  if is_object(obj) {
+    .message = obj
+  }
+}
 '''
 
 [sinks.example]
@@ -235,7 +263,14 @@ source = '''
 type = "remap"
 inputs = ["example_dedot"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
+obj, err = parse_json(string!(.message))
+if err != null {
+  log(err, level: "error") 
+} else {
+  if is_object(obj) {
+    .message = obj
+  }
+}
 '''
 
 [sinks.example]

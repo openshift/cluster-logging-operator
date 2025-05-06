@@ -53,7 +53,9 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		expMatch := fmt.Sprintf(`( %s )`, expTag)
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to find tag in received message")
-		Expect(outputlogs[0]).To(MatchRegexp(`{"index":.*1,.*"timestamp":.*1,.*"tag_key":.*"rec_tag"}`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"index":.*1`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"timestamp":.*1`), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(`"tag_key":.*"rec_tag"`), "Exp to find the original message in received message")
 	},
 
 		Entry("should use the value from the record and include the message", "$.message.tag_key", "rec_tag", false),

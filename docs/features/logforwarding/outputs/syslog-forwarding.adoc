@@ -102,6 +102,58 @@ Examples:
   foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 ====
 
+
+=== JSON logs
+If your application produces logs in JSON format and you want to extract values from the JSON log message, you need to add a `JSON Parser Filter` to your spec.
+See the example below to understand how to configure it.
+To access specific fields from the parsed JSON, use the field names with the structured prefix.
+
+Example:
+
+Log message: `{"index":1,"timestamp":123456789,"facility_key":"local0","severity_key":"Informational"}`
+
+Access paths:
+
+. `{.structured.facility_key||"user"}`
+
+. `{.structured.severity_key||"security"}`
+
+==== How to add JSON Parser filter
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  filters:
+  - name: parse
+    type: parse
+  inputs:
+  - name: application
+    type: application
+  outputs:
+  - name: syslog
+    syslog:
+      rfc: RFC5424
+      url: http://my-syslog.com
+      severity: '{.structured.severity_key||"information"}'
+      facility: '{.structured.facility_key||"user"}'
+    type: syslog
+  pipelines:
+    - name: demo-logs
+      filterRefs:
+        - parse
+      inputRefs:
+        - application
+      outputRefs:
+        - syslog
+  serviceAccount:
+    name: mine
+----
+
 === Defaults value of Syslog fields
 Will be calculating during processing log event if values not set:
 

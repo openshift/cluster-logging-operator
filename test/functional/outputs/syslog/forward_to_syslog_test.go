@@ -152,10 +152,11 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 		It("RFC5424: should take values of appname, procid, messageid from record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
+				WithParseJson().
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
-					spec.Syslog.AppName = `{.appname_key||"none"}`
-					spec.Syslog.ProcId = `{.procid_key||"none"}`
-					spec.Syslog.MsgId = `{.msgid_key||"none"}`
+					spec.Syslog.AppName = `{.structured.appname_key||"none"}`
+					spec.Syslog.ProcId = `{.structured.procid_key||"none"}`
+					spec.Syslog.MsgId = `{.structured.msgid_key||"none"}`
 				}))
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -178,9 +179,10 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 		It("RFC5424: should allow combination of static + dynamic setting of appname, procid, messageid from record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
+				WithParseJson().
 				ToSyslogOutput(obs.SyslogRFC5424, join(setSyslogSpecValues, func(spec *obs.OutputSpec) {
 					spec.Syslog.AppName = `foo-{.openshift.cluster_id||"none"}`
-					spec.Syslog.ProcId = `bar-{.appname_key||"none"}`
+					spec.Syslog.ProcId = `bar-{.structured.appname_key||"none"}`
 					spec.Syslog.MsgId = `baz{.level||"none"}.{.log_type||"none"}`
 				}))
 			Expect(framework.Deploy()).To(BeNil())
@@ -272,8 +274,9 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 		It("RFC3164: should take values of appname from record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
+				WithParseJson().
 				ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
-					spec.Syslog.AppName = `{.appname_key||"none"}`
+					spec.Syslog.AppName = `{.structured.appname_key||"none"}`
 					spec.Syslog.RFC = obs.SyslogRFC3164
 				})
 			Expect(framework.Deploy()).To(BeNil())

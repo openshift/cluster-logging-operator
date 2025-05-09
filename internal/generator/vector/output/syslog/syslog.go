@@ -3,6 +3,7 @@ package syslog
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"net/url"
 	"regexp"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
 
 const (
@@ -113,13 +113,13 @@ source = '''
 {{end}}
 {{if .EncodingFields.FieldVRLList -}}
 {{range $templatePair := .EncodingFields.FieldVRLList -}}
-	.{{$templatePair.Field}} = {{$templatePair.VRLString}}
+	{{$templatePair.Field}} = {{$templatePair.VRLString}}
 {{end -}}
 {{end}}
 
 {{if eq .RFC "RFC3164" -}}
-if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
- .tag = .tag + "[" + .proc_id + "]"
+if ._syslog.proc_id != "-" {
+ ._syslog.tag = ._syslog.tag + "[" + ._syslog.proc_id + "]"
 }
 {{end}}
 
@@ -138,8 +138,12 @@ if is_null({{.PayloadKey}}) {
 type SyslogEncoding struct {
 	ComponentID  string
 	RFC          string
-	Facility     string
-	Severity     string
+	Facility     genhelper.OptionalPair
+	Severity     genhelper.OptionalPair
+	AppName      genhelper.OptionalPair
+	ProcID       genhelper.OptionalPair
+	Tag          genhelper.OptionalPair
+	MsgID        genhelper.OptionalPair
 	AddLogSource genhelper.OptionalPair
 	PayloadKey   genhelper.OptionalPair
 }
@@ -154,6 +158,12 @@ func (se SyslogEncoding) Template() string {
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "{{.RFC}}"
+{{ .Facility }}
+{{ .Severity }}
+{{ .AppName }}   
+{{ .MsgID }}
+{{ .ProcID }}
+{{ .Tag}}
 {{ .AddLogSource }}
 {{ .PayloadKey }}
 {{end}}`
@@ -226,15 +236,15 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 		}
 	}
 
-	appendField("facility", s.Facility, defFacility)
-	appendField("severity", s.Severity, defSeverity)
-	appendField("proc_id", s.ProcId, defProcId)
+	appendField("._syslog.facility", s.Facility, defFacility)
+	appendField("._syslog.severity", s.Severity, defSeverity)
+	appendField("._syslog.proc_id", s.ProcId, defProcId)
 
 	if s.RFC == obs.SyslogRFC3164 {
-		appendField("tag", s.AppName, defTag)
+		appendField("._syslog.tag", s.AppName, defTag)
 	} else {
-		appendField("app_name", s.AppName, defAppName)
-		appendField("msg_id", s.MsgId, defMsgId)
+		appendField("._syslog.app_name", s.AppName, defAppName)
+		appendField("._syslog.msg_id", s.MsgId, defMsgId)
 	}
 
 	return templateFields
@@ -246,6 +256,10 @@ func Encoding(id string, o obs.OutputSpec, templatePairs []FieldVRLStringPair) [
 		RFC:          strings.ToLower(string(o.Syslog.RFC)),
 		Facility:     Facility(o.Syslog),
 		Severity:     Severity(o.Syslog),
+		AppName:      AppName(o.Syslog),
+		ProcID:       ProcID(o.Syslog),
+		MsgID:        MsgID(o.Syslog),
+		Tag:          Tag(o.Syslog),
 		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
 		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
 	}
@@ -255,10 +269,6 @@ func Encoding(id string, o obs.OutputSpec, templatePairs []FieldVRLStringPair) [
 
 	encodingFields := []Element{
 		sysLEncode,
-	}
-	// Add fields that have been templated
-	for _, pair := range templatePairs {
-		encodingFields = append(encodingFields, KV(pair.Field, fmt.Sprintf(`"$$.message.%s"`, pair.Field)))
 	}
 
 	return encodingFields
@@ -275,24 +285,12 @@ func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateFie
 	}
 }
 
-func Facility(s *obs.Syslog) string {
-	if s == nil || s.Facility == "" {
-		return ""
-	}
-	if IsKeyExpr(s.Facility) {
-		return fmt.Sprintf("$%s", s.Facility)
-	}
-	return s.Facility
+func Facility(s *obs.Syslog) genhelper.OptionalPair {
+	return syslogEncodeField("facility", s.Facility)
 }
 
-func Severity(s *obs.Syslog) string {
-	if s == nil || s.Severity == "" {
-		return ""
-	}
-	if IsKeyExpr(s.Severity) {
-		return fmt.Sprintf("$%s", s.Severity)
-	}
-	return s.Severity
+func Severity(s *obs.Syslog) genhelper.OptionalPair {
+	return syslogEncodeField("severity", s.Severity)
 }
 
 // PayloadKey returns the whole message or if user templated, uses the specified field from the message.
@@ -303,6 +301,31 @@ func PayloadKey(plKey string) string {
 		return ""
 	}
 	return plKey[1 : len(plKey)-1]
+}
+
+func AppName(s *obs.Syslog) genhelper.OptionalPair {
+	if obs.SyslogRFC5424 != s.RFC {
+		return genhelper.NewNilPair()
+	}
+	return syslogEncodeField("app_name", s.AppName)
+}
+
+func MsgID(s *obs.Syslog) genhelper.OptionalPair {
+	if obs.SyslogRFC5424 != s.RFC {
+		return genhelper.NewNilPair()
+	}
+	return syslogEncodeField("msg_id", s.MsgId)
+}
+
+func ProcID(s *obs.Syslog) genhelper.OptionalPair {
+	return syslogEncodeField("proc_id", s.ProcId)
+}
+
+func Tag(s *obs.Syslog) genhelper.OptionalPair {
+	if obs.SyslogRFC3164 != s.RFC {
+		return genhelper.NewOptionalPair("", nil)
+	}
+	return syslogEncodeField("tag", s.AppName)
 }
 
 // The Syslog output fields can be set to an expression of the form $.abc.xyz
@@ -443,4 +466,14 @@ func writeIfNotEmpty(builder *strings.Builder, s string) {
 	if s != "" {
 		builder.WriteString(s + "\n")
 	}
+}
+
+func syslogEncodeField(field, value string) genhelper.OptionalPair {
+	if value == "" {
+		return genhelper.NewOptionalPair(field, fmt.Sprintf("$$._syslog.%s", field))
+	}
+	if IsKeyExpr(value) {
+		return genhelper.NewOptionalPair(field, fmt.Sprintf("$%s", value))
+	}
+	return genhelper.NewOptionalPair(field, fmt.Sprintf("$$._syslog.%s", field))
 }

@@ -21,11 +21,11 @@ if ._internal.log_type == "audit" {
    ._internal.syslog.facility = "security"
 }
 
-.facility = to_string!(._internal.syslog.facility || "user")
-.severity = to_string!(._internal.syslog.severity || "informational")
-.proc_id = to_string!(._internal.syslog.proc_id || "-")
-.app_name = to_string!(._internal.syslog.app_name || "-")
-.msg_id = to_string!(._internal.syslog.msg_id || "-")
+._syslog.facility = to_string!(._internal.syslog.facility || "user")
+._syslog.severity = to_string!(._internal.syslog.severity || "informational")
+._syslog.proc_id = to_string!(._internal.syslog.proc_id || "-")
+._syslog.app_name = to_string!(._internal.syslog.app_name || "-")
+._syslog.msg_id = to_string!(._internal.syslog.msg_id || "-")
 '''
 
 [sinks.example]
@@ -38,9 +38,9 @@ mode = "xyz"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc5424"
+facility = "$$._syslog.facility"
+severity = "$$._syslog.severity"
+app_name = "$$._syslog.app_name"
+msg_id = "$$._syslog.msg_id"
+proc_id = "$$._syslog.proc_id"
 add_log_source = false
-facility = "$$.message.facility"
-severity = "$$.message.severity"
-proc_id = "$$.message.proc_id"
-app_name = "$$.message.app_name"
-msg_id = "$$.message.msg_id"

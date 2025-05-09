@@ -2,11 +2,11 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-.facility = to_string!(._internal.facility||"user")
-.severity = to_string!(._internal.severity||"informational")
-.proc_id = to_string!(._internal.proc_id||"none")
-.app_name = to_string!(._internal.app_name||"none")
-.msg_id = to_string!(._internal.msg_id||"none")
+._syslog.facility = to_string!(._internal.structured.facility||"user")
+._syslog.severity = to_string!(._internal.structured.severity||"informational")
+._syslog.proc_id = to_string!(._internal.structured proc_id||"none")
+._syslog.app_name = to_string!(._internal.structured.app_name||"none")
+._syslog.msg_id = to_string!(._internal.structured.msg_id||"none")
 
 if is_null(.payload_key) {
     .payload_key = .
@@ -26,13 +26,13 @@ mode = "tcp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc5424"
+facility = "$$._syslog.facility"
+severity = "$$._syslog.severity"
+app_name = "$$._syslog.app_name"
+msg_id = "$$._syslog.msg_id"
+proc_id = "$$._syslog.proc_id"
 add_log_source = false
 payload_key = "payload_key"
-facility = "$$.message.facility"
-severity = "$$.message.severity"
-proc_id = "$$.message.proc_id"
-app_name = "$$.message.app_name"
-msg_id = "$$.message.msg_id"
 
 [sinks.example.tls]
 enabled = true

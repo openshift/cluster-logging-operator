@@ -17,6 +17,14 @@ type OptionalPair struct {
 	options []frameworkhelper.Option
 }
 
+func NewNilPair() OptionalPair {
+	return OptionalPair{
+		"",
+		nil,
+		nil,
+	}
+}
+
 func NewOptionalPair(key string, value interface{}, options ...frameworkhelper.Option) OptionalPair {
 	return OptionalPair{
 		key,

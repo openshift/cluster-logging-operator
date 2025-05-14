@@ -11,6 +11,7 @@
   "kind": "Event",
   "level": "default",
   "log_type": "audit",
+  "log_source": "kubeAPI",
   "objectRef": {
     "apiGroup": "flowcontrol.apiserver.k8s.io",
     "apiVersion": "v1beta3",

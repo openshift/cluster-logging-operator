@@ -2,31 +2,24 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
-._internal.syslog.msg_id = ._internal.log_source
+._syslog.msg_id = ._internal.log_source
 
 if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._internal.syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER||"-")
-    ._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID||"-")
+    ._syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "-")
+    ._syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")
 }
 if ._internal.log_source == "container" {
-   ._internal.syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
-   ._internal.syslog.proc_id = to_string!(._internal.kubernetes.pod_id||"-")
-   ._internal.syslog.severity = ._internal.level
-   ._internal.syslog.facility = "user"
+   ._syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+   ._syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")
+   ._syslog.severity = ._internal.level
+   ._syslog.facility = "user"
 }
 if ._internal.log_type == "audit" {
-   ._internal.syslog.app_name = ._internal.log_source
-   ._internal.syslog.proc_id = to_string!(._internal.auditID || "-")
-   ._internal.syslog.severity = "informational"
-   ._internal.syslog.facility = "security"
+   ._syslog.app_name = ._internal.log_source
+   ._syslog.proc_id = to_string!(._internal.auditID || "-")
+   ._syslog.severity = "informational"
+   ._syslog.facility = "security"
 }
-
-.facility = to_string!(._internal.syslog.facility || "user")
-.severity = to_string!(._internal.syslog.severity || "informational")
-.proc_id = to_string!(._internal.syslog.proc_id || "-")
-.app_name = to_string!(._internal.syslog.app_name || "-")
-.msg_id = to_string!(._internal.syslog.msg_id || "-")
 '''
 
 [sinks.example]
@@ -39,12 +32,12 @@ mode = "tcp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc5424"
+facility = "$$._syslog.facility"
+severity = "$$._syslog.severity"
+app_name = "$$._syslog.app_name"
+msg_id = "$$._syslog.msg_id"
+proc_id = "$$._syslog.proc_id"
 add_log_source = false
-facility = "$$.message.facility"
-severity = "$$.message.severity"
-proc_id = "$$.message.proc_id"
-app_name = "$$.message.app_name"
-msg_id = "$$.message.msg_id"
 
 [sinks.example.buffer]
 type = "disk"

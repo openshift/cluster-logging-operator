@@ -1092,6 +1092,15 @@ type Syslog struct {
 	//
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
+	// The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"Error"}
+	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Severity",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
@@ -1108,6 +1117,15 @@ type Syslog struct {
 	//     kernel user mail daemon auth syslog lpr news
 	//     uucp cron authpriv ftp ntp security console solaris-cron
 	//     local0 local1 local2 local3 local4 local5 local6 local7
+	//
+	// The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"user"}
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`

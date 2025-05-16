@@ -1068,6 +1068,12 @@ type Syslog struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 
+	// The RFC to which the generated messages conform to.
+	//
+	// Supported values are:
+	// 1. RFC3164
+	// 2. RFC5424
+	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog RFC"
 	RFC SyslogRFCType `json:"rfc"`
@@ -1079,6 +1085,15 @@ type Syslog struct {
 	// The value can be a decimal integer or one of these case-insensitive keywords:
 	//
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
+	//
+	// The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"Error"}
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
@@ -1096,6 +1111,15 @@ type Syslog struct {
 	//     kernel user mail daemon auth syslog lpr news
 	//     uucp cron authpriv ftp ntp security console solaris-cron
 	//     local0 local1 local2 local3 local4 local5 local6 local7
+	//
+	// The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"user"}
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`

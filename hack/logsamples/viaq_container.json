@@ -41,6 +41,7 @@
   },
   "level": "info",
   "log_type": "application",
+  "log_source": "container",
   "message": "I1017 20:35:14.908511       1 log.go:198] http: TLS handshake error from 10.128.0.24:46206: write tcp 10.129.0.25:9092->10.128.0.24:46206: write: connection reset by peer",
   "openshift": {
     "cluster_id": "4732cbd5-56e8-4e0d-b52f-998f089afe3e"

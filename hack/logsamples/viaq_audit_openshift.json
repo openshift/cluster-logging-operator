@@ -10,6 +10,7 @@
   "kind": "Event",
   "level": "default",
   "log_type": "audit",
+  "log_source": "openshiftAPI",
   "objectRef": {
     "apiGroup": "oauth.openshift.io",
     "apiVersion": "v1",

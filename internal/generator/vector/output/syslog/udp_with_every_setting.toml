@@ -2,34 +2,19 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-. = merge(., parse_json!(string!(.message))) ?? .
-if .log_type == "infrastructure" && .log_source == "node" {
-    ._internal.syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
-    ._internal.syslog.proc_id = to_string!(.systemd.t.PID || "")
-}
-if .log_source == "container" {
-    ._internal.syslog.tag = join!([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
-    ._internal.syslog.severity = .level
-    ._internal.syslog.facility = "user"
-     #Remove non-alphanumeric characters
-   	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
-	#Truncate the sanitized tag to 32 characters
-	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
-}
-if .log_type == "audit" {
-    ._internal.syslog.tag = .log_source
-    ._internal.syslog.severity = "informational"
-    ._internal.syslog.facility = "security"
-}
-.proc_id = "procID"
-.tag = "appName"
-if exists(.proc_id) && .proc_id != "-" && .proc_id != "" {
-   .tag = .tag + "[" + .proc_id  + "]"
+._syslog.facility = "kern"
+._syslog.severity = "critical"
+proc_id = "procID"
+tag = "appName"
+if proc_id != "-" && proc_id != "" {
+  ._syslog.tag = to_string(tag||"") + "[" + to_string(proc_id)  + "]"
+} else {
+  ._syslog.tag = to_string(tag)
 }
 if is_null(.plKey) {
-	.payload_key = .
+    .payload_key = .
 } else {
-	.payload_key = .plKey
+    .payload_key = .plKey
 }
 '''
 
@@ -43,9 +28,10 @@ mode = "udp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc3164"
-facility = "kern"
-severity = "critical"
+facility = "$$._syslog.facility"
+severity = "$$._syslog.severity"
+proc_id = "$$._syslog.proc_id"
+tag = "$$._syslog.tag"
 add_log_source = false
 payload_key = "payload_key"
-proc_id = "$$.message.proc_id"
-tag = "$$.message.tag"
+

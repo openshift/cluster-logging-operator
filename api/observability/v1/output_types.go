@@ -135,6 +135,8 @@ type OutputSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Splunk"
 	Splunk *Splunk `json:"splunk,omitempty"`
 
+	// Syslog configures forwarding log events to a receiver using the syslog protocol
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog Output"
 	Syslog *Syslog `json:"syslog,omitempty"`
@@ -1013,6 +1015,12 @@ type Syslog struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 
+	// The RFC to which the generated messages conform to.
+	//
+	// Supported values are:
+	// 1. RFC3164
+	// 2. RFC5424
+	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Syslog RFC"
 	RFC SyslogRFCType `json:"rfc"`
@@ -1025,7 +1033,17 @@ type Syslog struct {
 	//
 	//     Emergency Alert Critical Error Warning Notice Informational Debug
 	//
+	// The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"Error"}
+	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Severity",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Severity string `json:"severity,omitempty"`
 
@@ -1041,7 +1059,17 @@ type Syslog struct {
 	//     uucp cron authpriv ftp ntp security console solaris-cron
 	//     local0 local1 local2 local3 local4 local5 local6 local7
 	//
+	// The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Example:
+	//
+	//  1. {.foo||"user"}
+	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Facility",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Facility string `json:"facility,omitempty"`
 

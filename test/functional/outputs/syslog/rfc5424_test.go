@@ -3,6 +3,10 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/onsi/gomega/format"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strings"
 	"time"
 
@@ -33,6 +37,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, payloadKey, expInfo string) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
+			WithParseJson().
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
@@ -42,7 +47,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				output.Syslog.PayloadKey = payloadKey
 			})
 		Expect(framework.Deploy()).To(BeNil())
-
+		format.MaxLength = 0
 		record := `{"index":1,"appname_key":"rec_appname","msgid_key":"rec_msgid","procid_key":"rec_procid"}`
 		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
 		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
@@ -52,14 +57,27 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		expMatch := fmt.Sprintf(`( %s )`, expInfo)
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to match the appname/procid/msgid in received message")
-		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
+		jsonPart := outputlogs[0][strings.Index(outputlogs[0], "{"):]
+		logs, err := types.ParseLogs(utils.ToJsonLogs([]string{jsonPart}))
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		Expect(logs).To(HaveLen(1), "Expected the receiver to receive the message")
+		var expected map[string]interface{}
+		err = json.Unmarshal([]byte(record), &expected)
+		Expect(err).To(BeNil(), "Expected no errors unmarshaling the expected json")
+		same := cmp.Equal(logs[0].Structured, expected)
+		if !same {
+			diff := cmp.Diff(logs[0].Structured, expected)
+			fmt.Printf("diff %s\n", diff)
+		}
+		Expect(same).To(BeTrue(), "parsed json message not matching")
 	},
-		Entry("should use the value from the record and include the message", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, `{.message}`, "rec_appname rec_procid rec_msgid"),
+		Entry("should use the value from the record and include the structured message", `{.structured.appname_key||"none"}`, `{.structured.msgid_key||"none"}`, `{.structured.procid_key||"none"}`, `{.message}`, "rec_appname rec_procid rec_msgid"),
 	)
 
 	DescribeTable("logforwarder configured with payload key", func(appName, msgId, procId, payloadKey string) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
+			WithParseJson().
 			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
 				output.Syslog.Facility = "user"
 				output.Syslog.Severity = "debug"
@@ -81,21 +99,29 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		payload := strings.TrimSpace(fields[1])
 		parsedRecord := map[string]interface{}{}
 		Expect(json.Unmarshal([]byte(payload), &parsedRecord)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
-		msg := parsedRecord["message"]
-		Expect(msg).To(Equal(record))
-
+		msg := parsedRecord["structured"]
+		var expected map[string]interface{}
+		err = json.Unmarshal([]byte(record), &expected)
+		Expect(err).To(BeNil(), "Expected no errors unmarshaling the expected json")
+		same := cmp.Equal(msg, expected)
+		if !same {
+			diff := cmp.Diff(msg, expected)
+			fmt.Printf("diff %s\n", diff)
+		}
+		Expect(same).To(BeTrue(), "parsed json message not matching")
 	},
-		Entry("should include the whole message when payloadkey is empty", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, ""),
-		Entry("should include the message when payloadkey is not found", `{.appname_key||"none"}`, `{.msgid_key||"none"}`, `{.procid_key||"none"}`, "{.key_not_available}"),
+		Entry("should include the structured message when payloadkey is empty", `{.structured.appname_key||"none"}`, `{.structured.msgid_key||"none"}`, `{.structured.procid_key||"none"}`, ""),
+		Entry("should include the message when payloadkey is not found", `{.structured.appname_key||"none"}`, `{.structured.msgid_key||"none"}`, `{.structured.procid_key||"none"}`, "{.key_not_available}"),
 	)
 
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
+				WithParseJson().
 				ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
-					spec.Syslog.Facility = `{.facility_key||"notfound"}`
-					spec.Syslog.Severity = `{.severity_key||"notfound"}`
+					spec.Syslog.Facility = `{.structured.facility_key||"notfound"}`
+					spec.Syslog.Severity = `{.structured.severity_key||"notfound"}`
 				})
 			Expect(framework.Deploy()).To(BeNil())
 

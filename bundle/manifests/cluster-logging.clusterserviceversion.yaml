@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-04-22T11:06:54Z"
+    createdAt: "2025-05-14T12:47:05Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1574,6 +1574,15 @@ spec:
               kernel user mail daemon auth syslog lpr news
               uucp cron authpriv ftp ntp security console solaris-cron
               local0 local1 local2 local3 local4 local5 local6 local7
+
+          The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+          A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
+          Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+          Example:
+
+           1. {.foo||"user"}
         displayName: Facility
         path: outputs[0].syslog.facility
         x-descriptors:
@@ -1658,6 +1667,15 @@ spec:
           The value can be a decimal integer or one of these case-insensitive keywords:
 
               Emergency Alert Critical Error Warning Notice Informational Debug
+
+          The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+          A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
+          Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+          Example:
+
+           1. {.foo||"Error"}
         displayName: Severity
         path: outputs[0].syslog.severity
         x-descriptors:

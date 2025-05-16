@@ -2,35 +2,30 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._internal = merge(._internal, parse_json!(string!(._internal.message))) ?? ._internal
-
 if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._internal.syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
-	._internal.syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
+   ._syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
+   ._syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
 }
 if ._internal.log_source == "container" {
-   	._internal.syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-   	._internal.syslog.severity = ._internal.level
-   	._internal.syslog.facility = "user"
+   	._syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
    	#Remove non-alphanumeric characters
-   	._internal.syslog.tag = replace(._internal.syslog.tag, r'[^a-zA-Z0-9]', "")
+   	._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
 	#Truncate the sanitized tag to 32 characters
-	._internal.syslog.tag = truncate(._internal.syslog.tag, 32)
-
+	._syslog.tag = truncate(._syslog.tag, 32)
+   	._syslog.severity = ._internal.level
+   	._syslog.facility = "user"
 }
-if .log_type == "audit" {
-   ._internal.syslog.tag = ._internal.log_source
-   ._internal.syslog.severity = "informational"
-   ._internal.syslog.facility = "security"
+if ._internal.log_type == "audit" {
+   ._syslog.tag = ._internal.log_source
+   ._syslog.severity = "informational"
+   ._syslog.facility = "security"
 }
-
-.facility = to_string!(._internal.syslog.facility || "user")
-.severity = to_string!(._internal.syslog.severity || "informational")
-.proc_id = to_string!(._internal.syslog.proc_id || "-")
-.tag = to_string!(._internal.syslog.tag || "")
-
-if .proc_id != "-" && .proc_id != "" {
-  .tag = to_string(.tag||"") + "[" + to_string(.proc_id)  + "]"
+proc_id = to_string!(._syslog.proc_id || "-")
+tag = to_string!(._syslog.tag || "")
+if proc_id != "-" && proc_id != "" {
+  ._syslog.tag = to_string(tag||"") + "[" + to_string(proc_id)  + "]"
+} else {
+  ._syslog.tag = to_string(tag)
 }
 '''
 
@@ -44,8 +39,8 @@ mode = "udp"
 codec = "syslog"
 except_fields = ["_internal"]
 rfc = "rfc3164"
+facility = "$$._syslog.facility"
+severity = "$$._syslog.severity"
+proc_id = "$$._syslog.proc_id"
+tag = "$$._syslog.tag"
 add_log_source = false
-facility = "$$.message.facility"
-severity = "$$.message.severity"
-proc_id = "$$.message.proc_id"
-tag = "$$.message.tag"

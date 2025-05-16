@@ -106,10 +106,12 @@ Following is a list of output tuning options based upon the https://github.com/o
 |Delivery
 a|The mode for log forwarding.
 
-- AtLeastOnce (default): The forwarder will block in an attempt to deliver all messages.  When the tuning spec is added to an output, this additionally configures an internal, durable buffer so the collector can attempt to forward any logs read before it restarted
+- AtLeastOnce: The forwarder will block in an attempt to deliver all messages.  When the tuning spec is added to an output, this additionally configures an internal, durable buffer so the collector can attempt to forward any logs read before it restarted
 - AtMostOnce: The forwarder may provide better throughput but also may drop logs in the event of spikes in volume and backpressure from the output.  Undelivered, collected logs will be lost on collector restart.
 
 **NOTE:**: Log collection and forwarding is best effort.  *AtLeastOnce* delivery mode does not guarantee logs will not be lost.
+
+**NOTE:**: When this setting is left unset, the system defaults to using an in-memory buffer with a capacity of 500 events. In-memory buffers offer the highest performance due to low latency, but they have two limitations: they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
 |Compression
 a| The compression algorithm to use to compress the data before sending over the network.
 

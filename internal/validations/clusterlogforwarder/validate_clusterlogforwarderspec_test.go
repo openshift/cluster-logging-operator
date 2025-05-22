@@ -1105,6 +1105,34 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Pipelines["esPruneHost"]).To(HaveCondition("Ready", true, "", ""))
 		})
 
+		It("should not fail with NPE error for pipeline without outputs", func() {
+			pruneHost := loggingv1.FilterSpec{
+				Name: "prune",
+				Type: loggingv1.FilterPrune,
+				FilterTypeSpec: loggingv1.FilterTypeSpec{
+					PruneFilterSpec: &loggingv1.PruneFilterSpec{
+						In:    []string{".foo, .hostname"},
+						NotIn: []string{".foo"},
+					},
+				},
+			}
+
+			forwarderSpec.Outputs = []loggingv1.OutputSpec{}
+			forwarderSpec.Filters = []loggingv1.FilterSpec{pruneHost}
+
+			forwarderSpec.Pipelines = []loggingv1.PipelineSpec{
+				{
+					Name:       "esPruneHost",
+					OutputRefs: []string{"myOutput"},
+					InputRefs:  []string{loggingv1.InputNameApplication},
+					FilterRefs: []string{"prune"},
+				},
+			}
+
+			msg := verifyHostNameNotFilteredForGCL(forwarderSpec.Pipelines[0].OutputRefs, forwarderSpec.Pipelines[0].FilterRefs, forwarderSpec.OutputMap(), forwarderSpec.FilterMap())
+			Expect(msg).To(BeEmpty())
+		})
+
 	})
 
 	Context("validating all", func() {

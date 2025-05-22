@@ -469,11 +469,13 @@ func verifyHostNameNotFilteredForGCL(outputRefs []string, filterRefs []string, o
 	var errMsgs []string
 
 	for _, out := range outputRefs {
-		if outputs[out].Type == loggingv1.OutputTypeGoogleCloudLogging {
-			for _, f := range filterRefs {
-				filterSpec := filters[f]
-				if prunesHostName(*filterSpec) {
-					errMsgs = append(errMsgs, fmt.Sprintf("filter: %s prunes the `.hostname` field which is required for output: %s of type googleCloudLogging.", filterSpec.Name, outputs[out].Name))
+		if outputSpec, ok := outputs[out]; ok {
+			if outputSpec.Type == loggingv1.OutputTypeGoogleCloudLogging {
+				for _, f := range filterRefs {
+					filterSpec := filters[f]
+					if prunesHostName(*filterSpec) {
+						errMsgs = append(errMsgs, fmt.Sprintf("filter: %s prunes the `.hostname` field which is required for output: %s of type googleCloudLogging.", filterSpec.Name, outputs[out].Name))
+					}
 				}
 			}
 		}

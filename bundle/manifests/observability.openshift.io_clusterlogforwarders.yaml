@@ -1812,8 +1812,11 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2005,8 +2008,11 @@ spec:
                               - zstd
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2154,8 +2160,11 @@ spec:
                               - zlib
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2269,8 +2278,11 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2417,8 +2429,11 @@ spec:
                               - zlib
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2552,8 +2567,11 @@ spec:
                               - lz4
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2724,8 +2742,11 @@ spec:
                               - snappy
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -2948,8 +2969,11 @@ spec:
                               - snappy
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -3079,8 +3103,11 @@ spec:
                               - none
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -3248,8 +3275,11 @@ spec:
                               - gzip
                               type: string
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce
@@ -3447,8 +3477,11 @@ spec:
                           nullable: true
                           properties:
                             deliveryMode:
-                              description: DeliveryMode sets the delivery mode for
-                                log forwarding.
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
                               enum:
                               - AtLeastOnce
                               - AtMostOnce

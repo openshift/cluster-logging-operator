@@ -222,6 +222,9 @@ type BaseOutputTuningSpec struct {
 }
 
 // DeliveryMode sets the delivery mode for log forwarding.
+// This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+// In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+// they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
 //
 // +kubebuilder:validation:Enum:=AtLeastOnce;AtMostOnce
 type DeliveryMode string

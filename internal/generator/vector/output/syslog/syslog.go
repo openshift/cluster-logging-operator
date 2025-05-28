@@ -42,13 +42,15 @@ func (s Syslog) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-obj, err = parse_json(string!(.message))
-if err != null {
-    log(err, level: "error") 
-} else {
-	if is_object(obj) {
-		.message = obj
-	}
+if exists(.message) {
+  obj, err = parse_json(string!(.message))
+  if err != null {
+    log(err, level: "debug") 
+  } else {
+    if is_object(obj) {
+      .message = obj
+    }
+  }
 }
 '''
 

@@ -28,6 +28,27 @@ spec:
       labels:
         service: collector
         severity: Warning
+    - alert: CollectorHigh403ForbiddenResponseRate
+      annotations:
+        description: |-
+          High rate of "HTTP 403 Forbidden" responses detected for collector "{{ $labels.app_kubernetes_io_instance }}" in namespace {{ $labels.namespace }} for output "{{ $labels.component_id }}". The rate of 403 responses is {{ printf "%.2f" $value }}% over the last 2 minutes, persisting for more than 5 minutes. This could indicate an authorization issue.
+        summary: |- 
+          At least 10% of sent requests responded with "HTTP 403 Forbidden" for collector "{{ $labels.app_kubernetes_io_instance }}" in namespace {{ $labels.namespace }} for output "{{ $labels.component_id }}"
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/CollectorHigh403ForbiddenResponseRate.md
+      expr: |
+        sum(
+          irate(vector_http_client_responses_total{component_kind="sink", status="403"}[2m])
+        ) by (component_id, app_kubernetes_io_instance, namespace)
+        /
+        sum(
+          irate(vector_http_client_responses_total{component_kind="sink"}[2m])
+        ) by (component_id, app_kubernetes_io_instance, namespace)
+        * 100
+        > 10
+      for: 5m
+      labels:
+        service: collector
+        severity: critical
   - name: logging_clusterlogging_telemetry.rules
     rules:
     - expr: |

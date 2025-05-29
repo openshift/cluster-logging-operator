@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-05-14T12:43:32Z"
+    createdAt: "2025-05-29T17:32:45Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2015,7 +2015,7 @@ spec:
     must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
     service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
 
-    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/latest/logging/cluster-logging-deploying.html)
+    For additional installation documentation see [Installing logging](https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html-single/logging/index#installing-logging-6-2)
     in the OpenShift product documentation.
   displayName: Red Hat OpenShift Logging
   icon:

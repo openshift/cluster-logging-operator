@@ -200,7 +200,39 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 				matches := regexpHost.FindStringSubmatch(v)
 				Expect(matches[1]).To(Equal(outputTestLog.Hostname), "Expected to find match for host")
 			}
+		})
 
+		It("should send correct hostname with payloadKey settings", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+					output.Splunk.PayloadKey = ".message"
+				})
+			framework.VisitConfig = func(conf string) string {
+				return strings.Replace(conf, `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`,
+					`._internal.hostname = "acme.com"`, 1) // replace hostname for testing
+			}
+			framework.Secrets = append(framework.Secrets, secret)
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Wait for splunk to be ready
+			WaitOnSplunk(framework)
+
+			// Write app logs
+			timestamp := "2020-11-04T18:13:59.061892+00:00"
+			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+			Eventually(func() bool {
+				result, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex)
+				Expect(err).ToNot(HaveOccurred())
+				return strings.Contains(strings.Join(result, ""), `{"message":"This is my test message"}`)
+			}, 5*time.Second, 500*time.Millisecond).Should(BeTrue())
+
+			result, err := framework.ReadFieldByIndexFromSplunk(functional.SplunkDefaultIndex, "host", "json")
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(len(result)).To(BeEquivalentTo(1))
+			Expect(result[0]).To(ContainSubstring(`{"host":"acme.com"}`), "Expected to find match for host")
 		})
 
 		DescribeTable("with user defined source", func(source, expSource string, inputType obs.InputType) {

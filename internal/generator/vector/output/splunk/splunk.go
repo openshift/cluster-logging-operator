@@ -189,7 +189,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets ob
 		RootMixin:     common.NewRootMixin("none"),
 		Source:        KV("source", `"{{ ._internal.splunk.source }}"`),
 		SourceType:    KV("sourcetype", `"{{ ._internal.splunk.sourcetype }}"`),
-		HostKey:       KV("host_key", `"hostname"`),
+		HostKey:       KV("host_key", `"._internal.hostname"`),
 		IndexedFields: IndexedFields(o.Splunk, op),
 	}
 	authentication := o.Splunk.Authentication

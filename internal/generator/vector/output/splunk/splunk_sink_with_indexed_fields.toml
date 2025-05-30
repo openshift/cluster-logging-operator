@@ -58,7 +58,7 @@ timestamp_key = "@timestamp"
 indexed_fields = ["log_source","kubernetes_namespace_labels_bar_baz0-9_test","annotations_authorization_k8s_io_decision"]
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
-host_key = "hostname"
+host_key = "._internal.hostname"
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["_internal"]

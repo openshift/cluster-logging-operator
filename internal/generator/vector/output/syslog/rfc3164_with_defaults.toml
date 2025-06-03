@@ -7,13 +7,18 @@ if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
    ._syslog.proc_id = to_string!(._internal.systemd.t.PID || "")
 }
 if ._internal.log_source == "container" {
-   	._syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-   	#Remove non-alphanumeric characters
-   	._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
-	#Truncate the sanitized tag to 32 characters
-	._syslog.tag = truncate(._syslog.tag, 32)
-   	._syslog.severity = ._internal.level
-   	._syslog.facility = "user"
+   	._syslog.tag, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
+   	if err != null {
+   	   log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error")
+  	   ._syslog.tag = ""
+    } else {
+       #Remove non-alphanumeric characters
+       ._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
+       #Truncate the sanitized tag to 32 characters
+       ._syslog.tag = truncate(._syslog.tag, 32)
+    }
+    ._syslog.severity = ._internal.level
+    ._syslog.facility = "user"
 }
 if ._internal.log_type == "audit" {
    ._syslog.tag = ._internal.log_source

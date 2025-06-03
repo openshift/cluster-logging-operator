@@ -40,15 +40,25 @@ const (
 	nodeProcIdRFC5424 = `._syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")`
 
 	// Default values for Syslog fields for application logType and infrastructure logType if source 'container'
-	containerAppName  = `._syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")`
+	containerAppName = `._syslog.app_name, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+if err != null {
+  log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error") 
+  ._syslog.app_name = "-"
+}
+`
 	containerFacility = `._syslog.facility = "user"`
 	containerSeverity = `._syslog.severity = ._internal.level`
 	containerProcId   = `._syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")`
-	containerTag      = `._syslog.tag = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
-#Remove non-alphanumeric characters
-._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
-#Truncate the sanitized tag to 32 characters
-._syslog.tag = truncate(._syslog.tag, 32)
+	containerTag      = `._syslog.tag, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
+if err != null {
+  log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error") 
+  ._syslog.tag = ""
+} else {
+  #Remove non-alphanumeric characters
+  ._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
+  #Truncate the sanitized tag to 32 characters
+  ._syslog.tag = truncate(._syslog.tag, 32)
+}
 `
 
 	// Default values for Syslog fields for audit logType

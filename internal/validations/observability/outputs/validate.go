@@ -22,14 +22,13 @@ func Validate(context internalcontext.ForwarderContext) {
 		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
 		messages = append(messages, validateOutputIsReferencedByPipelines(out, pipelines)...)
 		// Validate by output type
-		// Note: type 'lokiStack' becomes 'otlp' output type when sending Otel otherwise it becomes 'loki'
 		switch out.Type {
 		case obs.OutputTypeCloudwatch:
 			messages = append(messages, ValidateCloudWatchAuth(out, context)...)
 		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
-		case obs.OutputTypeOTLP:
-			messages = append(messages, ValidateTechPreviewAnnotation(context)...)
+		case obs.OutputTypeLokiStack, obs.OutputTypeOTLP:
+			messages = append(messages, ValidateTechPreviewAnnotation(out, context)...)
 		}
 		// Set condition
 		if len(messages) > 0 {

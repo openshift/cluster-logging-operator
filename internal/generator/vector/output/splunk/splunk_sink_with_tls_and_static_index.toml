@@ -47,7 +47,7 @@ index = "{{ ._internal.splunk_hec_splunk_index }}"
 timestamp_key = "@timestamp"
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
-host_key = "hostname"
+host_key = "._internal.hostname"
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["_internal"]

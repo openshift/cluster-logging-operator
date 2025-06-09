@@ -285,7 +285,7 @@ r.attributes = append(r.attributes,
   ]
 )
 if exists(.responseStatus.code) {
-  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
+  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})
 }
 values = []
 for_each(array!(.user.groups)) -> |_index,group| {
@@ -368,7 +368,7 @@ r.attributes = append(r.attributes,
   ]
 )
 if exists(.responseStatus.code) {
-  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
+  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})
 }
 values = []
 for_each(array!(.user.groups)) -> |_index,group| {
@@ -495,19 +495,18 @@ source = '''
 '''
 
 [sinks.output_otel_collector]
-type = "http"
+type = "opentelemetry"
 inputs = ["output_otel_collector_resource_logs"]
-uri = "http://localhost:4318/v1/logs"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
-compression = "gzip"
+protocol.uri = "http://localhost:4318/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
+protocol.compression = "gzip"
 
-[sinks.output_otel_collector.encoding]
-codec = "json"
-except_fields = ["_internal"]
-
-[sinks.output_otel_collector.batch]
+[sinks.output_otel_collector.protocol.batch]
 max_bytes = 10000000
 
 [sinks.output_otel_collector.buffer]
@@ -515,6 +514,6 @@ type = "disk"
 when_full = "block"
 max_size = 268435488
 
-[sinks.output_otel_collector.request]
+[sinks.output_otel_collector.protocol.request]
 retry_initial_backoff_secs = 20
 retry_max_duration_secs = 35

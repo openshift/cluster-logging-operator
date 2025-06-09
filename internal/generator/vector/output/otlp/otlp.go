@@ -154,7 +154,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			common.NewBatch(protocolId, strategy),
 			common.NewBuffer(id, strategy),
 			common.NewRequest(protocolId, strategy),
-			tls.New(id, o.TLS, secrets, op),
+			tls.New(protocolId, o.TLS, secrets, op),
 			auth.HTTPAuth(protocolId, o.OTLP.Authentication, secrets, op),
 		},
 	)

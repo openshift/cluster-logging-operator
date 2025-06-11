@@ -9,7 +9,11 @@ if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
     ._syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")
 }
 if ._internal.log_source == "container" {
-   ._syslog.app_name = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+   ._syslog.app_name, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+   if err != null {
+     log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error")
+  	 ._syslog.app_name = "-"
+   }
    ._syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")
    ._syslog.severity = ._internal.level
    ._syslog.facility = "user"

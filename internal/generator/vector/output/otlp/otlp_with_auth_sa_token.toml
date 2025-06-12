@@ -285,7 +285,7 @@ r.attributes = append(r.attributes,
   ]
 )
 if exists(.responseStatus.code) {
-  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
+  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})
 }
 values = []
 for_each(array!(.user.groups)) -> |_index,group| {
@@ -368,7 +368,7 @@ r.attributes = append(r.attributes,
   ]
 )
 if exists(.responseStatus.code) {
-  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
+  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})
 }
 values = []
 for_each(array!(.user.groups)) -> |_index,group| {
@@ -495,17 +495,16 @@ source = '''
 '''
 
 [sinks.output_otel_collector]
-type = "http"
+type = "opentelemetry"
 inputs = ["output_otel_collector_resource_logs"]
-uri = "http://localhost:4318/v1/logs"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
+protocol.uri = "http://localhost:4318/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 
-[sinks.output_otel_collector.encoding]
-codec = "json"
-except_fields = ["_internal"]
-
-[sinks.output_otel_collector.auth]
+[sinks.output_otel_collector.protocol.auth]
 strategy = "bearer"
 token = "SECRET[kubernetes_secret.my-service-account-token/token]"

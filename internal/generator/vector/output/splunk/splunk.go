@@ -105,7 +105,7 @@ endpoint = "{{.Endpoint}}"
 {{.Compression}}
 default_token = "{{.DefaultToken}}"
 {{kv .Index -}}
-timestamp_key = "@timestamp"
+timestamp_key = "._internal.timestamp"
 {{kv .IndexedFields}}
 {{kv .Source -}}
 {{kv .SourceType -}}
@@ -201,11 +201,11 @@ func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets ob
 
 func FixTimestampFormat(componentID string, inputs []string) Element {
 	var vrl = `
-ts, err = parse_timestamp(.@timestamp,"%+")
+ts, err = parse_timestamp(._internal.timestamp,"%+")
 if err != null {
 	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
 } else {
-	.@timestamp = ts
+	._internal.timestamp = ts
 }
 `
 	return Remap{

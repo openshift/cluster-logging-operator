@@ -3,13 +3,12 @@
 type = "remap"
 inputs = ["pipelineName"]
 source = '''
-ts, err = parse_timestamp(.@timestamp,"%+")
+ts, err = parse_timestamp(._internal.timestamp,"%+")
 if err != null {
 	log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
 } else {
-	.@timestamp = ts
+	._internal.timestamp = ts
 }
-
 '''
 [transforms.splunk_hec_metadata]
 type = "remap"
@@ -50,7 +49,7 @@ inputs = ["splunk_hec_metadata"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
-timestamp_key = "@timestamp"
+timestamp_key = "._internal.timestamp"
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
 host_key = "._internal.hostname"

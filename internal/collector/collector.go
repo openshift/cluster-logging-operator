@@ -177,6 +177,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 // to be a unique list
 func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs internalobs.Outputs, secretVolumes, configmapVolumes []string, clusterID string) *v1.Container {
 	collector := runtime.NewContainer(constants.CollectorName, utils.GetComponentImage(f.ImageName), v1.PullIfNotPresent, f.CollectorSpec.Resources)
+	collector.TerminationMessagePolicy = v1.TerminationMessageFallbackToLogsOnError
 	collector.Ports = []v1.ContainerPort{
 		{
 			Name:          MetricsPortName,

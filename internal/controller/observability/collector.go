@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime/serviceaccount"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,6 +43,11 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	if context.AdditionalContext != nil {
 		options = context.AdditionalContext
 	}
+
+	// Set kubeapi and rollout options based on annotation (LOG-7196)
+	// TODO: replace with API fields
+	SetKubeCacheOption(context.Forwarder.Annotations, options)
+	SetMaxUnavailableRolloutOption(context.Forwarder.Annotations, options)
 
 	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
 		// temporarily create SA token until collector is capable of dynamically reloading a projected serviceaccount token
@@ -100,28 +106,41 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 
 	isDaemonSet := !internalobs.DeployAsDeployment(*context.Forwarder)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
-	factory := collector.New(collectorConfHash, context.ClusterID, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
-	if err = factory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
+	collectorFactory := collector.New(
+		collectorConfHash,
+		context.ClusterID,
+		context.Forwarder.Spec.Collector,
+		context.Secrets, context.ConfigMaps,
+		context.Forwarder.Spec,
+		resourceNames,
+		isDaemonSet,
+		LogLevel(context.Forwarder.Annotations),
+		factory.IncludesKubeCacheOption(options),
+		factory.GetMaxUnavailableValue(options),
+	)
+
+	if err = collectorFactory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}
 
-	reconcileWorkload := factory.ReconcileDaemonset
+	reconcileWorkload := collectorFactory.ReconcileDaemonset
 	if !isDaemonSet {
-		reconcileWorkload = factory.ReconcileDeployment
+		reconcileWorkload = collectorFactory.ReconcileDeployment
 	}
+
 	if err := reconcileWorkload(context.Client, context.Forwarder.Namespace, trustedCABundle, ownerRef); err != nil {
 		log.Error(err, "Error reconciling the deployment of the collector")
 		return err
 	}
 
-	if err := factory.ReconcileInputServices(context.Client, context.Reader, context.Forwarder.Namespace, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := collectorFactory.ReconcileInputServices(context.Client, context.Reader, context.Forwarder.Namespace, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileInputServices")
 		return err
 	}
 
 	// Reconcile resources to support metrics gathering
-	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
@@ -134,12 +153,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	return nil
 }
 
-func GenerateConfig(k8Client client.Client, spec obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) (config string, err error) {
+func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) (config string, err error) {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	//EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 	g := forwardergenerator.New()
-	generatedConfig, err := g.GenerateConf(secrets, spec.Spec, spec.Namespace, spec.Name, resourceNames, op)
+	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
@@ -161,6 +180,16 @@ func EvaluateAnnotationsForEnabledCapabilities(annotations map[string]string, op
 			if strings.ToLower(value) == "true" {
 				options[generatorhelpers.EnableDebugOutput] = "true"
 			}
+		case constants.AnnotationKubeCache:
+			// Matching the validate_annotations logic
+			if observability.IsEnabledValue(value) {
+				options[framework.UseKubeCacheOption] = "true"
+			}
+		case constants.AnnotationMaxUnavailable:
+			// Matching the validate_annotations logic
+			if observability.IsPercentOrWholeNumber(value) {
+				options[framework.MaxUnavailableOption] = value
+			}
 		}
 	}
 }
@@ -170,4 +199,22 @@ func LogLevel(annotations map[string]string) string {
 		return level
 	}
 	return "warn"
+}
+
+func SetKubeCacheOption(annotations map[string]string, options framework.Options) {
+	if value, found := annotations[constants.AnnotationKubeCache]; found {
+		if observability.IsEnabledValue(value) {
+			log.V(3).Info("Kube cache annotation found")
+			options[framework.UseKubeCacheOption] = "true"
+		}
+	}
+}
+
+func SetMaxUnavailableRolloutOption(annotations map[string]string, options framework.Options) {
+	if value, found := annotations[constants.AnnotationMaxUnavailable]; found {
+		if observability.IsPercentOrWholeNumber(value) {
+			log.V(3).Info("Max Unavailable annotation found")
+			options[framework.MaxUnavailableOption] = value
+		}
+	}
 }

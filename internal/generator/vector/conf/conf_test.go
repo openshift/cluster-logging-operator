@@ -3,7 +3,6 @@ package conf
 import (
 	_ "embed"
 	"fmt"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -70,7 +69,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		conf := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with spec for containers", "container.toml", nil,
+		Entry("with spec for containers and kube-cache enabled",
+			"container.toml",
+			framework.Options{framework.UseKubeCacheOption: "true"},
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{
@@ -112,7 +113,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					},
 				},
 			}),
-		Entry("with complex spec", "complex.toml", nil,
+		Entry("with complex spec",
+			"complex.toml",
+			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{
@@ -159,7 +162,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 		),
-		Entry("with complex spec && http audit receiver as input source", "complex_http_receiver.toml", nil,
+		Entry("with complex spec && http audit receiver as input source",
+			"complex_http_receiver.toml",
+			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{

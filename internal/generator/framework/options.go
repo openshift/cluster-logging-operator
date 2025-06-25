@@ -5,14 +5,14 @@ import (
 )
 
 const (
-	ClusterTLSProfileSpec = "tlsProfileSpec"
-
-	MinTLSVersion = "minTLSVersion"
-	Ciphers       = "ciphers"
-
+	ClusterTLSProfileSpec               = "tlsProfileSpec"
+	MinTLSVersion                       = "minTLSVersion"
+	Ciphers                             = "ciphers"
 	URL                                 = "url"
 	OptionServiceAccountTokenSecretName = "serviceAccountTokenSecretName"
 	OptionForwarderName                 = "forwarderName"
+	UseKubeCacheOption                  = "useKubeCache"
+	MaxUnavailableOption                = "maxUnavailableRollout"
 )
 
 // Options is a map of Options used to customize the config generation. E.g. Debugging, legacy config generation

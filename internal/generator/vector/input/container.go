@@ -37,7 +37,7 @@ var (
 )
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
+func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}, useCache bool) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	if spec.Application != nil {
@@ -51,6 +51,7 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 			IncludePaths:       includes,
 			ExcludePaths:       excludes,
 			ExtraLabelSelector: source.LabelSelectorFrom(selector),
+			UseKubeCache:       useCache,
 		},
 		NewInternalNormalization(metaID, logSource, logType, base),
 	}

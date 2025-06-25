@@ -5,6 +5,7 @@ import (
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	controller "github.com/openshift/cluster-logging-operator/internal/controller/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -49,6 +50,7 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	op := framework.Options{}
 	//k8shandler.EvaluateAnnotationsForEnabledCapabilities(forwarder.Annotations, op)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(nil)
+	controller.SetKubeCacheOption(forwarder.Annotations, op)
 
 	configGenerator := forwardergenerator.New()
 	if configGenerator == nil {

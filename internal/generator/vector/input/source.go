@@ -14,6 +14,9 @@ import (
 func NewSource(input obs.InputSpec, collectorNS string, resNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
+	// LOG-7196 temporary fix to set vector caching config
+	// TODO: remove annotation logic and add to spec
+	useCache := factory.IncludesKubeCacheOption(op)
 	switch input.Type {
 	case obs.InputTypeApplication:
 		ib := source.NewContainerPathGlobBuilder()
@@ -60,7 +63,7 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		eb.AddExtensions(excludeExtensions...)
 		includes := ib.Build()
 		excludes := eb.Build(infraNamespaces...)
-		return NewContainerSource(input, collectorNS, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer)
+		return NewContainerSource(input, collectorNS, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer, useCache)
 	case obs.InputTypeInfrastructure:
 		sources := set.Set[obs.InfrastructureSource]{}
 		if input.Infrastructure == nil {
@@ -73,7 +76,7 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		}
 		if sources.Has(obs.InfrastructureSourceContainer) {
 			infraIncludes := source.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-			cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer)
+			cels, cids := NewContainerSource(input, collectorNS, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer, useCache)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}

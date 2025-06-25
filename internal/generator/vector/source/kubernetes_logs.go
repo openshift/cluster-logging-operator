@@ -16,6 +16,7 @@ type KubernetesLogs struct {
 	IncludePaths       string
 	ExcludePaths       string
 	ExtraLabelSelector string
+	UseKubeCache       bool
 }
 
 func (kl KubernetesLogs) Name() string {
@@ -46,6 +47,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
+use_apiserver_cache = {{.UseKubeCache}}
 {{end}}`
 }
 

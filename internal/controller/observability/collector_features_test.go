@@ -39,6 +39,10 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		Entry("enables debug for true", helpers.EnableDebugOutput, "true", AnnotationDebugOutput, "true"),
 		Entry("enables debug for True", helpers.EnableDebugOutput, "true", AnnotationDebugOutput, "True"),
 		Entry("disables debug for anything else", "", "", AnnotationDebugOutput, "abcdef"),
+
+		Entry("enables max-unavailable for value '10'", framework.MaxUnavailableOption, "10", AnnotationMaxUnavailable, "10"),
+		Entry("enables max-unavailable for value '99%'", framework.MaxUnavailableOption, "99%", AnnotationMaxUnavailable, "99%"),
+		Entry("disables max-unavailable option for anything not a number or percentage", "", "", AnnotationMaxUnavailable, "fluffy"),
 	)
 
 })

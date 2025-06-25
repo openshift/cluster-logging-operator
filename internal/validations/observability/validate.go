@@ -12,7 +12,8 @@ import (
 
 var (
 	clfValidators = []func(internalcontext.ForwarderContext){
-		validateAnnotations,
+		validateLogLevelAnnotation,
+		validateMaxUnavailableAnnotation,
 		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,

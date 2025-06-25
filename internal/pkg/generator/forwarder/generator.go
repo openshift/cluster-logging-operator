@@ -3,6 +3,7 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	"github.com/openshift/cluster-logging-operator/internal/factory"

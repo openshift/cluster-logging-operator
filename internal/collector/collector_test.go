@@ -130,6 +130,10 @@ var _ = Describe("Factory#Daemonset", func() {
 							MountPath: constants.ServiceAccountSecretPath}))
 				})
 			})
+
+			It("should set terminationMessagePolicy to 'FallbackToLogsOnError'", func() {
+				Expect(collector.TerminationMessagePolicy).To(Equal(v1.TerminationMessageFallbackToLogsOnError))
+			})
 		})
 
 		Describe("when creating the podSpec", func() {

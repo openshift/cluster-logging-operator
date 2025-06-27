@@ -692,7 +692,7 @@ type Kafka struct {
 	//
 	// The 'username@password' part of `url` is ignored.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +kubebuilder:validation:XValidation:rule="self == '' || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="must be a valid URL with a tcp or tls scheme"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
@@ -740,11 +740,11 @@ type Kafka struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kafka Brokers"
-	Brokers []URL `json:"brokers,omitempty"`
+	Brokers []BrokerURL `json:"brokers,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
-type URL string
+// +kubebuilder:validation:XValidation:rule="self == ” || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="each broker must be a valid URL with a tcp or tls scheme"
+type BrokerURL string
 
 type LokiTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`

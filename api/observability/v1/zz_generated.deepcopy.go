@@ -882,7 +882,7 @@ func (in *Kafka) DeepCopyInto(out *Kafka) {
 	}
 	if in.Brokers != nil {
 		in, out := &in.Brokers, &out.Brokers
-		*out = make([]URL, len(*in))
+		*out = make([]BrokerURL, len(*in))
 		copy(*out, *in)
 	}
 }

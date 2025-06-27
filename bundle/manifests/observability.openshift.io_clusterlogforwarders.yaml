@@ -1625,8 +1625,10 @@ spec:
                           items:
                             type: string
                             x-kubernetes-validations:
-                            - message: invalid URL
-                              rule: isURL(self)
+                            - message: each broker must be a valid URL with a tcp
+                                or tls scheme
+                              rule: self == '' || (isURL(self) && (self.startsWith('tcp://')
+                                || self.startsWith('tls://')))
                           type: array
                         topic:
                           description: |-
@@ -1686,8 +1688,9 @@ spec:
                             The 'username@password' part of `url` is ignored.
                           type: string
                           x-kubernetes-validations:
-                          - message: invalid URL
-                            rule: self == '' ||  isURL(self)
+                          - message: must be a valid URL with a tcp or tls scheme
+                            rule: self == '' || (isURL(self) && (self.startsWith('tcp://')
+                              || self.startsWith('tls://')))
                       type: object
                       x-kubernetes-validations:
                       - message: URL or brokers required

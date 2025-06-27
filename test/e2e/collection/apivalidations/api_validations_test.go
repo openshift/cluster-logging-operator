@@ -70,10 +70,11 @@ var _ = Describe("", func() {
 			Expect(err.Error()).To(MatchRegexp(".*URL.*brokers.*required.*"))
 		}),
 		Entry("should fail for kafka with invalid URL", "kafka_invalid_url.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+			Expect(err.Error()).To(MatchRegexp("must be a valid URL with a tcp or tls scheme"))
 		}),
 		Entry("should fail for kafka invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp("invalid URL"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("each broker must be a valid URL with a tcp or tls scheme"))
 		}),
 		Entry("LOG-5788: for multilineException filter should not fail", "log5788_mulitiline_ex_filter.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())

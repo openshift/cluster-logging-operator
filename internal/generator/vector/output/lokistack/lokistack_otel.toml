@@ -120,21 +120,20 @@ source = '''
 '''
 
 [sinks.output_default_lokistack_application]
-type = "http"
+type = "opentelemetry"
 inputs = ["output_default_lokistack_application_resource_logs"]
-uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp/v1/logs"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 
-[sinks.output_default_lokistack_application.encoding]
-codec = "json"
-except_fields = ["_internal"]
-
-[sinks.output_default_lokistack_application.tls]
+[sinks.output_default_lokistack_application.protocol.tls]
 ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
-[sinks.output_default_lokistack_application.auth]
+[sinks.output_default_lokistack_application.protocol.auth]
 strategy = "bearer"
 token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
@@ -469,21 +468,20 @@ source = '''
 '''
 
 [sinks.output_default_lokistack_audit]
-type = "http"
+type = "opentelemetry"
 inputs = ["output_default_lokistack_audit_resource_logs"]
-uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp/v1/logs"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 
-[sinks.output_default_lokistack_audit.encoding]
-codec = "json"
-except_fields = ["_internal"]
-
-[sinks.output_default_lokistack_audit.tls]
+[sinks.output_default_lokistack_audit.protocol.tls]
 ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
-[sinks.output_default_lokistack_audit.auth]
+[sinks.output_default_lokistack_audit.protocol.auth]
 strategy = "bearer"
 token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
@@ -684,21 +682,19 @@ source = '''
 '''
 
 [sinks.output_default_lokistack_infrastructure]
-type = "http"
+type = "opentelemetry"
 inputs = ["output_default_lokistack_infrastructure_resource_logs"]
-uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp/v1/logs"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 
-[sinks.output_default_lokistack_infrastructure.encoding]
-codec = "json"
-except_fields = ["_internal"]
-
-[sinks.output_default_lokistack_infrastructure.tls]
+[sinks.output_default_lokistack_infrastructure.protocol.tls]
 ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
-[sinks.output_default_lokistack_infrastructure.auth]
+[sinks.output_default_lokistack_infrastructure.protocol.auth]
 strategy = "bearer"
 token = "SECRET[kubernetes_secret.test-sa-token/token]"
-

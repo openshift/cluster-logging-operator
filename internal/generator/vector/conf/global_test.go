@@ -18,6 +18,7 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 
 [api]
 enabled = true
+address = "0.0.0.0:24686"
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
@@ -34,6 +35,7 @@ expire_metrics_secs = 60
 
 [api]
 enabled = true
+address = "0.0.0.0:24686"
 
 # Load sensitive data from files
 [secret.kubernetes_secret]

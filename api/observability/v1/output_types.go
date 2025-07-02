@@ -995,12 +995,6 @@ type Loki struct {
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tenant Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	TenantKey string `json:"tenantKey,omitempty"`
-
-	// Headers specify optional headers to be sent with the request
-	//
-	// +kubebuilder:validation:Optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Headers"
-	Headers map[string]string `json:"headers,omitempty"`
 }
 
 type SplunkTuningSpec struct {

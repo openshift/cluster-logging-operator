@@ -2683,12 +2683,6 @@ spec:
                               - secretName
                               type: object
                           type: object
-                        headers:
-                          additionalProperties:
-                            type: string
-                          description: Headers specify optional headers to be sent
-                            with the request
-                          type: object
                         labelKeys:
                           description: |-
                             LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.

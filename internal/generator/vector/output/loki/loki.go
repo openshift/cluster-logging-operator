@@ -172,7 +172,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
-		Request(id, o.Loki, strategy),
+		common.NewRequest(id, strategy),
 		NewLabels(id, o),
 		tls.New(id, o.TLS, secrets, op),
 		auth.HTTPAuth(id, o.Loki.Authentication, secrets, op),
@@ -312,12 +312,4 @@ func CleanupFields(id string, inputs []string) Element {
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         "del(.tag)",
 	}
-}
-
-func Request(id string, o *obs.Loki, strategy common.ConfigStrategy) *common.Request {
-	req := common.NewRequest(id, strategy)
-	if len(o.Headers) != 0 {
-		req.SetHeaders(o.Headers)
-	}
-	return req
 }

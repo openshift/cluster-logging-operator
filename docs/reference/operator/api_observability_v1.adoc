@@ -2022,6 +2022,8 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
+|headers|object|  Headers specify optional headers to be sent with the request
+
 |index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 
 The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
@@ -2130,6 +2132,10 @@ Type:: object
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
 
 |======================
+
+=== .spec.outputs[].elasticsearch.headers
+
+Type:: object
 
 === .spec.outputs[].elasticsearch.tuning
 
@@ -2584,6 +2590,8 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
+|headers|object|  Headers specify optional headers to be sent with the request
+
 |labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 
 If LabelKeys is not set, the default keys are:
@@ -2718,6 +2726,10 @@ Type:: object
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
 
 |======================
+
+=== .spec.outputs[].loki.headers
+
+Type:: object
 
 === .spec.outputs[].loki.labelKeys[]
 

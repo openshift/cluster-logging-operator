@@ -2125,6 +2125,12 @@ spec:
                               - secretName
                               type: object
                           type: object
+                        headers:
+                          additionalProperties:
+                            type: string
+                          description: Headers specify optional headers to be sent
+                            with the request
+                          type: object
                         index:
                           description: |-
                             Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
@@ -2672,6 +2678,12 @@ spec:
                               - key
                               - secretName
                               type: object
+                          type: object
+                        headers:
+                          additionalProperties:
+                            type: string
+                          description: Headers specify optional headers to be sent
+                            with the request
                           type: object
                         labelKeys:
                           description: |-

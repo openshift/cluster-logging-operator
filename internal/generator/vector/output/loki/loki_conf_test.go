@@ -193,5 +193,10 @@ var _ = Describe("Generate vector config", func() {
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}),
+		Entry("with headers", "with_headers.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+                        spec.Loki.Headers = map[string]string{
+				"header": "value",
+                        }
+                }),
 	)
 })

@@ -21,7 +21,7 @@ export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
-export LOGGING_VERSION?=6.3
+export LOGGING_VERSION?=6.4
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 

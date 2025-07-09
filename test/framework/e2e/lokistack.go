@@ -50,7 +50,7 @@ const (
 	lokistackQueryFrontend = "-query-frontend"
 
 	LokistackName       = "lokistack-dev"
-	lokiOperatorChannel = "stable-6.1"
+	lokiOperatorChannel = "stable-6.2"
 	minioName           = "minio"
 )
 

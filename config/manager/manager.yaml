@@ -48,6 +48,6 @@ spec:
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
           - name: RELATED_IMAGE_VECTOR
-            value: quay.io/openshift-logging/vector:v0.37.1
+            value: quay.io/vparfono/vector:v0.48.0-rh
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
             value: quay.io/openshift-logging/log-file-metric-exporter:6.1

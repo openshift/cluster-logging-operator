@@ -25,7 +25,7 @@ export LOGGING_VERSION?=6.3
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.37.1
+IMAGE_LOGGING_VECTOR?=quay.io/vparfono/vector:v0.48.0-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.1
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.3
 
@@ -217,6 +217,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker-vector
+    IMAGE_LOGGING_VECTOR=quay.io/vparfono/vector:v0.48.0-rh
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \

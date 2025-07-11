@@ -1,0 +1,120 @@
+== Reducing memory pressure on kube-api server
+Steps to introduce caching in vector and rolling update configuration for the logging collector pods in large-scale clusters
+
+IMPORTANT: This feature is a *Tech-Preview Feature* and not fully tested for impact or effectiveness yet. Enabling
+these features could result in unexpected issues with your logforwarder or cluster behavior.
+
+=== Description
+This feature adds the `use_apiserver_cache` config to the vector.toml, as well as a configurable rolling
+update `maxUnavailable` to the forwarder's DaemonSet.  Both features are currently enabled via annotations.
+
+We are working to validate the benefits and stability of this configuration, and intend to release the feature
+by default in a future version of logging.
+
+==== Configuration
+* Update your ClusterLogForwarder instance and include the following `metadata.annotations`:
++
+[source,yaml]
+----
+ observability.openshift.io/use-apiserver-cache: "true"
+ observability.openshift.io/max-unavailable-rollout: <percentage_or_number>
+----
++
+.example forwarder
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  annotations:
+    observability.openshift.io/use-apiserver-cache: "true"
+    observability.openshift.io/max-unavailable-rollout: "20%"
+  name: my-forwarder
+  namespace: my-logging-namespace
+spec:
+ ...
+----
+NOTE: `max-unavailable-rollout` can be an absolute number (e.g., 1) or a percentage (e.g., 10%). The default is 100%.
++
+If you need guidance on updating your forwarder instance, please see the sections below
+
+==== Verifying
+* The following commands can be used to verify the two options exist and are enabled:
++
+.vector configuration file
+[source,bash]
+----
+  oc get cm <my-forwarder-name>-config -o jsonpath='{.data.vector\.toml}' | grep use_apiserver_cache
+----
++
+.forwarder daemonset
+[source,bash]
+----
+  oc get ds <my-forwarder-name> -ojson | jq '.spec.updateStrategy'
+----
+
+
+===== Conditions
+* You can verify there are no `False` conditions in the forwarder validation
++
+.forwarder status
+[source,bash]
+----
+  oc get obsclf <my-forwarder-name> -ojson | jq 'items[0].status.conditions'
+----
++
+.invalid examples
+[source,json]
+----
+ {
+    "message": "max-unavailable-rollout value \"200%\" must be an absolute number or a valid percentage",
+    "reason": "MaxUnavailableAnnotationSupported",
+    "status": "False",
+    "type": "observability.openshift.io/MaxUnavailableAnnotation"
+  },
+  {
+    "message": "use-apiserver-cache value \"yep\" must be one of [enabled, true]",
+    "reason": "KubeCacheAnnotationSupported",
+    "status": "False",
+    "type": "observability.openshift.io/UseKubeCacheAnnotation"
+  }
+
+----
++
+NOTE: The conditions for annotations only show when Invalid and the status is set to `False`.  If there are no entries that mention
+annotations, then either they were not found, or they are valid.
+
+==== Other Commands
+====
+* You can add an annotation using `oc patch` on the clusterlogforwarder instance
++
+.example command
+[source,bash]
+----
+  oc patch obsclf <my-forwarder-name> --type='merge' -p '{"metadata":{"annotations":{"observability.openshift.io/use-apiserver-cache":"true"}}}'
+----
+* Alternatively, you can pull down the forwarder instance and make your changes locally
++
+[source,bash]
+----
+  oc get obsclf <my-forwarder-name> -o yaml > my-forwarder.yaml
+----
++
+Then apply the local file
++
+[source,bash]
+----
+  oc apply -f my-forwarder.yaml
+----
+* You could also use `oc edit` directly on the instance
++
+[source,bash]
+----
+  oc edit obsclf <my-forwarder-name>
+----
+====
+
+==== References
+* Annotation Implemented: https://issues.redhat.com/browse/LOG-7196
+* Knowledgebase Article: https://access.redhat.com/solutions/7121949
+* Upstream Fix: https://github.com/vectordotdev/vector/pull/17095/files

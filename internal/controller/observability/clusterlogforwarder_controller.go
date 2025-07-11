@@ -221,10 +221,10 @@ func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid
 }
 
 func updateStatus(k8Client client.Client, instance *obsv1.ClusterLogForwarder, ready metav1.Condition) {
+	internalobs.SetCondition(&instance.Status.Conditions, ready)
 	jsonPatch, _ := json.Marshal(map[string]interface{}{
 		"status": instance.Status,
 	})
-	internalobs.SetCondition(&instance.Status.Conditions, ready)
 	if err := k8Client.Status().Patch(context.TODO(), instance, client.RawPatch(types.MergePatchType, jsonPatch)); err != nil {
 		log.Error(err, "Error updating status", "status", instance.Status)
 	}

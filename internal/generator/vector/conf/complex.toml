@@ -7,8 +7,8 @@ address = "0.0.0.0:24686"
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
-type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+type = "directory"
+path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"

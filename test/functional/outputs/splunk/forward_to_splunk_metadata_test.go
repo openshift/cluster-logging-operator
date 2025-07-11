@@ -233,6 +233,9 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 			Expect(len(result)).To(BeEquivalentTo(1))
 			Expect(result[0]).To(ContainSubstring(`{"host":"acme.com"}`), "Expected to find match for host")
+			colLog, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil(), "Expected no errors getting collectors log")
+			Expect(colLog).ToNot(ContainSubstring("Timestamp was not found. Deferring to Splunk to set the timestamp"))
 		})
 
 		DescribeTable("with user defined source", func(source, expSource string, inputType obs.InputType) {

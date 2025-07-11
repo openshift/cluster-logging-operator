@@ -324,10 +324,6 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 test-e2e-clo-metric:
 	test/e2e/telemetry/clometrics_test.sh
 
-.PHONY: test-svt
-test-svt:
-	hack/svt/test-svt.sh
-
 .PHONY: undeploy
 undeploy:
 	hack/undeploy.sh

@@ -40,15 +40,6 @@ cleanup(){
 trap cleanup exit
 
 if [ "${DO_SETUP:-false}" == "true" ] ; then
-  if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
-      pushd ../../elasticsearch-operator
-      # install the catalog containing the elasticsearch operator csv
-      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
-      # install the elasticsearch operator from that catalog
-      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
-      popd
-  fi
-
   os::log::info "Deploying cluster-logging-operator"
   ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
   ${repo_dir}/olm_deploy/scripts/operator-install.sh

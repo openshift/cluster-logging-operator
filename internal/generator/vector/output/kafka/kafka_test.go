@@ -117,7 +117,7 @@ var _ = Describe("Generate vector config", func() {
 		Entry("with NOT tls brokers", "kafka_not_tls_brokers.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = ""
 			spec.Kafka.Topic = ""
-			spec.Kafka.Brokers = []obs.URL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
+			spec.Kafka.Brokers = []obs.BrokerURL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
 		}),
 		Entry("with tuning", "kafka_tuning.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"

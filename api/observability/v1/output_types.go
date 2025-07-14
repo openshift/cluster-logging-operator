@@ -1314,7 +1314,7 @@ type OTLPTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	// It is an error if the compression type is not supported by the output.
 	//
-	// +kubebuilder:validation:Enum:=gzip;none
+	// +kubebuilder:validation:Enum:=gzip;snappy;zlib;zstd;none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Compression string `json:"compression,omitempty"`
 }

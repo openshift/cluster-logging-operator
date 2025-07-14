@@ -125,6 +125,7 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 		},
 			Entry("should pass with gzip", "gzip"),
 			Entry("should pass with zlib", "zlib"),
+			Entry("should pass with zstd", "zstd"),
 			Entry("should pass with no compression", "none"))
 	})
 })

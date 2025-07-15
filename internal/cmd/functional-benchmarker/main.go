@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/reports"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/runners"
@@ -20,10 +19,15 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
+var (
+	log = utils.InitStaticLogger("functional-benchmarker")
+)
+
 // HACK - This command is for development use only
 func main() {
-	utils.InitLogger("functional-benchmarker")
-
+	defer func() {
+		log.Info("Test complete")
+	}()
 	options := config.InitOptions()
 
 	options.CollectorConfig = config.ReadConfig(options.CollectorConfigPath, options.BaseLine)
@@ -42,6 +46,7 @@ func main() {
 
 	options.CollectorConfig = config
 	reporter := reports.NewReporter(options, artifactDir, metrics, statistics)
+	log.Info("Generating reports...")
 	reporter.Generate()
 }
 
@@ -49,6 +54,7 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	runDuration := config.MustParseDuration(options.RunDuration, "run-duration")
 	sampleDuration := config.MustParseDuration(options.SampleDuration, "resource-sample-duration")
 	runner := runners.NewRunner(options)
+	log.Info("Deploying collector, loaders, and receivers")
 	runner.Deploy()
 	if options.DoCleanup {
 		log.V(2).Info("Deferring cleanup", "DoCleanup", options.DoCleanup)
@@ -58,6 +64,7 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	startTime := time.Now()
 	sampler := time.NewTicker(sampleDuration)
 	metrics := stats.NewResourceMetrics()
+	log.V(0).Info("Starting to sample metrics for the collector...")
 	go func() {
 		for {
 			select {
@@ -76,6 +83,8 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	endTime := time.Now()
 	done <- true
 	sampler.Stop()
+	log.Info("Stopped sampling metrics")
+	log.Info("Fetching log data from receiver...")
 	if err := runner.FetchApplicationLogs(); err != nil {
 		return nil, nil, "", err
 	}
@@ -105,6 +114,7 @@ func fetchContainerLogs(runner runners.Runner, artifactDir string) {
 }
 
 func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime, endTime time.Time) *stats.Statistics {
+	log.Info("Evaluating log data to calculate statistics")
 	logs, err := runner.ReadApplicationLogs()
 	if err != nil {
 		log.Error(err, "Error reading logs")

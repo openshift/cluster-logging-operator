@@ -22,8 +22,8 @@ address = "0.0.0.0:24686"
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
-type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+type = "directory"
+path = "/var/run/ocp-collector/secrets"
 `,
 			).To(EqualConfigFrom(Global(constants.OpenshiftNS, "my-forwarder")))
 		})
@@ -39,8 +39,8 @@ address = "0.0.0.0:24686"
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
-type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+type = "directory"
+path = "/var/run/ocp-collector/secrets"
 `,
 			).To(EqualConfigFrom(Global(constants.OpenshiftNS, constants.SingletonName)))
 

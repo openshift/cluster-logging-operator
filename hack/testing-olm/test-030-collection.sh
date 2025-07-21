@@ -57,7 +57,7 @@ for dir in $(ls -d $TEST_DIR| grep -E "${INCLUDES}"); do
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/collection/cleanup.sh $artifact_dir $GENERATOR_NS" \
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
-    ginkgo -p -procs=1 -v --no-color --trace --slowSpecThreshold=300 --timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
+    ginkgo -p -procs=1 -v --no-color --trace --slow-spec-threshold=300s --timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Collection $dir passed"
     os::log::info "======================================================="

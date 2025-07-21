@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -49,9 +50,9 @@ const (
 	lokistackQuerier       = "-querier"
 	lokistackQueryFrontend = "-query-frontend"
 
-	LokistackName       = "lokistack-dev"
-	lokiOperatorChannel = "stable-6.1"
-	minioName           = "minio"
+	LokistackName              = "lokistack-dev"
+	defaultLokiOperatorChannel = "stable-6.2"
+	minioName                  = "minio"
 )
 
 type LokistackLogStore struct {
@@ -184,6 +185,10 @@ minio server /data --console-address ":9001"
 }
 
 func (tc *E2ETestFramework) DeployLokiOperator() error {
+	lokiOperatorChannel := os.Getenv("LOKI_CHANNEL")
+	if lokiOperatorChannel == "" {
+		lokiOperatorChannel = defaultLokiOperatorChannel
+	}
 	clolog.V(1).Info("deploying loki operator", "namespace", test.OpenshiftOperatorsRedhatNS, "channel", lokiOperatorChannel)
 	operatorGroupYaml := `
 apiVersion: operators.coreos.com/v1

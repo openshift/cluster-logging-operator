@@ -33,10 +33,48 @@ source = '''
   ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
   
   if !exists(._internal.level) {
-    level = "default"
-    message = ._internal.message
+  level = null
+  message = ._internal.message
 
-    # Match on well known structured patterns
+  # attempt 1: parse as logfmt (e.g. level=error msg="Failed to connect")
+
+  parsed_logfmt, err = parse_logfmt(message)
+  if err == null && is_string(parsed_logfmt.level) {
+    level = downcase!(parsed_logfmt.level)
+  }
+
+  # attempt 2: parse as klog (e.g. I0920 14:22:00.089385 1 scheduler.go:592] "Successfully bound pod to node")
+  if level == null {
+    parsed_klog, err = parse_klog(message)
+    if err == null && is_string(parsed_klog.level) {
+      level = parsed_klog.level
+    }
+  }
+
+  # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
+
+  if level == null {
+    parsed_grok, err = parse_groks(message,
+      patterns: [
+        "%{common_prefix} %{_message}"
+      ],
+      aliases: {
+        "common_prefix": "%{_timestamp} %{_loglevel}",
+        "_timestamp": "%{TIMESTAMP_ISO8601:timestamp}",
+        "_loglevel": "%{LOGLEVEL:level}",
+        "_message": "%{GREEDYDATA:message}"
+      }
+    )
+
+    if err == null && is_string(parsed_grok.level) {
+      level = downcase!(parsed_grok.level)
+    }
+  }
+
+  if level == null {
+    level = "default"
+
+    # attempt 4: Match on well known structured patterns
     # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
 
     if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
@@ -59,30 +97,36 @@ source = '''
       level = "trace"
     }
 
-    # Match on unstructured keywords in same order
+    # attempt 5: Match on the keyword that appears earliest in the message
+
 
     if level == "default" {
-      if match!(message, r'Emergency|EMERGENCY|<emergency>') {
-        level = "emergency"
-      } else if match!(message, r'Alert|ALERT|<alert>') {
-        level = "alert"
-      } else if match!(message, r'Critical|CRITICAL|<critical>') {
-        level = "critical"
-      } else if match!(message, r'Error|ERROR|<error>') {
-        level = "error"
-      } else if match!(message, r'Warning|WARN|<warn>') {
-        level = "warn"
-      } else if match!(message, r'Notice|NOTICE|<notice>') {
-        level = "notice"
-      } else if match!(message, r'(?i)\b(?:info)\b|<info>') {
-        level = "info"
-      } else if match!(message, r'Debug|DEBUG|<debug>') {
-        level = "debug"
-      } else if match!(message, r'Trace|TRACE|<trace>') {
-        level = "trace"
-      }
-    }
-    ._internal.level = level
+	  level_patterns = r'(?i)(?<emergency>emergency|<emergency>)|(?<alert>alert|<alert>)|(?<critical>critical|<critical>)|(?<error>error|<error>)|(?<warn>warn(?:ing)?|<warn>)|(?<notice>notice|<notice>)|(?:\b(?<info>info)\b|<info>)|(?<debug>debug|<debug>)|(?<trace>trace|<trace>)'
+	  parsed, err = parse_regex(message, level_patterns)
+	  if err == null {
+		if is_string(parsed.emergency) {
+		  level = "emergency"
+		} else if is_string(parsed.alert) {
+		  level = "alert"
+		} else if is_string(parsed.critical) {
+		  level = "critical"
+		} else if is_string(parsed.error) {
+		  level = "error"
+		} else if is_string(parsed.warn) {
+		  level = "warn"
+		} else if is_string(parsed.notice) {
+		  level = "notice"
+		} else if is_string(parsed.info) {
+		  level = "info"
+		} else if is_string(parsed.debug) {
+		  level = "debug"
+		} else if is_string(parsed.trace) {
+		  level = "trace"
+		}
+	  }
+	}
   }
+  ._internal.level = level
+}
 
 '''

@@ -28,7 +28,7 @@ type Otlp struct {
 	ComponentID string
 	Inputs      string
 	URI         string
-	common.RootMixin
+	Compression genhelper.OptionalPair
 }
 
 func (p Otlp) Name() string {
@@ -38,19 +38,18 @@ func (p Otlp) Name() string {
 func (p Otlp) Template() string {
 	return `{{define "` + p.Name() + `" -}}
 [sinks.{{.ComponentID}}]
-type = "http"
+type = "opentelemetry"
 inputs = {{.Inputs}}
-uri = "{{.URI}}"
-method = "post"
-payload_prefix = "{\"resourceLogs\":"
-payload_suffix = "}"
+protocol.uri = "{{.URI}}"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
 {{.Compression}}
 {{end}}
 `
-}
-
-func (p *Otlp) SetCompression(algo string) {
-	p.Compression.Value = algo
 }
 
 const (
@@ -145,20 +144,18 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	els = append(els, FormatResourceLog(formatResourceLogsID, reduceInputs))
 	// Create sink and wrap in `resourceLogs`
 	sink := Output(id, o, []string{formatResourceLogsID}, secrets, op)
-	if strategy != nil {
-		strategy.VisitSink(sink)
-	}
+
+	protocolId := id + ".protocol"
 	return MergeElements(
 		els,
 		[]Element{
 			sink,
-			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
+			common.NewBatch(protocolId, strategy),
 			common.NewBuffer(id, strategy),
-			common.NewRequest(id, strategy),
-			tls.New(id, o.TLS, secrets, op),
-			auth.HTTPAuth(id, o.OTLP.Authentication, secrets, op),
+			common.NewRequest(protocolId, strategy),
+			tls.New(protocolId, o.TLS, secrets, op),
+			auth.HTTPAuth(protocolId, o.OTLP.Authentication, secrets, op),
 		},
 	)
 }
@@ -180,10 +177,14 @@ func RouteBySource(id string, inputs []string, logSources []string) Element {
 }
 
 func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options) *Otlp {
+	compression := genhelper.NewOptionalPair("protocol.compression", nil)
+	if o.OTLP.Tuning != nil && o.OTLP.Tuning.Compression != "" {
+		compression = genhelper.NewOptionalPair("protocol.compression", o.OTLP.Tuning.Compression)
+	}
 	return &Otlp{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		URI:         o.OTLP.URL,
-		RootMixin:   common.NewRootMixin(nil),
+		Compression: compression,
 	}
 }

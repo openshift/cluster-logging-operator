@@ -46,7 +46,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 
 		// Write log line
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 		// Read line from Log Forward output
 		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -69,5 +69,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 		Entry("should recognize a complex ERROR message", "error", `2022-01-26 13:41:57.149 mId:597c790b-6482-4a23-905c-49af6959241e cId:WEB::NAID-iOS-I42760F0-DE25-4622-90A0-4961356829A9-1643226116.796449-1643226117121::1643226117142::abunchofstuff::null::CnC::null::39.0.3::null::null::NONE::NONE::null::NONE ERROR com.fake.services.controllers.ecom.BalanceController:84 - GETBULKBALANCE::RECV_REQ - 1|GetBulkBalanceRequest(cash=[GetBalanceRequest(barcode=--------, transactionNumber=---, storeNumber=873, registerID=0, startTime=2022-01-26T13:41:57, pin=null)]) | Headers-> ConsumerApp: STF & MessageId: 597c790b-6482-4a23-905c-49af6959241e & EndpointUrl: /v1/cash/getBalanceBulk & CorrelationId: null`),
 		Entry("should recognize a complex DEBUG message", "debug", `2022-01-26 13:41:57.149 mId:597c790b-6482-4a23-905c-49af6959241e cId:WEB::NAID-iOS-D42760F0-DE25-4622-90A0-4961356829A9-1643226116.796449-1643226117121::1643226117142::abunchofstuff::null::CnC::null::39.0.3::null::null::NONE::NONE::null::NONE DEBUG com.fake.services.controllers.ecom.BalanceController:84 - GETBULKBALANCE::RECV_REQ - 1|GetBulkBalanceRequest(cash=[GetBalanceRequest(barcode=--------, transactionNumber=---, storeNumber=873, registerID=0, startTime=2022-01-26T13:41:57, pin=null)]) | Headers-> ConsumerApp: STF & MessageId: 597c790b-6482-4a23-905c-49af6959241e & EndpointUrl: /v1/cash/getBalanceBulk & CorrelationId: null`),
 		Entry("should recognize a complex TRACE message", "trace", `2022-01-26 13:41:57.149 mId:597c790b-6482-4a23-905c-49af6959241e cId:WEB::NAID-iOS-D42760F0-DE25-4622-90A0-4961356829A9-1643226116.796449-1643226117121::1643226117142::abunchofstuff::null::CnC::null::39.0.3::null::null::NONE::NONE::null::NONE TRACE com.fake.services.controllers.ecom.BalanceController:84 - GETBULKBALANCE::RECV_REQ - 1|GetBulkBalanceRequest(cash=[GetBalanceRequest(barcode=--------, transactionNumber=---, storeNumber=873, registerID=0, startTime=2022-01-26T13:41:57, pin=null)]) | Headers-> ConsumerApp: STF & MessageId: 597c790b-6482-4a23-905c-49af6959241e & EndpointUrl: /v1/cash/getBalanceBulk & CorrelationId: null`),
+		Entry("should recognize a complex INFO message", "info", `2025-06-16 10:32:54,862 INFO [http-nio-8080-exec-10] se.skv.chassi.MyResetController -- This is an example log message containing work ERROR `),
+		Entry("should recognize a WARN not structured message with few key words (WARNING, Error): WARN met first ", "warn", `Apr 24 15:02:47 fedora gnome-session-binary[3056]: GnomeDesktop-WARNING: Could not create transient scope for PID 3303: GDBus.Error:org.freedesktop.DBus.Error.UnixProcessIdUnknown: Failed to set unit properties: No such process`),
 	)
 })

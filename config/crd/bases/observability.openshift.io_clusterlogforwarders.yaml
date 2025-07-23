@@ -3103,6 +3103,9 @@ spec:
                                 It is an error if the compression type is not supported by the output.
                               enum:
                               - gzip
+                              - snappy
+                              - zlib
+                              - zstd
                               - none
                               type: string
                             deliveryMode:

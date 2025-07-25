@@ -127,7 +127,8 @@ spec:
               secretName: foo-sts-secret
             token:
               from: secret # <7>
-                key: token # <7>
+              secret:
+                key: my-token # <7>
                 name: my-sa-token-secret # <7>
   pipelines:
     - name: app-logs

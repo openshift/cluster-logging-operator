@@ -18,8 +18,8 @@ java.lang.NullPointerException: Cannot invoke "String.toString()" because "<para
 ----
 
 === Solution
-Include `detectMultilineException` filter when you create your Cluster Log Forwarder.
-Openshift Logging will detect multi-line exceptions and reassemble them into a single log entry.
+Include `detectMultilineException` filter type when you create your Cluster Log Forwarder.
+Openshift Logging will attempt to detect multi-line exceptions and reassemble them into a single log entry.
 
 .cluster-log-forwarder.yaml
 [source,yaml]
@@ -30,17 +30,24 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+    - name: my-default
+      type: http
+      http:
+        url: https://my-default.foo.bar
   filters:
-  - name: detectMultilineException
-    type: detectMultilineException
+    - name: detect-exceptions
+      type: detectMultilineException
   pipelines:
     - name: my-app-logs
       inputRefs:
-      - application
+        - application
       outputRefs:
-      - anOutput
+        - my-default
       filterRefs:
-      - detectMultilineError
+        - detect-exceptions
 ----
 
 === Details

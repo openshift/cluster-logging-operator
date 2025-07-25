@@ -37,10 +37,10 @@ The generator combines this fragment with others to create the complete collecto
 
 Relevant source files:
 
-[../api/observability/v1/clusterlogforwarder_types.go](../../api/observability/v1/clusterlog_forwarder_types.go)
+[../api/observability/v1/clusterlogforwarder_types.go](../../api/observability/v1/clusterlogforwarder_types.go)
 * Add the name of your output type to the `+kubebuilder:validation` comment on the `OutputSpec.Type` field.
 
-[../api/observability/v1/output_types.go](../../apis/observability/v1/output_types.go)
+[../api/observability/v1/output_types.go](../../api/observability/v1/output_types.go)
 * Add a constant for your output type name to the top of the file.
 * If necessary, add a struct for output-specific fields to `OutputTypeSpec`.
 

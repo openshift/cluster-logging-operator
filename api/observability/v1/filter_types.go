@@ -142,15 +142,15 @@ type PruneFilterSpec struct {
 	//
 	// Examples:
 	//
-	//  - `.kubernetes.namespace_name`
+	//  - `.kubernetes.namespace_id`
 	//
-	//  - `.log_type`
+	//  - `.hostname`
 	//
 	//  - '.kubernetes.labels.foobar'
 	//
 	//  - `.kubernetes.labels."foo-bar/baz"`
 	//
-	// NOTE1: `In` CANNOT contain `.log_type` or `.message` as those fields are required and cannot be pruned.
+	// NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fields are required and cannot be pruned.
 	//
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 	//
@@ -172,11 +172,13 @@ type PruneFilterSpec struct {
 	//
 	//  - `.log_type`
 	//
-	//  - '.kubernetes.labels.foobar'
+	//  - '.log_source'
+	//
+	//  - '.message'
 	//
 	//  - `.kubernetes.labels."foo-bar/baz"`
 	//
-	// NOTE1: `NotIn` MUST contain `.log_type` and `.message` as those fields are required and cannot be pruned.
+	// NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
 	//
 	// NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
 	//

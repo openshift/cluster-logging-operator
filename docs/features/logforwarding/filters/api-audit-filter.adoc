@@ -11,7 +11,7 @@ The API Audit filter allows you to remove unwanted events and reduce event size 
 Audit policy is explained, with examples, in https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-policy[Auditing Kubernetes].
 
 The ClusterLogForwarder audit filter also has some features that are extensions to the standard policy, see
-link:../../../../apis/observability/v1/filter_api_audit_types.go[the API documentation].
+link:../../../../api/observability/v1/filter_api_audit_types.go[the API documentation].
 
 Here is an example of a ClusterLogForwarder configuration using the example policy from
 https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/#audit-policy[Auditing Kubernetes].
@@ -25,16 +25,18 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
-  - name: default
-    type: http
-    http:
-      url: https://my-default.foo.bar
+    - name: my-default
+      type: http
+      http:
+        url: https://my-default.foo.bar
   pipelines:
     - name: my-pipeline
       inputRefs: [application, infrastructure, audit]
       filterRefs: [my-policy]
-      outputRefs: [default]
+      outputRefs: [my-default]
   filters:
     - name: my-policy
       type: kubeAPIAudit

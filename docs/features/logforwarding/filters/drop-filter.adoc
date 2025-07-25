@@ -25,14 +25,16 @@ Below is an example `ClusterLogForwarder` configuration specifying a custom drop
 
 [source,yaml]
 ----
-apiVersion: "observability.openshift.io/v1"
+apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance 
   namespace: openshift-logging 
 spec:
+  serviceAccount:
+    name: logging-admin
   outputs:
-  - name: default
+  - name: my-default
     type: http
     http:
       url: https://my-default.foo.bar
@@ -73,7 +75,6 @@ spec:
 
 == Relevant Links:
 
-1. link:../../../../apis/observability/v1/filter_types.go[API documentation]
-2. https://github.com/openshift/enhancements/blob/a6a1feb9cceb0b61960bcf00f292cb0d04ee3753/enhancements/cluster-logging/content-filter.md#drop-filters[Enhancement Proposal]
-3. https://issues.redhat.com/browse/LOG-2803[Related JIRA]
-4. https://github.com/openshift/cluster-logging-operator/pull/2339[Related PR]
+. link:../../../../api/observability/v1/filter_types.go[API documentation]
+. https://issues.redhat.com/browse/LOG-2803[Related JIRA]
+. https://github.com/openshift/cluster-logging-operator/pull/2339[Related PR]

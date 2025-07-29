@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-07-29T12:06:20Z"
+    createdAt: "2025-07-29T17:44:27Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1918,37 +1918,19 @@ spec:
     spec:
       clusterPermissions:
       - rules:
-        - nonResourceURLs:
-          - /metrics
-          verbs:
-          - get
         - apiGroups:
           - apps
           resources:
           - daemonsets
           - deployments
-          - replicasets
-          - statefulsets
           verbs:
           - '*'
-        - apiGroups:
-          - authentication.k8s.io
-          resources:
-          - tokenreviews
-          verbs:
-          - create
         - apiGroups:
           - authorization.k8s.io
           resources:
           - subjectaccessreviews
           verbs:
           - create
-        - apiGroups:
-          - batch
-          resources:
-          - cronjobs
-          verbs:
-          - '*'
         - apiGroups:
           - config.openshift.io
           resources:
@@ -1968,27 +1950,12 @@ spec:
           - list
           - watch
         - apiGroups:
-          - console.openshift.io
-          resources:
-          - consoleexternalloglinks
-          - consolelinks
-          - consoleplugins
-          - consoleplugins/finalizers
-          verbs:
-          - create
-          - delete
-          - get
-          - update
-        - apiGroups:
           - ""
           resources:
           - configmaps
           - endpoints
           - events
-          - namespaces
-          - persistentvolumeclaims
           - pods
-          - pods/exec
           - secrets
           - serviceaccounts
           - serviceaccounts/finalizers
@@ -1996,6 +1963,14 @@ spec:
           - services/finalizers
           verbs:
           - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups:
           - logging.openshift.io
           resources:
@@ -2017,23 +1992,11 @@ spec:
           - create
           - delete
         - apiGroups:
-          - oauth.openshift.io
-          resources:
-          - oauthclients
-          verbs:
-          - '*'
-        - apiGroups:
           - observability.openshift.io
           resources:
           - clusterlogforwarders
           verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
+          - '*'
         - apiGroups:
           - observability.openshift.io
           resources:
@@ -2058,18 +2021,11 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
-          - routes/custom-host
-          verbs:
-          - '*'
-        - apiGroups:
           - scheduling.k8s.io
           resources:
           - priorityclasses
           verbs:
-          - '*'
+          - delete
         - apiGroups:
           - security.openshift.io
           resources:

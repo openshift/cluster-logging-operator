@@ -688,9 +688,10 @@ type SASLAuthentication struct {
 // +kubebuilder:validation:XValidation:rule="has(self.url) || self.brokers.size() > 0", message="URL or brokers required"
 type Kafka struct {
 
-	// URL to send log records to.
-	//
+	// URL to send log records to. This field is optional.
+	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme, for example: 'tls://kafka.secure.com:9093/app-topic'.
 	// The 'username@password' part of `url` is ignored.
+	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="must be a valid URL with a tcp or tls scheme"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
@@ -735,15 +736,15 @@ type Kafka struct {
 	// The list represents only the initial set used by the collector's Kafka client for the
 	// first connection only. The collector's Kafka client fetches constantly an updated list
 	// from Kafka. These updates are not reconciled back to the collector configuration.
-	//
-	// If none provided the target URL from the OutputSpec is used as fallback.
+	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme.
+	// If none is provided, the target URL from the OutputSpec is used as fallback.
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kafka Brokers"
 	Brokers []BrokerURL `json:"brokers,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="self == ” || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="each broker must be a valid URL with a tcp or tls scheme"
+// +kubebuilder:validation:XValidation:rule="self == '' || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="each broker must be a valid URL with a tcp or tls scheme"
 type BrokerURL string
 
 type LokiTuningSpec struct {

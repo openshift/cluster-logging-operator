@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-05-20T09:15:01Z"
+    createdAt: "2025-07-29T12:06:20Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -947,8 +947,8 @@ spec:
           The list represents only the initial set used by the collector's Kafka client for the
           first connection only. The collector's Kafka client fetches constantly an updated list
           from Kafka. These updates are not reconciled back to the collector configuration.
-
-          If none provided the target URL from the OutputSpec is used as fallback.
+          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme.
+          If none is provided, the target URL from the OutputSpec is used as fallback.
         displayName: Kafka Brokers
         path: outputs[0].kafka.brokers
       - description: |-
@@ -985,8 +985,8 @@ spec:
         displayName: Batch Size
         path: outputs[0].kafka.tuning.maxWrite
       - description: |-
-          URL to send log records to.
-
+          URL to send log records to. This field is optional.
+          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme, for example: 'tls://kafka.secure.com:9093/app-topic'.
           The 'username@password' part of `url` is ignored.
         displayName: Destination URL
         path: outputs[0].kafka.url

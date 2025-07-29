@@ -264,7 +264,7 @@ func AddLivenessProbe(collector *v1.Container) {
 			},
 		},
 		InitialDelaySeconds: 10,
-		FailureThreshold: 5,
+		FailureThreshold:    5,
 	}
 
 	collector.LivenessProbe = livenessProbe

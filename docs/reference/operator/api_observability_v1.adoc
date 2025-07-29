@@ -1582,8 +1582,8 @@ Type:: object
 The list represents only the initial set used by the collector&#39;s Kafka client for the
 first connection only. The collector&#39;s Kafka client fetches constantly an updated list
 from Kafka. These updates are not reconciled back to the collector configuration.
-
-If none provided the target URL from the OutputSpec is used as fallback.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme.
+If none is provided, the target URL from the OutputSpec is used as fallback.
 
 |topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
 
@@ -1603,9 +1603,10 @@ Example:
 
 |tuning|object|  Tuning specs tuning for the output
 
-|url|string|  URL to send log records to.
-
+|url|string|  URL to send log records to. This field is optional.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;.
 The &#39;username@password&#39; part of `url` is ignored.
+
 |======================
 
 === .spec.outputs[].kafka.authentication
@@ -2445,6 +2446,15 @@ uucp cron authpriv ftp ntp security console solaris-cron
 
 local0 local1 local2 local3 local4 local5 local6 local7
 
+The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+Example:
+
+1. {.foo||&#34;user&#34;}
+
 |msgId|string|  MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
 The MsgId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
@@ -2511,12 +2521,21 @@ The value can be a decimal integer or one of these case-insensitive keywords:
 
 Emergency Alert Critical Error Warning Notice Informational Debug
 
+The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+Example:
+
+1. {.foo||&#34;Error&#34;}
+
 |tuning|object|  Tuning specs tuning for the output
 
 |url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
 For example, to send syslog records using UDP:
 
-url: udp://syslog.example.com:1234
+url: udp://syslog.example.com:514
 
 |======================
 

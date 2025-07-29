@@ -1620,8 +1620,8 @@ spec:
                             The list represents only the initial set used by the collector's Kafka client for the
                             first connection only. The collector's Kafka client fetches constantly an updated list
                             from Kafka. These updates are not reconciled back to the collector configuration.
-
-                            If none provided the target URL from the OutputSpec is used as fallback.
+                            If provided, it must be a valid URL with a 'tcp' or 'tls' scheme.
+                            If none is provided, the target URL from the OutputSpec is used as fallback.
                           items:
                             type: string
                             x-kubernetes-validations:
@@ -1683,8 +1683,8 @@ spec:
                           type: object
                         url:
                           description: |-
-                            URL to send log records to.
-
+                            URL to send log records to. This field is optional.
+                            If provided, it must be a valid URL with a 'tcp' or 'tls' scheme, for example: 'tls://kafka.secure.com:9093/app-topic'.
                             The 'username@password' part of `url` is ignored.
                           type: string
                           x-kubernetes-validations:

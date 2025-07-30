@@ -5,37 +5,19 @@ metadata:
   creationTimestamp: null
   name: cluster-logging-operator
 rules:
-- nonResourceURLs:
-  - /metrics
-  verbs:
-  - get
 - apiGroups:
   - apps
   resources:
   - daemonsets
   - deployments
-  - replicasets
-  - statefulsets
   verbs:
   - '*'
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - create
 - apiGroups:
   - authorization.k8s.io
   resources:
   - subjectaccessreviews
   verbs:
   - create
-- apiGroups:
-  - batch
-  resources:
-  - cronjobs
-  verbs:
-  - '*'
 - apiGroups:
   - config.openshift.io
   resources:
@@ -55,27 +37,12 @@ rules:
   - list
   - watch
 - apiGroups:
-  - console.openshift.io
-  resources:
-  - consoleexternalloglinks
-  - consolelinks
-  - consoleplugins
-  - consoleplugins/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - update
-- apiGroups:
   - ""
   resources:
   - configmaps
   - endpoints
   - events
-  - namespaces
-  - persistentvolumeclaims
   - pods
-  - pods/exec
   - secrets
   - serviceaccounts
   - serviceaccounts/finalizers
@@ -83,6 +50,14 @@ rules:
   - services/finalizers
   verbs:
   - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - logging.openshift.io
   resources:
@@ -104,23 +79,11 @@ rules:
   - create
   - delete
 - apiGroups:
-  - oauth.openshift.io
-  resources:
-  - oauthclients
-  verbs:
-  - '*'
-- apiGroups:
   - observability.openshift.io
   resources:
   - clusterlogforwarders
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - '*'
 - apiGroups:
   - observability.openshift.io
   resources:
@@ -145,18 +108,11 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - route.openshift.io
-  resources:
-  - routes
-  - routes/custom-host
-  verbs:
-  - '*'
-- apiGroups:
   - scheduling.k8s.io
   resources:
   - priorityclasses
   verbs:
-  - '*'
+  - delete
 - apiGroups:
   - security.openshift.io
   resources:

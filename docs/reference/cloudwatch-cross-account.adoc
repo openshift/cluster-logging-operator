@@ -1,0 +1,221 @@
+= CloudWatch Cross-Account Log Forwarding
+
+The cluster-logging-operator supports forwarding logs to Amazon CloudWatch Logs in external AWS accounts using AWS STS AssumeRole functionality. This feature enables centralized logging across multiple AWS accounts while maintaining security boundaries.
+
+== Overview
+
+Cross-account log forwarding works by:
+
+1. **Initial Authentication**: The collector authenticates to your cluster's AWS account using IAM roles or access keys
+2. **Role Assumption**: After initial authentication, the collector assumes a role in the target AWS account
+3. **Log Forwarding**: Using the assumed role's credentials, the collector forwards logs to CloudWatch in the target account
+
+== Configuration
+
+=== Prerequisites
+
+Before configuring cross-account log forwarding, ensure:
+
+1. **Trust Relationship**: The target account's IAM role must trust your cluster's initial role
+2. **Permissions**: The assumed role must have CloudWatch Logs permissions in the target account
+3. **External ID** (recommended): Use an external ID for additional security
+
+=== ClusterLogForwarder Configuration
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: cross-account-example
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: target-account-cloudwatch
+      type: cloudwatch
+      cloudwatch:
+        region: us-east-1
+        groupName: cross-account-logs
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: initial-role-secret
+              key: role_arn
+            token:
+              from: serviceAccount
+          # Cross-account assume role configuration
+          assumeRole:
+            roleARN:
+              secretName: cross-account-secret
+              key: assume_role_arn
+            externalID:
+              secretName: cross-account-secret
+              key: external_id
+            sessionName: "openshift-logging-session"
+----
+
+=== Authentication Fields
+
+==== `assumeRole.roleARN` (required)
+Reference to a secret containing the ARN of the role to assume in the target account.
+
+==== `assumeRole.externalID` (optional)
+Reference to a secret containing the external ID required for assuming the role. This provides additional security by ensuring only entities with knowledge of the external ID can assume the role.
+
+==== `assumeRole.sessionName` (optional)
+A string identifier for the assumed role session. If not provided, a default session name will be generated. Must be 2-64 characters and match the pattern `^[a-zA-Z0-9_+=,.@-]{2,64}$`.
+
+== AWS IAM Configuration
+
+=== Initial Role (Cluster Account)
+
+The initial role in your cluster account needs:
+
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::TARGET-ACCOUNT:role/target-logging-role"
+        }
+    ]
+}
+----
+
+=== Target Role (Target Account)
+
+The target role in the external account needs:
+
+1. **Trust Policy**:
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::CLUSTER-ACCOUNT:role/initial-role"
+            },
+            "Action": "sts:AssumeRole",
+            "Condition": {
+                "StringEquals": {
+                    "sts:ExternalId": "your-unique-external-id"
+                }
+            }
+        }
+    ]
+}
+----
+
+2. **CloudWatch Permissions**:
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+----
+
+== Examples
+
+=== Multi-Account Setup
+
+For organizations with multiple AWS accounts, you can configure different outputs for different accounts:
+
+[source,yaml]
+----
+outputs:
+  # Production logs to security account
+  - name: production-security-logs
+    type: cloudwatch
+    cloudwatch:
+      region: us-east-1
+      groupName: production-logs
+      authentication:
+        type: iamRole
+        iamRole:
+          roleARN:
+            secretName: cluster-role
+            key: role_arn
+          token:
+            from: serviceAccount
+        assumeRole:
+          roleARN:
+            secretName: security-account-role
+            key: role_arn
+          externalID:
+            secretName: security-account-role
+            key: external_id
+
+  # Development logs to dev account
+  - name: dev-logs
+    type: cloudwatch
+    cloudwatch:
+      region: us-west-2
+      groupName: dev-logs
+      authentication:
+        type: iamRole
+        iamRole:
+          roleARN:
+            secretName: cluster-role
+            key: role_arn
+          token:
+            from: serviceAccount
+        assumeRole:
+          roleARN:
+            secretName: dev-account-role
+            key: role_arn
+----
+
+== Security Considerations
+
+1. **External ID**: Always use external IDs for cross-account role assumptions
+2. **Least Privilege**: Grant minimum required permissions to assumed roles
+3. **Session Names**: Use descriptive session names for auditing
+4. **Secret Management**: Protect secrets containing role ARNs and external IDs
+5. **Monitoring**: Monitor CloudTrail for AssumeRole activities
+
+== Troubleshooting
+
+=== Common Issues
+
+1. **Role Assumption Fails**
+   - Verify trust relationship in target account
+   - Check external ID matches
+   - Ensure initial role has `sts:AssumeRole` permission
+
+2. **Permission Denied**
+   - Verify assumed role has CloudWatch permissions
+   - Check CloudWatch resource policies
+   - Verify region configuration
+
+3. **Invalid Role ARN**
+   - Ensure role ARN format is correct: `arn:aws:iam::ACCOUNT:role/ROLE-NAME`
+   - Verify the role exists in the target account
+
+=== Logs and Monitoring
+
+Check Vector pod logs for assume role related errors:
+[source,bash]
+----
+kubectl logs -n openshift-logging <vector-pod-name>
+----
+
+Look for AWS STS or CloudWatch related error messages in the logs.

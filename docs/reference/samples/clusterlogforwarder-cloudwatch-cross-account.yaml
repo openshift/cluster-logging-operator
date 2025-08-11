@@ -1,0 +1,111 @@
+---
+# Secret containing the initial role ARN for authentication within the cluster account
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudwatch-initial-role
+  namespace: openshift-logging
+stringData:
+  role_arn: "arn:aws:iam::123456789012:role/cluster-logging-initial-role"
+---
+# Secret containing the cross-account role ARN and external ID
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudwatch-cross-account-role
+  namespace: openshift-logging
+stringData:
+  assume_role_arn: "arn:aws:iam::987654321098:role/target-account-logging-role"
+  external_id: "unique-external-id-for-security"
+---
+# Service account for the collector pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudwatch-cross-account
+  namespace: openshift-logging
+  annotations:
+    # Optional: For EKS clusters with IRSA (IAM Roles for Service Accounts)
+    # eks.amazonaws.com/role-arn: "arn:aws:iam::123456789012:role/cluster-logging-initial-role"
+---
+# ClusterRoleBinding to grant log collection permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudwatch-cross-account
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: collect-application-logs
+subjects:
+  - kind: ServiceAccount
+    name: cloudwatch-cross-account
+    namespace: openshift-logging
+---
+# ClusterLogForwarder with cross-account assume role configuration
+apiVersion: "observability.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: cloudwatch-cross-account
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: cloudwatch-cross-account
+  inputs:
+    - name: application-logs
+      type: application
+      application:
+        includes:
+          - namespace: production
+          - namespace: staging
+  outputs:
+    # Output 1: Forward to Account A's CloudWatch
+    - name: account-a-cloudwatch
+      type: cloudwatch
+      cloudwatch:
+        region: us-east-1
+        groupName: account-a-logs
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              key: role_arn
+              secretName: cloudwatch-initial-role
+            token:
+              from: serviceAccount
+    # Output 2: Forward to Account B's CloudWatch via assume role
+    - name: account-b-cloudwatch
+      type: cloudwatch
+      cloudwatch:
+        region: us-west-2
+        groupName: cross-account-logs
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              key: role_arn
+              secretName: cloudwatch-initial-role
+            token:
+              from: serviceAccount
+          # Cross-account assume role configuration
+          assumeRole:
+            roleARN:
+              secretName: cloudwatch-cross-account-role
+              key: assume_role_arn
+            externalID:
+              secretName: cloudwatch-cross-account-role
+              key: external_id
+            sessionName: "openshift-cross-account-logging"
+  pipelines:
+    - name: production-to-account-a
+      inputRefs:
+        - application-logs
+      filterRefs: []
+      outputRefs:
+        - account-a-cloudwatch
+    - name: staging-to-account-b
+      inputRefs:
+        - application-logs
+      filterRefs: []
+      outputRefs:
+        - account-b-cloudwatch

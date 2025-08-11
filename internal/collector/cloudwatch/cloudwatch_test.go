@@ -194,5 +194,14 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				RoleARN:              "arn:aws:iam::123456789012:role/test-bar",
 				WebIdentityTokenFile: saTokenPath,
 			},
-		}, "cw_multiple_credentials"))
+		}, "cw_multiple_credentials"),
+		Entry("should generate assume role profile", []cloudwatch.CloudwatchWebIdentity{
+			{
+				Name:                 "default",
+				RoleARN:              "arn:aws:iam::123456789012:role/test-default",
+				WebIdentityTokenFile: saTokenPath,
+				AssumeRoleARN:        "arn:aws:iam::987654321098:role/cross-account-role",
+				ExternalID:           "unique-external-id",
+				SessionName:          "custom-session-name",
+			}}, "cw_assume_role_single"))
 })

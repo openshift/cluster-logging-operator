@@ -127,6 +127,11 @@ func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options O
 			authConfig.Profile.Value = "output_" + outputName
 		}
 	}
+
+	// Note: Assume role configuration is handled entirely through the AWS credentials file
+	// when using credentials_file + profile authentication method. The credentials file
+	// will contain the source_profile and role_arn for assume role operations.
+
 	return authConfig
 }
 
@@ -170,6 +175,22 @@ del(.source_type)
 func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
 	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
 		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
+
+		if roleArnString != "" {
+			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
+			roleArn := reg.FindStringSubmatch(roleArnString)
+			if roleArn != nil {
+				return roleArn[1] // the capturing group is index 1
+			}
+		}
+	}
+	return ""
+}
+
+// ParseAssumeRoleArn search for matching valid assume role ARN
+func ParseAssumeRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
+	if auth.AssumeRole != nil {
+		roleArnString := secrets.AsString(&auth.AssumeRole.RoleARN)
 
 		if roleArnString != "" {
 			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)

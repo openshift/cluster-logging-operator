@@ -195,6 +195,12 @@ func cloudwatchAuthKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.Sec
 				})
 			}
 		}
+		if auth.AssumeRole != nil {
+			keys = append(keys, &auth.AssumeRole.RoleARN)
+			if auth.AssumeRole.ExternalID != nil {
+				keys = append(keys, auth.AssumeRole.ExternalID)
+			}
+		}
 	}
 	return keys
 }

@@ -416,6 +416,15 @@ type CloudwatchAuthentication struct {
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon IAM Role"
 	IAMRole *CloudwatchIAMRole `json:"iamRole,omitempty"`
+
+	// AssumeRole specifies an additional IAM role to assume after the initial authentication.
+	// This enables cross-account log forwarding where the initial role (from IAMRole or AWSAccessKey)
+	// is used to authenticate, and then this role is assumed to access CloudWatch in another account.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cross-Account Assume Role"
+	AssumeRole *CloudwatchAssumeRole `json:"assumeRole,omitempty"`
 }
 
 type CloudwatchIAMRole struct {
@@ -445,6 +454,30 @@ type CloudwatchAWSAccessKey struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
 	KeySecret SecretReference `json:"keySecret"`
+}
+
+type CloudwatchAssumeRole struct {
+	// RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Assume Role ARN Secret"
+	RoleARN SecretReference `json:"roleARN"`
+
+	// ExternalID points to the secret containing the external ID required for assuming the role.
+	// This is an optional security measure used to ensure that only the intended entity can assume the role.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="External ID Secret"
+	ExternalID *SecretReference `json:"externalID,omitempty"`
+
+	// SessionName is an optional identifier for the assumed role session.
+	// If not provided, a default session name will be generated.
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^[a-zA-Z0-9_+=,.@-]{2,64}$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Session Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SessionName string `json:"sessionName,omitempty"`
 }
 
 type ElasticsearchTuningSpec struct {

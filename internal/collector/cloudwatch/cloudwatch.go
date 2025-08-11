@@ -29,6 +29,10 @@ type CloudwatchWebIdentity struct {
 	Name                 string
 	RoleARN              string
 	WebIdentityTokenFile string
+	// Assume role configuration
+	AssumeRoleARN string
+	ExternalID    string
+	SessionName   string
 }
 
 // ReconcileAWSCredentialsConfigMap reconciles a configmap with credential profile(s) for Cloudwatch output(s).
@@ -80,11 +84,27 @@ func GatherAWSWebIdentities(outputs []obs.OutputSpec, secrets observability.Secr
 					secret := o.Cloudwatch.Authentication.IAMRole.Token.Secret
 					tokenPath = common.SecretPath(secret.Name, secret.Key)
 				}
-				webIds = append(webIds, CloudwatchWebIdentity{
+
+				webId := CloudwatchWebIdentity{
 					Name:                 o.Name,
 					RoleARN:              roleARN,
 					WebIdentityTokenFile: tokenPath,
-				})
+				}
+
+				// Add assume role configuration if specified
+				if o.Cloudwatch.Authentication.AssumeRole != nil {
+					if assumeRoleARN := cloudwatch.ParseAssumeRoleArn(o.Cloudwatch.Authentication, secrets); assumeRoleARN != "" {
+						webId.AssumeRoleARN = assumeRoleARN
+					}
+					if o.Cloudwatch.Authentication.AssumeRole.ExternalID != nil {
+						webId.ExternalID = secrets.AsString(o.Cloudwatch.Authentication.AssumeRole.ExternalID)
+					}
+					if o.Cloudwatch.Authentication.AssumeRole.SessionName != "" {
+						webId.SessionName = o.Cloudwatch.Authentication.AssumeRole.SessionName
+					}
+				}
+
+				webIds = append(webIds, webId)
 			}
 		}
 	}

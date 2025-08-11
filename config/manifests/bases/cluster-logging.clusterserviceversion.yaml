@@ -409,6 +409,50 @@ spec:
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
         path: outputs[0].cloudwatch.authentication
+      - description: |-
+          AssumeRole specifies an additional IAM role to assume after the initial authentication.
+          This enables cross-account log forwarding where the initial role (from IAMRole or AWSAccessKey)
+          is used to authenticate, and then this role is assumed to access CloudWatch in another account.
+        displayName: Cross-Account Assume Role
+        path: outputs[0].cloudwatch.authentication.assumeRole
+      - description: |-
+          ExternalID points to the secret containing the external ID required for assuming the role.
+          This is an optional security measure used to ensure that only the intended entity can assume the role.
+        displayName: External ID Secret
+        path: outputs[0].cloudwatch.authentication.assumeRole.externalID
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.externalID.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.externalID.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: RoleARN points to the secret containing the ARN of the role to
+          assume for cross-account access.
+        displayName: Assume Role ARN Secret
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          SessionName is an optional identifier for the assumed role session.
+          If not provided, a default session name will be generated.
+        displayName: Session Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.sessionName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: AWSAccessKey points to the AWS access key id and secret to be
           used for authentication.
         displayName: Access Key

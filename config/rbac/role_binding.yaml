@@ -9,3 +9,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: cluster-logging-operator
+    namespace: openshift-logging

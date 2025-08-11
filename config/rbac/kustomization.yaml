@@ -1,4 +1,5 @@
 resources:
+- serviceaccount.yaml
 - role.yaml
 - role_binding.yaml
 - metadata_reader_clusterrole.yaml

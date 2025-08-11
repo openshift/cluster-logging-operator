@@ -1854,6 +1854,57 @@ spec:
                           description: Authentication sets credentials for authenticating
                             the requests.
                           properties:
+                            assumeRole:
+                              description: |-
+                                AssumeRole specifies an additional IAM role to assume after the initial authentication.
+                                This enables cross-account log forwarding where the initial role (from IAMRole or AWSAccessKey)
+                                is used to authenticate, and then this role is assumed to access CloudWatch in another account.
+                              nullable: true
+                              properties:
+                                externalID:
+                                  description: |-
+                                    ExternalID points to the secret containing the external ID required for assuming the role.
+                                    This is an optional security measure used to ensure that only the intended entity can assume the role.
+                                  nullable: true
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                roleARN:
+                                  description: RoleARN points to the secret containing
+                                    the ARN of the role to assume for cross-account
+                                    access.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                sessionName:
+                                  description: |-
+                                    SessionName is an optional identifier for the assumed role session.
+                                    If not provided, a default session name will be generated.
+                                  pattern: ^[a-zA-Z0-9_+=,.@-]{2,64}$
+                                  type: string
+                              required:
+                              - roleARN
+                              type: object
                             awsAccessKey:
                               description: AWSAccessKey points to the AWS access key
                                 id and secret to be used for authentication.

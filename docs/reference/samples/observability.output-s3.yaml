@@ -1,0 +1,29 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: my-s3
+      type: s3
+      s3:
+        bucket: my-log-bucket
+        keyPrefix: logs/{.log_type||"unknown"}/
+        region: us-east-1
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: role-for-sts
+              key: credentials
+            token:
+              from: serviceAccount
+  pipelines:
+    - name: my-s3-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - my-s3

@@ -1,0 +1,30 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  outputs:
+    - name: my-s3-access-key
+      type: s3
+      s3:
+        bucket: my-log-bucket
+        keyPrefix: logs/{.log_type||"unknown"}/
+        region: us-east-1
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyId:
+              secretName: s3-credentials
+              key: aws_access_key_id
+            keySecret:
+              secretName: s3-credentials
+              key: aws_secret_access_key
+        tuning:
+          compression: gzip
+          maxWrite: 10Mi
+  pipelines:
+    - name: my-s3-access-key-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - my-s3-access-key

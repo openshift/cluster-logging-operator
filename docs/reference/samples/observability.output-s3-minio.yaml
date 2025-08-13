@@ -1,0 +1,58 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  outputs:
+    - name: s3-minio
+      type: s3
+      s3:
+        bucket: logs-bucket
+        region: us-east-1
+        # MinIO endpoint example
+        url: https://minio.example.com:9000
+        keyPrefix: "openshift-logs/{.kubernetes.namespace_name||\"default\"}/{@timestamp|datetime}/"
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyId:
+              secretName: minio-credentials
+              key: access_key
+            keySecret:
+              secretName: minio-credentials
+              key: secret_key
+        tuning:
+          compression: gzip
+          deliveryMode: AtLeastOnce
+          maxWrite: 5Mi
+      # TLS configuration for MinIO with custom certificates
+      tls:
+        insecureSkipVerify: false
+        ca:
+          secretName: minio-ca
+          key: ca.crt
+  pipelines:
+    - name: minio-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - s3-minio
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-credentials
+  namespace: openshift-logging
+type: Opaque
+stringData:
+  access_key: "minio-access-key"
+  secret_key: "minio-secret-key"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-ca
+  namespace: openshift-logging
+type: Opaque
+data:
+  ca.crt: <base64_encoded_minio_ca_certificate>

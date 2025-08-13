@@ -1,0 +1,33 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: s3-timestamp-prefix
+      type: s3
+      s3:
+        bucket: my-log-bucket
+        region: us-east-1
+        # Advanced timestamp-based key prefix with Hive-style partitioning
+        keyPrefix: "logs/year={@timestamp|year}/month={@timestamp|month}/day={@timestamp|day}/namespace={.kubernetes.namespace_name||\"default\"}/log_type={.log_type||\"unknown\"}/"
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: role-for-sts
+              key: credentials
+            token:
+              from: serviceAccount
+        tuning:
+          compression: gzip
+  pipelines:
+    - name: my-s3-timestamp-logs
+      inputRefs:
+        - application
+        - infrastructure
+        - audit
+      outputRefs:
+        - s3-timestamp-prefix

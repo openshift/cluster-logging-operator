@@ -10,8 +10,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
@@ -38,6 +38,23 @@ func (e Endpoint) Template() (ret string) {
 	return
 }
 
+type Compression struct {
+	Algorithm string
+}
+
+func (c Compression) Name() string {
+	return "awsS3CompressionTemplate"
+}
+
+func (c Compression) Template() (ret string) {
+	ret = `{{define "` + c.Name() + `" -}}`
+	if c.Algorithm != "" && c.Algorithm != "none" {
+		ret += `compression = "{{ .Algorithm }}"`
+	}
+	ret += `{{end}}`
+	return
+}
+
 type S3 struct {
 	Desc           string
 	ComponentID    string
@@ -45,6 +62,7 @@ type S3 struct {
 	Region         string
 	Bucket         string
 	KeyPrefix      string
+	Compression    Element
 	EndpointConfig Element
 	SecurityConfig Element
 	common.RootMixin
@@ -64,7 +82,7 @@ func (e S3) Template() string {
 type = "aws_s3"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
-{{.Compression}}
+{{compose_one .Compression}}
 bucket = "{{.Bucket}}"
 key_prefix = "{{"{{"}} _internal.{{.KeyPrefix}} {{"}}"}}"
 {{compose_one .SecurityConfig}}
@@ -74,8 +92,10 @@ healthcheck.enabled = false
 `
 }
 
-func (e *S3) SetCompression(algo string) {
-	e.Compression.Value = algo
+func (s *S3) SetCompression(algo string) {
+	s.Compression = Compression{
+		Algorithm: algo,
+	}
 }
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
@@ -110,6 +130,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Region:         region,
 		Bucket:         bucket,
 		KeyPrefix:      keyPrefix,
+		Compression:    compressionConfig(o.S3),
 		SecurityConfig: authConfig(o.Name, o.S3.Authentication, op),
 		EndpointConfig: endpointConfig(o.S3),
 		RootMixin:      common.NewRootMixin("none"),
@@ -141,6 +162,15 @@ func endpointConfig(s3 *obs.S3) Element {
 	}
 	return Endpoint{
 		URL: s3.URL,
+	}
+}
+
+func compressionConfig(s3 *obs.S3) Element {
+	if s3 == nil || s3.Tuning == nil || s3.Tuning.Compression == "" {
+		return Compression{}
+	}
+	return Compression{
+		Algorithm: s3.Tuning.Compression,
 	}
 }
 

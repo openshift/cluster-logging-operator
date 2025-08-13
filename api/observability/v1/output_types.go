@@ -15,10 +15,9 @@ limitations under the License.
 package v1
 
 import (
-	"time"
-
 	openshiftv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // OutputType is used to define the type of output to be created.
@@ -221,13 +220,13 @@ type BaseOutputTuningSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Minimum Retry Duration"
-	MinRetryDuration *time.Duration `json:"minRetryDuration,omitempty"`
+	MinRetryDuration *metav1.Duration `json:"minRetryDuration,omitempty"`
 
 	// MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Maximum Retry Duration"
-	MaxRetryDuration *time.Duration `json:"maxRetryDuration,omitempty"`
+	MaxRetryDuration *metav1.Duration `json:"maxRetryDuration,omitempty"`
 }
 
 // DeliveryMode sets the delivery mode for log forwarding.

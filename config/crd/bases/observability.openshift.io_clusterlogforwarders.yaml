@@ -1826,8 +1826,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -1839,8 +1838,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                       required:
                       - authentication
@@ -2073,8 +2071,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -2086,8 +2083,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -2225,8 +2221,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -2238,8 +2233,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -2343,8 +2337,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -2356,8 +2349,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                       required:
                       - id
@@ -2494,8 +2486,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -2507,8 +2498,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -2810,8 +2800,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -2823,8 +2812,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -3037,8 +3025,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -3050,8 +3037,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                       required:
                       - authentication
@@ -3174,8 +3160,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -3187,8 +3172,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -3468,8 +3452,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -3481,8 +3464,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-
@@ -3617,8 +3599,7 @@ spec:
                             maxRetryDuration:
                               description: MaxRetryDuration is the maximum time to
                                 wait between retry attempts after a delivery failure.
-                              format: int64
-                              type: integer
+                              type: string
                             maxWrite:
                               anyOf:
                               - type: integer
@@ -3630,8 +3611,7 @@ spec:
                             minRetryDuration:
                               description: MinRetryDuration is the minimum time to
                                 wait between attempts to retry after delivery a failure.
-                              format: int64
-                              type: integer
+                              type: string
                           type: object
                         url:
                           description: |-

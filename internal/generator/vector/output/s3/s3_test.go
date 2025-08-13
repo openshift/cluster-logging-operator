@@ -293,4 +293,160 @@ var _ = Describe("S3 output", func() {
 			Expect(arn).To(BeEmpty())
 		})
 	})
+
+	Context("with compression", func() {
+		It("should generate valid configuration with gzip compression", func() {
+			outputSpec := obs.OutputSpec{
+				Type: obs.OutputTypeS3,
+				Name: "s3-output-gzip",
+				S3: &obs.S3{
+					Region: "us-west-2",
+					Bucket: "test-bucket",
+					Tuning: &obs.S3TuningSpec{
+						Compression: "gzip",
+					},
+					Authentication: &obs.S3Authentication{
+						Type: obs.S3AuthTypeAccessKey,
+						AWSAccessKey: &obs.S3AWSAccessKey{
+							KeyId: obs.SecretReference{
+								Key:        "aws_access_key_id",
+								SecretName: "s3-access-key",
+							},
+							KeySecret: obs.SecretReference{
+								Key:        "aws_secret_access_key",
+								SecretName: "s3-access-key",
+							},
+						},
+					},
+				},
+			}
+
+			op := framework.Options{
+				framework.OptionForwarderName: "test-forwarder",
+			}
+
+			config := New("s3-test", outputSpec, []string{"input1"}, secrets, nil, op)
+			Expect(config).To(Not(BeNil()))
+
+			// Find the S3 sink in the config
+			var s3Sink *S3
+			for _, element := range config {
+				if sink, ok := element.(*S3); ok {
+					s3Sink = sink
+					break
+				}
+			}
+			Expect(s3Sink).To(Not(BeNil()))
+			Expect(s3Sink.Compression).To(Equal(Compression{Algorithm: "gzip"}))
+		})
+
+		It("should generate valid configuration with snappy compression", func() {
+			outputSpec := obs.OutputSpec{
+				Type: obs.OutputTypeS3,
+				Name: "s3-output-snappy",
+				S3: &obs.S3{
+					Region: "us-west-2",
+					Bucket: "test-bucket",
+					Tuning: &obs.S3TuningSpec{
+						Compression: "snappy",
+					},
+					Authentication: &obs.S3Authentication{
+						Type: obs.S3AuthTypeAccessKey,
+						AWSAccessKey: &obs.S3AWSAccessKey{
+							KeyId: obs.SecretReference{
+								Key:        "aws_access_key_id",
+								SecretName: "s3-access-key",
+							},
+							KeySecret: obs.SecretReference{
+								Key:        "aws_secret_access_key",
+								SecretName: "s3-access-key",
+							},
+						},
+					},
+				},
+			}
+
+			op := framework.Options{
+				framework.OptionForwarderName: "test-forwarder",
+			}
+
+			config := New("s3-test", outputSpec, []string{"input1"}, secrets, nil, op)
+			Expect(config).To(Not(BeNil()))
+
+			var s3Sink *S3
+			for _, element := range config {
+				if sink, ok := element.(*S3); ok {
+					s3Sink = sink
+					break
+				}
+			}
+			Expect(s3Sink).To(Not(BeNil()))
+			Expect(s3Sink.Compression).To(Equal(Compression{Algorithm: "snappy"}))
+		})
+
+		It("should generate valid configuration with no compression when none specified", func() {
+			outputSpec := obs.OutputSpec{
+				Type: obs.OutputTypeS3,
+				Name: "s3-output-none",
+				S3: &obs.S3{
+					Region: "us-west-2",
+					Bucket: "test-bucket",
+					Authentication: &obs.S3Authentication{
+						Type: obs.S3AuthTypeAccessKey,
+						AWSAccessKey: &obs.S3AWSAccessKey{
+							KeyId: obs.SecretReference{
+								Key:        "aws_access_key_id",
+								SecretName: "s3-access-key",
+							},
+							KeySecret: obs.SecretReference{
+								Key:        "aws_secret_access_key",
+								SecretName: "s3-access-key",
+							},
+						},
+					},
+				},
+			}
+
+			op := framework.Options{
+				framework.OptionForwarderName: "test-forwarder",
+			}
+
+			config := New("s3-test", outputSpec, []string{"input1"}, secrets, nil, op)
+			Expect(config).To(Not(BeNil()))
+
+			var s3Sink *S3
+			for _, element := range config {
+				if sink, ok := element.(*S3); ok {
+					s3Sink = sink
+					break
+				}
+			}
+			Expect(s3Sink).To(Not(BeNil()))
+			Expect(s3Sink.Compression).To(Equal(Compression{Algorithm: ""}))
+		})
+
+		It("should support SetCompression method", func() {
+			s3Sink := &S3{}
+			s3Sink.SetCompression("zstd")
+			Expect(s3Sink.Compression).To(Equal(Compression{Algorithm: "zstd"}))
+		})
+
+		It("should include compression template when algorithm is set", func() {
+			compressionElement := Compression{Algorithm: "gzip"}
+			template := compressionElement.Template()
+			Expect(template).To(ContainSubstring(`compression = "{{ .Algorithm }}"`))
+		})
+
+		It("should not include compression when algorithm is empty", func() {
+			compressionElement := Compression{Algorithm: ""}
+			template := compressionElement.Template()
+			Expect(template).To(Not(ContainSubstring("compression =")))
+		})
+
+		It("should not include compression when algorithm is none", func() {
+			compressionElement := Compression{Algorithm: "none"}
+			template := compressionElement.Template()
+			Expect(template).To(Not(ContainSubstring("compression =")))
+		})
+	})
 })

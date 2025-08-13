@@ -3,7 +3,6 @@ package output
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"time"
 )
 
 const (
@@ -29,15 +28,17 @@ func (o Output) VisitBatch(b common.Batch) common.Batch {
 }
 
 func (o Output) VisitRequest(r common.Request) common.Request {
-	var duration time.Duration
-	if o.tuning.MinRetryDuration != nil && o.tuning.MinRetryDuration.Seconds() > 0 {
-		// time.Duration is default nanosecond. Convert to seconds first.
-		duration = *o.tuning.MinRetryDuration * time.Second
-		r.RetryInitialBackoffSec.Value = duration.Seconds()
+	if o.tuning.MinRetryDuration != nil {
+		duration := o.tuning.MinRetryDuration.Duration
+		if duration.Seconds() > 0 {
+			r.RetryInitialBackoffSec.Value = duration.Seconds()
+		}
 	}
-	if o.tuning.MaxRetryDuration != nil && o.tuning.MaxRetryDuration.Seconds() > 0 {
-		duration = *o.tuning.MaxRetryDuration * time.Second
-		r.RetryMaxDurationSec.Value = duration.Seconds()
+	if o.tuning.MaxRetryDuration != nil {
+		duration := o.tuning.MaxRetryDuration.Duration
+		if duration.Seconds() > 0 {
+			r.RetryMaxDurationSec.Value = duration.Seconds()
+		}
 	}
 
 	return r

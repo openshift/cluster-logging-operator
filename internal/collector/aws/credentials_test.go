@@ -23,7 +23,7 @@ var _ = Describe("AWS credentials generation", func() {
 		cwSecret = map[string]*v1.Secret{
 			secretName: {
 				Data: map[string][]byte{
-					"role_arn":  []byte(roleArn),
+					"role_arn":   []byte(roleArn),
 					altSecretKey: []byte(altRoleArn),
 				},
 			},

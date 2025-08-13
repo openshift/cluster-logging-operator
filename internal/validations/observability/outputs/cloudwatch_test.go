@@ -160,9 +160,9 @@ var _ = Describe("validating CloudWatch auth", func() {
 					Name: "foo",
 				},
 				Data: map[string][]byte{
-					"key_id":                    []byte("AKIATEST"),
-					"key_secret":                []byte("test-secret"),
-					"invalid_assume_role_arn":   []byte(invalidAssumeRoleArn),
+					"key_id":                  []byte("AKIATEST"),
+					"key_secret":              []byte("test-secret"),
+					"invalid_assume_role_arn": []byte(invalidAssumeRoleArn),
 				},
 			}
 
@@ -218,8 +218,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 					Name: "foo",
 				},
 				Data: map[string][]byte{
-					"invalidRoleARN":            []byte(invalidRoleARN),
-					"invalid_assume_role_arn":   []byte(invalidAssumeRoleArn),
+					"invalidRoleARN":          []byte(invalidRoleARN),
+					"invalid_assume_role_arn": []byte(invalidAssumeRoleArn),
 				},
 			}
 

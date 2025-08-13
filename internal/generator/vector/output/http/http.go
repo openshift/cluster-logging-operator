@@ -14,11 +14,12 @@ import (
 )
 
 type Http struct {
-	ComponentID string
-	Inputs      string
-	URI         string
-	Method      string
-	Proxy       string
+	ComponentID  string
+	Inputs       string
+	URI          string
+	Method       string
+	Proxy        string
+	LinePerEvent bool
 	common.RootMixin
 }
 
@@ -33,6 +34,9 @@ type = "http"
 inputs = {{.Inputs}}
 uri = "{{.URI}}"
 method = "{{.Method}}"
+{{with .LinePerEvent}}
+framing.method = "newline_delimited"
+{{end}}
 {{with .Proxy -}}
 proxy.enabled = true
 proxy.http = "{{.}}"
@@ -76,12 +80,13 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 
 func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options) *Http {
 	return &Http{
-		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		URI:         o.HTTP.URL,
-		Method:      Method(o.HTTP),
-		Proxy:       o.HTTP.ProxyURL,
-		RootMixin:   common.NewRootMixin(nil),
+		ComponentID:  id,
+		Inputs:       vectorhelpers.MakeInputs(inputs...),
+		URI:          o.HTTP.URL,
+		Method:       Method(o.HTTP),
+		Proxy:        o.HTTP.ProxyURL,
+		LinePerEvent: o.HTTP.LinePerEvent,
+		RootMixin:    common.NewRootMixin(nil),
 	}
 }
 

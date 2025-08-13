@@ -143,6 +143,9 @@ var _ = Describe("Generate vector config", func() {
 					BaseOutputTuningSpec: *baseTune,
 				}
 			}, secrets, true, framework.NoOptions, "http_with_tuning.toml"),
+			Entry("with ndjson", func(spec *obs.OutputSpec) {
+				spec.HTTP.LinePerEvent = true
+			}, secrets, true, framework.NoOptions, "http_with_ndjson.toml"),
 			Entry("with proxy", func(spec *obs.OutputSpec) {
 				spec.HTTP.ProxyURL = "http://somewhere.org/proxy"
 				spec.HTTP.Headers = nil

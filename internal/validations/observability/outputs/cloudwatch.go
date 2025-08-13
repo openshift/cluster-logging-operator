@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	RoleARNsOpt       = "roleARNs"
-	ErrInvalidRoleARN = "CloudWatch RoleARN is invalid"
+	RoleARNsOpt             = "roleARNs"
+	ErrInvalidRoleARN       = "CloudWatch RoleARN is invalid"
+	ErrInvalidAssumeRoleARN = "CloudWatch AssumeRole RoleARN is invalid"
 )
 
 func ValidateCloudWatchAuth(spec obs.OutputSpec, context internalcontext.ForwarderContext) (results []string) {
@@ -23,5 +24,14 @@ func ValidateCloudWatchAuth(spec obs.OutputSpec, context internalcontext.Forward
 			results = append(results, ErrInvalidRoleARN)
 		}
 	}
+
+	// Validate assume role ARN if specified
+	if authSpec.AssumeRole != nil {
+		assumeRoleArn := cloudwatch.ParseAssumeRoleArn(authSpec, secrets)
+		if assumeRoleArn == "" {
+			results = append(results, ErrInvalidAssumeRoleARN)
+		}
+	}
+
 	return results
 }

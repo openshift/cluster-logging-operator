@@ -1,0 +1,12 @@
+# Base profile for initial authentication
+[output_default_base]
+web_identity_token_file=/var/run/ocp-collector/serviceaccount/token
+role_arn=arn:aws:iam::123456789012:role/test-default
+role_session_name=output-default-base
+
+# Assume role profile for cross-account access
+[output_default]
+source_profile=output_default_base
+role_arn=arn:aws:iam::987654321098:role/cross-account-role
+external_id=unique-external-id
+role_session_name=custom-session-name

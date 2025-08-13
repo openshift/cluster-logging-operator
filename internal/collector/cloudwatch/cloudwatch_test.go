@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
 )
@@ -42,7 +42,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeElasticsearch,
 				},
 			}
-			Expect(cloudwatch.GatherAWSWebIdentities(outputs, cwSecret)).To(BeNil())
+			Expect(aws.GatherAWSWebIdentities(outputs, cwSecret)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and no cloudwatch outputs", func() {
@@ -53,14 +53,14 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			Expect(cloudwatch.GatherAWSWebIdentities(outputs, nil)).To(BeNil())
+			Expect(aws.GatherAWSWebIdentities(outputs, nil)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and outputs are nil", func() {
-			Expect(cloudwatch.GatherAWSWebIdentities(nil, nil)).To(BeNil())
+			Expect(aws.GatherAWSWebIdentities(nil, nil)).To(BeNil())
 		})
 
-		DescribeTable("token path", func(token obs.BearerToken, exp cloudwatch.CloudwatchWebIdentity) {
+		DescribeTable("token path", func(token obs.BearerToken, exp aws.AWSWebIdentity) {
 			cwOutputs := []obs.OutputSpec{
 				{
 					Name: "cw-out",
@@ -80,7 +80,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					},
 				},
 			}
-			actIds := cloudwatch.GatherAWSWebIdentities(cwOutputs, cwSecret)
+			actIds := aws.GatherAWSWebIdentities(cwOutputs, cwSecret)
 			Expect(actIds[0]).To(Equal(exp))
 		},
 			Entry("should get token from secret", obs.BearerToken{
@@ -89,14 +89,14 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Key:  constants.TokenKey,
 					Name: "cw-secret",
 				},
-			}, cloudwatch.CloudwatchWebIdentity{
+			}, aws.AWSWebIdentity{
 				Name:                 "cw-out",
 				RoleARN:              roleArn,
 				WebIdentityTokenFile: "/var/run/ocp-collector/secrets/cw-secret/token",
 			}),
 			Entry("should get token from serviceAccount", obs.BearerToken{
 				From: obs.BearerTokenFromServiceAccount,
-			}, cloudwatch.CloudwatchWebIdentity{
+			}, aws.AWSWebIdentity{
 				Name:                 "cw-out",
 				RoleARN:              roleArn,
 				WebIdentityTokenFile: "/var/run/ocp-collector/serviceaccount/token",
@@ -144,7 +144,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			expCreds := []cloudwatch.CloudwatchWebIdentity{
+			expCreds := []aws.AWSWebIdentity{
 				{
 					Name:                 cwOutputs[0].Name,
 					RoleARN:              roleArn,
@@ -157,28 +157,28 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			actIds := cloudwatch.GatherAWSWebIdentities(cwOutputs, cwSecret)
+			actIds := aws.GatherAWSWebIdentities(cwOutputs, cwSecret)
 			Expect(actIds).To(Equal(expCreds))
 		})
 	})
 
-	DescribeTable("cloudwatch credential go template", func(creds []cloudwatch.CloudwatchWebIdentity, expFile string) {
+	DescribeTable("cloudwatch credential go template", func(creds []aws.AWSWebIdentity, expFile string) {
 		exp, err := credFiles.ReadFile(expFile)
 		Expect(err).To(BeNil())
 
 		w := &strings.Builder{}
-		err = cloudwatch.CloudwatchCredentialsTemplate.Execute(w, creds)
+		err = aws.AWSCredentialsTemplate.Execute(w, creds)
 
 		Expect(err).To(BeNil())
 		Expect(w.String()).To(Equal(string(exp)))
 	},
-		Entry("should generate one profile", []cloudwatch.CloudwatchWebIdentity{
+		Entry("should generate one profile", []aws.AWSWebIdentity{
 			{
 				Name:                 "default",
 				RoleARN:              "arn:aws:iam::123456789012:role/test-default",
 				WebIdentityTokenFile: saTokenPath,
 			}}, "cw_single_credential"),
-		Entry("should generate multiple profiles when multiple credentials are present", []cloudwatch.CloudwatchWebIdentity{
+		Entry("should generate multiple profiles when multiple credentials are present", []aws.AWSWebIdentity{
 			{
 				Name:                 "default",
 				RoleARN:              "arn:aws:iam::123456789012:role/test-default",
@@ -195,7 +195,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				WebIdentityTokenFile: saTokenPath,
 			},
 		}, "cw_multiple_credentials"),
-		Entry("should generate assume role profile", []cloudwatch.CloudwatchWebIdentity{
+		Entry("should generate assume role profile", []aws.AWSWebIdentity{
 			{
 				Name:                 "default",
 				RoleARN:              "arn:aws:iam::123456789012:role/test-default",

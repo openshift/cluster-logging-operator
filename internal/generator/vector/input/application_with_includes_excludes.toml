@@ -2,6 +2,7 @@
 [sources.input_my_app_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
+max_merged_line_bytes = 65536
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 include_paths_glob_patterns = ["/var/log/pods/test-ns-bar_*/*/*.log", "/var/log/pods/test-ns-foo_*/*/*.log"]

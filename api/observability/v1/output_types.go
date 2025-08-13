@@ -23,7 +23,7 @@ import (
 
 // OutputType is used to define the type of output to be created.
 //
-// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog;otlp
+// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;s3;splunk;syslog;otlp
 type OutputType string
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
@@ -37,6 +37,7 @@ const (
 	OutputTypeLoki               OutputType = "loki"
 	OutputTypeLokiStack          OutputType = "lokiStack"
 	OutputTypeOTLP               OutputType = "otlp"
+	OutputTypeS3                 OutputType = "s3"
 	OutputTypeSplunk             OutputType = "splunk"
 	OutputTypeSyslog             OutputType = "syslog"
 )
@@ -52,6 +53,7 @@ var (
 		OutputTypeKafka,
 		OutputTypeLoki,
 		OutputTypeLokiStack,
+		OutputTypeS3,
 		OutputTypeSplunk,
 		OutputTypeSyslog,
 		OutputTypeOTLP,
@@ -68,6 +70,7 @@ var (
 // +kubebuilder:validation:XValidation:rule="self.type != 'kafka' || has(self.kafka)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'loki' || has(self.loki)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'lokiStack' || has(self.lokiStack)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 's3' || has(self.s3)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'splunk' || has(self.splunk)", message="Additional type specific spec is required the for output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'syslog' || has(self.syslog)", message="Additional type specific spec is required the for output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'otlp' || has(self.otlp)", message="Additional type specific spec is required the for output type"
@@ -147,6 +150,12 @@ type OutputSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack"
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`
+
+	// S3 configures forwarding log events to Amazon S3 buckets
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon S3"
+	S3 *S3 `json:"s3,omitempty"`
 
 	// Splunk configures forwarding log events to Splunk's HTTP event collector
 	//
@@ -1380,4 +1389,160 @@ type OTLP struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *OTLPTuningSpec `json:"tuning,omitempty"`
+}
+
+type S3TuningSpec struct {
+	BaseOutputTuningSpec `json:",inline"`
+
+	// Compression causes data to be compressed before sending over the network.
+	// It is an error if the compression type is not supported by the output.
+	//
+	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
+	Compression string `json:"compression,omitempty"`
+}
+
+// S3 provides configuration for the output type `s3`
+type S3 struct {
+	// Authentication sets credentials for authenticating the requests.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
+	Authentication *S3Authentication `json:"authentication"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
+	Tuning *S3TuningSpec `json:"tuning,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon Region",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Region string `json:"region"`
+
+	// Bucket specifies the S3 bucket name where logs will be stored.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="S3 Bucket Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Bucket string `json:"bucket"`
+
+	// KeyPrefix defines the S3 key prefix for log objects.
+	//
+	// The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
+	//
+	// A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Timestamp templates are supported using @timestamp with format specifiers:
+	//  - {@timestamp|date} - YYYY-MM-DD format
+	//  - {@timestamp|year} - YYYY format
+	//  - {@timestamp|month} - MM format
+	//  - {@timestamp|day} - DD format
+	//  - {@timestamp|hour} - HH format
+	//  - {@timestamp|strftime:"%Y-%m-%d"} - Custom strftime format
+	//
+	// Example:
+	//
+	//  1. foo-{.bar\|\|"none"}
+	//
+	//  2. {.foo\|\|.bar\|\|"missing"}
+	//
+	//  3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
+	//
+	//  4. {.kubernetes.namespace_name\|\|"default"}/{@timestamp|date}/
+	//
+	//  5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+	//
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{((\.[a-zA-Z0-9_.]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_.]+|\."[^"]+"))*(\|\|"[^"]*")?|@timestamp\|[a-z]+|@timestamp\|strftime:"[^"]+")\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Prefix",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	KeyPrefix string `json:"keyPrefix,omitempty"`
+
+	// URL is the custom S3-compatible endpoint URL.
+	// If not specified, the default AWS S3 endpoint will be used.
+	// This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Custom Endpoint URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	URL string `json:"url,omitempty"`
+}
+
+// S3AuthType sets the authentication type used for S3.
+//
+// +kubebuilder:validation:Enum:=awsAccessKey;iamRole
+type S3AuthType string
+
+const (
+	// S3AuthTypeAccessKey requires auth to use static keys
+	S3AuthTypeAccessKey S3AuthType = "awsAccessKey"
+
+	// S3AuthTypeIAMRole requires auth to use IAM Role and optional token
+	S3AuthTypeIAMRole S3AuthType = "iamRole"
+)
+
+// S3Authentication contains configuration for authenticating requests to an S3 output.
+// +kubebuilder:validation:XValidation:rule="self.type != 'awsAccessKey' || has(self.awsAccessKey)", message="Additional type specific spec is required for authentication"
+// +kubebuilder:validation:XValidation:rule="self.type != 'iamRole' || has(self.iamRole)", message="Additional type specific spec is required for authentication"
+type S3Authentication struct {
+	// Type is the type of S3 authentication to configure
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
+	Type S3AuthType `json:"type"`
+
+	// AWSAccessKey points to the AWS access key id and secret to be used for authentication.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Access Key"
+	AWSAccessKey *S3AWSAccessKey `json:"awsAccessKey,omitempty"`
+
+	// IAMRole points to the secret containing the role ARN to be used for authentication.
+	// This can be used for authentication in STS-enabled clusters when additionally specifying
+	// a web identity token
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon IAM Role"
+	IAMRole *S3IAMRole `json:"iamRole,omitempty"`
+
+	// AssumeRole specifies an additional IAM role to assume after the initial authentication.
+	// This enables cross-account log forwarding where the initial role (from IAMRole or AWSAccessKey)
+	// is used to authenticate, and then this role is assumed to access S3 in another account.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cross-Account Assume Role"
+	AssumeRole *CloudwatchAssumeRole `json:"assumeRole,omitempty"`
+}
+
+type S3IAMRole struct {
+	// RoleARN points to the secret containing the role ARN to be used for authentication.
+	// This is used for authentication in STS-enabled clusters.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="RoleARN Secret"
+	RoleARN SecretReference `json:"roleARN"`
+
+	// Token specifies a bearer token to be used for authenticating requests.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
+	Token BearerToken `json:"token"`
+}
+
+type S3AWSAccessKey struct {
+	// KeyId points to the AWS access key id to be used for authentication.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key ID"
+	KeyId SecretReference `json:"keyId"`
+
+	// KeySecret points to the AWS access key secret to be used for authentication.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
+	KeySecret SecretReference `json:"keySecret"`
 }

@@ -42,7 +42,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeElasticsearch,
 				},
 			}
-			Expect(cloudwatch.GatherAWSWebIdentities(outputs, cwSecret)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", outputs, cwSecret)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and no cloudwatch outputs", func() {
@@ -53,11 +53,11 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			Expect(cloudwatch.GatherAWSWebIdentities(outputs, nil)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", outputs, nil)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and outputs are nil", func() {
-			Expect(cloudwatch.GatherAWSWebIdentities(nil, nil)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", nil, nil)).To(BeNil())
 		})
 
 		DescribeTable("token path", func(token obs.BearerToken, exp cloudwatch.CloudwatchWebIdentity) {
@@ -80,7 +80,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					},
 				},
 			}
-			actIds := cloudwatch.GatherAWSWebIdentities(cwOutputs, cwSecret)
+			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-clf", cwOutputs, cwSecret)
 			Expect(actIds[0]).To(Equal(exp))
 		},
 			Entry("should get token from secret", obs.BearerToken{
@@ -157,7 +157,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			actIds := cloudwatch.GatherAWSWebIdentities(cwOutputs, cwSecret)
+			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-clf", cwOutputs, cwSecret)
 			Expect(actIds).To(Equal(expCreds))
 		})
 	})
@@ -194,5 +194,14 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				RoleARN:              "arn:aws:iam::123456789012:role/test-bar",
 				WebIdentityTokenFile: saTokenPath,
 			},
-		}, "cw_multiple_credentials"))
+		}, "cw_multiple_credentials"),
+		Entry("should generate assume role profile", []cloudwatch.CloudwatchWebIdentity{
+			{
+				Name:                 "default",
+				RoleARN:              "arn:aws:iam::123456789012:role/test-default",
+				WebIdentityTokenFile: saTokenPath,
+				AssumeRoleARN:        "arn:aws:iam::987654321098:role/cross-account-role",
+				ExternalID:           "unique-external-id",
+				SessionName:          "output-default",
+			}}, "cw_assume_role_single"))
 })

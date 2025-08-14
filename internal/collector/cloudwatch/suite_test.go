@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	//go:embed cw_multiple_credentials cw_single_credential
+	//go:embed cw_multiple_credentials cw_single_credential cw_assume_role_single
 	credFiles embed.FS
 )
 

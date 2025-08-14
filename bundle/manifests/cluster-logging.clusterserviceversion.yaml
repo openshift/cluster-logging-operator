@@ -486,6 +486,37 @@ spec:
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
         path: outputs[0].cloudwatch.authentication
+      - description: |-
+          AssumeRole specifies an additional AWS role to assume for forwarding logs.
+          This enables cross-account log forwarding by using the initial role to authenticate,
+          then assume a role in order to access cross-account services.
+        displayName: Assume Role
+        path: outputs[0].cloudwatch.authentication.assumeRole
+      - description: |-
+          ExternalID is the external ID to match when assuming the role.
+          This is optional and can be used as an additional security measure to ensure that only the intended
+          entity can assume the role.
+
+          The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+          The value must be alphanumeric without whitespace and can also include the following symbols:
+          plus(+), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+        displayName: External ID
+        path: outputs[0].cloudwatch.authentication.assumeRole.externalID
+      - description: RoleARN points to the secret containing the ARN of the role to
+          assume for cross-account access.
+        displayName: Assume Role ARN Secret
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: AWSAccessKey points to the AWS access key id and secret to be
           used for authentication.
         displayName: Access Key
@@ -526,8 +557,8 @@ spec:
         displayName: Amazon IAM Role
         path: outputs[0].cloudwatch.authentication.iamRole
       - description: |-
-          RoleARN points to the secret containing the role ARN to be used for authentication.
-          This is used for authentication in STS-enabled clusters.
+          RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+          This role requires an OIDC provider to be configured in an STS-enabled cluster.
         displayName: RoleARN Secret
         path: outputs[0].cloudwatch.authentication.iamRole.roleARN
       - description: Key contains the name of the key inside the referenced Secret.

@@ -1,15 +1,15 @@
-= Forwarding to Amazon Cloudwatch using Web Identities From an STS enabled Cluster
+= Forwarding logs to AWS CloudWatch using Web Identities
 
 This guide provides a workflow for forwarding to Amazon Cloudwatch in an <<aws-sts, STS>> enabled cluster.
 
 These steps assume that there is a <<setup-sts, STS>> enabled openshift cluster running.
 
 ---
-== Steps to forward to Cloudwatch using Web Identity
+== Configuring the Web Identity
 
-=== Creating a `CredentialsRequest`
-. Create a `CredentialsRequest` resource with the appropriate actions.
-.. This example `CredentialsRequest` allows creating and describing logs.
+. Create a `CredentialsRequest` resource with the appropriate cloudwatch actions
+
+* This example `CredentialsRequest` shows permissions for forwarding logs to CloudWatch.
 +
 .aws-cred-request.yaml
 [source, yaml]
@@ -17,14 +17,14 @@ These steps assume that there is a <<setup-sts, STS>> enabled openshift cluster 
 apiVersion: cloudcredential.openshift.io/v1
 kind: CredentialsRequest
 metadata:
-  name: my-credrequest # <1>
-  namespace: openshift-logging <1>
+  name: my-credrequest                             # <1>
+  namespace: openshift-logging
 spec:
   providerSpec:
     apiVersion: cloudcredential.openshift.io/v1
     kind: AWSProviderSpec
     statementEntries:
-      - action: # <2>
+      - action:                                    # <2>
           - logs:PutLogEvents
           - logs:CreateLogGroup
           - logs:PutRetentionPolicy
@@ -34,32 +34,30 @@ spec:
         effect: Allow
         resource: arn:aws:logs:*:*:*
   secretRef:
-    name: sts-secret # <3>
-    namespace: openshift-logging # <3>
+    name: sts-secret                               # <3>
+    namespace: openshift-logging
   serviceAccountNames:
-    - my-sa # <4>
+    - my-sa                                        # <4>
 ----
 <1> The name and namespace for the credentials request.
 <2> The allowed actions for this role.
 <3> The name and namespace of the secret containing the generated credentials.
-<4> The service account(s) that will use the credentials
+<4> The service account that will use the credentials
 +
 
-. Create the role in `AWS` using the <<cco, CCO>> utility.
+. Create the IAM role in AWS using the <<cco, CCO>> utility
 +
 ```
-$ ccoctl aws create-iam-roles --name=<NAME> --region=<REGION> \ # <1>
-  --credentials-requests-dir=<REQ DIR> \ # <2>
-  --output-dir=<OUTPUT> \ # <3>
-  --identity-provider-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:oidc-provider/<NAME>-oidc.s3.<REGION>.amazonaws.com # <4>
+$ ccoctl aws create-iam-roles --name=<NAME> \      # <1>
+  --credentials-requests-dir=<REQ DIR> \           # <2>
+  --identity-provider-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:oidc-provider/<NAME>-oidc.s3.<REGION>.amazonaws.com                             # <3>
 ```
-<1> The name of the resource along with the region
+<1> The name of the role
 <2> The credentials request directory where the above `CredentialsRequest` YAML is saved.
-<3> The output directory
-<4> The identity provider arn
+<3> The identity provider arn
 +
 
-. Apply the generated credentials secret.
+. Apply the generated credentials secret
 +
 .openshift-logging-sts-secret-credentials.yaml
 [source, yaml]
@@ -83,7 +81,7 @@ $ oc apply -f openshift-logging-sts-secret-credentials.yaml
 ```
 
 
-=== Configuring a `ClusterLogForwarder`
+== Configuring the `ClusterLogForwarder`
 
 This example forwarder shows two ways to configure a `cloudwatch` output, with a projected service account token or using a secret containing the service account token.
 
@@ -162,4 +160,4 @@ $ oc apply -f cluster-log-forwarder.yaml
 
 === Amazon
 . [[aws-sts]] https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html[AWS Security Token Service (STS)]
-. 
+. https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html[AWS IAM Roles and Instance Profiles] 

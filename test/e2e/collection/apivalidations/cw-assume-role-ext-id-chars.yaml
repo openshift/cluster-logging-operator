@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cw-secret-4884
+data:
+  aws_access_key_id: YXdzX2FjY2Vzc19rZXlfaWQ=
+  aws_secret_access_key: YXdzX3NlY3JldF9hY2Nlc3Nfa2V5
+  role_arn: YXJuOmF3czppYW06OjEyMzQ1Njc4OTAxMjpyb2xlL2Fzc3VtZS1sb2dnaW5nLXJvbGUK
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: role-for-cw
+data:
+  credentials: YXJuOmF3czppYW06OjEyMzQ1Njc4OTAxMjpyb2xlL215LWxvZ2dpbmctcm9sZQo=
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  serviceAccount:
+    name: my-sa
+  outputs:
+    - name: my-cw
+      type: cloudwatch
+      cloudwatch:
+        region: us-east-1
+        groupName: foo-{.bar||"none"}
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: role-for-cw
+              key: credentials
+            token:
+              from: serviceAccount
+          assumeRole:
+            roleARN:
+              key: role_arn
+              secretName: cw-secret-4884
+            externalID: "plus+,equal=,comma,,period.,at@,colon:,forwardslash/,andhyphen-."
+  pipelines:
+    - name: forward-log-cw
+      inputRefs:
+        - application
+      outputRefs:
+        - my-cw
+

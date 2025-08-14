@@ -97,6 +97,15 @@ var _ = Describe("", func() {
 		Entry("should pass for Cloudwatch with empty URL", "cloudwatch-empty-url.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
+		Entry("should fail for Cloudwatch with invalid characters in external_id", "cw-assume-role-ext-id.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("Invalid value"))
+		}),
+		Entry("should fail for Cloudwatch with invalid external_id", "cw-assume-role-ext-id-bad.yaml", func(out string, err error) {
+			Expect(err.Error()).To(MatchRegexp("should be at least 2 chars"))
+		}),
+		Entry("should pass for Cloudwatch with allowed external_id characters", "cw-assume-role-ext-id-chars.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
 		Entry("should pass for OTLP with any http or https URL", "otlp_valid_url.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),

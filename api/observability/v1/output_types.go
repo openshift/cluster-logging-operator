@@ -431,6 +431,15 @@ type CloudwatchIAMRole struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
 	Token BearerToken `json:"token"`
+
+	// AssumeRole specifies an additional IAM role to assume after the initial authentication.
+	// This enables cross-account log forwarding where the initial role is used to authenticate,
+	// and then this role is assumed to access CloudWatch in another account.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Cross-Account Assume Role"
+	AssumeRole *CloudwatchAssumeRole `json:"assumeRole,omitempty"`
 }
 
 type CloudwatchAWSAccessKey struct {
@@ -445,6 +454,22 @@ type CloudwatchAWSAccessKey struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
 	KeySecret SecretReference `json:"keySecret"`
+}
+
+type CloudwatchAssumeRole struct {
+	// RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Assume Role ARN Secret"
+	RoleARN SecretReference `json:"roleARN"`
+
+	// ExternalID points to the secret containing the external ID required for assuming the role.
+	// This is an optional security measure used to ensure that only the intended entity can assume the role.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="External ID Secret"
+	ExternalID *SecretReference `json:"externalID,omitempty"`
 }
 
 type ElasticsearchTuningSpec struct {

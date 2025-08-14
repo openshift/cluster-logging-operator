@@ -110,23 +110,30 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		Region:         region,
 		GroupName:      groupName,
-		SecurityConfig: authConfig(o.Name, o.Cloudwatch.Authentication, op),
+		SecurityConfig: authConfig(o.Name, o.Cloudwatch.Authentication, op, secrets),
 		EndpointConfig: endpointConfig(o.Cloudwatch),
 		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 
-func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options) Element {
+func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options, secrets observability.Secrets) Element {
 	authConfig := NewAuth()
 	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
+
 	} else if auth != nil && auth.Type == obs.CloudwatchAuthTypeIAMRole {
+		// For IAM role authentication, we use credentials file approach to handle
+		// web identity tokens properly. Assume role is configured in the credentials file.
 		if forwarderName, found := utils.GetOption(options, OptionForwarderName, ""); found {
 			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AWSCredentialsConfigMapName, constants.AWSCredentialsKey), `"`)
 			authConfig.Profile.Value = "output_" + outputName
 		}
 	}
+
+	// Note: For IAM role authentication, we use credentials file approach to properly
+	// handle web identity tokens with assume role configurations.
+
 	return authConfig
 }
 
@@ -170,6 +177,22 @@ del(.source_type)
 func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
 	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
 		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
+
+		if roleArnString != "" {
+			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
+			roleArn := reg.FindStringSubmatch(roleArnString)
+			if roleArn != nil {
+				return roleArn[1] // the capturing group is index 1
+			}
+		}
+	}
+	return ""
+}
+
+// ParseAssumeRoleArn search for matching valid assume role ARN
+func ParseAssumeRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
+	if auth.IAMRole != nil && auth.IAMRole.AssumeRole != nil {
+		roleArnString := secrets.AsString(&auth.IAMRole.AssumeRole.RoleARN)
 
 		if roleArnString != "" {
 			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)

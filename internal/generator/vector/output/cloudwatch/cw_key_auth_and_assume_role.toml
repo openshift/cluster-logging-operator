@@ -1,0 +1,48 @@
+# Cloudwatch Stream Names
+[transforms.cw_normalize_streams]
+type = "remap"
+inputs = ["cw-forward"]
+source = '''
+  .stream_name = "default"
+  if ( .log_type == "audit" ) {
+   .stream_name = (.hostname +"."+ downcase(.log_source)) ?? .stream_name
+  }
+  if ( .log_source == "container" ) {
+    k = .kubernetes
+    .stream_name = (k.namespace_name+"_"+k.pod_name+"_"+k.container_name) ?? .stream_name
+  }
+  if ( .log_type == "infrastructure" ) {
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
+  }
+  if ( .log_source == "node" ) {
+   .stream_name =  ( .hostname + ".journal.system" ) ?? .stream_name
+  }
+  del(.tag)
+  del(.source_type)
+'''
+
+# Cloudwatch Groupname
+[transforms.cw_group_name]
+type = "remap"
+inputs = ["cw_normalize_streams"]
+source = '''
+._internal.cw_group_name = "app-" + to_string!(._internal.log_type||"missing")
+'''
+
+# Cloudwatch Logs
+[sinks.cw]
+type = "aws_cloudwatch_logs"
+inputs = ["cw_group_name"]
+region = "us-east-test"
+compression = "none"
+group_name = "{{ _internal.cw_group_name }}"
+stream_name = "{{ stream_name }}"
+auth.access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
+auth.secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"
+auth.assume_role = "SECRET[kubernetes_secret.secretwithcredentials/my_role_arn]"
+auth.external_id = "unique-external-id"
+healthcheck.enabled = false
+
+[sinks.cw.encoding]
+codec = "json"
+except_fields = ["_internal"]

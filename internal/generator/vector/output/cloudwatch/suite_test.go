@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	//go:embed *.toml
-	tomlContent embed.FS
+	//go:embed files/*
+	testFiles embed.FS
 )
 
 func TestSuite(t *testing.T) {

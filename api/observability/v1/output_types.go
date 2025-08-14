@@ -416,21 +416,15 @@ type CloudwatchAuthentication struct {
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon IAM Role"
 	IAMRole *CloudwatchIAMRole `json:"iamRole,omitempty"`
-}
 
-type CloudwatchIAMRole struct {
-	// RoleARN points to the secret containing the role ARN to be used for authentication.
-	// This is used for authentication in STS-enabled clusters.
+	// AssumeRole specifies an additional AWS role to assume for forwarding logs.
+	// This enables cross-account log forwarding by using the initial role to authenticate,
+	// then assume a role in order to access cross-account services.
 	//
-	// +kubebuilder:validation:Required
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="RoleARN Secret"
-	RoleARN SecretReference `json:"roleARN"`
-
-	// Token specifies a bearer token to be used for authenticating requests.
-	//
-	// +kubebuilder:validation:Required
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
-	Token BearerToken `json:"token"`
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Assume Role"
+	AssumeRole *CloudwatchAssumeRole `json:"assumeRole,omitempty"`
 }
 
 type CloudwatchAWSAccessKey struct {
@@ -445,6 +439,45 @@ type CloudwatchAWSAccessKey struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Access Key Secret"
 	KeySecret SecretReference `json:"keySecret"`
+}
+
+type CloudwatchIAMRole struct {
+	// RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+	// This role requires an OIDC provider to be configured in an STS-enabled cluster.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="RoleARN Secret"
+	RoleARN SecretReference `json:"roleARN"`
+
+	// Token specifies a bearer token to be used for authenticating requests.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
+	Token BearerToken `json:"token"`
+}
+
+type CloudwatchAssumeRole struct {
+	// RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Assume Role ARN Secret"
+	RoleARN SecretReference `json:"roleARN"`
+
+	// ExternalID is the external ID to match when assuming the role.
+	// This is optional and can be used as an additional security measure to ensure that only the intended
+	// entity can assume the role.
+	//
+	// The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+	// The value must be alphanumeric without whitespace and can also include the following symbols:
+	// plus(+), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength:=2
+	// +kubebuilder:validation:MaxLength:=1224
+	// +kubebuilder:validation:Pattern:=`^[\w+=,.@:/-]*$`
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="External ID"
+	ExternalID string `json:"externalID,omitempty"`
 }
 
 type ElasticsearchTuningSpec struct {

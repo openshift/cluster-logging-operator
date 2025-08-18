@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/version"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,19 +36,17 @@ type CloudwatchWebIdentity struct {
 }
 
 // generateSessionName creates an intelligent session name using cluster metadata
-// Format: <cluster_ID>-<CLF_Name>-<output_name>
-func generateSessionName(reader client.Reader, clfName, outputName string) string {
-	// Try to get cluster ID for meaningful session names
-	_, clusterID, err := version.ClusterVersion(reader)
-	if err != nil || clusterID == "" {
+// Format: <cluster_ID>-<namespace>-<CLF_Name>-<output_name>
+func generateSessionName(clusterID, namespace, clfName, outputName string) string {
+	if clusterID == "" {
 		// Fallback to basic session name if cluster metadata unavailable
-		log.V(3).Info("Unable to retrieve cluster ID for session name, using fallback", "error", err)
+		log.V(3).Info("Cluster ID not available for session name, using fallback")
 		return "output-" + outputName
 	}
 
 	// Generate session name with cluster context for better auditing
-	// Format: clusterid-clfname-output (truncated to 64 chars max)
-	sessionName := clusterID[:min(8, len(clusterID))] + "-" + clfName + "-" + outputName
+	// Format: clusterid-namespace-clfname-output (truncated to 64 chars max)
+	sessionName := clusterID[:min(8, len(clusterID))] + "-" + namespace + "-" + clfName + "-" + outputName
 	if len(sessionName) > 64 {
 		// Truncate but keep meaningful parts, prioritizing cluster ID and output name
 		sessionName = clusterID[:min(8, len(clusterID))] + "-" + outputName
@@ -60,18 +57,10 @@ func generateSessionName(reader client.Reader, clfName, outputName string) strin
 	return sessionName
 }
 
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // ReconcileAWSCredentialsConfigMap reconciles a configmap with credential profile(s) for Cloudwatch output(s).
-func ReconcileAWSCredentialsConfigMap(k8sClient client.Client, reader client.Reader, namespace, name, clfName string, outputs []obs.OutputSpec, secrets observability.Secrets, configMaps map[string]*corev1.ConfigMap, owner metav1.OwnerReference) (*corev1.ConfigMap, error) {
+func ReconcileAWSCredentialsConfigMap(k8sClient client.Client, reader client.Reader, namespace, name, clfName, clusterID string, outputs []obs.OutputSpec, secrets observability.Secrets, configMaps map[string]*corev1.ConfigMap, owner metav1.OwnerReference) (*corev1.ConfigMap, error) {
 	log.V(3).Info("generating AWS ConfigMap")
-	credString, err := GenerateCloudwatchCredentialProfiles(reader, clfName, outputs, secrets)
+	credString, err := GenerateCloudwatchCredentialProfiles(reader, namespace, clfName, clusterID, outputs, secrets)
 
 	if err != nil || credString == "" {
 		return nil, err
@@ -89,9 +78,9 @@ func ReconcileAWSCredentialsConfigMap(k8sClient client.Client, reader client.Rea
 }
 
 // GenerateCloudwatchCredentialProfiles generates AWS CLI profiles for a credentials file from spec'd cloudwatch role ARNs and returns the formatted content as a string.
-func GenerateCloudwatchCredentialProfiles(reader client.Reader, clfName string, outputs []obs.OutputSpec, secrets observability.Secrets) (string, error) {
+func GenerateCloudwatchCredentialProfiles(reader client.Reader, namespace, clfName, clusterID string, outputs []obs.OutputSpec, secrets observability.Secrets) (string, error) {
 	// Gather all cloudwatch output's role_arns/tokens
-	webIds := GatherAWSWebIdentities(reader, clfName, outputs, secrets)
+	webIds := GatherAWSWebIdentities(reader, namespace, clfName, clusterID, outputs, secrets)
 
 	// No CW outputs
 	if webIds == nil {
@@ -108,7 +97,7 @@ func GenerateCloudwatchCredentialProfiles(reader client.Reader, clfName string, 
 }
 
 // GatherAWSWebIdentities takes spec'd role arns and generates CloudwatchWebIdentity objects with a name and token path from secret or projected SA token
-func GatherAWSWebIdentities(reader client.Reader, clfName string, outputs []obs.OutputSpec, secrets observability.Secrets) (webIds []CloudwatchWebIdentity) {
+func GatherAWSWebIdentities(reader client.Reader, namespace, clfName, clusterID string, outputs []obs.OutputSpec, secrets observability.Secrets) (webIds []CloudwatchWebIdentity) {
 	for _, o := range outputs {
 		if o.Type == obs.OutputTypeCloudwatch && o.Cloudwatch.Authentication != nil && o.Cloudwatch.Authentication.Type == obs.CloudwatchAuthTypeIAMRole {
 			if roleARN := cloudwatch.ParseRoleArn(o.Cloudwatch.Authentication, secrets); roleARN != "" {
@@ -133,7 +122,7 @@ func GatherAWSWebIdentities(reader client.Reader, clfName string, outputs []obs.
 						webId.ExternalID = secrets.AsString(o.Cloudwatch.Authentication.IAMRole.AssumeRole.ExternalID)
 					}
 					// Use intelligent session name generation with cluster metadata
-					webId.SessionName = generateSessionName(reader, clfName, o.Name)
+					webId.SessionName = generateSessionName(clusterID, namespace, clfName, o.Name)
 				}
 
 				webIds = append(webIds, webId)

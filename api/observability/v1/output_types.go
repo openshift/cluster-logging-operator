@@ -432,9 +432,11 @@ type CloudwatchIAMRole struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
 	Token BearerToken `json:"token"`
 
-	// AssumeRole specifies an additional IAM role to assume after the initial authentication.
-	// This enables cross-account log forwarding where the initial role is used to authenticate,
-	// and then this role is assumed to access CloudWatch in another account.
+	// AssumeRole specifies an IAM role to assume after the initial authentication. This enables
+	// cross-account log forwarding where the initial role or access keys associated with the collector
+	// service account is used to authenticate, and then this role is assumed in order to access
+	// CloudWatch in another account. This requires a trust relationship has been established between
+	// the roles and the assumed roles have been granted the necessary CloudWatch permissions.
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable

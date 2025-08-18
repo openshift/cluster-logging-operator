@@ -42,7 +42,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeElasticsearch,
 				},
 			}
-			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", outputs, cwSecret)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-namespace", "test-clf", "test-cluster", outputs, cwSecret)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and no cloudwatch outputs", func() {
@@ -53,11 +53,11 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", outputs, nil)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-namespace", "test-clf", "test-cluster", outputs, nil)).To(BeNil())
 		})
 
 		It("should be nil if secrets are nil and outputs are nil", func() {
-			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-clf", nil, nil)).To(BeNil())
+			Expect(cloudwatch.GatherAWSWebIdentities(nil, "test-namespace", "test-clf", "test-cluster", nil, nil)).To(BeNil())
 		})
 
 		DescribeTable("token path", func(token obs.BearerToken, exp cloudwatch.CloudwatchWebIdentity) {
@@ -80,7 +80,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					},
 				},
 			}
-			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-clf", cwOutputs, cwSecret)
+			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-namespace", "test-clf", "test-cluster", cwOutputs, cwSecret)
 			Expect(actIds[0]).To(Equal(exp))
 		},
 			Entry("should get token from secret", obs.BearerToken{
@@ -157,7 +157,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 				},
 			}
 
-			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-clf", cwOutputs, cwSecret)
+			actIds := cloudwatch.GatherAWSWebIdentities(nil, "test-namespace", "test-clf", "test-cluster", cwOutputs, cwSecret)
 			Expect(actIds).To(Equal(expCreds))
 		})
 	})

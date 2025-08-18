@@ -173,18 +173,29 @@ del(.source_type)
 	}
 }
 
+// parseAwsRoleArn searches for matching valid ARN from a secret reference
+func parseAwsRoleArn(secretRef *obs.SecretReference, secrets observability.Secrets) string {
+	if secretRef == nil {
+		return ""
+	}
+
+	roleArnString := secrets.AsString(secretRef)
+	if roleArnString == "" {
+		return ""
+	}
+
+	reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
+	roleArn := reg.FindStringSubmatch(roleArnString)
+	if roleArn != nil {
+		return roleArn[1] // the capturing group is index 1
+	}
+	return ""
+}
+
 // ParseRoleArn search for matching valid ARN
 func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
 	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
-		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
-
-		if roleArnString != "" {
-			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
-			roleArn := reg.FindStringSubmatch(roleArnString)
-			if roleArn != nil {
-				return roleArn[1] // the capturing group is index 1
-			}
-		}
+		return parseAwsRoleArn(&auth.IAMRole.RoleARN, secrets)
 	}
 	return ""
 }
@@ -192,15 +203,7 @@ func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secr
 // ParseAssumeRoleArn search for matching valid assume role ARN
 func ParseAssumeRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
 	if auth.IAMRole != nil && auth.IAMRole.AssumeRole != nil {
-		roleArnString := secrets.AsString(&auth.IAMRole.AssumeRole.RoleARN)
-
-		if roleArnString != "" {
-			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
-			roleArn := reg.FindStringSubmatch(roleArnString)
-			if roleArn != nil {
-				return roleArn[1] // the capturing group is index 1
-			}
-		}
+		return parseAwsRoleArn(&auth.IAMRole.AssumeRole.RoleARN, secrets)
 	}
 	return ""
 }

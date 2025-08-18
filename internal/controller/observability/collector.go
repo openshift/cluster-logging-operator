@@ -79,7 +79,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
-	credCm, err := cloudwatch.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+	credCm, err := cloudwatch.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.ClusterID, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
 	if err != nil {
 		log.V(9).Error(err, "collector.ReconcileAWSProfileConfig")
 		return err

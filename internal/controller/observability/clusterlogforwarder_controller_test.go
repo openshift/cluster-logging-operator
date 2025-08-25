@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
+	"time"
 )
 
 var _ = Describe("#Reconcile", func() {
@@ -115,8 +116,13 @@ spec:
 				},
 			}
 			r := ClusterLogForwarderReconciler{
-				ForwarderContext: fContext,
+				PollInterval: 500 * time.Millisecond,
+				TimeOut:      1 * time.Second,
+				NewForwarderContext: func() obscontext.ForwarderContext {
+					return fContext
+				},
 			}
+
 			_, err := r.Reconcile(context.TODO(), ctrl.Request{
 				NamespacedName: types.NamespacedName{Namespace: clf.Namespace, Name: clf.Name},
 			})

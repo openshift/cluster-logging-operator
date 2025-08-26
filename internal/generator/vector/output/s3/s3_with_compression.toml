@@ -1,0 +1,11 @@
+# Amazon S3
+[sinks.s3_gzip]
+type = "aws_s3"
+inputs = ["my_input"]
+region = "us-west-2"
+compression = "gzip"
+bucket = "test-bucket"
+key_prefix = "logs/"
+aws_access_key_id = "${AWS_ACCESS_KEY_ID}"
+aws_secret_access_key = "${AWS_SECRET_ACCESS_KEY}"
+healthcheck.enabled = false

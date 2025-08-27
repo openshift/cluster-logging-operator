@@ -15,7 +15,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
-	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	internalinit "github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -47,15 +47,21 @@ var (
 
 // ClusterLogForwarderReconciler reconciles a ClusterLogForwarder object
 type ClusterLogForwarderReconciler struct {
-	internalcontext.ForwarderContext
 	Scheme *runtime.Scheme
+
+	NewForwarderContext func() internalcontext.ForwarderContext
+
+	PollInterval time.Duration
+
+	TimeOut time.Duration
 }
 
-func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+func (r *ClusterLogForwarderReconciler) Reconcile(_ context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := log.WithName(loggerName)
 	log.V(3).Info("reconcile", "namespace", req.NamespacedName.Namespace, "name", req.NamespacedName.Name)
 
-	if r.Forwarder, err = FetchClusterLogForwarder(r.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
+	cxt := r.NewForwarderContext()
+	if cxt.Forwarder, err = FetchClusterLogForwarder(cxt.Client, req.NamespacedName.Namespace, req.NamespacedName.Name); err != nil {
 		if !errors.IsNotFound(err) {
 			// Other error, so requeue the request
 			return defaultRequeue, err
@@ -64,49 +70,49 @@ func (r *ClusterLogForwarderReconciler) Reconcile(ctx context.Context, req ctrl.
 		return defaultRequeue, nil
 	}
 
-	if r.Forwarder.DeletionTimestamp != nil {
+	if cxt.Forwarder.DeletionTimestamp != nil {
 		// Resource is being deleted, no further reconciliation
 		return defaultRequeue, nil
 	}
 
-	removeStaleStatuses(r.Forwarder)
+	removeStaleStatuses(cxt.Forwarder)
 
 	readyCond := internalobs.NewCondition(obsv1.ConditionTypeReady, obsv1.ConditionUnknown, obsv1.ReasonUnknownState, "")
 	defer func() {
-		updateStatus(r.Client, r.Forwarder, readyCond)
+		updateStatus(cxt.Client, cxt.Forwarder, readyCond)
 	}()
 
-	if r.Forwarder.Spec.ManagementState == obsv1.ManagementStateUnmanaged {
+	if cxt.Forwarder.Spec.ManagementState == obsv1.ManagementStateUnmanaged {
 		readyCond.Reason = obsv1.ReasonManagementStateUnmanaged
 		readyCond.Message = "Updates are ignored when the managementState is Unmanaged"
 		return defaultRequeue, nil
 	}
 
 	readyCond.Status = obsv1.ConditionFalse
-	if err = r.Initialize(); err != nil {
+	if cxt, err = initialize(cxt); err != nil {
 		readyCond.Reason = obsv1.ReasonInitializationFailed
 		readyCond.Message = err.Error()
 		return defaultRequeue, nil
 	}
 
-	if !validateForwarder(r.ForwarderContext) {
+	if !validateForwarder(cxt) {
 		readyCond.Reason = obsv1.ReasonValidationFailure
 		readyCond.Message = "collector not ready"
-		if validations.MustUndeployCollector(r.Forwarder.Status.Conditions) {
-			if deleteErr := collector.Remove(r.Client, r.Forwarder.Namespace, r.Forwarder.Name); deleteErr != nil {
+		if validations.MustUndeployCollector(cxt.Forwarder.Status.Conditions) {
+			if deleteErr := collector.Remove(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Name); deleteErr != nil {
 				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
 			}
 		}
 		return defaultRequeue, err
 	}
 
-	if err = RemoveStaleWorkload(r.Client, r.Forwarder); err != nil {
+	if err = RemoveStaleWorkload(cxt.Client, cxt.Forwarder); err != nil {
 		readyCond.Reason = obsv1.ReasonFailureToRemoveStaleWorkload
 		readyCond.Message = err.Error()
 		return defaultRequeue, err
 	}
 
-	reconcileErr := ReconcileCollector(r.ForwarderContext, collector.DefaultPollInterval, collector.DefaultTimeOut)
+	reconcileErr := ReconcileCollector(cxt, r.PollInterval, r.TimeOut)
 	if reconcileErr != nil {
 		log.V(2).Error(reconcileErr, "reconcile error")
 		readyCond.Reason = obsv1.ReasonDeploymentError
@@ -161,35 +167,36 @@ func MapConfigMaps(k8Client client.Client, namespace string, inputs internalobs.
 	return configMaps, nil
 }
 
-// Initialize evaluates the spec and initializes any values that can not be enforced with annotations or are implied
+// initialize evaluates the spec and initializes any values that can not be enforced with annotations or are implied
 // in their usage (i.e. reserved input names)
-func (r *ClusterLogForwarderReconciler) Initialize() (err error) {
+func initialize(cxt internalcontext.ForwarderContext) (internalcontext.ForwarderContext, error) {
 	log.V(4).Info("Initialize")
-	r.AdditionalContext = utils.Options{}
-	migrated := initialize.ClusterLogForwarder(*r.Forwarder, r.AdditionalContext)
-	r.Forwarder = &migrated
+	var err error
+	cxt.AdditionalContext = utils.Options{}
+	migrated := internalinit.ClusterLogForwarder(*cxt.Forwarder, cxt.AdditionalContext)
+	cxt.Forwarder = &migrated
 
-	if r.Secrets, err = MapSecrets(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
-		return err
+	if cxt.Secrets, err = MapSecrets(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Spec.Inputs, cxt.Forwarder.Spec.Outputs); err != nil {
+		return cxt, err
 	}
 
-	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](r.AdditionalContext, initialize.GeneratedSecrets, []*corev1.Secret{}); found {
+	if generatedSecrets, found := utils.GetOption[[]*corev1.Secret](cxt.AdditionalContext, internalinit.GeneratedSecrets, []*corev1.Secret{}); found {
 		for _, secret := range generatedSecrets {
-			r.Secrets[secret.Name] = secret
+			cxt.Secrets[secret.Name] = secret
 		}
 	}
 
-	if r.ConfigMaps, err = MapConfigMaps(r.Client, r.Forwarder.Namespace, r.Forwarder.Spec.Inputs, r.Forwarder.Spec.Outputs); err != nil {
-		return err
+	if cxt.ConfigMaps, err = MapConfigMaps(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Spec.Inputs, cxt.Forwarder.Spec.Outputs); err != nil {
+		return cxt, err
 	}
 
 	// Determine if on HCP and use the appropriate cluster Version/id
-	clusterVersion, clusterID := version.HostedClusterVersion(context.TODO(), r.Reader, r.Forwarder.Namespace)
+	clusterVersion, clusterID := version.HostedClusterVersion(context.TODO(), cxt.Reader, cxt.Forwarder.Namespace)
 	if clusterVersion != "" && clusterID != "" {
-		r.ClusterVersion = clusterVersion
-		r.ClusterID = clusterID
+		cxt.ClusterVersion = clusterVersion
+		cxt.ClusterID = clusterID
 	}
-	return nil
+	return cxt, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

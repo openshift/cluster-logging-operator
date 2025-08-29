@@ -3,6 +3,7 @@ package runtime
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -80,4 +81,11 @@ func NewDeployment(namespace, name string, visitors ...func(o runtime.Object)) *
 	dpl := &appsv1.Deployment{}
 	Initialize(dpl, namespace, name, visitors...)
 	return dpl
+}
+
+// NewNetworkPolicy returns a networking.k8s.io/v1.NetworkPolicy with namespace and name.
+func NewNetworkPolicy(namespace, name string, visitors ...func(o runtime.Object)) *networkingv1.NetworkPolicy {
+	np := &networkingv1.NetworkPolicy{}
+	Initialize(np, namespace, name, visitors...)
+	return np
 }

@@ -78,6 +78,11 @@ rules:
   verbs:
   - create
   - delete
+  - watch
+  - list
+  - get
+  - update
+  - patch
 - apiGroups:
   - observability.openshift.io
   resources:

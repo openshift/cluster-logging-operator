@@ -139,6 +139,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 
+	// Reconcile NetworkPolicy for the collector daemonset
+	if err := network.ReconcileNetworkPolicy(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
+		log.Error(err, "collector.ReconcileNetworkPolicy")
+		return err
+	}
+
 	// Reconcile resources to support metrics gathering
 	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")

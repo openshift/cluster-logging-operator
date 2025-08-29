@@ -1,0 +1,104 @@
+= NetworkPolicy for Collector Pods
+
+The Cluster Logging Operator automatically creates and manages a `NetworkPolicy` for its collector pods to ensure they function in restrictive network environments, even if a cluster-wide `AdminNetworkPolicy` would otherwise block their traffic.
+
+== Overview
+
+When a `ClusterLogForwarder` is deployed, the operator creates a permissive `NetworkPolicy` that allows all ingress and egress traffic for the collector pods. This ensures that log collection can function properly even when:
+
+* Restrictive default `NetworkPolicies` are in place
+* `AdminNetworkPolicy` configurations limit pod communications
+* Namespace-level network restrictions are applied
+
+The `NetworkPolicy` is automatically created and removed along with the collector deployment lifecycle. 
+
+The `NetworkPolicy` can directly be edited by the cluster administrator and won't be reconciled by the operator upon updates.
+
+== NetworkPolicy Configuration
+
+The operator creates a `NetworkPolicy` for the collector with the following characteristics:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: <COLLECTOR-INSTANCE-NAME>
+  namespace: <COLLECTOR-NAMESPACE>
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: <COLLECTOR-INSTANCE-NAME>
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: cluster-logging
+    app.kubernetes.io/managed-by: cluster-logging-operator
+    app.kubernetes.io/version: <CLO-VERSION>
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vector
+      app.kubernetes.io/instance: <COLLECTOR-INSTANCE-NAME>
+      app.kubernetes.io/component: collector
+      app.kubernetes.io/part-of: cluster-logging
+      app.kubernetes.io/managed-by: cluster-logging-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - {}  # Allow all ingress traffic
+  egress:
+    - {}  # Allow all egress traffic
+```
+
+== AdminNetworkPolicy Delegation
+
+When an `AdminNetworkPolicy` (ANP) is used in your cluster to enforce network restrictions, you may need to configure delegation to allow the collector's `NetworkPolicy` to take precedence for log collection traffic.
+
+=== Understanding the Hierarchy
+
+OpenShift network policy precedence (highest to lowest priority):
+
+1. **AdminNetworkPolicy** - Cluster-admin controlled, highest priority
+2. **BaselineAdminNetworkPolicy** - Default fallback rules  
+3. **NetworkPolicy** - Namespace-level policies (where collector policies reside)
+
+=== Delegation Configuration
+
+To ensure collector pods can communicate properly when an `AdminNetworkPolicy` is blocking traffic, create an `AdminNetworkPolicy` rule that delegates to `NetworkPolicy` for collector traffic:
+
+==== Example: Delegating Collector Traffic
+
+```yaml
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: allow-logging-collector-delegation
+spec:
+  priority: 50  # Adjust based on your cluster's ANP priority scheme. Lower number means higher priority
+  subject:
+    pods: # Target the collector pods
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-logging # or collector namespace
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: vector
+          app.kubernetes.io/instance: my-clf # or collector instance name
+          app.kubernetes.io/managed-by: cluster-logging-operator
+          app.kubernetes.io/part-of: cluster-logging
+          app.kubernetes.io/component: collector
+  ingress:
+    - name: "delegate-to-collector-ingress"
+      action: "Pass"  # Pass to collector NetworkPolicy
+      from:
+        - {}  # Delegate decisions for traffic coming from any source
+  egress:
+    - name: "delegate-to-collector-egress"
+      action: "Pass"  # Pass to collector NetworkPolicy
+      to:
+        - {}  # Delegate decisions for traffic going to any destination
+```
+
+== References
+
+- https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/network_security/admin-network-policy#adminnetworkpolicy_ovn-k-anp[Openshift AdminNetworkPolicy]
+- https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html[OpenShift Network Policy]
+- https://kubernetes.io/docs/concepts/services-networking/network-policies/[Kubernetes NetworkPolicy Documentation]

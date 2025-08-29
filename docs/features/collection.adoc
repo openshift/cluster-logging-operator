@@ -95,6 +95,7 @@ a|
 
 |https://issues.redhat.com/browse/LOG-3270[TLS Security Profile Compliance]
 |Comply with OCP cluster-wide cryptographic profiles for internal communication and allow configuration of outbound connection profiles. See link:./tls_security_profile.adoc[details]
+|https://issues.redhat.com/browse/LOG-7571[Network Policy]| Network policy in place for the collectors that allows all egress and ingress.
 |======
 
 === Tuning

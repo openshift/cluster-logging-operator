@@ -179,6 +179,29 @@ func (f *CollectorFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs 
 	return err
 }
 
+// WriteMessagesToLogWithoutNewLine write one log message without ending new line symbol
+// need in some specific use cases
+func (f *CollectorFunctionalFramework) WriteMessagesToLogWithoutNewLine(msg string) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(filename)
+	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
+	cmd := fmt.Sprintf("mkdir -p %s;for n in {1..%d};do echo -n \"$(echo %s|base64 -d)\" >> %s;sleep 1s;done", logPath, 1, encoded, filename)
+	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
+	log.V(3).Info("WriteMessagesToLogWithoutNewLine", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
+func (f *CollectorFunctionalFramework) EmulateCreationNewLogFileForContainer() error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(filename)
+	cmd := fmt.Sprintf("mkdir -p %s; touch %s", logPath, filename)
+	log.V(3).Info("Create log file with command", "cmd", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
+	log.V(3).Info("EmulateCreationNewLogFileForContainer", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
 // WriteMessagesWithNotUTF8SymbolsToLog write 12 symbols in ISO-8859-1 encoding
 // need to use small hack with 'sed' replacement because if try to use something like:
 // 'echo -e \xC0\xC1' Go always convert every undecodeable byte into '\ufffd'.

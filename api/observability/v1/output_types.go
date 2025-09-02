@@ -1278,12 +1278,13 @@ type OTLPTuningSpec struct {
 type OTLP struct {
 	// URL to send log records to.
 	//
-	// An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+	// An absolute URL, with a valid http scheme. The OTLP spec recommends it terminate with `/v1/logs` but
+	// that 'Non-default URL paths for requests MAY be configured on the client and server sides.'
 	//
 	// Basic TLS is enabled if the URL scheme requires it (for example 'https').
 	// The 'username@password' part of `url` is ignored.
 	//
-	// +kubebuilder:validation:Pattern:=`^(https?):\/\/\S+\/v1\/logs$`
+	// +kubebuilder:validation:Pattern:=`^(https?):\/\/\S+$`
 	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`

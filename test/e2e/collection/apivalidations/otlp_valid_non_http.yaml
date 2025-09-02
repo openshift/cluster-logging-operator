@@ -1,0 +1,20 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  outputs:
+    - name: output
+      otlp:
+        url: ftp://ahost:8976/api/v1/ingest/otlp
+      type: otlp
+  pipelines:
+  - inputRefs:
+      - infrastructure
+      - audit
+      - application
+    name: thepipeline
+    outputRefs:
+    - output
+  serviceAccount:
+    name: clf-validation-test

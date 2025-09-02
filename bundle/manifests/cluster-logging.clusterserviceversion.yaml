@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-12-12T17:14:22Z"
+    createdAt: "2026-02-03T00:15:38Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1500,7 +1500,8 @@ spec:
           URL to send log records to.
 
 
-          An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+          An absolute URL, with a valid http scheme. The OTLP spec recommends it terminate with `/v1/logs` but
+          that 'Non-default URL paths for requests MAY be configured on the client and server sides.'
 
 
           Basic TLS is enabled if the URL scheme requires it (for example 'https').

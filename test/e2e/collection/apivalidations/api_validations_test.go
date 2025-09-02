@@ -4,11 +4,12 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"os/exec"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
-	"os/exec"
 )
 
 var _ = Describe("", func() {
@@ -95,6 +96,12 @@ var _ = Describe("", func() {
 		}),
 		Entry("should pass for Cloudwatch with empty URL", "cloudwatch-empty-url.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for OTLP with any http or https URL", "otlp_valid_url.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for OTLP with non http URL", "otlp_valid_non_http.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
 		}),
 	)
 })

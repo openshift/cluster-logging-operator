@@ -2995,7 +2995,8 @@ Type:: object
 
 |url|string|  URL to send log records to.
 
-An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+An absolute URL, with a valid http scheme. The OTLP spec recommends it terminate with `/v1/logs` but
+that &#39;Non-default URL paths for requests MAY be configured on the client and server sides.&#39;
 
 Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39;).
 The &#39;username@password&#39; part of `url` is ignored.

@@ -167,7 +167,6 @@ func (f *CollectorFunctionalFramework) WriteMessagesToLogWithoutNewLine(msg stri
 	return err
 }
 
-
 func (f *CollectorFunctionalFramework) EmulateCreationNewLogFileForContainer() error {
 	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	logPath := filepath.Dir(filename)

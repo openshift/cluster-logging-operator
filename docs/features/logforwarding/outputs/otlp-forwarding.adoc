@@ -1,9 +1,11 @@
 = OTLP Output
 
-The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Observability Framework.  This is a configuration guide for the `ClusterLogForwarder` spec introduced to send logs to OTLP receivers.
+The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Observability Framework.
+This is a configuration guide for the `ClusterLogForwarder` spec introduced to send logs to OTLP receivers.
 
 
-*OTLP* describes the *protocol* for encoding, transporting, and delivering telemetry data between sources using the https://opentelemetry.io/docs/specs/otlp/[OpenTelemetry OTLP Specification]
+*OTLP* describes the *protocol* for encoding, transporting, and delivering telemetry data between sources using the
+https://opentelemetry.io/docs/specs/otlp/[OpenTelemetry OTLP Specification]
 
 .Technical Preview
 This feature is tech-preview and an annotation is required to enable it
@@ -51,7 +53,7 @@ spec:
 ----
 . Tech preview `annotation` must be enabled
 . `type` is '*otlp*'
-. `otlp` `url` specify a valid host:port of the otel receiver and *MUST* terminate with "*/v1/logs*"
+. `otlp` `url` specify a valid host:port of the otel receiver and *MAY* require termination with "*/v1/logs*" depending upon the configuration of the server
 . `otlp` `authentication` is optional and specifies a `token.from` and a value of '*serviceAccount*'
 .. The token can also be read from a secret
 .. Also available with `username` and `password` authentication spec (refer to HTTP Auth Specification for full scope)
@@ -74,7 +76,8 @@ NOTE: This option is *NOT* recommended for production configurations. If true, t
 === Semantic Convention
 The Semantic Conventions in OpenTelemetry (OTel) define a *Resource* as an immutable representation of the entity producing telemetry as *Attributes*.
 
-All *Attributes* are included in the *Resource* object. For example, a process producing telemetry that is running in a container has a container_name, a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
+All *Attributes* are included in the *Resource* object. For example, a process producing telemetry that is running in a container has a container_name,
+a cluster_id, a pod_name, a namespace, and possibly a deployment or app_name.
 
 The grouping and reducing of common resource attributes is a key aspect of sending logs via OpenTelemetry.
 

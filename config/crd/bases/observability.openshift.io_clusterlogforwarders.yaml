@@ -3142,11 +3142,12 @@ spec:
                           description: |-
                             URL to send log records to.
 
-                            An absolute URL, with a valid http scheme. Must terminate with `/v1/logs`
+                            An absolute URL, with a valid http scheme. The OTLP spec recommends it terminate with `/v1/logs` but
+                            that 'Non-default URL paths for requests MAY be configured on the client and server sides.'
 
                             Basic TLS is enabled if the URL scheme requires it (for example 'https').
                             The 'username@password' part of `url` is ignored.
-                          pattern: ^(https?):\/\/\S+\/v1\/logs$
+                          pattern: ^(https?):\/\/\S+$
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL

@@ -17,7 +17,7 @@ var _ = Describe("Writer", func() {
 		out := &bytes.Buffer{}
 		cmd.Stdout = out
 		cmd.Stderr = test.Writer()
-		w, err := NewWriter(cmd)
+		w, err := NewExecWriter(cmd)
 		ExpectOK(err)
 
 		_, err = fmt.Fprint(w, "hello world")

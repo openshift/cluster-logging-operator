@@ -308,7 +308,7 @@ func (f *CollectorFunctionalFramework) setupPortForwarder(podPort int32) (*PortF
 // Call Close() when finished to terminate the writer process.
 func (f *CollectorFunctionalFramework) LogWriter(filename string) (io.WriteCloser, error) {
 	dir := filepath.Dir(filename)
-	return cmd.NewWriter(runtime.ExecContainer(f.Pod, constants.CollectorName, "sh", "-c", fmt.Sprintf("mkdir -p %v && cat > %v", dir, filename)))
+	return cmd.NewExecWriter(runtime.ExecContainer(f.Pod, constants.CollectorName, "sh", "-c", fmt.Sprintf("mkdir -p %v && cat > %v", dir, filename)))
 }
 
 // WriteLog writes bytes to a log file on the collector Pod.

@@ -19,7 +19,7 @@ type Writer struct {
 }
 
 // NewWriter starts an exec.Cmd and returns an io.WriteCloser for its stdin.
-func NewWriter(cmd *exec.Cmd) (*Writer, error) {
+func NewExecWriter(cmd *exec.Cmd) (*Writer, error) {
 	p, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (w *Writer) Close() error {
 
 // PodWriter returns an io.WriteCloser that appends to a file in a pod container.
 func PodWriter(pod *corev1.Pod, container, filename string) (io.WriteCloser, error) {
-	return NewWriter(runtime.ExecContainer(pod, container, "sh", "-c", "cat >"+filename))
+	return NewExecWriter(runtime.ExecContainer(pod, container, "sh", "-c", "cat >"+filename))
 }
 
 // PodWrite is a shortcut for NewPodWriter(), Write(), Close()

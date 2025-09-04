@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -141,7 +142,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Reconcile NetworkPolicy for the collector daemonset
-	if err := network.ReconcileNetworkPolicy(context.Client, context.Forwarder.Namespace, fmt.Sprintf("%s-%s", constants.CollectorName, resourceNames.CommonName), context.Forwarder.Name, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileNetworkPolicy(context.Client, context.Forwarder.Namespace, fmt.Sprintf("%s-%s", constants.CollectorName, resourceNames.CommonName), context.Forwarder.Name, constants.CollectorName, []networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress}, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileNetworkPolicy")
 		return err
 	}

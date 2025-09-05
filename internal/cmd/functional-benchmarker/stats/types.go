@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/openshift/cluster-logging-operator/test"
+	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
@@ -37,7 +37,7 @@ func (t *PerfLog) ElapsedEpoc() float64 {
 func NewPerfLog(line string) *PerfLog {
 	entry := &PerfLog{}
 	log.V(4).Info("Unmarshalling", "line", line)
-	if err := test.Unmarshal(line, entry); err != nil {
+	if err := utilsjson.Unmarshal(line, entry); err != nil {
 		log.V(4).Info("Failed to unmarshall perflog", "line", line)
 		return nil
 	}

@@ -34,4 +34,7 @@ type ForwarderContext struct {
 
 	// AdditionalContext are additional context options to take pass along during reconciliation
 	AdditionalContext utils.Options
+
+	// Capabilities is the list of enabled features for the operator
+	Capabilities Capabilities
 }

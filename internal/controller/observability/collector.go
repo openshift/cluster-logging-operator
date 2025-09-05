@@ -1,7 +1,6 @@
 package observability
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
+	"github.com/openshift/cluster-logging-operator/internal/capabilities"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -140,12 +140,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 
-	// Reconcile NetworkPolicy for the collector daemonset
-	if err := network.ReconcileNetworkPolicy(context.Client, context.Forwarder.Namespace, fmt.Sprintf("%s-%s", constants.CollectorName, resourceNames.CommonName), context.Forwarder.Name, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
-		log.Error(err, "collector.ReconcileNetworkPolicy")
-		return err
-	}
-
 	// Reconcile resources to support metrics gathering
 	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
@@ -155,6 +149,13 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, metricsSelector, collector.MetricsPortName); err != nil {
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
+	}
+
+	for name, handle := range capabilities.ReconcileHandlers(context.Capabilities) {
+		if err := handle(context, collectorFactory.CommonLabelInitializer); err != nil {
+			log.V(0).Error(err, "Unable to apply feature", "name", name)
+			return err
+		}
 	}
 
 	return nil

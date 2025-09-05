@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"os"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	"strings"
 	"time"
+
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -204,6 +205,7 @@ func main() {
 				Reader:         mgr.GetAPIReader(),
 				ClusterID:      clusterID,
 				ClusterVersion: clusterVersion,
+				Capabilities:   internalcontext.ReadCapabilities("/etc/capabilities"),
 			}
 		},
 	}).SetupWithManager(mgr); err != nil {

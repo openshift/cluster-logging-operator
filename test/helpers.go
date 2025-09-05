@@ -57,12 +57,8 @@ func Must(err error) {
 	}
 }
 
-// Unmarshal JSON or YAML string into a value according to k8s rules.
-// Uses sigs.k8s.io/yaml.
-func Unmarshal(s string, v interface{}) error { return yaml.Unmarshal([]byte(s), v) }
-
 // MustUnmarshal unmarshals JSON or YAML into a value, panic on error.
-func MustUnmarshal(s string, v interface{}) { Must(Unmarshal(s, v)) }
+func MustUnmarshal(s string, v interface{}) { Must(utilsjson.Unmarshal(s, v)) }
 
 var (
 	uniqueReplace = regexp.MustCompile("[^a-z0-9]+")

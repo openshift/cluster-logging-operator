@@ -2,7 +2,9 @@ package json
 
 import (
 	"encoding/json"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"sigs.k8s.io/yaml"
 )
 
 // JSONString returns a JSON string of a value, or an error message.
@@ -14,3 +16,7 @@ func MustMarshal(v interface{}) (value string) {
 	}
 	return string(out)
 }
+
+// Unmarshal JSON or YAML string into a value according to k8s rules.
+// Uses sigs.k8s.io/yaml.
+func Unmarshal(s string, v interface{}) error { return yaml.Unmarshal([]byte(s), v) }

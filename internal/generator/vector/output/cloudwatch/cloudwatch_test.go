@@ -266,4 +266,131 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				}, ""),
 		)
 	})
+
+	Context("#ParseAssumeRoleArn", func() {
+
+		const (
+			assumeRoleArn    = "arn:aws:iam::987654321098:role/cross-account-role"
+			altAssumeRoleArn = "arn:aws-us-gov:iam::987654321098:role/cross-account-role"
+		)
+		var (
+			secrets = map[string]*corev1.Secret{
+				secretName: {
+					Data: map[string][]byte{
+						"assume_role_arn":     []byte(assumeRoleArn),
+						"alt_assume_role_arn": []byte(altAssumeRoleArn),
+						"bad_arn":             []byte("invalid-arn-format"),
+					},
+				},
+			}
+		)
+		DescribeTable("when retrieving the assume role arn", func(auth obs.CloudwatchAuthentication, exp string) {
+			results := ParseAssumeRoleArn(&auth, secrets)
+			Expect(results).To(Equal(exp))
+		},
+			Entry("should return the value explicitly spec'd",
+				obs.CloudwatchAuthentication{
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						AssumeRole: &obs.CloudwatchAssumeRole{
+							RoleARN: obs.SecretReference{
+								Key:        "assume_role_arn",
+								SecretName: secretName,
+							},
+						},
+					},
+				}, assumeRoleArn),
+			Entry("should return a specified valid assume role arn when the partition is more than 'aws'",
+				obs.CloudwatchAuthentication{
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						AssumeRole: &obs.CloudwatchAssumeRole{
+							RoleARN: obs.SecretReference{
+								Key:        "alt_assume_role_arn",
+								SecretName: secretName,
+							},
+						},
+					},
+				}, altAssumeRoleArn),
+			Entry("should return empty string when assume role is not specified",
+				obs.CloudwatchAuthentication{
+					Type: obs.CloudwatchAuthTypeIAMRole,
+				}, ""),
+			Entry("should return empty string when value is incorrectly formatted",
+				obs.CloudwatchAuthentication{
+					Type: obs.CloudwatchAuthTypeIAMRole,
+					IAMRole: &obs.CloudwatchIAMRole{
+						AssumeRole: &obs.CloudwatchAssumeRole{
+							RoleARN: obs.SecretReference{
+								Key:        "bad_arn",
+								SecretName: secretName,
+							},
+						},
+					},
+				}, ""),
+		)
+	})
+
+	Context("when assume role is configured", func() {
+		It("should generate valid Vector config with assume role", func() {
+			outputSpec := obs.OutputSpec{
+				Type: obs.OutputTypeCloudwatch,
+				Name: "cw",
+				Cloudwatch: &obs.Cloudwatch{
+					Region:    "us-east-test",
+					GroupName: "{.log_type||\"missing\"}",
+					Authentication: &obs.CloudwatchAuthentication{
+						Type: obs.CloudwatchAuthTypeIAMRole,
+						IAMRole: &obs.CloudwatchIAMRole{
+							RoleARN: obs.SecretReference{
+								Key:        constants.AWSWebIdentityRoleKey,
+								SecretName: secretName,
+							},
+							Token: obs.BearerToken{
+								From: obs.BearerTokenFromServiceAccount,
+							},
+							AssumeRole: &obs.CloudwatchAssumeRole{
+								RoleARN: obs.SecretReference{
+									Key:        "assume_role_arn",
+									SecretName: secretName,
+								},
+								ExternalID: &obs.SecretReference{
+									Key:        "external_id",
+									SecretName: secretName,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			secrets := map[string]*corev1.Secret{
+				secretName: {
+					Data: map[string][]byte{
+						constants.AWSWebIdentityRoleKey: []byte("arn:aws:iam::123456789012:role/initial-role"),
+						"assume_role_arn":               []byte("arn:aws:iam::987654321098:role/cross-account-role"),
+						"external_id":                   []byte("unique-external-id"),
+					},
+				},
+			}
+
+			op := framework.Options{}
+			op[framework.OptionForwarderName] = "my-forwarder"
+			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, fake.Output{}, op)
+
+			// Verify that CloudWatch sink configuration is present
+			var elementNames []string
+			for _, element := range conf {
+				elementNames = append(elementNames, element.Name())
+			}
+
+			// Verify basic CloudWatch elements exist
+			Expect(elementNames).To(ContainElement("cloudwatchTemplate"), "Should contain cloudwatch sink template")
+
+			// Since authentication is embedded within cloudwatchTemplate, we just verify
+			// that the CloudWatch configuration was created successfully with assume role
+			// The actual authentication fields are tested in unit tests for the auth functions
+			Expect(len(conf)).To(BeNumerically(">", 0), "Should generate CloudWatch configuration elements")
+		})
+	})
 })

@@ -449,6 +449,43 @@ spec:
         displayName: Amazon IAM Role
         path: outputs[0].cloudwatch.authentication.iamRole
       - description: |-
+          AssumeRole specifies an additional IAM role to assume after the initial authentication.
+          This enables cross-account log forwarding where the initial role is used to authenticate,
+          and then this role is assumed to access CloudWatch in another account.
+        displayName: Cross-Account Assume Role
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole
+      - description: |-
+          ExternalID points to the secret containing the external ID required for assuming the role.
+          This is an optional security measure used to ensure that only the intended entity can assume the role.
+        displayName: External ID Secret
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.externalID
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.externalID.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.externalID.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: RoleARN points to the secret containing the ARN of the role to
+          assume for cross-account access.
+        displayName: Assume Role ARN Secret
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.roleARN
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].cloudwatch.authentication.iamRole.assumeRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
           RoleARN points to the secret containing the role ARN to be used for authentication.
           This is used for authentication in STS-enabled clusters.
         displayName: RoleARN Secret

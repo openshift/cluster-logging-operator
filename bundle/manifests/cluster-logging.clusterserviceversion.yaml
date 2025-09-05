@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-09-03T01:08:59Z"
+    createdAt: "2025-09-05T19:11:58Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2095,11 +2095,20 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
+                volumeMounts:
+                - mountPath: /etc/capabilities
+                  name: capabilities
+                  readOnly: true
               nodeSelector:
                 kubernetes.io/os: linux
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: cluster-logging-operator
+              volumes:
+              - configMap:
+                  name: capabilities
+                  optional: true
+                name: capabilities
     strategy: deployment
   installModes:
   - supported: true

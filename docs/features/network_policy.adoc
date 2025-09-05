@@ -1,20 +1,24 @@
-= NetworkPolicy for Collector Pods
+= NetworkPolicies for Logging Components
 
-The Cluster Logging Operator automatically creates and manages a `NetworkPolicy` for its collector pods to ensure they function in restrictive network environments, even if a cluster-wide `AdminNetworkPolicy` would otherwise block their traffic.
+The Cluster Logging Operator automatically creates and manages `NetworkPolicy` resources for its logging components to ensure they function in restrictive network environments, even if a cluster-wide `AdminNetworkPolicy` would otherwise block their traffic.
 
 == Overview
 
-When a `ClusterLogForwarder` is deployed, the operator creates a permissive `NetworkPolicy` that allows all ingress and egress traffic for the collector pods. This ensures that log collection can function properly even when:
+When logging components are deployed, the operator creates permissive `NetworkPolicy` resources to ensure proper functionality even when:
 
 * Restrictive default `NetworkPolicies` are in place
 * `AdminNetworkPolicy` configurations limit pod communications
 * Namespace-level network restrictions are applied
 
-The `NetworkPolicy` is automatically created and removed along with the collector deployment lifecycle. 
+The `NetworkPolicy` resources are automatically created and removed along with the component deployment lifecycle.
 
 The `NetworkPolicy` can directly be edited by the cluster administrator and won't be reconciled by the operator upon updates.
 
-== NetworkPolicy Configuration
+== Collector NetworkPolicy
+
+When a `ClusterLogForwarder` is deployed, the operator creates a permissive `NetworkPolicy` that allows all ingress and egress traffic for the collector pods.
+
+=== Configuration
 
 The operator creates a `NetworkPolicy` for the collector with the following characteristics:
 
@@ -22,7 +26,7 @@ The operator creates a `NetworkPolicy` for the collector with the following char
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: <COLLECTOR-INSTANCE-NAME>
+  name: collector-<COLLECTOR-INSTANCE-NAME>
   namespace: <COLLECTOR-NAMESPACE>
   labels:
     app.kubernetes.io/name: vector
@@ -48,9 +52,46 @@ spec:
     - {}  # Allow all egress traffic
 ```
 
+== LogFileMetricExporter NetworkPolicy
+
+When a `LogFileMetricExporter` is deployed, the operator creates a `NetworkPolicy` that allows ingress traffic for the metric exporter pods to serve metrics.
+
+=== Configuration
+
+The operator creates a `NetworkPolicy` for the LogFileMetricExporter with the following characteristics:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lfme-<LFME-INSTANCE-NAME>
+  namespace: <LFME-NAMESPACE>
+  labels:
+    app.kubernetes.io/name: logfilesmetricexporter
+    app.kubernetes.io/instance: <LFME-INSTANCE-NAME>
+    app.kubernetes.io/component: logfilesmetricexporter
+    app.kubernetes.io/part-of: cluster-logging
+    app.kubernetes.io/managed-by: cluster-logging-operator
+    app.kubernetes.io/version: <CLO-VERSION>
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: logfilesmetricexporter
+      app.kubernetes.io/instance: <LFME-INSTANCE-NAME>
+      app.kubernetes.io/component: logfilesmetricexporter
+      app.kubernetes.io/part-of: cluster-logging
+      app.kubernetes.io/managed-by: cluster-logging-operator
+  policyTypes:
+    - Ingress
+  ingress:
+    - {}  # Allow all ingress traffic for metrics collection
+```
+
+NOTE: The LogFileMetricExporter NetworkPolicy only configures ingress rules since it primarily serves metrics and does not need to make outbound connections like the collector.
+
 == AdminNetworkPolicy Delegation
 
-When an `AdminNetworkPolicy` (ANP) is used in your cluster to enforce network restrictions, you may need to configure delegation to allow the collector's `NetworkPolicy` to take precedence for log collection traffic.
+When an `AdminNetworkPolicy` (ANP) is used in your cluster to enforce network restrictions, you may need to configure delegation to allow the logging components' `NetworkPolicy` resources to take precedence for their traffic.
 
 === Understanding the Hierarchy
 
@@ -58,11 +99,11 @@ OpenShift network policy precedence (highest to lowest priority):
 
 1. **AdminNetworkPolicy** - Cluster-admin controlled, highest priority
 2. **BaselineAdminNetworkPolicy** - Default fallback rules  
-3. **NetworkPolicy** - Namespace-level policies (where collector policies reside)
+3. **NetworkPolicy** - Namespace-level policies (where logging component policies reside)
 
 === Delegation Configuration
 
-To ensure collector pods can communicate properly when an `AdminNetworkPolicy` is blocking traffic, create an `AdminNetworkPolicy` rule that delegates to `NetworkPolicy` for collector traffic:
+To ensure logging component pods can communicate properly when an `AdminNetworkPolicy` is blocking traffic, create `AdminNetworkPolicy` rules that delegate to `NetworkPolicy` for each component:
 
 ==== Example: Delegating Collector Traffic
 
@@ -86,16 +127,50 @@ spec:
           app.kubernetes.io/part-of: cluster-logging
           app.kubernetes.io/component: collector
   ingress:
-    - name: "delegate-to-collector-ingress"
-      action: "Pass"  # Pass to collector NetworkPolicy
+    - name: delegate-to-collector-ingress
+      action: Pass  # Pass to collector NetworkPolicy
       from:
-        - {}  # Delegate decisions for traffic coming from any source
+        - namespaces: {}  # Delegate decisions for traffic coming from any source
   egress:
-    - name: "delegate-to-collector-egress"
-      action: "Pass"  # Pass to collector NetworkPolicy
-      to:
-        - {}  # Delegate decisions for traffic going to any destination
+    - name: delegate-to-collector-egress
+      action: Pass  # Pass to collector NetworkPolicy
+      to: # Delegate decisions for all egress traffic
+        - namespaces: {} 
+        - networks:
+            - 0.0.0.0/0
+            - ::/0
+        - nodes: {}
 ```
+
+==== Example: Delegating LogFileMetricExporter Traffic
+
+```yaml
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: allow-logging-lfme-delegation
+spec:
+  priority: 51  # Adjust based on your cluster's ANP priority scheme. Lower number means higher priority
+  subject:
+    pods: # Target the LFME pods
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-logging
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: logfilesmetricexporter
+          app.kubernetes.io/instance: instance
+          app.kubernetes.io/managed-by: cluster-logging-operator
+          app.kubernetes.io/part-of: cluster-logging
+          app.kubernetes.io/component: logfilesmetricexporter
+  ingress:
+    - name: delegate-to-lfme-ingress
+      action: Pass  # Pass to LFME NetworkPolicy
+      from:
+        - namespaces: {}
+```
+
+NOTE: The LogFileMetricExporter example only includes ingress delegation since its NetworkPolicy only defines ingress rules.
 
 == References
 

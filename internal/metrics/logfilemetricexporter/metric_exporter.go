@@ -13,6 +13,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -53,6 +54,11 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 
 	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, exporterPortName, ExporterMetricsSecretName, exporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
+		return err
+	}
+
+	if err := network.ReconcileNetworkPolicy(requestClient, lfmeInstance.Namespace, "lfme-"+resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, []networkingv1.PolicyType{networkingv1.PolicyTypeIngress}, owner, commonLabels); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileNetworkPolicy")
 		return err
 	}
 

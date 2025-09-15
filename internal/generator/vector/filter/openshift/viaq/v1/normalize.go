@@ -133,7 +133,6 @@ if ._internal.log_type != "audit" && exists(._internal.level) {
 	SetLogSourceOnRoot  = ".log_source = ._internal.log_source"
 	SetKubernetesOnRoot = `
 .kubernetes = ._internal.kubernetes
-.kubernetes.container_iostream = ._internal.stream
 if exists(._internal.dedot_labels) {.kubernetes.labels = del(._internal.dedot_labels) }
 if exists(._internal.dedot_namespace_labels) {.kubernetes.namespace_labels = del(._internal.dedot_namespace_labels) }
 del(.kubernetes.node_labels)

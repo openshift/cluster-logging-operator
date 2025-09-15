@@ -30,6 +30,7 @@ type = "socket"
 inputs = ["example_parse_encoding"]
 address = "logserver:514"
 mode = "tcp"
+keepalive.time_secs = 60
 
 [sinks.example.encoding]
 codec = "syslog"

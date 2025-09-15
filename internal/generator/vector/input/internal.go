@@ -29,11 +29,12 @@ const (
 ._internal = merge!(._internal,._internal.structured)
 `
 
-	setClusterID            = `._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}`
-	setOpenshiftSequence    = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
-	setEnvelope             = `. = {"_internal": .}`
-	setEnvelopeToStructured = `. = {"_internal": {"structured": .}}`
-	setHostName             = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
+	setClusterID                   = `._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}`
+	setOpenshiftSequence           = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
+	setEnvelope                    = `. = {"_internal": .}`
+	setKubernetesContainerIOStream = `if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}`
+	setEnvelopeToStructured        = `. = {"_internal": {"structured": .}}`
+	setHostName                    = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
 )
 
 // NewAuditInternalNormalization returns configuration elements to normalize audit log entries to an internal, common data model
@@ -60,18 +61,22 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 // NewInternalNormalization returns configuration elements to normalize log entries to an internal, common data model
 func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
 	logTypeVRL := fmt.Sprintf(fmtLogType, logType)
+	vrls := []string{setEnvelope}
+
 	if logSource == obs.InfrastructureSourceContainer {
 		logTypeVRL = logTypeContainer
+		// Add kubernetes container iostream for all container sources
+		vrls = append(vrls, setKubernetesContainerIOStream)
 	}
-	vrls := []string{
-		setEnvelope,
+	vrls = append(vrls,
 		fmt.Sprintf(fmtLogSource, logSource),
 		logTypeVRL,
 		setHostName,
 		setClusterID,
 		setOpenshiftSequence,
 		v1.SetLogLevel,
-	}
+	)
+
 	vrls = append(vrls, addVRLs...)
 	return elements.Remap{
 		ComponentID: id,

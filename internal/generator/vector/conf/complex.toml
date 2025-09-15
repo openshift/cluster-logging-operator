@@ -32,6 +32,7 @@ source = '''
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if !exists(._internal.level) {
     level = "default"
@@ -131,6 +132,7 @@ source = '''
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''
 
 # Logs from openshift audit
@@ -157,6 +159,7 @@ source = '''
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''
 
 # Logs from ovn audit
@@ -179,6 +182,7 @@ source = '''
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if !exists(._internal.level) {
     level = "default"
@@ -268,6 +272,7 @@ source = '''
 
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if !exists(._internal.level) {
     level = "default"
@@ -336,6 +341,7 @@ source = '''
   ._internal.log_source = "node"
   ._internal.log_type = "infrastructure"
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
   	._internal.level = "trace"
@@ -438,6 +444,7 @@ source = '''
 
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if !exists(._internal.level) {
     level = "default"
@@ -505,8 +512,7 @@ source = '''
 type = "remap"
 inputs = ["pipeline_pipeline_my_labels_0"]
 source = '''
-  if ._internal.log_type != "receiver" { ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")}
-   if exists(._internal.hostname) { .hostname = ._internal.hostname }
+  if exists(._internal.hostname) { .hostname = ._internal.hostname }
   .log_type = ._internal.log_type
   .log_source = ._internal.log_source
 

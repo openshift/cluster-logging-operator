@@ -106,5 +106,4 @@ if !exists(._internal.structured) {
 if exists(._internal.openshift) {.openshift = ._internal.openshift}
 if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels) }
 `
-	SetOpenShiftSequence = `if ._internal.log_type != "receiver" { ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")}`
 )

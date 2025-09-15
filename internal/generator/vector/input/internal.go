@@ -2,13 +2,15 @@ package input
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
+
+	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
+
+	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
 )
 
 const (
@@ -28,6 +30,7 @@ const (
 `
 
 	setClusterID            = `._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}`
+	setOpenshiftSequence    = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
 	setEnvelope             = `. = {"_internal": .}`
 	setEnvelopeToStructured = `. = {"_internal": {"structured": .}}`
 	setHostName             = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
@@ -44,6 +47,7 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 		fmt.Sprintf(fmtLogType, obs.InputTypeAudit),
 		setHostName,
 		setClusterID,
+		setOpenshiftSequence,
 	)
 	vrls = append(vrls, addVRLs...)
 	return elements.Remap{
@@ -65,6 +69,7 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		logTypeVRL,
 		setHostName,
 		setClusterID,
+		setOpenshiftSequence,
 		v1.SetLogLevel,
 	}
 	vrls = append(vrls, addVRLs...)
@@ -82,6 +87,7 @@ func NewJournalInternalNormalization(id string, logSource interface{}, envelopeV
 		fmt.Sprintf(fmtLogSource, logSource),
 		fmt.Sprintf(fmtLogType, obs.InputTypeInfrastructure),
 		setClusterID,
+		setOpenshiftSequence,
 	}
 	vrls = append(vrls, addVRLs...)
 	return elements.Remap{

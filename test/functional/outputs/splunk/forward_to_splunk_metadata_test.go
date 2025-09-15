@@ -2,11 +2,15 @@ package splunk
 
 import (
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"regexp"
 	"time"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/splunk"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,7 +19,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	v1 "k8s.io/api/core/v1"
-	"strings"
 )
 
 var _ = Describe("Forwarding to Splunk with Metadata", func() {
@@ -53,7 +56,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -108,7 +111,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write audit logs
 			writeAuditLogs := framework.WriteK8sAuditLog(2)
@@ -171,7 +174,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -216,7 +219,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -253,7 +256,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			if inputType == obs.InputTypeApplication {
 				if expSource == "" {
@@ -319,7 +322,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"

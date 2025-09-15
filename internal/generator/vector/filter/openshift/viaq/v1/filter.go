@@ -2,12 +2,13 @@ package v1
 
 import (
 	"fmt"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
 )
 
 const (
@@ -18,7 +19,6 @@ const (
 func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
 
 	vrls := []string{
-		SetOpenShiftSequence,
 		SetHostnameOnRoot,
 		SetLogTypeOnRoot,
 		SetLogSourceOnRoot,

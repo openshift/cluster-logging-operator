@@ -2,10 +2,14 @@ package splunk
 
 import (
 	"fmt"
+	"time"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/splunk"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"time"
+
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,34 +18,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	v1 "k8s.io/api/core/v1"
-	"strings"
 )
 
 const SplunkSecretName = "splunk-secret"
-
-func WaitOnSplunk(f *functional.CollectorFunctionalFramework) {
-	time.Sleep(20 * time.Second)
-	Eventually(func() string {
-		// Run the Splunk CLI status command to check if splunkd is running
-		output, err := f.SplunkHealthCheck()
-		if err != nil {
-			return output
-		}
-		return output
-	}, 90*time.Second, 3*time.Second).Should(ContainSubstring("HEC is healthy"))
-	time.Sleep(1 * time.Second)
-	Eventually(func() string {
-		// Run the Splunk CLI status command to check if splunkd is running
-		output, err := f.ReadSplunkStatus()
-		if err != nil {
-			return output
-		}
-		return output
-	}, 15*time.Second, 3*time.Second).Should(SatisfyAll(
-		ContainSubstring("splunkd is running"),
-		ContainSubstring("splunk helpers are running"),
-	))
-}
 
 var _ = Describe("Forwarding to Splunk", func() {
 	var (
@@ -73,7 +52,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Wait for splunk to be ready
-		WaitOnSplunk(framework)
+		splunk.WaitOnSplunk(framework)
 
 		// Write app logs
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -105,7 +84,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Wait for splunk to be ready
-		WaitOnSplunk(framework)
+		splunk.WaitOnSplunk(framework)
 
 		// Write audit logs
 		timestamp, _ := time.Parse(time.RFC3339Nano, "2024-04-16T09:46:19.116+00:00")
@@ -149,7 +128,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
@@ -192,7 +171,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Wait for splunk to be ready
-			WaitOnSplunk(framework)
+			splunk.WaitOnSplunk(framework)
 
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"

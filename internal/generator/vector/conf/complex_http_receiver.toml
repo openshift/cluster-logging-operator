@@ -258,6 +258,7 @@ type = "remap"
 inputs = ["input_infrastructure_container"]
 source = '''
   . = {"_internal": .}
+  if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
   ._internal.log_source = "container"
 
     # If namespace is infra, label log_type as infra
@@ -471,6 +472,7 @@ type = "remap"
 inputs = ["input_mytestapp_container"]
 source = '''
   . = {"_internal": .}
+  if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
   ._internal.log_source = "container"
 
     # If namespace is infra, label log_type as infra
@@ -617,7 +619,6 @@ source = '''
     ._internal.dedot_openshift_labels = set!(._internal.dedot_openshift_labels,[newkey],value)
   }}
   .kubernetes = ._internal.kubernetes
-  .kubernetes.container_iostream = ._internal.stream
   if exists(._internal.dedot_labels) {.kubernetes.labels = del(._internal.dedot_labels) }
   if exists(._internal.dedot_namespace_labels) {.kubernetes.namespace_labels = del(._internal.dedot_namespace_labels) }
   del(.kubernetes.node_labels)

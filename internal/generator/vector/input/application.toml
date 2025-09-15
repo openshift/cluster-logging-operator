@@ -19,7 +19,7 @@ type = "remap"
 inputs = ["input_application_container"]
 source = '''
   . = {"_internal": .}
-
+  if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
   ._internal.log_source = "container"
   # If namespace is infra, label log_type as infra
   if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {

@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -77,6 +78,100 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Level).To(BeEmpty())
 
 		})
+
+		// https://issues.redhat.com/browse/LOG-7622
+		Context("when forwarding to splunk", func() {
+			It("should keep minimal fields and contain .kubernetes.container_iostream", func() {
+				f = functional.NewCollectorFunctionalFramework()
+
+				var secretKey = internalobs.NewSecretReference("hecToken", "do-not-tell")
+				var secret *v1.Secret
+
+				testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+					FromInput(obs.InputTypeApplication).
+					WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+						spec.Type = obs.FilterTypePrune
+						spec.PruneFilterSpec = &obs.PruneFilterSpec{
+							NotIn: []obs.FieldPath{".kubernetes", ".log_type", ".log_source", ".message", ".timestamp"},
+						}
+					}).ToSplunkOutput(*secretKey)
+
+				secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,
+					map[string][]byte{
+						secretKey.Key: functional.HecToken,
+					},
+				)
+				f.Secrets = append(f.Secrets, secret)
+
+				Expect(f.Deploy()).To(BeNil())
+				time.Sleep(90 * time.Second)
+
+				msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+				Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+				logs, err := f.ReadAppLogsByIndexFromSplunk("*")
+				Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+				Expect(logs).ToNot(BeEmpty())
+
+				// Parse the logs
+				var appLogs []types.ApplicationLog
+				jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+				err = types.ParseLogsFrom(jsonString, &appLogs, false)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+				Expect(appLogs).ToNot(BeEmpty())
+
+				log := appLogs[0]
+				Expect(log.Kubernetes).ToNot(BeNil())
+				Expect(log.Kubernetes.ContainerStream).ToNot(BeEmpty())
+			})
+
+			It("should prune .kubernetes.container_iostream field", func() {
+				f = functional.NewCollectorFunctionalFramework()
+
+				var secretKey = internalobs.NewSecretReference("hecToken", "do-not-tell")
+				var secret *v1.Secret
+				var fieldToPrune = obs.FieldPath(".kubernetes.container_iostream")
+
+				testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+					FromInput(obs.InputTypeApplication).
+					WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+						spec.Type = obs.FilterTypePrune
+						spec.PruneFilterSpec = &obs.PruneFilterSpec{
+							In: []obs.FieldPath{fieldToPrune},
+						}
+					}).ToSplunkOutput(*secretKey)
+
+				secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,
+					map[string][]byte{
+						secretKey.Key: functional.HecToken,
+					},
+				)
+				f.Secrets = append(f.Secrets, secret)
+
+				Expect(f.Deploy()).To(BeNil())
+				time.Sleep(90 * time.Second)
+
+				msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+				Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+				// Read logs and verify the field was pruned
+				logs, err := f.ReadAppLogsByIndexFromSplunk("*")
+				Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+				Expect(logs).ToNot(BeEmpty())
+
+				// Parse the logs
+				var appLogs []types.ApplicationLog
+				jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+				err = types.ParseLogsFrom(jsonString, &appLogs, false)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+				Expect(appLogs).ToNot(BeEmpty())
+
+				// Verify the pruned field is not present
+				log := appLogs[0]
+				Expect(log.Kubernetes.ContainerStream).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", fieldToPrune))
+			})
+		})
+
 	})
 
 	Context("minimal set of fields (.log_type, .log_source, .message, .timestamp) for each output", func() {

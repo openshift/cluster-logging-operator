@@ -29,6 +29,7 @@ func (kl KubernetesLogs) Template() string {
 [sources.{{.ComponentID}}]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
+max_merged_line_bytes = 65536
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 {{- if gt (len .IncludePaths) 0}}

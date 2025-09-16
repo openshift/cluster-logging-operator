@@ -1,4 +1,4 @@
-package cloudwatch
+package s3
 
 import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -27,7 +27,7 @@ func NewAuth() Auth {
 }
 
 func (a Auth) Name() string {
-	return "awsAuthTemplate"
+	return "awsS3AuthTemplate"
 }
 
 func (a Auth) Template() string {

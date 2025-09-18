@@ -34,4 +34,5 @@ source = '''
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''

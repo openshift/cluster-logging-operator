@@ -15,6 +15,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
+	"github.com/openshift/cluster-logging-operator/test/helpers/splunk"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -66,6 +68,8 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.LogType).ToNot(BeNil())
 			Expect(log.Kubernetes).ToNot(BeNil())
 			Expect(log.Openshift).ToNot(BeNil())
+			Expect(log.Openshift.Sequence).ToNot(BeNil())
+			Expect(log.Openshift.Sequence).ToNot(BeEmpty())
 			Expect(log.Timestamp).ToNot(BeNil())
 			Expect(log.TimestampLegacy).ToNot(BeNil())
 			Expect(log.Kubernetes.Annotations).ToNot(BeNil())
@@ -76,6 +80,52 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Kubernetes.NamespaceName).To(BeEmpty())
 			Expect(log.Level).To(BeEmpty())
 
+		})
+
+		It("should prune .openshift.sequence field", func() {
+			f = functional.NewCollectorFunctionalFramework()
+
+			var secretKey = internalobs.NewSecretReference("hecToken", "do-not-tell")
+			var secret *v1.Secret
+			var fieldToPrune = obs.FieldPath(".openshift.sequence")
+
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						In: []obs.FieldPath{fieldToPrune},
+					}
+				}).ToSplunkOutput(*secretKey)
+
+			secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,
+				map[string][]byte{
+					secretKey.Key: functional.HecToken,
+				},
+			)
+			f.Secrets = append(f.Secrets, secret)
+
+			Expect(f.Deploy()).To(BeNil())
+			splunk.WaitOnSplunk(f)
+
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+			// Read logs and verify the field was pruned
+			logs, err := f.ReadAppLogsByIndexFromSplunk("*")
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			// Parse the logs
+			var appLogs []types.ApplicationLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &appLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(appLogs).ToNot(BeEmpty())
+
+			// Verify the pruned field is not present
+			log := appLogs[0]
+			Expect(log.Openshift.Sequence).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", fieldToPrune))
 		})
 	})
 
@@ -122,8 +172,10 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			f.Secrets = append(f.Secrets, secret)
 
 			Expect(f.Deploy()).To(BeNil())
-			time.Sleep(90 * time.Second)
 
+			splunk.WaitOnSplunk(f)
+
+			// Write logs
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 

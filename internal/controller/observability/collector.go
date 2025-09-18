@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// ReconcileCollector generates and deploys all resources required by the ClusterLogForwarder
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
 
 	if err = reconcile.SecurityContextConstraints(context.Client, context.Reader, auth.NewSCC()); err != nil {
@@ -47,7 +48,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Set kubeapi and rollout options based on annotation (LOG-7196)
-	// TODO: replace with API fields
 	SetKubeCacheOption(context.Forwarder.Annotations, options)
 	SetMaxUnavailableRolloutOption(context.Forwarder.Annotations, options)
 
@@ -81,15 +81,16 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
-	credCm, err := cloudwatch.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
-	if err != nil {
-		log.V(9).Error(err, "collector.ReconcileAWSProfileConfig")
-		return err
-	}
-
-	// Add generated credentials configmap to contexts to be mounted in pod
-	if credCm != nil {
-		context.ConfigMaps[credCm.Name] = credCm
+	// Create an AWS credentials file containing role profiles
+	if cloudwatch.IsCloudwatchRoleAuth(context.Forwarder.Spec.Outputs) {
+		awsCredsFile, err := cloudwatch.ReconcileCredentialsFile(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+		if err != nil {
+			log.V(3).Error(err, "cloudwatch.ReconcileCredentialsFile")
+			return err
+		}
+		if awsCredsFile != nil {
+			context.ConfigMaps[awsCredsFile.Name] = awsCredsFile
+		}
 	}
 
 	var collectorConfig string
@@ -102,7 +103,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
 		log.Error(err, "unable to calculate MD5 hash")
-		log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 		return
 	}
 

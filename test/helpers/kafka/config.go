@@ -363,7 +363,7 @@ const (
       # Hostname and port the broker will advertise to producers and consumers. If not set,
       # it uses the value for "listeners" if configured.  Otherwise, it will use the value
       # returned from java.net.InetAddress.getCanonicalHostName().
-      advertised.listeners=PLAINTEXT://localhost:9092,SSL://localhost:9093
+      #advertised.listeners=PLAINTEXT://localhost:9092,SSL://localhost:9093
       #init#advertised.listeners=PLAINTEXT://#init#
 
       # Maps listener names to security protocols, the default is for them to be the same. See the config documentation for more details

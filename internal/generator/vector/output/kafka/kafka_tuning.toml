@@ -25,3 +25,6 @@ max_bytes = 10000000
 type = "disk"
 when_full = "block"
 max_size = 268435488
+
+[sinks.kafka_receiver.librdkafka_options]
+"message.max.bytes" = "10000000"

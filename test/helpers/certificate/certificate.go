@@ -115,6 +115,10 @@ func NewCA(signer *CertKey, org string) *CertKey {
 	}, signer)
 }
 
+var (
+	LoopBackAddresses = []interface{}{"localhost", net.IPv4(127, 0, 0, 1), net.IPv6loopback}
+)
+
 // NewCert creates a dummy server cert signed by signer, or self-signed if signer is nil.
 // The addrs list can contain strings (DNS names) or net.IP addresses, if addrs
 // is empty will use "localhost", v4 and v6 loopback
@@ -124,7 +128,7 @@ func NewCert(signer *CertKey, org string, addrs ...interface{}) *CertKey {
 		ips []net.IP
 	)
 	if len(addrs) == 0 {
-		addrs = []interface{}{"localhost", net.IPv4(127, 0, 0, 1), net.IPv6loopback}
+		addrs = LoopBackAddresses
 	}
 	for _, a := range addrs {
 		switch a := a.(type) {

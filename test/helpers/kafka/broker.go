@@ -3,8 +3,9 @@ package kafka
 import (
 	"bytes"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -350,12 +351,12 @@ func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 	return runtime.NewConfigMap(namespace, DeploymentName, data)
 }
 
-func NewBrokerSecret(namespace string) *v1.Secret {
+func NewBrokerSecret(namespace string, addrs ...interface{}) *v1.Secret {
 	// Intermediate CA is part of the test for BZ 1904380
 	// Don't remove it.
 	rootCA := certificate.NewCA(nil, "Root CA")
 	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
-	serverCert := certificate.NewCert(intermediateCA, "Server")
+	serverCert := certificate.NewCert(intermediateCA, "Server", addrs...)
 	clientCert := certificate.NewCert(intermediateCA, "Client")
 
 	data := map[string][]byte{

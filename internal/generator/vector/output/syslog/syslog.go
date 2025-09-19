@@ -2,10 +2,11 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"net/url"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
@@ -95,6 +96,9 @@ type = "socket"
 inputs = {{.Inputs}}
 address = "{{.Address}}"
 mode = "{{.Mode}}"
+{{if eq .Mode "tcp"}}
+keepalive.time_secs = 60
+{{end}}
 {{end}}`
 }
 

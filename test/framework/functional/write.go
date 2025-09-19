@@ -134,6 +134,31 @@ func (f *CollectorFunctionalFramework) WritesApplicationLogsWithDelay(numOfLogs 
 	return f.WritesNApplicationLogsOfSize(numOfLogs, 100, delay)
 }
 
+func (f *CollectorFunctionalFramework) WriteApplicationLogOfSizeAsPartials(size int) error {
+	partialLimit := 1000
+	partialMsg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout P $msg "
+	numOfLogs := size / partialLimit
+
+	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(file)
+	if numOfLogs > 1 {
+		log.V(3).Info("Writing message to app log with path", "path", logPath)
+		result, err := f.RunCommand(constants.CollectorName, "bash", "-c",
+			fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", logPath, partialLimit, numOfLogs, partialMsg, file))
+		log.V(3).Info("WriteApplicationLogOfSizeAsPartials: partials", "namespace", f.Pod.Namespace, "result", result, "err", err)
+		if err != nil {
+			return err
+		}
+	}
+
+	finalMsg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
+	finalLength := size - (numOfLogs * partialLimit)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c",
+		fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1); echo %s >> %s'", logPath, finalLength, finalMsg, file))
+	log.V(3).Info("WriteApplicationLogOfSizeAsPartials: full", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
 func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int, delay float32) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)

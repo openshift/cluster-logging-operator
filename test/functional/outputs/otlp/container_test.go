@@ -2,6 +2,8 @@ package otlp
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -12,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types/otlp"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"golang.org/x/exp/maps"
-	"time"
 )
 
 var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
@@ -79,19 +80,19 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 				otlp.OpenshiftClusterUID: MatchRegexp(".*"),
 				otlp.OpenshiftLogSource:  BeEquivalentTo(obs.InfrastructureSourceContainer),
 				otlp.OpenshiftLogType:    BeEquivalentTo(obs.InputTypeApplication),
-				otlp.NodeName:            MatchRegexp(".*"),
+				otlp.K8sNodeName:         MatchRegexp(".*"),
 				otlp.K8sNamespaceName:    BeEquivalentTo(appNamespace),
 				otlp.K8sContainerName:    MatchRegexp(".*"),
 				otlp.K8sPodName:          BeEquivalentTo(framework.Pod.Name),
 				otlp.K8sPodID:            BeEquivalentTo(framework.Pod.UID),
 				// deprecated
-				otlp.OpenshiftClusterID:      MatchRegexp(".*"),
-				otlp.KubernetesHost:          MatchRegexp(".*"),
 				otlp.LogSource:               BeEquivalentTo(obs.InfrastructureSourceContainer),
 				otlp.LogType:                 BeEquivalentTo(obs.InputTypeApplication),
+				otlp.KubernetesContainerName: MatchRegexp(".*"),
+				otlp.KubernetesHost:          MatchRegexp(".*"),
 				otlp.KubernetesNamespaceName: BeEquivalentTo(appNamespace),
 				otlp.KubernetesPodName:       BeEquivalentTo(framework.Pod.Name),
-				otlp.KubernetesContainerName: MatchRegexp(".*"),
+				otlp.OpenshiftClusterID:      MatchRegexp(".*"),
 			}
 			for key, value := range framework.Pod.Labels {
 				expResourceAttributes[fmt.Sprintf("k8s.pod.label.%s", key)] = BeEquivalentTo(value)

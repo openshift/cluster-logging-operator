@@ -2,6 +2,10 @@ package otlp
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -15,10 +19,6 @@ import (
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"golang.org/x/exp/maps"
 	"k8s.io/apiserver/pkg/apis/audit"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
@@ -71,14 +71,14 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 
 			expResourceAttributes := map[string]types.GomegaMatcher{
 				otlp.OpenshiftClusterUID: MatchRegexp(".*"),
-				otlp.OpenshiftLogType:    BeEquivalentTo(obs.InputTypeAudit),
 				otlp.OpenshiftLogSource:  BeEquivalentTo(auditSource),
-				otlp.NodeName:            MatchRegexp(".*"),
+				otlp.OpenshiftLogType:    BeEquivalentTo(obs.InputTypeAudit),
+				otlp.K8sNodeName:         MatchRegexp(".*"),
 				// deprecated
-				otlp.OpenshiftClusterID: MatchRegexp(".*"),
-				otlp.KubernetesHost:     MatchRegexp(".*"),
-				otlp.LogType:            BeEquivalentTo(obs.InputTypeAudit),
 				otlp.LogSource:          BeEquivalentTo(auditSource),
+				otlp.LogType:            BeEquivalentTo(obs.InputTypeAudit),
+				otlp.KubernetesHost:     MatchRegexp(".*"),
+				otlp.OpenshiftClusterID: MatchRegexp(".*"),
 			}
 
 			for key, value := range openShiftLabels {
@@ -145,8 +145,8 @@ func validateHostLog(logLine string, logRecord otlp.LogRecord) {
 	auditdType := strings.Split(parts[0], "=")[1]
 	sequence := strings.Split(parts[1], ":")[1]
 	expLogAttributes := map[string]types.GomegaMatcher{
-		otlp.AuditdType:     BeEquivalentTo(auditdType),
-		otlp.AuditdSequence: BeEquivalentTo(sequence),
+		otlp.AuditdType:  BeEquivalentTo(auditdType),
+		otlp.LogSequence: BeEquivalentTo(sequence),
 	}
 
 	Expect(logRecord.SeverityText).To(BeEquivalentTo("default"))
@@ -168,7 +168,7 @@ func validateOvnLog(logLine string, logRecord otlp.LogRecord) {
 	Expect(logRecord.SeverityText).To(BeEquivalentTo(strings.ToLower(severity)))
 
 	expLogAttributes := map[string]types.GomegaMatcher{
-		otlp.K8sOVNSequence:  BeEquivalentTo(sequence),
+		otlp.LogSequence:     BeEquivalentTo(sequence),
 		otlp.K8sOVNComponent: BeEquivalentTo(component),
 	}
 	Expect(otlp.CollectNames(logRecord.Attributes)).To(ContainElements(maps.Keys(expLogAttributes)))
@@ -182,50 +182,15 @@ func validateOvnLog(logLine string, logRecord otlp.LogRecord) {
 func validateK8sAPILogs(logLine string, logRecord otlp.LogRecord) {
 	event := &audit.Event{}
 	test.MustUnmarshal(logLine, event)
-	expLogAttributes := map[string]types.GomegaMatcher{
-		otlp.K8sEventLevel:               BeEquivalentTo(event.Level),
-		otlp.K8sEventStage:               BeEquivalentTo(event.Stage),
-		otlp.K8sEventUserAgent:           BeEquivalentTo(event.UserAgent),
-		otlp.K8sEventRequestURI:          BeEquivalentTo(event.RequestURI),
-		otlp.K8sEventResponseCode:        Equal(strconv.Itoa(int(event.ResponseStatus.Code))),
-		otlp.K8sEventObjectRefResource:   BeEquivalentTo(event.ObjectRef.Resource),
-		otlp.K8sEventObjectRefName:       BeEquivalentTo(event.ObjectRef.Name),
-		otlp.K8sEventObjectRefNamespace:  BeEquivalentTo(event.ObjectRef.Namespace),
-		otlp.K8sEventObjectRefAPIGroup:   BeEquivalentTo(event.ObjectRef.APIGroup),
-		otlp.K8sEventObjectRefAPIVersion: BeEquivalentTo(event.ObjectRef.APIVersion),
-		otlp.K8sUserUsername:             BeEquivalentTo(event.User.Username),
-	}
-	Expect(otlp.CollectNames(logRecord.Attributes)).To(ContainElements(maps.Keys(expLogAttributes)))
-	expAttrs := maps.Keys(expLogAttributes)
-	sort.Strings(expAttrs)
-	for _, key := range expAttrs {
-		Expect(logRecord.Attribute(key).String()).To(expLogAttributes[key], key)
-	}
-	Expect(logRecord.Attribute(otlp.K8sUserGroups).Array.List()).To(ContainElements(event.User.Groups))
-	logAttributeNames := otlp.CollectNames(logRecord.Attributes)
-	Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.K8sEventAnnotationPrefix)), "Exp. some attributes with this prefix")
+	attributeNames := otlp.CollectNames(logRecord.Attributes)
+	Expect(attributeNames).ToNot(ContainElement(HavePrefix("k8s.audit.")))
+	Expect(attributeNames).ToNot(ContainElement("k8s.user."))
 }
 
 func validateOpenshiftAPILogs(logLine string, logRecord otlp.LogRecord) {
 	event := &helpertypes.OpenshiftAuditLog{}
 	test.MustUnmarshal(logLine, event)
-	expLogAttributes := map[string]types.GomegaMatcher{
-		otlp.K8sEventLevel:                           BeEquivalentTo(event.Level),
-		otlp.K8sEventStage:                           BeEquivalentTo(event.Stage),
-		otlp.K8sEventUserAgent:                       BeEquivalentTo(event.UserAgent),
-		otlp.K8sEventRequestURI:                      BeEquivalentTo(event.RequestURI),
-		otlp.K8sEventResponseCode:                    Equal(strconv.Itoa(event.ResponseStatus.Code)),
-		otlp.K8sUserUsername:                         BeEquivalentTo(event.User.Username),
-		otlp.K8sEventAnnotationAuthorizationDecision: BeEquivalentTo(event.Annotations.AuthorizationK8SIoDecision),
-		otlp.K8sEventAnnotationAuthorizationReason:   BeEquivalentTo(event.Annotations.AuthorizationK8SIoReason),
-	}
-	Expect(otlp.CollectNames(logRecord.Attributes)).To(ContainElements(maps.Keys(expLogAttributes)))
-	expAttrs := maps.Keys(expLogAttributes)
-	sort.Strings(expAttrs)
-	for _, key := range expAttrs {
-		Expect(logRecord.Attribute(key).String()).To(expLogAttributes[key], key)
-	}
-	Expect(logRecord.Attribute(otlp.K8sUserGroups).Array.List()).To(ContainElements(event.User.Groups))
-	logAttributeNames := otlp.CollectNames(logRecord.Attributes)
-	Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.K8sEventAnnotationPrefix)), "Exp. some attributes with this prefix")
+	attributeNames := otlp.CollectNames(logRecord.Attributes)
+	Expect(attributeNames).ToNot(ContainElement(HavePrefix("k8s.audit.")))
+	Expect(attributeNames).ToNot(ContainElement("k8s.user."))
 }

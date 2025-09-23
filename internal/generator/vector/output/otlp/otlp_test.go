@@ -2,6 +2,8 @@ package otlp
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -14,7 +16,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"time"
 )
 
 var _ = Describe("Generate vector config", func() {

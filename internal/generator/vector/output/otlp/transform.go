@@ -61,47 +61,11 @@ r.body = {"stringValue": string!(value)}
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 `
-	APILogAttributes = `
-r.attributes = append(r.attributes,
-  [
-    {"key": "k8s.audit.event.level", "value": {"stringValue": .level}},
-    {"key": "k8s.audit.event.stage", "value": {"stringValue": .stage}},
-    {"key": "k8s.audit.event.request.uri", "value": {"stringValue": .requestURI}},
-    {"key": "k8s.audit.event.request.verb", "value": {"stringValue": .verb}},
-    {"key": "k8s.audit.event.user_agent", "value": {"stringValue": .userAgent}},
-    {"key": "k8s.user.username", "value": {"stringValue": .user.username}}
-  ]
-)
-if exists(.responseStatus.code) {
-  r.attributes = push(r.attributes,{"key": "k8s.audit.event.response.code", "value": {"intValue": to_string!(.responseStatus.code)}})  
-}
-values = []
-for_each(array!(.user.groups)) -> |_index,group| {
-    .group = group
-    values = push(values,{"stringValue": group})
-}
-r.attributes = push(r.attributes,{"key": "k8s.user.groups", "value": {"arrayValue": {"values": values}}})
-if exists(.objectRef) {
-  r.attributes = append(r.attributes,[
-      {"key": "k8s.audit.event.object_ref.resource", "value": {"stringValue": .objectRef.resource}},
-      {"key": "k8s.audit.event.object_ref.name", "value": {"stringValue": .objectRef.name}},
-      {"key": "k8s.audit.event.object_ref.namespace", "value": {"stringValue": .objectRef.namespace}},
-      {"key": "k8s.audit.event.object_ref.api_version", "value": {"stringValue": .objectRef.apiVersion}},
-      {"key": "k8s.audit.event.object_ref.api_group", "value": {"stringValue": .objectRef.apiGroup}}
-    ]
-  )
-}
-if exists(.annotations) {for_each(object!(.annotations)) -> |key,value| {
-    r.attributes = append(r.attributes,
-        [{"key": "k8s.audit.event.annotation." + key, "value": {"stringValue": value}}]
-    )
-}}
-`
 	OVNLogAttributes = `
 # Fill up OVN logRecord object
 if exists(.level) { r.severityText = .level } 
 ovnTokens = split(to_string!(get!(.,["_internal","message"])),"|")
-if 0 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "k8s.ovn.sequence", "value": {"stringValue": ovnTokens[1] }})}
+if 0 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": ovnTokens[1] }})}
 if 1 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "k8s.ovn.component", "value": {"stringValue": ovnTokens[2] }})}
 `
 	HostLogAttributes = `
@@ -120,7 +84,7 @@ if exists(kv.msg) {
   }
   trimmed = slice!(msg_str, find!(msg_str, "(") + 1, -2)
   parts = split!(trimmed, ":")
-  r.attributes = push(r.attributes, {"key": "auditd.sequence", "value": {"stringValue": parts[1] }})
+  r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": parts[1] }})
 }
 `
 
@@ -146,16 +110,6 @@ resource.attributes = append(resource.attributes,
 `
 	NodeLogAttributes = `
 r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
-if exists(.systemd.t) {for_each(object!(.systemd.t)) -> |key,value| {
-    r.attributes = append(r.attributes,
-        [{"key": "systemd.t." + downcase(key), "value": {"stringValue": value}}]
-    )
-}}
-if exists(.systemd.u) {for_each(object!(.systemd.u)) -> |key,value| {
-    r.attributes = append(r.attributes,
-        [{"key": "systemd.u." + downcase(key), "value": {"stringValue": value}}]
-    )
-}}
 `
 	FinalGrouping = `
 # Openshift object for grouping (dropped before sending)
@@ -260,7 +214,6 @@ func auditAPILogsVRL() string {
 		LogRecord,
 		BodyFromInternal,
 		LogAttributes,
-		APILogAttributes,
 		FinalGrouping,
 	}), "\n")
 }

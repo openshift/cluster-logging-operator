@@ -2,6 +2,7 @@ package otlp
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -59,17 +60,17 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 				otlp.OpenshiftClusterUID: MatchRegexp(".*"),
 				otlp.OpenshiftLogSource:  BeEquivalentTo(obs.InfrastructureSourceNode),
 				otlp.OpenshiftLogType:    BeEquivalentTo(obs.InputTypeInfrastructure),
-				otlp.NodeName:            MatchRegexp(".*"),
+				otlp.K8sNodeName:         MatchRegexp(".*"),
 				otlp.ProcessExeName:      MatchRegexp(".*"),
 				otlp.ProcessExePath:      MatchRegexp(".*"),
 				otlp.ProcessCommandLine:  MatchRegexp(".*"),
 				otlp.ProcessPID:          MatchRegexp(".*"),
 				otlp.ServiceName:         MatchRegexp(".*"),
 				// deprecated
-				otlp.OpenshiftClusterID: MatchRegexp(".*"),
-				otlp.KubernetesHost:     MatchRegexp(".*"),
 				otlp.LogSource:          BeEquivalentTo(obs.InfrastructureSourceNode),
 				otlp.LogType:            BeEquivalentTo(obs.InputTypeInfrastructure),
+				otlp.KubernetesHost:     MatchRegexp(".*"),
+				otlp.OpenshiftClusterID: MatchRegexp(".*"),
 			}
 			for key, value := range openShiftLabels {
 				expResourceAttributes[fmt.Sprintf("%s%s", otlp.OpenshiftLabelPrefix, key)] = BeEquivalentTo(value)
@@ -95,8 +96,7 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			Expect(logRecord.SeverityText).To(Equal("err"))
 
 			logAttributeNames := otlp.CollectNames(logRecord.Attributes)
-			Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.SystemTPrefix)), "Exp. some attributes with this prefix")
-			Expect(logAttributeNames).To(ContainElement(HavePrefix(otlp.SystemUPrefix)), "Exp. some attributes with this prefix")
+			Expect(logAttributeNames).ToNot(ContainElement(HavePrefix(otlp.SystemdPrefix)), "Exp. no attributes with this prefix")
 			// (Deprecated) compatibility attribute
 			Expect(logAttributeNames).To(ContainElement(otlp.Level), "Expect logRecord attributes to contain level")
 			Expect(logRecord.Attribute(otlp.Level).String()).To(Equal("err"))

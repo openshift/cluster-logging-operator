@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	timex "time"
 )
@@ -487,6 +488,11 @@ func (in *CollectorSpec) DeepCopyInto(out *CollectorSpec) {
 	if in.NetworkPolicy != nil {
 		in, out := &in.NetworkPolicy, &out.NetworkPolicy
 		*out = new(NetworkPolicy)
+		**out = **in
+	}
+	if in.MaxUnavailable != nil {
+		in, out := &in.MaxUnavailable, &out.MaxUnavailable
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 }

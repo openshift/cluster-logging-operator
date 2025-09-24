@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	configv1 "github.com/openshift/api/config/v1"
 	loggingv1a1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
@@ -27,7 +28,10 @@ const (
 	logPods                         = "varlogpods"
 	logPodsValue                    = "/var/log/pods"
 	metricsVolumePath               = "/etc/logfilemetricexporter/metrics"
-	lfmeMaxUnavailable              = "100%"
+)
+
+var (
+	lfmeMaxUnavailable = intstr.Parse("100%")
 )
 
 // resourceRequirements returns the resource requirements for a given metric-exporter implementation

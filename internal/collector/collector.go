@@ -2,8 +2,9 @@ package collector
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
@@ -22,6 +23,9 @@ import (
 )
 
 const (
+	//DefaultMaxUnavailable is the maxUnavailable collector setting when not defined by spec.collector.maxUnavailable
+	DefaultMaxUnavailable = "100%"
+
 	defaultAudience                 = "openshift"
 	clusterLoggingPriorityClassName = "system-node-critical"
 	MetricsPort                     = int32(24231)
@@ -69,9 +73,7 @@ type Factory struct {
 	PodLabelVisitor        PodLabelVisitor
 	ResourceNames          *factory.ForwarderResourceNames
 	isDaemonset            bool
-	LogLevel               string
-	UseKubeCache           bool
-	MaxUnavailable         string
+	annotations            map[string]string
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -89,12 +91,22 @@ func (f *Factory) NodeSelector() map[string]string {
 func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
-
 func (f *Factory) Affinity() *v1.Affinity {
 	return f.CollectorSpec.Affinity
 }
+func (f *Factory) MaxUnavailable() intstr.IntOrString {
+	if f.CollectorSpec.MaxUnavailable != nil {
+		return *f.CollectorSpec.MaxUnavailable
+	}
+	if f.annotations != nil {
+		if value, found := f.annotations[constants.AnnotationMaxUnavailable]; found {
+			return intstr.Parse(value)
+		}
+	}
+	return intstr.Parse(DefaultMaxUnavailable)
+}
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string, useCache bool, maxUnavailable string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, annotations map[string]string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -113,16 +125,14 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 		ResourceNames:   resNames,
 		PodLabelVisitor: vector.PodLogExcludeLabel,
 		isDaemonset:     isDaemonset,
-		LogLevel:        logLevel,
-		UseKubeCache:    useCache,
-		MaxUnavailable:  maxUnavailable,
+		annotations:     annotations,
 	}
 	return factory
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
-	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable(), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return ds
 }
@@ -143,6 +153,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Affinity:                      f.Affinity(),
+
 		Volumes: []v1.Volume{
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
@@ -172,7 +183,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
-	f.Visit(collector, podSpec, f.ResourceNames, namespace, f.LogLevel)
+	f.Visit(collector, podSpec, f.ResourceNames, namespace, LogLevel(f.annotations))
 
 	podSpec.Containers = []v1.Container{
 		*collector,
@@ -412,4 +423,11 @@ func hasTrustedCABundle(configMap *v1.ConfigMap) (string, bool) {
 	}
 	caBundle, ok := configMap.Data[constants.TrustedCABundleKey]
 	return caBundle, ok && caBundle != ""
+}
+
+func LogLevel(annotations map[string]string) string {
+	if level, ok := annotations[constants.AnnotationVectorLogLevel]; ok {
+		return level
+	}
+	return "warn"
 }

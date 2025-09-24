@@ -17,6 +17,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
@@ -134,6 +135,14 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Network Policy",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	NetworkPolicy *NetworkPolicy `json:"networkPolicy,omitempty"`
+
+	// Define the maxUnavailable pod rollout strategy which defaults to 100% when not set
+	//
+	// Value can be a number (e.g., 50) or a percentage string (e.g., "50%").
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^(?:[0-9]{1,2}|100)%?$"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Unavailable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
 }
 
 type NetworkPolicy struct {

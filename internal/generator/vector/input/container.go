@@ -2,6 +2,8 @@ package input
 
 import (
 	"fmt"
+	"regexp"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -10,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
 )
 
 const (
@@ -37,7 +38,7 @@ var (
 )
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}, useCache bool) ([]framework.Element, []string) {
+func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	if spec.Application != nil {
@@ -51,7 +52,6 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 			IncludePaths:       includes,
 			ExcludePaths:       excludes,
 			ExtraLabelSelector: source.LabelSelectorFrom(selector),
-			UseKubeCache:       useCache,
 		},
 		NewInternalNormalization(metaID, logSource, logType, base),
 	}

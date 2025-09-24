@@ -2,13 +2,14 @@ package observability
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
-	"regexp"
-	"strings"
 )
 
 const (
@@ -18,7 +19,6 @@ const (
 var (
 	compiledMaxUnavailableRegex = regexp.MustCompile(validMaxUnavailableRegex)
 	allowedLogLevels            = sets.NewString("trace", "debug", "info", "warn", "error", "off")
-	enabledValues               = sets.NewString("true", "enabled")
 )
 
 func IsPercentOrWholeNumber(val string) bool {
@@ -36,23 +36,6 @@ func validateMaxUnavailableAnnotation(context internalcontext.ForwarderContext) 
 	}
 	// Condition is only necessary when it is invalid, otherwise we can remove
 	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeMaxUnavailable)
-}
-
-func IsEnabledValue(val string) bool {
-	return enabledValues.Has(strings.ToLower(val))
-}
-
-func validateUseKubeCacheAnnotation(context internalcontext.ForwarderContext) {
-	if value, ok := context.Forwarder.Annotations[constants.AnnotationKubeCache]; ok {
-		if !IsEnabledValue(value) {
-			condition := internalobs.NewCondition(obs.ConditionTypeUseKubeCache, obs.ConditionFalse, obs.ReasonKubeCacheSupported, "")
-			condition.Message = fmt.Sprintf("use-apiserver-cache value %q must be one of [%s]", value, strings.Join(enabledValues.List(), ", "))
-			internalobs.SetCondition(&context.Forwarder.Status.Conditions, condition)
-			return
-		}
-	}
-	// Condition is only necessary when it is invalid, otherwise we can remove
-	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeUseKubeCache)
 }
 
 func validateLogLevelAnnotation(context internalcontext.ForwarderContext) {

@@ -18,16 +18,7 @@ const (
 
 	AnnotationSecretHash = "observability.openshift.io/secret-hash"
 
-	// AnnotationKubeCache is used to enable caching for requests to the kube-apiserver using vector kubernetes_logs source.
-	// Tech-Preview feature
-	//
-	// While enabling cache can significantly reduce Kubernetes control plane
-	// memory pressure, the trade-off is a chance of receiving stale data.
-	AnnotationKubeCache = "observability.openshift.io/use-apiserver-cache"
-
-	// AnnotationMaxUnavailable configures the maximum number of DaemonSet pods that can be unavailable during a rolling update.
-	// Tech-Preview feature
-	//
+	// AnnotationMaxUnavailable (Deprecated) configures the maximum number of DaemonSet pods that can be unavailable during a rolling update.
 	// This can be an absolute number (e.g., 1) or a percentage (e.g., 10%). Default is 100%.
 	AnnotationMaxUnavailable = "observability.openshift.io/max-unavailable-rollout"
 )

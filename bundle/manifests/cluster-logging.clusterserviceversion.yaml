@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-10-09T19:11:37Z"
+    createdAt: "2025-10-10T20:13:29Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -144,6 +144,14 @@ spec:
           node or pod affinity/anti-affinity constraints.
         displayName: Affinity
         path: collector.affinity
+      - description: |-
+          Define the maxUnavailable pod rollout strategy which defaults to 100% when not set
+
+          Value can be a number (e.g., 50) or a percentage string (e.g., "50%").
+        displayName: Max Unavailable
+        path: collector.maxUnavailable
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Define the Network Policy for the Collector
         displayName: Network Policy
         path: collector.networkPolicy

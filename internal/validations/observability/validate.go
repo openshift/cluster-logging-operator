@@ -14,7 +14,6 @@ var (
 	clfValidators = []func(internalcontext.ForwarderContext){
 		validateLogLevelAnnotation,
 		validateMaxUnavailableAnnotation,
-		validateUseKubeCacheAnnotation,
 		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,

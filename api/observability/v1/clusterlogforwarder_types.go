@@ -17,6 +17,7 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
@@ -128,6 +129,13 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Affinity"
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Define the maxUnavailable pod rollout strategy
+	//
+	// Value can be a number (e.g., 50) or a percentage string (e.g., "50%").
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^([0-9]{1,2}|100)$|^([0-9]{1,2}|100)%$"
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
 }
 
 // PipelineSpec links a set of inputs and transformations to a set of outputs.

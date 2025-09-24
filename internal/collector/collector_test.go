@@ -1,6 +1,9 @@
 package collector
 
 import (
+	"os"
+	"path"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -14,13 +17,39 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"os"
-	"path"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+var _ = Describe("Factory#MaxUnavalable", func() {
+	var (
+		factory Factory
+	)
+	BeforeEach(func() {
+		factory = Factory{
+			CollectorSpec: obs.CollectorSpec{},
+			annotations:   make(map[string]string),
+		}
+	})
+
+	Context("when evaluating MaxUnavailable", func() {
+		It("should apply the default when nothing is not defined", func() {
+			Expect(factory.MaxUnavailable().StrVal).To(Equal(DefaultMaxUnavailable))
+		})
+		It("should prefer spec over the deprecated annotation", func() {
+			exp := intstr.Parse("30%")
+			factory.CollectorSpec.MaxUnavailable = &exp
+			Expect(factory.MaxUnavailable()).To(Equal(exp))
+		})
+		It("should honor the deprecated annotation", func() {
+			exp := intstr.Parse("30%")
+			factory.annotations[constants.AnnotationMaxUnavailable] = exp.StrVal
+			Expect(factory.MaxUnavailable()).To(Equal(exp))
+		})
+	})
+})
 
 var _ = Describe("Factory#Daemonset", func() {
 	var (
@@ -99,7 +128,9 @@ var _ = Describe("Factory#Daemonset", func() {
 
 			It("should set VECTOR_LOG env variable with debug value", func() {
 				logLevelDebug := "debug"
-				factory.LogLevel = logLevelDebug
+				factory.annotations = map[string]string{
+					constants.AnnotationVectorLogLevel: logLevelDebug,
+				}
 
 				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
 				collector = podSpec.Containers[0]

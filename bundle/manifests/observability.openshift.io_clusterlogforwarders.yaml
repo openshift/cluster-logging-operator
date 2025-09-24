@@ -948,6 +948,17 @@ spec:
                             type: array
                         type: object
                     type: object
+                  maxUnavailable:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: |-
+                      Define the maxUnavailable pod rollout strategy
+
+                      Value can be a number (e.g., 50) or a percentage string (e.g., "50%").
+                    pattern: ^([0-9]{1,2}|100)$|^([0-9]{1,2}|100)%$
+                    type: string
+                    x-kubernetes-int-or-string: true
                   nodeSelector:
                     additionalProperties:
                       type: string

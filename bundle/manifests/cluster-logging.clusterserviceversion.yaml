@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-09-11T16:25:19Z"
+    createdAt: "2025-09-03T01:08:59Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1167,10 +1167,10 @@ spec:
 
           There are two different models to choose from:
 
-           - Viaq (DEPRECATED: To be ignored in a future release)
+           - Viaq
            - Otel
 
-          When the data model is not set, it currently defaults to the "Otel" data model.
+          When the data model is not set, it currently defaults to the "Viaq" data model.
         displayName: Data Model
         path: outputs[0].lokiStack.dataModel
       - description: |-

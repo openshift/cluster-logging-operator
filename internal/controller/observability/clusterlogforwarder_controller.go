@@ -176,6 +176,7 @@ func initialize(cxt internalcontext.ForwarderContext) (internalcontext.Forwarder
 	cxt.AdditionalContext = utils.Options{}
 	migrated := internalinit.ClusterLogForwarder(*cxt.Forwarder, cxt.AdditionalContext)
 	cxt.Forwarder = &migrated
+
 	if cxt.Secrets, err = MapSecrets(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Spec.Inputs, cxt.Forwarder.Spec.Outputs); err != nil {
 		return cxt, err
 	}

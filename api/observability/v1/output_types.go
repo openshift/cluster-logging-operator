@@ -834,10 +834,10 @@ type LokiStack struct {
 	//
 	// There are two different models to choose from:
 	//
-	//  - Viaq (DEPRECATED: To be ignored in a future release)
+	//  - Viaq
 	//  - Otel
 	//
-	// When the data model is not set, it currently defaults to the "Otel" data model.
+	// When the data model is not set, it currently defaults to the "Viaq" data model.
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Data Model"

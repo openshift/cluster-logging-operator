@@ -2758,10 +2758,10 @@ Type:: object
 
 There are two different models to choose from:
 
-- Viaq (DEPRECATED: To be ignored in a future release)
+- Viaq
  - Otel
 
-When the data model is not set, it currently defaults to the &#34;Otel&#34; data model.
+When the data model is not set, it currently defaults to the &#34;Viaq&#34; data model.
 
 |labelKeys|object|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
 

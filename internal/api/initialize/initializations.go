@@ -16,7 +16,6 @@ const (
 var clfInitializers = []func(spec obs.ClusterLogForwarder, migrateContext utils.Options) obs.ClusterLogForwarder{
 	Resources,
 	MigrateInputs,
-	MigrateOutputs,
 }
 
 // ClusterLogForwarder initializes the forwarder for fields that must be set and are inferred from settings already defined.

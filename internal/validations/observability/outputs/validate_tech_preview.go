@@ -14,7 +14,7 @@ const MissingAnnotationMessage = "requires a valid tech-preview annotation"
 
 // ValidateTechPreviewAnnotation verifies the tech-preview annotation for outputs sending OTEL data
 func ValidateTechPreviewAnnotation(out obsv1.OutputSpec, context internalcontext.ForwarderContext) (messages []string) {
-	enabled := common.IsEnabledAnnotation(*context.Forwarder, constants.AnnotationOtlpOutputTechPreview)
+	enabled := common.IsEnabledAnnotation(context, constants.AnnotationOtlpOutputTechPreview)
 	if out.Type == obsv1.OutputTypeOTLP && !enabled {
 		log.V(3).Info("ValidateTechPreviewAnnotation failed", "reason", MissingAnnotationMessage)
 		messages = append(messages, fmt.Sprintf("output %q %v", out.Name, MissingAnnotationMessage))

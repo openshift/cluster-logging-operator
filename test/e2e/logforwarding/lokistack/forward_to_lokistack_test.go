@@ -103,7 +103,9 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
 		}
 	})
-	It("should send logs to lokistack's OTLP endpoint when dataModel is not spec'd", func() {
+
+	It("should send logs to lokistack's OTLP endpoint when dataModel == Otel", func() {
+		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
 		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
@@ -132,8 +134,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(found).To(BeTrue())
 	})
 
-	It("should send logs to lokistack when dataModel == Viaq", func() {
-		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelViaq
+	It("should send logs to lokistack when dataModel is not spec'd", func() {
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
 		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
@@ -163,7 +164,6 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	})
 
 	It("should send logs to lokistack with otel equivalent default labels when data model is viaq", func() {
-		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelViaq
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
 		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {

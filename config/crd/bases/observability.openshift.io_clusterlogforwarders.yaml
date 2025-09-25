@@ -2533,8 +2533,7 @@ spec:
                             x-kubernetes-validations:
                             - message: each broker must be a valid URL with a tcp
                                 or tls scheme
-                              rule: self == '' || (isURL(self) && (self.startsWith('tcp://')
-                                || self.startsWith('tls://')))
+                              rule: isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://'))
                           type: array
                         topic:
                           description: |-

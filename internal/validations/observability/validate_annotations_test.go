@@ -79,32 +79,4 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder annotatio
 			Entry("should pass with value 100", "100"),
 			Entry("should pass with value 100%", "100%"))
 	})
-
-	Context("#validateUseKubeCacheAnnotation", func() {
-		It("should pass validation if no annotations are set", func() {
-			validateUseKubeCacheAnnotation(context)
-			Expect(clf.Status.Conditions).To(BeEmpty())
-		})
-
-		DescribeTable("invalid kube-cache values", func(value string) {
-			clf.Annotations = map[string]string{constants.AnnotationKubeCache: value}
-			validateUseKubeCacheAnnotation(context)
-			Expect(clf.Status.Conditions).To(HaveCondition(obs.ConditionTypeUseKubeCache, false, obs.ReasonKubeCacheSupported, ".*must be one of.*"))
-		},
-			Entry("should fail with empty value", ""),
-			Entry("should fail with value 0", "0"),
-			Entry("should fail with value false", "false"),
-			Entry("should fail with value disabled", "disabled"),
-			Entry("should fail with value 'foo'", "foo"))
-
-		DescribeTable("valid kube-cache values", func(value string) {
-			clf.Annotations = map[string]string{constants.AnnotationKubeCache: value}
-			validateUseKubeCacheAnnotation(context)
-			Expect(clf.Status.Conditions).To(BeEmpty())
-		},
-			Entry("should pass with value true", "true"),
-			Entry("should pass with value True", "True"),
-			Entry("should pass with value enabled", "enabled"),
-			Entry("should pass with value Enabled", "Enabled"))
-	})
 })

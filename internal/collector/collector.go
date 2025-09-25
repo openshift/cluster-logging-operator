@@ -91,7 +91,7 @@ func (f *Factory) Affinity() *v1.Affinity {
 	return f.CollectorSpec.Affinity
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string, useCache bool, maxUnavailable string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string, maxUnavailable string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -111,7 +111,6 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 		PodLabelVisitor: vector.PodLogExcludeLabel,
 		isDaemonset:     isDaemonset,
 		LogLevel:        logLevel,
-		UseKubeCache:    useCache,
 		MaxUnavailable:  maxUnavailable,
 	}
 	return factory

@@ -39,11 +39,6 @@ var _ = Describe("#EvaluateAnnotationsForEnabledCapabilities", func() {
 		Entry("enables debug for True", helpers.EnableDebugOutput, "true", AnnotationDebugOutput, "True"),
 		Entry("disables debug for anything else", "", "", AnnotationDebugOutput, "abcdef"),
 
-		Entry("enables kube-cache for true", framework.UseKubeCacheOption, "true", AnnotationKubeCache, "true"),
-		Entry("enables kube-cache for True", framework.UseKubeCacheOption, "true", AnnotationKubeCache, "True"),
-		Entry("enables kube-cache for enabled", framework.UseKubeCacheOption, "true", AnnotationKubeCache, "enabled"),
-		Entry("disables kube-cache for anything else", "", "", AnnotationKubeCache, "bubbles"),
-
 		Entry("enables max-unavailable for value '10'", framework.MaxUnavailableOption, "10", AnnotationMaxUnavailable, "10"),
 		Entry("enables max-unavailable for value '99%'", framework.MaxUnavailableOption, "99%", AnnotationMaxUnavailable, "99%"),
 		Entry("disables max-unavailable option for anything not a number or percentage", "", "", AnnotationMaxUnavailable, "fluffy"),

@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-09-03T01:08:59Z"
+    createdAt: "2025-09-26T23:39:11Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1874,6 +1874,17 @@ spec:
         name: ""
         version: v1
       specDescriptors:
+      - description: Define the Network Policy for the LogFileMetricExporter
+        displayName: LogFileMetricExporter Network Policy
+        path: networkPolicy
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: NetworkPolicyRuleSetType is the type of network policy rule set
+          to use
+        displayName: LogFileMetricExporter Network Policy Rule Set Type
+        path: networkPolicy.ruleSet
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Define which Nodes the Pods are scheduled on.
         displayName: LogFileMetricExporter Node Selector
         path: nodeSelector

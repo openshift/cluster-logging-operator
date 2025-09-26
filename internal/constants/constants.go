@@ -51,6 +51,7 @@ const (
 	VectorName                 = "vector"
 	KibanaName                 = "kibana"
 	LogfilesmetricexporterName = "logfilesmetricexporter"
+	MetricsPortName            = "metrics"
 	PodSecurityLabelEnforce    = "pod-security.kubernetes.io/enforce"
 	PodSecurityLabelValue      = "privileged"
 	// Disable gosec linter, complains "possible hard-coded secret"

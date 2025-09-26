@@ -3,11 +3,14 @@ package factory
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/version"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("#NewNetworkPolicy", func() {
@@ -25,7 +28,7 @@ var _ = Describe("#NewNetworkPolicy", func() {
 		var np *networkingv1.NetworkPolicy
 
 		BeforeEach(func() {
-			np = NewNetworkPolicy(namespace, policyName, instanceName, constants.CollectorName, []networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress}, commonLabels)
+			np = NewNetworkPolicy(namespace, policyName, instanceName, constants.CollectorName, "", commonLabels)
 		})
 
 		It("should set name and namespace correctly", func() {
@@ -60,48 +63,35 @@ var _ = Describe("#NewNetworkPolicy", func() {
 		})
 	})
 
-	DescribeTable("Policy types configuration",
-		func(policyTypes []networkingv1.PolicyType, expectIngress bool, expectEgress bool) {
-			np := NewNetworkPolicy(namespace, policyName, instanceName, constants.CollectorName, policyTypes, commonLabels)
+	DescribeTable("Ruleset configuration",
+		func(ruleSet string, expectedPolicyTypes []networkingv1.PolicyType, expectedIngressRules []networkingv1.NetworkPolicyIngressRule, expectedEgressRules []networkingv1.NetworkPolicyEgressRule) {
+			np := NewNetworkPolicy(namespace, policyName, instanceName, constants.CollectorName, ruleSet, commonLabels)
 
-			// Verify policy types are set correctly
-			Expect(np.Spec.PolicyTypes).To(Equal(policyTypes))
+			// Verify policy types are set correctly based on the ruleset
+			Expect(np.Spec.PolicyTypes).To(ConsistOf(expectedPolicyTypes))
 
-			// Verify ingress rules based on expectation
-			if expectIngress {
-				Expect(np.Spec.Ingress).To(HaveLen(1))
-				Expect(np.Spec.Ingress[0]).To(Equal(networkingv1.NetworkPolicyIngressRule{}))
-			} else {
-				Expect(np.Spec.Ingress).To(BeNil())
-			}
+			// Verify ingress rules match expectations
+			Expect(np.Spec.Ingress).To(Equal(expectedIngressRules))
 
-			// Verify egress rules based on expectation
-			if expectEgress {
-				Expect(np.Spec.Egress).To(HaveLen(1))
-				Expect(np.Spec.Egress[0]).To(Equal(networkingv1.NetworkPolicyEgressRule{}))
-			} else {
-				Expect(np.Spec.Egress).To(BeNil())
-			}
+			// Verify egress rules match expectations
+			Expect(np.Spec.Egress).To(Equal(expectedEgressRules))
 		},
-		Entry("with Ingress policy type only",
-			[]networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
-			true,  
-			false,
-		),
-		Entry("with Egress policy type only",
-			[]networkingv1.PolicyType{networkingv1.PolicyTypeEgress},
-			false,
-			true,  
-		),
-		Entry("with both Ingress and Egress policy types",
+		Entry("with default ruleset (allow all ingress and egress)",
+			"",
 			[]networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress},
-			true, 
-			true, 
+			[]networkingv1.NetworkPolicyIngressRule{{}}, // Empty rule allows all ingress
+			[]networkingv1.NetworkPolicyEgressRule{{}},  // Empty rule allows all egress
 		),
-		Entry("with empty policy types array",
-			[]networkingv1.PolicyType{},
-			false, 
-			false, 
+		Entry("with AllowIngressMetrics ruleset",
+			string(loggingv1alpha1.NetworkPolicyRuleSetTypeAllowIngressMetrics),
+			[]networkingv1.PolicyType{networkingv1.PolicyTypeEgress, networkingv1.PolicyTypeIngress},
+			[]networkingv1.NetworkPolicyIngressRule{{
+				Ports: []networkingv1.NetworkPolicyPort{{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: constants.MetricsPortName}}[0],
+				}},
+			}},
+			nil, // No egress rules
 		),
 	)
 })

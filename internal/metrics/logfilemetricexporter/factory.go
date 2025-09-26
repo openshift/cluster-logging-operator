@@ -20,7 +20,6 @@ import (
 const (
 	clusterLoggingPriorityClassName = "system-node-critical"
 	exporterPort                    = int32(2112)
-	exporterPortName                = "exporter-port"
 	logContainers                   = "varlogcontainers"
 	logContainersValue              = "/var/log/containers"
 	exporterMetricsVolumeName       = "lfme-metrics"
@@ -104,7 +103,7 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 
 	exporterContainer.Ports = []v1.ContainerPort{
 		{
-			Name:          exporterPortName,
+			Name:          constants.MetricsPortName,
 			ContainerPort: exporterPort,
 			Protocol:      v1.ProtocolTCP,
 		},

@@ -5,12 +5,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -19,12 +21,12 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 	defer GinkgoRecover()
 
 	var (
-		owner metav1.OwnerReference
+		owner          metav1.OwnerReference
 		policyInstance *networkingv1.NetworkPolicy
 		policyKey      types.NamespacedName
-		policyName    string
-		componentName string
-		commonLabels  func(o runtime.Object)
+		policyName     string
+		componentName  string
+		commonLabels   func(o runtime.Object)
 
 		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
 		namespace = &corev1.Namespace{
@@ -36,17 +38,18 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 		reqClient = fake.NewFakeClient(
 			namespace,
 		)
-		instanceName  = "test-instance"
+		instanceName = "test-instance"
+		protocolTCP  = corev1.ProtocolTCP
 	)
 
 	Context("when the collector NetworkPolicy is reconciled", func() {
-		BeforeEach(func() {		
+		BeforeEach(func() {
 			policyName = "collector-test-network-policy"
 			componentName = constants.CollectorName
 			commonLabels = func(o runtime.Object) {
 				runtime.SetCommonLabels(o, constants.VectorName, instanceName, componentName)
 			}
-			owner =metav1.OwnerReference{
+			owner = metav1.OwnerReference{
 				APIVersion: "v1",
 				Kind:       "ClusterLogForwarder",
 				Name:       instanceName,
@@ -57,13 +60,13 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 
 		It("should successfully reconcile the network policy", func() {
 			// Reconcile the network policy
-			Expect(ReconcileNetworkPolicy(
+			Expect(ReconcileClusterLogForwarderNetworkPolicy(
 				reqClient,
 				constants.OpenshiftNS,
 				policyName,
 				instanceName,
 				componentName,
-				[]networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress},
+				"",
 				owner,
 				commonLabels)).To(Succeed())
 
@@ -89,13 +92,17 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			}
 			Expect(policyInstance.Spec.PolicyTypes).To(Equal(expectedPolicyTypes))
 
+			expectedIngressRules := []networkingv1.NetworkPolicyIngressRule{
+				{},
+			}
 			// Verify ingress rules allow all traffic (empty rule)
-			Expect(policyInstance.Spec.Ingress).To(HaveLen(1))
-			Expect(policyInstance.Spec.Ingress[0]).To(Equal(networkingv1.NetworkPolicyIngressRule{}))
+			Expect(policyInstance.Spec.Ingress).To(Equal(expectedIngressRules))
 
 			// Verify egress rules allow all traffic (empty rule)
-			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
-			Expect(policyInstance.Spec.Egress[0]).To(Equal(networkingv1.NetworkPolicyEgressRule{}))
+			expectedEgressRules := []networkingv1.NetworkPolicyEgressRule{
+				{},
+			}
+			Expect(policyInstance.Spec.Egress).To(Equal(expectedEgressRules))
 
 			// Verify common labels are applied
 			Expect(policyInstance.Labels).To(HaveKey(constants.LabelK8sName))
@@ -113,7 +120,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			commonLabels = func(o runtime.Object) {
 				runtime.SetCommonLabels(o, constants.LogfilesmetricexporterName, instanceName, componentName)
 			}
-			owner =metav1.OwnerReference{
+			owner = metav1.OwnerReference{
 				APIVersion: "v1",
 				Kind:       "LogFileMetricExporter",
 				Name:       instanceName,
@@ -124,13 +131,13 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 
 		It("should successfully reconcile the network policy", func() {
 			// Reconcile the network policy
-			Expect(ReconcileNetworkPolicy(
+			Expect(ReconcileLogFileMetricsExporterNetworkPolicy(
 				reqClient,
 				constants.OpenshiftNS,
 				policyName,
 				instanceName,
 				componentName,
-				[]networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
+				loggingv1alpha1.NetworkPolicyRuleSetTypeAllowIngressMetrics,
 				owner,
 				commonLabels)).To(Succeed())
 			// Get and check the network policy
@@ -148,15 +155,28 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			expectedPodSelector := runtime.Selectors(instanceName, componentName, constants.LogfilesmetricexporterName)
 			Expect(policyInstance.Spec.PodSelector.MatchLabels).To(Equal(expectedPodSelector))
 
-			// Verify policy types includes only Ingress
+			// Verify policy types includes Egress and Ingress
 			expectedPolicyTypes := []networkingv1.PolicyType{
+				networkingv1.PolicyTypeEgress,
 				networkingv1.PolicyTypeIngress,
 			}
 			Expect(policyInstance.Spec.PolicyTypes).To(Equal(expectedPolicyTypes))
 
-			// Verify ingress rules allow all traffic (empty rule)
-			Expect(policyInstance.Spec.Ingress).To(HaveLen(1))
-			Expect(policyInstance.Spec.Ingress[0]).To(Equal(networkingv1.NetworkPolicyIngressRule{}))
+			// Verify ingress rules allow only the named metrics port
+			expectedIngressRules := []networkingv1.NetworkPolicyIngressRule{
+				{
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Protocol: &protocolTCP,
+							Port:     &intstr.IntOrString{Type: intstr.String, StrVal: constants.MetricsPortName},
+						},
+					},
+				},
+			}
+			Expect(policyInstance.Spec.Ingress).To(Equal(expectedIngressRules))
+
+			// Verify egress rules are not present to deny all egress traffic
+			Expect(policyInstance.Spec.Egress).To(BeNil())
 
 			// Verify common labels are applied
 			Expect(policyInstance.Labels).To(HaveKey(constants.LabelK8sName))

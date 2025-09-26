@@ -24,7 +24,34 @@ type LogFileMetricExporterSpec struct {
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LogFileMetricExporter Pod Tolerations",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration"}
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Define the Network Policy for the LogFileMetricExporter
+	// +nullable
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LogFileMetricExporter Network Policy",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	NetworkPolicy *NetworkPolicy `json:"networkPolicy,omitempty"`
 }
+
+type NetworkPolicy struct {
+	// NetworkPolicyRuleSetType is the type of network policy rule set to use
+	//
+	// +kubebuilder:validation:Required
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LogFileMetricExporter Network Policy Rule Set Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	RuleSet NetworkPolicyRuleSetType `json:"ruleSet,omitempty"`
+}
+
+// NetworkPolicyRuleSetType is the type of network policy rule set to use
+//
+// +kubebuilder:validation:Enum:=AllowIngressMetrics;AllowAllIngressEgress
+type NetworkPolicyRuleSetType string
+
+const (
+	// NetworkPolicyRuleSetTypeAllowIngressMetrics is the type of network policy rule set to use for allowing only ingress metrics
+	NetworkPolicyRuleSetTypeAllowIngressMetrics NetworkPolicyRuleSetType = "AllowIngressMetrics"
+
+	// NetworkPolicyRuleSetTypeAllowAllIngressEgress is the type of network policy rule set to use for allowing all ingress and egress traffic
+	NetworkPolicyRuleSetTypeAllowAllIngressEgress NetworkPolicyRuleSetType = "AllowAllIngressEgress"
+)
 
 const (
 	// ReasonValid is used as a reason for the condition indicating that the LogFileMetricExporter is deployed.

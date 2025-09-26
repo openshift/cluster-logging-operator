@@ -13,7 +13,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
-	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -52,18 +51,27 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, exporterPortName, ExporterMetricsSecretName, exporterPort, owner, commonLabels); err != nil {
+	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, constants.MetricsPortName, ExporterMetricsSecretName, exporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
 		return err
 	}
 
-	if err := network.ReconcileNetworkPolicy(requestClient, lfmeInstance.Namespace, "lfme-"+resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, []networkingv1.PolicyType{networkingv1.PolicyTypeIngress}, owner, commonLabels); err != nil {
-		log.Error(err, "logfilemetricexporter.ReconcileNetworkPolicy")
-		return err
+	// Reconcile the network policy if it is defined
+	if lfmeInstance.Spec.NetworkPolicy != nil {
+		if err := network.ReconcileLogFileMetricsExporterNetworkPolicy(requestClient, lfmeInstance.Namespace, "lfme-"+resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, lfmeInstance.Spec.NetworkPolicy.RuleSet, owner, commonLabels); err != nil {
+			log.Error(err, "logfilemetricexporter.ReconcileNetworkPolicy")
+			return err
+		}
+		// Attempt to remove the network policy if it is not defined
+	} else {
+		if err := network.RemoveNetworkPolicy(requestClient, lfmeInstance.Namespace, "lfme-"+resNames.CommonName); err != nil {
+			log.Error(err, "logfilemetricexporter.RemoveNetworkPolicy")
+			return err
+		}
 	}
 
 	metricsSelector := metrics.BuildSelector(constants.LogfilesmetricexporterName, lfmeInstance.Name)
-	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, owner, metricsSelector, exporterPortName); err != nil {
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, owner, metricsSelector, constants.MetricsPortName); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
 		return err
 	}

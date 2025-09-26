@@ -3,6 +3,7 @@ package logfilemetricexporter
 import (
 	"context"
 	"fmt"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -119,7 +120,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
 		Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
-		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(exporterPortName))
+		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(constants.MetricsPortName))
 
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).

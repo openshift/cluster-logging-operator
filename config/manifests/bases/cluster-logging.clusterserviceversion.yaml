@@ -1797,6 +1797,17 @@ spec:
         name: ""
         version: v1
       specDescriptors:
+      - description: Define the Network Policy for the LogFileMetricExporter
+        displayName: LogFileMetricExporter Network Policy
+        path: networkPolicy
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: NetworkPolicyRuleSetType is the type of network policy rule set
+          to use
+        displayName: LogFileMetricExporter Network Policy Rule Set Type
+        path: networkPolicy.ruleSet
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Define which Nodes the Pods are scheduled on.
         displayName: LogFileMetricExporter Node Selector
         path: nodeSelector

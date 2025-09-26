@@ -49,6 +49,20 @@ spec:
           spec:
             description: LogFileMetricExporterSpec defines the desired state of LogFileMetricExporter
             properties:
+              networkPolicy:
+                description: Define the Network Policy for the LogFileMetricExporter
+                nullable: true
+                properties:
+                  ruleSet:
+                    description: NetworkPolicyRuleSetType is the type of network policy
+                      rule set to use
+                    enum:
+                    - AllowIngressMetrics
+                    - AllowAllIngressEgress
+                    type: string
+                required:
+                - ruleSet
+                type: object
               nodeSelector:
                 additionalProperties:
                   type: string

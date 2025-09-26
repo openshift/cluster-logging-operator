@@ -3,12 +3,13 @@ package common
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 const (
-	CodecJSON              = "json"
-	TimeStampFormatRFC3339 = "rfc3339"
+	CodecJSON              = sinks.CodecJSON
+	TimeStampFormatRFC3339 = sinks.TimeStampFormatRFC3339
 )
 
 type Encoding struct {
@@ -44,7 +45,7 @@ func (e Encoding) Name() string {
 
 func (e Encoding) Template() string {
 	return `{{define "` + e.Name() + `" -}}
-[sinks.{{.ID}}.encoding]
+[sinks.{{.id}}.encoding]
 {{.Codec }}
 {{.TimeStampFormat }}
 {{.ExceptFields }}

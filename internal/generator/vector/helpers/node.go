@@ -19,6 +19,11 @@ func MakeID(parts ...string) string {
 	return FormatComponentID(strings.Join(parts, "_"))
 }
 
+// MakeIDList given a list of components and return as a single entry array
+func MakeIDList(parts ...string) []string {
+	return []string{MakeID(parts...)}
+}
+
 // MakeRouteInputID appends sourceType to rerouteId for input ids
 func MakeRouteInputID(rerouteId, sourceType string) string {
 	return strings.ToLower(strings.Join([]string{rerouteId, sourceType}, "."))

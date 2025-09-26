@@ -269,7 +269,7 @@ type ViaQCommon struct {
 	// +optional
 	ViaqIndexName string `json:"viaq_index_name,omitempty"`
 
-	// ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+	// ViaqMessageId is a unique id assigned to each message. The format is not specified.
 	//
 	// It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
 	// or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another

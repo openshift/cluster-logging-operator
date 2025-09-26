@@ -68,3 +68,10 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 	}
 	return t
 }
+
+func (t Tuning) GetMaxWrite() uint {
+	if t.BaseOutputTuningSpec.MaxWrite != nil {
+		return uint(t.BaseOutputTuningSpec.MaxWrite.Value())
+	}
+	return 0
+}

@@ -120,14 +120,26 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			return f.ReadApplicationLogsFromKafka(sourceType, "localhost:9092", container)
 		}
 	case obs.OutputTypeElasticsearch:
-		readLogs = func() ([]string, error) {
-			option := Option{"port", "9200"}
-			if outputSpec.Elasticsearch != nil {
-				if esurl, err := url.Parse(outputSpec.Elasticsearch.URL); err == nil {
-					option.Value = esurl.Port()
+		if len(outputSpec.Elasticsearch.Headers) > 0 {
+			readLogs = func() ([]string, error) {
+				option := Option{"port", "9428"}
+				if outputSpec.Elasticsearch != nil {
+					if esurl, err := url.Parse(outputSpec.Elasticsearch.URL); err == nil {
+						option.Value = esurl.Port()
+					}
 				}
+				return f.GetLogsFromVL(outputName, outputSpec.Elasticsearch.Headers, option)
 			}
-			return f.GetLogsFromElasticSearch(outputName, sourceType, option)
+		} else {
+			readLogs = func() ([]string, error) {
+				option := Option{"port", "9200"}
+				if outputSpec.Elasticsearch != nil {
+					if esurl, err := url.Parse(outputSpec.Elasticsearch.URL); err == nil {
+						option.Value = esurl.Port()
+					}
+				}
+				return f.GetLogsFromElasticSearch(outputName, sourceType, option)
+			}
 		}
 	default:
 		readLogs = func() ([]string, error) {

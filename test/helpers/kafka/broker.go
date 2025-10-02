@@ -3,8 +3,9 @@ package kafka
 import (
 	"bytes"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"

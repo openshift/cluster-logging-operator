@@ -1,0 +1,68 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: s3-custom-endpoint
+      type: s3
+      s3:
+        bucket: my-log-bucket
+        region: us-east-1
+        # Custom S3-compatible endpoint (e.g., MinIO, Ceph Object Gateway, Dell EMC ECS)
+        url: https://s3.custom-endpoint.com
+        keyPrefix: "logs/{.kubernetes.namespace_name||\"default\"}/{@timestamp|date}/"
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyId:
+              secretName: s3-credentials
+              key: access_key_id
+            keySecret:
+              secretName: s3-credentials
+              key: secret_access_key
+        tuning:
+          compression: gzip
+          maxWrite: 10Mi
+      # Optional TLS configuration for custom endpoints
+      tls:
+        insecureSkipVerify: false
+        ca:
+          secretName: s3-tls
+          key: ca-bundle.crt
+        certificate:
+          secretName: s3-tls
+          key: tls.crt
+        key:
+          secretName: s3-tls
+          key: tls.key
+  pipelines:
+    - name: my-s3-custom-endpoint-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - s3-custom-endpoint
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-credentials
+  namespace: openshift-logging
+type: Opaque
+data:
+  access_key_id: <base64_encoded_access_key_id>
+  secret_access_key: <base64_encoded_secret_access_key>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-tls
+  namespace: openshift-logging
+type: Opaque
+data:
+  ca-bundle.crt: <base64_encoded_ca_bundle>
+  tls.crt: <base64_encoded_certificate>
+  tls.key: <base64_encoded_private_key>

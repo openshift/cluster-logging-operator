@@ -1,0 +1,37 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterlogforwarder
+    app.kubernetes.io/instance: clusterlogforwarder-sample
+    app.kubernetes.io/part-of: cluster-logging-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cluster-logging-operator
+  name: clusterlogforwarder-sample-s3
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: s3-output
+      type: s3
+      s3:
+        bucket: my-log-bucket
+        keyPrefix: {.kubernetes.namespace_name||"rosa-control-plane"}
+        region: us-east-1
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: role-for-sts
+              key: credentials
+            token:
+              from: serviceAccount
+        tuning:
+          compression: gzip
+  pipelines:
+    - name: s3-pipeline
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - s3-output

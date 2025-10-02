@@ -1,4 +1,4 @@
-package cloudwatch
+package s3
 
 import (
 	_ "embed"
@@ -10,14 +10,15 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
 
 type Endpoint struct {
@@ -25,7 +26,7 @@ type Endpoint struct {
 }
 
 func (e Endpoint) Name() string {
-	return "awsEndpointTemplate"
+	return "awsS3EndpointTemplate"
 }
 
 func (e Endpoint) Template() (ret string) {
@@ -37,34 +38,53 @@ func (e Endpoint) Template() (ret string) {
 	return
 }
 
-type CloudWatch struct {
+type Compression struct {
+	Algorithm string
+}
+
+func (c Compression) Name() string {
+	return "awsS3CompressionTemplate"
+}
+
+func (c Compression) Template() (ret string) {
+	ret = `{{define "` + c.Name() + `" -}}`
+	if c.Algorithm != "" && c.Algorithm != "none" {
+		ret += `compression = "{{ .Algorithm }}"`
+	}
+	ret += `{{end}}`
+	return
+}
+
+type S3 struct {
 	Desc           string
 	ComponentID    string
 	Inputs         string
 	Region         string
-	GroupName      string
+	Bucket         string
+	KeyPrefix      string
+	Compression    Element
 	EndpointConfig Element
 	SecurityConfig Element
 	common.RootMixin
 }
 
-func (e CloudWatch) Name() string {
-	return "cloudwatchTemplate"
+func (e S3) Name() string {
+	return "s3Template"
 }
 
-func (e CloudWatch) Template() string {
+func (e S3) Template() string {
 
 	return `{{define "` + e.Name() + `" -}}
 {{if .Desc -}}
 # {{.Desc}}
 {{end -}}
 [sinks.{{.ComponentID}}]
-type = "aws_cloudwatch_logs"
+type = "aws_s3"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
-{{.Compression}}
-group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
-stream_name = "{{"{{ stream_name }}"}}"
+{{compose_one .Compression}}
+bucket = "{{.Bucket}}"
+key_prefix = "{{"{{"}} _internal.{{.KeyPrefix}} {{"}}"}}"
 {{compose_one .SecurityConfig}}
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
@@ -72,27 +92,26 @@ healthcheck.enabled = false
 `
 }
 
-func (e *CloudWatch) SetCompression(algo string) {
-	e.Compression.Value = algo
+func (s *S3) SetCompression(algo string) {
+	s.Compression = Compression{
+		Algorithm: algo,
+	}
 }
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
-	componentID := vectorhelpers.MakeID(id, "normalize_streams")
-	groupNameID := vectorhelpers.MakeID(id, "group_name")
+	keyPrefixID := vectorhelpers.MakeID(id, "key_prefix")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			NormalizeStreamName(componentID, inputs),
-			Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
+			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	sink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
+	sink := sink(id, o, []string{keyPrefixID}, secrets, op, o.S3.Region, o.S3.Bucket, keyPrefixID)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 
 	return []Element{
-		NormalizeStreamName(componentID, inputs),
-		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
+		template.TemplateRemap(keyPrefixID, inputs, o.S3.KeyPrefix, keyPrefixID, "S3 Key Prefix"),
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
@@ -103,26 +122,28 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, region, groupName string) *CloudWatch {
-	return &CloudWatch{
-		Desc:           "Cloudwatch Logs",
+func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, region, bucket, keyPrefix string) *S3 {
+	return &S3{
+		Desc:           "Amazon S3",
 		ComponentID:    id,
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		Region:         region,
-		GroupName:      groupName,
-		SecurityConfig: authConfig(o.Name, o.Cloudwatch.Authentication, op),
-		EndpointConfig: endpointConfig(o.Cloudwatch),
+		Bucket:         bucket,
+		KeyPrefix:      keyPrefix,
+		Compression:    compressionConfig(o.S3),
+		SecurityConfig: authConfig(o.Name, o.S3.Authentication, op),
+		EndpointConfig: endpointConfig(o.S3),
 		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 
-func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options) Element {
+func authConfig(outputName string, auth *obs.S3Authentication, options Options) Element {
 	authConfig := NewAuth()
-	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
+	if auth != nil && auth.Type == obs.S3AuthTypeAccessKey {
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
-	} else if auth != nil && auth.Type == obs.CloudwatchAuthTypeIAMRole {
-		if forwarderName, found := utils.GetOption(options, OptionForwarderName, ""); found {
+	} else if auth != nil && auth.Type == obs.S3AuthTypeIAMRole {
+		if forwarderName, found := utils.GetOption(options, framework.OptionForwarderName, ""); found {
 			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AWSCredentialsConfigMapName, constants.AWSCredentialsKey), `"`)
 			authConfig.Profile.Value = "output_" + outputName
 		}
@@ -135,45 +156,27 @@ func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options O
 	return authConfig
 }
 
-func endpointConfig(cw *obs.Cloudwatch) Element {
-	if cw == nil {
+func endpointConfig(s3 *obs.S3) Element {
+	if s3 == nil {
 		return Endpoint{}
 	}
 	return Endpoint{
-		URL: cw.URL,
+		URL: s3.URL,
 	}
 }
 
-func NormalizeStreamName(componentID string, inputs []string) Element {
-	vrl := strings.TrimSpace(`
-.stream_name = "default"
-if ( .log_type == "audit" ) {
- .stream_name = (.hostname +"."+ downcase(.log_source)) ?? .stream_name
-}
-if ( .log_source == "container" ) {
-  k = .kubernetes
-  .stream_name = (k.namespace_name+"_"+k.pod_name+"_"+k.container_name) ?? .stream_name
-}
-if ( .log_type == "infrastructure" ) {
- .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
-}
-if ( .log_source == "node" ) {
- .stream_name =  ( .hostname + ".journal.system" ) ?? .stream_name
-}
-del(.tag)
-del(.source_type)
-	`)
-	return Remap{
-		Desc:        "Cloudwatch Stream Names",
-		ComponentID: componentID,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         vrl,
+func compressionConfig(s3 *obs.S3) Element {
+	if s3 == nil || s3.Tuning == nil || s3.Tuning.Compression == "" {
+		return Compression{}
+	}
+	return Compression{
+		Algorithm: s3.Tuning.Compression,
 	}
 }
 
 // ParseRoleArn search for matching valid ARN
-func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
-	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
+func ParseRoleArn(auth *obs.S3Authentication, secrets observability.Secrets) string {
+	if auth.Type == obs.S3AuthTypeIAMRole {
 		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
 
 		if roleArnString != "" {
@@ -188,7 +191,7 @@ func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secr
 }
 
 // ParseAssumeRoleArn search for matching valid assume role ARN
-func ParseAssumeRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
+func ParseAssumeRoleArn(auth *obs.S3Authentication, secrets observability.Secrets) string {
 	if auth.AssumeRole != nil {
 		roleArnString := secrets.AsString(&auth.AssumeRole.RoleARN)
 

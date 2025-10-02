@@ -1,0 +1,37 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+spec:
+  serviceAccount:
+    name: my-account
+  outputs:
+    - name: my-s3-cross-account
+      type: s3
+      s3:
+        bucket: cross-account-log-bucket
+        keyPrefix: logs/{.log_type||"unknown"}/{.kubernetes.namespace_name||"default"}/
+        region: us-east-1
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: base-role-for-sts
+              key: role-arn
+            token:
+              from: serviceAccount
+          assumeRole:
+            roleARN:
+              secretName: cross-account-role
+              key: role-arn
+            externalID:
+              secretName: cross-account-role
+              key: external-id
+            sessionName: openshift-logging-session
+  pipelines:
+    - name: my-s3-cross-account-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - my-s3-cross-account

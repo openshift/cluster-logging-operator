@@ -1,0 +1,33 @@
+# S3 output with static key prefix
+[transforms.test_key_prefix]
+type = "remap"
+inputs = ["input"]
+source = '''
+# Enhanced S3 key prefix with timestamp support
+# Set up timestamp components for advanced templating
+._internal.timestamp_year = format_timestamp!(.timestamp || now(), format: "%Y")
+._internal.timestamp_month = format_timestamp!(.timestamp || now(), format: "%m")
+._internal.timestamp_day = format_timestamp!(.timestamp || now(), format: "%d")
+._internal.timestamp_hour = format_timestamp!(.timestamp || now(), format: "%H")
+._internal.timestamp_minute = format_timestamp!(.timestamp || now(), format: "%M")
+._internal.timestamp_date = format_timestamp!(.timestamp || now(), format: "%Y-%m-%d")
+
+# Set the actual key prefix field
+._internal.test_key_prefix = "logs/"
+'''
+
+# Amazon S3
+[sinks.test]
+type = "aws_s3"
+inputs = ["test_key_prefix"]
+region = "us-east-1"
+compression = "none"
+bucket = "my-log-bucket"
+key_prefix = "{{ _internal.test_key_prefix }}"
+healthcheck.enabled = false
+auth.access_key_id = "SECRET[kubernetes_secret.s3-access-key/aws_access_key_id]"
+auth.secret_access_key = "SECRET[kubernetes_secret.s3-access-key/aws_secret_access_key]"
+
+[sinks.test.encoding]
+codec = "json"
+except_fields = ["_internal"]

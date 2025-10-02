@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type fakeSink struct {
@@ -139,7 +140,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{
 						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-							MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+							MaxRetryDuration: &metav1.Duration{Duration: 35 * time.Second},
 						},
 					},
 				},
@@ -170,7 +171,7 @@ retry_max_duration_secs = 35
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{
 						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
-							MinRetryDuration: utils.GetPtr(time.Duration(25)),
+							MinRetryDuration: &metav1.Duration{Duration: 25 * time.Second},
 						},
 					},
 				},

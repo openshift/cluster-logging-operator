@@ -5,22 +5,28 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
+	_ "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 )
 
 const (
-	RoleARNsOpt       = "roleARNs"
-	ErrInvalidRoleARN = "CloudWatch RoleARN is invalid"
+	ErrInvalidRoleARN       = "CloudWatch RoleARN is invalid"
+	ErrInvalidAssumeRoleARN = "CloudWatch AssumeRole RoleARN is invalid"
 )
 
-func ValidateCloudWatchAuth(spec obs.OutputSpec, context internalcontext.ForwarderContext) (results []string) {
+// ValidateCloudWatchAuth ensures auth role and assumeRole ARN's are valid
+func ValidateCloudWatchAuth(o obs.OutputSpec, context internalcontext.ForwarderContext) (results []string) {
 	secrets := observability.Secrets(context.Secrets)
-	authSpec := spec.Cloudwatch.Authentication
-
-	// Validate role ARN
-	if authSpec.Type == obs.CloudwatchAuthTypeIAMRole {
-		roleArn := cloudwatch.ParseRoleArn(authSpec, secrets)
+	if isRoleAuth, awsAuth := cloudwatch.OutputIsRoleAuth(o); isRoleAuth {
+		roleArn := cloudwatch.ParseRoleArn(awsAuth, secrets)
 		if roleArn == "" {
 			results = append(results, ErrInvalidRoleARN)
+		}
+	}
+	// Additional validation for new assumeRole spec
+	if isAssumeRole, assumeRoleSpec := cloudwatch.OutputIsAssumeRole(o); isAssumeRole {
+		assumeRoleArn := cloudwatch.ParseAssumeRoleArn(assumeRoleSpec, secrets)
+		if assumeRoleArn == "" {
+			results = append(results, ErrInvalidAssumeRoleARN)
 		}
 	}
 	return results

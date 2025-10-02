@@ -2,6 +2,7 @@ package observability
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"strings"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// ReconcileCollector generates and deploys all resources required by the ClusterLogForwarder
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
 
 	if err = reconcile.SecurityContextConstraints(context.Client, context.Reader, auth.NewSCC()); err != nil {
@@ -46,7 +47,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Set kubeapi and rollout options based on annotation (LOG-7196)
-	// TODO: replace with API fields
 	SetKubeCacheOption(context.Forwarder.Annotations, options)
 	SetMaxUnavailableRolloutOption(context.Forwarder.Annotations, options)
 
@@ -80,15 +80,16 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
-	credCm, err := cloudwatch.ReconcileAWSCredentialsConfigMap(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
-	if err != nil {
-		log.V(9).Error(err, "collector.ReconcileAWSProfileConfig")
-		return err
-	}
-
-	// Add generated credentials configmap to contexts to be mounted in pod
-	if credCm != nil {
-		context.ConfigMaps[credCm.Name] = credCm
+	// Create a local credentials file containing AWS profiles
+	if cloudwatch.RequiresProfilesConfigMap(context.Forwarder.Spec.Outputs) {
+		awsCredsFile, err := cloudwatch.ReconcileCredsFile(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+		if err != nil {
+			log.V(3).Error(err, "cloudwatch.ReconcileCredsFile")
+			return err
+		}
+		if awsCredsFile != nil {
+			context.ConfigMaps[awsCredsFile.Name] = awsCredsFile
+		}
 	}
 
 	var collectorConfig string
@@ -101,7 +102,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
 		log.Error(err, "unable to calculate MD5 hash")
-		log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 		return
 	}
 

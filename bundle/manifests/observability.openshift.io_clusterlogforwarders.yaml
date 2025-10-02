@@ -1854,6 +1854,47 @@ spec:
                           description: Authentication sets credentials for authenticating
                             the requests.
                           properties:
+                            assumeRole:
+                              description: |-
+                                AssumeRole specifies an additional AWS role to assume for forwarding logs.
+                                This enables cross-account log forwarding by using the initial role to authenticate,
+                                then assume a role in order to access cross-account services.
+                              nullable: true
+                              properties:
+                                externalID:
+                                  description: |-
+                                    ExternalID is the external ID to match when assuming the role.
+                                    This is optional and can be used as an additional security measure to ensure that only the intended
+                                    entity can assume the role.
+
+                                    The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+                                    The value must be alphanumeric without whitespace and can also include the following symbols:
+                                    plus(+), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+                                  maxLength: 1224
+                                  minLength: 2
+                                  nullable: true
+                                  pattern: ^[\w+=,.@:/-]*$
+                                  type: string
+                                roleARN:
+                                  description: RoleARN points to the secret containing
+                                    the ARN of the role to assume for cross-account
+                                    access.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                              required:
+                              - roleARN
+                              type: object
                             awsAccessKey:
                               description: AWSAccessKey points to the AWS access key
                                 id and secret to be used for authentication.
@@ -1904,8 +1945,8 @@ spec:
                               properties:
                                 roleARN:
                                   description: |-
-                                    RoleARN points to the secret containing the role ARN to be used for authentication.
-                                    This is used for authentication in STS-enabled clusters.
+                                    RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+                                    This role requires an OIDC provider to be configured in an STS-enabled cluster.
                                   properties:
                                     key:
                                       description: Key contains the name of the key

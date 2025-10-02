@@ -2,14 +2,12 @@ package cloudwatch
 
 import (
 	_ "embed"
-	"regexp"
-	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
@@ -44,7 +42,7 @@ type CloudWatch struct {
 	Region         string
 	GroupName      string
 	EndpointConfig Element
-	SecurityConfig Element
+	AuthConfig     Element
 	common.RootMixin
 }
 
@@ -53,7 +51,6 @@ func (e CloudWatch) Name() string {
 }
 
 func (e CloudWatch) Template() string {
-
 	return `{{define "` + e.Name() + `" -}}
 {{if .Desc -}}
 # {{.Desc}}
@@ -65,7 +62,7 @@ region = "{{.Region}}"
 {{.Compression}}
 group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
 stream_name = "{{"{{ stream_name }}"}}"
-{{compose_one .SecurityConfig}}
+{{compose_one .AuthConfig}}
 healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
 {{- end}}
@@ -85,15 +82,15 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	sink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
+	cwSink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
 	if strategy != nil {
-		strategy.VisitSink(sink)
+		strategy.VisitSink(cwSink)
 	}
 
 	return []Element{
 		NormalizeStreamName(componentID, inputs),
 		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
-		sink,
+		cwSink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
@@ -110,19 +107,33 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		Region:         region,
 		GroupName:      groupName,
-		SecurityConfig: authConfig(o.Name, o.Cloudwatch.Authentication, op),
+		AuthConfig:     authConfig(o.Name, o.Cloudwatch.Authentication, op, secrets),
 		EndpointConfig: endpointConfig(o.Cloudwatch),
 		RootMixin:      common.NewRootMixin("none"),
 	}
 }
 
-func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options) Element {
+// authConfig returns the templated VRL containing cloudwatch auth configuration
+func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options, secrets observability.Secrets) Element {
 	authConfig := NewAuth()
-	if auth != nil && auth.Type == obs.CloudwatchAuthTypeAccessKey {
+	if auth == nil {
+		return authConfig
+	}
+	switch auth.Type {
+	case obs.CloudwatchAuthTypeAccessKey:
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
-	} else if auth != nil && auth.Type == obs.CloudwatchAuthTypeIAMRole {
+		// New assumeRole works with static keys as well
+		if auth.AssumeRole != nil {
+			authConfig.AssumeRole.Value = vectorhelpers.SecretFrom(&auth.AssumeRole.RoleARN)
+			// Optional externalID
+			if hasExtID, extID := AssumeRoleHasExternalId(auth.AssumeRole); hasExtID {
+				authConfig.ExternalID.Value = extID
+			}
+		}
+	case obs.CloudwatchAuthTypeIAMRole:
 		if forwarderName, found := utils.GetOption(options, OptionForwarderName, ""); found {
+			// For OIDC roles we mount a configMap containing a credentials file
 			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AWSCredentialsConfigMapName, constants.AWSCredentialsKey), `"`)
 			authConfig.Profile.Value = "output_" + outputName
 		}
@@ -164,20 +175,4 @@ del(.source_type)
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         vrl,
 	}
-}
-
-// ParseRoleArn search for matching valid ARN
-func ParseRoleArn(auth *obs.CloudwatchAuthentication, secrets observability.Secrets) string {
-	if auth.Type == obs.CloudwatchAuthTypeIAMRole {
-		roleArnString := secrets.AsString(&auth.IAMRole.RoleARN)
-
-		if roleArnString != "" {
-			reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
-			roleArn := reg.FindStringSubmatch(roleArnString)
-			if roleArn != nil {
-				return roleArn[1] // the capturing group is index 1
-			}
-		}
-	}
-	return ""
 }

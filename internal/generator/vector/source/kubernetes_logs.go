@@ -58,6 +58,7 @@ func NewKubernetesLogs(id, includes, excludes string) KubernetesLogs {
 		Desc:         "Logs from containers (including openshift containers)",
 		IncludePaths: includes,
 		ExcludePaths: excludes,
+		UseKubeCache: true,
 	}
 }
 

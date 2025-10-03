@@ -11,7 +11,6 @@ const (
 	URL                                 = "url"
 	OptionServiceAccountTokenSecretName = "serviceAccountTokenSecretName"
 	OptionForwarderName                 = "forwarderName"
-	UseKubeCacheOption                  = "useKubeCache"
 	MaxUnavailableOption                = "maxUnavailableRollout"
 )
 

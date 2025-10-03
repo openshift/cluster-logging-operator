@@ -7,6 +7,20 @@ spec:
   groups:
   - name: logging_collector.alerts
     rules:
+    - alert: ClusterLogForwarderDeprecations
+      annotations:
+        message: "The Cluster Logging Operator version {{$labels.version}} includes deprecations to some feature of ClusterLogForwarder."
+        summary: |-
+          The Cluster Logging Operator version {{$labels.version}} includes deprecations to some features of ClusterLogForwarder which
+          will be removed in a future release.  Please see the release notes for details:
+          https://docs.redhat.com/en/documentation/red_hat_openshift_logging/6.3/html/release_notes
+      expr: |
+        max by (version) (csv_succeeded{exported_namespace="openshift-logging", name=~"cluster-logging.*", version=~"6.3.*"})  > 0
+      for: 1m
+      labels:
+        namespace: openshift-logging
+        service: collector
+        severity: info
     - alert: CollectorNodeDown
       annotations:
         description: "Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod }} collector component for more than 10m."

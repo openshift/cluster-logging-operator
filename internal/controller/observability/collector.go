@@ -44,9 +44,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		options = context.AdditionalContext
 	}
 
-	// Set kubeapi and rollout options based on annotation (LOG-7196)
-	// TODO: replace with API fields
-	SetKubeCacheOption(context.Forwarder.Annotations, options)
+	// Set rollout options based on annotation (LOG-7196)
 	SetMaxUnavailableRolloutOption(context.Forwarder.Annotations, options)
 
 	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
@@ -115,7 +113,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		resourceNames,
 		isDaemonSet,
 		LogLevel(context.Forwarder.Annotations),
-		factory.IncludesKubeCacheOption(options),
 		factory.GetMaxUnavailableValue(options),
 	)
 
@@ -180,11 +177,6 @@ func EvaluateAnnotationsForEnabledCapabilities(annotations map[string]string, op
 			if strings.ToLower(value) == "true" {
 				options[generatorhelpers.EnableDebugOutput] = "true"
 			}
-		case constants.AnnotationKubeCache:
-			// Matching the validate_annotations logic
-			if observability.IsEnabledValue(value) {
-				options[framework.UseKubeCacheOption] = "true"
-			}
 		case constants.AnnotationMaxUnavailable:
 			// Matching the validate_annotations logic
 			if observability.IsPercentOrWholeNumber(value) {
@@ -199,15 +191,6 @@ func LogLevel(annotations map[string]string) string {
 		return level
 	}
 	return "warn"
-}
-
-func SetKubeCacheOption(annotations map[string]string, options framework.Options) {
-	if value, found := annotations[constants.AnnotationKubeCache]; found {
-		if observability.IsEnabledValue(value) {
-			log.V(3).Info("Kube cache annotation found")
-			options[framework.UseKubeCacheOption] = "true"
-		}
-	}
 }
 
 func SetMaxUnavailableRolloutOption(annotations map[string]string, options framework.Options) {

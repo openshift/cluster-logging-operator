@@ -35,9 +35,6 @@ const (
 	// ConditionTypeMaxUnavailable validates the value of the max-unavailable-rollout annotation
 	ConditionTypeMaxUnavailable = GroupName + "/MaxUnavailableAnnotation"
 
-	// ConditionTypeUseKubeCache validates the value of the use-apiserver-cache annotation
-	ConditionTypeUseKubeCache = GroupName + "/UseKubeCacheAnnotation"
-
 	// ConditionTypeReady indicates the service is ready.
 	//
 	// Ready=True means the operands are running and providing some service.

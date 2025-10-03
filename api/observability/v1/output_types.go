@@ -744,7 +744,7 @@ type Kafka struct {
 	Brokers []BrokerURL `json:"brokers,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="self == '' || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="each broker must be a valid URL with a tcp or tls scheme"
+// +kubebuilder:validation:XValidation:rule="isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://'))",message="each broker must be a valid URL with a tcp or tls scheme"
 type BrokerURL string
 
 type LokiTuningSpec struct {

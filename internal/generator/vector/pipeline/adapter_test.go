@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -48,9 +49,8 @@ var _ = Describe("Pipeline adapters", func() {
 				Application: &obs.Application{},
 			},
 		}
-		inputMap = map[string]helpers.InputComponent{
-			inputSpecs[0].Name: input.NewInput(inputSpecs[0], map[string]*corev1.Secret{}, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, nil),
-		}
+		inputMap map[string]helpers.InputComponent
+
 		outputMap         map[string]*output.Output
 		fakeElement       = &FakeElement{}
 		internalFilterMap = map[string]*filter.InternalFilterSpec{
@@ -72,7 +72,9 @@ var _ = Describe("Pipeline adapters", func() {
 		}
 	)
 	BeforeEach(func() {
-
+		inputMap = map[string]helpers.InputComponent{
+			inputSpecs[0].Name: input.NewInput(inputSpecs[0], map[string]*corev1.Secret{}, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, utils.Options{}),
+		}
 		outputMap = map[string]*output.Output{
 			"referenced":    {},
 			"notReferenced": {},

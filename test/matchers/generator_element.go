@@ -2,11 +2,12 @@ package matchers
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"reflect"
-	"strings"
 )
 
 type GeneratorElementMatcher struct {
@@ -41,7 +42,7 @@ func (m *GeneratorElementMatcher) FailureMessage(expected interface{}) (message 
 	if m.err != nil {
 		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
 	}
-	return fmt.Sprintf("Expected element to produce a config from 'elements'\nexpected:\n%s\n\nactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
+	return fmt.Sprintf("Expected element to produce a config from 'elements'\nexpected:\n>>>\n%s\n\n<<<\n\n\n\nactual\n>>>:\n\n%s\n\n<<<\ndiff: %s\n", expected, m.actual, m.diff)
 }
 
 func (m *GeneratorElementMatcher) NegatedFailureMessage(expected interface{}) (message string) {

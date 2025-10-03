@@ -3,9 +3,10 @@ package lokistack
 import (
 	_ "embed"
 	"fmt"
-	. "github.com/onsi/ginkgo/v2"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -76,8 +77,26 @@ var _ = Describe("Generate vector config", func() {
 				TLS: tlsSpec,
 			}
 		}
-		options = utils.Options{
-			framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
+		initOptions = func() utils.Options {
+			output := initOutput()
+			return utils.Options{
+				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
+				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{output},
+					Pipelines: []obs.PipelineSpec{
+						{
+							Name:       "lokistack",
+							InputRefs:  []string{obs.InputTypeApplication.String(), obs.InputTypeInfrastructure.String(), obs.InputTypeAudit.String()},
+							OutputRefs: []string{output.Name},
+						},
+					},
+					Inputs: []obs.InputSpec{
+						{Name: obs.InputTypeApplication.String(), Type: obs.InputTypeApplication},
+						{Name: obs.InputTypeInfrastructure.String(), Type: obs.InputTypeInfrastructure, Infrastructure: &obs.Infrastructure{Sources: obs.InfrastructureSources}},
+						{Name: obs.InputTypeAudit.String(), Type: obs.InputTypeAudit, Audit: &obs.Audit{Sources: obs.AuditSources}},
+					},
+				}),
+			}
 		}
 	)
 	DescribeTable("for LokiStack output", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
@@ -95,8 +114,8 @@ var _ = Describe("Generate vector config", func() {
 		conf := New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_fake"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with ViaQ datamodel", "lokistack_viaq.toml", options, false, func(spec *obs.OutputSpec) {}),
-		Entry("with Otel datamodel", "lokistack_otel.toml", options, false, func(spec *obs.OutputSpec) {
+		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), false, func(spec *obs.OutputSpec) {}),
+		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), false, func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
 	)

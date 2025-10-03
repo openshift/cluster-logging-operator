@@ -53,9 +53,30 @@ var _ = Describe("Generate vector config", func() {
 			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
 			MinRetryDuration: utils.GetPtr(time.Duration(20)),
 		}
+
+		initOptions = func() utils.Options {
+			output := initOutput()
+			return utils.Options{
+				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{output},
+					Pipelines: []obs.PipelineSpec{
+						{
+							Name:       "lokistack",
+							InputRefs:  []string{obs.InputTypeApplication.String(), obs.InputTypeInfrastructure.String(), obs.InputTypeAudit.String()},
+							OutputRefs: []string{output.Name},
+						},
+					},
+					Inputs: []obs.InputSpec{
+						{Name: obs.InputTypeApplication.String(), Type: obs.InputTypeApplication},
+						{Name: obs.InputTypeInfrastructure.String(), Type: obs.InputTypeInfrastructure, Infrastructure: &obs.Infrastructure{Sources: obs.InfrastructureSources}},
+						{Name: obs.InputTypeAudit.String(), Type: obs.InputTypeAudit, Audit: &obs.Audit{Sources: obs.AuditSources}},
+					},
+				}),
+			}
+		}
 	)
 
-	DescribeTable("for OTLP output", func(secret observability.Secrets, op framework.Options, tune bool, visit func(spec *obs.OutputSpec), expFile string) {
+	DescribeTable("for OTLP output", func(secret observability.Secrets, op utils.Options, tune bool, visit func(spec *obs.OutputSpec), expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -75,14 +96,23 @@ var _ = Describe("Generate vector config", func() {
 	},
 		Entry("with only URL spec'd",
 			nil,
-			framework.NoOptions,
+			initOptions(),
 			false,
 			nil,
 			"otlp_all.toml",
 		),
+		Entry("with only some audit sources",
+			nil,
+			utils.Options{
+				OtlpLogSourcesOption: []string{obs.AuditSourceKube.String(), obs.AuditSourceOpenShift.String()},
+			},
+			false,
+			nil,
+			"otlp_audit_two_sources.toml",
+		),
 		Entry("with base tuning and compression",
 			nil,
-			framework.NoOptions,
+			initOptions(),
 			true,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Tuning = &obs.OTLPTuningSpec{
@@ -94,7 +124,7 @@ var _ = Describe("Generate vector config", func() {
 		),
 		Entry("with token auth from secret",
 			secrets,
-			framework.NoOptions,
+			initOptions(),
 			false,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Authentication = &obs.HTTPAuthentication{
@@ -111,9 +141,7 @@ var _ = Describe("Generate vector config", func() {
 		),
 		Entry("with token auth from SA",
 			secrets,
-			framework.Options{
-				framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
-			},
+			initOptions().Set(framework.OptionServiceAccountTokenSecretName, "my-service-account-token"),
 			false,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Authentication = &obs.HTTPAuthentication{
@@ -126,7 +154,7 @@ var _ = Describe("Generate vector config", func() {
 		),
 		Entry("with basic auth",
 			secrets,
-			framework.NoOptions,
+			initOptions(),
 			false,
 			func(spec *obs.OutputSpec) {
 				spec.OTLP.Authentication = &obs.HTTPAuthentication{

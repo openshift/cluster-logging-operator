@@ -30,6 +30,7 @@ import (
 // * input_<name>(_<element_purpose>)*    (e.g. input_application, input_application_dedot)
 // * output_<name>(_<element_purpose>)*    (e.g. output_mykafka, output_mykafka_dedot)
 // * pipeline_<name>(_<element_purpose>)*
+
 /*
    spec:
      filters:
@@ -56,9 +57,9 @@ import (
    	[sinks.output_mykafka]
        output_mykafka_dedot
 */
-
 //nolint:govet // using declarative style
 func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op framework.Options) []framework.Section {
+	op[helpers.CLFSpec] = internalobs.ClusterLogForwarderSpec(clfspec)
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*input.Input{}
@@ -108,7 +109,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		{
 			Elements: []framework.Element{
 				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{source.InternalMetricsSourceName}),
-				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites),
+				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites, op),
 			},
 		},
 	}

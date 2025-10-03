@@ -2,7 +2,6 @@ package input
 
 import (
 	"fmt"
-	"regexp"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
@@ -34,7 +33,6 @@ var (
 		Build()
 	excludeExtensions = []string{"gz", "tmp", "log.*"}
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
-	infraNSRegex      = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
 )
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
@@ -75,9 +73,9 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 func pruneInfraNS(includes []string) []string {
 	foundInfraNamespaces := make(map[string]string)
 	for _, ns := range includes {
-		matches := infraNSRegex.FindStringSubmatch(ns)
+		matches := internalobs.InfraNSRegex.FindStringSubmatch(ns)
 		if matches != nil {
-			for i, name := range infraNSRegex.SubexpNames() {
+			for i, name := range internalobs.InfraNSRegex.SubexpNames() {
 				if i != 0 && matches[i] != "" {
 					foundInfraNamespaces[name] = matches[i]
 				}

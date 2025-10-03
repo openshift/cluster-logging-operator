@@ -5,6 +5,18 @@ route.application = '.log_type == "application"'
 route.audit = '.log_type == "audit"'
 route.infrastructure = '.log_type == "infrastructure"'
 
+[transforms.output_default_lokistack_route_unmatched]
+inputs = ["output_default_lokistack_route._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_route_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_route", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
 [transforms.output_default_lokistack_application_remap]
 type = "remap"
 inputs = ["output_default_lokistack_route.application"]

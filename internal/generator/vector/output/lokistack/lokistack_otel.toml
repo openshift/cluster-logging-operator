@@ -5,12 +5,35 @@ route.application = '.log_type == "application"'
 route.audit = '.log_type == "audit"'
 route.infrastructure = '.log_type == "infrastructure"'
 
+[transforms.output_default_lokistack_route_unmatched]
+inputs = ["output_default_lokistack_route._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_route_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_route", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
 
 # Route logs separately by log_source
 [transforms.output_default_lokistack_application_reroute]
 type = "route"
 inputs = ["output_default_lokistack_route.application"]
 route.container = '.log_source == "container"'
+
+[transforms.output_default_lokistack_application_reroute_unmatched]
+inputs = ["output_default_lokistack_application_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_application_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_application_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
 
 # Normalize container log records to OTLP semantic conventions
 [transforms.output_default_lokistack_application_container]
@@ -145,6 +168,18 @@ route.auditd = '.log_source == "auditd"'
 route.kubeapi = '.log_source == "kubeAPI"'
 route.openshiftapi = '.log_source == "openshiftAPI"'
 route.ovn = '.log_source == "ovn"'
+
+[transforms.output_default_lokistack_audit_reroute_unmatched]
+inputs = ["output_default_lokistack_audit_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_audit_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_audit_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
 
 # Normalize audit log record to OTLP semantic conventions
 [transforms.output_default_lokistack_audit_auditd]
@@ -425,6 +460,18 @@ type = "route"
 inputs = ["output_default_lokistack_route.infrastructure"]
 route.container = '.log_source == "container"'
 route.node = '.log_source == "node"'
+
+[transforms.output_default_lokistack_infrastructure_reroute_unmatched]
+inputs = ["output_default_lokistack_infrastructure_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_infrastructure_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_infrastructure_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
 
 # Normalize container log records to OTLP semantic conventions
 [transforms.output_default_lokistack_infrastructure_container]

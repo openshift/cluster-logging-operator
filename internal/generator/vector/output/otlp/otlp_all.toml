@@ -9,6 +9,18 @@ route.node = '.log_source == "node"'
 route.openshiftapi = '.log_source == "openshiftAPI"'
 route.ovn = '.log_source == "ovn"'
 
+[transforms.output_otel_collector_reroute_unmatched]
+inputs = ["output_otel_collector_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_otel_collector_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_otel_collector_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
 # Normalize container log records to OTLP semantic conventions
 [transforms.output_otel_collector_container]
 type = "remap"

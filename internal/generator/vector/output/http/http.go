@@ -3,8 +3,10 @@ package http
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	vectorsinks "github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -58,14 +60,15 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
+	tuning := internalobs.NewTuning(o)
 	return MergeElements(
 
 		els,
 		[]Element{
 			sink,
-			common.NewEncoding(id, common.CodecJSON),
+			vectorsinks.NewEncoding(id, vectorsinks.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(id, strategy),
+			vectorsinks.NewBatch(id, tuning.GetMaxWrite(), 0, 0),
 			common.NewBuffer(id, strategy),
 			Request(id, o, strategy),
 			tls.New(id, o.TLS, secrets, op),

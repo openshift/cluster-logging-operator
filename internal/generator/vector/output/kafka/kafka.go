@@ -2,7 +2,10 @@ package kafka
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	vectorsinks "github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+
 	"net/url"
 	"strings"
 
@@ -78,8 +81,8 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	elements := []Element{
 		commontemplate.TemplateRemap(componentID, inputs, Topics(o), componentID, "Kafka Topic"),
 		sink,
-		common.NewEncoding(id, common.CodecJSON, func(e *common.Encoding) {
-			e.TimeStampFormat.Value = common.TimeStampFormatRFC3339
+		vectorsinks.NewEncoding(id, vectorsinks.CodecJSON, func(e *vectorsinks.Encoding) {
+			e.TimeStampFormat = common.TimeStampFormatRFC3339
 		}),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),

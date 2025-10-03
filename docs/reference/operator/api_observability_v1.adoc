@@ -74,6 +74,9 @@ Type:: object
 |Property|Type|Description
 
 |affinity|object|  Define scheduling rules that influence pod placement based on node or pod affinity/anti-affinity constraints.
+|maxUnavailable|object|  Define the maxUnavailable pod rollout strategy
+
+Value can be a number (e.g., 50) or a percentage string (e.g., &#34;50%&#34;).
 |nodeSelector|object|  Define nodes for scheduling the pods.
 
 |resources|object|  The resource requirements for the collector
@@ -875,6 +878,19 @@ Type:: object
 === .spec.collector.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].namespaces[]
 
 Type:: array
+
+=== .spec.collector.maxUnavailable
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|IntVal|int|  
+|StrVal|string|  
+|Type|int|  
+|======================
 
 === .spec.collector.nodeSelector
 

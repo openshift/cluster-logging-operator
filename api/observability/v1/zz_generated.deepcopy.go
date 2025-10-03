@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	timex "time"
 )
@@ -462,6 +463,11 @@ func (in *CollectorSpec) DeepCopyInto(out *CollectorSpec) {
 		in, out := &in.Affinity, &out.Affinity
 		*out = new(corev1.Affinity)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.MaxUnavailable != nil {
+		in, out := &in.MaxUnavailable, &out.MaxUnavailable
+		*out = new(intstr.IntOrString)
+		**out = **in
 	}
 }
 

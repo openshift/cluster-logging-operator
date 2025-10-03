@@ -1,32 +1,26 @@
 package observability
 
 import (
+	"regexp"
+	"sort"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"k8s.io/utils/set"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 var (
 	ReservedInputTypes = sets.NewString(
-		string(obs.InputTypeApplication),
-		string(obs.InputTypeAudit),
-		string(obs.InputTypeInfrastructure),
+		obs.InputTypeApplication.String(),
+		obs.InputTypeAudit.String(),
+		obs.InputTypeInfrastructure.String(),
 	)
+	ReservedApplicationSources    = sets.NewString(obs.ApplicationSourceContainer.String())
+	ReservedInfrastructureSources = sets.NewString(obs.InfrastructureSourceContainer.String(), obs.InfrastructureSourceNode.String())
 
-	ReservedApplicationSources    = sets.NewString(string(obs.ApplicationSourceContainer))
-	ReservedInfrastructureSources = sets.NewString()
-	ReservedAuditSources          = sets.NewString()
+	InfraNSRegex = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
 )
-
-func init() {
-	for _, i := range obs.InfrastructureSources {
-		ReservedInfrastructureSources.Insert(string(i))
-	}
-	for _, i := range obs.AuditSources {
-		ReservedAuditSources.Insert(string(i))
-	}
-}
 
 func MaxRecordsPerSecond(input obs.InputSpec) (int64, bool) {
 	if input.Application != nil &&
@@ -46,6 +40,17 @@ func Threshold(ls *obs.LimitSpec) (int64, bool) {
 
 type Inputs []obs.InputSpec
 
+func IncludesInfraNamespace(input *obs.Application) bool {
+	if input != nil {
+		for _, ns := range input.Includes {
+			if matches := InfraNSRegex.FindStringSubmatch(ns.Namespace); matches != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Names returns a slice of input names
 func (inputs Inputs) Names() (names []string) {
 	for _, i := range inputs {
@@ -54,13 +59,35 @@ func (inputs Inputs) Names() (names []string) {
 	return names
 }
 
-// InputTypes returns a unique set of input types
+// InputTypes returns a unique set of sorted input types.
 func (inputs Inputs) InputTypes() []obs.InputType {
 	types := set.New[obs.InputType]()
 	for _, i := range inputs {
 		types.Insert(i.Type)
 	}
-	return types.UnsortedList()
+	typesList := types.UnsortedList()
+	sort.Slice(typesList, func(i, j int) bool {
+		return typesList[i].String() < typesList[j].String()
+	})
+	return typesList
+}
+
+// InputSources returns a unique set of input sources based upon the input type
+func (inputs Inputs) InputSources(inputType obs.InputType) []string {
+	types := set.New[string]()
+	for _, i := range inputs {
+		if i.Type == inputType {
+			switch i.Type {
+			case obs.InputTypeApplication:
+				types.Insert(ReservedApplicationSources.List()...)
+			case obs.InputTypeInfrastructure:
+				types.Insert(InfrastructureSources(i.Infrastructure.Sources).AsStrings()...)
+			case obs.InputTypeAudit:
+				types.Insert(AuditSources(i.Audit.Sources).AsStrings()...)
+			}
+		}
+	}
+	return types.SortedList()
 }
 
 // Map returns a map of input name to input spec
@@ -142,4 +169,22 @@ func (inputs Inputs) HasReceiverSource() bool {
 		}
 	}
 	return false
+}
+
+type InfrastructureSources []obs.InfrastructureSource
+
+func (infraSources InfrastructureSources) AsStrings() (result []string) {
+	for _, s := range infraSources {
+		result = append(result, string(s))
+	}
+	return result
+}
+
+type AuditSources []obs.AuditSource
+
+func (auditSources AuditSources) AsStrings() (result []string) {
+	for _, s := range auditSources {
+		result = append(result, string(s))
+	}
+	return result
 }

@@ -2,8 +2,6 @@ package otlp
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"sort"
 	"strings"
 
@@ -17,6 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -65,26 +64,40 @@ var (
 	allLogSources = []string{logSourceContainer, logSourceNode, logSourceAuditd, logSourceKubeAPI, logSourceOpenshiftAPI, logSourceOvn}
 )
 
+type logSources []string
+
+func (ls logSources) Has(source string) bool {
+	for _, e := range ls {
+		if e == source {
+			return true
+		}
+	}
+	return false
+}
+
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			elements.Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
-	opLogSources, _ := utils.GetOption(op, OtlpLogSourcesOption, allLogSources)
-	logSources := sets.NewString(opLogSources...)
-
+	var opSources, _ = utils.GetOption(op, OtlpLogSourcesOption, allLogSources)
+	if len(opSources) == 0 {
+		panic("InputSources not found while generating config")
+	}
+	sources := logSources(opSources)
 	// TODO: create a pattern to filter by input so all this is not necessary
 	var els []Element
 	// Creates reroutes for 'container','node','auditd','kubeAPI','openshiftAPI','ovn'
 	rerouteID := vectorhelpers.MakeID(id, "reroute") // "output_my_id_reroute
-	els = append(els, RouteBySource(rerouteID, inputs, logSources.List()))
+	els = append(els, RouteBySource(rerouteID, inputs, sources))
+	els = append(els, elements.NewUnmatched(rerouteID, op, nil))
 
 	groupBySourceInputs := []string{}
 	groupByHostInputs := []string{}
 	reduceInputs := []string{}
 	// Container
-	if logSources.Has(logSourceContainer) {
+	if sources.Has(logSourceContainer) {
 		transformContainerID := vectorhelpers.MakeID(id, logSourceContainer)                       // "output_my_id_container"
 		transformContainerInputID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceContainer) // "output_my_id_reroute.container"
 		reduceContainerID := vectorhelpers.MakeID(id, "groupby", "container")
@@ -94,7 +107,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 
 		reduceInputs = append(reduceInputs, reduceContainerID)
 	}
-	if logSources.Has(logSourceNode) {
+	if sources.Has(logSourceNode) {
 		// Journal
 		transformNodeID := vectorhelpers.MakeID(id, logSourceNode)
 		transformNodeRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceNode)
@@ -103,27 +116,31 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		groupByHostInputs = append(groupByHostInputs, transformNodeID)
 	}
 
-	if logSources.Has(logSourceAuditd) || logSources.Has(logSourceKubeAPI) || logSources.Has(logSourceOpenshiftAPI) || logSources.Has(logSourceOvn) {
+	if sources.Has(logSourceAuditd) {
 		// Audit
 		transformAuditHostID := vectorhelpers.MakeID(id, logSourceAuditd)
 		transformAuditHostRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceAuditd)
+		els = append(els, TransformAuditHost(transformAuditHostID, []string{transformAuditHostRouteID}))
+		groupByHostInputs = append(groupByHostInputs, transformAuditHostID)
+	}
+	if sources.Has(logSourceKubeAPI) {
 		transformAuditKubeID := vectorhelpers.MakeID(id, logSourceKubeAPI)
 		transformAuditKubeRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceKubeAPI)
+		els = append(els, TransformAuditKube(transformAuditKubeID, []string{transformAuditKubeRouteID}))
+		groupBySourceInputs = append(groupBySourceInputs, transformAuditKubeID)
+	}
+	if sources.Has(logSourceOpenshiftAPI) {
+
 		transformAuditOpenshiftID := vectorhelpers.MakeID(id, logSourceOpenshiftAPI)
 		transformAuditOpenshiftRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceOpenshiftAPI)
+		els = append(els, TransformAuditOpenshift(transformAuditOpenshiftID, []string{transformAuditOpenshiftRouteID}))
+		groupBySourceInputs = append(groupBySourceInputs, transformAuditOpenshiftID)
+	}
+	if sources.Has(logSourceOvn) {
 		transformAuditOvnID := vectorhelpers.MakeID(id, logSourceOvn)
 		transformAuditOvnRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceOvn)
-
-		els = append(els, TransformAuditHost(transformAuditHostID, []string{transformAuditHostRouteID}))
-		els = append(els, TransformAuditKube(transformAuditKubeID, []string{transformAuditKubeRouteID}))
-		els = append(els, TransformAuditOpenshift(transformAuditOpenshiftID, []string{transformAuditOpenshiftRouteID}))
 		els = append(els, TransformAuditOvn(transformAuditOvnID, []string{transformAuditOvnRouteID}))
-
-		groupBySourceInputs = append(groupBySourceInputs,
-			transformAuditKubeID,
-			transformAuditOpenshiftID,
-			transformAuditOvnID)
-		groupByHostInputs = append(groupByHostInputs, transformAuditHostID)
+		groupBySourceInputs = append(groupBySourceInputs, transformAuditOvnID)
 	}
 
 	// Group by cluster_id, log_source

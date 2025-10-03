@@ -26,6 +26,10 @@ import (
 // +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog;otlp
 type OutputType string
 
+func (s OutputType) String() string {
+	return string(s)
+}
+
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
 	OutputTypeAzureMonitor       OutputType = "azureMonitor"

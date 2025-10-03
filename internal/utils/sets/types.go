@@ -1,8 +1,9 @@
 package sets
 
 import (
-	"github.com/golang-collections/collections/set"
 	"sort"
+
+	"github.com/golang-collections/collections/set"
 )
 
 type String struct {

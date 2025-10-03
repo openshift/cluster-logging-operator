@@ -2,6 +2,8 @@ package observability
 
 import (
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
+
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -58,4 +60,22 @@ func isAuthorized(conditions []metav1.Condition) bool {
 		}
 	}
 	return false
+}
+
+type ClusterLogForwarderSpec obs.ClusterLogForwarderSpec
+
+func (spec ClusterLogForwarderSpec) InputSpecsTo(out obs.OutputSpec) (results []obs.InputSpec) {
+	inputs := Inputs(spec.Inputs).Map()
+	found := map[string]obs.InputSpec{}
+	for _, p := range spec.Pipelines {
+		if sets.NewString(p.OutputRefs...).Has(out.Name) {
+			for _, ref := range p.InputRefs {
+				found[ref] = inputs[ref]
+			}
+		}
+	}
+	for _, input := range found {
+		results = append(results, input)
+	}
+	return results
 }

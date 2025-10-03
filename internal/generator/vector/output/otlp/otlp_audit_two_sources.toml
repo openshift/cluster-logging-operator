@@ -1,0 +1,152 @@
+# Route logs separately by log_source
+[transforms.output_otel_collector_reroute]
+type = "route"
+inputs = ["pipeline_my_pipeline_viaq_0"]
+route.kubeapi = '.log_source == "kubeAPI"'
+route.openshiftapi = '.log_source == "openshiftAPI"'
+
+[transforms.output_otel_collector_reroute_unmatched]
+inputs = ["output_otel_collector_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_otel_collector_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_otel_collector_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
+# Normalize audit log kube record to OTLP semantic conventions
+[transforms.output_otel_collector_kubeapi]
+type = "remap"
+inputs = ["output_otel_collector_reroute.kubeapi"]
+source = '''
+# Create base resource attributes
+resource.attributes = []
+resource.attributes = append(resource.attributes,
+  [
+    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+  ]
+)
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+# Append backward compatibility attributes
+resource.attributes = append( resource.attributes,
+	[
+      {"key": "log_type", "value": {"stringValue": .log_type}},
+      {"key": "log_source", "value": {"stringValue": .log_source}},
+      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+    ]
+)
+# Create logRecord object
+r = {"attributes": []}
+r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+# Create body from internal message
+r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+# Openshift object for grouping (dropped before sending)
+o = {
+    "log_type": .log_type,
+    "log_source": .log_source,
+    "hostname": .hostname,
+    "cluster_id": .openshift.cluster_id
+}
+. = {
+  "openshift": o,
+  "resource": resource,
+  "logRecords": r
+}
+'''
+
+# Normalize audit openshiftAPI record to OTLP semantic conventions
+[transforms.output_otel_collector_openshiftapi]
+type = "remap"
+inputs = ["output_otel_collector_reroute.openshiftapi"]
+source = '''
+# Create base resource attributes
+resource.attributes = []
+resource.attributes = append(resource.attributes,
+  [
+    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+  ]
+)
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+# Append backward compatibility attributes
+resource.attributes = append( resource.attributes,
+	[
+      {"key": "log_type", "value": {"stringValue": .log_type}},
+      {"key": "log_source", "value": {"stringValue": .log_source}},
+      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+    ]
+)
+# Create logRecord object
+r = {"attributes": []}
+r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+# Create body from internal message
+r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+# Openshift object for grouping (dropped before sending)
+o = {
+    "log_type": .log_type,
+    "log_source": .log_source,
+    "hostname": .hostname,
+    "cluster_id": .openshift.cluster_id
+}
+. = {
+  "openshift": o,
+  "resource": resource,
+  "logRecords": r
+}
+'''
+
+# Merge audit api and node logs and group by log_source
+[transforms.output_otel_collector_groupby_source]
+type = "reduce"
+inputs = ["output_otel_collector_kubeapi","output_otel_collector_openshiftapi"]
+expire_after_ms = 15000
+max_events = 1
+group_by = [".openshift.cluster_id",".openshift.log_type",".openshift.log_source"]
+merge_strategies.resource = "retain"
+merge_strategies.logRecords = "array"
+
+# Create new resource object for OTLP JSON payload
+[transforms.output_otel_collector_resource_logs]
+type = "remap"
+inputs = ["output_otel_collector_groupby_source"]
+source = '''
+  . = {
+        "resource": {
+           "attributes": .resource.attributes,
+        },
+        "scopeLogs": [
+          {"logRecords": .logRecords}
+        ]
+      }
+'''
+
+[sinks.output_otel_collector]
+type = "opentelemetry"
+inputs = ["output_otel_collector_resource_logs"]
+protocol.uri = "http://localhost:4318/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"

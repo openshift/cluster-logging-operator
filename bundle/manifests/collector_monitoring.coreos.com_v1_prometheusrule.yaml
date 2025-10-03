@@ -6,6 +6,20 @@ spec:
   groups:
   - name: logging_collector.alerts
     rules:
+    - alert: ClusterLogForwarderRuntimeConfigurationMissingUnmatched
+      annotations:
+        message: The ClusterLogForwarder {{$labels.namespace}}/{{$labels.app_kubernetes_io_instance}}
+          has an incomplete configuration.
+        summary: |-
+          The ClusterLogForwarder {{$labels.namespace}}/{{$labels.app_kubernetes_io_instance}} has a runtime configuration
+          error where routing of unmatched log entries could result in the logs being dropped.  Please open an issue with support
+          and include the ClusterLogForwarder and generated collector configuration.
+      expr: |
+        sum by(namespace,app_kubernetes_io_instance,component_id, log_type, log_source)(irate(logcollector_component_event_unmatched_count[2m])) > 0
+      for: 1m
+      labels:
+        service: collector
+        severity: error
     - alert: ClusterLogForwarderDeprecations
       annotations:
         message: The Cluster Logging Operator version {{$labels.version}} includes

@@ -13,6 +13,9 @@ const (
 	OptionForwarderName                 = "forwarderName"
 	UseKubeCacheOption                  = "useKubeCache"
 	MaxUnavailableOption                = "maxUnavailableRollout"
+
+	//OptionLogsToMetricInputs identifies a set of inputs that should be used for exporting metrics
+	OptionLogsToMetricInputs = "logsToMetricInputs"
 )
 
 // Options is a map of Options used to customize the config generation. E.g. Debugging, legacy config generation

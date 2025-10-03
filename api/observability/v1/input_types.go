@@ -23,6 +23,10 @@ import (
 // +kubebuilder:validation:Enum:=audit;application;infrastructure;receiver
 type InputType string
 
+func (s InputType) String() string {
+	return string(s)
+}
+
 const (
 	// InputTypeApplication contains all the non-infrastructure container logs.
 	InputTypeApplication InputType = "application"
@@ -103,6 +107,10 @@ type ContainerInputTuningSpec struct {
 // +kubebuilder:validation:Enum:=container
 type ApplicationSource string
 
+func (s ApplicationSource) String() string {
+	return string(s)
+}
+
 const (
 
 	// ApplicationSourceContainer are container logs from deployed workloads
@@ -168,6 +176,10 @@ type NamespaceContainerSpec struct {
 // +kubebuilder:validation:Enum:=container;node
 type InfrastructureSource string
 
+func (s InfrastructureSource) String() string {
+	return string(s)
+}
+
 const (
 	// InfrastructureSourceNode are journald logs from the node
 	InfrastructureSourceNode InfrastructureSource = "node"
@@ -201,6 +213,10 @@ type Infrastructure struct {
 //
 // +kubebuilder:validation:Enum:=auditd;kubeAPI;openshiftAPI;ovn
 type AuditSource string
+
+func (s AuditSource) String() string {
+	return string(s)
+}
 
 const (
 	// AuditSourceKube are audit logs from kubernetes API servers

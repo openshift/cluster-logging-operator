@@ -2,8 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -11,10 +9,16 @@ import (
 	"strings"
 	"sync"
 
+	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
 	"golang.org/x/sys/unix"
 )
 
-const VectorSecretID = "kubernetes_secret"
+const (
+	VectorSecretID = "kubernetes_secret"
+	CLFSpec        = "clfSpec"
+)
 
 // Match quoted strings like "foo" or "foo/bar-baz"
 var quoteRegex = regexp.MustCompile(`^".+"$`)

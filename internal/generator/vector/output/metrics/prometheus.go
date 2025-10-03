@@ -3,6 +3,7 @@ package metrics
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -60,7 +61,8 @@ source = '''
 {{end}}`
 }
 
-func PrometheusOutput(id string, inputs []string, minTlsVersion string, cipherSuites string) framework.Element {
+func PrometheusOutput(id string, inputs []string, minTlsVersion string, cipherSuites string, op utils.Options) framework.Element {
+	inputs = append(inputs, op.GetStringSet(framework.OptionLogsToMetricInputs)...)
 	return PrometheusExporter{
 		ID:            id,
 		Inputs:        helpers.MakeInputs(inputs...),

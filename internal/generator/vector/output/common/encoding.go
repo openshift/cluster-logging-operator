@@ -1,40 +1,26 @@
 package common
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-)
-
-const (
-	CodecJSON              = "json"
-	TimeStampFormatRFC3339 = "rfc3339"
-)
-
 type Encoding struct {
-	ID    string
-	Codec helpers.OptionalPair
-	//ExceptFields is a VRL acceptable List
-	ExceptFields    helpers.OptionalPair
-	TimeStampFormat helpers.OptionalPair
+	ID             string   `toml:"-"`
+	Codec          *string  `toml:"codec,omitempty"`
+	ExceptFields   []string `toml:"except_fields,omitempty"`
+	TimeStampFormat *string `toml:"timestamp_format,omitempty"`
 }
 
-func NewEncoding(id, codec string, inits ...func(*Encoding)) Encoding {
+func NewEncoding(id string, codec string, inits ...func(*Encoding)) Encoding {
 	e := &Encoding{
-		ID:    id,
-		Codec: helpers.NewOptionalPair("codec", codec),
-		ExceptFields: helpers.NewOptionalPair("except_fields",
-			vectorhelpers.MakeInputs("_internal"),
-			framework.Option{Name: helpers.OptionFormatter, Value: "%s = %v"},
-		),
-		TimeStampFormat: helpers.NewOptionalPair("timestamp_format", nil),
+		ID:           id,
+		ExceptFields: []string{"_internal"},
 	}
-	if codec == "" {
-		e.Codec.Value = nil
+
+	if codec != "" {
+		e.Codec = &codec
 	}
+
 	for _, init := range inits {
 		init(e)
 	}
+
 	return *e
 }
 
@@ -43,10 +29,11 @@ func (e Encoding) Name() string {
 }
 
 func (e Encoding) Template() string {
-	return `{{define "` + e.Name() + `" -}}
-[sinks.{{.ID}}.encoding]
-{{.Codec }}
-{{.TimeStampFormat }}
-{{.ExceptFields }}
-{{end}}`
+	return ""
+}
+
+func (e Encoding) Config() any {
+	return map[string]interface{}{
+		"sinks." + e.ID + ".encoding": e,
+	}
 }

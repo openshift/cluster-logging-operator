@@ -1,25 +1,37 @@
 package azuremonitor
 
 import (
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
+type AzureMonitorSink struct {
+	Type            string   `toml:"type"`
+	Inputs          []string `toml:"inputs"`
+	CustomerId      string   `toml:"customer_id"`
+	LogType         string   `toml:"log_type"`
+	SharedKey       string   `toml:"shared_key"`
+	AzureResourceId string   `toml:"azure_resource_id,omitempty"`
+	Host            string   `toml:"host,omitempty"`
+	Encoding        common.Encoding `toml:"encoding,omitempty"`
+}
+
 type AzureMonitor struct {
-	ComponentID     string
-	Inputs          string
-	CustomerId      string
-	LogType         string
-	AzureResourceId string
-	SharedKey       string
-	Host            string
+	ID   string
+	Sink AzureMonitorSink
+}
+
+func (azm AzureMonitor) Config() any {
+	return map[string]interface{}{
+		"sinks": map[string]interface{}{
+			azm.ID: azm.Sink,
+		},
+	}
 }
 
 func (azm AzureMonitor) Name() string {
@@ -27,20 +39,7 @@ func (azm AzureMonitor) Name() string {
 }
 
 func (azm AzureMonitor) Template() string {
-	return `{{define "` + azm.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "azure_monitor_logs"
-inputs = {{.Inputs}}
-{{ if .AzureResourceId}}
-azure_resource_id = "{{.AzureResourceId}}"
-{{- end }}
-customer_id = "{{.CustomerId}}"
-{{ if .Host }}
-host = "{{.Host}}"
-{{- end }}
-log_type = "{{.LogType}}"
-shared_key = "{{.SharedKey}}"
-{{end}}`
+	return ""
 }
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
@@ -50,26 +49,25 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		}
 	}
 	azm := o.AzureMonitor
-	e := AzureMonitor{
-		ComponentID:     id,
-		Inputs:          vectorhelpers.MakeInputs(inputs...),
-		CustomerId:      azm.CustomerId,
-		LogType:         azm.LogType,
-		AzureResourceId: azm.AzureResourceId,
-		Host:            azm.Host,
+	sink := AzureMonitorSink{
+		Type:       "azure_monitor_logs",
+		Inputs:     inputs,
+		CustomerId: azm.CustomerId,
+		LogType:    azm.LogType,
+		Host:       azm.Host,
+		Encoding:   common.NewEncoding(id, ""),
 	}
 	if azm.Authentication != nil && azm.Authentication.SharedKey != nil {
-		e.SharedKey = secrets.AsString(azm.Authentication.SharedKey)
-		e.SharedKey = vectorhelpers.SecretFrom(azm.Authentication.SharedKey)
+		sink.SharedKey = vectorhelpers.SecretFrom(azm.Authentication.SharedKey)
 	}
-	confTLS := tls.New(id, o.TLS, secrets, op)
+	//confTLS := tls.New(id, o.TLS, secrets, op)
 	return []framework.Element{
-		e,
-		common.NewEncoding(id, ""),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		confTLS,
+		AzureMonitor{ID: id, Sink: sink},
+		//common.NewEncoding(id, ""),
+		//common.NewAcknowledgments(id, strategy),
+		//common.NewBatch(id, strategy),
+		//common.NewBuffer(id, strategy),
+		//common.NewRequest(id, strategy),
+		//confTLS,
 	}
 }

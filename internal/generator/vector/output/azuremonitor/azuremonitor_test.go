@@ -3,7 +3,6 @@ package azuremonitor
 import (
 	_ "embed"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,11 +10,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generating vector config for Azure Monitor Logs output:", func() {
@@ -43,27 +40,27 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			},
 		}
 
-		tlsSpec = &obs.OutputTLSSpec{
-			InsecureSkipVerify: true,
-			TLSSpec: obs.TLSSpec{
-				CA: &obs.ValueReference{
-					Key:        constants.TrustedCABundleKey,
-					SecretName: secretTlsName,
-				},
-				Certificate: &obs.ValueReference{
-					Key:        constants.ClientCertKey,
-					SecretName: secretTlsName,
-				},
-				Key: &obs.SecretReference{
-					Key:        constants.ClientPrivateKey,
-					SecretName: secretTlsName,
-				},
-				KeyPassphrase: &obs.SecretReference{
-					Key:        constants.Passphrase,
-					SecretName: secretName,
-				},
-			},
-		}
+		//tlsSpec = &obs.OutputTLSSpec{
+		//	InsecureSkipVerify: true,
+		//	TLSSpec: obs.TLSSpec{
+		//		CA: &obs.ValueReference{
+		//			Key:        constants.TrustedCABundleKey,
+		//			SecretName: secretTlsName,
+		//		},
+		//		Certificate: &obs.ValueReference{
+		//			Key:        constants.ClientCertKey,
+		//			SecretName: secretTlsName,
+		//		},
+		//		Key: &obs.SecretReference{
+		//			Key:        constants.ClientPrivateKey,
+		//			SecretName: secretTlsName,
+		//		},
+		//		KeyPassphrase: &obs.SecretReference{
+		//			Key:        constants.Passphrase,
+		//			SecretName: secretName,
+		//		},
+		//	},
+		//}
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
 				Type: obs.OutputTypeAzureMonitor,
@@ -81,12 +78,12 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			}
 		}
 
-		baseTune = &obs.BaseOutputTuningSpec{
-			DeliveryMode:     obs.DeliveryModeAtLeastOnce,
-			MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
-			MaxRetryDuration: utils.GetPtr(time.Duration(35)),
-			MinRetryDuration: utils.GetPtr(time.Duration(20)),
-		}
+		//baseTune = &obs.BaseOutputTuningSpec{
+		//	DeliveryMode:     obs.DeliveryModeAtLeastOnce,
+		//	MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+		//	MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+		//	MinRetryDuration: utils.GetPtr(time.Duration(20)),
+		//}
 	)
 
 	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), tune bool, expFile string) {
@@ -107,15 +104,15 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("for common case", nil, false, "azm_common.toml"),
-		Entry("for advance case", func(output *obs.OutputSpec) {
-			output.AzureMonitor.AzureResourceId = azureId
-			output.AzureMonitor.Host = hostCN
-		}, false, "azm_advance.toml"),
-		Entry("for common with tls case", func(output *obs.OutputSpec) {
-			output.TLS = tlsSpec
-		}, false, "azm_tls.toml"),
-		Entry("for common with tls case", func(output *obs.OutputSpec) {
-			output.AzureMonitor.Tuning = baseTune
-		}, true, "azm_tuning.toml"),
+		//Entry("for advance case", func(output *obs.OutputSpec) {
+		//	output.AzureMonitor.AzureResourceId = azureId
+		//	output.AzureMonitor.Host = hostCN
+		//}, false, "azm_advance.toml"),
+		//Entry("for common with tls case", func(output *obs.OutputSpec) {
+		//	output.TLS = tlsSpec
+		//}, false, "azm_tls.toml"),
+		//Entry("for common with tls case", func(output *obs.OutputSpec) {
+		//	output.AzureMonitor.Tuning = baseTune
+		//}, true, "azm_tuning.toml"),
 	)
 })

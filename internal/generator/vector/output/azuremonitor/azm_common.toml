@@ -1,10 +1,10 @@
-
+[sinks]
 [sinks.output_azure_monitor_logs]
-type = "azure_monitor_logs"
-inputs = ["pipelineName"]
-customer_id = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"
-log_type = "myLogType"
-shared_key = "SECRET[kubernetes_secret.azure-monitor-secret/shared_key]"
+type = 'azure_monitor_logs'
+inputs = ['pipelineName']
+customer_id = '6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt'
+log_type = 'myLogType'
+shared_key = 'SECRET[kubernetes_secret.azure-monitor-secret/shared_key]'
 
 [sinks.output_azure_monitor_logs.encoding]
-except_fields = ["_internal"]
+except_fields = ['_internal']

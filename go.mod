@@ -16,6 +16,7 @@ require (
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298
 	github.com/openshift/hypershift/api v0.0.0-20250331115040-26fc3ceb1929
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
 	github.com/prometheus/client_golang v1.20.5

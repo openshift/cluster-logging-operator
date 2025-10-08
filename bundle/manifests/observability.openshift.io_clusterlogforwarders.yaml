@@ -948,6 +948,20 @@ spec:
                             type: array
                         type: object
                     type: object
+                  networkPolicy:
+                    description: Define the Network Policy for the Collector
+                    nullable: true
+                    properties:
+                      ruleSet:
+                        description: NetworkPolicyRuleSetType is the type of network
+                          policy rule set to use
+                        enum:
+                        - AllowAllIngressEgress
+                        - RestrictIngressEgress
+                        type: string
+                    required:
+                    - ruleSet
+                    type: object
                   nodeSelector:
                     additionalProperties:
                       type: string

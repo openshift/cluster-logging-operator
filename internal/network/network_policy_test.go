@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +67,9 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 				policyName,
 				instanceName,
 				componentName,
-				"",
+				obsv1.NetworkPolicyRuleSetTypeAllowAllIngressEgress,
+				nil,
+				nil,
 				owner,
 				commonLabels)).To(Succeed())
 
@@ -112,7 +115,213 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			Expect(policyInstance.Labels[constants.LabelK8sInstance]).To(Equal(instanceName))
 			Expect(policyInstance.Labels[constants.LabelK8sComponent]).To(Equal(componentName))
 		})
+
+		It("should successfully reconcile the network policy with input receiver ports", func() {
+			inputs := []obsv1.InputSpec{
+				{
+					Name: "http-receiver",
+					Type: obsv1.InputTypeReceiver,
+					Receiver: &obsv1.ReceiverSpec{
+						Type: obsv1.ReceiverTypeHTTP,
+						Port: 8080,
+					},
+				},
+				{
+					Name: "syslog-receiver",
+					Type: obsv1.InputTypeReceiver,
+					Receiver: &obsv1.ReceiverSpec{
+						Type: obsv1.ReceiverTypeSyslog,
+						Port: 5140,
+					},
+				},
+			}
+
+			// Reconcile the network policy with RestrictIngressEgress rule set
+			Expect(ReconcileClusterLogForwarderNetworkPolicy(
+				reqClient,
+				constants.OpenshiftNS,
+				policyName,
+				instanceName,
+				componentName,
+				obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress,
+				[]obsv1.OutputSpec{},
+				inputs,
+				owner,
+				commonLabels)).To(Succeed())
+
+			// Get and check the network policy
+			Expect(reqClient.Get(context.TODO(), policyKey, policyInstance)).Should(Succeed())
+
+			// Verify ingress rules include metrics port and receiver ports
+			Expect(policyInstance.Spec.Ingress).To(HaveLen(1))
+			ingressRule := policyInstance.Spec.Ingress[0]
+
+			// Should have 3 ports: metrics port + 2 receiver ports
+			Expect(ingressRule.Ports).To(HaveLen(3))
+
+			portNumbers := make([]int32, 0)
+			for _, port := range ingressRule.Ports {
+				if port.Port != nil {
+					portNumbers = append(portNumbers, port.Port.IntVal)
+				}
+			}
+
+			Expect(portNumbers).To(ContainElements(int32(8080), int32(5140)))
+		})
+
+		It("should successfully reconcile the network policy with output ports", func() {
+			outputs := []obsv1.OutputSpec{
+				{
+					Name: "elasticsearch-output",
+					Type: obsv1.OutputTypeElasticsearch,
+					Elasticsearch: &obsv1.Elasticsearch{
+						URLSpec: obsv1.URLSpec{
+							URL: "https://elasticsearch.example.com:9200",
+						},
+					},
+				},
+				{
+					Name: "splunk-output",
+					Type: obsv1.OutputTypeSplunk,
+					Splunk: &obsv1.Splunk{
+						URLSpec: obsv1.URLSpec{
+							URL: "https://splunk.example.com:8088",
+						},
+					},
+				},
+				{
+					Name: "loki-output",
+					Type: obsv1.OutputTypeLoki,
+					Loki: &obsv1.Loki{
+						URLSpec: obsv1.URLSpec{
+							URL: "http://loki.example.com:3100",
+						},
+					},
+				},
+			}
+
+			// Reconcile the network policy with RestrictIngressEgress rule set
+			Expect(ReconcileClusterLogForwarderNetworkPolicy(
+				reqClient,
+				constants.OpenshiftNS,
+				policyName,
+				instanceName,
+				componentName,
+				obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress,
+				outputs,
+				[]obsv1.InputSpec{},
+				owner,
+				commonLabels)).To(Succeed())
+
+			// Get and check the network policy
+			Expect(reqClient.Get(context.TODO(), policyKey, policyInstance)).Should(Succeed())
+
+			// Verify egress rules include output ports
+			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
+			egressRule := policyInstance.Spec.Egress[0]
+
+			Expect(egressRule.Ports).To(HaveLen(3))
+
+			portNumbers := make([]int32, 0)
+			for _, port := range egressRule.Ports {
+				if port.Port != nil {
+					portNumbers = append(portNumbers, port.Port.IntVal)
+				}
+			}
+
+			Expect(portNumbers).To(ContainElements(int32(9200), int32(8088), int32(3100)))
+		})
+
+		It("should successfully reconcile the network policy with both input and output ports", func() {
+			// Setup inputs with receiver ports
+			inputs := []obsv1.InputSpec{
+				{
+					Name: "http-receiver",
+					Type: obsv1.InputTypeReceiver,
+					Receiver: &obsv1.ReceiverSpec{
+						Type: obsv1.ReceiverTypeHTTP,
+						Port: 8080,
+					},
+				},
+				{
+					Name: "syslog-receiver",
+					Type: obsv1.InputTypeReceiver,
+					Receiver: &obsv1.ReceiverSpec{
+						Type: obsv1.ReceiverTypeSyslog,
+						Port: 5140,
+					},
+				},
+			}
+
+			// Setup outputs with different types
+			outputs := []obsv1.OutputSpec{
+				{
+					Name: "elasticsearch-output",
+					Type: obsv1.OutputTypeElasticsearch,
+					Elasticsearch: &obsv1.Elasticsearch{
+						URLSpec: obsv1.URLSpec{
+							URL: "https://elasticsearch.example.com:9200",
+						},
+					},
+				},
+				{
+					Name: "kafka-output",
+					Type: obsv1.OutputTypeKafka,
+					Kafka: &obsv1.Kafka{
+						URL: "tcp://kafka.example.com:9092",
+					},
+				},
+			}
+
+			// Reconcile the network policy with RestrictIngressEgress rule set
+			Expect(ReconcileClusterLogForwarderNetworkPolicy(
+				reqClient,
+				constants.OpenshiftNS,
+				policyName,
+				instanceName,
+				componentName,
+				obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress,
+				outputs,
+				inputs,
+				owner,
+				commonLabels)).To(Succeed())
+
+			// Get and check the network policy
+			Expect(reqClient.Get(context.TODO(), policyKey, policyInstance)).Should(Succeed())
+
+			// Verify ingress rules include metrics port and receiver ports
+			Expect(policyInstance.Spec.Ingress).To(HaveLen(1))
+			ingressRule := policyInstance.Spec.Ingress[0]
+
+			// Should have 3 ingress ports: metrics port + 2 receiver ports
+			Expect(ingressRule.Ports).To(HaveLen(3))
+
+			ingressPortNumbers := make([]int32, 0)
+			for _, port := range ingressRule.Ports {
+				if port.Port != nil {
+					ingressPortNumbers = append(ingressPortNumbers, port.Port.IntVal)
+				}
+			}
+
+			Expect(ingressPortNumbers).To(ContainElements(int32(8080), int32(5140)))
+
+			// Verify egress rules include output ports
+			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
+			egressRule := policyInstance.Spec.Egress[0]
+
+			Expect(egressRule.Ports).To(HaveLen(2))
+
+			egressPortNumbers := make([]int32, 0)
+			for _, port := range egressRule.Ports {
+				if port.Port != nil {
+					egressPortNumbers = append(egressPortNumbers, port.Port.IntVal)
+				}
+			}
+
+			Expect(egressPortNumbers).To(ContainElements(int32(9200), int32(9092)))
+		})
 	})
+
 	Context("when the logfilemetricexporter NetworkPolicy is reconciled", func() {
 		BeforeEach(func() {
 			policyName = "lfme-test-network-policy"

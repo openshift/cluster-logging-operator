@@ -74,6 +74,7 @@ Type:: object
 |Property|Type|Description
 
 |affinity|object|  Define scheduling rules that influence pod placement based on node or pod affinity/anti-affinity constraints.
+|networkPolicy|object|  Define the Network Policy for the Collector
 |nodeSelector|object|  Define nodes for scheduling the pods.
 
 |resources|object|  The resource requirements for the collector
@@ -875,6 +876,18 @@ Type:: object
 === .spec.collector.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].namespaces[]
 
 Type:: array
+
+=== .spec.collector.networkPolicy
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ruleSet|string|  NetworkPolicyRuleSetType is the type of network policy rule set to use
+
+|======================
 
 === .spec.collector.nodeSelector
 

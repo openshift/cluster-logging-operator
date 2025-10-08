@@ -139,11 +139,19 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		log.Error(err, "collector.ReconcileInputServices")
 		return err
 	}
-
+	networkPolicyName := fmt.Sprintf("%s-%s", constants.CollectorName, resourceNames.CommonName)
 	// Reconcile NetworkPolicy for the collector daemonset
-	if err := network.ReconcileClusterLogForwarderNetworkPolicy(context.Client, context.Forwarder.Namespace, fmt.Sprintf("%s-%s", constants.CollectorName, resourceNames.CommonName), context.Forwarder.Name, constants.CollectorName, "", ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
-		log.Error(err, "collector.ReconcileNetworkPolicy")
-		return err
+	if context.Forwarder.Spec.Collector != nil && context.Forwarder.Spec.Collector.NetworkPolicy != nil {
+		if err := network.ReconcileClusterLogForwarderNetworkPolicy(context.Client, context.Forwarder.Namespace, networkPolicyName, context.Forwarder.Name, constants.CollectorName, context.Forwarder.Spec.Collector.NetworkPolicy.RuleSet, context.Forwarder.Spec.Outputs, context.Forwarder.Spec.Inputs, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
+			log.Error(err, "collector.ReconcileNetworkPolicy")
+			return err
+		}
+	} else {
+		// If no NetworkPolicy spec is defined, attempt to remove any existing NetworkPolicy
+		if err := network.RemoveNetworkPolicy(context.Client, context.Forwarder.Namespace, networkPolicyName); err != nil {
+			log.Error(err, "collector.RemoveNetworkPolicy")
+			return err
+		}
 	}
 
 	// Reconcile resources to support metrics gathering

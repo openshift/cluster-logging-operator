@@ -128,7 +128,34 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Affinity"
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Define the Network Policy for the Collector
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Network Policy",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	NetworkPolicy *NetworkPolicy `json:"networkPolicy,omitempty"`
 }
+
+type NetworkPolicy struct {
+	// NetworkPolicyRuleSetType is the type of network policy rule set to use
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Network Policy Rule Set Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	RuleSet NetworkPolicyRuleSetType `json:"ruleSet,omitempty"`
+}
+
+// NetworkPolicyRuleSetType is the type of network policy rule set to use
+//
+// +kubebuilder:validation:Enum:=AllowAllIngressEgress;RestrictIngressEgress
+type NetworkPolicyRuleSetType string
+
+const (
+	// NetworkPolicyRuleSetTypeAllowAllIngressEgress is the type of network policy rule set to use for allowing all ingress and egress traffic
+	NetworkPolicyRuleSetTypeAllowAllIngressEgress NetworkPolicyRuleSetType = "AllowAllIngressEgress"
+
+	// NetworkPolicyRuleSetTypeRestrictIngressEgress is the type of network policy rule set to use for restricting ingress and egress traffic
+	NetworkPolicyRuleSetTypeRestrictIngressEgress NetworkPolicyRuleSetType = "RestrictIngressEgress"
+)
 
 // PipelineSpec links a set of inputs and transformations to a set of outputs.
 type PipelineSpec struct {

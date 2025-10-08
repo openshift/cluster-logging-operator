@@ -67,6 +67,17 @@ spec:
           node or pod affinity/anti-affinity constraints.
         displayName: Affinity
         path: collector.affinity
+      - description: Define the Network Policy for the Collector
+        displayName: Network Policy
+        path: collector.networkPolicy
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: NetworkPolicyRuleSetType is the type of network policy rule set
+          to use
+        displayName: Network Policy Rule Set Type
+        path: collector.networkPolicy.ruleSet
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Define nodes for scheduling the pods.
         displayName: Node Selector
         path: collector.nodeSelector

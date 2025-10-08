@@ -4,23 +4,30 @@ The Cluster Logging Operator automatically creates and manages `NetworkPolicy` r
 
 == Overview
 
-When logging components are deployed, the operator creates permissive `NetworkPolicy` resources to ensure proper functionality even when:
+When logging components are deployed, the operator can create permissive `NetworkPolicy` resources to ensure proper functionality even when:
 
 * Restrictive default `NetworkPolicies` are in place
 * `AdminNetworkPolicy` configurations limit pod communications
 * Namespace-level network restrictions are applied
 
-The `NetworkPolicy` resources are automatically created and removed along with the component deployment lifecycle.
-
-The `NetworkPolicy` can directly be edited by the cluster administrator and won't be reconciled by the operator upon updates.
+The `NetworkPolicy` resources are automatically created, updated, and removed along with the component deployment lifecycle.
 
 == Collector NetworkPolicy
 
-When a `ClusterLogForwarder` is deployed, the operator creates a permissive `NetworkPolicy` that allows all ingress and egress traffic for the collector pods.
+When a `ClusterLogForwarder` is deployed and a network policy rule set is specified, the operator creates a `NetworkPolicy` for the collector pods. The policy behavior can be configured using the `networkPolicy.ruleSet` field in the collector specification. If `spec.collector.networkPolicy` is not specified, the operator will not create a `NetworkPolicy` for the collector.
+
+=== Rule Set Types
+
+The collector supports the following network policy rule set types:
+
+* **`AllowAllIngressEgress`**: Allows all ingress and egress traffic
+* **`RestrictIngressEgress`**: Restricts traffic to specific ports based on the configured inputs,  outputs, and the metrics port.
 
 === Configuration
 
-The operator creates a `NetworkPolicy` for the collector with the following characteristics:
+==== Permissive Behavior (`AllowAllIngressEgress`)
+
+When configured with `AllowAllIngressEgress`, the operator creates a permissive `NetworkPolicy` that allows all ingress and egress traffic.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -52,13 +59,77 @@ spec:
     - {}  # Allow all egress traffic
 ```
 
+==== Restricted Behavior (`RestrictIngressEgress`)
+
+When configured with `RestrictIngressEgress`, the network policy restricts traffic to only the necessary ports based on your configured inputs, outputs, and the metrics port.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: collector-<COLLECTOR-INSTANCE-NAME>
+  namespace: <COLLECTOR-NAMESPACE>
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: <COLLECTOR-INSTANCE-NAME>
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: cluster-logging
+    app.kubernetes.io/managed-by: cluster-logging-operator
+    app.kubernetes.io/version: <CLO-VERSION>
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vector
+      app.kubernetes.io/instance: <COLLECTOR-INSTANCE-NAME>
+      app.kubernetes.io/component: collector
+      app.kubernetes.io/part-of: cluster-logging
+      app.kubernetes.io/managed-by: cluster-logging-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - port: metrics  # Always allowed for metrics collection
+          protocol: TCP
+        # Additional ports are added based on configured inputs
+  egress:
+    - ports:
+        # Ports are added based on configured outputs and their protocols
+```
+
+==== How to Configure Network Policy Rule Sets
+
+To configure the network policy rule set for a collector, specify it in the `ClusterLogForwarder` specification under `spec.collector.networkPolicy.ruleSet`:
+
+```yaml
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: my-forwarder
+  namespace: openshift-logging
+spec:
+  collector:
+    networkPolicy:
+      ruleSet: RestrictIngressEgress  # or AllowAllIngressEgress
+  # ... other configuration
+```
+
 == LogFileMetricExporter NetworkPolicy
 
-When a `LogFileMetricExporter` is deployed, the operator creates a `NetworkPolicy` that allows ingress traffic for the metric exporter pods to serve metrics.
+When a `LogFileMetricExporter` is deployed and a network policy rule set is specified, the operator creates a `NetworkPolicy` for the metric exporter pods. The policy behavior can be configured using the `networkPolicy.ruleSet` field in the LogFileMetricExporter specification. If `spec.logFileMetricExporter.networkPolicy` is not specified, the operator will not create a `NetworkPolicy` for the metric exporter.
+
+=== Rule Set Types
+
+The LogFileMetricExporter supports the following network policy rule set types:
+
+* **`AllowIngressMetrics`**: Allows ingress traffic only on the metrics port, denies all egress traffic
+* **`AllowAllIngressEgress`**: Allows all ingress and egress traffic
 
 === Configuration
 
-The operator creates a `NetworkPolicy` for the LogFileMetricExporter with the following characteristics:
+==== Restricted Behavior (`AllowIngressMetrics`)
+
+When configured with `AllowIngressMetrics`, the operator creates a `NetworkPolicy` that allows only metrics collection.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -83,11 +154,65 @@ spec:
       app.kubernetes.io/managed-by: cluster-logging-operator
   policyTypes:
     - Ingress
+    - Egress  # Egress policy type is added to deny all egress traffic by default
   ingress:
-    - {}  # Allow all ingress traffic for metrics collection
+    - ports:
+        - port: metrics  # Allow ingress only on the metrics port
+          protocol: TCP
+  # No egress rules defined - this denies all egress traffic
 ```
 
-NOTE: The LogFileMetricExporter NetworkPolicy only configures ingress rules since it primarily serves metrics and does not need to make outbound connections like the collector.
+==== Permissive Behavior (`AllowAllIngressEgress`)
+
+When configured with `AllowAllIngressEgress`, the `LogFileMetricExporter` network policy allows all ingress and egress traffic:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lfme-<LFME-INSTANCE-NAME>
+  namespace: <LFME-NAMESPACE>
+  labels:
+    app.kubernetes.io/name: logfilesmetricexporter
+    app.kubernetes.io/instance: <LFME-INSTANCE-NAME>
+    app.kubernetes.io/component: logfilesmetricexporter
+    app.kubernetes.io/part-of: cluster-logging
+    app.kubernetes.io/managed-by: cluster-logging-operator
+    app.kubernetes.io/version: <CLO-VERSION>
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: logfilesmetricexporter
+      app.kubernetes.io/instance: <LFME-INSTANCE-NAME>
+      app.kubernetes.io/component: logfilesmetricexporter
+      app.kubernetes.io/part-of: cluster-logging
+      app.kubernetes.io/managed-by: cluster-logging-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - {}  # Allow all ingress traffic
+  egress:
+    - {}  # Allow all egress traffic
+```
+
+==== How to Configure LogFileMetricExporter Network Policy Rule Sets
+
+To configure the network policy rule set for a `LogFileMetricExporter`, specify it in the `LogFileMetricExporter` specification under `spec.networkPolicy.ruleSet`:
+
+```yaml
+apiVersion: logging.openshift.io/v1alpha1
+kind: LogFileMetricExporter
+metadata:
+  name: my-lfme
+  namespace: openshift-logging
+spec:
+  networkPolicy:
+    ruleSet: AllowAllIngressEgress  # or AllowIngressMetrics
+  # ... other configuration
+```
+
+NOTE: The LogFileMetricExporter NetworkPolicy includes both ingress and egress policy types. In the default `AllowIngressMetrics` mode, egress is denied by having an egress policy type with no rules, providing better security isolation.
 
 == AdminNetworkPolicy Delegation
 
@@ -105,7 +230,7 @@ OpenShift network policy precedence (highest to lowest priority):
 
 To ensure logging component pods can communicate properly when an `AdminNetworkPolicy` is blocking traffic, create `AdminNetworkPolicy` rules that delegate to `NetworkPolicy` for each component:
 
-==== Example: Delegating Collector Traffic
+==== Example: Delegating Collector Traffic (`AllowAllIngressEgress`)
 
 ```yaml
 apiVersion: policy.networking.k8s.io/v1alpha1
@@ -115,14 +240,11 @@ metadata:
 spec:
   priority: 50  # Adjust based on your cluster's ANP priority scheme. Lower number means higher priority
   subject:
-    pods: # Target the collector pods
-      namespaceSelector:
-        matchLabels:
-          kubernetes.io/metadata.name: openshift-logging # or collector namespace
+    pods: # Target all collector pods in any namespace
+      namespaceSelector: {}
       podSelector:
         matchLabels:
           app.kubernetes.io/name: vector
-          app.kubernetes.io/instance: my-clf # or collector instance name
           app.kubernetes.io/managed-by: cluster-logging-operator
           app.kubernetes.io/part-of: cluster-logging
           app.kubernetes.io/component: collector
@@ -142,7 +264,7 @@ spec:
         - nodes: {}
 ```
 
-==== Example: Delegating LogFileMetricExporter Traffic
+==== Example: Delegating LogFileMetricExporter Ingress Traffic (`AllowIngressMetrics`)
 
 ```yaml
 apiVersion: policy.networking.k8s.io/v1alpha1
@@ -152,7 +274,7 @@ metadata:
 spec:
   priority: 51  # Adjust based on your cluster's ANP priority scheme. Lower number means higher priority
   subject:
-    pods: # Target the LFME pods
+    pods: # Target the LFME pods in openshift-logging namespace
       namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: openshift-logging
@@ -169,8 +291,6 @@ spec:
       from:
         - namespaces: {}
 ```
-
-NOTE: The LogFileMetricExporter example only includes ingress delegation since its NetworkPolicy only defines ingress rules.
 
 == References
 

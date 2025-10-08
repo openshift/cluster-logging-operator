@@ -88,6 +88,15 @@ func (builder *NetworkPolicyBuilder) NewIngressRule() *IngressRuleBuilder {
 	}
 }
 
+func (irb *IngressRuleBuilder) OnPort(protocol corev1.Protocol, port int32) *IngressRuleBuilder {
+	portRule := networkingv1.NetworkPolicyPort{
+		Protocol: &protocol,
+		Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: port},
+	}
+	irb.rule.Ports = append(irb.rule.Ports, portRule)
+	return irb
+}
+
 // OnNamedPort adds a named port to the ingress rule
 func (irb *IngressRuleBuilder) OnNamedPort(protocol corev1.Protocol, portName string) *IngressRuleBuilder {
 	portRule := networkingv1.NetworkPolicyPort{

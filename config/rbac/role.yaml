@@ -76,11 +76,7 @@ rules:
   resources:
   - networkpolicies
   verbs:
-  - create
-  - delete
-  - list
-  - get
-  - watch
+  - '*'
 - apiGroups:
   - observability.openshift.io
   resources:

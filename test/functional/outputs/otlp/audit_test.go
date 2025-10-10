@@ -43,7 +43,7 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 		)
 
 		DescribeTable("should send audit logs with correct grouping and resource attributes", func(auditSource obs.AuditSource,
-			writeLog func(f *functional.CollectorFunctionalFramework) (string, error),
+			writeLog func(f *functional.CollectorFunctionalFramework, numberOfLogs int) (string, error),
 			validateLogRecord func(logLine string, logRecord otlp.LogRecord)) {
 
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -56,7 +56,8 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			})).To(BeNil())
 
 			// Log message data
-			logLine, err := writeLog(framework)
+			totEntries := 3
+			logLine, err := writeLog(framework, totEntries)
 			Expect(err).To(BeNil())
 
 			// Read line from Log Forward output
@@ -94,7 +95,7 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			Expect(scopeLogs).To(HaveLen(1), "Expected a single scopeLog")
 
 			logRecords := scopeLogs[0].LogRecords
-			Expect(logRecords).To(HaveLen(3), "Expected same count as sent for log records")
+			Expect(logRecords).To(HaveLen(1), "Expected same count group size defined by the transform")
 
 			// Inspect the first log record for correct fields
 			logRecord := logRecords[0]
@@ -114,29 +115,29 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 	})
 })
 
-func writeK8sAuditLog(f *functional.CollectorFunctionalFramework) (string, error) {
+func writeK8sAuditLog(f *functional.CollectorFunctionalFramework, numOfLogs int) (string, error) {
 	now := time.Now()
 	logLine := functional.NewKubeAuditLog(now)
-	return logLine, f.WriteMessagesTok8sAuditLog(logLine, 3)
+	return logLine, f.WriteMessagesTok8sAuditLog(logLine, numOfLogs)
 }
 
-func writeOpenshiftAuditLog(f *functional.CollectorFunctionalFramework) (string, error) {
+func writeOpenshiftAuditLog(f *functional.CollectorFunctionalFramework, numOfLogs int) (string, error) {
 	now := time.Now()
 	nowCrio := functional.CRIOTime(now)
 	logLine := fmt.Sprintf(functional.OpenShiftAuditLogTemplate, nowCrio, nowCrio)
-	return logLine, f.WriteMessagesToOpenshiftAuditLog(logLine, 3)
+	return logLine, f.WriteMessagesToOpenshiftAuditLog(logLine, numOfLogs)
 }
 
-func writeOvnAuditLog(f *functional.CollectorFunctionalFramework) (string, error) {
+func writeOvnAuditLog(f *functional.CollectorFunctionalFramework, numOfLogs int) (string, error) {
 	now := time.Now()
 	logLine := functional.NewOVNAuditLog(now)
-	return logLine, f.WriteMessagesToOVNAuditLog(logLine, 3)
+	return logLine, f.WriteMessagesToOVNAuditLog(logLine, numOfLogs)
 }
 
-func writeAuditHostLog(f *functional.CollectorFunctionalFramework) (string, error) {
+func writeAuditHostLog(f *functional.CollectorFunctionalFramework, numOfLogs int) (string, error) {
 	now := time.Now()
 	logLine := functional.NewAuditHostLog(now)
-	return logLine, f.WriteMessagesToAuditLog(logLine, 3)
+	return logLine, f.WriteMessagesToAuditLog(logLine, numOfLogs)
 }
 
 func validateHostLog(logLine string, logRecord otlp.LogRecord) {

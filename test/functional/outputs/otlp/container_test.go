@@ -108,7 +108,7 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			scopeLogs := resourceLog.ScopeLogs
 			Expect(scopeLogs).To(HaveLen(1), "Expected a single scopeLog")
 			logRecords := scopeLogs[0].LogRecords
-			Expect(logRecords).To(HaveLen(len(messages)), "Expected same count as sent for log records")
+			Expect(logRecords).To(HaveLen(1), "Expected same count group size defined by the transform")
 
 			// Inspect the first log record for correct fields
 			logRecord := logRecords[0]

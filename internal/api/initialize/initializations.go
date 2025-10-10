@@ -16,14 +16,15 @@ const (
 var clfInitializers = []func(spec obs.ClusterLogForwarder, migrateContext utils.Options) obs.ClusterLogForwarder{
 	Resources,
 	MigrateInputs,
+	InitOutputs,
 }
 
 // ClusterLogForwarder initializes the forwarder for fields that must be set and are inferred from settings already defined.
 // It additionally takes a context to pass decisions back such as secrets for receiver inputs that will exist after reconciliation
 // but may not exist when the configuration is being generated
-func ClusterLogForwarder(spec obs.ClusterLogForwarder, migrateContext utils.Options) obs.ClusterLogForwarder {
+func ClusterLogForwarder(forwarder obs.ClusterLogForwarder, migrateContext utils.Options) obs.ClusterLogForwarder {
 	for _, initialize := range clfInitializers {
-		spec = initialize(spec, migrateContext)
+		forwarder = initialize(forwarder, migrateContext)
 	}
-	return spec
+	return forwarder
 }

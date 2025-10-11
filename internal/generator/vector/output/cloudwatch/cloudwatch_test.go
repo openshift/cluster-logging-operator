@@ -2,7 +2,7 @@ package cloudwatch_test
 
 import (
 	"fmt"
-	. "github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -61,15 +61,15 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					Name: "cw",
 					Cloudwatch: &obs.Cloudwatch{
 						Region: "us-east-test",
-						Authentication: &obs.CloudwatchAuthentication{
-							Type: obs.CloudwatchAuthTypeAccessKey,
-							AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+						Authentication: &obs.AwsAuthentication{
+							Type: obs.AuthTypeAccessKey,
+							AwsAccessKey: &obs.AwsAccessKey{
 								KeyId: obs.SecretReference{
-									Key:        constants.AWSAccessKeyID,
+									Key:        constants.AwsAccessKeyID,
 									SecretName: secretName,
 								},
 								KeySecret: obs.SecretReference{
-									Key:        constants.AWSSecretAccessKey,
+									Key:        constants.AwsSecretAccessKey,
 									SecretName: secretName,
 								},
 							},
@@ -81,8 +81,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			secrets = map[string]*corev1.Secret{
 				secretName: {
 					Data: map[string][]byte{
-						constants.AWSAccessKeyID:     []byte(keyId),
-						constants.AWSSecretAccessKey: []byte(keySecret),
+						constants.AwsAccessKeyID:     []byte(keyId),
+						constants.AwsSecretAccessKey: []byte(keySecret),
 					},
 				},
 				vectorTLSSecret: {
@@ -94,7 +94,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				},
 				secretWithCredentials: {
 					Data: map[string][]byte{
-						constants.AWSCredentialsKey:  []byte("[default]\nrole_arn = " + roleArn + "\nweb_identity_token_file = /var/run/secrets/token"),
+						constants.AwsCredentialsKey:  []byte("[default]\nrole_arn = " + roleArn + "\nweb_identity_token_file = /var/run/secrets/token"),
 						"my_role_arn":                []byte(roleArn),
 						constants.ClientPrivateKey:   []byte("-- key-- "),
 						constants.TrustedCABundleKey: []byte("-- ca-bundle -- "),
@@ -149,11 +149,11 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}, false, framework.NoOptions, "files/cw_with_tls_spec_insecure_verify.toml"),
 
 			Entry("when aws role credentials are provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
-				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
-							Key:        constants.AWSCredentialsKey,
+							Key:        constants.AwsCredentialsKey,
 							SecretName: secretWithCredentials,
 						},
 						Token: obs.BearerToken{
@@ -164,9 +164,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}, false, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
 
 			Entry("when a role_arn is provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
-				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        "my_role_arn",
 							SecretName: secretWithCredentials,
@@ -179,19 +179,19 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}, false, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
 
 			Entry("when an assume_role is specified with accessKey auth", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
-				spec.Cloudwatch.Authentication = &obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeAccessKey,
-					AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
+					Type: obs.AuthTypeAccessKey,
+					AwsAccessKey: &obs.AwsAccessKey{
 						KeyId: obs.SecretReference{
-							Key:        constants.AWSAccessKeyID,
+							Key:        constants.AwsAccessKeyID,
 							SecretName: secretName,
 						},
 						KeySecret: obs.SecretReference{
-							Key:        constants.AWSSecretAccessKey,
+							Key:        constants.AwsSecretAccessKey,
 							SecretName: secretName,
 						},
 					},
-					AssumeRole: &obs.CloudwatchAssumeRole{
+					AssumeRole: &obs.AwsAssumeRole{
 						RoleARN: obs.SecretReference{
 							Key:        "my_role_arn",
 							SecretName: secretWithCredentials,
@@ -218,9 +218,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			secrets = map[string]*corev1.Secret{
 				secretName: {
 					Data: map[string][]byte{
-						constants.AWSWebIdentityRoleKey: []byte(roleArn),
+						constants.AwsWebIdentityRoleKey: []byte(roleArn),
 						"altArn":                        []byte(altRoleArn),
-						constants.AWSCredentialsKey:     []byte(credentialsString),
+						constants.AwsCredentialsKey:     []byte(credentialsString),
 						"badArn":                        []byte("no match here"),
 						"role_arn_as_cred":              []byte(credentialsString),
 					},
@@ -228,16 +228,16 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}
 		)
 
-		DescribeTable("when retrieving the role_arn", func(auth obs.CloudwatchAuthentication, exp string) {
-			results := ParseRoleArn(&auth, secrets)
+		DescribeTable("when retrieving the role_arn", func(auth obs.AwsAuthentication, exp string) {
+			results := aws.ParseRoleArn(&auth, secrets)
 			Expect(results).To(Equal(exp))
 		},
 			Entry("should return the value specified",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
-							Key:        constants.AWSWebIdentityRoleKey,
+							Key:        constants.AwsWebIdentityRoleKey,
 							SecretName: secretName,
 						},
 						Token: obs.BearerToken{
@@ -246,9 +246,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, roleArn),
 			Entry("should return a specified valid role_arn when the partition is more than 'aws'",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        "altArn",
 							SecretName: secretName,
@@ -259,11 +259,11 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, altRoleArn),
 			Entry("should return a valid role_arn when using 'credentials' ",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
-							Key:        constants.AWSCredentialsKey,
+							Key:        constants.AwsCredentialsKey,
 							SecretName: secretName,
 						},
 						Token: obs.BearerToken{
@@ -272,9 +272,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, credentialsRoleArn),
 			Entry("should return the value from the credentials string when specified as role_arn",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        "role_arn_as_cred",
 							SecretName: secretName,
@@ -285,9 +285,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, credentialsRoleArn),
 			Entry("should return an empty string when value is incorrectly formatted",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        "bad",
 							SecretName: secretName,
@@ -317,14 +317,14 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}
 		)
 
-		DescribeTable("when retrieving the assume role arn", func(auth obs.CloudwatchAuthentication, exp string) {
-			results := ParseAssumeRoleArn(auth.AssumeRole, secrets)
+		DescribeTable("when retrieving the assume role arn", func(auth obs.AwsAuthentication, exp string) {
+			results := aws.ParseAssumeRoleArn(auth.AssumeRole, secrets)
 			Expect(results).To(Equal(exp))
 		},
 			Entry("should return the value explicitly spec'd with iamRole auth",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					AssumeRole: &obs.CloudwatchAssumeRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					AssumeRole: &obs.AwsAssumeRole{
 						RoleARN: obs.SecretReference{
 							Key:        "assume_role_arn",
 							SecretName: secretName,
@@ -333,9 +333,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				}, assumeRoleArn),
 
 			Entry("should return the secret value specified (assumeRole with accessKey auth)",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					AssumeRole: &obs.CloudwatchAssumeRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					AssumeRole: &obs.AwsAssumeRole{
 						RoleARN: obs.SecretReference{
 							Key:        "assume_role_arn",
 							SecretName: secretName,
@@ -344,9 +344,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				}, assumeRoleArn),
 
 			Entry("should return a specified valid assume role arn when the partition is more than 'aws'",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					AssumeRole: &obs.CloudwatchAssumeRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					AssumeRole: &obs.AwsAssumeRole{
 						RoleARN: obs.SecretReference{
 							Key:        "alt_assume_role_arn",
 							SecretName: secretName,
@@ -354,13 +354,13 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, altAssumeRoleArn),
 			Entry("should return empty string when assume role is not specified",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
 				}, ""),
 			Entry("should return empty string when value is incorrectly formatted",
-				obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					AssumeRole: &obs.CloudwatchAssumeRole{
+				obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					AssumeRole: &obs.AwsAssumeRole{
 						RoleARN: obs.SecretReference{
 							Key:        "bad_arn",
 							SecretName: secretName,
@@ -378,18 +378,18 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				Cloudwatch: &obs.Cloudwatch{
 					Region:    "us-east-test",
 					GroupName: "{.log_type||\"missing\"}",
-					Authentication: &obs.CloudwatchAuthentication{
-						Type: obs.CloudwatchAuthTypeIAMRole,
-						IAMRole: &obs.CloudwatchIAMRole{
+					Authentication: &obs.AwsAuthentication{
+						Type: obs.AuthTypeIAMRole,
+						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
-								Key:        constants.AWSWebIdentityRoleKey,
+								Key:        constants.AwsWebIdentityRoleKey,
 								SecretName: secretName,
 							},
 							Token: obs.BearerToken{
 								From: obs.BearerTokenFromServiceAccount,
 							},
 						},
-						AssumeRole: &obs.CloudwatchAssumeRole{
+						AssumeRole: &obs.AwsAssumeRole{
 							RoleARN: obs.SecretReference{
 								Key:        "assume_role_arn",
 								SecretName: secretName,
@@ -403,7 +403,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			secrets := map[string]*corev1.Secret{
 				secretName: {
 					Data: map[string][]byte{
-						constants.AWSWebIdentityRoleKey: []byte("arn:aws:iam::123456789012:role/initial-role"),
+						constants.AwsWebIdentityRoleKey: []byte("arn:aws:iam::123456789012:role/initial-role"),
 						"assume_role_arn":               []byte("arn:aws:iam::987654321098:role/cross-account-role"),
 						"external_id":                   []byte("unique-external-id"),
 					},

@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("validating CloudWatch auth", func() {
+var _ = Describe("validating aws auth", func() {
 	Context("#ValidateAwsAuth", func() {
 
 		var (
@@ -18,8 +18,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			invalidRoleARN = "arn:aws:iam::123456789:role/other-role-to-assume"
 			spec           = obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
@@ -62,7 +62,7 @@ var _ = Describe("validating CloudWatch auth", func() {
 		})
 
 		It("should fail if Role ARN is invalid", func() {
-			spec.Cloudwatch.Authentication.IamRole.RoleARN.Key = "invalidRoleARN"
+			spec.S3.Authentication.IamRole.RoleARN.Key = "invalidRoleARN"
 			res := ValidateAwsAuth(spec, context)
 			Expect(res).ToNot(BeEmpty())
 			Expect(len(res)).To(BeEquivalentTo(1))
@@ -75,8 +75,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			// Create a new spec for this test
 			testSpec := obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
@@ -130,8 +130,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			// Create a new spec for this test with IAM role and invalid assume role ARN
 			testSpec := obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
@@ -189,8 +189,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			// Create a new spec for this test with both invalid ARNs
 			testSpec := obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
@@ -252,8 +252,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			// Create a new spec
 			testSpec := obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeAccessKey,
 						AwsAccessKey: &obs.AwsAccessKey{
@@ -308,8 +308,8 @@ var _ = Describe("validating CloudWatch auth", func() {
 			secretName := "foo"
 			testSpec := obs.OutputSpec{
 				Name: "output",
-				Type: obs.OutputTypeCloudwatch,
-				Cloudwatch: &obs.Cloudwatch{
+				Type: obs.OutputTypeS3,
+				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
 						Type: obs.AuthTypeAccessKey,
 						AwsAccessKey: &obs.AwsAccessKey{

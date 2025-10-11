@@ -51,8 +51,10 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 			auths = append(auths, o.Loki.Authentication.Token)
 		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
 			auths = append(auths, o.LokiStack.Authentication.Token)
-		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.CloudwatchAuthTypeIAMRole:
-			auths = append(auths, &o.Cloudwatch.Authentication.IAMRole.Token)
+		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.AuthTypeIAMRole:
+			auths = append(auths, &o.Cloudwatch.Authentication.IamRole.Token)
+		case o.Type == obsv1.OutputTypeS3 && o.S3 != nil && o.S3.Authentication.Type == obsv1.AuthTypeIAMRole:
+			auths = append(auths, &o.S3.Authentication.IamRole.Token)
 		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
 			auths = append(auths, o.Elasticsearch.Authentication.Token)
 		case o.Type == obsv1.OutputTypeOTLP && o.OTLP.Authentication != nil && o.OTLP.Authentication.Token != nil:
@@ -108,9 +110,12 @@ func SecretReferences(o obsv1.OutputSpec) []*obsv1.SecretReference {
 	case obsv1.OutputTypeCloudwatch:
 		if o.Cloudwatch != nil && o.Cloudwatch.Authentication != nil {
 			a := o.Cloudwatch.Authentication
-			keys := cloudwatchSecretKeys(a)
-			// cross-account feature LOG-7687
-			return appendAssumeRoleKeys(a, keys)
+			return awsSecretKeys(a)
+		}
+	case obsv1.OutputTypeS3:
+		if o.S3 != nil && o.S3.Authentication != nil {
+			a := o.S3.Authentication
+			return awsSecretKeys(a)
 		}
 	case obsv1.OutputTypeElasticsearch:
 		if o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil {
@@ -183,28 +188,29 @@ func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretRef
 	return keys
 }
 
-// cloudwatchSecretKeys returns a list of keys from secrets in the cloudwatch output
-func cloudwatchSecretKeys(auth *obsv1.CloudwatchAuthentication) (keys []*obsv1.SecretReference) {
+// awsSecretKeys returns a list of keys from secrets in the cloudwatch output
+func awsSecretKeys(auth *obsv1.AwsAuthentication) (keys []*obsv1.SecretReference) {
 	if auth == nil {
 		return keys
 	}
 	switch auth.Type {
-	case obsv1.CloudwatchAuthTypeAccessKey:
-		keys = append(keys, &auth.AWSAccessKey.KeyId, &auth.AWSAccessKey.KeySecret)
-	case obsv1.CloudwatchAuthTypeIAMRole:
-		keys = append(keys, &auth.IAMRole.RoleARN)
-		if auth.IAMRole.Token.From == obsv1.BearerTokenFromSecret && auth.IAMRole.Token.Secret != nil {
+	case obsv1.AuthTypeAccessKey:
+		keys = append(keys, &auth.AwsAccessKey.KeyId, &auth.AwsAccessKey.KeySecret)
+	case obsv1.AuthTypeIAMRole:
+		keys = append(keys, &auth.IamRole.RoleARN)
+		if auth.IamRole.Token.From == obsv1.BearerTokenFromSecret && auth.IamRole.Token.Secret != nil {
 			keys = append(keys, &obsv1.SecretReference{
-				Key:        auth.IAMRole.Token.Secret.Key,
-				SecretName: auth.IAMRole.Token.Secret.Name,
+				Key:        auth.IamRole.Token.Secret.Key,
+				SecretName: auth.IamRole.Token.Secret.Name,
 			})
 		}
 	}
+	keys = appendAssumeRoleKeys(auth, keys)
 	return keys
 }
 
-// appendAssumeRoleKeys adds assume role spec to the list of secret refs
-func appendAssumeRoleKeys(auth *obsv1.CloudwatchAuthentication, keys []*obsv1.SecretReference) []*obsv1.SecretReference {
+// appendAssumeRoleKeys adds assume role secret keys to the refs
+func appendAssumeRoleKeys(auth *obsv1.AwsAuthentication, keys []*obsv1.SecretReference) []*obsv1.SecretReference {
 	if auth != nil && auth.AssumeRole != nil {
 		keys = append(keys, &auth.AssumeRole.RoleARN)
 	}

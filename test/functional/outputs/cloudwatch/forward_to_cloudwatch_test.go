@@ -30,7 +30,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	var (
 		framework *functional.CollectorFunctionalFramework
 		secret    *v1.Secret
-		obsCwAuth *obs.CloudwatchAuthentication
+		obsCwAuth *obs.AwsAuthentication
 	)
 
 	BeforeEach(func() {
@@ -45,15 +45,15 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			},
 		)
 
-		obsCwAuth = &obs.CloudwatchAuthentication{
-			Type: obs.CloudwatchAuthTypeAccessKey,
-			AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+		obsCwAuth = &obs.AwsAuthentication{
+			Type: obs.AuthTypeAccessKey,
+			AwsAccessKey: &obs.AwsAccessKey{
 				KeySecret: obs.SecretReference{
-					Key:        constants.AWSSecretAccessKey,
+					Key:        constants.AwsSecretAccessKey,
 					SecretName: functional.CloudwatchSecret,
 				},
 				KeyId: obs.SecretReference{
-					Key:        constants.AWSAccessKeyID,
+					Key:        constants.AwsAccessKeyID,
 					SecretName: functional.CloudwatchSecret,
 				},
 			},

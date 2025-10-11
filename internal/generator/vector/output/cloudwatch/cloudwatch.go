@@ -2,9 +2,7 @@ package cloudwatch
 
 import (
 	_ "embed"
-	creds "github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -108,38 +106,10 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		Region:         region,
 		GroupName:      groupName,
-		AuthConfig:     authConfig(o.Name, o.Cloudwatch.Authentication, op, secrets),
+		AuthConfig:     aws.AuthConfig(o.Name, o.Cloudwatch.Authentication, op, secrets),
 		EndpointConfig: endpointConfig(o.Cloudwatch),
 		RootMixin:      common.NewRootMixin("none"),
 	}
-}
-
-// authConfig returns the templated VRL containing cloudwatch auth configuration
-func authConfig(outputName string, auth *obs.CloudwatchAuthentication, options Options, secrets observability.Secrets) Element {
-	authConfig := NewAuth()
-	if auth == nil {
-		return authConfig
-	}
-	switch auth.Type {
-	case obs.CloudwatchAuthTypeAccessKey:
-		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeyId)
-		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AWSAccessKey.KeySecret)
-		// New assumeRole works with static keys as well
-		if auth.AssumeRole != nil {
-			authConfig.AssumeRole.Value = vectorhelpers.SecretFrom(&auth.AssumeRole.RoleARN)
-			// Optional externalID
-			if hasExtID, extID := creds.AssumeRoleHasExternalId(auth.AssumeRole); hasExtID {
-				authConfig.ExternalID.Value = extID
-			}
-		}
-	case obs.CloudwatchAuthTypeIAMRole:
-		if forwarderName, found := utils.GetOption(options, OptionForwarderName, ""); found {
-			// For OIDC roles we mount a configMap containing a credentials file
-			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AWSCredentialsConfigMapName, constants.AWSCredentialsKey), `"`)
-			authConfig.Profile.Value = "output_" + outputName
-		}
-	}
-	return authConfig
 }
 
 func endpointConfig(cw *obs.Cloudwatch) Element {

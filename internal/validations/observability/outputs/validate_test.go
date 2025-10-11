@@ -28,9 +28,9 @@ var _ = Describe("Validating outputs", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 			Data: map[string][]byte{
-				constants.AWSSecretAccessKey: []byte("some-key"),
-				constants.AWSAccessKeyID:     []byte("some-key-id"),
-				constants.AWSCredentialsKey:  []byte(myRoleArn),
+				constants.AwsSecretAccessKey: []byte("some-key"),
+				constants.AwsAccessKeyID:     []byte("some-key-id"),
+				constants.AwsCredentialsKey:  []byte(myRoleArn),
 			},
 		}
 
@@ -40,9 +40,9 @@ var _ = Describe("Validating outputs", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 			Data: map[string][]byte{
-				constants.AWSSecretAccessKey: []byte("other-key"),
-				constants.AWSAccessKeyID:     []byte("other-key-id"),
-				constants.AWSCredentialsKey:  []byte(otherRoleArn),
+				constants.AwsSecretAccessKey: []byte("other-key"),
+				constants.AwsAccessKeyID:     []byte("other-key-id"),
+				constants.AwsCredentialsKey:  []byte(otherRoleArn),
 			},
 		}
 	)
@@ -75,16 +75,16 @@ var _ = Describe("Validating outputs", func() {
 			Name: name,
 			Type: obs.OutputTypeCloudwatch,
 			Cloudwatch: &obs.Cloudwatch{
-				Authentication: &obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeAccessKey,
-					AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+				Authentication: &obs.AwsAuthentication{
+					Type: obs.AuthTypeAccessKey,
+					AwsAccessKey: &obs.AwsAccessKey{
 						KeySecret: obs.SecretReference{
 							SecretName: secretName,
-							Key:        constants.AWSSecretAccessKey,
+							Key:        constants.AwsSecretAccessKey,
 						},
 						KeyId: obs.SecretReference{
 							SecretName: secretName,
-							Key:        constants.AWSAccessKeyID,
+							Key:        constants.AwsAccessKeyID,
 						},
 					},
 				},
@@ -92,18 +92,18 @@ var _ = Describe("Validating outputs", func() {
 		}
 	}
 
-	// Helper function to create CloudWatch output spec with IAMRole auth
+	// Helper function to create CloudWatch output spec with IamRole auth
 	createIAMRoleSpec := func(name, secretName string) obs.OutputSpec {
 		return obs.OutputSpec{
 			Name: name,
 			Type: obs.OutputTypeCloudwatch,
 			Cloudwatch: &obs.Cloudwatch{
-				Authentication: &obs.CloudwatchAuthentication{
-					Type: obs.CloudwatchAuthTypeIAMRole,
-					IAMRole: &obs.CloudwatchIAMRole{
+				Authentication: &obs.AwsAuthentication{
+					Type: obs.AuthTypeIAMRole,
+					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							SecretName: secretName,
-							Key:        constants.AWSCredentialsKey,
+							Key:        constants.AwsCredentialsKey,
 						},
 						Token: obs.BearerToken{
 							From: obs.BearerTokenFromServiceAccount,

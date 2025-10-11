@@ -1877,7 +1877,7 @@ spec:
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
-                            the requests.
+                            requests to cloudwatch services.
                           properties:
                             assumeRole:
                               description: |-
@@ -1917,11 +1917,17 @@ spec:
                                   - key
                                   - secretName
                                   type: object
+                                sessionName:
+                                  description: |-
+                                    SessionName is an optional identifier for the assumed role session.
+                                    If not provided, a default session name will be generated.
+                                  pattern: ^[a-zA-Z0-9_+=,.@-]{2,64}$
+                                  type: string
                               required:
                               - roleARN
                               type: object
                             awsAccessKey:
-                              description: AWSAccessKey points to the AWS access key
+                              description: AwsAccessKey points to the AWS access key
                                 id and secret to be used for authentication.
                               nullable: true
                               properties:
@@ -1963,7 +1969,7 @@ spec:
                               type: object
                             iamRole:
                               description: |-
-                                IAMRole points to the secret containing the role ARN to be used for authentication.
+                                IamRole points to the secret containing the role ARN to be used for authentication.
                                 This can be used for authentication in STS-enabled clusters when additionally specifying
                                 a web identity token
                               nullable: true
@@ -3239,6 +3245,269 @@ spec:
                       required:
                       - maxRecordsPerSecond
                       type: object
+                    s3:
+                      description: S3 configures forwarding log events to Amazon S3
+                        buckets
+                      properties:
+                        authentication:
+                          description: Authentication sets credentials for authenticating
+                            the requests.
+                          properties:
+                            assumeRole:
+                              description: |-
+                                AssumeRole specifies an additional AWS role to assume for forwarding logs.
+                                This enables cross-account log forwarding by using the initial role to authenticate,
+                                then assume a role in order to access cross-account services.
+                              nullable: true
+                              properties:
+                                externalID:
+                                  description: |-
+                                    ExternalID is the external ID to match when assuming the role.
+                                    This is optional and can be used as an additional security measure to ensure that only the intended
+                                    entity can assume the role.
+
+                                    The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+                                    The value must be alphanumeric without whitespace and can also include the following symbols:
+                                    plus(+), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+                                  maxLength: 1224
+                                  minLength: 2
+                                  nullable: true
+                                  pattern: ^[\w+=,.@:/-]*$
+                                  type: string
+                                roleARN:
+                                  description: RoleARN points to the secret containing
+                                    the ARN of the role to assume for cross-account
+                                    access.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                sessionName:
+                                  description: |-
+                                    SessionName is an optional identifier for the assumed role session.
+                                    If not provided, a default session name will be generated.
+                                  pattern: ^[a-zA-Z0-9_+=,.@-]{2,64}$
+                                  type: string
+                              required:
+                              - roleARN
+                              type: object
+                            awsAccessKey:
+                              description: AwsAccessKey points to the AWS access key
+                                id and secret to be used for authentication.
+                              nullable: true
+                              properties:
+                                keyId:
+                                  description: KeyId points to the AWS access key
+                                    id to be used for authentication.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                keySecret:
+                                  description: KeySecret points to the AWS access
+                                    key secret to be used for authentication.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                              required:
+                              - keyId
+                              - keySecret
+                              type: object
+                            iamRole:
+                              description: |-
+                                IamRole points to the secret containing the role ARN to be used for authentication.
+                                This can be used for authentication in STS-enabled clusters when additionally specifying
+                                a web identity token
+                              nullable: true
+                              properties:
+                                roleARN:
+                                  description: |-
+                                    RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+                                    This role requires an OIDC provider to be configured in an STS-enabled cluster.
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                token:
+                                  description: Token specifies a bearer token to be
+                                    used for authenticating requests.
+                                  properties:
+                                    from:
+                                      description: From is the source from where to
+                                        find the token
+                                      enum:
+                                      - secret
+                                      - serviceAccount
+                                      type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        key:
+                                          description: Name of the key used to get
+                                            the value from the referenced Secret.
+                                          type: string
+                                        name:
+                                          description: Name of secret
+                                          type: string
+                                      required:
+                                      - key
+                                      - name
+                                      type: object
+                                  required:
+                                  - from
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Additional secret spec is required when
+                                      bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              required:
+                              - roleARN
+                              - token
+                              type: object
+                            type:
+                              description: Type is the type of cloudwatch authentication
+                                to configure
+                              enum:
+                              - awsAccessKey
+                              - iamRole
+                              type: string
+                          required:
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'awsAccessKey' || has(self.awsAccessKey)
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'iamRole' || has(self.iamRole)
+                        bucket:
+                          description: Bucket specifies the S3 bucket name where logs
+                            will be stored.
+                          pattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
+                          type: string
+                        keyPrefix:
+                          description: |-
+                            KeyPrefix defines the S3 key prefix for log objects.
+
+                            The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
+
+                            A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
+
+                            Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+                            Timestamp templates are supported using @timestamp with format specifiers:
+                             - {@timestamp|date} - YYYY-MM-DD format
+                             - {@timestamp|year} - YYYY format
+                             - {@timestamp|month} - MM format
+                             - {@timestamp|day} - DD format
+                             - {@timestamp|hour} - HH format
+                             - {@timestamp|strftime:"%Y-%m-%d"} - Custom strftime format
+
+                            Examples ....that don't currently work:
+
+                             1. foo-{.bar\|\|"none"}
+                             2. {.foo\|\|.bar\|\|"missing"}
+                             3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
+                             4. {.kubernetes.namespace_name\|\|"default"}/{@timestamp|date}/
+                             5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+                          pattern: ^(([a-zA-Z0-9-_.\/])*(\{((\.[a-zA-Z0-9_.]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_.]+|\."[^"]+"))*(\|\|"[^"]*")?|@timestamp\|[a-z]+|@timestamp\|strftime:"[^"]+")\})*)*$
+                          type: string
+                        region:
+                          type: string
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          nullable: true
+                          properties:
+                            compression:
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+                                It is an error if the compression type is not supported by the output.
+                              enum:
+                              - gzip
+                              - none
+                              - snappy
+                              - zlib
+                              - zstd
+                              type: string
+                            deliveryMode:
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
+                              enum:
+                              - AtLeastOnce
+                              - AtMostOnce
+                              type: string
+                            maxRetryDuration:
+                              description: MaxRetryDuration is the maximum time to
+                                wait between retry attempts after a delivery failure.
+                              format: int64
+                              type: integer
+                            maxWrite:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: MaxWrite limits the maximum payload in
+                                terms of bytes of a single "send" to the output.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            minRetryDuration:
+                              description: MinRetryDuration is the minimum time to
+                                wait between attempts to retry after delivery a failure.
+                              format: int64
+                              type: integer
+                          type: object
+                        url:
+                          description: |-
+                            URL is the custom S3-compatible endpoint URL.
+                            If not specified, the default AWS S3 endpoint will be used.
+                            This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
+                          type: string
+                      required:
+                      - authentication
+                      - bucket
+                      - region
+                      type: object
                     splunk:
                       description: Splunk configures forwarding log events to Splunk's
                         HTTP event collector
@@ -3827,6 +4096,7 @@ spec:
                       - loki
                       - lokiStack
                       - googleCloudLogging
+                      - s3
                       - splunk
                       - syslog
                       - otlp
@@ -3860,6 +4130,9 @@ spec:
                   - message: Additional type specific spec is required for the output
                       type
                     rule: self.type != 'lokiStack' || has(self.lokiStack)
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 's3' || has(self.s3)
                   - message: Additional type specific spec is required the for output
                       type
                     rule: self.type != 'splunk' || has(self.splunk)

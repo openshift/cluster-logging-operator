@@ -1,9 +1,6 @@
 package collector
 
 import (
-	"os"
-	"path"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -17,6 +14,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"os"
+	"path"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -647,12 +647,12 @@ var _ = Describe("Factory#Deployment", func() {
 							Name: "my-clf",
 							Type: obs.OutputTypeCloudwatch,
 							Cloudwatch: &obs.Cloudwatch{
-								Authentication: &obs.CloudwatchAuthentication{
-									Type: obs.CloudwatchAuthTypeIAMRole,
-									IAMRole: &obs.CloudwatchIAMRole{
+								Authentication: &obs.AwsAuthentication{
+									Type: obs.AuthTypeIAMRole,
+									IamRole: &obs.AwsRole{
 										RoleARN: obs.SecretReference{
 											SecretName: "my-secret",
-											Key:        constants.AWSCredentialsKey,
+											Key:        constants.AwsCredentialsKey,
 										},
 										Token: obs.BearerToken{
 											From: obs.BearerTokenFromServiceAccount,
@@ -791,9 +791,9 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 				Cloudwatch: &obs.Cloudwatch{
 					Region:    "us-east-77",
 					GroupName: "{{.namespace_name}}",
-					Authentication: &obs.CloudwatchAuthentication{
-						Type: obs.CloudwatchAuthTypeIAMRole,
-						IAMRole: &obs.CloudwatchIAMRole{
+					Authentication: &obs.AwsAuthentication{
+						Type: obs.AuthTypeIAMRole,
+						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								Key:        "credentials",
 								SecretName: "cw",
@@ -838,7 +838,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 	})
 	Context("when collector has a secret containing a credentials key", func() {
 		It("should mount the secret for the bearer token when spec'd", func() {
-			outputs[0].Cloudwatch.Authentication.IAMRole.Token = bearerToken
+			outputs[0].Cloudwatch.Authentication.IamRole.Token = bearerToken
 			podSpec := *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
 				Outputs:   outputs,
 				Pipelines: pipelines,

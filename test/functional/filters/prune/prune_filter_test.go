@@ -364,15 +364,15 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 		})
 
 		It("should send to CloudWatch", func() {
-			pipelineBuilder.ToCloudwatchOutput(obs.CloudwatchAuthentication{
-				Type: obs.CloudwatchAuthTypeAccessKey,
-				AWSAccessKey: &obs.CloudwatchAWSAccessKey{
+			pipelineBuilder.ToCloudwatchOutput(obs.AwsAuthentication{
+				Type: obs.AuthTypeAccessKey,
+				AwsAccessKey: &obs.AwsAccessKey{
 					KeyId: obs.SecretReference{
-						Key:        constants.AWSAccessKeyID,
+						Key:        constants.AwsAccessKeyID,
 						SecretName: functional.CloudwatchSecret,
 					},
 					KeySecret: obs.SecretReference{
-						Key:        constants.AWSSecretAccessKey,
+						Key:        constants.AwsSecretAccessKey,
 						SecretName: functional.CloudwatchSecret,
 					},
 				},
@@ -380,8 +380,8 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 
 			secret = runtime.NewSecret(f.Namespace, functional.CloudwatchSecret,
 				map[string][]byte{
-					constants.AWSAccessKeyID:     []byte(functional.AwsAccessKeyID),
-					constants.AWSSecretAccessKey: []byte(functional.AwsSecretAccessKey),
+					constants.AwsAccessKeyID:     []byte(functional.AwsAccessKeyID),
+					constants.AwsSecretAccessKey: []byte(functional.AwsSecretAccessKey),
 				},
 			)
 

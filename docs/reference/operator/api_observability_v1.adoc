@@ -1692,6 +1692,8 @@ to this output from any given collector container. The total log flow from an in
 container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node
 Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
 
+|s3|object|  S3 configures forwarding log events to Amazon S3 buckets
+
 |splunk|object|  Splunk configures forwarding log events to Splunk&#39;s HTTP event collector
 
 |syslog|object|  Syslog configures forwarding log events to a receiver using the syslog protocol
@@ -1862,7 +1864,7 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|authentication|object|  Authentication sets credentials for authenticating the requests.
+|authentication|object|  Authentication sets credentials for authenticating requests to cloudwatch services.
 
 |groupName|string|  GroupName defines the strategy for grouping logstreams
 
@@ -1891,7 +1893,7 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 === .spec.outputs[].cloudwatch.authentication
 
-CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+AwsAuthentication contains configuration for authenticating requests to a Cloudwatch output.
 
 Type:: object
 
@@ -1899,13 +1901,56 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|awsAccessKey|object|  AWSAccessKey points to the AWS access key id and secret to be used for authentication.
+|assumeRole|object|  AssumeRole specifies an additional AWS role to assume for forwarding logs.
+This enables cross-account log forwarding by using the initial role to authenticate,
+then assume a role in order to access cross-account services.
 
-|iamRole|object|  IAMRole points to the secret containing the role ARN to be used for authentication.
+|awsAccessKey|object|  AwsAccessKey points to the AWS access key id and secret to be used for authentication.
+
+|iamRole|object|  IamRole points to the secret containing the role ARN to be used for authentication.
 This can be used for authentication in STS-enabled clusters when additionally specifying
 a web identity token
 
 |type|string|  Type is the type of cloudwatch authentication to configure
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.assumeRole
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|externalID|string|  ExternalID is the external ID to match when assuming the role.
+This is optional and can be used as an additional security measure to ensure that only the intended
+entity can assume the role.
+
+The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+The value must be alphanumeric without whitespace and can also include the following symbols:
+plus(&#43;), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+
+|roleARN|object|  RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
+
+|sessionName|string|  SessionName is an optional identifier for the assumed role session.
+If not provided, a default session name will be generated.
+
+|======================
+
+=== .spec.outputs[].cloudwatch.authentication.assumeRole.roleARN
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
 
 |======================
 
@@ -1963,8 +2008,8 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|roleARN|object|  RoleARN points to the secret containing the role ARN to be used for authentication.
-This is used for authentication in STS-enabled clusters.
+|roleARN|object|  RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+This role requires an OIDC provider to be configured in an STS-enabled cluster.
 
 |token|object|  Token specifies a bearer token to be used for authenticating requests.
 
@@ -3144,6 +3189,244 @@ Type:: object
 
 |maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 allowed per input/output in a pipeline
+
+|======================
+
+=== .spec.outputs[].s3
+
+S3 provides configuration for the output type `s3`
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|bucket|string|  Bucket specifies the S3 bucket name where logs will be stored.
+
+|keyPrefix|string|  KeyPrefix defines the S3 key prefix for log objects.
+
+The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by &#34;\|\|&#34; followed by another field path or a static value.
+
+A dynamic value is encased in single curly brackets &#34;{}&#34; and MUST end with a static fallback value separated with &#34;\|\|&#34;.
+
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+Timestamp templates are supported using @timestamp with format specifiers:
+ - {@timestamp|date} - YYYY-MM-DD format
+ - {@timestamp|year} - YYYY format
+ - {@timestamp|month} - MM format
+ - {@timestamp|day} - DD format
+ - {@timestamp|hour} - HH format
+ - {@timestamp|strftime:&#34;%Y-%m-%d&#34;} - Custom strftime format
+
+Examples ....that don&#39;t currently work:
+
+1. foo-{.bar\|\|&#34;none&#34;}
+ 2. {.foo\|\|.bar\|\|&#34;missing&#34;}
+ 3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
+ 4. {.kubernetes.namespace_name\|\|&#34;default&#34;}/{@timestamp|date}/
+ 5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+
+|region|string|  
+|tuning|object|  Tuning specs tuning for the output
+
+|url|string|  URL is the custom S3-compatible endpoint URL.
+If not specified, the default AWS S3 endpoint will be used.
+This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
+
+|======================
+
+=== .spec.outputs[].s3.authentication
+
+AwsAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|assumeRole|object|  AssumeRole specifies an additional AWS role to assume for forwarding logs.
+This enables cross-account log forwarding by using the initial role to authenticate,
+then assume a role in order to access cross-account services.
+
+|awsAccessKey|object|  AwsAccessKey points to the AWS access key id and secret to be used for authentication.
+
+|iamRole|object|  IamRole points to the secret containing the role ARN to be used for authentication.
+This can be used for authentication in STS-enabled clusters when additionally specifying
+a web identity token
+
+|type|string|  Type is the type of cloudwatch authentication to configure
+
+|======================
+
+=== .spec.outputs[].s3.authentication.assumeRole
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|externalID|string|  ExternalID is the external ID to match when assuming the role.
+This is optional and can be used as an additional security measure to ensure that only the intended
+entity can assume the role.
+
+The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+The value must be alphanumeric without whitespace and can also include the following symbols:
+plus(&#43;), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+
+|roleARN|object|  RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
+
+|sessionName|string|  SessionName is an optional identifier for the assumed role session.
+If not provided, a default session name will be generated.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.assumeRole.roleARN
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.awsAccessKey
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|keyId|object|  KeyId points to the AWS access key id to be used for authentication.
+
+|keySecret|object|  KeySecret points to the AWS access key secret to be used for authentication.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.awsAccessKey.keyId
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.awsAccessKey.keySecret
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.iamRole
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|roleARN|object|  RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+This role requires an OIDC provider to be configured in an STS-enabled cluster.
+
+|token|object|  Token specifies a bearer token to be used for authenticating requests.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.iamRole.roleARN
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.iamRole.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].s3.authentication.iamRole.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].s3.tuning
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|deliveryMode|string|  
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
+
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|compression|string|  Compression causes data to be compressed before sending over the network.
+It is an error if the compression type is not supported by the output.
 
 |======================
 

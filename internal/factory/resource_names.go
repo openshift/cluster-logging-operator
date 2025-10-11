@@ -44,6 +44,6 @@ func ResourceNames(clf obsv1.ClusterLogForwarder) *ForwarderResourceNames {
 		InternalLogStoreSecret:           clf.Spec.ServiceAccount.Name + "-default",
 		ServiceAccountTokenSecret:        clf.Spec.ServiceAccount.Name + "-token",
 		Secrets:                          resBaseName + "-secrets",
-		AwsCredentialsFile:               resBaseName + "-" + constants.AWSCredentialsConfigMapName,
+		AwsCredentialsFile:               resBaseName + "-" + constants.AwsCredentialsConfigMapName,
 	}
 }

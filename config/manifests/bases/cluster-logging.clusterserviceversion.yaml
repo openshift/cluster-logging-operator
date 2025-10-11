@@ -425,7 +425,8 @@ spec:
           logs
         displayName: Amazon CloudWatch
         path: outputs[0].cloudwatch
-      - description: Authentication sets credentials for authenticating the requests.
+      - description: Authentication sets credentials for authenticating requests to
+          cloudwatch services.
         displayName: Authentication Options
         path: outputs[0].cloudwatch.authentication
       - description: |-
@@ -459,7 +460,14 @@ spec:
         path: outputs[0].cloudwatch.authentication.assumeRole.roleARN.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: AWSAccessKey points to the AWS access key id and secret to be
+      - description: |-
+          SessionName is an optional identifier for the assumed role session.
+          If not provided, a default session name will be generated.
+        displayName: Session Name
+        path: outputs[0].cloudwatch.authentication.assumeRole.sessionName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: AwsAccessKey points to the AWS access key id and secret to be
           used for authentication.
         displayName: Access Key
         path: outputs[0].cloudwatch.authentication.awsAccessKey
@@ -493,7 +501,7 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: |-
-          IAMRole points to the secret containing the role ARN to be used for authentication.
+          IamRole points to the secret containing the role ARN to be used for authentication.
           This can be used for authentication in STS-enabled clusters when additionally specifying
           a web identity token
         displayName: Amazon IAM Role
@@ -1383,6 +1391,196 @@ spec:
         path: outputs[0].rateLimit.maxRecordsPerSecond
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:number
+      - description: S3 configures forwarding log events to Amazon S3 buckets
+        displayName: Amazon S3
+        path: outputs[0].s3
+      - description: Authentication sets credentials for authenticating the requests.
+        displayName: Authentication Options
+        path: outputs[0].s3.authentication
+      - description: |-
+          AssumeRole specifies an additional AWS role to assume for forwarding logs.
+          This enables cross-account log forwarding by using the initial role to authenticate,
+          then assume a role in order to access cross-account services.
+        displayName: Assume Role
+        path: outputs[0].s3.authentication.assumeRole
+      - description: |-
+          ExternalID is the external ID to match when assuming the role.
+          This is optional and can be used as an additional security measure to ensure that only the intended
+          entity can assume the role.
+
+          The ExternalId must be a minimum of 2 characters and a maximum of 1,224 characters.
+          The value must be alphanumeric without whitespace and can also include the following symbols:
+          plus(+), equal(=), comma(,), period(.), at(@), colon(:), forward slash(/), and hyphen(-).
+        displayName: External ID
+        path: outputs[0].s3.authentication.assumeRole.externalID
+      - description: RoleARN points to the secret containing the ARN of the role to
+          assume for cross-account access.
+        displayName: Assume Role ARN Secret
+        path: outputs[0].s3.authentication.assumeRole.roleARN
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].s3.authentication.assumeRole.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].s3.authentication.assumeRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          SessionName is an optional identifier for the assumed role session.
+          If not provided, a default session name will be generated.
+        displayName: Session Name
+        path: outputs[0].s3.authentication.assumeRole.sessionName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: AwsAccessKey points to the AWS access key id and secret to be
+          used for authentication.
+        displayName: Access Key
+        path: outputs[0].s3.authentication.awsAccessKey
+      - description: KeyId points to the AWS access key id to be used for authentication.
+        displayName: Secret with Access Key ID
+        path: outputs[0].s3.authentication.awsAccessKey.keyId
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].s3.authentication.awsAccessKey.keyId.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].s3.authentication.awsAccessKey.keyId.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: KeySecret points to the AWS access key secret to be used for
+          authentication.
+        displayName: Secret with Access Key Secret
+        path: outputs[0].s3.authentication.awsAccessKey.keySecret
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].s3.authentication.awsAccessKey.keySecret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].s3.authentication.awsAccessKey.keySecret.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          IamRole points to the secret containing the role ARN to be used for authentication.
+          This can be used for authentication in STS-enabled clusters when additionally specifying
+          a web identity token
+        displayName: Amazon IAM Role
+        path: outputs[0].s3.authentication.iamRole
+      - description: |-
+          RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
+          This role requires an OIDC provider to be configured in an STS-enabled cluster.
+        displayName: RoleARN Secret
+        path: outputs[0].s3.authentication.iamRole.roleARN
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].s3.authentication.iamRole.roleARN.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].s3.authentication.iamRole.roleARN.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token specifies a bearer token to be used for authenticating
+          requests.
+        displayName: Token
+        path: outputs[0].s3.authentication.iamRole.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].s3.authentication.iamRole.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].s3.authentication.iamRole.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].s3.authentication.iamRole.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].s3.authentication.iamRole.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Type is the type of cloudwatch authentication to configure
+        displayName: Authentication Type
+        path: outputs[0].s3.authentication.type
+      - description: Bucket specifies the S3 bucket name where logs will be stored.
+        displayName: S3 Bucket Name
+        path: outputs[0].s3.bucket
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          KeyPrefix defines the S3 key prefix for log objects.
+
+          The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
+
+          A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
+
+          Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+          Timestamp templates are supported using @timestamp with format specifiers:
+           - {@timestamp|date} - YYYY-MM-DD format
+           - {@timestamp|year} - YYYY format
+           - {@timestamp|month} - MM format
+           - {@timestamp|day} - DD format
+           - {@timestamp|hour} - HH format
+           - {@timestamp|strftime:"%Y-%m-%d"} - Custom strftime format
+
+          Examples ....that don't currently work:
+
+           1. foo-{.bar\|\|"none"}
+           2. {.foo\|\|.bar\|\|"missing"}
+           3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
+           4. {.kubernetes.namespace_name\|\|"default"}/{@timestamp|date}/
+           5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+        displayName: Key Prefix
+        path: outputs[0].s3.keyPrefix
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - displayName: Amazon Region
+        path: outputs[0].s3.region
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].s3.tuning
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+          It is an error if the compression type is not supported by the output.
+        displayName: Compression
+        path: outputs[0].s3.tuning.compression
+      - displayName: Delivery Mode
+        path: outputs[0].s3.tuning.deliveryMode
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].s3.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].s3.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].s3.tuning.minRetryDuration
+      - description: |-
+          URL is the custom S3-compatible endpoint URL.
+          If not specified, the default AWS S3 endpoint will be used.
+          This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
+        displayName: Custom Endpoint URL
+        path: outputs[0].s3.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Splunk configures forwarding log events to Splunk's HTTP event
           collector
         displayName: Splunk

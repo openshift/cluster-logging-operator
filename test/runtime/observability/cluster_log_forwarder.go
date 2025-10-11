@@ -166,7 +166,7 @@ func (p *PipelineBuilder) ToSyslogOutput(rfc obs.SyslogRFCType, visitors ...func
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeSyslog))
 }
 
-func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.CloudwatchAuthentication, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.AwsAuthentication, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeCloudwatch)
 		output.Type = obs.OutputTypeCloudwatch

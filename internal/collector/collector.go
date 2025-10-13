@@ -67,6 +67,8 @@ type Factory struct {
 	ResourceNames          *factory.ForwarderResourceNames
 	isDaemonset            bool
 	LogLevel               string
+	UseKubeCache           bool
+	MaxUnavailable         string
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -85,7 +87,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string, maxUnavailable string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -105,13 +107,14 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 		PodLabelVisitor: vector.PodLogExcludeLabel,
 		isDaemonset:     isDaemonset,
 		LogLevel:        logLevel,
+		MaxUnavailable:  maxUnavailable,
 	}
 	return factory
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
-	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	return ds
 }

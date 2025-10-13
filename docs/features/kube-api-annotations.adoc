@@ -1,0 +1,103 @@
+== Reducing memory pressure on the Kubernetes API server
+Steps to introduce rolling update configuration for the logging collector pods in large-scale clusters
+
+IMPORTANT: The enablement of this feature using an annotation is deprecated and is https://issues.redhat.com/browse/LOG-7587[replaced] in a future release by
+directly editing the ClusterLogForwarder spec.
+
+=== Description
+This feature enables the `use_apiserver_cache` config to the vector.toml, as well as a configurable rolling
+update `maxUnavailable` to the forwarder's DaemonSet. The 'maxUnavailable' feature is enabled through an annotation.
+
+==== Configuration
+* Update your ClusterLogForwarder instance and include the following `metadata.annotations`:
++
+[source,yaml]
+----
+ observability.openshift.io/max-unavailable-rollout: <percentage_or_number>
+----
++
+.example forwarder
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  annotations:
+    observability.openshift.io/max-unavailable-rollout: "20%"
+  name: my-forwarder
+  namespace: my-logging-namespace
+spec:
+ ...
+----
+NOTE: `max-unavailable-rollout` can be an absolute number (e.g., 1) or a percentage (e.g., 10%). The default is 100%.
++
+If you need guidance on updating your forwarder instance, please see the sections below
+
+==== Verifying
+* The following commands can be used to verify the two options exist and are enabled:
++
+.forwarder daemonset
+[source,bash]
+----
+  oc get ds <my-forwarder-name> -ojson | jq '.spec.updateStrategy'
+----
+
+
+===== Conditions
+* You can verify there are no `False` conditions in the forwarder validation
++
+.forwarder status
+[source,bash]
+----
+  oc get obsclf <my-forwarder-name> -ojson | jq 'items[0].status.conditions'
+----
++
+.invalid examples
+[source,json]
+----
+ {
+    "message": "max-unavailable-rollout value \"200%\" must be an absolute number or a valid percentage",
+    "reason": "MaxUnavailableAnnotationSupported",
+    "status": "False",
+    "type": "observability.openshift.io/MaxUnavailableAnnotation"
+  }
+
+----
++
+NOTE: The conditions for annotations only show when Invalid and the status is set to `False`.  If there are no entries that mention
+annotations, then either they were not found, or they are valid.
+
+==== Other Commands
+====
+* You can add an annotation using `oc patch` on the clusterlogforwarder instance
++
+.example command
+[source,bash]
+----
+  oc patch obsclf <my-forwarder-name> --type='merge' -p '{"metadata":{"annotations":{"observability.openshift.io/max-unavailable-rollout":"20%"}}}'
+----
+* Alternatively, you can pull down the forwarder instance and make your changes locally
++
+[source,bash]
+----
+  oc get obsclf <my-forwarder-name> -o yaml > my-forwarder.yaml
+----
++
+Then apply the local file
++
+[source,bash]
+----
+  oc apply -f my-forwarder.yaml
+----
+* You could also use `oc edit` directly on the instance
++
+[source,bash]
+----
+  oc edit obsclf <my-forwarder-name>
+----
+====
+
+==== References
+* Annotation Implemented: https://issues.redhat.com/browse/LOG-7196
+* Knowledgebase Article: https://access.redhat.com/solutions/7121949
+* Upstream Fix: https://github.com/vectordotdev/vector/pull/17095/files

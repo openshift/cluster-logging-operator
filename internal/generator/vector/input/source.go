@@ -46,6 +46,8 @@ var (
 func NewSource(input obs.InputSpec, collectorNS string, resNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
+	// LOG-7196 temporary fix to set vector caching config
+	// TODO: remove annotation logic and add to spec
 	switch input.Type {
 	case obs.InputTypeApplication:
 		ib := source.NewContainerPathGlobBuilder()
@@ -167,6 +169,7 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 			IncludePaths:       includes,
 			ExcludePaths:       excludes,
 			ExtraLabelSelector: source.LabelSelectorFrom(selector),
+			UseKubeCache:       true,
 		},
 		NewLogSourceAndType(metaID, logSource, logType, base, func(remap *elements.Remap) {
 			remap.VRL = fmt.Sprintf(

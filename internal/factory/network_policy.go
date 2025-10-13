@@ -9,6 +9,8 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 )
 
+const DNSPortName = "dns"
+
 // PortProtocol represents a port with its associated protocol
 type PortProtocol struct {
 	Port     int32
@@ -73,7 +75,9 @@ func NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder *runtime.Netw
 	ingressRule.End()
 
 	// Egress rules are allowed on all spec'd egress ports with their detected protocols
-	egressRule := npBuilder.NewEgressRule()
+	egressRule := npBuilder.NewEgressRule().
+		OnNamedPort(corev1.ProtocolUDP, DNSPortName). // allow egress to openshift DNS service port
+		OnPort(corev1.ProtocolTCP, 6443)              // allow egress to KubeAPI port
 
 	for _, portProtocol := range egressPorts {
 		egressRule.OnPort(portProtocol.Protocol, portProtocol.Port)

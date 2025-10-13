@@ -204,6 +204,38 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		}
 	})
 
+	It("should send logs to lokistack when network policy is restricted", func() {
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+		forwarder.Spec.Collector.NetworkPolicy = &obs.NetworkPolicy{
+			RuleSet: obs.NetworkPolicyRuleSetTypeRestrictIngressEgress,
+		}
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+		}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(err.Error())
+		}
+
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+
+		expression := `| json kubernetes_container_iostream="stdout"`
+		res, err := lokistackReceiver.GetApplicationLogsWithPipeline(serviceAccount.Name, expression, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(res).ToNot(BeEmpty())
+		Expect(len(res)).To(Equal(1))
+
+		found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+
+		found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+	})
+
 	AfterEach(func() {
 		e2e.Cleanup()
 		e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})

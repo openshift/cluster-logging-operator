@@ -220,16 +220,32 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
 			egressRule := policyInstance.Spec.Egress[0]
 
-			Expect(egressRule.Ports).To(HaveLen(3))
+			Expect(egressRule.Ports).To(HaveLen(5))
 
-			portNumbers := make([]int32, 0)
-			for _, port := range egressRule.Ports {
-				if port.Port != nil {
-					portNumbers = append(portNumbers, port.Port.IntVal)
-				}
+			expectedEgressPorts := []networkingv1.NetworkPolicyPort{
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9200},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: "dns"},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 8088},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 3100},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 6443},
+				},
 			}
 
-			Expect(portNumbers).To(ContainElements(int32(9200), int32(8088), int32(3100)))
+			Expect(egressRule.Ports).To(ConsistOf(expectedEgressPorts))
 		})
 
 		It("should successfully reconcile the network policy with both input and output ports", func() {
@@ -309,16 +325,27 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
 			egressRule := policyInstance.Spec.Egress[0]
 
-			Expect(egressRule.Ports).To(HaveLen(2))
+			Expect(egressRule.Ports).To(HaveLen(4))
 
-			egressPortNumbers := make([]int32, 0)
-			for _, port := range egressRule.Ports {
-				if port.Port != nil {
-					egressPortNumbers = append(egressPortNumbers, port.Port.IntVal)
-				}
+			expectedEgressPorts := []networkingv1.NetworkPolicyPort{
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9200},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9092},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 6443},
+				},
+				{
+					Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
+					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: "dns"},
+				},
 			}
-
-			Expect(egressPortNumbers).To(ContainElements(int32(9200), int32(9092)))
+			Expect(egressRule.Ports).To(ConsistOf(expectedEgressPorts))
 		})
 	})
 

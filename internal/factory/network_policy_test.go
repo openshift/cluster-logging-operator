@@ -118,6 +118,14 @@ var _ = Describe("#NewNetworkPolicy", func() {
 			[]networkingv1.NetworkPolicyEgressRule{{
 				Ports: []networkingv1.NetworkPolicyPort{
 					{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: DNSPortName}}[0],
+					},
+					{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: 6443}}[0],
+					},
+					{
 						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
 						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: 8080}}[0],
 					},

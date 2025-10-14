@@ -137,18 +137,6 @@ var _ = Describe("Factory#Daemonset", func() {
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
 			})
 
-			It("should has Liveness Probe", func() {
-				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
-				collector = podSpec.Containers[0]
-				livenessProbe := collector.LivenessProbe
-				Expect(livenessProbe).ToNot(BeNil())
-				Expect(livenessProbe.HTTPGet).ToNot(BeNil())
-				Expect(livenessProbe.HTTPGet.Path).To(Equal("/health"))
-				Expect(livenessProbe.HTTPGet.Port).ToNot(BeNil())
-				Expect(livenessProbe.HTTPGet.Port.IntVal).To(Equal(HealthPort))
-				Expect(livenessProbe.FailureThreshold).To(BeEquivalentTo(5))
-			})
-
 			Context("the volume mounts", func() {
 				It("should mount all output configmaps", func() {
 					Expect(collector.VolumeMounts).To(IncludeVolumeMount(

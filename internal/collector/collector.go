@@ -32,8 +32,6 @@ const (
 	MetricsPortName                 = "metrics"
 	metricsVolumeName               = "metrics"
 	metricsVolumePath               = "/etc/collector/metrics"
-	HealthPortName                  = "health"
-	HealthPort                      = int32(24686)
 	saTokenVolumeName               = "sa-token"
 	saTokenExpirationSecs           = 3600 //1 hour
 	sourcePodsName                  = "varlogpods"
@@ -202,11 +200,6 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 			ContainerPort: MetricsPort,
 			Protocol:      v1.ProtocolTCP,
 		},
-		{
-			Name:          HealthPortName,
-			ContainerPort: HealthPort,
-			Protocol:      v1.ProtocolTCP,
-		},
 	}
 	collector.Env = []v1.EnvVar{
 		{Name: "COLLECTOR_CONF_HASH", Value: f.ConfigHash},
@@ -247,8 +240,6 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		AddSecurityContextTo(collector)
 	}
 
-	AddLivenessProbe(collector)
-
 	AddVolumeMounts(collector, secretVolumes, common.SecretBasePath)
 	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
 		return common.ConfigMapBasePath(strings.TrimPrefix(name, "config-"))
@@ -262,23 +253,6 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 	}
 
 	return collector
-}
-
-// AddLivenessProbe to collector container
-func AddLivenessProbe(collector *v1.Container) {
-	livenessProbe := &v1.Probe{
-		ProbeHandler: v1.ProbeHandler{
-			HTTPGet: &v1.HTTPGetAction{
-				Path:   "/health",
-				Port:   intstr.FromInt32(HealthPort),
-				Scheme: v1.URISchemeHTTP,
-			},
-		},
-		InitialDelaySeconds: 10,
-		FailureThreshold:    5,
-	}
-
-	collector.LivenessProbe = livenessProbe
 }
 
 func sanitizeVolumeName(input string) string {

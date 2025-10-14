@@ -1,11 +1,9 @@
 package conf
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"strconv"
 )
 
 func Global(namespace, forwarderName string) []framework.Element {
@@ -41,7 +39,6 @@ data_dir = "{{.DataDir}}"
 
 [api]
 enabled = true
-address = "0.0.0.0:` + strconv.Itoa(int(collector.HealthPort)) + `"
 {{end}}
 `
 }

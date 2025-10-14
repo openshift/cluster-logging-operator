@@ -2,16 +2,23 @@ package framework
 
 import (
 	"bytes"
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"sort"
 	"strings"
 	"text/template"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/pelletier/go-toml/v2"
 )
 
 // Element is a basic unit of configuration. It wraps a golang template along with the data type to hold the data template needs. A type implementing
 type Element interface {
 	Name() string
 	Template() string
+}
+
+type StructuredElement interface {
+	Element
+	Config() any
 }
 
 // Section is a collection of Elements at a high level division of configuration. e.g. Inputs, Outputs, Ingress etc. It is used to show a breakdown of generated configuration + adding a comment along with the declared section to document the meaning of the section.
@@ -50,6 +57,7 @@ func (g Generator) generate(es []Element) (string, error) {
 	if len(es) == 0 {
 		return "", nil
 	}
+	structMaps := map[string]interface{}{}
 	t := template.New("generate")
 	f := template.FuncMap{
 		"compose": g.generate,
@@ -83,23 +91,60 @@ func (g Generator) generate(es []Element) (string, error) {
 		if e == nil || e == Nil {
 			continue
 		}
-		var err error
-		t, err = t.Parse(e.Template())
-		if err != nil {
-			log.V(0).Error(err, "Error parsing template", "element", e, "name", e.Name(), "template", e.Template())
-			log.V(3).Error(err, "Error parsing template", "element", e)
-			panic(err)
+
+		switch el := e.(type) {
+		case StructuredElement:
+			cfg := el.Config().(map[string]interface{})
+			structMaps = mergeMaps(structMaps, cfg)
+
+		default:
+			var err error
+			t, err = t.Parse(e.Template())
+			if err != nil {
+				log.V(0).Error(err, "Error parsing template", "element", e, "name", e.Name(), "template", e.Template())
+				log.V(3).Error(err, "Error parsing template", "element", e)
+				panic(err)
+			}
+			err = t.ExecuteTemplate(b, e.Name(), e)
+			if err != nil {
+				log.V(0).Error(err, "Error in conf generation")
+				return "error in conf generation", err
+			}
+			if i < len(es)-1 {
+				b.Write([]byte("\n"))
+			}
 		}
-		err = t.ExecuteTemplate(b, e.Name(), e)
-		if err != nil {
-			log.V(0).Error(err, "Error in conf generation")
-			return "error in conf generation", err
-		}
+
 		if i < len(es)-1 {
 			b.Write([]byte("\n"))
 		}
 	}
+
+	if len(structMaps) > 0 {
+		b1, err := toml.Marshal(structMaps)
+		if err != nil {
+			return "", err
+		}
+		b.Write(b1)
+	}
+
 	return strings.TrimRight(b.String(), "\n"), nil
+}
+
+func mergeMaps(dest, src map[string]interface{}) map[string]interface{} {
+	for k, v := range src {
+		if vMap, ok := v.(map[string]interface{}); ok {
+			if destMap, exists := dest[k].(map[string]interface{}); exists {
+				// recursively merge nested maps
+				dest[k] = mergeMaps(destMap, vMap)
+			} else {
+				dest[k] = vMap
+			}
+		} else {
+			dest[k] = v
+		}
+	}
+	return dest
 }
 
 // MergeElements merges multiple arrays of Elements into a single array of Element

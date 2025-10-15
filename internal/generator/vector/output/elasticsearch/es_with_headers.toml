@@ -1,0 +1,26 @@
+# Elasticsearch Index
+[transforms.es_1_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+._internal.es_1_index = to_string!(._internal.log_type||"none")
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_index"]
+endpoints = ["https://es.svc.infra.cluster:9200"]
+bulk.index = "{{ _internal.es_1_index }}"
+bulk.action = "create"
+api_version = "v8"
+
+[sinks.es_1.encoding]
+except_fields = ["_internal"]
+
+[sinks.es_1.request]
+headers = {"Key"="Value"}
+
+[sinks.es_1.auth]
+strategy = "basic"
+user = "SECRET[kubernetes_secret.es-1/username]"
+password = "SECRET[kubernetes_secret.es-1/password]"

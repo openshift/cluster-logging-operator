@@ -57,7 +57,7 @@ func AuthConfig(outputName string, auth *obs.AwsAuthentication, options utils.Op
 		return authConfig
 	}
 	switch auth.Type {
-	case obs.AuthTypeAccessKey:
+	case obs.AwsAuthTypeAccessKey:
 		authConfig.KeyID.Value = vectorhelpers.SecretFrom(&auth.AwsAccessKey.KeyId)
 		authConfig.KeySecret.Value = vectorhelpers.SecretFrom(&auth.AwsAccessKey.KeySecret)
 		// New assumeRole works with static keys as well
@@ -71,7 +71,7 @@ func AuthConfig(outputName string, auth *obs.AwsAuthentication, options utils.Op
 				authConfig.SessionName.Value = auth.AssumeRole.SessionName
 			}
 		}
-	case obs.AuthTypeIAMRole:
+	case obs.AwsAuthTypeIAMRole:
 		if forwarderName, found := utils.GetOption(options, framework.OptionForwarderName, ""); found {
 			// For OIDC roles we mount a configMap containing a credentials file
 			authConfig.CredentialsPath.Value = strings.Trim(vectorhelpers.ConfigPath(forwarderName+"-"+constants.AwsCredentialsConfigMapName, constants.AwsCredentialsKey), `"`)

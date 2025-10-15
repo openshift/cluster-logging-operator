@@ -38,7 +38,7 @@ var _ = Describe("S3 secret handling", func() {
 				Type: obsv1.OutputTypeS3,
 				S3: &obsv1.S3{
 					Authentication: &obsv1.AwsAuthentication{
-						Type: obsv1.AuthTypeAccessKey,
+						Type: obsv1.AwsAuthTypeAccessKey,
 						AwsAccessKey: &obsv1.AwsAccessKey{
 							KeyId: obsv1.SecretReference{
 								SecretName: "s3-secret1",
@@ -66,7 +66,7 @@ var _ = Describe("S3 secret handling", func() {
 				Type: obsv1.OutputTypeS3,
 				S3: &obsv1.S3{
 					Authentication: &obsv1.AwsAuthentication{
-						Type: obsv1.AuthTypeIAMRole,
+						Type: obsv1.AwsAuthTypeIAMRole,
 						IamRole: &obsv1.AwsRole{
 							RoleARN: obsv1.SecretReference{
 								SecretName: "s3-role",
@@ -91,7 +91,7 @@ var _ = Describe("S3 secret handling", func() {
 				Type: obsv1.OutputTypeS3,
 				S3: &obsv1.S3{
 					Authentication: &obsv1.AwsAuthentication{
-						Type: obsv1.AuthTypeIAMRole,
+						Type: obsv1.AwsAuthTypeIAMRole,
 						IamRole: &obsv1.AwsRole{
 							RoleARN: obsv1.SecretReference{
 								SecretName: "s3-base-role",
@@ -127,7 +127,7 @@ var _ = Describe("S3 secret handling", func() {
 					Type: obsv1.OutputTypeS3,
 					S3: &obsv1.S3{
 						Authentication: &obsv1.AwsAuthentication{
-							Type: obsv1.AuthTypeIAMRole,
+							Type: obsv1.AwsAuthTypeIAMRole,
 							IamRole: &obsv1.AwsRole{
 								Token: obsv1.BearerToken{
 									From: obsv1.BearerTokenFromServiceAccount,
@@ -147,7 +147,7 @@ var _ = Describe("S3 secret handling", func() {
 					Type: obsv1.OutputTypeS3,
 					S3: &obsv1.S3{
 						Authentication: &obsv1.AwsAuthentication{
-							Type: obsv1.AuthTypeAccessKey,
+							Type: obsv1.AwsAuthTypeAccessKey,
 						},
 					},
 				},

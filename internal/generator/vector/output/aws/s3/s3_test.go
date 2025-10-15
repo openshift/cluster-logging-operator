@@ -7,7 +7,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/s3"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
 	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +39,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						Region: "us-east-test",
 						Bucket: "my-test-bucket",
 						Authentication: &obs.AwsAuthentication{
-							Type: obs.AuthTypeAccessKey,
+							Type: obs.AwsAuthTypeAccessKey,
 							AwsAccessKey: &obs.AwsAccessKey{
 								KeyId: obs.SecretReference{
 									Key:        constants.AwsAccessKeyID,
@@ -97,7 +97,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			Entry("when a role_arn is provided directly", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.Authentication = &obs.AwsAuthentication{
-					Type: obs.AuthTypeIAMRole,
+					Type: obs.AwsAuthTypeIAMRole,
 					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        "my_role",
@@ -113,7 +113,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			Entry("when a role_arn is provided by ccoctl", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.Authentication = &obs.AwsAuthentication{
-					Type: obs.AuthTypeIAMRole,
+					Type: obs.AwsAuthTypeIAMRole,
 					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							Key:        constants.AwsCredentialsKey,
@@ -129,7 +129,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			Entry("when an assume_role is specified with accessKey auth", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.Authentication = &obs.AwsAuthentication{
-					Type: obs.AuthTypeAccessKey,
+					Type: obs.AwsAuthTypeAccessKey,
 					AwsAccessKey: &obs.AwsAccessKey{
 						KeyId: obs.SecretReference{
 							Key:        constants.AwsAccessKeyID,
@@ -167,7 +167,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 					KeyPrefix: "app-{.log_type||\"missing\"}",
 					Bucket:    "my-test-bucket",
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								Key:        constants.AwsWebIdentityRoleKey,

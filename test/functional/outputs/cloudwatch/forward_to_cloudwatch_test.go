@@ -46,7 +46,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		)
 
 		obsCwAuth = &obs.AwsAuthentication{
-			Type: obs.AuthTypeAccessKey,
+			Type: obs.AwsAuthTypeAccessKey,
 			AwsAccessKey: &obs.AwsAccessKey{
 				KeySecret: obs.SecretReference{
 					Key:        constants.AwsSecretAccessKey,

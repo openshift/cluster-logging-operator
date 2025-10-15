@@ -63,7 +63,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeCloudwatch,
 					Cloudwatch: &obs.Cloudwatch{
 						Authentication: &obs.AwsAuthentication{
-							Type: obs.AuthTypeAccessKey,
+							Type: obs.AwsAuthTypeAccessKey,
 							AwsAccessKey: &obs.AwsAccessKey{
 								KeySecret: obs.SecretReference{
 									Key:        "role_arn1",
@@ -89,7 +89,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeCloudwatch,
 					Cloudwatch: &obs.Cloudwatch{
 						Authentication: &obs.AwsAuthentication{
-							Type: obs.AuthTypeIAMRole,
+							Type: obs.AwsAuthTypeIAMRole,
 							IamRole: &obs.AwsRole{
 								RoleARN: obs.SecretReference{
 									Key:        "role_arn1",
@@ -131,7 +131,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeCloudwatch,
 					Cloudwatch: &obs.Cloudwatch{
 						Authentication: &obs.AwsAuthentication{
-							Type: obs.AuthTypeIAMRole,
+							Type: obs.AwsAuthTypeIAMRole,
 							IamRole: &obs.AwsRole{
 								RoleARN: obs.SecretReference{
 									Key:        "role_arn1",
@@ -150,7 +150,7 @@ var _ = Describe("cloudwatch auth configmap", func() {
 					Type: obs.OutputTypeCloudwatch,
 					Cloudwatch: &obs.Cloudwatch{
 						Authentication: &obs.AwsAuthentication{
-							Type: obs.AuthTypeIAMRole,
+							Type: obs.AwsAuthTypeIAMRole,
 							IamRole: &obs.AwsRole{
 								RoleARN: obs.SecretReference{
 									Key:        "role_arn2",

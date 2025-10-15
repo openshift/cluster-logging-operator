@@ -21,7 +21,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								SecretName: "foo",
@@ -78,7 +78,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								SecretName: "foo",
@@ -133,7 +133,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								SecretName: "foo",
@@ -192,7 +192,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								SecretName: "foo",
@@ -255,7 +255,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeAccessKey,
+						Type: obs.AwsAuthTypeAccessKey,
 						AwsAccessKey: &obs.AwsAccessKey{
 							KeyId: obs.SecretReference{
 								Key:        constants.AwsAccessKeyID,
@@ -311,7 +311,7 @@ var _ = Describe("validating aws auth", func() {
 				Type: obs.OutputTypeS3,
 				S3: &obs.S3{
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeAccessKey,
+						Type: obs.AwsAuthTypeAccessKey,
 						AwsAccessKey: &obs.AwsAccessKey{
 							KeyId: obs.SecretReference{
 								Key:        constants.AwsAccessKeyID,

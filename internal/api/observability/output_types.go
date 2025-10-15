@@ -51,9 +51,9 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 			auths = append(auths, o.Loki.Authentication.Token)
 		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
 			auths = append(auths, o.LokiStack.Authentication.Token)
-		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.AuthTypeIAMRole:
+		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.AwsAuthTypeIAMRole:
 			auths = append(auths, &o.Cloudwatch.Authentication.IamRole.Token)
-		case o.Type == obsv1.OutputTypeS3 && o.S3 != nil && o.S3.Authentication.Type == obsv1.AuthTypeIAMRole:
+		case o.Type == obsv1.OutputTypeS3 && o.S3 != nil && o.S3.Authentication.Type == obsv1.AwsAuthTypeIAMRole:
 			auths = append(auths, &o.S3.Authentication.IamRole.Token)
 		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
 			auths = append(auths, o.Elasticsearch.Authentication.Token)
@@ -188,15 +188,15 @@ func lokiStackKeys(auth *obsv1.LokiStackAuthentication) (keys []*obsv1.SecretRef
 	return keys
 }
 
-// awsSecretKeys returns a list of keys from secrets in the cloudwatch output
+// awsSecretKeys returns a list of keys from secrets in the s3 and cloudwatch outputs
 func awsSecretKeys(auth *obsv1.AwsAuthentication) (keys []*obsv1.SecretReference) {
 	if auth == nil {
 		return keys
 	}
 	switch auth.Type {
-	case obsv1.AuthTypeAccessKey:
+	case obsv1.AwsAuthTypeAccessKey:
 		keys = append(keys, &auth.AwsAccessKey.KeyId, &auth.AwsAccessKey.KeySecret)
-	case obsv1.AuthTypeIAMRole:
+	case obsv1.AwsAuthTypeIAMRole:
 		keys = append(keys, &auth.IamRole.RoleARN)
 		if auth.IamRole.Token.From == obsv1.BearerTokenFromSecret && auth.IamRole.Token.Secret != nil {
 			keys = append(keys, &obsv1.SecretReference{

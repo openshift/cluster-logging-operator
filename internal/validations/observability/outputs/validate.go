@@ -26,6 +26,7 @@ func Validate(context internalcontext.ForwarderContext) {
 		case obs.OutputTypeCloudwatch:
 			messages = append(messages, ValidateAwsAuth(out, context)...)
 		case obs.OutputTypeS3:
+			messages = append(messages, ValidateTechPreviewAnnotation(out, context)...)
 			messages = append(messages, ValidateAwsAuth(out, context)...)
 		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)

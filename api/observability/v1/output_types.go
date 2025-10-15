@@ -541,6 +541,12 @@ type Elasticsearch struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Version int `json:"version"`
+
+	// Headers specify optional headers to be sent with the request
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Headers"
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 // GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.

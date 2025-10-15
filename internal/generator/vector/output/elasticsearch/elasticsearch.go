@@ -81,7 +81,7 @@ if exists(.kubernetes.event.metadata.uid) {
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
+		Request(id, o.Elasticsearch, strategy),
 		tls.New(id, o.TLS, secrets, op, Option{Name: URL, Value: o.Elasticsearch.URL}),
 	)
 
@@ -109,4 +109,12 @@ func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets 
 		Version:     o.Elasticsearch.Version,
 	}
 	return &es
+}
+
+func Request(id string, o *obs.Elasticsearch, strategy common.ConfigStrategy) *common.Request {
+	req := common.NewRequest(id, strategy)
+	if len(o.Headers) != 0 {
+		req.SetHeaders(o.Headers)
+	}
+	return req
 }

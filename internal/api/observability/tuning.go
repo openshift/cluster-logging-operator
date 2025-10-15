@@ -25,6 +25,11 @@ func NewTuning(spec obs.OutputSpec) Tuning {
 			t.BaseOutputTuningSpec = spec.Cloudwatch.Tuning.BaseOutputTuningSpec
 			t.Compression = spec.Cloudwatch.Tuning.Compression
 		}
+	case obs.OutputTypeS3:
+		if spec.S3 != nil && spec.S3.Tuning != nil {
+			t.BaseOutputTuningSpec = spec.S3.Tuning.BaseOutputTuningSpec
+			t.Compression = spec.S3.Tuning.Compression
+		}
 	case obs.OutputTypeElasticsearch:
 		if spec.Elasticsearch != nil && spec.Elasticsearch.Tuning != nil {
 			t.BaseOutputTuningSpec = spec.Elasticsearch.Tuning.BaseOutputTuningSpec

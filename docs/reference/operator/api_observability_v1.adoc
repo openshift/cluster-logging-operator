@@ -1893,7 +1893,7 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 === .spec.outputs[].cloudwatch.authentication
 
-AwsAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+AwsAuthentication contains configuration for authenticating requests to an AWS service.
 
 Type:: object
 
@@ -3206,29 +3206,21 @@ Type:: object
 
 |bucket|string|  Bucket specifies the S3 bucket name where logs will be stored.
 
-|keyPrefix|string|  KeyPrefix defines the S3 key prefix for log objects.
+String name absent leading &#39;s3://&#39; or trailing &#39;/&#39; and truncated to 63 characters to meet length restrictions
+
+|keyPrefix|string|  KeyPrefix is a templated string that defines the S3 key prefix for log objects.
+Prefixes are useful for partitioning objects, such as by creating an object key that stores objects under a particular directory.
+If using a prefix for this purpose, it must end in / to act as a directory path. A trailing / is not automatically added.
 
 The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by &#34;\|\|&#34; followed by another field path or a static value.
 
 A dynamic value is encased in single curly brackets &#34;{}&#34; and MUST end with a static fallback value separated with &#34;\|\|&#34;.
-
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
-Timestamp templates are supported using @timestamp with format specifiers:
- - {@timestamp|date} - YYYY-MM-DD format
- - {@timestamp|year} - YYYY format
- - {@timestamp|month} - MM format
- - {@timestamp|day} - DD format
- - {@timestamp|hour} - HH format
- - {@timestamp|strftime:&#34;%Y-%m-%d&#34;} - Custom strftime format
-
-Examples ....that don&#39;t currently work:
-
-1. foo-{.bar\|\|&#34;none&#34;}
- 2. {.foo\|\|.bar\|\|&#34;missing&#34;}
- 3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
- 4. {.kubernetes.namespace_name\|\|&#34;default&#34;}/{@timestamp|date}/
- 5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+Example:
+ 1. foo-{.bar\|\|&#34;none&#34;}/
+ 2. {.foo\|\|.bar\|\|&#34;missing&#34;}/
+ 3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}/
 
 |region|string|  
 |tuning|object|  Tuning specs tuning for the output
@@ -3241,7 +3233,7 @@ This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or De
 
 === .spec.outputs[].s3.authentication
 
-AwsAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+AwsAuthentication contains configuration for authenticating requests to an AWS service.
 
 Type:: object
 

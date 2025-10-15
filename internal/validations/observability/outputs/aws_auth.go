@@ -5,7 +5,6 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
-	_ "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 )
 
 const (

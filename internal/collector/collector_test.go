@@ -648,7 +648,7 @@ var _ = Describe("Factory#Deployment", func() {
 							Type: obs.OutputTypeCloudwatch,
 							Cloudwatch: &obs.Cloudwatch{
 								Authentication: &obs.AwsAuthentication{
-									Type: obs.AuthTypeIAMRole,
+									Type: obs.AwsAuthTypeIAMRole,
 									IamRole: &obs.AwsRole{
 										RoleARN: obs.SecretReference{
 											SecretName: "my-secret",
@@ -792,7 +792,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch STS Resources", func() {
 					Region:    "us-east-77",
 					GroupName: "{{.namespace_name}}",
 					Authentication: &obs.AwsAuthentication{
-						Type: obs.AuthTypeIAMRole,
+						Type: obs.AwsAuthTypeIAMRole,
 						IamRole: &obs.AwsRole{
 							RoleARN: obs.SecretReference{
 								Key:        "credentials",

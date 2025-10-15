@@ -1514,35 +1514,28 @@ spec:
       - description: Type is the type of cloudwatch authentication to configure
         displayName: Authentication Type
         path: outputs[0].s3.authentication.type
-      - description: Bucket specifies the S3 bucket name where logs will be stored.
+      - description: |-
+          Bucket specifies the S3 bucket name where logs will be stored.
+
+          String name absent leading 's3://' or trailing '/' and truncated to 63 characters to meet length restrictions
         displayName: S3 Bucket Name
         path: outputs[0].s3.bucket
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: |-
-          KeyPrefix defines the S3 key prefix for log objects.
+          KeyPrefix is a templated string that defines the S3 key prefix for log objects.
+          Prefixes are useful for partitioning objects, such as by creating an object key that stores objects under a particular directory.
+          If using a prefix for this purpose, it must end in / to act as a directory path. A trailing / is not automatically added.
 
           The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
 
           A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
-
           Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
-          Timestamp templates are supported using @timestamp with format specifiers:
-           - {@timestamp|date} - YYYY-MM-DD format
-           - {@timestamp|year} - YYYY format
-           - {@timestamp|month} - MM format
-           - {@timestamp|day} - DD format
-           - {@timestamp|hour} - HH format
-           - {@timestamp|strftime:"%Y-%m-%d"} - Custom strftime format
-
-          Examples ....that don't currently work:
-
-           1. foo-{.bar\|\|"none"}
-           2. {.foo\|\|.bar\|\|"missing"}
-           3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
-           4. {.kubernetes.namespace_name\|\|"default"}/{@timestamp|date}/
-           5. logs/{@timestamp|year}/{@timestamp|month}/{@timestamp|day}/
+          Example:
+           1. foo-{.bar\|\|"none"}/
+           2. {.foo\|\|.bar\|\|"missing"}/
+           3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}/
         displayName: Key Prefix
         path: outputs[0].s3.keyPrefix
         x-descriptors:

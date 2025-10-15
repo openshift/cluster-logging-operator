@@ -76,7 +76,7 @@ var _ = Describe("Validating outputs", func() {
 			Type: obs.OutputTypeCloudwatch,
 			Cloudwatch: &obs.Cloudwatch{
 				Authentication: &obs.AwsAuthentication{
-					Type: obs.AuthTypeAccessKey,
+					Type: obs.AwsAuthTypeAccessKey,
 					AwsAccessKey: &obs.AwsAccessKey{
 						KeySecret: obs.SecretReference{
 							SecretName: secretName,
@@ -99,7 +99,7 @@ var _ = Describe("Validating outputs", func() {
 			Type: obs.OutputTypeCloudwatch,
 			Cloudwatch: &obs.Cloudwatch{
 				Authentication: &obs.AwsAuthentication{
-					Type: obs.AuthTypeIAMRole,
+					Type: obs.AwsAuthTypeIAMRole,
 					IamRole: &obs.AwsRole{
 						RoleARN: obs.SecretReference{
 							SecretName: secretName,

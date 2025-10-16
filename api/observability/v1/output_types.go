@@ -528,23 +528,23 @@ type Elasticsearch struct {
 
 	// Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 	//
-	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 	//
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
-	// When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app|infra|audit)-write$
+	// When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app\|infra\|audit)-write$
 	// where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
 	// with the openshiftLabels filter. See the product documentation for examples.
 	//
 	// Example:
 	//
-	//  1. foo-{.bar||"none"}
+	//  1. foo-{.bar\|\|"none"}
 	//
-	//  2. {.foo||.bar||"missing"}
+	//  2. {.foo\|\|.bar\|\|"missing"}
 	//
-	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//  3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
@@ -1436,26 +1436,30 @@ type S3 struct {
 
 	// Bucket specifies the S3 bucket name where logs will be stored.
 	//
-	// String name absent leading 's3://' or trailing '/' and truncated to 63 characters to meet length restrictions
+	// String name absent leading `s3://` or trailing `/` and truncated to 63 characters to meet length restrictions
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="S3 Bucket Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Bucket string `json:"bucket"`
 
-	// KeyPrefix is a templated string that defines the S3 key prefix for log objects.
-	// Prefixes are useful for partitioning objects, such as by creating an object key that stores objects under a particular directory.
-	// If using a prefix for this purpose, it must end in "/" to act as a directory path. A trailing "/" (forward slash) is not automatically added.
+	// KeyPrefix is a templated string that defines the S3 key prefix for log objects.  It is a combination of
+	// static or dynamic values consisting of field paths separated by `\|\|` and ending with a static
+	// fallback value (e.g. logs_{.kubernetes.namespace_name\|\|.hostname\|\|"unknown"}_my_workload_{.openshift.sequence_id\|\|"none"}).
 	//
-	// The KeyPrefix can be a combination of static and dynamic values consisting of field paths followed by "||" followed by another field path or a static value.
+	// Prefixes are necessary for partitioning logs from other objects in the bucket.  If the prefix represents a
+	// directory, it must end in `/` to act as a directory path. A trailing `/` (forward slash) is not automatically added.
 	//
-	// A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "||".
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Dynamic values are encased in single curly brackets `{}` and MUST end with a static fallback value separated
+	// with `\|\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
-	// Example:
-	//  1. foo-{.bar||"none"}/
-	//  2. {.foo||.bar||"missing"}/
-	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}/
+	// Examples:
+	//
+	//  1. logs_{.kubernetes.namespace_name\|\|"none"}/
+	//
+	//  2. {.log_type\|\|.log_source\|\|"missing"}/
+	//
+	//  3. my_workload.{.hostname\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}/
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`

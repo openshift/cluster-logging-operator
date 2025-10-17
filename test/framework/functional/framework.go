@@ -442,6 +442,11 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 			if err := f.AddCloudWatchOutput(b, output); err != nil {
 				return err
 			}
+		case obs.OutputTypeS3:
+			// TODO: resolve resulting cw aws-sdk dependency issues
+			//if err := f.AddS3Output(b, output); err != nil {
+			//	return err
+			//}
 		}
 	}
 	return nil

@@ -20,6 +20,24 @@ spec:
       labels:
         service: collector
         severity: error
+    - alert: ClusterLogForwarderOutputErrorRate
+      annotations:
+        description: The rate of output errors detected for {{ $labels.namespace }}/{{
+          $labels.pod }} pod exceeds the threshold of 10%.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/ClusterLogForwarderOutputErrorRate.md
+        summary: "The pod \"{{ $labels.pod }}\" owned by ClusterLogForwarder \"{{
+          $labels.namespace }}/{{ $labels.app_kubernetes_io_instance }}\" \nfor output
+          \"{{ $labels.component_id }}\" has been generating the error: \"{{ $labels.error_kind
+          }}\" for the last 5m\nat the rate of {{ $value | humanizePercentage }} which
+          exceeds the threshold of 10%.\nThis could indicate: the output URL is misconfigured,
+          the receiver is unavailable, or there are networking issues for that pod."
+      expr: "sum by (namespace,app_kubernetes_io_instance, pod, component_id, error_kind)(irate(vector_http_client_errors_total[5m])
+        \n/ on (namespace,app_kubernetes_io_instance, pod, component_id) group_left
+        irate(vector_http_client_requests_sent_total[5m])) > 0.10\n"
+      for: 5m
+      labels:
+        service: clusterlogforwarder
+        severity: critical
     - alert: ClusterLogForwarderDeprecations
       annotations:
         message: The Cluster Logging Operator version {{$labels.version}} includes

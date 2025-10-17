@@ -186,6 +186,26 @@ func (p *PipelineBuilder) ToCloudwatchOutput(auth obs.AwsAuthentication, visitor
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeCloudwatch))
 }
 
+// TODO: resolve tests given new aws-sdk requires cw updates as well
+func (p *PipelineBuilder) ToS3Output(auth obs.AwsAuthentication, bucketName, keyPrefix, port string, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+	v := func(output *obs.OutputSpec) {
+		output.Name = string(obs.OutputTypeS3)
+		output.Type = obs.OutputTypeS3
+		output.TLS = &obs.OutputTLSSpec{InsecureSkipVerify: true}
+		output.S3 = &obs.S3{
+			URL:            "https://localhost:" + string(port),
+			Region:         "us-east-2",
+			Bucket:         bucketName,
+			KeyPrefix:      keyPrefix,
+			Authentication: &auth,
+		}
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(v, string(obs.OutputTypeS3))
+}
+
 func (p *PipelineBuilder) ToLokiOutput(lokiURL url.URL, visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
 	v := func(output *obs.OutputSpec) {
 		output.Name = string(obs.OutputTypeLoki)

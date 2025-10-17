@@ -2,7 +2,7 @@ package observability
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	"strings"
 	"time"
 
@@ -75,11 +75,10 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 	trustedCABundle := collector.WaitForTrustedCAToBePopulated(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, pollInterval, timeout)
 
-	// Create a local credentials file containing AWS profiles
-	if cloudwatch.RequiresProfilesConfigMap(context.Forwarder.Spec.Outputs) {
-		awsCredsFile, err := cloudwatch.ReconcileCredsFile(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
+	if aws.RequiresProfilesConfigMap(context.Forwarder.Spec.Outputs) {
+		awsCredsFile, err := aws.ReconcileCredsFile(context.Client, context.Reader, context.Forwarder.Namespace, resourceNames.AwsCredentialsFile, context.Forwarder.Name, context.Forwarder.Spec.Outputs, context.Secrets, context.ConfigMaps, ownerRef)
 		if err != nil {
-			log.V(3).Error(err, "cloudwatch.ReconcileCredsFile")
+			log.V(3).Error(err, "collector.ReconcileAWSProfileConfig")
 			return err
 		}
 		if awsCredsFile != nil {

@@ -1,0 +1,24 @@
+# S3 Key Prefix
+[transforms.s3_key_prefix]
+type = "remap"
+inputs = ["s3-forward"]
+source = '''
+  ._internal.s3_key_prefix = "app-" + to_string!(._internal.log_type||"missing")
+'''
+
+# Amazon S3
+[sinks.s3]
+type = "aws_s3"
+inputs = ["s3_key_prefix"]
+region = "us-east-test"
+bucket = "my-test-bucket"
+key_prefix = "{{ _internal.s3_key_prefix }}"
+auth.access_key_id = "SECRET[kubernetes_secret.s3-secret/aws_access_key_id]"
+auth.secret_access_key = "SECRET[kubernetes_secret.s3-secret/aws_secret_access_key]"
+auth.assume_role = "SECRET[kubernetes_secret.s3-role-secret/my_role]"
+auth.external_id = "unique-external-id"
+healthcheck.enabled = false
+
+[sinks.s3.encoding]
+codec = "json"
+except_fields = ["_internal"]

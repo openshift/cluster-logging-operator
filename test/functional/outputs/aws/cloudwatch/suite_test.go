@@ -9,5 +9,5 @@ import (
 
 func TestFunctionalOutputCloudwatch(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "[Functional][Outputs][Cloudwatch] Suite")
+	RunSpecs(t, "[Functional][Outputs][AWS][Cloudwatch] Suite")
 }

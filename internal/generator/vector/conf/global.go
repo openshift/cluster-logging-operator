@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
+// TODO: this needs to be verified
 func Global(namespace, forwarderName string) []framework.Element {
 	dataDir := vector.GetDataPath(namespace, forwarderName)
 	if dataDir == vector.DefaultDataPath {
@@ -42,3 +43,5 @@ enabled = true
 {{end}}
 `
 }
+
+// This is a temp fix for vector api no longer working

@@ -2,6 +2,8 @@
 
 The ClusterLogForwarder supports forwarding logs to an external AWS accounts using AssumeRole functionality. This feature enables centralized logging across multiple AWS accounts while maintaining security boundaries.
 
+This feature applies to both CloudWatch and S3 output types
+
 === Cross-Account Overview
 Cross-account log forwarding works by:
 
@@ -34,7 +36,7 @@ Cross-account log forwarding works by:
 ----
 2. The target (cross-account) role needs permissions to write logs
 +
-.Target Role Permissions Policy
+.Target Role CloudWatch Permissions Policy
 [source,json]
 ----
 {
@@ -54,6 +56,8 @@ Cross-account log forwarding works by:
     ]
 }
 ----
+NOTE: This could also be S3 forwarding permissions (see s3 section)
+
 3. The target (cross-account) requires a trust-policy specifying a `Principal` entity to trust (and optional externalID)
 +
 .Target Role Trust Policy (Cross-Account)
@@ -81,7 +85,7 @@ Cross-account log forwarding works by:
 [#_clusterlogforwarder_configuration_for_cross_account_forwarding]
 === ClusterLogForwarder Configuration for Cross-Account Forwarding
 
-.ClusterLogForwarder with AssumeRole
+.CloudWatch Forwarding with AssumeRole
 [source,yaml]
 ----
 apiVersion: observability.openshift.io/v1
@@ -202,6 +206,99 @@ Check Vector pod logs for assume role related errors:
 ----
 oc logs -n openshift-logging <collector-pod-name>
 ----
+
+== S3 Output
+The S3 output shares the authentication spec with CloudWatch.
+
+=== S3 Examples with AssumeRole
+.S3 Forwarding with AssumeRole
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: cross-account-example
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: my-sa
+  outputs:
+    - name: s3-cross-account
+      type: s3
+      s3:
+        bucket: my-test-bucket
+        keyPrefix: my-logs-{.log_type||"unknown"}
+        region: us-east-1
+        authentication:
+          type: iamRole
+          iamRole:
+            roleARN:
+              secretName: initial-role-secret
+              key: role_arn
+            token:
+              from: serviceAccount
+          # Cross-account assume role configuration
+          assumeRole:
+            roleARN:
+              secretName: cross-account-secret
+              key: assume_role_arn
+            externalID: "my-unique-id-1234"
+  pipelines:
+    - name: cross-account-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - s3-cross-account
+----
+==== S3 Long-lived Credentials and AssumeRole
+The S3 authentication type `awsAccessKey` can also be used along with the `assumeRole` configuration.  This allows long-lived access keys to be used for the initial assumeRole, and provides an additional layer of least-privilege security for s3 permissions.
+
+.Alternate Authentication snippet with AssumeRole
+[source,yaml]
+----
+
+  outputs:
+    - name: s3-cross-account
+      type: s3
+      s3:
+        bucket: my-test-bucket
+        keyPrefix: my-logs-{.log_type||"unknown"}
+        authentication:
+          type: awsAccessKey
+          awsAccessKey:
+            keyId:
+              secretName: cw-secret
+              key: aws_access_key_id
+            keySecret:
+              secretName: cw-secret
+              key: aws_secret_access_key
+          # Cross-account assume role configuration
+          assumeRole:
+            roleARN:
+              secretName: cross-account-secret
+              key: assume_role_arn
+----
+With both of these forwarders, the target (cross-account) role needs permissions to write logs
+
+.Target Role S3 Permissions Policy
+[source,json]
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:ListBucket"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+----
+NOTE: `Resource` can also be specified by bucket or directory for additional security.  e.g.  `"arn:aws:s3:::my-test-bucket/*"`
+
 
 == References
 === Amazon

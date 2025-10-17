@@ -6,11 +6,11 @@ import (
 )
 
 func HasAwsRoleArnKey(secret *corev1.Secret) bool {
-	return HasKeys(secret, constants.AWSWebIdentityRoleKey)
+	return HasKeys(secret, constants.AwsWebIdentityRoleKey)
 }
 
 func HasAwsCredentialsKey(secret *corev1.Secret) bool {
-	return HasKeys(secret, constants.AWSCredentialsKey)
+	return HasKeys(secret, constants.AwsCredentialsKey)
 }
 
 // GetKey if found return value and ok=true, else ok=false

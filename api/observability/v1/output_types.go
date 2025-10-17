@@ -23,7 +23,7 @@ import (
 
 // OutputType is used to define the type of output to be created.
 //
-// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;splunk;syslog;otlp
+// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;s3;splunk;syslog;otlp
 type OutputType string
 
 func (s OutputType) String() string {
@@ -41,6 +41,7 @@ const (
 	OutputTypeLoki               OutputType = "loki"
 	OutputTypeLokiStack          OutputType = "lokiStack"
 	OutputTypeOTLP               OutputType = "otlp"
+	OutputTypeS3                 OutputType = "s3"
 	OutputTypeSplunk             OutputType = "splunk"
 	OutputTypeSyslog             OutputType = "syslog"
 )
@@ -56,6 +57,7 @@ var (
 		OutputTypeKafka,
 		OutputTypeLoki,
 		OutputTypeLokiStack,
+		OutputTypeS3,
 		OutputTypeSplunk,
 		OutputTypeSyslog,
 		OutputTypeOTLP,
@@ -72,6 +74,7 @@ var (
 // +kubebuilder:validation:XValidation:rule="self.type != 'kafka' || has(self.kafka)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'loki' || has(self.loki)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'lokiStack' || has(self.lokiStack)", message="Additional type specific spec is required for the output type"
+// +kubebuilder:validation:XValidation:rule="self.type != 's3' || has(self.s3)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'splunk' || has(self.splunk)", message="Additional type specific spec is required the for output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'syslog' || has(self.syslog)", message="Additional type specific spec is required the for output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'otlp' || has(self.otlp)", message="Additional type specific spec is required the for output type"
@@ -151,6 +154,12 @@ type OutputSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack"
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`
+
+	// S3 configures forwarding log events to Amazon S3 buckets
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon S3"
+	S3 *S3 `json:"s3,omitempty"`
 
 	// Splunk configures forwarding log events to Splunk's HTTP event collector
 	//
@@ -344,11 +353,11 @@ type Cloudwatch struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
-	// Authentication sets credentials for authenticating the requests.
+	// Authentication sets credentials for authenticating requests to cloudwatch services.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
-	Authentication *CloudwatchAuthentication `json:"authentication"`
+	Authentication *AwsAuthentication `json:"authentication"`
 
 	// Tuning specs tuning for the output
 	//
@@ -382,44 +391,44 @@ type Cloudwatch struct {
 	GroupName string `json:"groupName"`
 }
 
-// CloudwatchAuthType sets the authentication type used for CloudWatch.
+// AwsAuthType sets the authentication type used for CloudWatch.
 //
 // +kubebuilder:validation:Enum:=awsAccessKey;iamRole
-type CloudwatchAuthType string
+type AwsAuthType string
 
 const (
-	// CloudwatchAuthTypeAccessKey requires auth to use static keys
-	CloudwatchAuthTypeAccessKey CloudwatchAuthType = "awsAccessKey"
+	// AwsAuthTypeAccessKey requires auth to use static keys
+	AwsAuthTypeAccessKey AwsAuthType = "awsAccessKey"
 
-	// CloudwatchAuthTypeIAMRole requires auth to use IAM Role and optional token
-	CloudwatchAuthTypeIAMRole CloudwatchAuthType = "iamRole"
+	// AwsAuthTypeIAMRole requires auth to use IAM Role and optional token
+	AwsAuthTypeIAMRole AwsAuthType = "iamRole"
 )
 
-// CloudwatchAuthentication contains configuration for authenticating requests to a Cloudwatch output.
+// AwsAuthentication contains configuration for authenticating requests to an AWS service.
 // +kubebuilder:validation:XValidation:rule="self.type != 'awsAccessKey' || has(self.awsAccessKey)", message="Additional type specific spec is required for authentication"
 // +kubebuilder:validation:XValidation:rule="self.type != 'iamRole' || has(self.iamRole)", message="Additional type specific spec is required for authentication"
-type CloudwatchAuthentication struct {
+type AwsAuthentication struct {
 	// Type is the type of cloudwatch authentication to configure
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
-	Type CloudwatchAuthType `json:"type"`
+	Type AwsAuthType `json:"type"`
 
-	// AWSAccessKey points to the AWS access key id and secret to be used for authentication.
+	// AwsAccessKey points to the AWS access key id and secret to be used for authentication.
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Access Key"
-	AWSAccessKey *CloudwatchAWSAccessKey `json:"awsAccessKey,omitempty"`
+	AwsAccessKey *AwsAccessKey `json:"awsAccessKey,omitempty"`
 
-	// IAMRole points to the secret containing the role ARN to be used for authentication.
+	// IamRole points to the secret containing the role ARN to be used for authentication.
 	// This can be used for authentication in STS-enabled clusters when additionally specifying
 	// a web identity token
 	//
 	// +kubebuilder:validation:Optional
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon IAM Role"
-	IAMRole *CloudwatchIAMRole `json:"iamRole,omitempty"`
+	IamRole *AwsRole `json:"iamRole,omitempty"`
 
 	// AssumeRole specifies an additional AWS role to assume for forwarding logs.
 	// This enables cross-account log forwarding by using the initial role to authenticate,
@@ -428,10 +437,10 @@ type CloudwatchAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Assume Role"
-	AssumeRole *CloudwatchAssumeRole `json:"assumeRole,omitempty"`
+	AssumeRole *AwsAssumeRole `json:"assumeRole,omitempty"`
 }
 
-type CloudwatchAWSAccessKey struct {
+type AwsAccessKey struct {
 	// KeyId points to the AWS access key id to be used for authentication.
 	//
 	// +kubebuilder:validation:Required
@@ -445,7 +454,7 @@ type CloudwatchAWSAccessKey struct {
 	KeySecret SecretReference `json:"keySecret"`
 }
 
-type CloudwatchIAMRole struct {
+type AwsRole struct {
 	// RoleARN specifies the secret containing the role ARN to be used for AWS authentication.
 	// This role requires an OIDC provider to be configured in an STS-enabled cluster.
 	//
@@ -460,7 +469,7 @@ type CloudwatchIAMRole struct {
 	Token BearerToken `json:"token"`
 }
 
-type CloudwatchAssumeRole struct {
+type AwsAssumeRole struct {
 	// RoleARN points to the secret containing the ARN of the role to assume for cross-account access.
 	//
 	// +kubebuilder:validation:Required
@@ -482,6 +491,14 @@ type CloudwatchAssumeRole struct {
 	// +nullable
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="External ID"
 	ExternalID string `json:"externalID,omitempty"`
+
+	// SessionName is an optional identifier for the assumed role session.
+	// If not provided, a default session name will be generated.
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^[a-zA-Z0-9_+=,.@-]{2,64}$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Session Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SessionName string `json:"sessionName,omitempty"`
 }
 
 type ElasticsearchTuningSpec struct {
@@ -511,23 +528,23 @@ type Elasticsearch struct {
 
 	// Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 	//
-	// The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 	//
-	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 	//
 	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 	//
-	// When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app|infra|audit)-write$
+	// When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app\|infra\|audit)-write$
 	// where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
 	// with the openshiftLabels filter. See the product documentation for examples.
 	//
 	// Example:
 	//
-	//  1. foo-{.bar||"none"}
+	//  1. foo-{.bar\|\|"none"}
 	//
-	//  2. {.foo||.bar||"missing"}
+	//  2. {.foo\|\|.bar\|\|"missing"}
 	//
-	//  3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//  3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
 	//
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
@@ -1385,4 +1402,75 @@ type OTLP struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *OTLPTuningSpec `json:"tuning,omitempty"`
+}
+
+type S3TuningSpec struct {
+	BaseOutputTuningSpec `json:",inline"`
+
+	// Compression causes data to be compressed before sending over the network.
+	// It is an error if the compression type is not supported by the output.
+	//
+	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
+	Compression string `json:"compression,omitempty"`
+}
+
+// S3 provides configuration for the output type `s3`
+type S3 struct {
+	// Authentication sets credentials for authenticating the requests.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
+	Authentication *AwsAuthentication `json:"authentication"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
+	Tuning *S3TuningSpec `json:"tuning,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Amazon Region",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Region string `json:"region"`
+
+	// Bucket specifies the S3 bucket name where logs will be stored.
+	//
+	// String name absent leading `s3://` or trailing `/` and truncated to 63 characters to meet length restrictions
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="S3 Bucket Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Bucket string `json:"bucket"`
+
+	// KeyPrefix is a templated string that defines the S3 key prefix for log objects.  It is a combination of
+	// static or dynamic values consisting of field paths separated by `\|\|` and ending with a static
+	// fallback value (e.g. logs_{.kubernetes.namespace_name\|\|.hostname\|\|"unknown"}_my_workload_{.openshift.sequence_id\|\|"none"}).
+	//
+	// Prefixes are necessary for partitioning logs from other objects in the bucket.  If the prefix represents a
+	// directory, it must end in `/` to act as a directory path. A trailing `/` (forward slash) is not automatically added.
+	//
+	// Dynamic values are encased in single curly brackets `{}` and MUST end with a static fallback value separated
+	// with `\|\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Examples:
+	//
+	//  1. logs_{.kubernetes.namespace_name\|\|"none"}/
+	//
+	//  2. {.log_type\|\|.log_source\|\|"missing"}/
+	//
+	//  3. my_workload.{.hostname\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}/
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Key Prefix",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	KeyPrefix string `json:"keyPrefix,omitempty"`
+
+	// URL is the custom S3-compatible endpoint URL.
+	// If not specified, the default AWS S3 endpoint will be used.
+	// This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Custom Endpoint URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	URL string `json:"url,omitempty"`
 }

@@ -19,6 +19,7 @@ const (
 var (
 	compiledMaxUnavailableRegex = regexp.MustCompile(validMaxUnavailableRegex)
 	allowedLogLevels            = sets.NewString("trace", "debug", "info", "warn", "error", "off")
+	enabledValues               = sets.NewString("true", "enabled")
 )
 
 func IsPercentOrWholeNumber(val string) bool {
@@ -50,4 +51,8 @@ func validateLogLevelAnnotation(context internalcontext.ForwarderContext) {
 	}
 	// Condition is only necessary when it is invalid, otherwise we can remove
 	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeLogLevel)
+}
+
+func IsEnabledValue(val string) bool {
+	return enabledValues.Has(strings.ToLower(val))
 }

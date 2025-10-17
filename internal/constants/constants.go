@@ -20,17 +20,13 @@ const (
 
 	// Output-specific keys
 
-	SharedKey                    = "shared_key"            // fluent forward
-	AWSSecretAccessKey           = "aws_secret_access_key" //nolint:gosec
-	AWSAccessKeyID               = "aws_access_key_id"
-	AWSRoleSessionName           = "cluster-logging" // identifier for role logging session
-	AWSCredentialsConfigMapName  = "aws-creds"
-	AWSCredentialsKey            = "credentials" // credrequest key to check for sts-formatted secret
-	AWSWebIdentityRoleKey        = "role_arn"    // manual key to check for sts-formatted secret
-	AWSRegionEnvVarKey           = "AWS_REGION"
-	AWSRoleArnEnvVarKey          = "AWS_ROLE_ARN"
-	AWSRoleSessionEnvVarKey      = "AWS_ROLE_SESSION_NAME"
-	AWSWebIdentityTokenEnvVarKey = "AWS_WEB_IDENTITY_TOKEN_FILE" //nolint:gosec
+	SharedKey                   = "shared_key"            // fluent forward
+	AwsSecretAccessKey          = "aws_secret_access_key" //nolint:gosec
+	AwsAccessKeyID              = "aws_access_key_id"
+	AwsRoleSessionName          = "cluster-logging" // identifier for role logging session
+	AwsCredentialsConfigMapName = "aws-creds"
+	AwsCredentialsKey           = "credentials" // credrequest key to check for sts-formatted secret
+	AwsWebIdentityRoleKey       = "role_arn"    // manual key to check for sts-formatted secret
 
 	SplunkHECTokenKey = `hecToken`
 

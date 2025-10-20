@@ -1,0 +1,214 @@
+= Forwarding logs to S3 compatible services
+
+This guide provides a workflow for forwarding log records to Amazon Simple Storage Service (S3)
+
+== Key Features
+- New `s3` output type with comprehensive field validation
+- Supported by both authentication methods, role and access-key
+- Dynamic key prefix generation with template support
+- AssumeRole configuration including external ID and session name support
+- Custom endpoint configuration for S3-compatible services
+- Buffer, batch, and timeout configuration through shared tuning configurations
+- Comprehensive compression support including gzip, snappy, zlib, zstd
+
+
+== Configuring the Web Identity
+These steps assume that there is a <<setup-sts, STS>> enabled openshift cluster running.
+
+. Create a `CredentialsRequest` resource with the appropriate s3 actions
+
+* This example `CredentialsRequest` shows permissions for forwarding logs to s3.
++
+.aws-cred-request.yaml
+[source, yaml]
+----
+apiVersion: cloudcredential.openshift.io/v1
+kind: CredentialsRequest
+metadata:
+  name: my-credrequest                             # <1>
+  namespace: openshift-logging
+spec:
+  providerSpec:
+    apiVersion: cloudcredential.openshift.io/v1
+    kind: AWSProviderSpec
+    statementEntries:
+      - action:                                    # <2>
+          - s3:PutObject
+          - s3:ListBucket
+        effect: Allow
+        resource: arn:aws:s3:*:*:*
+  secretRef:
+    name: s3-secret                               # <3>
+    namespace: openshift-logging
+  serviceAccountNames:
+    - my-sa                                        # <4>
+----
+<1> The name and namespace for the credentials request.
+<2> The allowed actions for this role.
+<3> The name and namespace of the secret containing the generated credentials.
+<4> The service account that will use the credentials
++
+
+. Create the IAM role in AWS using the <<cco, CCO>> utility
++
+```
+$ ccoctl aws create-iam-roles --name=<NAME> \      # <1>
+  --credentials-requests-dir=<REQ DIR> \           # <2>
+  --identity-provider-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:oidc-provider/<NAME>-oidc.s3.<REGION>.amazonaws.com                             # <3>
+```
+<1> The name of the role
+<2> The credentials request directory where the above `CredentialsRequest` YAML is saved.
+<3> The identity provider arn
++
+
+. Apply the generated credentials secret
++
+.openshift-logging-s3-secret-credentials.yaml
+[source, yaml]
+----
+apiVersion: v1
+stringData:
+  credentials: |-
+    [default]
+    sts_regional_endpoints = regional
+    role_arn = <MY ROLE ARN>
+    web_identity_token_file = <PATH TO SA TOKEN>
+kind: Secret
+metadata:
+  name: s3-secret
+  namespace: openshift-logging
+type: Opaque
+----
++
+```
+$ oc apply -f openshift-logging-s3-secret-credentials.yaml
+```
+
+
+== Configuring the `ClusterLogForwarder`
+
+This example shows one `s3` output with authentication via a projected service account token, and another output using a static access key.
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: s3-forwarder # <1>
+  namespace: openshift-logging # <1>
+spec:
+  serviceAccount:
+    name: my-sa # <2>
+  outputs:
+    - name: s3-sa-projected-token
+      type: s3
+      s3:
+        keyPrefix: 's3-projected.{.log_type||"missing"}' # <3>
+        bucket: "my-log-bucket"
+        region: us-west-1
+        authentication:
+          type: iamRole # <4>
+          iamRole:
+            roleARN: # <5>
+              key: credentials # <5>
+              secretName: s3-secret # <5>
+            token: # <6>
+              from: serviceAccount # <6>
+    - name: s3-key-secret
+      type: s3
+      s3:
+        keyPrefix: 's3-key.{.kubernetes.namespace_name||"missing"}'  # <7>
+        bucket: "my-log-bucket"
+        region: us-west-1
+        authentication:
+          type: awsAccessKey # <8>
+          awsAccessKey:
+            keyId:
+              key: access_key_id
+              secretName: my-secret
+            keySecret:
+              key: secret_access_key
+              secretName: my-secret
+  pipelines:
+    - name: app-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - s3-sa-projected-token
+        - s3-key-secret
+----
+<1> The name and namespace of the forwarder
+<2> The service account with the appropriate collection permissions
+<3> Key prefix for the log streams. Can be templated.
+<4> The authentication type. For `STS`, use `iamRole`.
+<5> The `role_arn` used to authenticate. Specify the name of the secret and the key where the `role_arn` is stored.
+<6> The service account token used to authenticate. To use the projected service account token, specify `from: serviceAccount`.
+<7> This supports template syntax to allow dynamic per-event values.
+<8> To use static credentials, specify `type: awsAccessKey` and provide the key secret and id
+
+
+==== Configuring tuning and compression
+[source,yaml]
+----
+ spec:
+   outputs:
+   - name: s3-optimized
+     type: s3
+     s3:
+       region: us-west-2
+       bucket: high-volume-logs
+       keyPrefix: "logs/{.kubernetes.namespace_name}/{@timestamp|date('%Y/%m/%d')}/"
+       url: https://minio.example.com:9000  # a custom endpoint supporting s3-compatible services
+       tuning:
+         compression: gzip         # Reduce storage costs and network usage
+         maxWrite: "50Mi"          # Large batch sizes for efficiency
+         deliveryMode: "AtLeastOnce"  # Guaranteed delivery
+         minRetryDuration: "5s"
+         maxRetryDuration: "300s"
+       authentication:
+         type: iamRole
+         iamRole:
+           roleARN:
+             key: role_arn
+             secretName: s3-secret
+----
+
+==== Configuring cross-account forwarding using assume-role
+[source,yaml]
+----
+  spec:
+   outputs:
+   - name: s3-cross-account-role
+     type: s3
+     s3:
+       region: us-west-2
+       bucket: cross-account-logs
+       authentication:
+         type: iamRole
+         iamRole:
+           roleARN:
+             key: base_role_arn
+             secretName: s3-secret
+         assumeRole:
+           roleARN:
+             key: target_role_arn
+             secretName: s3-target-secret
+           externalID:
+             key: external_id
+             secretName: s3-target-secret
+           sessionName: "my-forwarding-session"
+----
+
+
+== References
+=== Openshift
+. [[setup-sts]] https://github.com/openshift/cloud-credential-operator/blob/master/docs/sts.md[Setting up an STS cluster]
+. [[cco]] https://github.com/openshift/cloud-credential-operator[Cloud Credential Operator (CCO)]
+. https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/logging/index[Openshift Logging Documentation]
+. https://github.com/openshift/cluster-logging-operator/blob/master/docs/features/logforwarding/outputs/aws-cross-account-forwarding.adoc[AWS Cross-Account forwarding]
+
+=== Amazon
+. [[aws-s3]] https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#CoreConcepts[Amazon Simple Storage Service (S3)]
+. [[aws-sts]] https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html[AWS Security Token Service (STS)]
+. https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html[AWS IAM Roles and Instance Profiles] 

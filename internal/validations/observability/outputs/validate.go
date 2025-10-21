@@ -23,10 +23,7 @@ func Validate(context internalcontext.ForwarderContext) {
 		messages = append(messages, validateOutputIsReferencedByPipelines(out, pipelines)...)
 		// Validate by output type
 		switch out.Type {
-		case obs.OutputTypeCloudwatch:
-			messages = append(messages, ValidateAwsAuth(out, context)...)
-		case obs.OutputTypeS3:
-			messages = append(messages, ValidateTechPreviewAnnotation(out, context)...)
+		case obs.OutputTypeCloudwatch, obs.OutputTypeS3:
 			messages = append(messages, ValidateAwsAuth(out, context)...)
 		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)

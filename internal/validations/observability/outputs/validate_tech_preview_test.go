@@ -153,57 +153,5 @@ var _ = Describe("Validating tech-preview annotation", func() {
 				Expect(results).To(ContainElement(ContainSubstring(MissingAnnotationMessage)))
 			})
 		})
-
-		When("output type is S3", func() {
-			BeforeEach(func() {
-				out = obs.OutputSpec{
-					Name: "my-s3",
-					Type: obs.OutputTypeS3,
-				}
-				forwarder = obs.ClusterLogForwarder{
-					Spec: obs.ClusterLogForwarderSpec{
-						Outputs: []obs.OutputSpec{out},
-					},
-				}
-				forwarder.Annotations = map[string]string{"some.other.annotation/for-testing": "true"}
-				k8sClient = fake.NewFakeClient()
-				context = internalcontext.ForwarderContext{
-					Client:    k8sClient,
-					Reader:    k8sClient,
-					Forwarder: &forwarder,
-				}
-			})
-			It("should fail validation when missing annotation", func() {
-				results := ValidateTechPreviewAnnotation(forwarder.Spec.Outputs[0], context)
-				Expect(results).To(ContainElement(ContainSubstring(MissingAnnotationMessage)))
-			})
-			It("should fail validation when annotation has incorrect value", func() {
-				forwarder.Annotations[constants.AnnotationOtlpOutputTechPreview] = "false"
-				results := ValidateTechPreviewAnnotation(forwarder.Spec.Outputs[0], context)
-				Expect(results).To(ContainElement(ContainSubstring(MissingAnnotationMessage)))
-			})
-			It("should pass validation when annotation is included and enabled", func() {
-				forwarder.Annotations[constants.AnnotationS3OutputTechPreview] = "true"
-				Expect(ValidateTechPreviewAnnotation(forwarder.Spec.Outputs[0], context)).To(BeEmpty())
-
-				forwarder.Annotations[constants.AnnotationS3OutputTechPreview] = "enabled"
-				Expect(ValidateTechPreviewAnnotation(forwarder.Spec.Outputs[0], context)).To(BeEmpty())
-			})
-			It("should pass validation when including additional types", func() {
-				forwarder.Annotations[constants.AnnotationS3OutputTechPreview] = "true"
-				forwarder.Annotations[constants.AnnotationOtlpOutputTechPreview] = "enabled"
-				out2 := obs.OutputSpec{
-					Name: "my-out2",
-					Type: obs.OutputTypeCloudwatch,
-				}
-				out3 := obs.OutputSpec{
-					Name: "my-out3",
-					Type: obs.OutputTypeLoki,
-				}
-				forwarder.Spec.Outputs = []obs.OutputSpec{out, out2, out3}
-				Expect(ValidateTechPreviewAnnotation(forwarder.Spec.Outputs[0], context)).To(BeEmpty())
-			})
-		})
-
 	})
 })

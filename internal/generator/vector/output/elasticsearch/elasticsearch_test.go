@@ -145,5 +145,10 @@ var _ = Describe("Generate Vector config", func() {
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}, true, framework.NoOptions, "es_with_tune.toml"),
+		Entry("with headers", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Key": "Value",
+			}
+		}, true, framework.NoOptions, "es_with_headers.toml"),
 	)
 })

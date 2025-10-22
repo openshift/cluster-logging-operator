@@ -1,6 +1,5 @@
 ---
-packageName: redhat-cluster-logging-operator
+packageName: clusterlogging
 channels:
-- name: stable
+- name: stable-6.3
   currentCSV: cluster-logging-operator.v6.3.2
-defaultChannel: stable

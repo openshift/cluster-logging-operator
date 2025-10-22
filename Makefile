@@ -25,7 +25,7 @@ export LOGGING_VERSION?=6.4
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.47.0
+IMAGE_LOGGING_VECTOR?=quay.io/vparfono/vector:v0.50.0-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.1
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.3
 
@@ -117,7 +117,7 @@ run:
 	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	LOG_LEVEL=$(LOG_LEVEL) \
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	OPERATOR_NAME=$(OPERATOR_NAME) \
 	WATCH_NAMESPACE="" \
@@ -212,12 +212,12 @@ deploy-catalog:
 #   env $(make -s test-env) go test ./my/packages
 test-env: ## Echo test environment, useful for running tests outside of the Makefile.
 	@echo \
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker-vector
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/... \
@@ -229,11 +229,11 @@ test-forwarder-generator: bin/forwarder-generator
 
 test-functional-benchmarker-vector: bin/functional-benchmarker
 	@rm -rf /tmp/benchmark-test-vector
-	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+	@out=$$(RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator test-unit-api
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
 
@@ -295,7 +295,7 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 
 .PHONY: test-upgrade
 test-upgrade: $(JUNITREPORT)
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
 	exit 0
@@ -303,7 +303,7 @@ test-upgrade: $(JUNITREPORT)
 
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
 	EXCLUDES="$(E2E_TEST_EXCLUDES)" CLF_EXCLUDES="$(CLF_TEST_EXCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
@@ -311,7 +311,7 @@ test-e2e: $(JUNITREPORT)
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image
 	LOG_LEVEL=3 \
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.50.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \

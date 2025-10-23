@@ -21,13 +21,18 @@ RUN make build
 
 FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
 
-RUN case $(uname -m) in \
-    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
-    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
-    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
-    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
-    *) echo "Unsupported architecture"; exit 1 ;; \
-esac
+RUN arch=$(uname -m) && \
+        if [ "$arch" = "x86_64" ]; then \
+          cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc; \
+        elif [ "$arch" = "aarch64" ]; then \
+          cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc; \
+        elif [ "$arch" = "ppc64le" ]; then \
+          cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc; \
+        elif [ "$arch" = "s390x" ]; then \
+          cp /usr/share/openshift/linux_s390x/oc /tmp/oc; \
+        else \
+          echo "Unsupported architecture" && exit 1; \
+        fi
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 

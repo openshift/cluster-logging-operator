@@ -46,7 +46,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		},
 	}
 	confs = append(confs, elements.NewUnmatched(routeID, op, map[string]string{"output_type": strings.ToLower(obs.OutputTypeLokiStack.String())}))
-	for _, inputType := range inputTypes.List() {
+	for _, inputType := range observability.ReservedInputTypes.List() {
 		outputID := vectorhelpers.MakeID(id, inputType)
 		migratedOutput := GenerateOutput(o, inputType)
 		log.V(4).Info("migrated lokistack output", "spec", migratedOutput)

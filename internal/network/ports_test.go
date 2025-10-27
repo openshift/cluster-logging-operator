@@ -48,6 +48,7 @@ var _ = Describe("Network Ports", func() {
 		Entry("should return 443 for AzureMonitor", obs.OutputTypeAzureMonitor, "", int32(443)),
 		Entry("should return 443 for GoogleCloudLogging", obs.OutputTypeGoogleCloudLogging, "", int32(443)),
 		Entry("should return 8080 for LokiStack", obs.OutputTypeLokiStack, "", int32(8080)),
+		Entry("should return 443 for S3", obs.OutputTypeS3, "", int32(443)),
 
 		// Kafka with different schemes
 		Entry("should return 9092 for plaintext Kafka", obs.OutputTypeKafka, "tcp://kafka.example.com", int32(9092)),
@@ -59,6 +60,12 @@ var _ = Describe("Network Ports", func() {
 		Entry("should return 443 for HTTPS scheme", obs.OutputTypeHTTP, "https://example.com", int32(443)),
 		Entry("should return 443 for HTTP with no scheme", obs.OutputTypeHTTP, "", int32(443)),
 	)
+
+	It("should not panic for all supported output types", func() {
+		for _, outputType := range obs.OutputTypes {
+			Expect(func() { getDefaultPort(outputType, "") }).ToNot(Panic())
+		}
+	})
 
 	It("should panic for unknown output type", func() {
 		Expect(func() { getDefaultPort(obs.OutputType("unknown"), "") }).To(Panic())
@@ -241,6 +248,25 @@ var _ = Describe("Network Ports", func() {
 			),
 			Entry("should use default port for Cloudwatch without explicit port",
 				"https://cloudwatch.amazonaws.com",
+				[]factory.PortProtocol{{Port: 443, Protocol: corev1.ProtocolTCP}},
+			),
+		)
+
+		DescribeTable("S3",
+			func(urlStr string, expected []factory.PortProtocol) {
+				output := obs.OutputSpec{
+					Type: obs.OutputTypeS3,
+					S3:   &obs.S3{URL: urlStr},
+				}
+				ports := getPortProtocolFromOutputURL(output)
+				Expect(ports).To(Equal(expected))
+			},
+			Entry("should extract port from S3 URL",
+				"https://some-s3-bucket.com:5555",
+				[]factory.PortProtocol{{Port: 5555, Protocol: corev1.ProtocolTCP}},
+			),
+			Entry("should use default port for S3 without explicit port",
+				"https://s3.amazonaws.com",
 				[]factory.PortProtocol{{Port: 443, Protocol: corev1.ProtocolTCP}},
 			),
 		)

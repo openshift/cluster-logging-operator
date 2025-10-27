@@ -80,8 +80,12 @@ func getPortProtocolFromOutputURL(output obs.OutputSpec) []factory.PortProtocol 
 			urlStr = output.HTTP.URL
 		}
 	case obs.OutputTypeCloudwatch:
-		if output.Cloudwatch != nil && output.Cloudwatch.URL != "" {
+		if output.Cloudwatch != nil {
 			urlStr = output.Cloudwatch.URL
+		}
+	case obs.OutputTypeS3:
+		if output.S3 != nil {
+			urlStr = output.S3.URL
 		}
 	case obs.OutputTypeKafka:
 		// For kafka, prefer the URL over the broker URLs
@@ -180,7 +184,7 @@ func getDefaultPort(outputType obs.OutputType, urlStr string) int32 {
 		return 4318
 	case obs.OutputTypeLokiStack: // LokiStack uses 8080
 		return 8080
-	case obs.OutputTypeCloudwatch, obs.OutputTypeAzureMonitor, obs.OutputTypeGoogleCloudLogging:
+	case obs.OutputTypeCloudwatch, obs.OutputTypeAzureMonitor, obs.OutputTypeGoogleCloudLogging, obs.OutputTypeS3:
 		return 443
 	case obs.OutputTypeKafka:
 		// Kafka uses 9092 for plaintext (tcp), 9093 for TLS

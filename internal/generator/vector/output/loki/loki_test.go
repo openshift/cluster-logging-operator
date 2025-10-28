@@ -25,7 +25,7 @@ var _ = Describe("Loki generator helpers", func() {
 		lo := &obs.Loki{
 			LabelKeys: []string{label},
 		}
-		labels := lokiLabels(lo)
+		labels := lokiLabels(lo, false)
 		Expect(labels).To(ContainElement(LokiLabel{
 			Name:  expKey,
 			Value: expValue,

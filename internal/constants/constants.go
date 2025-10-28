@@ -81,6 +81,8 @@ const (
 
 	STDOUT = "stdout"
 	STDERR = "stderr"
+
+	InputTypeOption = "inputTypeOption"
 )
 
 var ExtraNoProxyList = []string{ElasticsearchFQDN}

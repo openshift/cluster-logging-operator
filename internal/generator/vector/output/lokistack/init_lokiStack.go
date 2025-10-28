@@ -33,6 +33,14 @@ func GenerateOutput(outSpec obs.OutputSpec, tenant string) obs.OutputSpec {
 
 // GenerateLokiSpec generates and returns a Loki spec for the defined lokistack output
 func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
+	// Determine the default label keys for the tenant
+	// Audit logs do not have container labels
+	defaultLabelKeys := slices.Concat(lokioutput.DefaultViaqLabels, lokioutput.RequiredViaqLabels)
+	switch tenant {
+	case string(obs.InputTypeApplication), string(obs.InputTypeInfrastructure):
+		defaultLabelKeys = slices.Concat(defaultLabelKeys, lokioutput.LokistackContainerLabels)
+	}
+
 	return &obs.Loki{
 		URLSpec: obs.URLSpec{
 			URL: lokiStackURL(ls, tenant, false),
@@ -41,7 +49,7 @@ func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
 			Token: ls.Authentication.Token,
 		},
 		Tuning:    ls.Tuning,
-		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
+		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, defaultLabelKeys),
 	}
 }
 
@@ -80,7 +88,7 @@ func lokiStackGatewayService(lokiStackServiceName string) string {
 // A return value of "nil" indicates that the defaults of the Loki output should be used.
 func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant string, defaultKeys []string) []string {
 	if labelKeys == nil {
-		return nil
+		return defaultKeys
 	}
 
 	var tenantConfig *obs.LokiStackTenantLabelKeys

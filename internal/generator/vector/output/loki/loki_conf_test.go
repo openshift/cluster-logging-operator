@@ -3,6 +3,7 @@ package loki
 import (
 	_ "embed"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -33,16 +34,16 @@ var _ = Describe("outputLabelConf", func() {
 	Context("#lokiLabelKeys when LabelKeys", func() {
 		Context("are not spec'd", func() {
 			It("should provide a default set of labels including the required ones", func() {
-				exp := append(DefaultLabelKeys, requiredLabelKeys...)
+				exp := slices.Concat(DefaultViaqLabels, RequiredViaqLabels, viaqContainerLabels)
 				sort.Strings(exp)
-				Expect(lokiLabelKeys(loki)).To(BeEquivalentTo(exp))
+				Expect(lokiLabelKeys(loki, false)).To(BeEquivalentTo(exp))
 			})
 		})
 		Context("are spec'd", func() {
 			It("should use the ones provided and add the required ones", func() {
 				loki.LabelKeys = []string{"foo"}
-				exp := append(loki.LabelKeys, requiredLabelKeys...)
-				Expect(lokiLabelKeys(loki)).To(BeEquivalentTo(exp))
+				exp := append(loki.LabelKeys, RequiredViaqLabels...)
+				Expect(lokiLabelKeys(loki, false)).To(BeEquivalentTo(exp))
 			})
 		})
 

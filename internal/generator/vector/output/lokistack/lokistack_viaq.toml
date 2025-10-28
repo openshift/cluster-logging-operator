@@ -76,24 +76,9 @@ source = '''
   del(.tag)
 '''
 
-[transforms.output_default_lokistack_audit_remap_label]
-type = "remap"
-inputs = ["output_default_lokistack_audit_remap"]
-source = '''
-  if !exists(.kubernetes.namespace_name) {
-    .kubernetes.namespace_name = ""
-  }
-  if !exists(.kubernetes.pod_name) {
-    .kubernetes.pod_name = ""
-  }
-  if !exists(.kubernetes.container_name) {
-    .kubernetes.container_name = ""
-  }
-'''
-
 [sinks.output_default_lokistack_audit]
 type = "loki"
-inputs = ["output_default_lokistack_audit_remap_label"]
+inputs = ["output_default_lokistack_audit_remap"]
 endpoint = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -103,14 +88,8 @@ codec = "json"
 except_fields = ["_internal"]
 
 [sinks.output_default_lokistack_audit.labels]
-k8s_container_name = "{{kubernetes.container_name}}"
-k8s_namespace_name = "{{kubernetes.namespace_name}}"
 k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
-k8s_pod_name = "{{kubernetes.pod_name}}"
-kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
-kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
 

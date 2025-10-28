@@ -7,6 +7,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -59,6 +60,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			inputSources = append(inputSources, observability.ReservedInfrastructureSources.List()...)
 		}
 		op[otlp.OtlpLogSourcesOption] = inputSources
+		op[constants.InputTypeOption] = inputType
 		confs = append(confs, factory(outputID, migratedOutput, []string{vectorhelpers.MakeRouteInputID(routeID, inputType)}, secrets, strategy, op)...)
 	}
 	return confs

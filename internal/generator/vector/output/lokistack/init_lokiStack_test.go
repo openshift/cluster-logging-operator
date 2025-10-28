@@ -1,12 +1,13 @@
 package lokistack
 
 import (
+	"slices"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
-	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
 var _ = Describe("#GenerateOutput", func() {
@@ -64,6 +65,8 @@ var _ = Describe("#GenerateOutput", func() {
 							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
+					LabelKeys: slices.Concat(lokioutput.DefaultViaqLabels, lokioutput.RequiredViaqLabels,
+						lokioutput.LokistackContainerLabels),
 				},
 			},
 			string(obs.InputTypeApplication),
@@ -115,7 +118,7 @@ var _ = Describe("#GenerateOutput", func() {
 							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
-					LabelKeys: sets.NewString(lokioutput.DefaultLabelKeys...).Insert("objectRef.apiGroup").List(),
+					LabelKeys: slices.Concat(lokioutput.RequiredViaqLabels, lokioutput.DefaultViaqLabels, []string{"objectRef.apiGroup"}),
 				},
 			},
 			string(obs.InputTypeAudit),
@@ -162,7 +165,10 @@ var _ = Describe("#GenerateOutput", func() {
 			"no config",
 			nil,
 			string(obs.InputTypeApplication),
-			nil,
+			[]string{
+				"default_one",
+				"default_two",
+			},
 		),
 		Entry(
 			"empty slices -> still nil",

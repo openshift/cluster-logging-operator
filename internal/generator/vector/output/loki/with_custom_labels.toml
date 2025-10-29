@@ -32,8 +32,6 @@ codec = "json"
 except_fields = ["_internal"]
 
 [sinks.loki_receiver.labels]
-k8s_container_name = "{{kubernetes.container_name}}"
-k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_labels_app = "{{kubernetes.labels.\"app\"}}"

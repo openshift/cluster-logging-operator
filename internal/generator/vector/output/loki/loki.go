@@ -2,9 +2,11 @@ package loki
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
@@ -37,38 +39,43 @@ const (
 )
 
 var (
-	// DefaultLabelKeys contains the log entry keys that are used as Loki stream labels by default.
-	DefaultLabelKeys = []string{
+	// DefaultViaqLabels contains the log entry keys that are used as Loki stream labels by default.
+	DefaultViaqLabels = []string{
 		logType,
+	}
 
-		//container labels
+	DefaultOtelLabels = []string{
+		otellogType,
+	}
+
+	viaqContainerLabels = []string{
 		lokiLabelKubernetesNamespaceName,
 		lokiLabelKubernetesPodName,
 		lokiLabelKubernetesContainerName,
+	}
 
-		// OTel labels
-		otellogType,
+	otelContainerLabels = []string{
 		otellokiLabelKubernetesNamespaceName,
 		otellokiLabelKubernetesPodName,
 		otellokiLabelKubernetesContainerName,
 	}
 
-	containerLabels = []string{
-		lokiLabelKubernetesNamespaceName,
-		lokiLabelKubernetesPodName,
-		lokiLabelKubernetesContainerName,
-	}
-
-	requiredLabelKeys = []string{
-		otellokiLabelKubernetesNodeName,
+	RequiredViaqLabels = []string{
 		lokiLabelKubernetesHost,
 	}
+
+	RequiredOtelLabels = []string{
+		otellokiLabelKubernetesNodeName,
+	}
+
+	LokistackContainerLabels = slices.Concat(viaqContainerLabels, otelContainerLabels)
 
 	viaqOtelLabelMap = map[string]string{
 		logType:                          otellogType,
 		lokiLabelKubernetesNamespaceName: otellokiLabelKubernetesNamespaceName,
 		lokiLabelKubernetesPodName:       otellokiLabelKubernetesPodName,
 		lokiLabelKubernetesContainerName: otellokiLabelKubernetesContainerName,
+		lokiLabelKubernetesHost:          otellokiLabelKubernetesNodeName,
 	}
 )
 
@@ -149,34 +156,64 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		}
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
-	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
-
-	var tenantTemplate Element
-	sink := Output(id, o, []string{remapLabelID}, "")
-	if hasTenantKey(o.Loki) {
-		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
-		tenantTemplate = commontemplate.TemplateRemap(lokiTenantID, []string{remapLabelID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
-		sink = Output(id, o, []string{lokiTenantID}, lokiTenantID)
+	elements := []Element{
+		CleanupFields(componentID, inputs),
 	}
+
+	// Add remap labels based on input type
+	shouldRemapLabels := false
+	// Used to determine if OTel labels are needed for lokistack outputs
+	isLokistackOutput := false
+
+	// InputTypeOption is set for Lokistack outputs
+	if input, ok := op[constants.InputTypeOption]; ok {
+		// Only add remapLabels for application or infrastructure for Lokistack outputs
+		if input == string(obs.InputTypeApplication) || input == string(obs.InputTypeInfrastructure) {
+			shouldRemapLabels = true
+		}
+		// Always add OTel labels for Lokistack outputs
+		isLokistackOutput = true
+	} else {
+		// For regular Loki outputs, always add remapLabels
+		shouldRemapLabels = true
+	}
+
+	if shouldRemapLabels {
+		remapLabelID := vectorhelpers.MakeID(id, "remap_label")
+		remapLabels := RemapLabels(remapLabelID, o, []string{componentID})
+		elements = append(elements, remapLabels)
+		componentID = remapLabelID
+	}
+
+	// Add tenant template if tenant key is configured
+	var lokiTenantID string
+	if hasTenantKey(o.Loki) {
+		lokiTenantID = vectorhelpers.MakeID(id, "loki_tenant")
+		tenantTemplate := commontemplate.TemplateRemap(lokiTenantID, []string{componentID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
+		elements = append(elements, tenantTemplate)
+		componentID = lokiTenantID
+	}
+
+	sink := Output(id, o, []string{componentID}, lokiTenantID)
 
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
 
-	return []Element{
-		CleanupFields(componentID, inputs),
-		RemapLabels(remapLabelID, o, []string{componentID}),
-		tenantTemplate,
+	// Add remaining elements
+	elements = append(elements,
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
 		common.NewAcknowledgments(id, strategy),
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
 		common.NewRequest(id, strategy),
-		NewLabels(id, o),
+		NewLabels(id, o, isLokistackOutput),
 		tls.New(id, o.TLS, secrets, op),
 		auth.HTTPAuth(id, o.Loki.Authentication, secrets, op),
-	}
+	)
+
+	return elements
 }
 
 func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
@@ -189,23 +226,26 @@ func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
 	}
 }
 
-func lokiLabelKeys(l *obs.Loki) []string {
-	var keys sets.String
+func lokiLabelKeys(l *obs.Loki, isLokistackOutput bool) []string {
+	keys := sets.NewString(RequiredViaqLabels...)
 	if l != nil && len(l.LabelKeys) != 0 {
-		keys = *sets.NewString(l.LabelKeys...)
+		keys.Insert(l.LabelKeys...)
 		// Determine which of the OTel labels need to also be added based on spec'd custom labels
-		keys.Insert(addOtelEquivalentLabels(l.LabelKeys)...)
+		// Only required for Lokistack outputs
+		if isLokistackOutput {
+			keys.Insert(addOtelEquivalentLabels(l.LabelKeys)...)
+		}
 	} else {
-		keys = *sets.NewString(DefaultLabelKeys...)
+		// Add default labels and container labels if none specified for regular Loki outputs
+		keys.Insert(DefaultViaqLabels...).
+			Insert(viaqContainerLabels...)
 	}
-	// Ensure required tags for serialization
-	keys.Insert(requiredLabelKeys...)
 	return keys.List()
 }
 
-func lokiLabels(lo *obs.Loki) []LokiLabel {
+func lokiLabels(lo *obs.Loki, isLokistackOutput bool) []LokiLabel {
 	ls := []LokiLabel{}
-	for _, k := range lokiLabelKeys(lo) {
+	for _, k := range lokiLabelKeys(lo, isLokistackOutput) {
 		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
 		name := r.Replace(k)
 		l := LokiLabel{
@@ -257,7 +297,7 @@ func generateCustomLabelValues(value string) string {
 	return fmt.Sprintf("{{%s}}", labelVal)
 }
 
-func remapLabelsVrl(labels []string) string {
+func remapContainerLabelsVrl(labels []string) string {
 	k8sEventLabel := `
 if !exists(.%s) {
   .%s = ""
@@ -284,14 +324,14 @@ func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
 	return Remap{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         remapLabelsVrl(containerLabels),
+		VRL:         remapContainerLabelsVrl(viaqContainerLabels),
 	}
 }
 
-func NewLabels(id string, o obs.OutputSpec) Element {
+func NewLabels(id string, o obs.OutputSpec, isLokistackOutput bool) Element {
 	return LokiLabels{
 		ComponentID: id,
-		Labels:      lokiLabels(o.Loki),
+		Labels:      lokiLabels(o.Loki, isLokistackOutput),
 	}
 }
 

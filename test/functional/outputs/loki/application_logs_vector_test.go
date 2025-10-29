@@ -93,9 +93,6 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			Expect(len(lines)).To(Equal(1))
 
 			want := map[string]string{
-				"k8s_namespace_name":                                f.Namespace,
-				"k8s_pod_name":                                      f.Pod.Name,
-				"k8s_node_name":                                     f.Pod.Spec.NodeName,
 				"kubernetes_namespace_name":                         f.Namespace,
 				"kubernetes_pod_name":                               f.Pod.Name,
 				"kubernetes_labels_app_kubernetes_io_name":          myValue,
@@ -106,43 +103,37 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			want["service_name"] = "unknown_service"
 
 			labels := result[0].Stream
-			Expect(len(labels)).To(Equal(9))
+			Expect(len(labels)).To(Equal(6))
 			Expect(labels).To(BeEquivalentTo(want))
 		})
 
-		It("should add all otel equivalent default labels when loki.LabelKeys are not defined", func() {
+		It("should not add all otel equivalent default labels when loki.LabelKeys are not defined", func() {
 			Expect(f.Deploy()).To(BeNil())
 			now := time.Now()
 			tsNow := functional.CRIOTime(now)
 			msg := functional.NewFullCRIOLogMessage(tsNow, "Present days")
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(Succeed())
 
-			query := fmt.Sprintf(`{openshift_log_type=%q}`, obs.InputTypeApplication)
+			query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeApplication)
 			result, err := l.QueryUntil(query, "", 1)
 			Expect(err).To(BeNil())
 			Expect(result).NotTo(BeNil())
 			Expect(len(result)).To(Equal(1))
 			lines := result[0].Lines()
 			Expect(len(lines)).To(Equal(1))
-
 			want := map[string]string{
-				"k8s_container_name":        f.Pod.Spec.Containers[0].Name,
-				"k8s_namespace_name":        f.Namespace,
-				"k8s_pod_name":              f.Pod.Name,
-				"k8s_node_name":             f.Pod.Spec.NodeName,
 				"kubernetes_container_name": f.Pod.Spec.Containers[0].Name,
 				"kubernetes_namespace_name": f.Namespace,
 				"kubernetes_pod_name":       f.Pod.Name,
 				"kubernetes_host":           f.Pod.Spec.NodeName,
 				"log_type":                  string(obs.InputTypeApplication),
-				"openshift_log_type":        string(obs.InputTypeApplication),
 			}
 
 			// quick fix since unable to disable service_name discovery via functional test arguments
-			want["service_name"] = f.Pod.Spec.Containers[0].Name
+			want["service_name"] = "unknown_service"
 
 			labels := result[0].Stream
-			Expect(len(labels)).To(Equal(11))
+			Expect(len(labels)).To(Equal(6))
 			Expect(labels).To(BeEquivalentTo(want))
 		})
 	})

@@ -5,17 +5,17 @@ import (
 	"net/url"
 	"strconv"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/set"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // GetOutputPortsWithProtocols extracts all unique ports with their protocols from the given outputs.
 // It parses URLs to extract ports and protocols, or uses default values based on the output type.
-func GetOutputPortsWithProtocols(outputs []obs.OutputSpec) []factory.PortProtocol {
-	portProtocolMap := map[factory.PortProtocol]bool{}
-
+func GetOutputPortsWithProtocols(outputs []obs.OutputSpec, portProtocolMap map[factory.PortProtocol]bool) {
 	for _, output := range outputs {
 		portProtocols := getPortProtocolFromOutputURL(output)
 		for _, pp := range portProtocols {
@@ -24,19 +24,12 @@ func GetOutputPortsWithProtocols(outputs []obs.OutputSpec) []factory.PortProtoco
 			}
 		}
 	}
-
-	result := make([]factory.PortProtocol, 0, len(portProtocolMap))
-	for pp := range portProtocolMap {
-		result = append(result, pp)
-	}
-
-	return result
 }
 
 // GetInputPorts extracts all unique ports from the given input receiver specs.
 // It returns the ports that input receivers are configured to listen on.
 func GetInputPorts(inputs []obs.InputSpec) []int32 {
-	portSet := set.New[int32]()
+	portSet := sets.NewInt32()
 
 	for _, input := range inputs {
 		if input.Type == obs.InputTypeReceiver && input.Receiver != nil {
@@ -106,7 +99,7 @@ func getPortProtocolFromOutputURL(output obs.OutputSpec) []factory.PortProtocol 
 	}
 
 	// Fall back to default port with TCP protocol
-	if defaultPort := getDefaultPort(output.Type, urlStr); defaultPort > 0 {
+	if defaultPort := getDefaultOutputPort(output.Type, urlStr); defaultPort > 0 {
 		return []factory.PortProtocol{{Port: defaultPort, Protocol: corev1.ProtocolTCP}}
 	}
 
@@ -123,13 +116,20 @@ func getKafkaBrokerPortProtocols(brokers []obs.BrokerURL) []factory.PortProtocol
 			portProtocolSlice = append(portProtocolSlice, factory.PortProtocol{Port: port.Port, Protocol: port.Protocol})
 		} else {
 			// If no port in broker URL, use default port based on scheme
-			if defaultPort := getDefaultPort(obs.OutputTypeKafka, string(broker)); defaultPort > 0 {
+			if defaultPort := getDefaultOutputPort(obs.OutputTypeKafka, string(broker)); defaultPort > 0 {
 				portProtocolSlice = append(portProtocolSlice, factory.PortProtocol{Port: defaultPort, Protocol: corev1.ProtocolTCP})
 			}
 		}
 	}
 
 	return portProtocolSlice
+}
+
+func parsePortString(portStr string) (int32, bool) {
+	if port, err := strconv.ParseInt(portStr, 10, 32); err == nil && port > 0 {
+		return int32(port), true
+	}
+	return 0, false
 }
 
 // parsePortProtocolFromURL extracts the port from a URL string.
@@ -150,19 +150,15 @@ func parsePortProtocolFromURL(urlStr string) *factory.PortProtocol {
 		protocol = corev1.ProtocolTCP
 	}
 
-	portStr := parsedURL.Port()
-	if portStr != "" {
-		port, err := strconv.ParseInt(portStr, 10, 32)
-		if err == nil && port > 0 {
-			return &factory.PortProtocol{Port: int32(port), Protocol: protocol}
-		}
+	if port, ok := parsePortString(parsedURL.Port()); ok {
+		return &factory.PortProtocol{Port: port, Protocol: protocol}
 	}
 
 	return nil
 }
 
-// getDefaultPort returns the default port for a given output type based on the URL scheme or the default port for the output type.
-func getDefaultPort(outputType obs.OutputType, urlStr string) int32 {
+// getDefaultOutputPort returns the default port for a given output type based on the URL scheme or the default port for the output type.
+func getDefaultOutputPort(outputType obs.OutputType, urlStr string) int32 {
 	// Parse URL to determine scheme for kafka and http/https to return appropriate default port
 	var scheme string
 	if urlStr != "" {
@@ -199,4 +195,47 @@ func getDefaultPort(outputType obs.OutputType, urlStr string) int32 {
 		return 443 // https
 	}
 	panic(fmt.Sprintf("unknown output type: %s", outputType))
+}
+
+// getDefaultProxyPort returns the default port for a given proxy environment variable based on the URL scheme.
+func getDefaultProxyPort(scheme string) (int32, bool) {
+	switch scheme {
+	case "http":
+		return 80, true
+	case "https":
+		return 443, true
+	}
+	return 0, false
+}
+
+// GetProxyPorts extracts unique ports from cluster-wide proxy environment variables.
+// It parses HTTP_PROXY and HTTPS_PROXY URLs to determine explicit proxy ports,
+// or adds default ports (80 for HTTP, 443 for HTTPS) when no port is specified.
+func GetProxyPorts(portProtocolMap map[factory.PortProtocol]bool) {
+	// Get proxy environment variables and parse them for additional explicit ports
+	proxyEnvVars := utils.GetProxyEnvVars()
+
+	for _, envVar := range proxyEnvVars {
+		// Skip non-proxy environment variables or empty values
+		if (envVar.Name != "http_proxy" && envVar.Name != "https_proxy") || envVar.Value == "" {
+			continue
+		}
+
+		// Parse URL for port extraction or default port determination
+		parsedURL, err := url.Parse(envVar.Value)
+		if err != nil {
+			log.V(0).Error(err, "Failed to parse proxy URL", "url", envVar.Value)
+			continue
+		}
+
+		var port int32
+		var ok bool
+		// Extract port from URL or use default port based on URL scheme
+		if port, ok = parsePortString(parsedURL.Port()); !ok {
+			port, ok = getDefaultProxyPort(parsedURL.Scheme)
+		}
+		if ok {
+			portProtocolMap[factory.PortProtocol{Port: port, Protocol: corev1.ProtocolTCP}] = true
+		}
+	}
 }

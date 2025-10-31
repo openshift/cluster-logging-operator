@@ -1,10 +1,13 @@
 package network
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -35,7 +38,7 @@ var _ = Describe("Network Ports", func() {
 
 	DescribeTable("getDefaultPort",
 		func(outputType obs.OutputType, urlStr string, expected int32) {
-			port := getDefaultPort(outputType, urlStr)
+			port := getDefaultOutputPort(outputType, urlStr)
 			Expect(port).To(Equal(expected))
 		},
 		// Different output types
@@ -63,12 +66,12 @@ var _ = Describe("Network Ports", func() {
 
 	It("should not panic for all supported output types", func() {
 		for _, outputType := range obs.OutputTypes {
-			Expect(func() { getDefaultPort(outputType, "") }).ToNot(Panic())
+			Expect(func() { getDefaultOutputPort(outputType, "") }).ToNot(Panic())
 		}
 	})
 
 	It("should panic for unknown output type", func() {
-		Expect(func() { getDefaultPort(obs.OutputType("unknown"), "") }).To(Panic())
+		Expect(func() { getDefaultOutputPort(obs.OutputType("unknown"), "") }).To(Panic())
 	})
 
 	DescribeTable("getKafkaBrokerPortProtocols",
@@ -323,12 +326,13 @@ var _ = Describe("Network Ports", func() {
 						},
 					},
 				}
-				ports := GetOutputPortsWithProtocols(outputs)
-				Expect(ports).To(ConsistOf(
-					factory.PortProtocol{Port: 9200, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 8088, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 3100, Protocol: corev1.ProtocolTCP},
-				))
+				portMap := map[factory.PortProtocol]bool{}
+				GetOutputPortsWithProtocols(outputs, portMap)
+				Expect(portMap).To(Equal(map[factory.PortProtocol]bool{
+					{Port: 9200, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 8088, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 3100, Protocol: corev1.ProtocolTCP}: true,
+				}))
 			})
 
 			It("should deduplicate ports from multiple outputs", func() {
@@ -352,11 +356,12 @@ var _ = Describe("Network Ports", func() {
 						},
 					},
 				}
-				ports := GetOutputPortsWithProtocols(outputs)
-				Expect(ports).To(ConsistOf(
-					factory.PortProtocol{Port: 9200, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 8088, Protocol: corev1.ProtocolTCP},
-				))
+				portMap := map[factory.PortProtocol]bool{}
+				GetOutputPortsWithProtocols(outputs, portMap)
+				Expect(portMap).To(Equal(map[factory.PortProtocol]bool{
+					{Port: 9200, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 8088, Protocol: corev1.ProtocolTCP}: true,
+				}))
 			})
 
 			It("should handle outputs with default ports", func() {
@@ -374,11 +379,12 @@ var _ = Describe("Network Ports", func() {
 						},
 					},
 				}
-				ports := GetOutputPortsWithProtocols(outputs)
-				Expect(ports).To(ConsistOf(
-					factory.PortProtocol{Port: 9200, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 80, Protocol: corev1.ProtocolTCP},
-				))
+				portMap := map[factory.PortProtocol]bool{}
+				GetOutputPortsWithProtocols(outputs, portMap)
+				Expect(portMap).To(Equal(map[factory.PortProtocol]bool{
+					{Port: 9200, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 80, Protocol: corev1.ProtocolTCP}:   true,
+				}))
 			})
 
 			It("should handle complex Kafka output with multiple brokers", func() {
@@ -401,12 +407,13 @@ var _ = Describe("Network Ports", func() {
 						},
 					},
 				}
-				ports := GetOutputPortsWithProtocols(outputs)
-				Expect(ports).To(ConsistOf(
-					factory.PortProtocol{Port: 9092, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 9093, Protocol: corev1.ProtocolTCP},
-					factory.PortProtocol{Port: 9200, Protocol: corev1.ProtocolTCP},
-				))
+				portMap := map[factory.PortProtocol]bool{}
+				GetOutputPortsWithProtocols(outputs, portMap)
+				Expect(portMap).To(Equal(map[factory.PortProtocol]bool{
+					{Port: 9092, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 9093, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 9200, Protocol: corev1.ProtocolTCP}: true,
+				}))
 			})
 		})
 	})
@@ -555,6 +562,118 @@ var _ = Describe("Network Ports", func() {
 				ports := GetInputPorts(inputs)
 				Expect(ports).To(ConsistOf(int32(8080), int32(5140)))
 			})
+		})
+	})
+
+	Describe("GetProxyPorts", func() {
+		var originalEnvVars map[string]string
+
+		BeforeEach(func() {
+			// Save original environment variables
+			originalEnvVars = make(map[string]string)
+			for _, envVar := range constants.ProxyEnvVars {
+				originalEnvVars[envVar] = os.Getenv(envVar)
+				os.Unsetenv(envVar) // Clear all proxy env vars for clean test state
+			}
+		})
+
+		AfterEach(func() {
+			// Restore original environment variables
+			for envVar, value := range originalEnvVars {
+				if value != "" {
+					os.Setenv(envVar, value)
+				} else {
+					os.Unsetenv(envVar)
+				}
+			}
+		})
+
+		setProxies := func(httpProxy, httpsProxy string) map[string]string {
+			return map[string]string{
+				"http_proxy":  httpProxy,
+				"https_proxy": httpsProxy,
+			}
+		}
+
+		expectedProxyPorts := func(ports ...int32) []factory.PortProtocol {
+			expectedPortProtocols := make([]factory.PortProtocol, 0, len(ports))
+			for _, port := range ports {
+				expectedPortProtocols = append(expectedPortProtocols, factory.PortProtocol{Port: port, Protocol: corev1.ProtocolTCP})
+			}
+			return expectedPortProtocols
+		}
+
+		DescribeTable("when proxy environment variables are set",
+			func(envVars map[string]string, expectedPorts []factory.PortProtocol) {
+				for key, value := range envVars {
+					os.Setenv(key, value)
+				}
+
+				portMap := map[factory.PortProtocol]bool{}
+				GetProxyPorts(portMap)
+				ports := make([]factory.PortProtocol, 0, len(portMap))
+				for pp := range portMap {
+					ports = append(ports, pp)
+				}
+				if len(expectedPorts) == 0 {
+					Expect(ports).To(BeEmpty())
+				} else {
+					Expect(ports).To(ConsistOf(expectedPorts))
+				}
+			},
+			Entry("should extract ports from HTTP proxy URLs with explicit ports",
+				setProxies("http://proxy.example.com:8080", "https://proxy.example.com:8443"),
+				expectedProxyPorts(8080, 8443),
+			),
+			Entry("should use default ports when proxy URLs don't specify ports",
+				setProxies("http://proxy.example.com", "https://proxy.example.com"),
+				expectedProxyPorts(80, 443),
+			),
+			Entry("should return empty when proxy URLs have unknown schemes without ports",
+				setProxies("proxy://proxy.example.com", "invalid://proxy.example.com"),
+				expectedProxyPorts(),
+			),
+			Entry("should deduplicate identical proxy ports",
+				setProxies("http://proxy.example.com:8080", "https://proxy.example.com:8080"),
+				expectedProxyPorts(8080),
+			),
+			Entry("should handle malformed proxy URLs gracefully",
+				setProxies("not-a-valid-url", "http://proxy.example.com:8080"),
+				expectedProxyPorts(8080),
+			),
+			Entry("should extract explicitly specified standard ports from proxy URLs",
+				setProxies("http://proxy.example.com:80", "https://proxy.example.com:443"),
+				expectedProxyPorts(80, 443),
+			),
+			Entry("should handle proxy URLs with authentication",
+				setProxies("http://user:password@proxy.example.com:8080", "https://user:password@proxy.example.com:8443"),
+				expectedProxyPorts(8080, 8443),
+			),
+			Entry("should handle IPv6 proxy URLs",
+				setProxies("http://[::1]:8080", ""),
+				expectedProxyPorts(8080),
+			),
+			Entry("should handle empty string proxy URLs gracefully",
+				setProxies("", "https://proxy.example.com:8443"),
+				expectedProxyPorts(8443),
+			),
+			Entry("should handle invalid ports on urls gracefully",
+				setProxies("http://proxy.example.com:invalid", "https://proxy.example.com:no-a-port"),
+				expectedProxyPorts(),
+			),
+			Entry("should handle mix of uppercase and lowercase proxy environment variables",
+				map[string]string{
+					"HTTP_PROXY":  "http://proxy.example.com:8080",
+					"https_proxy": "https://proxy.example.com:8443",
+				},
+				expectedProxyPorts(8080, 8443),
+			),
+		)
+
+		It("should be empty portMap when no proxy environment variables are set", func() {
+			portMap := map[factory.PortProtocol]bool{}
+			GetProxyPorts(portMap)
+			Expect(portMap).To(BeEmpty())
 		})
 	})
 })

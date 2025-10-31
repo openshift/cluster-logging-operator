@@ -23,13 +23,25 @@ func ReconcileClusterLogForwarderNetworkPolicy(k8Client client.Client, namespace
 
 	// For RestrictIngressEgress, determine the ports to use based on URLs in outputs and defaults
 	if policyRuleSet == obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress {
-		// Parse ports with protocols from outputs
-		if len(outputs) > 0 {
-			egressPorts = GetOutputPortsWithProtocols(outputs)
-		}
 		// Parse ports from inputs (receiver inputs use TCP)
 		if len(inputs) > 0 {
 			ingressPorts = GetInputPorts(inputs)
+		}
+
+		// Parse ports for egress from outputs and proxy configuration if any
+		egressPortMap := map[factory.PortProtocol]bool{}
+		// Parse ports with protocols from outputs
+		if len(outputs) > 0 {
+			GetOutputPortsWithProtocols(outputs, egressPortMap)
+
+		}
+		// Add proxy ports if any for cluster-wide proxy configuration
+		GetProxyPorts(egressPortMap)
+
+		// Convert map to slice
+		egressPorts = make([]factory.PortProtocol, 0, len(egressPortMap))
+		for pp := range egressPortMap {
+			egressPorts = append(egressPorts, pp)
 		}
 	}
 

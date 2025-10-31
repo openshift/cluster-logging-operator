@@ -85,6 +85,8 @@ const (
 
 var ExtraNoProxyList = []string{ElasticsearchFQDN}
 
+var ProxyEnvVars = []string{"HTTP_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"}
+
 func DefaultTolerations() []v1.Toleration {
 	return []v1.Toleration{
 		{

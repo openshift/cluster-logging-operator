@@ -322,7 +322,7 @@ func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelec
 
 func GetProxyEnvVars() []v1.EnvVar {
 	envVars := []v1.EnvVar{}
-	for _, envvar := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
+	for _, envvar := range constants.ProxyEnvVars {
 		if value := os.Getenv(envvar); value != "" {
 			if envvar == "NO_PROXY" || envvar == "no_proxy" {
 				if len(constants.ExtraNoProxyList) > 0 {

@@ -447,19 +447,25 @@ func (ls LokistackLogStore) GetApplicationLogsWithPipeline(saName, expression st
 
 func (ls LokistackLogStore) HasApplicationLogs(saName string, timeToWait time.Duration) (bool, error) {
 	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeApplication)
-	result, err := ls.QueryUntil(query, "", string(obs.InputTypeApplication), saName, 1, defaultTimeout)
+	result, err := ls.QueryUntil(query, "", string(obs.InputTypeApplication), saName, 1, timeToWait)
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has application logs")
 }
 
 func (ls LokistackLogStore) HasInfrastructureLogs(saName string, timeToWait time.Duration) (bool, error) {
-	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeInfrastructure)
-	result, err := ls.QueryUntil(query, "", string(obs.InputTypeInfrastructure), saName, 1, defaultTimeout)
+	result, err := ls.InfrastructureLogs(saName, timeToWait, 1)
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has infrastructure logs")
+}
+
+func (ls LokistackLogStore) InfrastructureLogs(saName string, timeToWait time.Duration, limit int) ([]lokitesthelper.StreamValues, error) {
+	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeInfrastructure)
+	result, err := ls.QueryUntil(query, "", string(obs.InputTypeInfrastructure), saName, limit, timeToWait)
+	clolog.V(3).Info("Loki Query", "result", test.JSONString(result))
+	return result, errors.Wrap(err, "error determining if logstore has infrastructure logs")
 }
 
 func (ls LokistackLogStore) HasAuditLogs(saName string, timeToWait time.Duration) (bool, error) {
 	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeAudit)
-	result, err := ls.QueryUntil(query, "", string(obs.InputTypeAudit), saName, 1, defaultTimeout)
+	result, err := ls.QueryUntil(query, "", string(obs.InputTypeAudit), saName, 1, timeToWait)
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has audit logs")
 }
 

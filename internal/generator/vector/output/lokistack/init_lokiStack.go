@@ -33,9 +33,13 @@ func GenerateOutput(outSpec obs.OutputSpec, tenant string) obs.OutputSpec {
 
 // GenerateLokiSpec generates and returns a Loki spec for the defined lokistack output
 func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
+	url := lokiStackURL(ls, tenant, false)
+	if url == "" {
+		panic("LokiStack output has no valid URL")
+	}
 	return &obs.Loki{
 		URLSpec: obs.URLSpec{
-			URL: lokiStackURL(ls, tenant, false),
+			URL: url,
 		},
 		Authentication: &obs.HTTPAuthentication{
 			Token: ls.Authentication.Token,

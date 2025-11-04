@@ -145,8 +145,8 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceName(namespace, name 
 }
 
 // DeploySocat will deploy pod with socat software
-func (tc *E2ETestFramework) DeploySocat(namespace, name, forwarderName string, options LogGeneratorOptions) error {
-	pod := testruntime.NewSocatPod(namespace, name, forwarderName, options.Labels)
+func (tc *E2ETestFramework) DeploySocat(namespace, name, forwarderName, receiverName string, options LogGeneratorOptions) error {
+	pod := testruntime.NewSocatPod(namespace, name, forwarderName, receiverName, options.Labels)
 	if err := tc.WaitForResourceCondition(namespace, "serviceaccount", "default", "", "{}", 10, func(string) (bool, error) { return true, nil }); err != nil {
 		return err
 	}

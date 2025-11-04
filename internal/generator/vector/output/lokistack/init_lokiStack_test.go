@@ -294,3 +294,49 @@ var _ = Describe("#GenerateOutput", func() {
 		),
 	)
 })
+
+var _ = Describe("#GenerateLokiSpec", func() {
+	var (
+		lokiStack *obs.LokiStack
+	)
+
+	BeforeEach(func() {
+		lokiStack = &obs.LokiStack{
+			Target: obs.LokiStackTarget{
+				Name:      "test-lokistack",
+				Namespace: constants.OpenshiftNS,
+			},
+			Authentication: &obs.LokiStackAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				},
+			},
+		}
+	})
+
+	Context("when given a valid tenant", func() {
+		It("should return a valid Loki spec", func() {
+			var spec *obs.Loki
+			Expect(func() {
+				spec = GenerateLokiSpec(lokiStack, string(obs.InputTypeApplication))
+			}).ToNot(Panic())
+
+			Expect(spec).ToNot(BeNil())
+			Expect(spec.URL).To(Equal("https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"))
+			Expect(spec.Authentication.Token).To(Equal(lokiStack.Authentication.Token))
+		})
+	})
+
+	Context("when given an invalid tenant", func() {
+		DescribeTable("should panic with a specific message",
+			func(tenant string) {
+				Expect(func() {
+					GenerateLokiSpec(lokiStack, tenant)
+				}).To(PanicWith("LokiStack output has no valid URL"))
+			},
+			Entry("with an empty tenant", ""),
+			Entry("with a non-reserved tenant name", "my-custom-logs"),
+			Entry("with the 'receiver' tenant name", "receiver"),
+		)
+	})
+})

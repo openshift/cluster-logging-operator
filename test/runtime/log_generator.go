@@ -94,10 +94,10 @@ func NewCURLLogGenerator(namespace, name, endpoint string, count int, delay time
 }
 
 // NewSocatPod creates pods with socat software which allow advance network call e.g. syslog message
-func NewSocatPod(namespace, name, forwarderName string, labels map[string]string) *corev1.Pod {
+func NewSocatPod(namespace, name, forwarderName, receiverName string, labels map[string]string) *corev1.Pod {
 	var containers []corev1.Container
 	containerName := name
-
+	commonName := fmt.Sprintf("%s-%s", forwarderName, receiverName)
 	containers = append(containers, corev1.Container{
 		Name:    containerName,
 		Image:   "quay.io/openshift-logging/alpine-socat:1.8.0.0",
@@ -109,7 +109,7 @@ func NewSocatPod(namespace, name, forwarderName string, labels map[string]string
 			},
 		},
 		VolumeMounts: []corev1.VolumeMount{{
-			Name:      fmt.Sprintf("%s-syslog", forwarderName),
+			Name:      commonName,
 			ReadOnly:  true,
 			MountPath: "/etc/collector/syslog",
 		}},
@@ -127,9 +127,9 @@ func NewSocatPod(namespace, name, forwarderName string, labels map[string]string
 		pod.Labels[k] = v
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
-		Name: fmt.Sprintf("%s-syslog", forwarderName), VolumeSource: corev1.VolumeSource{
+		Name: commonName, VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName: fmt.Sprintf("%s-syslog", forwarderName),
+				SecretName: commonName,
 			},
 		},
 	})

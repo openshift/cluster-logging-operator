@@ -98,6 +98,39 @@ var _ = Describe("Generate vector config", func() {
 				}),
 			}
 		}
+
+		initReceiverOptions = func() utils.Options {
+			output := initOutput()
+			return utils.Options{
+				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
+				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{output},
+					Pipelines: []obs.PipelineSpec{
+						{
+							Name:       "lokistack-receivers",
+							InputRefs:  []string{"http-receiver", "syslog-receiver"},
+							OutputRefs: []string{output.Name},
+						},
+					},
+					Inputs: []obs.InputSpec{
+						{
+							Name: "http-receiver",
+							Type: obs.InputTypeReceiver,
+							Receiver: &obs.ReceiverSpec{
+								Type: obs.ReceiverTypeHTTP,
+							},
+						},
+						{
+							Name: "syslog-receiver",
+							Type: obs.InputTypeReceiver,
+							Receiver: &obs.ReceiverSpec{
+								Type: obs.ReceiverTypeSyslog,
+							},
+						},
+					},
+				}),
+			}
+		}
 	)
 	DescribeTable("for LokiStack output", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
 		exp, err := tomlContent.ReadFile(expFile)
@@ -118,5 +151,6 @@ var _ = Describe("Generate vector config", func() {
 		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), false, func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
+		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), false, func(spec *obs.OutputSpec) {}),
 	)
 })

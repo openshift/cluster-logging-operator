@@ -1,16 +1,17 @@
 package lokistack
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -19,6 +20,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	const (
 		forwarderName = "my-forwarder"
 		logGenName    = "log-generator"
+		outputName    = "lokistack-output"
 	)
 	var (
 		err               error
@@ -53,8 +55,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(err.Error())
 		}
 
-		outputName := "lokistack-otlp"
-		forwarder = obsruntime.NewClusterLogForwarder(deployNS, "my-forwarder", runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
+		forwarder = obsruntime.NewClusterLogForwarder(deployNS, forwarderName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
 			clf.Spec.ServiceAccount.Name = serviceAccount.Name
 			clf.Annotations = map[string]string{constants.AnnotationOtlpOutputTechPreview: "true"}
 			clf.Spec.Pipelines = append(clf.Spec.Pipelines, obs.PipelineSpec{
@@ -163,6 +164,130 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(found).To(BeTrue())
 	})
 
+	It("should send logs to lokistack with HTTP receiver as audit logs", func() {
+		const (
+			httpReceiverPort = 8080
+			httpReceiver     = "http-audit"
+		)
+
+		forwarder.Spec.Inputs = []obs.InputSpec{
+			{
+				Name: httpReceiver,
+				Type: obs.InputTypeReceiver,
+				Receiver: &obs.ReceiverSpec{
+					Type: obs.ReceiverTypeHTTP,
+					Port: httpReceiverPort,
+					HTTP: &obs.HTTPReceiver{
+						Format: obs.HTTPReceiverFormatKubeAPIAudit,
+					},
+				},
+			},
+		}
+
+		forwarder.Spec.Pipelines = []obs.PipelineSpec{
+			{
+				Name:       "input-receiver-logs",
+				OutputRefs: []string{outputName},
+				InputRefs:  []string{httpReceiver},
+			},
+		}
+
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+		}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(err.Error())
+		}
+
+		httpReceiverServiceName := fmt.Sprintf("%s-%s", forwarderName, httpReceiver)
+		httpReceiverEndpoint := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", httpReceiverServiceName, deployNS, httpReceiverPort)
+
+		if err = e2e.DeployCURLLogGeneratorWithNamespaceAndEndpoint(deployNS, httpReceiverEndpoint); err != nil {
+			Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
+		}
+
+		found, err := lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+	})
+
+	It("should send logs to lokistack with Syslog receiver as infrastructure logs", func() {
+		const (
+			syslogReceiver     = "syslog-infra"
+			syslogReceiverPort = 8443
+			syslogLogGenerator = "syslog-log-generator"
+		)
+
+		forwarder.Spec.Inputs = []obs.InputSpec{
+			{
+				Name: syslogReceiver,
+				Type: obs.InputTypeReceiver,
+				Receiver: &obs.ReceiverSpec{
+					Port: syslogReceiverPort,
+					Type: obs.ReceiverTypeSyslog,
+				},
+			},
+		}
+
+		forwarder.Spec.Pipelines = []obs.PipelineSpec{
+			{
+				Name:       "input-receiver-logs",
+				OutputRefs: []string{outputName},
+				InputRefs:  []string{syslogReceiver},
+			},
+		}
+
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+		}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(err.Error())
+		}
+
+		if err = e2e.DeploySocat(forwarder.Namespace, syslogLogGenerator, forwarderName, syslogReceiver, framework.NewDefaultLogGeneratorOptions()); err != nil {
+			Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
+		}
+
+		requiredApps := write2syslog(e2e, forwarder, syslogLogGenerator, syslogReceiverPort)
+		requiredAppsChecklist := map[string]bool{}
+		for _, app := range requiredApps {
+			requiredAppsChecklist[app] = false
+		}
+
+		type LogLineData struct {
+			AppName string `json:"appname"`
+		}
+
+		Eventually(func(g Gomega) {
+			res, err := lokistackReceiver.InfrastructureLogs(serviceAccount.Name, 0, len(requiredApps))
+			g.Expect(err).To(BeNil())
+			for _, stream := range res {
+				for _, valPair := range stream.Values {
+					logLine := valPair[1]
+					var data LogLineData
+					err := json.Unmarshal([]byte(logLine), &data)
+					if err != nil {
+						GinkgoWriter.Printf("Failed to parse log line: %v\n", err)
+						continue
+					}
+					appName := data.AppName
+					if _, isRequired := requiredAppsChecklist[appName]; isRequired {
+						requiredAppsChecklist[appName] = true
+					}
+				}
+			}
+
+			for appName, found := range requiredAppsChecklist {
+				g.Expect(found).To(BeTrue(), "Failed to find required app '%s' in log streams", appName)
+			}
+
+		}).WithTimeout(framework.DefaultWaitForLogsTimeout).WithPolling(5 * time.Second).Should(Succeed())
+	})
+
 	It("should send logs to lokistack with otel equivalent default labels when data model is viaq", func() {
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
@@ -240,4 +365,40 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		e2e.Cleanup()
 		e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
 	})
+
 })
+
+func write2syslog(e2e *framework.E2ETestFramework, fwd *obs.ClusterLogForwarder, logGenPodName string, port int32) []string {
+	const (
+		host    = "acme.com"
+		pid     = 6868
+		msg     = "Choose Your Destiny"
+		msgId   = "ID7"
+		caFile  = "/etc/collector/syslog/tls.crt"
+		keyFile = "/etc/collector/syslog/tls.key"
+	)
+	destinationHost := fmt.Sprintf("%s-syslog-infra.%s.svc.cluster.local", fwd.Name, fwd.Namespace)
+	socatCmd := fmt.Sprintf("socat openssl-connect:%s:%d,verify=0,cafile=%s,cert=%s,key=%s -",
+		destinationHost, port, caFile, caFile, keyFile)
+
+	now := time.Now()
+	utcTime := now.UTC()
+	rfc5425Date := utcTime.Format(time.RFC3339)
+	rfc3164Date := utcTime.Format(time.Stamp)
+
+	rfc3164AppName := "app_rfc3164"
+	rfc5425AppName := "app_rfc5425"
+
+	// RFC5424 format: <pri>ver timestamp hostname app-name procid msgid SD msg
+	rfc5425 := fmt.Sprintf("<39>1 %s %s %s %d %s - %s", rfc5425Date, host, rfc5425AppName, pid, msgId, msg)
+	// RFC3164 format: <pri>timestamp hostname app-name[procid]: msg
+	rfc3164 := fmt.Sprintf("<30>%s %s %s[%d]: %s", rfc3164Date, host, rfc3164AppName, pid, msg)
+
+	cmd := fmt.Sprintf("echo %q | %s; echo %q | %s", rfc3164, socatCmd, rfc5425, socatCmd)
+
+	_, err := e2e.PodExec(fwd.Namespace, logGenPodName, logGenPodName, []string{"/bin/sh", "-c", cmd})
+	if err != nil {
+		Fail(fmt.Sprintf("Error execution write command: %v", err))
+	}
+	return []string{rfc5425AppName, rfc3164AppName}
+}

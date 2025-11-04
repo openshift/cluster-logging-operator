@@ -60,7 +60,7 @@ for dir in $(ls -d $TEST_DIR); do
   mkdir -p $artifact_dir
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/flowcontrol/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
-    ginkgo -p -procs=1 -v --no-color --trace --slow-spec-threshold=300s  --timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
+    ginkgo -p -procs=1 -v --no-color --trace --poll-progress-after=300s --poll-progress-interval=30s  --timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
 
     os::log::info "======================================================="
     os::log::info "Flowcontrol $dir passed"

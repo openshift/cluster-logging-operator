@@ -42,7 +42,6 @@ const (
 	ServiceAccountSecretPath   = "/var/run/ocp-collector/serviceaccount"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
-	ElasticsearchFQDN          = "elasticsearch"
 	ElasticsearchName          = "elasticsearch"
 	VectorName                 = "vector"
 	KibanaName                 = "kibana"
@@ -83,9 +82,9 @@ const (
 	STDERR = "stderr"
 )
 
-var ExtraNoProxyList = []string{ElasticsearchFQDN}
+var ExtraNoProxyList = []string{}
 
-var ProxyEnvVars = []string{"HTTP_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"}
+var ProxyEnvVars = []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"}
 
 func DefaultTolerations() []v1.Toleration {
 	return []v1.Toleration{

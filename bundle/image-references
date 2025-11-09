@@ -1,0 +1,13 @@
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: vector-rhel9
+    from:
+      kind: DockerImage
+      name: quay.io/openshift-logging/vector:v0.37.1
+  - name: log-file-metric-exporter-rhel9
+    from:
+      kind: DockerImage
+      name: quay.io/openshift-logging/log-file-metric-exporter:6.1

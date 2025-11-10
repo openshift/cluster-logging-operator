@@ -167,6 +167,9 @@ func getDefaultOutputPort(outputType obs.OutputType, urlStr string) int32 {
 		}
 	}
 
+	if scheme == "https" {
+		return 443
+	}
 	switch outputType {
 	case obs.OutputTypeElasticsearch:
 		return 9200
@@ -189,10 +192,7 @@ func getDefaultOutputPort(outputType obs.OutputType, urlStr string) int32 {
 		}
 		return 9092
 	case obs.OutputTypeHTTP:
-		if scheme == "http" {
-			return 80
-		}
-		return 443 // https
+		return 80
 	}
 	panic(fmt.Sprintf("unknown output type: %s", outputType))
 }

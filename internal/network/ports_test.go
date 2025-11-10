@@ -42,6 +42,7 @@ var _ = Describe("Network Ports", func() {
 			Expect(port).To(Equal(expected))
 		},
 		// Different output types
+		Entry("should return 443 for any https without a defined port", obs.OutputTypeLoki, "https://logs-prod3.grafana.net", int32(443)),
 		Entry("should return 9200 for Elasticsearch", obs.OutputTypeElasticsearch, "", int32(9200)),
 		Entry("should return 8088 for Splunk", obs.OutputTypeSplunk, "", int32(8088)),
 		Entry("should return 3100 for Loki", obs.OutputTypeLoki, "", int32(3100)),
@@ -61,7 +62,6 @@ var _ = Describe("Network Ports", func() {
 		// HTTP with different schemes
 		Entry("should return 80 for HTTP scheme", obs.OutputTypeHTTP, "http://example.com", int32(80)),
 		Entry("should return 443 for HTTPS scheme", obs.OutputTypeHTTP, "https://example.com", int32(443)),
-		Entry("should return 443 for HTTP with no scheme", obs.OutputTypeHTTP, "", int32(443)),
 	)
 
 	It("should not panic for all supported output types", func() {
@@ -133,7 +133,7 @@ var _ = Describe("Network Ports", func() {
 			),
 			Entry("should use default port when no port in URL",
 				"https://es.example.com",
-				[]factory.PortProtocol{{Port: 9200, Protocol: corev1.ProtocolTCP}},
+				[]factory.PortProtocol{{Port: 443, Protocol: corev1.ProtocolTCP}},
 			),
 		)
 
@@ -152,7 +152,7 @@ var _ = Describe("Network Ports", func() {
 			),
 			Entry("should use default port for Splunk without explicit port",
 				"https://splunk.example.com",
-				[]factory.PortProtocol{{Port: 8088, Protocol: corev1.ProtocolTCP}},
+				[]factory.PortProtocol{{Port: 443, Protocol: corev1.ProtocolTCP}},
 			),
 		)
 
@@ -171,7 +171,7 @@ var _ = Describe("Network Ports", func() {
 			),
 			Entry("should use default port for Loki without explicit port",
 				"https://loki.example.com",
-				[]factory.PortProtocol{{Port: 3100, Protocol: corev1.ProtocolTCP}},
+				[]factory.PortProtocol{{Port: 443, Protocol: corev1.ProtocolTCP}},
 			),
 		)
 
@@ -382,8 +382,8 @@ var _ = Describe("Network Ports", func() {
 				portMap := map[factory.PortProtocol]bool{}
 				GetOutputPortsWithProtocols(outputs, portMap)
 				Expect(portMap).To(Equal(map[factory.PortProtocol]bool{
-					{Port: 9200, Protocol: corev1.ProtocolTCP}: true,
-					{Port: 80, Protocol: corev1.ProtocolTCP}:   true,
+					{Port: 443, Protocol: corev1.ProtocolTCP}: true,
+					{Port: 80, Protocol: corev1.ProtocolTCP}:  true,
 				}))
 			})
 

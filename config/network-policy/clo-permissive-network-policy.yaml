@@ -1,0 +1,31 @@
+# NetworkPolicy for cluster-logging-operator manager pod
+# This policy defines both ingress and egress rules required for the operator to function
+# in a restrictive network environment.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: cluster-logging-operator
+  name: clo-permissive-network-policy
+  namespace: openshift-logging
+spec:
+  podSelector:
+    matchLabels:
+      name: cluster-logging-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow metrics (Port 8686)
+    - ports:
+      - port: http-metrics
+        protocol: TCP
+  egress:
+    # Allow DNS resolution
+    - ports:
+      - port: dns
+        protocol: UDP
+    # Allow communication with Kubernetes API server
+    - ports:
+      - port: 6443
+        protocol: TCP

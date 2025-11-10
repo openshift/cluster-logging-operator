@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+data:
+  shared_key: Zm9vLWJhci1rZXk=
+---
+apiVersion: "observability.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  serviceAccount:
+    name: mine
+  outputs:
+    - name: app-logs-azure
+      type: azureMonitor
+      azureMonitor:
+        authentication:
+          sharedKey:
+            key: shared_key
+            secretName: my-secret
+        customerId: 1111-111-1111-1111-11111
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - app-logs-azure

@@ -1833,6 +1833,7 @@ spec:
                             LogType the record type of the data that is being submitted.
                             Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
                             https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
+                          minLength: 1
                           pattern: ^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$
                           type: string
                         tuning:
@@ -1870,6 +1871,7 @@ spec:
                       required:
                       - authentication
                       - customerId
+                      - logType
                       type: object
                     cloudwatch:
                       description: Cloudwatch configures forwarding log events to

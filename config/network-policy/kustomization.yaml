@@ -1,3 +1,4 @@
 # resources:
 # - allow-metrics-traffic.yaml
 # - allow-webhook-traffic.yaml
+# - clo-permissive-network-policy.yaml

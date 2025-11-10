@@ -1,10 +1,12 @@
-= NetworkPolicies for Logging Components
+= NetworkPolicies for the Cluster Logging Operator and its Logging Components
 
 The Cluster Logging Operator automatically creates and manages `NetworkPolicy` resources for its logging components to ensure they function in restrictive network environments, even if a cluster-wide `AdminNetworkPolicy` would otherwise block their traffic.
 
+In addition, you can use the `NetworkPolicy` defined in `config/network-policy/clo-permissive-network-policy.yaml` to configure the Cluster Logging Operator's network policy for restricted networks.
+
 == Overview
 
-When logging components are deployed, the operator can create permissive `NetworkPolicy` resources to ensure proper functionality even when:
+When logging components are deployed, the operator can optionally create permissive `NetworkPolicy` resources. This **opt-in** feature ensures proper functionality even when:
 
 * Restrictive default `NetworkPolicies` are in place
 * `AdminNetworkPolicy` configurations limit pod communications
@@ -216,11 +218,11 @@ NOTE: The LogFileMetricExporter NetworkPolicy includes both ingress and egress p
 
 == AdminNetworkPolicy Delegation
 
-When an `AdminNetworkPolicy` (ANP) is used in your cluster to enforce network restrictions, you may need to configure delegation to allow the logging components' `NetworkPolicy` resources to take precedence for their traffic.
+When an `AdminNetworkPolicy` (ANP) is used in your cluster to enforce network restrictions, you may need to configure delegation to allow the operator and its components' `NetworkPolicy` resources to take precedence for their traffic.
 
 === Understanding the Hierarchy
 
-OpenShift network policy precedence (highest to lowest priority):
+The OpenShift network policy precedence (highest to lowest priority) is as follows:
 
 1. **AdminNetworkPolicy** - Cluster-admin controlled, highest priority
 2. **BaselineAdminNetworkPolicy** - Default fallback rules  
@@ -290,6 +292,38 @@ spec:
       action: Pass  # Pass to LFME NetworkPolicy
       from:
         - namespaces: {}
+```
+
+==== Example: Delegating Cluster Logging Operator Traffic
+```yaml
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: allow-clo-delegation
+spec:
+  priority: 50  # Lower number = higher priority. Adjust based on your cluster's ANP priority scheme
+  subject:
+    pods:
+      # Target operator manager pod in openshift-logging namespace
+      namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-logging
+      podSelector:
+        matchLabels:
+          name: cluster-logging-operator
+  ingress:
+    - name: delegate-to-operator-ingress
+      action: Pass  # Pass to Cluster Logging Operator NetworkPolicy
+      from:
+        - namespaces: {}
+  egress:
+    - name: delegate-to-operator-egress
+      action: Pass  # Pass to Cluster Logging Operator NetworkPolicy
+      to:
+        - namespaces: {} 
+        - networks:
+            - 0.0.0.0/0
+            - ::/0     
 ```
 
 == References

@@ -427,8 +427,14 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 				return err
 			}
 		case obs.OutputTypeElasticsearch:
-			if err := f.AddESOutput(ElasticsearchVersion(output.Elasticsearch.Version), b, output, nil); err != nil {
-				return err
+			if len(output.Elasticsearch.Headers) == 0 {
+				if err := f.AddESOutput(ElasticsearchVersion(output.Elasticsearch.Version), b, output, nil); err != nil {
+					return err
+				}
+			} else {
+				if err := f.AddVLOutput(b, output, nil); err != nil {
+					return err
+				}
 			}
 		case obs.OutputTypeHTTP:
 			if err := f.AddVectorHttpOutput(b, output); err != nil {

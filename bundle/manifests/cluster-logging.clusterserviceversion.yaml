@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-05-14T12:38:55Z"
+    createdAt: "2025-11-13T10:47:02Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -107,6 +107,7 @@ metadata:
       }
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
+    operators.openshift.io/must-gather-image: quay.io/openshift-logging/cluster-logging-operator:latest
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift
       Container Platform", "OpenShift Platform Plus"]'
     operators.operatorframework.io/builder: operator-sdk-unknown
@@ -1724,14 +1725,7 @@ spec:
         path: outputs[0].syslog.procId
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: |-
-          The RFC to which the generated messages conform to.
-
-
-          Supported values are:
-          1. RFC3164
-          2. RFC5424
-        displayName: Syslog RFC
+      - displayName: Syslog RFC
         path: outputs[0].syslog.rfc
       - description: |-
           Severity to set on outgoing syslog records.

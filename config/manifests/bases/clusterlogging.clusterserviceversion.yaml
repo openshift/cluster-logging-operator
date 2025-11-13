@@ -23,6 +23,7 @@ metadata:
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
+    operators.openshift.io/must-gather-image: quay.io/openshift-logging/cluster-logging-operator:latest
     operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift
       Container Platform", "OpenShift Platform Plus"]'
     operators.operatorframework.io/builder: operator-sdk-unknown

@@ -18,32 +18,8 @@ import (
 // ReconcileClusterLogForwarderNetworkPolicy reconciles the NetworkPolicy for the clusterlogforwarder
 // It handles both AllowAllIngressEgress and RestrictIngressEgress rule sets, parsing ports from outputs and inputs when needed.
 func ReconcileClusterLogForwarderNetworkPolicy(k8Client client.Client, namespace, policyName, instanceName, component string, policyRuleSet obsv1.NetworkPolicyRuleSetType, outputs []obsv1.OutputSpec, inputs []obsv1.InputSpec, ownerRef metav1.OwnerReference, visitor func(o runtime.Object)) error {
-	var egressPorts []factory.PortProtocol
-	var ingressPorts []int32
-
-	// For RestrictIngressEgress, determine the ports to use based on URLs in outputs and defaults
-	if policyRuleSet == obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress {
-		// Parse ports from inputs (receiver inputs use TCP)
-		if len(inputs) > 0 {
-			ingressPorts = GetInputPorts(inputs)
-		}
-
-		// Parse ports for egress from outputs and proxy configuration if any
-		egressPortMap := map[factory.PortProtocol]bool{}
-		// Parse ports with protocols from outputs
-		if len(outputs) > 0 {
-			GetOutputPortsWithProtocols(outputs, egressPortMap)
-
-		}
-		// Add proxy ports if any for cluster-wide proxy configuration
-		GetProxyPorts(egressPortMap)
-
-		// Convert map to slice
-		egressPorts = make([]factory.PortProtocol, 0, len(egressPortMap))
-		for pp := range egressPortMap {
-			egressPorts = append(egressPorts, pp)
-		}
-	}
+	egressPorts := DetermineEgressPortProtocols(outputs, policyRuleSet)
+	ingressPorts := DetermineIngressPortProtocols(inputs, policyRuleSet)
 
 	desired := factory.NewNetworkPolicyWithProtocolPorts(namespace, policyName, instanceName, component, string(policyRuleSet), egressPorts, ingressPorts, visitor)
 	utils.AddOwnerRefToObject(desired, ownerRef)

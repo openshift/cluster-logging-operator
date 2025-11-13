@@ -2426,12 +2426,8 @@ spec:
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         rfc:
-                          description: |-
-                            The RFC to which the generated messages conform to.
-
-                            Supported values are:
-                            1. RFC3164
-                            2. RFC5424
+                          description: SyslogRFCType sets which RFC the generated
+                            messages conform to.
                           enum:
                           - RFC3164
                           - RFC5424

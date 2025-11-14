@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -16,6 +17,7 @@ type KubernetesLogs struct {
 	IncludePaths       string
 	ExcludePaths       string
 	ExtraLabelSelector string
+	MaxMergedLineBytes helpers.OptionalPair
 }
 
 func (kl KubernetesLogs) Name() string {
@@ -30,6 +32,7 @@ type = "kubernetes_logs"
 max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
+{{ .MaxMergedLineBytes }}
 {{- if gt (len .IncludePaths) 0}}
 include_paths_glob_patterns = {{.IncludePaths}}
 {{- end}}
@@ -51,13 +54,17 @@ use_apiserver_cache = true
 }
 
 // NewKubernetesLogs element which always excludes temp and gzip files
-func NewKubernetesLogs(id, includes, excludes string) KubernetesLogs {
-	return KubernetesLogs{
+func NewKubernetesLogs(id, includes, excludes string, maxMergedLineBytes int64) KubernetesLogs {
+	logs := KubernetesLogs{
 		ComponentID:  id,
 		Desc:         "Logs from containers (including openshift containers)",
 		IncludePaths: includes,
 		ExcludePaths: excludes,
 	}
+	if maxMergedLineBytes > 0 {
+		logs.MaxMergedLineBytes = helpers.NewOptionalPair("max_merged_line_bytes", maxMergedLineBytes)
+	}
+	return logs
 }
 
 const (

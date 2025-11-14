@@ -15,6 +15,7 @@ limitations under the License.
 package v1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -100,6 +101,12 @@ type ContainerInputTuningSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Per-Container Rate Limit"
 	RateLimitPerContainer *LimitSpec `json:"rateLimitPerContainer,omitempty"`
+
+	// MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+	// partial log lines are merged.  Messages exceeding this limit are dropped.
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Message Size"
+	MaxMessageSize *resource.Quantity `json:"maxMessageSize,omitempty"`
 }
 
 // ApplicationSource defines the type of ApplicationSource log source to use.
@@ -207,6 +214,13 @@ type Infrastructure struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Sources"
 	Sources []InfrastructureSource `json:"sources,omitempty"`
+
+	// Tuning is the container input tuning spec for this container sources
+	// Available only if has at lease one container source, otherwise configuration will be rejected
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Container Input Tuning"
+	ContainerInputTuning *ContainerInputTuningSpec `json:"containerInputTuning,omitempty"`
 }
 
 // AuditSource defines which type of audit log source is used.

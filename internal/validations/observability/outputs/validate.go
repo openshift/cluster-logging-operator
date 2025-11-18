@@ -29,6 +29,8 @@ func Validate(context internalcontext.ForwarderContext) {
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
 		case obs.OutputTypeLokiStack, obs.OutputTypeOTLP:
 			messages = append(messages, ValidateTechPreviewAnnotation(out, context)...)
+		case obs.OutputTypeElasticsearch:
+			messages = append(messages, validateElasticsearchHeaders(out)...)
 		}
 		// Set condition
 		if len(messages) > 0 {

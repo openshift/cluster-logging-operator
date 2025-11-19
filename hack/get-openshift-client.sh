@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Download latest release of openshift-client, intended for use by ../Makefile
 
 set -e

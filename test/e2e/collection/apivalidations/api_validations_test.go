@@ -112,5 +112,13 @@ var _ = Describe("", func() {
 		Entry("should fail for OTLP with non http URL", "otlp_valid_non_http.yaml", func(out string, err error) {
 			Expect(err).To(HaveOccurred())
 		}),
+		Entry("should fail for AzureMonitor with empty LogType", "azure-monitor-empty-logtype.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp("azureMonitor.logType in body should be at least 1 chars long"))
+		}),
+		Entry("should fail for AzureMonitor if no LogType", "azure-monitor-no-logtype.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp("azureMonitor.logType: Required value"))
+		}),
 	)
 })

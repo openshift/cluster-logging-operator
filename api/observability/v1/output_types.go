@@ -306,9 +306,11 @@ type AzureMonitor struct {
 	// Can only contain letters, numbers, and underscores (_), and may not exceed 100 characters.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers
 	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:Pattern:="^[a-zA-Z0-9][a-zA-Z0-9_]{0,99}$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Type",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	LogType string `json:"logType,omitempty"`
+	LogType string `json:"logType"`
 
 	// AzureResourceId the Resource ID of the Azure resource the data should be associated with.
 	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell#request-headers

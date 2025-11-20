@@ -1551,6 +1551,15 @@ spec:
                           description: Tuning is the container input tuning spec for
                             this container sources
                           properties:
+                            maxMessageSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+                                partial log lines are merged.  Messages exceeding this limit are dropped.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             rateLimitPerContainer:
                               description: |-
                                 RateLimitPerContainer is the limit applied to each container
@@ -1602,6 +1611,41 @@ spec:
                             - node
                             type: string
                           type: array
+                        tuning:
+                          description: Tuning is the infrastructure input tuning spec,
+                            for now available only for container sources
+                          properties:
+                            container:
+                              description: Container is the input tuning spec for
+                                container sources
+                              properties:
+                                maxMessageSize:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: |-
+                                    MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+                                    partial log lines are merged.  Messages exceeding this limit are dropped.
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                rateLimitPerContainer:
+                                  description: |-
+                                    RateLimitPerContainer is the limit applied to each container
+                                    by this input. This limit is applied per collector deployment.
+                                  properties:
+                                    maxRecordsPerSecond:
+                                      description: |-
+                                        MaxRecordsPerSecond is the maximum number of log records
+                                        allowed per input/output in a pipeline
+                                      exclusiveMinimum: true
+                                      format: int64
+                                      minimum: 0
+                                      type: integer
+                                  required:
+                                  - maxRecordsPerSecond
+                                  type: object
+                              type: object
+                          type: object
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.

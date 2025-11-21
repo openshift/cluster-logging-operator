@@ -2243,6 +2243,12 @@ spec:
                               - secretName
                               type: object
                           type: object
+                        headers:
+                          additionalProperties:
+                            type: string
+                          description: Headers specify optional headers to be sent
+                            with the request
+                          type: object
                         index:
                           description: |-
                             Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
@@ -2509,6 +2515,10 @@ spec:
                           description: Headers specify optional headers to be sent
                             with the request
                           type: object
+                        line_per_event:
+                          description: LinePerEvent uses NDJSON instead of JSON to
+                            send data to remote destination.
+                          type: boolean
                         method:
                           description: Method specifies the HTTP method to be used
                             for sending logs. If not set, 'POST' is used.

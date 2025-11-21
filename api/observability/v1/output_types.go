@@ -558,6 +558,12 @@ type Elasticsearch struct {
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticSearch Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	Version int `json:"version"`
+
+	// Headers specify optional headers to be sent with the request
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Headers"
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 // GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.
@@ -690,6 +696,12 @@ type HTTP struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
 	ProxyURL string `json:"proxyURL,omitempty"`
+
+	// LinePerEvent uses NDJSON instead of JSON to send data to remote destination.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Line Per Event"
+	LinePerEvent bool `json:"line_per_event,omitempty"`
 }
 
 type KafkaTuningSpec struct {

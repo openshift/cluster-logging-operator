@@ -17,7 +17,7 @@ import (
 
 const (
 	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:0.2"
-	imageVector      = "quay.io/openshift-logging/vector:v0.47.0"
+	imageVector      = "quay.io/vparfono/vector:v0.50.0-rh"
 )
 
 type Options struct {

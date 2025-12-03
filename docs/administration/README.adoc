@@ -5,3 +5,4 @@
 * Enabling event collection by link:deploy-event-router.md[Deploying the Event Router]
 * link:logfilemetricexporter.adoc[Collecting Container Log Metrics]
 * Example of a link:lokistack.adoc[complete Logging Solution] using LokiStack and UIPlugin
+* Configuring for link:large-volume.adoc[high volume log loss]

@@ -1,0 +1,382 @@
+= High volume log loss
+:doctype: article
+:toc: left
+:stem:
+
+This guide explains how high log volumes in OpenShift clusters can cause log loss,
+and how to configure your cluster to minimize this risk.
+
+== Overview
+
+=== Log loss
+
+Container logs are written to `/var/log/pods`.
+The forwarder reads and forwards logs as quickly as possible with its available CPU/Memory.
+If the forwarder is too slow, in some cases adjusting its CPU/Memory may resolve the problem.
+
+There are always some _unread logs_, written but not yet read by the forwarder.
+
+_CRI-O_ (Container Runtime Interface - Open Container Initiative) captures logs from container
+stdout/stderr and writes them to files under `/var/log/pods`.
+It rotates log files, and deletes old files, to enforce per-container limits.
+CRI-O and the log forwarder act independently.
+There is no coordination or flow-control to ensure logs are forwarded before they are deleted.
+
+_Log Loss_ occurs when _unread logs_ are deleted by CRI-O _before_ being read by the forwarder.
+Lost logs are gone from the file-system, have not been forwarded anywhere, and cannot be recovered.
+
+NOTE: This guide focuses on _container logs_.
+The section <<Other types of logs>> briefly discusses other types of log.
+====
+Not all logs are container logs, the following types of logs are not discussed here but
+can be managed in similar ways:
+
+- Journald (node) logs: are
+====
+=== Log rotation
+
+CRI-O does the actual log rotation, but the rotation limits are specified via Kubelet.
+The parameters are:
+[horizontal]
+containerLogMaxSize:: Max size of a single log file (default 10MiB)
+containerLogMaxFiles:: Max number of log files per container (default 5)
+
+A container writes to one active log file.
+When the active file reaches `containerLogMaxSize` the log files are rotated:
+
+. the old active file becomes the most recent archive
+. a new active file is created
+. if there are more than `containerLogMaxFiles` files, the oldest is deleted.
+
+=== Best effort delivery
+
+OpenShift logging provides _best effort_ delivery of logs.
+There is limited capacity to store and forward logs reliably.
+If the load exceeds those limits, logs will be lost.
+
+This article discusses how you can tune these limits to minimize log loss under your expected loads.
+
+[WARNING]
+====
+**NEVER** abuse logs as a way to store or send application data - especially financial data.
+This is unreliable, insecure, and in all other ways inconceivable.
+Use appropriate tools that meet your reliability requirements for application data.
+For example: databases, object stores, or reliable messaging (Kafka, AMQP, MQTT).
+====
+
+=== Modes of operation
+
+[horizontal]
+writeRate:: long-term average logs per second per container written to `/var/log/pods`
+sendRate:: long-term average logs per second per container forwarded to the store
+
+During _normal operation_ `sendRate` keeps up with `writeRate` (on average).
+The number of unread logs is small, and does not grow over time.
+
+If `writeRate` exceeds `sendRate` (on average) for an extended period of time, unread logs accumulate.
+If this lasts long enough, log rotation will delete unread logs causing log loss.
+
+After a load surge ends, the system has to _recover_ by processing the accumulated unread logs.
+Until the backlog clears, the system is more vulnerable to log loss if there is another overload.
+
+== Metrics for logging
+
+Relevant metrics include:
+[horizontal]
+vector_*:: The `vector` process deployed by the log forwarder generates metrics for log collection, buffering and forwarding.
+log_logged_bytes_total:: The `LogFileMetricExporter` measures disk writes _before_ logs are read by the forwarder.
+  To measure end-to-end log loss it is important to measure data that is _not_ yet read by the forwarder.
+kube_*:: Metrics from the Kubernetes cluster.
+
+[CAUTION]
+====
+Metrics named `_bytes_` count bytes, metrics named `_events_` count log records.
+
+The forwarder adds metadata to the logs before sending so you cannot assume that a log
+record written to `/var/log` is the same size in bytes as the record sent to the store.
+
+Use event and byte metrics carefully in calculations to get the correct results.
+====
+
+=== Log File Metric Exporter
+
+The metric `log_logged_bytes_total` is the number of bytes written to each file in `/var/log/pods` by a container.
+This is independent of whether the forwarder reads or forwards the data.
+To generate this metric, create a `LogFileMetricExporter`:
+
+[,yaml]
+----
+apiVersion: logging.openshift.io/v1alpha1
+kind: LogFileMetricExporter
+metadata:
+  name: instance
+  namespace: openshift-logging
+----
+
+== Limitations
+
+Write rate metrics only cover container logs in `/var/log/pods`.
+The following are excluded from these metrics:
+
+* Node-level logs (journal, systemd, audit)
+* API audit logs
+
+This may cause discrepancies when comparing write vs send rates.
+The principles still apply, but account for this additional volume in capacity planning.
+
+=== Using metrics to measure log activity
+
+The PromQL queries below are averaged over an hour of cluster operation, you may want to take longer samples for more stable results.
+
+.*TotalWriteRateBytes* (bytes/sec, all containers)
+----
+sum(rate(log_logged_bytes_total[1h]))
+----
+
+.*TotalSendRateEvents* (events/sec, all containers)
+----
+sum(rate(vector_component_sent_events_total{component_kind="sink",component_type!="prometheus_exporter"}[1h]))
+----
+
+.*LogSizeBytes* (bytes): Average size of a log record on /var/log disk
+----
+sum(increase(vector_component_received_bytes_total{component_type="kubernetes_logs"}[1h])) /
+sum(increase(vector_component_received_events_total{component_type="kubernetes_logs"}[1h]))
+----
+
+.*MaxContainerWriteRateBytes* (bytes/sec per container): The max rate determines per-container log loss.
+----
+max(rate(log_logged_bytes_total[1h]))
+----
+
+NOTE: The queries above are for container logs only.
+Node and audit may also be forwarded (depending on your `ClusterLogForwarder` configuration)
+which may cause discrepancies when comparing write and send rates.
+
+== Other types of logs
+
+There are other types of logs besides container logs.
+All are stored under `/var/log`, but log rotation is configured differently.
+The same general principles of log loss apply, here are some tips for configuration.
+
+journald node logs:: The write-rate in is the total volume of logs from _local_ processes on the node.
+Rotation is controlled by local `journald.conf` configuration files.
+
+Linux audit node logs:: The write-rate is total of all auditable actions on the node.
+Rotation is controlled by `auditd`, which is configured by `/etc/auditd/auditd.conf`.
+
+Openshift and Kubernetes audit logs:: #TODO: link to existing docs and features for API audit.#
+
+ #TODO#: explain how to set node configuration in a cluster.
+
+== Recommendations
+
+=== Check forwarder CPU and Memory
+
+If the forwarder can't keep up with `writeRate`, there are two possible causes:
+- `sendRate` is to slow - the forwarder is often blocked waiting to send, which slows down reading once its internal buffers are full.
+- The _forwarder itself_ is too slow: the CPU and Memory limits  for the forwarder may be set too low slowing down the forwarder process itself.
+
+Adjusting CPU and memory for the forwarder is an easy solution for some logging problems
+and is always a good thing to check.
+
+However, if the real problem is `writeRate > sendRate`, then this won't solve all the problems.
+
+=== Estimate long-term load
+
+Estimate your expected steady-state load, spike patterns, and tolerable outage duration.
+The long-term average send rate *must* exceed the write rate (including spikes) to allow recovery after overloads.
+
+----
+TotalWriteRateBytes < TotalSendRateLogs × LogSizeBytes
+----
+
+=== Configure rotation
+
+Configure rotation parameters based on the _noisiest_ containers in your cluster,
+with the highest write rates (`MaxContainerWriteRateBytes`) that you want to protect.
+
+For an outage of length `MaxOutageTime`:
+
+.Maximum per-container log storage
+----
+MaxContainerSizeBytes = MaxOutageTime × MaxContainerWriteRateBytes
+----
+
+.Kubelet configuration
+----
+containerLogMaxFiles = N
+containerLogMaxSize = MaxContainerSizeBytes / N
+----
+
+NOTE: N should be a relatively small number of files, the default is 5.
+The files can be as large as needed so that `N*containerLogMaxSize > MaxContainerSizeBytes`
+
+=== Estimate total disk requirements
+
+Most containers write far less than `MaxContainerSizeBytes`.
+Total disk space is based on cluster-wide average write rates, not on the noisiest containers.
+
+.Minimum total disk space required
+----
+DiskTotalSize = MaxOutageTime × TotalWriteRateBytes × SafetyFactor
+----
+
+.Recovery time to clear the backlog from a max outage:
+----
+RecoveryTime = (MaxOutageTime × TotalWriteRateBytes) / (TotalSendRateLogs × LogSizeBytes)
+----
+
+[TIP]
+.To check the size of the /var/log partition on each node
+[source,console]
+----
+for NODE in $(oc get nodes -o name);
+  do echo "# $NODE"; oc debug -q $NODE -- df -h /var/log;
+done
+----
+
+==== Example
+
+The default Kubelet settings allow 50MB per container log:
+----
+containerLogMaxFiles: 5     # Max 5 files per container log
+containerLogMaxSize: 10MB   # Max 10 MB per file
+----
+
+Suppose we observe log loss during a 3-minute outage (forwarder is unable to forward any logs).
+This implies the noisiest containers are writing at least 50MB of logs _each_ during the 3 minute outage:
+
+----
+MaxContainerWriteRateBytes ≥ 50MB / 180s ≈ 278KB/s
+----
+
+Now suppose we want to handle an outage of up to 1 hour, without loss,
+rounding up to a maximum per-container write rate of 300KB/s.
+
+----
+MaxStoragePerContainerBytes = 300KB/s × 3600s ≈ 1GB
+
+containerLogMaxFiles: 10
+containerLogMaxSize: 100MB
+----
+
+For total disk space, suppose the cluster writes 2MB/s for all containers:
+
+----
+MaxOutageTime = 3600
+TotalWriteRateBytes = 2MB/s
+SafetyFactor = 1.5
+
+DiskTotalSize = 3600s × 2MB/s × 1.5 = 10GB
+----
+
+NOTE: `MaxStoragePerContainerBytes=1GB` applies only to the noisiest containers.
+The `DiskTotalSize=10GB` is based on the cluster-wide average write rates.
+
+=== Configure Kubelet log limits
+
+Here is an example `KubeletConfig` resource (OpenShift 4.6+). +
+It provides `50MB × 10 files = 500MB` per container.
+
+[,yaml]
+----
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: increase-log-limits
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      machineconfiguration.openshift.io/role: worker
+  kubeletConfig:
+    containerLogMaxSize: 50Mi
+    containerLogMaxFiles: 10
+----
+
+You can modify `MachineConfig` resources on older versions of OpenShift that don't support `KubeletConfig`.
+
+=== Apply and verify configuration
+
+*To apply the KubeletConfig:*
+[,bash]
+----
+# Apply the configuration
+oc apply -f kubelet-log-limits.yaml
+
+# Monitor the roll-out (this will cause node reboots)
+oc get kubeletconfig
+oc get mcp -w
+----
+
+*To verify the configuration is active:*
+[,bash]
+----
+# Check that all nodes are updated
+oc get nodes
+
+# Verify the kubelet configuration on a node
+oc debug node/<node-name>
+chroot /host
+grep -E "(containerLogMaxSize|containerLogMaxFiles)" /etc/kubernetes/kubelet/kubelet.conf
+
+# Check effective log limits for running containers
+find /var/log -name "*.log" -exec ls -lah {} \; | head -20
+
+----
+
+== Alternative (non)-solutions
+
+This section presents what seem like alternative solutions at first glance, but have significant problems.
+
+=== Large forwarder buffers
+
+Instead of modifying rotation parameters, make the forwarder's internal buffers very large.
+
+==== Duplication of logs
+
+Forwarder buffers are stored on the same disk partition as `/var/log`.
+When the forwarder reads logs, they remain in `/var/log` until rotation deletes them.
+This means the forwarder buffer mostly duplicates data from `/var/log` files,
+which requires up to double the disk space for logs waiting to be forwarded.
+
+==== Buffer design mismatch
+
+Forwarder buffers are optimized for transmitting data efficiently, based on characteristics of the remote store.
+
+- *Intended purpose:* Hold records that are ready-to-send or in-flight awaiting acknowledgement.
+- *Typical time-frame:* Seconds to minutes of buffering for round-trip request/response times.
+- *Not designed for:* Hours/days of log accumulation during extended outages
+
+==== Supporting other logging tools
+
+Expanding `/var/log` benefits _any_ logging tool, including:
+
+- `oc logs` for local debugging or troubleshooting log collection
+- Standard Unix tools when debugging via `oc rsh`
+
+Expanding forwarder buffers only benefits the forwarder, and costs more in disk space.
+
+If you deploy multiple forwarders, each additional forwarder will need its own buffer space.
+If you expand `/var/log`, all forwarders share the same storage.
+
+=== Persistent volume buffers
+
+Since large forwarder buffers compete for disk space with `/var/log`,
+what about storing forwarder buffers on a separate persistent volume?
+
+This would still double the storage requirements (using a separate disk) but
+the real problem is that a PV is not a local disk, it is a network service.
+Using PVs for buffer storage introduces new network dependencies and reliability and performance issues.
+The underlying buffer management code is optimized for local disk response times.
+
+== Summary
+
+1. *Monitor log patterns:* Use Prometheus metrics to measure log generation and send rates
+2. *Calculate storage requirements:* Account for peak periods, recovery time, and spikes
+3. *Increase kubelet log rotation limits:* Allow greater storage for noisy containers
+4. *Plan for peak scenarios:* Size storage to handle expected patterns without loss
+
+TIP: The OpenShift console Observe>Dashboard section includes helpful log-related dashboards.
+
+

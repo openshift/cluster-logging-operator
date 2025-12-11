@@ -19,16 +19,27 @@ func (f *CollectorFunctionalFramework) AddVLOutput(b *runtime.PodBuilder, output
 	log.V(2).Info("Adding output for victorialogs", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	esURL, err := url.Parse(output.Elasticsearch.URL)
-	if err != nil {
-		return err
+	port := "9428"
+	switch output.Type {
+	case obs.OutputTypeElasticsearch:
+		u, err := url.Parse(output.Elasticsearch.URL)
+		if err != nil {
+			return err
+		}
+		port = u.Port()
+	case obs.OutputTypeHTTP:
+		u, err := url.Parse(output.HTTP.URL)
+		if err != nil {
+			return err
+		}
+		port = u.Port()
 	}
 
 	log.V(2).Info("Adding container", "name", name)
-	log.V(2).Info("Adding VictoriaLogs output container", "name", obs.OutputTypeElasticsearch)
+	log.V(2).Info("Adding VictoriaLogs output container", "name", output.Type)
 
 	cmdArgs := []string{
-		"-httpListenAddr=:" + esURL.Port(),
+		"-httpListenAddr=:" + port,
 		"-storageDataPath=/tmp/logs",
 	}
 	if len(args) > 0 {

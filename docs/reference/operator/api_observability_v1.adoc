@@ -2410,6 +2410,8 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |headers|object|  Headers specify optional headers to be sent with the request
 
+|line_per_event|bool|  LinePerEvent uses NDJSON instead of JSON to send data to remote destination.
+
 |method|string|  Method specifies the HTTP method to be used for sending logs. If not set, &#39;POST&#39; is used.
 
 |proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.

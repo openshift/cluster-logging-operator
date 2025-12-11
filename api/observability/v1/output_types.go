@@ -698,6 +698,12 @@ type HTTP struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
 	ProxyURL string `json:"proxyURL,omitempty"`
+
+	// LinePerEvent uses NDJSON instead of JSON to send data to remote destination.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Line Per Event"
+	LinePerEvent bool `json:"line_per_event,omitempty"`
 }
 
 type KafkaTuningSpec struct {

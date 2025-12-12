@@ -628,9 +628,77 @@ Type:: object
 |======================
 |Property|Type|Description
 
+|maxMessageSize|object|  MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+partial log lines are merged.  Messages exceeding this limit are dropped.
 |rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container
 by this input. This limit is applied per collector deployment.
 
+|======================
+
+=== .spec.inputs[].application.tuning.maxMessageSize
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.inputs[].application.tuning.maxMessageSize.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.inputs[].application.tuning.maxMessageSize.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.inputs[].application.tuning.maxMessageSize.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.inputs[].application.tuning.maxMessageSize.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.inputs[].application.tuning.maxMessageSize.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
 |======================
 
 === .spec.inputs[].application.tuning.rateLimitPerContainer
@@ -683,6 +751,8 @@ Type:: object
 |sources|array|  Sources defines the list of infrastructure sources to collect.
 This field is optional and omission results in the collection of all infrastructure sources.
 
+|tuning|object|  Tuning is the infrastructure input tuning spec, for now available only for container sources
+
 |======================
 
 === .spec.inputs[].infrastructure.sources[]
@@ -690,6 +760,114 @@ This field is optional and omission results in the collection of all infrastruct
 InfrastructureSource defines the type of infrastructure log source to use.
 
 Type:: array
+
+=== .spec.inputs[].infrastructure.tuning
+
+InfrastructureInputTuningSpec is the infrastructure input tuning spec, for now available only for container sources
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|container|object|  Container is the input tuning spec for container sources
+
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxMessageSize|object|  MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+partial log lines are merged.  Messages exceeding this limit are dropped.
+|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container
+by this input. This limit is applied per collector deployment.
+
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Format|string|  Change Format at will. See the comment for Canonicalize for
+more details.
+|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
+|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
+|s|string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize.d
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Dec|object|  
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize.d.Dec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|unscaled|object|  
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize.d.Dec.unscaled
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|abs|Word|  sign
+|neg|bool|  
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize.d.Dec.unscaled.abs
+
+Type:: Word
+
+=== .spec.inputs[].infrastructure.tuning.container.maxMessageSize.i
+
+Type:: int
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|scale|int|  
+|value|int|  
+|======================
+
+=== .spec.inputs[].infrastructure.tuning.container.rateLimitPerContainer
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+allowed per input/output in a pipeline
+
+|======================
 
 === .spec.inputs[].receiver
 

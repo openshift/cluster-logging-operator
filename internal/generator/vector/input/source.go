@@ -158,19 +158,28 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
+	maxMsgSize := int64(0)
 	if spec.Application != nil {
 		selector = spec.Application.Selector
+		if spec.Application.Tuning != nil && spec.Application.Tuning.MaxMessageSize != nil {
+			if size, ok := spec.Application.Tuning.MaxMessageSize.AsInt64(); ok {
+				maxMsgSize = size
+			}
+		}
+	}
+	if spec.Infrastructure != nil {
+		if (len(spec.Infrastructure.Sources) == 0 || set.New(spec.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer)) &&
+			spec.Infrastructure.Tuning != nil && spec.Infrastructure.Tuning.Container != nil && spec.Infrastructure.Tuning.Container.MaxMessageSize != nil {
+			if size, ok := spec.Infrastructure.Tuning.Container.MaxMessageSize.AsInt64(); ok {
+				maxMsgSize = size
+			}
+		}
 	}
 	metaID := helpers.MakeID(base, "meta")
+	k8sLogs := source.NewKubernetesLogs(base, includes, excludes, maxMsgSize)
+	k8sLogs.ExtraLabelSelector = source.LabelSelectorFrom(selector)
 	el := []framework.Element{
-		source.KubernetesLogs{
-			ComponentID:        base,
-			Desc:               "Logs from containers (including openshift containers)",
-			IncludePaths:       includes,
-			ExcludePaths:       excludes,
-			ExtraLabelSelector: source.LabelSelectorFrom(selector),
-			UseKubeCache:       true,
-		},
+		k8sLogs,
 		NewLogSourceAndType(metaID, logSource, logType, base, func(remap *elements.Remap) {
 			remap.VRL = fmt.Sprintf(
 				`

@@ -2,8 +2,11 @@ package input
 
 import (
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -394,6 +397,31 @@ var _ = Describe("inputs", func() {
 			},
 		},
 			"receiver_syslog_tls_from_configmap.toml",
+		),
+		Entry("application input with a MaxMessageSize", obs.InputSpec{
+			Name: "my_app",
+			Type: obs.InputTypeApplication,
+			Application: &obs.Application{
+				Tuning: &obs.ContainerInputTuningSpec{
+					MaxMessageSize: utils.GetPtr(resource.MustParse("1Mi")),
+				},
+			},
+		},
+			"application_with_max_merge_line_size.toml",
+		),
+		Entry("infrastructure input with containers source and MaxMessageSize", obs.InputSpec{
+			Name: "myinfra",
+			Type: obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{
+				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
+				Tuning: &obs.InfrastructureInputTuningSpec{
+					Container: &obs.ContainerInputTuningSpec{
+						MaxMessageSize: utils.GetPtr(resource.MustParse("1M")),
+					},
+				},
+			},
+		},
+			"infrastructure_container_with_max_merge_line_size.toml",
 		),
 	)
 })

@@ -2,9 +2,10 @@ package observability
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -147,12 +148,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Reconcile resources to support metrics gathering
-	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, constants.MetricsPortName, resourceNames.SecretMetrics, constants.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
 	metricsSelector := metrics.BuildSelector(constants.CollectorName, resourceNames.CommonName)
-	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, metricsSelector, collector.MetricsPortName); err != nil {
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, metricsSelector, constants.MetricsPortName); err != nil {
 		log.Error(err, "collector.ReconcileServiceMonitor")
 		return err
 	}

@@ -1,0 +1,362 @@
+= High volume log loss
+
+This guide explains how to handle scenarios where high-volume logging can cause log loss in OpenShift clusters, and how to configure your cluster to minimize this risk.
+
+== The problem
+
+To summarize the logging process on a cluster node:
+
+- **Containers** write to log files under `/var/log`.
+- **Kubelet** _rotates_ log files to enforce a size limit per container.
+  Rotation permanently deletes old logs to free disk space.
+- **Log Forwarder** collects logs by reading from `/var/log` files and sending to a remote store (often Loki).
+  - *Collected logs* have been read by the forwarder. They may be sent or still sending, but they are the forwarder's responsibility.
+  - *Uncollected logs* have not yet been read by the forwarder.
+
+.Log loss
+IMPORTANT: If uncollected logs are deleted by Kubelet before the forwarder can read them, they are **lost** permanently.
+
+.Filling `/var/log` will destabilize the node.
+WARNING: Kubelet rotation controls the size of log files in `/var/log`. The forwarder is responsible for controlling any other files (e.g. buffers) that it stores here.
+
+Log loss depends on three factors:
+
+[horizontal]
+write rate:: The rate that logs are written to `/var/log` files (bytes/sec)
+send rate:: The rate that logs are successfully sent to the remote store (bytes/sec)
+storage capacity:: Storage capacity for logs in `/var/log`
+
+The logging system has three modes of operation:
+
+Normal operation (no log loss)::
+Send-rate exceeds write-rate. Logs are forwarded as quickly as they arrive.
+The set of uncollected logs is small and does not grow significantly.
+The forwarder has time to collect all logs before they are rotated.
+
+Overload (possible log loss)::
+Write-rate exceeds send-rate (on average) for an extended period of time.
+This could be caused by high write activity and/or slow sending.
+Uncollected logs accumulate as the forwarder falls behind.
+A brief overload (sometimes called a _burst_ or _spike_) can be handled without log loss if there is enough storage.
+An overload that continues long enough force rotation of uncollected logs **will** cause log loss.
+
+Recovery (no log loss, but not yet back to normal)::
+After an overload, there are more uncollected logs accumulated in storage than during normal operation.
+We must consider the time it takes to reduce this backlog and get back to normal, before the next overload.
+
+IMPORTANT: It is theoretically impossible to prevent log loss under all conditions.
+The goal is to analyze your expected average and peak conditions, then provision storage accordingly.
+
+=== Calculations and examples
+
+*Time to log loss during steady overload:*
+
+When write rate consistently exceeds send rate, logs accumulate until storage fills:
+
+```
+Time to log loss = Storage capacity ÷ (Write rate - Send rate)
+```
+
+*Example - Steady overload:*
+- Storage capacity: 500MB (kubelet default: 10MB × 5 files × 10 containers)
+- Write rate: 2MB/s
+- Send rate: 1.5MB/s
+- Net accumulation: 0.5MB/s
+- Time to log loss: `500MB ÷ 0.5MB/s = 1000 seconds (16.7 minutes)`
+
+*Example - Burst overload:*
+- Storage capacity: 500MB
+- Normal write rate: 1MB/s
+- Burst write rate: 5MB/s for 3 minutes
+- Send rate: 1.5MB/s (constant)
+- Logs accumulated during burst: `(5-1.5)MB/s × 180s = 630MB`
+- Result: **Log loss occurs** - burst exceeds storage capacity
+
+These examples show why understanding your specific rates and durations is critical for proper storage sizing.
+
+*Recovery time calculation:*
+
+After a peak logging period, the system needs time to drain accumulated logs. Calculate recovery time:
+```
+Recovery_time = Accumulated_logs / (Send_rate - Normal_log_rate)
+```
+
+*Key considerations:*
+
+- **Overlapping peaks:** If peaks occur closer together than recovery time, logs accumulate across multiple peaks
+- **Send rate degradation:** Network issues during recovery extend drain time
+- **Grace period:** Allow buffer between peaks for unexpected delays
+
+*Example recovery calculation:*
+- Peak accumulated: 1GB of logs
+- Normal log rate: 100 KB/s
+- Send rate: 400 KB/s
+- Recovery time: `1GB / (400-100) KB/s = 1GB / 300KB/s = 3,413 seconds (57 minutes)`
+
+If peaks occur more frequently than 57 minutes, you need larger storage or higher send capacity.
+
+== Recommendations
+
+The core recommendation is to _increase the log rotation limits of Kubelet_ based on
+measurements or estimates of you real or expected log load.
+
+=== Measuring
+
+These are the key quantities to measure and/or estimate:
+
+- **Average log rate:** Normal sustained logging rate during typical operations
+- **Average send rate:** Normal sustained send rate during typical operations
+- **Peak log rate:** Maximum logging rate during high-activity periods (deployments, errors, etc.)
+- **Peak duration:** How long high-volume periods typically last
+- **Peak distribution:** How often do peak periods occur.
+
+==== OpenShift Logging metrics
+
+OpenShift Logging provides Prometheus metrics to monitor log flows.
+Use these queries to measure your system:
+
+```promql
+# Log ingestion rate (bytes per second) - by namespace
+rate(log_logged_bytes_total[5m])
+
+# Log events ingestion rate (events per second)
+rate(log_logged_events_total[5m])
+
+# Vector component throughput (events per second)
+rate(vector_component_sent_events_total[5m])
+
+# Vector component errors
+rate(vector_component_errors_total[5m])
+
+# Vector buffer usage (events in buffer)
+vector_buffer_events
+
+# Vector sink processing rate (events per second to destinations)
+rate(vector_component_sent_events_total{component_type="sink"}[5m])
+```
+
+*Understanding metric units:*
+
+Note that Vector metrics mix units - some report events/sec, others bytes/sec. For capacity planning, convert everything to bytes/sec:
+
+```promql
+# Calculate average log size (bytes per event)
+rate(log_logged_bytes_total[5m]) / rate(log_logged_events_total[5m])
+
+# Convert send rate from events/sec to bytes/sec
+rate(vector_component_sent_events_total{component_type="sink"}[5m]) *
+  (rate(log_logged_bytes_total[5m]) / rate(log_logged_events_total[5m]))
+```
+
+This gives you consistent byte-based metrics for all storage calculations.
+
+==== Alternative measurement techniques
+
+If you don't have production metrics, here are some estimation approaches:
+
+1. **Application-based estimation:**
+   ```
+   Total log rate = ∑(Application log rate × Instance count)
+   ```
+
+2. **Industry benchmarks:**
+   - Web applications: 1-10KB/request
+   - Database applications: 10-100MB/hour per connection
+   - Microservices: 5-50MB/day per instance
+
+3. **Similar cluster analysis:**
+   If you have comparable clusters, scale metrics based on:
+   - Workload count ratios
+   - Traffic volume differences
+   - Application complexity variations
+
+4. **Load testing measurements:**
+   Run representative load tests and measure log generation under:
+   - Normal load conditions
+   - Peak load scenarios
+   - Error/failure conditions
+
+=== Calculate storage requirements
+
+To prevent log loss, ensure storage capacity exceeds the worst-case scenario:
+
+```
+Required storage = Peak_byte_rate × Peak_duration × Safety_factor
+```
+
+*Example calculation using byte rates:*
+- Peak byte rate: 2.4 MB/s (measured from metrics)
+- Peak duration: 300 seconds (5 minutes)
+- Safety factor: 2x (for unexpected spikes)
+
+```
+Required storage = 2.4 MB/s × 300s × 2 = 1.44 GB
+```
+
+This approach is more direct and accurate than calculating with log counts and average sizes.
+
+WARNING: This calculation only covers a single peak incident.
+For production systems, you must also consider multi-peak scenarios:
+
+```
+Total_storage = Single_peak_storage + (Peak_frequency / Recovery_rate) × Peak_storage
+```
+
+Where:
+- Peak_frequency = how often peaks occur (e.g., every 2 hours)
+- Recovery_rate = how quickly the system drains logs after peaks
+
+*Enhanced example:*
+If peaks occur every 2 hours but recovery takes 4 hours:
+- Base storage for one peak: 1.44 GB
+- Overlap factor: 4 hours recovery / 2 hours frequency = 2
+- Required storage: `1.44 GB × (1 + 2) = 4.32 GB`
+
+This accounts for logs accumulating across overlapping peak periods.
+
+=== Configure kubelet log limits
+
+For environments that support KubeletConfig (OpenShift 4.6+):
+
+```yaml
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: increase-log-limits
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      machineconfiguration.openshift.io/role: worker
+  kubeletConfig:
+    containerLogMaxSize: 50Mi
+    containerLogMaxFiles: 10
+```
+
+This configuration provides: `50MB × 10 files = 500MB` per container.
+
+You can also configure `MachineConfig` resources directly for older versions of OpenShift that don't support `KubeletConfig`.
+
+=== Apply and verify configuration
+
+*To apply the KubeletConfig:*
+```bash
+# Apply the configuration
+oc apply -f kubelet-log-limits.yaml
+
+# Monitor the rollout (this will cause node reboots)
+oc get kubeletconfig
+oc get mcp -w
+```
+
+*To verify the configuration is active:*
+```bash
+# Check that all nodes are updated
+oc get nodes
+
+# Verify the kubelet configuration on a node
+oc debug node/<node-name>
+chroot /host
+grep -E "(containerLogMaxSize|containerLogMaxFiles)" /etc/kubernetes/kubelet/kubelet.conf
+
+# Check effective log limits for running containers
+find /var/log -name "*.log" -exec ls -lah {} \; | head -20
+```
+
+The configuration rollout typically takes 10-20 minutes as nodes are updated in rolling fashion.
+
+
+== Alternatives considered and rejected
+
+Some explanation about why we didn't go with alternative approaches that have been suggested
+and seem reasonable at first glance.
+
+=== Large forwarder buffers
+
+This approach uses large forwarder buffers rather than increasing kubelet limits.
+While forwarder configuration changes appear less intrusive than modifying kubelet parameters, this approach has significant drawbacks.
+
+==== Same disk, duplicate storage
+
+The naive expectation is that a forwarder buffer increases the total log buffer space to `/var/log + forwarder-buffer`. This is not the case.
+
+When the forwarder reads a log record, it _remains in `/var/log`_ until it is deleted by rotation.
+This means the forwarder buffer will usually be full of log data that is _still available in the log files_.
+
+Thus the _effective_ space for logs is more like `max(/var/log, forwarder-buffer)`.
+If the buffer is smaller than `/var/log` then it uses disk space, but provides **0** additional protection from log loss.
+If it is bigger you get some extra buffer, at the expense of doubling the disk storage required for `/var/log`
+
+It is _much_ more efficient to simply make `/var/log` bigger.
+
+==== Buffer design mismatch
+
+Forwarder buffers are optimized for transmitting data efficiently, based on characteristics of the remote store.
+
+- **Intended purpose:** Hold records that are ready-to-send or in-flight awaiting acknowledgement.
+- **Typical timeframe:** Seconds to minutes of buffering for round-trip request/response times.
+- **Not designed for:** Hours/days of log accumulation during extended outages
+
+==== Supporting other logging tools
+
+Expanding `/var/log` benefits _any_ logging tool, including
+- `oc logs` for local debugging, or if there is a problem with the log collection.
+- Standard Unix tools used when debugging by `rsh` to the node.
+
+Expanding forwarder buffers only benefits the forwarder, and costs more in disk space.
+
+If you deploy multiple forwarders, each additional forwarder will need its own buffer space.
+If you expand `/var/log`, all forwarders share the same storage.
+
+==== Risk of self-sabotage
+
+Filling `/var/log` is a near-fatal problem.
+Storing forwarder buffers on `/var/log` means users need to be very aware of the _combined_ disk usage implied by separate Kubelet and Forwarder configurations.
+This seems likely to lead to mistakes with serious consequence for less experienced users.
+
+Modifying kubelet parameters may seem like a bigger deal than adding buffer config to log forwarder.
+**It Is Not** - the calculations required, and the consequences of error are the same either way.
+
+So it seems better to make kubelet changes for 2 reasons:
+- Log storage requirements are calculated and specified _once_ in kubelet config, not in separate kubelet and forwarder config.
+- The "seriousness" of modifying Kubelet config encourages careful thought, exposing a harmless-looking forwarder "bufferSize" might encourage ill-considered use.
+
+==== Multiple forwarders
+
+It is possible to deploy multiple forwarders, which is useful in some cases.
+Deploying N forwarders multiplies all of the previously mentioned problems by N.
+
+=== Store buffers on a persistent volume
+
+The problems above stem from using `/var/log` for buffer storage.
+Another tempting idea is to use a mounted persistent volume for buffer storage instead.
+This presents the following problems:
+
+1. It still duplicates log data and wastes storage (as explained above),
+   just not on the node file system.
+
+2. _A persistent volume is not a local disk_ even though it appears to be; it is a remote web service.
+   This creates another moving part for reliability and performance.
+   Slow/interrupted access to the PV  creates similar problems to slow/interrupted access to Loki
+   or other web service destination, and could cause log loss.
+
+3. The forwarder's buffering code is optimized for local file system response times.
+   It will not perform as well with remote storage.
+
+== Summary and recommendations
+
+1. **Monitor log patterns:** Use Prometheus metrics to measure log generation and send rates
+2. **Calculate storage requirements:** Account for peak periods, recovery time, and overlapping spikes
+3. **Increase kubelet log limits:** Use `KubeletConfig` to expand `/var/log` storage
+4. **Plan for peak scenarios:** Size storage to handle expected peak patterns without loss
+
+Consider setting up alerts for:
+- High log generation rates: `rate(log_logged_bytes_total[5m]) > threshold`
+- Buffer fill levels: `vector_buffer_events > threshold`
+- Send rate degradation: `rate(vector_component_sent_events_total{component_type="sink"}[5m]) < threshold`
+
+Consider larger limits if you experience:
+- Frequent log loss during deployments or scaling events
+- Extended recovery periods after high-activity periods
+- Peak periods that occur more frequently than your calculated recovery time
+
+The optimal configuration balances disk space usage with your specific operational patterns and risk tolerance.

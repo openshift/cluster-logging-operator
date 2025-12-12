@@ -37,9 +37,22 @@ Type:: object
 |======================
 |Property|Type|Description
 
+|networkPolicy|object|  *(optional)* Define the Network Policy for the LogFileMetricExporter
 |nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
 |resources|object|  *(optional)* The resource requirements for the LogFileMetricExporter
 |tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+|======================
+
+=== .spec.networkPolicy
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ruleSet|string|  NetworkPolicyRuleSetType is the type of network policy rule set to use
+
 |======================
 
 === .spec.nodeSelector

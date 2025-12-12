@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-11-13T11:03:18Z"
+    createdAt: "2025-12-12T18:19:58Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -334,6 +334,11 @@ spec:
         displayName: Input Tuning
         path: inputs[0].application.tuning
       - description: |-
+          MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+          partial log lines are merged.  Messages exceeding this limit are dropped.
+        displayName: Max Message Size
+        path: inputs[0].application.tuning.maxMessageSize
+      - description: |-
           RateLimitPerContainer is the limit applied to each container
           by this input. This limit is applied per collector deployment.
         displayName: Per-Container Rate Limit
@@ -361,6 +366,30 @@ spec:
           This field is optional and omission results in the collection of all infrastructure sources.
         displayName: Log Sources
         path: inputs[0].infrastructure.sources
+      - description: Tuning is the infrastructure input tuning spec, for now available
+          only for container sources
+        displayName: Container Input Tuning
+        path: inputs[0].infrastructure.tuning
+      - description: Container is the input tuning spec for container sources
+        displayName: Input Tuning
+        path: inputs[0].infrastructure.tuning.container
+      - description: |-
+          MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+          partial log lines are merged.  Messages exceeding this limit are dropped.
+        displayName: Max Message Size
+        path: inputs[0].infrastructure.tuning.container.maxMessageSize
+      - description: |-
+          RateLimitPerContainer is the limit applied to each container
+          by this input. This limit is applied per collector deployment.
+        displayName: Per-Container Rate Limit
+        path: inputs[0].infrastructure.tuning.container.rateLimitPerContainer
+      - description: |-
+          MaxRecordsPerSecond is the maximum number of log records
+          allowed per input/output in a pipeline
+        displayName: Max Records Per Second
+        path: inputs[0].infrastructure.tuning.container.rateLimitPerContainer.maxRecordsPerSecond
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: Name used to refer to the input of a `pipeline`.
         displayName: Input Name
         path: inputs[0].name

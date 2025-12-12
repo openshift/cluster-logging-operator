@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"slices"
+	"sort"
 
+	"github.com/openshift/cluster-logging-operator/internal/utils/json"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,6 +112,16 @@ func (irb *IngressRuleBuilder) OnNamedPort(protocol corev1.Protocol, portName st
 // End completes the ingress rule and returns to the NetworkPolicyBuilder
 func (irb *IngressRuleBuilder) End() *NetworkPolicyBuilder {
 	irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress = append(irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress, *irb.rule)
+
+	for _, i := range irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress {
+		sort.Slice(i.Ports, func(x, y int) bool {
+			return json.MustMarshal(i.Ports[x]) < json.MustMarshal(i.Ports[y])
+		})
+	}
+	sort.Slice(irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress, func(i, j int) bool {
+		return len(irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress[i].Ports) < len(irb.networkPolicyBuilder.NetworkPolicy.Spec.Ingress[j].Ports)
+	})
+
 	return irb.networkPolicyBuilder
 }
 
@@ -152,5 +164,14 @@ func (erb *EgressRuleBuilder) OnNamedPort(protocol corev1.Protocol, portName str
 // End completes the egress rule and returns to the NetworkPolicyBuilder
 func (erb *EgressRuleBuilder) End() *NetworkPolicyBuilder {
 	erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress = append(erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress, *erb.rule)
+	for _, i := range erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress {
+		sort.Slice(i.Ports, func(x, y int) bool {
+			return json.MustMarshal(i.Ports[x]) < json.MustMarshal(i.Ports[y])
+		})
+	}
+	sort.Slice(erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress, func(i, j int) bool {
+		return len(erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress[i].Ports) < len(erb.networkPolicyBuilder.NetworkPolicy.Spec.Egress[j].Ports)
+	})
+
 	return erb.networkPolicyBuilder
 }

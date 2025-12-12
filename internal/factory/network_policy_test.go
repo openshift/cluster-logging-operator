@@ -93,7 +93,7 @@ var _ = Describe("#NewNetworkPolicy", func() {
 			[]networkingv1.NetworkPolicyIngressRule{{
 				Ports: []networkingv1.NetworkPolicyPort{{
 					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-					Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: constants.MetricsPortName}}[0],
+					Port:    &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
 				}},
 			}},
 			nil, // No egress rules
@@ -107,7 +107,7 @@ var _ = Describe("#NewNetworkPolicy", func() {
 				Ports: []networkingv1.NetworkPolicyPort{
 					{
 						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-						Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: constants.MetricsPortName}}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
 					},
 					{
 						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],

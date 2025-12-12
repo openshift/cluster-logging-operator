@@ -57,7 +57,7 @@ func NetworkPolicyTypeAllowIngressMetrics(npBuilder *runtime.NetworkPolicyBuilde
 	return npBuilder.
 		WithEgressPolicyType(). // Adding egress policy type without any rules to deny all egress traffic
 		NewIngressRule().
-		OnNamedPort(corev1.ProtocolTCP, constants.MetricsPortName).
+		OnPort(corev1.ProtocolTCP, constants.MetricsPort).
 		End()
 }
 
@@ -66,7 +66,7 @@ func NetworkPolicyTypeAllowIngressMetrics(npBuilder *runtime.NetworkPolicyBuilde
 func NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder *runtime.NetworkPolicyBuilder, ingressPorts []int32, egressPorts []PortProtocol) *runtime.NetworkPolicyBuilder {
 	// Ingress rules are allowed on the metrics port and all additional spec'd ingress ports
 	ingressRule := npBuilder.NewIngressRule().
-		OnNamedPort(corev1.ProtocolTCP, constants.MetricsPortName)
+		OnPort(corev1.ProtocolTCP, constants.MetricsPort)
 
 	// Add all additional spec'd ingress ports to the same rule (still TCP for inputs)
 	for _, port := range ingressPorts {

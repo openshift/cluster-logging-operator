@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2025-11-20T15:34:38Z"
+    createdAt: "2026-01-05T17:48:14Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -763,6 +763,9 @@ spec:
         path: outputs[0].elasticsearch.authentication.username.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Headers specify optional headers to be sent with the request
+        displayName: Headers
+        path: outputs[0].elasticsearch.headers
       - description: |-
           Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 

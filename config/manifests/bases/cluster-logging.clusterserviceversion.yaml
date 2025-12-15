@@ -686,6 +686,9 @@ spec:
         path: outputs[0].elasticsearch.authentication.username.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Headers specify optional headers to be sent with the request
+        displayName: Headers
+        path: outputs[0].elasticsearch.headers
       - description: |-
           Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 

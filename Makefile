@@ -18,7 +18,7 @@ export GODEBUG=x509ignoreCN=0
 
 # Set variables from environment or hard-coded default
 export OPERATOR_NAME=cluster-logging-operator
-export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
+export CURRENT_BRANCH=$(or $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null),no-branch)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
 export LOGGING_VERSION?=6.4
@@ -299,7 +299,6 @@ test-upgrade: $(JUNITREPORT)
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
 	exit 0
-	
 
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)
@@ -342,6 +341,9 @@ cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-d
 .PHONY: cluster-logging-cleanup
 cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
 
+# olm_deploy targets excluded if olm_deploy does not exist - e.g. during image build.
+ifneq ($(wildcard olm_deploy),)
+
 .PHONY: cluster-logging-catalog-build
 # builds an operator-registry image containing the cluster-logging operator
 cluster-logging-catalog-build: .target/cluster-logging-catalog-build
@@ -368,6 +370,8 @@ cluster-logging-operator-install:
 # uninstalls the cluster-logging operator
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
+
+endif # ($(wildcard olm_deploy),)
 
 #
 # Targets for installing the operator to a cluster using operator-sdk run bundle

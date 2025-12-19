@@ -11,3 +11,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift-logging/log-file-metric-exporter:6.1
+  - name: cluster-logging-rhel9-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift-logging/cluster-logging-operator:latest

@@ -46,6 +46,7 @@ const (
 	VectorName                 = "vector"
 	KibanaName                 = "kibana"
 	LogfilesmetricexporterName = "logfilesmetricexporter"
+	LogfilesmetricexporterPort = int32(2112)
 	MetricsPortName            = "metrics"
 	MetricsPort                = int32(24231)
 	PodSecurityLabelEnforce    = "pod-security.kubernetes.io/enforce"

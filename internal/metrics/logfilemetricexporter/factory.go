@@ -108,7 +108,7 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 	exporterContainer.Ports = []v1.ContainerPort{
 		{
 			Name:          constants.MetricsPortName,
-			ContainerPort: exporterPort,
+			ContainerPort: constants.LogfilesmetricexporterPort,
 			Protocol:      v1.ProtocolTCP,
 		},
 	}

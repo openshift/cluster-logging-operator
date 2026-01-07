@@ -26,7 +26,10 @@ func NewNetworkPolicyWithProtocolPorts(namespace, policyName, instanceName, comp
 	podSelector := runtime.Selectors(instanceName, component, np.Labels[constants.LabelK8sName])
 
 	npBuilder := runtime.NewNetworkPolicyBuilder(np).WithPodSelector(podSelector)
-
+	metricsPort := constants.MetricsPort
+	if component == constants.LogfilesmetricexporterName {
+		metricsPort = constants.LogfilesmetricexporterPort
+	}
 	// Configure the policy based on the rule set
 	switch policyRuleSet {
 	// allow all ingress and egress traffic
@@ -34,10 +37,11 @@ func NewNetworkPolicyWithProtocolPorts(namespace, policyName, instanceName, comp
 		NetworkPolicyTypeAllowAllIngressEgress(npBuilder)
 	// allow ingress on the metrics port only and deny all egress traffic
 	case string(loggingv1alpha1.NetworkPolicyRuleSetTypeAllowIngressMetrics):
-		NetworkPolicyTypeAllowIngressMetrics(npBuilder)
+
+		NetworkPolicyTypeAllowIngressMetrics(npBuilder, metricsPort)
 	// allow ingress on the specified ports and egress to the specified ports
 	case string(obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress):
-		NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder, ingressPorts, egressPorts)
+		NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder, ingressPorts, egressPorts, metricsPort)
 	default:
 		NetworkPolicyTypeAllowAllIngressEgress(npBuilder)
 	}
@@ -53,20 +57,20 @@ func NetworkPolicyTypeAllowAllIngressEgress(npBuilder *runtime.NetworkPolicyBuil
 }
 
 // NetworkPolicyTypeAllowIngressMetrics configures the network policy to allow ingress on the metrics port only and deny all egress traffic.
-func NetworkPolicyTypeAllowIngressMetrics(npBuilder *runtime.NetworkPolicyBuilder) *runtime.NetworkPolicyBuilder {
+func NetworkPolicyTypeAllowIngressMetrics(npBuilder *runtime.NetworkPolicyBuilder, port int32) *runtime.NetworkPolicyBuilder {
 	return npBuilder.
 		WithEgressPolicyType(). // Adding egress policy type without any rules to deny all egress traffic
 		NewIngressRule().
-		OnPort(corev1.ProtocolTCP, constants.MetricsPort).
+		OnPort(corev1.ProtocolTCP, port).
 		End()
 }
 
 // NetworkPolicyTypeRestrictIngressEgressWithProtocols configures the network policy to restrict ingress and egress traffic
 // It allows ingress on specified ports and egress to specified ports with their protocols.
-func NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder *runtime.NetworkPolicyBuilder, ingressPorts []int32, egressPorts []PortProtocol) *runtime.NetworkPolicyBuilder {
+func NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder *runtime.NetworkPolicyBuilder, ingressPorts []int32, egressPorts []PortProtocol, metricsPort int32) *runtime.NetworkPolicyBuilder {
 	// Ingress rules are allowed on the metrics port and all additional spec'd ingress ports
 	ingressRule := npBuilder.NewIngressRule().
-		OnPort(corev1.ProtocolTCP, constants.MetricsPort)
+		OnPort(corev1.ProtocolTCP, metricsPort)
 
 	// Add all additional spec'd ingress ports to the same rule (still TCP for inputs)
 	for _, port := range ingressPorts {

@@ -193,7 +193,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 
 				expectedPort := networkingv1.NetworkPolicyPort{
 					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-					Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
+					Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.LogfilesmetricexporterPort}}[0],
 				}
 				Expect(networkPolicyInstance.Spec.Ingress[0].Ports[0]).To(Equal(expectedPort))
 

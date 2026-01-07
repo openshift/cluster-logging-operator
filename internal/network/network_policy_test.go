@@ -404,7 +404,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Protocol: &protocolTCP,
-							Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: constants.MetricsPort},
+							Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: constants.LogfilesmetricexporterPort},
 						},
 					},
 				},

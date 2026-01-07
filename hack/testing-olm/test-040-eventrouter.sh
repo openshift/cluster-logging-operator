@@ -13,7 +13,7 @@ test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
-EVENT_ROUTER_VERSION="0.3"
+EVENT_ROUTER_VERSION="v0.5.0"
 IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"quay.io/openshift-logging/eventrouter:${EVENT_ROUTER_VERSION}"}
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}

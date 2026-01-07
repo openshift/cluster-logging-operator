@@ -31,11 +31,22 @@ type = "loki"
 inputs = ["output_default_loki_apps_remap_label"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
-healthcheck.enabled = false
+
+[sinks.output_default_loki_apps.healthcheck]
+enabled = false
+
+[sinks.output_default_loki_apps.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.logcollector-token/token]"
 
 [sinks.output_default_loki_apps.encoding]
 codec = "json"
 except_fields = ["_internal"]
+
+[sinks.output_default_loki_apps.tls]
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+ca_file = "/var/run/ocp-collector/secrets/logcollector-token/service-ca.crt"
 
 [sinks.output_default_loki_apps.labels]
 k8s_container_name = "{{kubernetes.container_name}}"
@@ -48,12 +59,3 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
-
-[sinks.output_default_loki_apps.tls]
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
-ca_file = "/var/run/ocp-collector/secrets/logcollector-token/service-ca.crt"
-
-[sinks.output_default_loki_apps.auth]
-strategy = "bearer"
-token = "SECRET[kubernetes_secret.logcollector-token/token]"

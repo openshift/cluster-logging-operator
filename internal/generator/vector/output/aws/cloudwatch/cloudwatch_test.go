@@ -2,9 +2,12 @@ package cloudwatch_test
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,7 +16,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,7 +38,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		)
 
 		var (
-			adapter fake.Output
+			adapter *adapters.Output
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 				TLSSpec: obs.TLSSpec{
@@ -111,7 +113,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}
 		)
 
-		DescribeTable("should generate valid config", func(groupName string, visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
+		DescribeTable("should generate valid config", func(groupName string, visit func(spec *obs.OutputSpec), op utils.Options, expFile string) {
 			exp, err := testFiles.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -121,32 +123,33 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			if visit != nil {
 				visit(&outputSpec)
 			}
-			if tune {
-				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-			}
+			adapter = adapters.NewOutput(outputSpec)
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, adapter, op)
-			Expect(string(exp)).To(EqualConfigFrom(conf))
+			id, sink, transforms := New(outputSpec.Name, adapter, []string{"cw-forward"}, secrets, op)
+			Expect(exp).To(EqualConfigFrom(api.NewConfig(func(c *api.Config) {
+				c.Sinks[id] = sink
+				c.AddTransforms(transforms)
+			})))
 		},
 
-			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {}, false,
+			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {},
 				framework.NoOptions, "files/cw_with_groupname.toml"),
 
 			Entry("when URL is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.URL = "http://mylogreceiver"
-			}, false, framework.NoOptions, "files/cw_with_url.toml"),
+			}, framework.NoOptions, "files/cw_with_url.toml"),
 
-			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil, false,
+			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil,
 				testhelpers.FrameworkOptionWithDefaultTLSCiphers, "files/cw_with_tls_and_default_mintls_ciphers.toml"),
 
 			Entry("when tls is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
-			}, false, framework.NoOptions, "files/cw_with_tls_spec.toml"),
+			}, framework.NoOptions, "files/cw_with_tls_spec.toml"),
 
 			Entry("when tls is spec'd with insecure verify", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
 				spec.TLS.InsecureSkipVerify = true
-			}, false, framework.NoOptions, "files/cw_with_tls_spec_insecure_verify.toml"),
+			}, framework.NoOptions, "files/cw_with_tls_spec_insecure_verify.toml"),
 
 			Entry("when aws role credentials are provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -161,7 +164,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						},
 					},
 				}
-			}, false, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
 
 			Entry("when a role_arn is provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -176,7 +179,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						},
 					},
 				}
-			}, false, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
 
 			Entry("when an assume_role is specified with accessKey auth", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -199,11 +202,11 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						ExternalID: "unique-external-id",
 					},
 				}
-			}, false, framework.NoOptions, "files/cw_key_auth_and_assume_role.toml"),
+			}, framework.NoOptions, "files/cw_key_auth_and_assume_role.toml"),
 
 			Entry("when tuning is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Tuning = baseTune
-			}, true, framework.NoOptions, "files/cw_with_tuning.toml"),
+			}, framework.NoOptions, "files/cw_with_tuning.toml"),
 		)
 	})
 
@@ -368,65 +371,5 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 					},
 				}, ""),
 		)
-	})
-
-	Context("when assume role is configured", func() {
-		It("should generate valid Vector config with assume role", func() {
-			outputSpec := obs.OutputSpec{
-				Type: obs.OutputTypeCloudwatch,
-				Name: "cw",
-				Cloudwatch: &obs.Cloudwatch{
-					Region:    "us-east-test",
-					GroupName: "{.log_type||\"missing\"}",
-					Authentication: &obs.AwsAuthentication{
-						Type: obs.AwsAuthTypeIAMRole,
-						IamRole: &obs.AwsRole{
-							RoleARN: obs.SecretReference{
-								Key:        constants.AwsWebIdentityRoleKey,
-								SecretName: secretName,
-							},
-							Token: obs.BearerToken{
-								From: obs.BearerTokenFromServiceAccount,
-							},
-						},
-						AssumeRole: &obs.AwsAssumeRole{
-							RoleARN: obs.SecretReference{
-								Key:        "assume_role_arn",
-								SecretName: secretName,
-							},
-							ExternalID: "unique-external-id",
-						},
-					},
-				},
-			}
-
-			secrets := map[string]*corev1.Secret{
-				secretName: {
-					Data: map[string][]byte{
-						constants.AwsWebIdentityRoleKey: []byte("arn:aws:iam::123456789012:role/initial-role"),
-						"assume_role_arn":               []byte("arn:aws:iam::987654321098:role/cross-account-role"),
-						"external_id":                   []byte("unique-external-id"),
-					},
-				},
-			}
-
-			op := framework.Options{}
-			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, fake.Output{}, op)
-
-			// Verify that CloudWatch sink configuration is present
-			var elementNames []string
-			for _, element := range conf {
-				elementNames = append(elementNames, element.Name())
-			}
-
-			// Verify basic CloudWatch elements exist
-			Expect(elementNames).To(ContainElement("cloudwatchTemplate"), "Should contain cloudwatch sink template")
-
-			// Since authentication is embedded within cloudwatchTemplate, we just verify
-			// that the CloudWatch configuration was created successfully with assume role
-			// The actual authentication fields are tested in unit tests for the auth functions
-			Expect(len(conf)).To(BeNumerically(">", 0), "Should generate CloudWatch configuration elements")
-		})
 	})
 })

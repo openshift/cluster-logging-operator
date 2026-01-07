@@ -26,11 +26,18 @@ type = "loki"
 inputs = ["loki_receiver_remap_label"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
-healthcheck.enabled = false
+
+[sinks.loki_receiver.healthcheck]
+enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
 except_fields = ["_internal"]
+
+[sinks.loki_receiver.tls]
+key_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/loki-receiver/ca-bundle.crt"
 
 [sinks.loki_receiver.labels]
 k8s_container_name = "{{kubernetes.container_name}}"
@@ -43,9 +50,3 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
-
-
-[sinks.loki_receiver.tls]
-key_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/loki-receiver/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/loki-receiver/ca-bundle.crt"

@@ -3,82 +3,65 @@ package matchers
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
-	"github.com/google/go-cmp/cmp"
+	log "github.com/ViaQ/logerr/v2/log/static"
+	gformat "github.com/onsi/gomega/format"
+	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
+	"github.com/openshift/cluster-logging-operator/test"
 )
 
 type GeneratorElementMatcher struct {
-	actual interface{}
-	diff   string
-	err    error
+	actual       interface{}
+	matcher      matchers.MatchYAMLMatcher
+	truncateDiff bool
+	maxLength    int
 }
 
 func EqualConfigFrom(actual interface{}) types.GomegaMatcher {
+
 	return &GeneratorElementMatcher{
 		actual: actual,
 	}
 }
 
-func (m *GeneratorElementMatcher) Match(expected interface{}) (bool, error) {
-	if expectedType := reflect.TypeOf(expected); expectedType.Kind() != reflect.String {
-		return false, fmt.Errorf("'actual' type is expected to be a string but is: %s", expectedType.Name())
+func (m *GeneratorElementMatcher) Match(expected interface{}) (_ bool, err error) {
+	defer func() {
+		gformat.TruncatedDiff = m.truncateDiff
+		gformat.MaxLength = m.maxLength
+	}()
+	gformat.TruncatedDiff = true
+	gformat.MaxLength = 0
+	rawExp, expCastable := expected.([]byte)
+	if !expCastable {
+		expectedType := reflect.TypeOf(expected)
+		return false, fmt.Errorf("'expected' can not be converted to a string but is: %v", expectedType.Kind())
 	}
-	conf, err := generateConf(m.actual)
-	m.err = err
-	if err != nil {
-		return false, err
-	}
-	m.actual = conf
-	nactual := strings.Join(normalize(conf, true), "\n")
-	nexpected := strings.Join(normalize(expected.(string), true), "\n")
-	m.diff = cmp.Diff(nexpected, nactual)
-	return m.diff == "", nil
-}
-
-func (m *GeneratorElementMatcher) FailureMessage(expected interface{}) (message string) {
-	if m.err != nil {
-		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
-	}
-	return fmt.Sprintf("Expected element to produce a config from 'elements'\nexpected:\n>>>\n%s\n\n<<<\n\n\n\nactual\n>>>:\n\n%s\n\n<<<\ndiff: %s\n", expected, m.actual, m.diff)
-}
-
-func (m *GeneratorElementMatcher) NegatedFailureMessage(expected interface{}) (message string) {
-	if m.err != nil {
-		return fmt.Sprintf("Error generating 'expected' conf: %v", m.err)
-	}
-	return fmt.Sprintf("Expected element to not produce a config from 'elements'\nexpected:\n%s\n\nactual:\n\n%s\n\ndiff: %s\n", expected, m.actual, m.diff)
-}
-
-func generateConf(expected interface{}) (string, error) {
-	var els []framework.Element
-	expType := reflect.TypeOf(expected)
-	switch {
-	case expType.Kind() == reflect.Slice && expType.Elem().Name() == "Section":
-		sections := expected.([]framework.Section)
-		for _, v := range sections {
-			els = append(els, v.Elements...)
+	expConfig := &api.Config{}
+	if err = toml.Unmarshal(string(rawExp), expConfig); err != nil {
+		log.V(1).Info("expected config can not be unmarshalled as toml. trying another...", "err", err.Error(), "raw", string(rawExp))
+		if err = test.Unmarshal(string(rawExp), expConfig); err != nil {
+			return false, fmt.Errorf("'expected' can not be unmarshalled as yaml: %v", err)
 		}
-	case expType.Kind() == reflect.Slice && expType.Elem().Name() == "Element":
-		elements := expected.([]framework.Element)
-		els = elements
-	case expType.Implements(generatorElementType):
-		if el, ok := expected.(framework.Element); ok {
-			els = []framework.Element{el}
-		} else {
-			return "", fmt.Errorf("matcher unable to cast 'expected' type %q to a generator.Element", expType.Name())
-		}
-	case expType.Kind() == reflect.String:
-		return expected.(string), nil
-	default:
-		return "", fmt.Errorf("matcher does not support 'expected' kind %q or element type: %q, expected: %v", expType.Kind(), expType.Name(), expected)
 	}
-	g := framework.MakeGenerator()
-	return g.GenerateConf(els...)
+
+	actualConfig, castable := m.actual.(*api.Config)
+	if !castable {
+		return false, fmt.Errorf("actual can not be converted to an api.Config: %v", m.actual)
+	}
+	m.matcher = matchers.MatchYAMLMatcher{
+		YAMLToMatch: test.YAMLString(expConfig),
+	}
+	m.actual = test.YAMLString(actualConfig)
+	return m.matcher.Match(m.actual)
 }
 
-var (
-	generatorElementType = reflect.TypeOf((*framework.Element)(nil)).Elem()
-)
+func (m *GeneratorElementMatcher) FailureMessage(_ interface{}) (message string) {
+	return m.matcher.FailureMessage(m.actual)
+}
+
+func (m *GeneratorElementMatcher) NegatedFailureMessage(_ interface{}) (message string) {
+	return m.matcher.NegatedFailureMessage(m.actual)
+}

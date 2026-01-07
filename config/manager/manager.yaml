@@ -50,4 +50,4 @@ spec:
           - name: RELATED_IMAGE_VECTOR
             value: quay.io/openshift-logging/vector:v0.47.0
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
-            value: quay.io/openshift-logging/log-file-metric-exporter:6.1
+            value: quay.io/openshift-logging/log-file-metric-exporter:latest

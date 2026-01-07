@@ -2,129 +2,56 @@ package cloudwatch
 
 import (
 	_ "embed"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-
 	"strings"
 
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-type Endpoint struct {
-	URL string
-}
+const (
+	groupNameField                  = "cw_group_name"
+	templatedInternalGroupNameField = `{{ _internal.` + groupNameField + ` }}`
+)
 
-func (e Endpoint) Name() string {
-	return "awsEndpointTemplate"
-}
-
-func (e Endpoint) Template() (ret string) {
-	ret = `{{define "` + e.Name() + `" -}}`
-	if e.URL != "" {
-		ret += `endpoint = "{{ .URL }}"`
-	}
-	ret += `{{end}}`
-	return
-}
-
-type CloudWatch struct {
-	Desc           string
-	ComponentID    string
-	Inputs         string
-	Region         string
-	GroupName      string
-	EndpointConfig framework.Element
-	AuthConfig     framework.Element
-	common.RootMixin
-}
-
-func (e CloudWatch) Name() string {
-	return "cloudwatchTemplate"
-}
-
-func (e CloudWatch) Template() string {
-	return `{{define "` + e.Name() + `" -}}
-{{if .Desc -}}
-# {{.Desc}}
-{{end -}}
-[sinks.{{.ComponentID}}]
-type = "aws_cloudwatch_logs"
-inputs = {{.Inputs}}
-region = "{{.Region}}"
-{{.Compression}}
-group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
-stream_name = "{{"{{ stream_name }}"}}"
-{{compose_one .AuthConfig}}
-healthcheck.enabled = false
-{{compose_one .EndpointConfig}}
-{{- end}}
-`
-}
-
-func (e *CloudWatch) SetCompression(algo string) {
-	e.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
+	tfs = api.Transforms{}
+	tfs[componentID] = NormalizeStreamName(inputs)
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
-	if genhelper.IsDebugOutput(op) {
-		return []framework.Element{
-			NormalizeStreamName(componentID, inputs),
-			elements.Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
+	tfs[groupNameID] = commontemplate.NewTemplateRemap([]string{componentID}, o.Cloudwatch.GroupName, groupNameField)
+	sink = sinks.NewAwsCloudwatchLogs(func(s *sinks.AwsCloudwatchLogs) {
+		s.Region = o.Cloudwatch.Region
+		s.Endpoint = o.Cloudwatch.URL
+		s.Auth = auth.New(o.Name, o.Cloudwatch.Authentication, op)
+		s.GroupName = templatedInternalGroupNameField
+		s.StreamName = "{{ stream_name }}"
+		s.Encoding = common.NewApiEncoding(codec.CodecTypeJSON)
+		if o.GetTuning() != nil && o.GetTuning().Compression == "" {
+			s.Compression = sinks.CompressionTypeNone
+		} else {
+			s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 		}
-	}
-	cwSink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
-	if strategy != nil {
-		strategy.VisitSink(cwSink)
-	}
+		s.Batch = common.NewApiBatch(o)
+		s.Buffer = common.NewApiBuffer(o)
+		s.Request = common.NewApiRequest(o)
+		s.TLS = tls.NewTls(o, secrets, op)
+	}, groupNameID)
 
-	return []framework.Element{
-		NormalizeStreamName(componentID, inputs),
-		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
-		cwSink,
-		common.NewEncoding(id, common.CodecJSON),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
-	}
+	return id, sink, tfs
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, region, groupName string) *CloudWatch {
-	return &CloudWatch{
-		Desc:           "Cloudwatch Logs",
-		ComponentID:    id,
-		Inputs:         vectorhelpers.MakeInputs(inputs...),
-		Region:         region,
-		GroupName:      groupName,
-		AuthConfig:     aws.AuthConfig(o.Name, o.Cloudwatch.Authentication, op, secrets),
-		EndpointConfig: endpointConfig(o.Cloudwatch),
-		RootMixin:      common.NewRootMixin("none"),
-	}
-}
-
-func endpointConfig(cw *obs.Cloudwatch) framework.Element {
-	if cw == nil {
-		return Endpoint{}
-	}
-	return Endpoint{
-		URL: cw.URL,
-	}
-}
-
-func NormalizeStreamName(componentID string, inputs []string) framework.Element {
+func NormalizeStreamName(inputs []string) types.Transform {
 	vrl := strings.TrimSpace(`
 .stream_name = "default"
 if ( .log_type == "audit" ) {
@@ -143,10 +70,5 @@ if ( .log_source == "node" ) {
 del(.tag)
 del(.source_type)
 	`)
-	return elements.Remap{
-		Desc:        "Cloudwatch Stream Names",
-		ComponentID: componentID,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         vrl,
-	}
+	return transforms.NewRemap(vrl, inputs...)
 }

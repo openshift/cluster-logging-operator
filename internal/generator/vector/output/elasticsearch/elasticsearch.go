@@ -1,120 +1,95 @@
 package elasticsearch
 
 import (
+	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-type Elasticsearch struct {
-	IDKey       genhelper.OptionalPair
-	Desc        string
-	ComponentID string
-	Inputs      string
-	Index       string
-	Endpoint    string
-	Version     int
-	common.RootMixin
-}
-
-func (e Elasticsearch) Name() string {
-	return "elasticsearchTemplate"
-}
-
-func (e Elasticsearch) Template() string {
-	return `{{define "` + e.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "elasticsearch"
-inputs = {{.Inputs}}
-endpoints = ["{{.Endpoint}}"]
-{{.IDKey}}
-bulk.index = "{{"{{"}} _internal.{{.Index}} {{"}}"}}"
-bulk.action = "create"
-{{.Compression}}
-{{- if ne .Version 0 }}
-api_version = "v{{ .Version }}"
-{{- end }}
-{{end}}`
-}
-
-func (e *Elasticsearch) SetCompression(algo string) {
-	e.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
-	if genhelper.IsDebugOutput(op) {
-		return []framework.Element{
-			elements.Debug(id, helpers.MakeInputs(inputs...)),
-		}
-	}
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	componentID := helpers.MakeID(id, "index")
-	outputs := []framework.Element{}
+	tfs = api.Transforms{}
 	if o.Elasticsearch.Version == 6 {
 		addID := helpers.MakeID(id, "add_id")
-		outputs = append(outputs, elements.Remap{
-			ComponentID: addID,
-			Inputs:      helpers.MakeInputs(inputs...),
-			VRL: `._id = encode_base64(uuid_v4())
+		tfs[addID] = transforms.NewRemap(`._id = encode_base64(uuid_v4())
 if exists(.kubernetes.event.metadata.uid) {
   ._id = .kubernetes.event.metadata.uid
-}`,
-		})
+}`, inputs...)
 		inputs = []string{addID}
 	}
-	sink := Output(id, o, []string{componentID}, componentID, secrets, op)
-	if strategy != nil {
-		strategy.VisitSink(sink)
-	}
+	tfs[componentID] = commontemplate.NewTemplateRemap(inputs, o.Elasticsearch.Index, componentID)
+	sink = sinks.NewElasticsearch(o.Elasticsearch.URL, func(s *sinks.Elasticsearch) {
+		s.Bulk = &sinks.Bulk{
+			Action: sinks.BulkActionCreate,
+			Index:  fmt.Sprintf("{{ _internal.%s }}", componentID),
+		}
+		s.ApiVersion = fmt.Sprintf("v%d", o.Elasticsearch.Version)
+		s.Encoding = common.NewApiEncoding("")
+		s.Batch = common.NewApiBatch(o)
+		s.Buffer = common.NewApiBuffer(o)
+		s.Request = common.NewApiRequest(o)
+		if len(o.Elasticsearch.Headers) > 0 {
+			if s.Request == nil {
+				s.Request = &sinks.Request{}
+				s.Request.Headers = o.Elasticsearch.Headers
+			}
+		}
+		elasticsearchAuth(s, o, op)
+		if o.Elasticsearch.Version == 6 {
+			s.IdKey = "_id"
+		}
+		s.TLS = tls.NewTls(o, secrets, op)
+	}, componentID)
+	return id, sink, tfs
+}
 
-	outputs = append(outputs,
-		commontemplate.TemplateRemap(componentID, inputs, o.Elasticsearch.Index, componentID, "Elasticsearch Index"),
-		sink,
-		common.NewEncoding(id, ""),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		Request(id, o.Elasticsearch, strategy),
-		tls.New(id, o.TLS, secrets, op, framework.Option{Name: framework.URL, Value: o.Elasticsearch.URL}),
-	)
-
+func elasticsearchAuth(s *sinks.Elasticsearch, o *adapters.Output, op utils.Options) {
 	if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil {
-		outputs = append(outputs, NewBearerToken(id, o.Elasticsearch.Authentication, secrets, op))
+		if s.Request == nil {
+			s.Request = &sinks.Request{}
+		}
+		if s.Request.Headers == nil {
+			s.Request.Headers = map[string]string{}
+		}
+		var token string
+		key := o.Elasticsearch.Authentication.Token
+		switch o.Elasticsearch.Authentication.Token.From {
+		case obs.BearerTokenFromSecret:
+			if key.Secret != nil {
+				token = helpers.SecretFrom(&obs.SecretReference{
+					SecretName: key.Secret.Name,
+					Key:        key.Secret.Key,
+				})
+			}
+		case obs.BearerTokenFromServiceAccount:
+			if name, found := utils.GetOption(op, framework.OptionServiceAccountTokenSecretName, ""); found {
+				token = helpers.SecretFrom(&obs.SecretReference{
+					Key:        constants.TokenKey,
+					SecretName: name,
+				})
+			}
+		}
+		s.Request.Headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
 	} else if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Username != nil && o.Elasticsearch.Authentication.Password != nil {
-		outputs = append(outputs, auth.NewBasic(id, o.Elasticsearch.Authentication, secrets))
+		s.Auth = &sinks.ElasticsearchAuth{
+			Strategy: sinks.HttpAuthStrategyBasic,
+			HttpAuthBasic: sinks.HttpAuthBasic{
+				User:     helpers.SecretFrom(o.Elasticsearch.Authentication.Username),
+				Password: helpers.SecretFrom(o.Elasticsearch.Authentication.Password),
+			},
+		}
 	}
-
-	return outputs
-}
-
-func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets observability.Secrets, op utils.Options) *Elasticsearch {
-	idKey := genhelper.NewOptionalPair("id_key", nil)
-	if o.Elasticsearch.Version == 6 {
-		idKey.Value = "_id"
-	}
-	es := Elasticsearch{
-		ComponentID: id,
-		IDKey:       idKey,
-		Endpoint:    o.Elasticsearch.URL,
-		Inputs:      helpers.MakeInputs(inputs...),
-		Index:       index,
-		RootMixin:   common.NewRootMixin(nil),
-		Version:     o.Elasticsearch.Version,
-	}
-	return &es
-}
-
-func Request(id string, o *obs.Elasticsearch, strategy common.ConfigStrategy) *common.Request {
-	req := common.NewRequest(id, strategy)
-	if len(o.Headers) != 0 {
-		req.SetHeaders(o.Headers)
-	}
-	return req
 }

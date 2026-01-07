@@ -1,20 +1,18 @@
 package input
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common"
 )
 
 const (
-	perContainerLimitKeyField = `"{{ _internal.file }}"`
+	perContainerLimitKeyField = "{{ _internal.file }}"
 )
 
-func AddThrottleToInput(id, input string, maxRecordsPerSec int64) []framework.Element {
-	throttleKey := perContainerLimitKeyField
-	return normalize.NewThrottle(
-		id,
+func AddThrottleToInput(input string, maxRecordsPerSec int64) types.Transform {
+	return common.NewThrottle(
 		[]string{input},
 		maxRecordsPerSec,
-		throttleKey,
+		perContainerLimitKeyField,
 	)
 }

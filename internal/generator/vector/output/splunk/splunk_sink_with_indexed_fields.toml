@@ -1,4 +1,3 @@
-# Ensure timestamp field well formatted for Splunk
 [transforms.splunk_hec_timestamp]
 type = "remap"
 inputs = ["pipelineName"]
@@ -51,10 +50,9 @@ for_each(indexed_fields) -> |_, field| {
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]
 endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
 timestamp_key = "._internal.timestamp"
-indexed_fields = ["log_source","kubernetes_namespace_labels_bar_baz0-9_test","annotations_authorization_k8s_io_decision"]
+indexed_fields = ["log_source", "kubernetes_namespace_labels_bar_baz0-9_test", "annotations_authorization_k8s_io_decision"]
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
 host_key = "._internal.hostname"

@@ -2,9 +2,10 @@ package v1
 
 import (
 	"fmt"
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
 )
 
 const (
@@ -39,11 +40,11 @@ if ._internal.log_type == "%s" && ._internal.log_source == "%s" {
 %s
 }
 `, string(obs.InputTypeAudit), obs.AuditSourceAuditd,
-		strings.Join(helpers.TrimSpaces([]string{
+		strings.Join([]string{
 			SetMessageOnRoot,
 			`."audit.linux" = ._internal."audit.linux"`,
 			AddDefaultLogLevel,
-		}), "\n"))
+		}, "\n"))
 }
 
 func auditK8sLogs() string {

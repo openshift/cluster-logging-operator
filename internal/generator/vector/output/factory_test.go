@@ -3,12 +3,13 @@ package output
 import (
 	"fmt"
 
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -20,7 +21,12 @@ var _ = Describe("output/factory.go", func() {
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", exp, err))
 		}
-		Expect(string(exp)).To(EqualConfigFrom(New(o, []string{"application"}, secrets, &Output{}, framework.Options{})))
+		adapter := adapters.NewOutput(o)
+		sinks, transforms := New(adapter, []string{"application"}, secrets, utils.Options{})
+		Expect(exp).To(EqualConfigFrom(api.NewConfig(func(c *api.Config) {
+			c.AddSinks(sinks)
+			c.AddTransforms(transforms)
+		})))
 
 	},
 		Entry("should add output throttling when present",

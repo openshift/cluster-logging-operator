@@ -4,6 +4,10 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
+type TunableOutput interface {
+	GetTuning() *Tuning
+}
+
 type Tuning struct {
 	obs.BaseOutputTuningSpec
 	Compression string

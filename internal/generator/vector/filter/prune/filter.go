@@ -7,7 +7,9 @@ import (
 	"strings"
 	"text/template"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 )
 
 type Prune struct {
@@ -30,6 +32,16 @@ type PruneFilter obs.PruneFilterSpec
 
 func NewFilter(pruneFilterSpec *obs.PruneFilterSpec) PruneFilter {
 	return PruneFilter(*pruneFilterSpec)
+}
+
+func New(spec *obs.PruneFilterSpec, inputs ...string) *transforms.Remap {
+	pf := NewFilter(spec)
+	vrl, err := pf.VRL()
+	if err != nil {
+		log.Error(err, "bad filter", "pruneFilterSpec", spec)
+		return nil
+	}
+	return transforms.NewRemap(vrl, inputs...)
 }
 
 func (f PruneFilter) VRL() (string, error) {

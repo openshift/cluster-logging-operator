@@ -2,8 +2,9 @@ package v1
 
 import (
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -14,17 +15,17 @@ const (
 
 	FixJournalLogLevel = `
 if ._internal.PRIORITY == "8" || ._internal.PRIORITY == 8 {
-	._internal.level = "trace"
+  ._internal.level = "trace"
 } else {
-	priority = to_int!(._internal.PRIORITY)
-	._internal.level, err = to_syslog_level(priority)
-	if err != null {
-		log("Unable to determine level from PRIORITY: " + err, level: "error")
-		log(., level: "error")
-		._internal.level = "unknown"
-	} else {
-		del(._internal.PRIORITY)
-	}
+  priority = to_int!(._internal.PRIORITY)
+  ._internal.level, err = to_syslog_level(priority)
+  if err != null {
+    log("Unable to determine level from PRIORITY: " + err, level: "error")
+    log(., level: "error")
+    ._internal.level = "unknown"
+  } else {
+    del(._internal.PRIORITY)
+  }
 }
 `
 	SetJournalMessage = `if exists(._internal.MESSAGE) {._internal.message = del(._internal.MESSAGE)}`
@@ -84,7 +85,7 @@ if exists(._internal.UNIT) { ._internal.systemd.u.UNIT = del(._internal.UNIT) }
 func journalLogs() string {
 	return fmt.Sprintf(`
 if ._internal.log_source == "%s" {
-  %s
+%s
 }
 `, obs.InfrastructureSourceNode, journalLogsVRL())
 }
@@ -95,5 +96,5 @@ func journalLogsVRL() string {
 		AddHostName,
 		`.systemd = ._internal.systemd`,
 		SetMessageOnRoot,
-	}), "\n\n")
+	}), "\n")
 }

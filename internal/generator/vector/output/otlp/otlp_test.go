@@ -10,9 +10,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,7 +38,7 @@ var _ = Describe("Generate vector config", func() {
 			},
 		}
 
-		adapter    fake.Output
+		adapter    *adapters.Output
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
 				Type: obs.OutputTypeOTLP,
@@ -85,14 +86,12 @@ var _ = Describe("Generate vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		var conf []framework.Element
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secret, framework.NoOptions)
-			conf = New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_my_pipeline_viaq_0"}, secret, adapter, op)
-		} else {
-			conf = New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_my_pipeline_viaq_0"}, secret, nil, op)
-		}
-		Expect(string(exp)).To(EqualConfigFrom(conf))
+		adapter = adapters.NewOutput(outputSpec)
+		id, sink, transforms := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_my_pipeline_viaq_0"}, secret, op)
+		Expect(exp).To(EqualConfigFrom(api.NewConfig(func(c *api.Config) {
+			c.Sinks[id] = sink
+			c.AddTransforms(transforms)
+		})))
 	},
 		Entry("with only URL spec'd",
 			nil,

@@ -1,9 +1,10 @@
 package multilineexception
 
 import (
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

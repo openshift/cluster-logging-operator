@@ -6,14 +6,16 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
@@ -70,128 +72,41 @@ var (
 	}
 )
 
-type Loki struct {
-	ComponentID string
-	Inputs      string
-	TenantID    framework.Element
-	Endpoint    string
-	Proxy       string
-	LokiLabel   []string
-	common.RootMixin
-}
-
-func (l Loki) Name() string {
-	return "lokiVectorTemplate"
-}
-
-func (l Loki) Template() string {
-	return `{{define "` + l.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "loki"
-inputs = {{.Inputs}}
-endpoint = "{{.Endpoint}}"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-{{with .Proxy -}}
-proxy.enabled = true
-proxy.http = "{{.}}"
-proxy.https = "{{.}}"
-{{end -}}
-{{kv .TenantID -}}
-{{.Compression}}
-{{end}}`
-}
-
-type LokiEncoding struct {
-	ComponentID string
-	Codec       string
-}
-
-func (le LokiEncoding) Name() string {
-	return "lokiEncoding"
-}
-
-func (le LokiEncoding) Template() string {
-	return `{{define "` + le.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = {{.Codec}}
-{{end}}`
-}
-
-type LokiLabel struct {
-	Name  string
-	Value string
-}
-
-type LokiLabels struct {
-	ComponentID string
-	Labels      []LokiLabel
-}
-
-func (l LokiLabels) Name() string {
-	return "lokiLabels"
-}
-
-func (l LokiLabels) Template() string {
-	return `{{define "` + l.Name() + `" -}}
-[sinks.{{.ComponentID}}.labels]
-{{range $i, $label := .Labels -}}
-{{$label.Name}} = "{{$label.Value}}"
-{{end -}}
-{{end}}
-`
-}
-
-func (e *Loki) SetCompression(algo string) {
-	e.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
-	if genhelper.IsDebugOutput(op) {
-		return []framework.Element{
-			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
-		}
-	}
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {
+	tfs := api.Transforms{}
 	componentID := vectorhelpers.MakeID(id, "remap")
+	tfs[componentID] = CleanupFields(inputs...)
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
+	tfs[remapLabelID] = RemapLabels(componentID)
 
-	var tenantTemplate framework.Element
-	sink := Output(id, o, []string{remapLabelID}, "")
+	sink := sinks.NewLoki(o.Loki.URL, func(s *sinks.Loki) {
+		s.OutOfOrderAction = sinks.LokiOutOfOrderActionAccept
+		s.Auth = common.NewHttpAuth(o.Loki.Authentication, op)
+		s.Encoding = common.NewApiEncoding(codec.CodecTypeJSON)
+		s.Compression = sinks.CompressionType(o.GetTuning().Compression)
+		s.Batch = common.NewApiBatch(o)
+		s.Buffer = common.NewApiBuffer(o)
+		s.Request = common.NewApiRequest(o)
+		s.TLS = tls.NewTls(o, secrets, op)
+		if o.Loki.ProxyURL != "" {
+			s.Proxy = &sinks.Proxy{
+				Enabled: true,
+				Http:    o.Loki.ProxyURL,
+				Https:   o.Loki.ProxyURL,
+			}
+		}
+	}, remapLabelID)
+
 	if hasTenantKey(o.Loki) {
 		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
-		tenantTemplate = commontemplate.TemplateRemap(lokiTenantID, []string{remapLabelID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
-		sink = Output(id, o, []string{lokiTenantID}, lokiTenantID)
+		tenantTemplate := commontemplate.NewTemplateRemap([]string{remapLabelID}, o.Loki.TenantKey, lokiTenantID)
+		sink.Inputs = []string{lokiTenantID}
+		sink.TenantId = tenantId(o.Loki, lokiTenantID)
+		tfs[lokiTenantID] = tenantTemplate
 	}
+	sink.Labels = lokiLabels(o.Loki)
 
-	if strategy != nil {
-		strategy.VisitSink(sink)
-	}
-
-	return []framework.Element{
-		CleanupFields(componentID, inputs),
-		RemapLabels(remapLabelID, o, []string{componentID}),
-		tenantTemplate,
-		sink,
-		common.NewEncoding(id, common.CodecJSON),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		NewLabels(id, o),
-		tls.New(id, o.TLS, secrets, op),
-		auth.HTTPAuth(id, o.Loki.Authentication, secrets, op),
-	}
-}
-
-func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
-	return &Loki{
-		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		Endpoint:    o.Loki.URL,
-		Proxy:       o.Loki.ProxyURL,
-		TenantID:    Tenant(o.Loki, tenant),
-		RootMixin:   common.NewRootMixin(nil),
-	}
+	return id, sink, tfs
 }
 
 func lokiLabelKeys(l *obs.Loki) []string {
@@ -208,21 +123,16 @@ func lokiLabelKeys(l *obs.Loki) []string {
 	return keys.List()
 }
 
-func lokiLabels(lo *obs.Loki) []LokiLabel {
-	ls := []LokiLabel{}
+func lokiLabels(lo *obs.Loki) map[string]string {
+	ls := map[string]string{}
 	for _, k := range lokiLabelKeys(lo) {
 		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
 		name := r.Replace(k)
-		l := LokiLabel{
-			Name:  name,
-			Value: formatLokiLabelValue(k),
-		}
+		ls[name] = formatLokiLabelValue(k)
 		// some labels need custom values. e.g. host, otel labels
 		if val := generateCustomLabelValues(k); val != "" {
-			l.Value = val
+			ls[name] = val
 		}
-
-		ls = append(ls, l)
 	}
 	return ls
 }
@@ -279,42 +189,27 @@ func formatLokiLabelValue(value string) string {
 		parts := strings.SplitAfterN(value, "labels.", 2)
 		r := strings.NewReplacer("/", "_", ".", "_")
 		key := r.Replace(parts[1])
-		key = fmt.Sprintf(`\"%s\"`, key)
+		key = fmt.Sprintf("%q", key)
 		value = fmt.Sprintf("%s%s", parts[0], key)
 	}
 	return fmt.Sprintf("{{%s}}", value)
 }
 
-func RemapLabels(id string, o obs.OutputSpec, inputs []string) framework.Element {
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         remapLabelsVrl(containerLabels),
-	}
-}
-
-func NewLabels(id string, o obs.OutputSpec) framework.Element {
-	return LokiLabels{
-		ComponentID: id,
-		Labels:      lokiLabels(o.Loki),
-	}
+func RemapLabels(inputs ...string) types.Transform {
+	return transforms.NewRemap(remapLabelsVrl(containerLabels), inputs...)
 }
 
 func hasTenantKey(l *obs.Loki) bool {
 	return l != nil && l.TenantKey != ""
 }
 
-func Tenant(l *obs.Loki, tenant string) framework.Element {
+func tenantId(l *obs.Loki, tenant string) string {
 	if !hasTenantKey(l) {
-		return framework.Nil
+		return ""
 	}
-	return elements.KV("tenant_id", fmt.Sprintf(`"{{ _internal.%s }}"`, tenant))
+	return fmt.Sprintf("{{ _internal.%s }}", tenant)
 }
 
-func CleanupFields(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         "del(.tag)",
-	}
+func CleanupFields(inputs ...string) types.Transform {
+	return transforms.NewRemap("del(.tag)", inputs...)
 }

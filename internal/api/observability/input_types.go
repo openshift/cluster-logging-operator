@@ -4,10 +4,9 @@ import (
 	"regexp"
 	"sort"
 
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"k8s.io/utils/set"
-
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 var (

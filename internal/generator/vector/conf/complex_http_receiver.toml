@@ -4,7 +4,6 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 [api]
 enabled = true
 
-# Load sensitive data from files
 [secret.kubernetes_secret]
 type = "directory"
 path = "/var/run/ocp-collector/secrets"
@@ -55,7 +54,8 @@ source = '''
   # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
 
   if level == null {
-    parsed_grok, err = parse_groks(message,
+    parsed_grok, err = parse_groks(
+      message,
       patterns: [
         "%{common_prefix} %{_message}"
       ],
@@ -161,17 +161,16 @@ rotate_wait_secs = 5
 type = "remap"
 inputs = ["input_audit_kube"]
 source = '''
-  . = {"_internal": .}
+. = {"_internal": .}
 
-  ._internal.structured = parse_json!(string!(._internal.message))
-  ._internal = merge!(._internal,._internal.structured)
+._internal.structured = parse_json!(string!(._internal.message))
+._internal = merge!(._internal,._internal.structured)
 
-  ._internal.log_source = "kubeAPI"
-  ._internal.log_type = "audit"
-  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
-  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
-'''
+._internal.log_source = "kubeAPI"
+._internal.log_type = "audit"
+._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")'''
 
 [sources.input_audit_openshift]
 type = "file"
@@ -242,7 +241,8 @@ source = '''
   # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
 
   if level == null {
-    parsed_grok, err = parse_groks(message,
+    parsed_grok, err = parse_groks(
+      message,
       patterns: [
         "%{common_prefix} %{_message}"
       ],
@@ -316,7 +316,6 @@ source = '''
 }
 '''
 
-# Logs from containers (including openshift containers)
 [sources.input_infrastructure_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
@@ -324,14 +323,18 @@ glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
 exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
 use_apiserver_cache = true
+
+[sources.input_infrastructure_container.pod_annotation_fields]
+pod_labels = "kubernetes.labels"
+pod_namespace = "kubernetes.namespace_name"
+pod_annotations = "kubernetes.annotations"
+pod_uid = "kubernetes.pod_id"
+pod_node_name = "hostname"
+
+[sources.input_infrastructure_container.namespace_annotation_fields]
+namespace_uid = "kubernetes.namespace_id"
 
 [transforms.input_infrastructure_container_meta]
 type = "remap"
@@ -374,7 +377,8 @@ source = '''
   # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
 
   if level == null {
-    parsed_grok, err = parse_groks(message,
+    parsed_grok, err = parse_groks(
+      message,
       patterns: [
         "%{common_prefix} %{_message}"
       ],
@@ -534,7 +538,9 @@ source = '''
 [sources.input_myreceiver]
 type = "http_server"
 address = "[::]:7777"
-decoding.codec = "json"
+
+[sources.input_myreceiver.decoding]
+codec = "json"
 
 [sources.input_myreceiver.tls]
 enabled = true
@@ -572,7 +578,6 @@ source = '''
   ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''
 
-# Logs from containers (including openshift containers)
 [sources.input_mytestapp_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
@@ -580,14 +585,18 @@ glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 include_paths_glob_patterns = ["/var/log/pods/test-ns_*/*/*.log"]
 exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
 use_apiserver_cache = true
+
+[sources.input_mytestapp_container.pod_annotation_fields]
+pod_labels = "kubernetes.labels"
+pod_namespace = "kubernetes.namespace_name"
+pod_annotations = "kubernetes.annotations"
+pod_uid = "kubernetes.pod_id"
+pod_node_name = "hostname"
+
+[sources.input_mytestapp_container.namespace_annotation_fields]
+namespace_uid = "kubernetes.namespace_id"
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"
@@ -630,7 +639,8 @@ source = '''
   # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
 
   if level == null {
-    parsed_grok, err = parse_groks(message,
+    parsed_grok, err = parse_groks(
+      message,
       patterns: [
         "%{common_prefix} %{_message}"
       ],
@@ -707,14 +717,14 @@ source = '''
 
 [transforms.pipeline_pipeline_viaq_0]
 type = "remap"
-inputs = ["input_audit_host_meta","input_audit_kube_meta","input_audit_openshift_meta","input_audit_ovn_meta","input_infrastructure_container_meta","input_infrastructure_journal_meta","input_myreceiver_meta","input_mytestapp_container_meta"]
+inputs = ["input_audit_host_meta", "input_audit_kube_meta", "input_audit_openshift_meta", "input_audit_ovn_meta", "input_infrastructure_container_meta", "input_infrastructure_journal_meta", "input_myreceiver_meta", "input_mytestapp_container_meta"]
 source = '''
   if exists(._internal.hostname) { .hostname = ._internal.hostname }
   .log_type = ._internal.log_type
   .log_source = ._internal.log_source
 
   if exists(._internal.openshift) {.openshift = ._internal.openshift}
-  if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels) }
+  if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels)}
 
 
   if ._internal.log_type == "audit" && ._internal.log_source == "auditd" {
@@ -830,7 +840,6 @@ source = '''
 
 '''
 
-# Kafka Topic
 [transforms.output_kafka_receiver_topic]
 type = "remap"
 inputs = ["pipeline_pipeline_viaq_0"]
@@ -844,7 +853,9 @@ type = "kafka"
 inputs = ["output_kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "{{ _internal.output_kafka_receiver_topic }}"
-healthcheck.enabled = false
+
+[sinks.output_kafka_receiver.healthcheck]
+enabled = false
 
 [sinks.output_kafka_receiver.encoding]
 codec = "json"
@@ -862,9 +873,7 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 [transforms.add_nodename_to_metric]
 type = "remap"
 inputs = ["internal_metrics"]
-source = '''
-.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
-'''
+source = ".tags.hostname = get_env_var!(\"VECTOR_SELF_NODE_NAME\")"
 
 [sinks.prometheus_output]
 type = "prometheus_exporter"
@@ -874,7 +883,7 @@ default_namespace = "collector"
 
 [sinks.prometheus_output.tls]
 enabled = true
-key_file = "/etc/collector/metrics/tls.key"
-crt_file = "/etc/collector/metrics/tls.crt"
 min_tls_version = "VersionTLS12"
 ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
+key_file = "/etc/collector/metrics/tls.key"
+crt_file = "/etc/collector/metrics/tls.crt"

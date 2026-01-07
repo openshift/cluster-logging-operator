@@ -4,20 +4,14 @@ import (
 	_ "embed"
 	"fmt"
 
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-
-	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
-	. "github.com/openshift/cluster-logging-operator/test/matchers"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -59,8 +53,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		}
 	)
 
-	DescribeTable("Generate full vector.toml", func(expFile string, op framework.Options, spec obs.ClusterLogForwarderSpec) {
-		exp, err := tomlContent.ReadFile(expFile)
+	DescribeTable("Generate full vector config", func(expFile string, op framework.Options, spec obs.ClusterLogForwarderSpec) {
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -68,7 +62,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			op = clusterOptions
 		}
 		conf := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
-		Expect(string(exp)).To(EqualConfigFrom(conf))
+		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("with complex spec",
 			"complex.toml",
@@ -182,12 +176,4 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			}),
 	)
-
-	Describe("test helper functions", func() {
-		It("test MakeInputs", func() {
-			diff := cmp.Diff(helpers.MakeInputs("a", "b"), "[\"a\",\"b\"]")
-			fmt.Println(diff)
-			Expect(diff).To(Equal(""))
-		})
-	})
 })

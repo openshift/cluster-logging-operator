@@ -3,8 +3,8 @@ package otlp
 import (
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	otlpv1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/otlp/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
@@ -252,65 +252,33 @@ func auditOVNLogsVRL() string {
 	}), "\n")
 }
 
-func TransformContainer(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize container log records to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         containerLogsVRL(),
-	}
+func TransformContainer(inputs []string) types.Transform {
+	return transforms.NewRemap(containerLogsVRL(), inputs...)
 }
 
-func TransformJournal(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize node log events to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         nodeLogsVRL(),
-	}
+func TransformJournal(inputs []string) types.Transform {
+	return transforms.NewRemap(nodeLogsVRL(), inputs...)
 }
 
-func TransformAuditHost(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize audit log record to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditHostLogsVRL(),
-	}
+func TransformAuditHost(inputs []string) types.Transform {
+	return transforms.NewRemap(auditHostLogsVRL(), inputs...)
 }
 
-func TransformAuditKube(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize audit log kube record to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditAPILogsVRL(),
-	}
+func TransformAuditKube(inputs []string) types.Transform {
+	return transforms.NewRemap(auditAPILogsVRL(), inputs...)
 }
-func TransformAuditOpenshift(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize audit openshiftAPI record to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditAPILogsVRL(),
-	}
+
+func TransformAuditOpenshift(inputs []string) types.Transform {
+	return transforms.NewRemap(auditAPILogsVRL(), inputs...)
 }
-func TransformAuditOvn(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Normalize audit log ovn records to OTLP semantic conventions",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         auditOVNLogsVRL(),
-	}
+
+func TransformAuditOvn(inputs []string) types.Transform {
+	return transforms.NewRemap(auditOVNLogsVRL(), inputs...)
 }
 
 // FormatResourceLog Drops everything except resource.attributes and scopeLogs.logRecords
-func FormatResourceLog(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Create new resource object for OTLP JSON payload",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL: strings.TrimSpace(`
+func FormatResourceLog(inputs []string) types.Transform {
+	return transforms.NewRemap(`
 . = {
       "resource": {
          "attributes": .resource.attributes,
@@ -319,16 +287,10 @@ func FormatResourceLog(id string, inputs []string) framework.Element {
         {"logRecords": .logRecords}
       ]
     }
-`),
-	}
+`, inputs...)
 }
 
 // TransformTraceContext extracts trace context from log messages
-func TransformTraceContext(id string, inputs []string) framework.Element {
-	return elements.Remap{
-		Desc:        "Extract trace context from log messages",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         strings.TrimSpace(otlpv1.AddLogRecordTraceContexts),
-	}
+func TransformTraceContext(inputs []string) types.Transform {
+	return transforms.NewRemap(strings.TrimSpace(otlpv1.AddLogRecordTraceContexts), inputs...)
 }

@@ -50,17 +50,20 @@ type = "loki"
 inputs = ["output_default_lokistack_audit_remap_label"]
 endpoint = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit"
 out_of_order_action = "accept"
-healthcheck.enabled = false
 
+[sinks.output_default_lokistack_audit.healthcheck]
+enabled = false
+
+[sinks.output_default_lokistack_audit.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
 [sinks.output_default_lokistack_audit.encoding]
 codec = "json"
-
 except_fields = ["_internal"]
 
-
-
-
+[sinks.output_default_lokistack_audit.tls]
+ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
 [sinks.output_default_lokistack_audit.labels]
 k8s_container_name = "{{kubernetes.container_name}}"
@@ -74,13 +77,7 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
 
-[sinks.output_default_lokistack_audit.tls]
 
-ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
-
-[sinks.output_default_lokistack_audit.auth]
-strategy = "bearer"
-token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
 [transforms.output_default_lokistack_infrastructure_remap]
 type = "remap"
@@ -110,17 +107,20 @@ type = "loki"
 inputs = ["output_default_lokistack_infrastructure_remap_label"]
 endpoint = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure"
 out_of_order_action = "accept"
-healthcheck.enabled = false
 
+[sinks.output_default_lokistack_infrastructure.healthcheck]
+enabled = false
+
+[sinks.output_default_lokistack_infrastructure.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
 [sinks.output_default_lokistack_infrastructure.encoding]
 codec = "json"
-
 except_fields = ["_internal"]
 
-
-
-
+[sinks.output_default_lokistack_infrastructure.tls]
+ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
 [sinks.output_default_lokistack_infrastructure.labels]
 k8s_container_name = "{{kubernetes.container_name}}"
@@ -133,11 +133,3 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
-
-[sinks.output_default_lokistack_infrastructure.tls]
-
-ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
-
-[sinks.output_default_lokistack_infrastructure.auth]
-strategy = "bearer"
-token = "SECRET[kubernetes_secret.test-sa-token/token]"

@@ -10,7 +10,7 @@ import (
 
 var (
 	//go:embed *.toml
-	tomlContent embed.FS
+	expContent embed.FS
 )
 
 func TestSuite(t *testing.T) {

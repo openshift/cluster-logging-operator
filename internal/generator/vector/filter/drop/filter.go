@@ -2,8 +2,12 @@ package drop
 
 import (
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 )
 
 type Filter struct {
@@ -13,6 +17,16 @@ type Filter struct {
 // NewFilter returns a drop filter
 func NewFilter(dropTestsSpec []obs.DropTest) *Filter {
 	return &Filter{dropTestsSpec}
+}
+
+func New(spec []obs.DropTest, inputs ...string) types.Transform {
+	pf := NewFilter(spec)
+	vrl, err := pf.VRL()
+	if err != nil {
+		log.Error(err, "bad filter", "dropSpec", spec)
+		return nil
+	}
+	return transforms.NewFilter(vrl, inputs...)
 }
 
 func (f *Filter) VRL() (string, error) {

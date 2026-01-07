@@ -29,7 +29,6 @@ if ._internal.log_source == "syslog" && exists(._internal.structured) {. = merge
 if ._internal.log_source == "container" && exists(._internal.structured) {.structured = ._internal.structured }
 `
 	SetLogLevel = `
-
 if !exists(._internal.level) {
   level = null
   message = ._internal.message
@@ -96,31 +95,31 @@ if !exists(._internal.level) {
     }
   
     # attempt 5: Match on the keyword that appears earliest in the message
-	if level == "default" {
-	  level_patterns = r'(?i)(?<emergency>emergency|<emergency>)|(?<alert>alert|<alert>)|(?<critical>critical|<critical>)|(?<error>error|<error>)|(?<warn>warn(?:ing)?|<warn>)|(?<notice>notice|<notice>)|(?:\b(?<info>info)\b|<info>)|(?<debug>debug|<debug>)|(?<trace>trace|<trace>)'
-	  parsed, err = parse_regex(message, level_patterns)
-	  if err == null {
-		if is_string(parsed.emergency) {
-		  level = "emergency"
-		} else if is_string(parsed.alert) {
-		  level = "alert"
-		} else if is_string(parsed.critical) {
-		  level = "critical"
-		} else if is_string(parsed.error) {
-		  level = "error"
-		} else if is_string(parsed.warn) {
-		  level = "warn"
-		} else if is_string(parsed.notice) {
-		  level = "notice"
-		} else if is_string(parsed.info) {
-		  level = "info"
-		} else if is_string(parsed.debug) {
-		  level = "debug"
-		} else if is_string(parsed.trace) {
-		  level = "trace"
-		}
-	  }
-	}
+    if level == "default" {
+      level_patterns = r'(?i)(?<emergency>emergency|<emergency>)|(?<alert>alert|<alert>)|(?<critical>critical|<critical>)|(?<error>error|<error>)|(?<warn>warn(?:ing)?|<warn>)|(?<notice>notice|<notice>)|(?:\b(?<info>info)\b|<info>)|(?<debug>debug|<debug>)|(?<trace>trace|<trace>)'
+      parsed, err = parse_regex(message, level_patterns)
+      if err == null {
+        if is_string(parsed.emergency) {
+          level = "emergency"
+        } else if is_string(parsed.alert) {
+          level = "alert"
+        } else if is_string(parsed.critical) {
+          level = "critical"
+        } else if is_string(parsed.error) {
+          level = "error"
+        } else if is_string(parsed.warn) {
+          level = "warn"
+        } else if is_string(parsed.notice) {
+          level = "notice"
+        } else if is_string(parsed.info) {
+          level = "info"
+        } else if is_string(parsed.debug) {
+          level = "debug"
+        } else if is_string(parsed.trace) {
+          level = "trace"
+        }
+      }
+    }
   }
   ._internal.level = level
 }

@@ -12,7 +12,6 @@ path = "/var/run/ocp-collector/secrets"
 [sources.internal_metrics]
 type = "internal_metrics"
 
-# Logs from host audit
 [sources.input_audit_host]
 type = "file"
 include = ["/var/log/audit/audit.log"]
@@ -20,7 +19,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
-max_read_bytes =  262144
+max_read_bytes = 262144
 rotate_wait_secs = 5
 
 [transforms.input_audit_host_meta]
@@ -148,7 +147,6 @@ source = '''
   }
 '''
 
-# Logs from kubernetes audit
 [sources.input_audit_kube]
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
@@ -156,7 +154,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
-max_read_bytes =  262144
+max_read_bytes = 262144
 rotate_wait_secs = 5
 
 [transforms.input_audit_kube_meta]
@@ -175,15 +173,14 @@ source = '''
   ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''
 
-# Logs from openshift audit
 [sources.input_audit_openshift]
 type = "file"
-include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log", "/var/log/openshift-apiserver/audit.log", "/var/log/oauth-server/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
-max_read_bytes =  262144
+max_read_bytes = 262144
 rotate_wait_secs = 5
 
 [transforms.input_audit_openshift_meta]
@@ -202,7 +199,6 @@ source = '''
   ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 '''
 
-# Logs from ovn audit
 [sources.input_audit_ovn]
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
@@ -210,7 +206,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
-max_read_bytes =  262144
+max_read_bytes = 262144
 rotate_wait_secs = 5
 
 [transforms.input_audit_ovn_meta]

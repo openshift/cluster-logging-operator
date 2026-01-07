@@ -8,11 +8,11 @@ import (
 
 // LogToMetric is the configuration for the log_to_metric transform
 type LogToMetric struct {
-	// Type is required to be 'log_to_metric'
-	Type string `json:"type" yaml:"type" toml:"type"`
-
 	// Inputs is the IDs of the components feeding into this component
 	Inputs []string `json:"inputs" yaml:"inputs" toml:"inputs"`
+
+	// Type is required to be 'log_to_metric'
+	Type string `json:"type" yaml:"type" toml:"type"`
 
 	// Metrics is the spec for the Metrics being exposed
 	Metrics []Metric `json:"metrics" yaml:"metrics" toml:"metrics"`
@@ -49,16 +49,16 @@ const (
 type Metric struct {
 	Field string `json:"field" yaml:"field" toml:"field"`
 
+	Kind MetricsKind `json:"kind,omitempty" yaml:"kind,omitempty" toml:"kind,omitempty"`
+
 	MetricName string `json:"name,omitempty" yaml:"name,omitempty" toml:"name,omitempty"`
 
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty" toml:"namespace,omitempty"`
 
-	Kind MetricsKind `json:"kind,omitempty" yaml:"kind,omitempty" toml:"kind,omitempty"`
-
-	Type MetricsType `json:"type" yaml:"type" toml:"type"`
-
 	// Tags optional tags (or labels) to apply to the metric
 	Tags Tags `json:"tags,omitempty" yaml:"tags,omitempty"  toml:"tags,omitempty,multiline"`
+
+	Type MetricsType `json:"type" yaml:"type" toml:"type"`
 }
 
 // Tags optional tags (or labels) to apply to the metric

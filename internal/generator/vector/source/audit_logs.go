@@ -1,108 +1,98 @@
 package source
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	sourcesfile "github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources/file"
 )
 
-const HostAuditLogTemplate = `
-{{define "inputSourceHostAuditTemplate" -}}
-# {{.Desc}}
-[sources.{{.ComponentID}}]
-type = "file"
-include = ["/var/log/audit/audit.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-ignore_older_secs = 3600
-max_line_bytes = 3145728
-max_read_bytes =  262144
-rotate_wait_secs = 5
-{{end}}`
+const (
+	GlobalMinimumCooldown = 15000
+	IgnoreOlderSecs       = 3600
+	MaxLineBytes          = 3145728
+	MaxReadBytes          = 262144
+	RotateWaitSecs        = 5
+)
 
-type HostAuditLog = framework.ConfLiteral
-
-const OpenshiftAuditLogTemplate = `
-{{define "inputSourceOpenShiftAuditTemplate" -}}
-# {{.Desc}}
-[sources.{{.ComponentID}}]
-type = "file"
-include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-ignore_older_secs = 3600
-max_line_bytes = 3145728
-max_read_bytes =  262144
-rotate_wait_secs = 5
-{{end}}
-`
-
-type OpenshiftAuditLog = framework.ConfLiteral
-
-const K8sAuditLogTemplate = `
-{{define "inputSourceK8sAuditTemplate" -}}
-# {{.Desc}}
-[sources.{{.ComponentID}}]
-type = "file"
-include = ["/var/log/kube-apiserver/audit.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-ignore_older_secs = 3600
-max_line_bytes = 3145728
-max_read_bytes =  262144
-rotate_wait_secs = 5
-{{end}}
-`
-
-type OVNAuditLog = framework.ConfLiteral
-
-const OVNAuditLogTemplate = `
-{{define "inputSourceOVNAuditTemplate" -}}
-# {{.Desc}}
-[sources.{{.ComponentID}}]
-type = "file"
-include = ["/var/log/ovn/acl-audit-log.log"]
-host_key = "hostname"
-glob_minimum_cooldown_ms = 15000
-ignore_older_secs = 3600
-max_line_bytes = 3145728
-max_read_bytes =  262144
-rotate_wait_secs = 5
-{{end}}
-`
-
-type K8sAuditLog = framework.ConfLiteral
+type HostAuditLog struct {
+	api.Config
+}
 
 func NewHostAuditLog(id string) HostAuditLog {
+	f := sourcesfile.New("/var/log/audit/audit.log")
+	f.HostKey = "hostname"
+	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
+	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.MaxLineBytes = MaxLineBytes
+	f.MaxReadBytes = MaxReadBytes
+	f.RotateWaitSecs = RotateWaitSecs
 	return HostAuditLog{
-		ComponentID:  id,
-		Desc:         "Logs from host audit",
-		TemplateName: "inputSourceHostAuditTemplate",
-		TemplateStr:  HostAuditLogTemplate,
+		Config: api.Config{
+			Sources: map[string]interface{}{
+				id: f,
+			},
+		},
 	}
 }
 
-func NewK8sAuditLog(id string) K8sAuditLog {
-	return K8sAuditLog{
-		ComponentID:  id,
-		Desc:         "Logs from kubernetes audit",
-		TemplateName: "inputSourceK8sAuditTemplate",
-		TemplateStr:  K8sAuditLogTemplate,
-	}
+type OpenshiftAuditLog struct {
+	api.Config
 }
 
 func NewOpenshiftAuditLog(id string) OpenshiftAuditLog {
+	f := sourcesfile.New("/var/log/oauth-apiserver/audit.log", "/var/log/openshift-apiserver/audit.log", "/var/log/oauth-server/audit.log")
+	f.HostKey = "hostname"
+	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
+	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.MaxLineBytes = MaxLineBytes
+	f.MaxReadBytes = MaxReadBytes
+	f.RotateWaitSecs = RotateWaitSecs
 	return OpenshiftAuditLog{
-		ComponentID:  id,
-		Desc:         "Logs from openshift audit",
-		TemplateName: "inputSourceOpenShiftAuditTemplate",
-		TemplateStr:  OpenshiftAuditLogTemplate,
+		Config: api.Config{
+			Sources: map[string]interface{}{
+				id: f,
+			},
+		},
 	}
 }
 
-func NewOVNAuditLog(id string) OVNAuditLog {
-	return OVNAuditLog{
-		ComponentID:  id,
-		Desc:         "Logs from ovn audit",
-		TemplateName: "inputSourceOVNAuditTemplate",
-		TemplateStr:  OVNAuditLogTemplate,
+type K8sAuditLog struct {
+	api.Config
+}
+
+func NewK8sAuditLog(id string) K8sAuditLog {
+	f := sourcesfile.New("/var/log/kube-apiserver/audit.log")
+	f.HostKey = "hostname"
+	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
+	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.MaxLineBytes = MaxLineBytes
+	f.MaxReadBytes = MaxReadBytes
+	f.RotateWaitSecs = RotateWaitSecs
+	return K8sAuditLog{
+		Config: api.Config{
+			Sources: map[string]interface{}{
+				id: f,
+			},
+		},
+	}
+}
+
+type OVNAuditLog struct {
+	api.Config
+}
+
+func NewOVNAuditLog(id string) K8sAuditLog {
+	f := sourcesfile.New("/var/log/ovn/acl-audit-log.log")
+	f.HostKey = "hostname"
+	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
+	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.MaxLineBytes = MaxLineBytes
+	f.MaxReadBytes = MaxReadBytes
+	f.RotateWaitSecs = RotateWaitSecs
+	return K8sAuditLog{
+		Config: api.Config{
+			Sources: map[string]interface{}{
+				id: f,
+			},
+		},
 	}
 }

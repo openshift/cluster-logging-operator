@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-01-05T17:48:14Z"
+    createdAt: "2026-01-07T00:29:49Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -246,6 +246,8 @@ spec:
           NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fields are required and cannot be pruned.
 
           NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
+
+          NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
         displayName: Fields to be dropped
         path: filters[0].prune.in
       - description: |-
@@ -272,6 +274,8 @@ spec:
           NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
 
           NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+
+          NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
         displayName: Fields to be kept
         path: filters[0].prune.notIn
       - description: |-
@@ -1227,6 +1231,13 @@ spec:
       - description: |-
           LokiStack configures forwarding log events to a Red Hat managed Loki deployment
           using the Red Hat tenancy model
+
+          The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+          1. .kubernetes.container_name
+          2. .kubernetes.namespace_name
+          3. .kubernetes.pod_name
+
+          If these fields are not present in the log record, they will be set to the empty string.
         displayName: LokiStack
         path: outputs[0].lokiStack
       - description: Authentication sets credentials for authenticating the requests.

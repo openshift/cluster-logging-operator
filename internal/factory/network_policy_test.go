@@ -24,32 +24,32 @@ var _ = Describe("#NewNetworkPolicy", func() {
 			runtime.SetCommonLabels(o, constants.VectorName, instanceName, constants.CollectorName)
 		}
 	)
-	Context("builders", func(){
+	Context("builders", func() {
 		Context("IngressRuleBuilder ", func() {
-			It("#End should return rules sorted by ports", func(){
+			It("#End should return rules sorted by ports", func() {
 				policyOne := &networkingv1.NetworkPolicy{Spec: networkingv1.NetworkPolicySpec{}}
 				runtime.NewNetworkPolicyBuilder(policyOne).
 					NewIngressRule().
-						OnPort(corev1.ProtocolTCP, int32(1)).
+					OnPort(corev1.ProtocolTCP, int32(1)).
 					End().
 					NewIngressRule().
-						OnPort(corev1.ProtocolTCP, int32(3)).
-						OnPort(corev1.ProtocolTCP, int32(2)).
+					OnPort(corev1.ProtocolTCP, int32(3)).
+					OnPort(corev1.ProtocolTCP, int32(2)).
 					End()
 				policyTwo := &networkingv1.NetworkPolicy{Spec: networkingv1.NetworkPolicySpec{}}
 				runtime.NewNetworkPolicyBuilder(policyTwo).
 					NewIngressRule().
-						OnPort(corev1.ProtocolTCP, int32(2)).
-						OnPort(corev1.ProtocolTCP, int32(3)).
+					OnPort(corev1.ProtocolTCP, int32(2)).
+					OnPort(corev1.ProtocolTCP, int32(3)).
 					End().
 					NewIngressRule().
-						OnPort(corev1.ProtocolTCP, int32(1)).
+					OnPort(corev1.ProtocolTCP, int32(1)).
 					End()
 				Expect(policyOne.Spec).To(Equal(policyTwo.Spec))
 			})
 		})
 		Context("EgressRuleBuilder ", func() {
-			It("#End should return rules sorted by ports", func(){
+			It("#End should return rules sorted by ports", func() {
 				policyOne := &networkingv1.NetworkPolicy{Spec: networkingv1.NetworkPolicySpec{}}
 				runtime.NewNetworkPolicyBuilder(policyOne).
 					NewEgressRule().
@@ -140,7 +140,7 @@ var _ = Describe("#NewNetworkPolicy", func() {
 			[]networkingv1.NetworkPolicyIngressRule{{
 				Ports: []networkingv1.NetworkPolicyPort{{
 					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-					Port:    &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
+					Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
 				}},
 			}},
 			nil, // No egress rules

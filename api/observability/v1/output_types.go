@@ -151,6 +151,13 @@ type OutputSpec struct {
 	// LokiStack configures forwarding log events to a Red Hat managed Loki deployment
 	// using the Red Hat tenancy model
 	//
+	// The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+	// 1. .kubernetes.container_name
+	// 2. .kubernetes.namespace_name
+	// 3. .kubernetes.pod_name
+	//
+	// If these fields are not present in the log record, they will be set to the empty string.
+	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="LokiStack"
 	LokiStack *LokiStack `json:"lokiStack,omitempty"`

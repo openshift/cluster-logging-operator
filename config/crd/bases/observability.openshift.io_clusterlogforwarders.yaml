@@ -1356,6 +1356,8 @@ spec:
                             NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fields are required and cannot be pruned.
 
                             NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
+
+                            NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
                           items:
                             description: |-
                               FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
@@ -1391,6 +1393,8 @@ spec:
                             NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
 
                             NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+
+                            NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
                           items:
                             description: |-
                               FieldPath represents a path to find a value for a given field.  The format must be a value that can be converted to a
@@ -2914,6 +2918,13 @@ spec:
                       description: |-
                         LokiStack configures forwarding log events to a Red Hat managed Loki deployment
                         using the Red Hat tenancy model
+
+                        The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+                        1. .kubernetes.container_name
+                        2. .kubernetes.namespace_name
+                        3. .kubernetes.pod_name
+
+                        If these fields are not present in the log record, they will be set to the empty string.
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating

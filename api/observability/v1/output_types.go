@@ -1052,6 +1052,12 @@ type Loki struct {
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tenant Key",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	TenantKey string `json:"tenantKey,omitempty"`
+
+	// ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	ProxyURL string `json:"proxyURL,omitempty"`
 }
 
 type SplunkTuningSpec struct {

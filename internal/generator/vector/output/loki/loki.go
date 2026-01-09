@@ -77,6 +77,7 @@ type Loki struct {
 	Inputs      string
 	TenantID    Element
 	Endpoint    string
+	Proxy       string
 	LokiLabel   []string
 	common.RootMixin
 }
@@ -93,6 +94,12 @@ inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 out_of_order_action = "accept"
 healthcheck.enabled = false
+{{with .Proxy -}}
+proxy.enabled = true
+proxy.http = "{{.}}"
+proxy.https = "{{.}}"
+proxy.no_proxy = [""]
+{{end -}}
 {{kv .TenantID -}}
 {{.Compression}}
 {{end}}`
@@ -184,6 +191,7 @@ func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.Loki.URLSpec.URL,
+		Proxy:       o.Loki.ProxyURL,
 		TenantID:    Tenant(o.Loki, tenant),
 		RootMixin:   common.NewRootMixin(nil),
 	}

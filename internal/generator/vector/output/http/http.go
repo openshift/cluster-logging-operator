@@ -37,7 +37,7 @@ method = "{{.Method}}"
 proxy.enabled = true
 proxy.http = "{{.}}"
 proxy.https = "{{.}}"
-proxy.no_proxy = [""]
+proxy.no_proxy = ["needadummyentry.neveruseddomain"]
 {{end -}}
 {{.Compression}}
 {{end}}

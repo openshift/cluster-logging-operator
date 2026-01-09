@@ -98,7 +98,7 @@ healthcheck.enabled = false
 proxy.enabled = true
 proxy.http = "{{.}}"
 proxy.https = "{{.}}"
-proxy.no_proxy = [""]
+proxy.no_proxy = ["needadummyentry.neveruseddomain"]
 {{end -}}
 {{kv .TenantID -}}
 {{.Compression}}

@@ -2911,6 +2911,13 @@ spec:
                           x-kubernetes-validations:
                           - message: invalid URL
                             rule: isURL(self)
+                        proxyURL:
+                          description: ProxyURL URL of a HTTP or HTTPS proxy to be
+                            used instead of direct connection.
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: self == '' ||  isURL(self)
                       required:
                       - url
                       type: object

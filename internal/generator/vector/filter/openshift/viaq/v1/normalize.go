@@ -4,6 +4,7 @@ const (
 	HandleEventRouterLog = `
 
 if exists(._internal.kubernetes.pod_name) && starts_with(string!(._internal.kubernetes.pod_name), "eventrouter-") {
+  
   parsed, err = parse_json(._internal.message)
   if err != null {
     log("Unable to process EventRouter log: " + err, level: "info")
@@ -11,8 +12,10 @@ if exists(._internal.kubernetes.pod_name) && starts_with(string!(._internal.kube
     ._internal.event = parsed
     if exists(._internal.event.event) && is_object(._internal.event.event) {
         ._internal.kubernetes.event = del(._internal.event.event)
-		._internal.kubernetes.event.verb = ._internal.event.verb
-        ._internal.message = del(._internal.kubernetes.event.message)
+        ._internal.kubernetes.event.verb = del(._internal.event.verb)
+        # escape 'new line' symbol see: LOG-8090 
+        msg = to_string!(del(._internal.kubernetes.event.message))
+        ._internal.message = replace(msg, "\n", s'\n')
         ._internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
     } else {
       log("Unable to merge EventRouter log message into record: " + err, level: "info")
@@ -147,5 +150,4 @@ if !exists(._internal.structured) {
 	SetOpenShiftOnRoot = `
 if exists(._internal.openshift) {.openshift = ._internal.openshift}
 if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels) }
-`
-)
+`)

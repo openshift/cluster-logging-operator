@@ -2,10 +2,12 @@ package normalization
 
 import (
 	"encoding/json"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"github.com/openshift/cluster-logging-operator/test/helpers/syslog"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,10 +30,10 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		templateForAnyKubernetesWithEvents = types.KubernetesWithEvent{
 			Kubernetes: functional.TemplateForAnyKubernetes,
 		}
-		NewEventDataBuilder = func(verb string, podRef *corev1.ObjectReference) types.EventData {
-			newEvent := types.NewEvent(podRef, corev1.EventTypeNormal, "reason", "amessage")
+		NewEventDataBuilder = func(verb, message string, podRef *corev1.ObjectReference) types.EventData {
+			newEvent := types.NewEvent(podRef, corev1.EventTypeNormal, "reason", message)
 			if verb == "UPDATED" {
-				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_message")
+				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_" + message)
 				return types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
 			} else {
 				return types.EventData{Verb: "ADDED", Event: newEvent}
@@ -71,14 +73,36 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 
 			return tmpl
 		}
+
+		parseLogs = func(raw []string, outputType obs.OutputType) ([]types.EventRouterLog, error) {
+			var logs []types.EventRouterLog
+			if outputType == obs.OutputTypeHTTP {
+				err := types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+				return logs, err
+			} else if outputType == obs.OutputTypeSyslog {
+				jsStr := make([]string, len(raw))
+				for i, s := range raw {
+					s, _ := syslog.ParseRFC5424SyslogLogs(s)
+					jsStr[i] = s.MessagePayload
+				}
+				err := types.StrictlyParseLogs(utils.ToJsonLogs(jsStr), &logs)
+				return logs, err
+			}
+			return nil, nil
+		}
 	)
 
-	BeforeEach(func() {
+	DescribeTable("should be normalized to the ViaQ data model when sinking to different outputs", func(outputType obs.OutputType, verb, message, expectedMessage  string) {
 		framework = functional.NewCollectorFunctionalFramework()
-		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(obs.InputTypeApplication).
-			ToHttpOutput()
-		// vector only collects logs using pods, namespaces, containers it knows about.
+		builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication)
+		if outputType == obs.OutputTypeHTTP {
+			builder.ToHttpOutput()
+		}
+		if outputType == obs.OutputTypeSyslog {
+			builder.ToSyslogOutput(obs.SyslogRFC5424)
+		}
+
 		writeMsg = func(msg string) error {
 			return framework.WriteMessagesToApplicationLog(msg, 1)
 		}
@@ -86,32 +110,35 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 			return strings.Replace(conf, `"eventrouter-"`, `"functional"`, 1)
 		}
 		Expect(framework.Deploy()).To(BeNil())
-
-	})
-	AfterEach(func() {
-		framework.Cleanup()
-	})
-
-	DescribeTable("should be normalized to the VIAQ data model", func(verb string) {
 		podRef, err := reference.GetReference(scheme.Scheme, types.NewMockPod())
 		Expect(err).To(BeNil())
-		newEventData := NewEventDataBuilder(verb, podRef)
+		newEventData := NewEventDataBuilder(verb, message, podRef)
 		jsonBytes, _ := json.Marshal(newEventData)
 		jsonStr := string(jsonBytes)
 		msg := functional.NewCRIOLogMessage(timestamp, jsonStr, false)
 		err = writeMsg(msg)
 		Expect(err).To(BeNil())
 
-		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+		raw, err := framework.ReadRawApplicationLogsFrom(string(outputType))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		var logs []types.EventRouterLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+		logs, err := parseLogs(raw, outputType)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		var expectedLogTemplate = ExpectedLogTemplateBuilder(newEventData.Event, newEventData.OldEvent)
+		expectedEventData := newEventData
+		expectedEventData.Event.Message = expectedMessage
+		var expectedLogTemplate = ExpectedLogTemplateBuilder(expectedEventData.Event, expectedEventData.OldEvent)
 		Expect(logs[0]).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
 	},
-		Entry("for ADDED events", "ADDED"),
-		Entry("for UPDATED events", "UPDATED"),
+		Entry("with HTTP output for ADDED events", obs.OutputTypeHTTP, "ADDED", "simple syslog message", "simple syslog message"),
+		Entry("with HTTP output for UPDATED events", obs.OutputTypeHTTP, "UPDATED", "simple syslog message", "simple syslog message"),
+		Entry("with Syslog output for ADDED events", obs.OutputTypeSyslog, "ADDED", "simple syslog message", "simple syslog message"),
+		Entry("with Syslog output for UPDATED events", obs.OutputTypeSyslog, "UPDATED", "simple syslog message", "simple syslog message"),
+		Entry("with Syslog output for ADDED events and new line symbol", obs.OutputTypeSyslog, "ADDED", "syslog message\n with new line", "syslog message\\n with new line"),
+		Entry("with Syslog output for UPDATED events and new line symbol", obs.OutputTypeSyslog, "UPDATED", "syslog message\n with new line", "syslog message\\n with new line"),
 	)
 
+	AfterEach(func() {
+		if framework != nil {
+			framework.Cleanup()
+		}
+	})
 })

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
@@ -60,7 +61,9 @@ func ListenOnAllLocalInterfacesAddress() string {
 			if fd, err := unix.Socket(unix.AF_INET6, unix.SOCK_STREAM, unix.IPPROTO_IP); err != nil {
 				return `0.0.0.0`
 			} else {
-				unix.Close(fd)
+				if err = unix.Close(fd); err != nil {
+					log.V(3).Error(err, "failed to close socket after determining local interface address")
+				}
 				return `[::]`
 			}
 		}()

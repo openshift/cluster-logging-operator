@@ -3,19 +3,16 @@ package gcl
 import (
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -34,7 +31,7 @@ type GoogleCloudLogging struct {
 	ComponentID string
 	Inputs      string
 
-	LogDestination Element
+	LogDestination framework.Element
 
 	LogID       string
 	SeverityKey string
@@ -67,17 +64,17 @@ func (g *GoogleCloudLogging) SetCompression(algo string) {
 	g.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, helpers.MakeInputs(inputs...)),
 		}
 	}
 	if o.GoogleCloudLogging == nil {
-		return []Element{}
+		return []framework.Element{}
 	}
-	componentID := vectorhelpers.MakeID(id, "log_id")
-	gclSeverityID := vectorhelpers.MakeID(id, "normalize_severity")
+	componentID := helpers.MakeID(id, "log_id")
+	gclSeverityID := helpers.MakeID(id, "normalize_severity")
 	g := o.GoogleCloudLogging
 	gcl := &GoogleCloudLogging{
 		ComponentID:     id,
@@ -92,7 +89,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	if strategy != nil {
 		strategy.VisitSink(gcl)
 	}
-	return []Element{
+	return []framework.Element{
 		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
 		NormalizeSeverity(gclSeverityID, []string{componentID}),
 		gcl,
@@ -113,7 +110,7 @@ func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets observability.Secr
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order
-func LogDestination(g *obs.GoogleCloudLogging) Element {
+func LogDestination(g *obs.GoogleCloudLogging) framework.Element {
 	var key string
 	switch g.ID.Type {
 	case obs.GoogleCloudLoggingIdTypeFolder:
@@ -125,7 +122,7 @@ func LogDestination(g *obs.GoogleCloudLogging) Element {
 	case obs.GoogleCloudLoggingIdTypeOrganization:
 		key = OrganizationID
 	}
-	return KV(key, fmt.Sprintf("%q", g.ID.Value))
+	return elements.KV(key, fmt.Sprintf("%q", g.ID.Value))
 }
 
 func SeverityKey(g *obs.GoogleCloudLogging) string {
@@ -135,7 +132,7 @@ func SeverityKey(g *obs.GoogleCloudLogging) string {
 // NormalizeSeverity normalizes log severity to conform to GCL's standard
 // Accepted Severity: DEFAULT, EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG
 // Ref: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
-func NormalizeSeverity(componentID string, inputs []string) Element {
+func NormalizeSeverity(componentID string, inputs []string) framework.Element {
 	var vrl = `
 # Set audit log level to 'INFO'
 if .log_type == "audit" {
@@ -150,10 +147,10 @@ if .log_type == "audit" {
 	.level = upcase!(.level) 
 }
 `
-	return Remap{
+	return elements.Remap{
 		Desc:        "Normalize GCL severity levels",
 		ComponentID: componentID,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
+		Inputs:      helpers.MakeInputs(inputs...),
 		VRL:         vrl,
 	}
 }

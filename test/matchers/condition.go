@@ -1,12 +1,10 @@
+//nolint:staticcheck
 package matchers
 
 import (
-	//"fmt"
 	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	//"k8s.io/utils/diff"
-	//"reflect"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 )

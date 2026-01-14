@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -156,7 +157,7 @@ func (fluent *fluentReceiverLogStore) listPods() (*corev1.PodList, error) {
 		return nil, err
 	}
 	if len(pods.Items) == 0 {
-		return nil, errors.New("No pods found for fluent receiver")
+		return nil, errors.New("no pods found for fluent receiver")
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	return pods, nil
@@ -212,7 +213,7 @@ func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) 
 	if err != nil {
 		return nil, err
 	}
-	out := "[" + strings.TrimRight(strings.Replace(fl, "\n", ",", -1), ",") + "]"
+	out := "[" + strings.TrimRight(strings.ReplaceAll(fl, "\n", ","), ",") + "]"
 	return types.ParseLogs(out)
 }
 
@@ -229,7 +230,7 @@ func (fluent *fluentReceiverLogStore) HasAuditLogs(timeToWait time.Duration) (bo
 }
 
 func (fluent *fluentReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
-	return "Not Found", fmt.Errorf("Not implemented")
+	return "Not Found", fmt.Errorf("not implemented")
 }
 
 func (fluent *fluentReceiverLogStore) RetrieveLogs() (map[string]string, error) {

@@ -24,7 +24,7 @@ func EqualConfigFrom(actual interface{}) types.GomegaMatcher {
 
 func (m *GeneratorElementMatcher) Match(expected interface{}) (bool, error) {
 	if expected := reflect.TypeOf(expected); expected.Kind() != reflect.String {
-		return false, fmt.Errorf("The 'actual' type is expected to be a string but is: %s", expected.Name())
+		return false, fmt.Errorf("'actual' type is expected to be a string but is: %s", expected.Name())
 	}
 	conf, err := generateConf(m.actual)
 	m.err = err
@@ -68,10 +68,10 @@ func generateConf(expected interface{}) (string, error) {
 		if el, ok := expected.(framework.Element); ok {
 			els = []framework.Element{el}
 		} else {
-			return "", fmt.Errorf("Matcher unable to cast 'expected' type %q to a generator.Element", expType.Name())
+			return "", fmt.Errorf("matcher unable to cast 'expected' type %q to a generator.Element", expType.Name())
 		}
 	default:
-		return "", fmt.Errorf("Matcher does not support 'expected' kind %q or element type: %q", expType.Kind(), expType.Name())
+		return "", fmt.Errorf("matcher does not support 'expected' kind %q or element type: %q", expType.Kind(), expType.Name())
 	}
 	g := framework.MakeGenerator()
 	return g.GenerateConf(els...)

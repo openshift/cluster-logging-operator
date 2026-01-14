@@ -8,7 +8,7 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -46,7 +46,7 @@ shared_key = "{{.SharedKey}}"
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
-			Debug(vectorhelpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
+			elements.Debug(vectorhelpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	azm := o.AzureMonitor

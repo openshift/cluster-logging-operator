@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -15,9 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"path"
-	"strings"
-	"time"
 )
 
 const (
@@ -149,9 +150,9 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		podSpec,
 		commonLabeler,
 	)
-	logStore.Deployment.Spec.Template.Labels["vector.dev/exclude"] = "true"
+	logStore.Spec.Template.Labels["vector.dev/exclude"] = "true"
 
-	log.V(1).Info("Deploying http receiver deployment", "namespace", ns, "name", logStore.Deployment.Name, "spec", logStore.Deployment.Spec)
+	log.V(1).Info("Deploying http receiver deployment", "namespace", ns, "name", logStore.Name, "spec", logStore.Spec)
 	logStore.Deployment, err = tc.KubeClient.AppsV1().Deployments(ns).Create(context.TODO(), logStore.Deployment, dOpts)
 	if err != nil {
 		log.Error(err, "Unable to create Deployment", "deployment", logStore.Deployment)
@@ -163,7 +164,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().Deployments(ns).Delete(context.TODO(), logStore.Deployment.Name, opts)
+		return tc.KubeClient.AppsV1().Deployments(ns).Delete(context.TODO(), logStore.Name, opts)
 	})
 
 	service := factory.NewService(
@@ -189,8 +190,8 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().Services(ns).Delete(context.TODO(), service.Name, opts)
 	})
-	tc.LogStores[logStore.Deployment.Name] = logStore
-	return logStore, tc.WaitForDeployment(ns, logStore.Deployment.Name, defaultRetryInterval, 1*time.Minute)
+	tc.LogStores[logStore.Name] = logStore
+	return logStore, tc.WaitForDeployment(ns, logStore.Name, defaultRetryInterval, 1*time.Minute)
 }
 
 type ContainerLogSimpleMeta struct {
@@ -249,7 +250,7 @@ func (v VectorHttpReceiverLogStore) ListJournalLogs() ([]types.JournalLog, error
 	if err != nil {
 		return nil, err
 	}
-	out := "[" + strings.TrimRight(strings.Replace(result, "\n", ",", -1), ",") + "]"
+	out := "[" + strings.TrimRight(strings.ReplaceAll(result, "\n", ","), ",") + "]"
 	return types.ParseJournalLogs[types.JournalLog](out)
 }
 
@@ -265,7 +266,7 @@ func (v VectorHttpReceiverLogStore) RunCmd(cmd string, timeout *time.Duration) (
 		return "", err
 	}
 	if len(pods.Items) == 0 {
-		return "", errors.New("No pods found for receiver")
+		return "", errors.New("no pods found for receiver")
 	}
 	result := ""
 	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, *timeout, true, func(cxt context.Context) (done bool, err error) {
@@ -361,5 +362,5 @@ func (v VectorHttpReceiverLogStore) RetrieveLogs() (map[string]string, error) {
 }
 
 func (v VectorHttpReceiverLogStore) ClusterLocalEndpoint() string {
-	return fmt.Sprintf("http://%s.%s.svc.cluster.local:8090", v.Deployment.Name, v.Deployment.Namespace)
+	return fmt.Sprintf("http://%s.%s.svc.cluster.local:8090", v.Name, v.Namespace)
 }

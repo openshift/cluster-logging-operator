@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package e2e
 
 import (
@@ -10,29 +11,24 @@ import (
 	"strings"
 	"time"
 
+	clolog "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
-
-	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	clolog "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/yaml"
 )
 
 func init() {
@@ -263,7 +259,7 @@ func (tc *E2ETestFramework) Cleanup() {
 	for _, cleanup := range tc.CleanupFns {
 		clolog.V(5).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
-			if !apierrors.IsNotFound(err) {
+			if !errors.IsNotFound(err) {
 				clolog.V(2).Info("Error during cleanup ", "error", err)
 			}
 		}

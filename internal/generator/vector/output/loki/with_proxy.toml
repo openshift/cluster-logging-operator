@@ -1,0 +1,48 @@
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
+[transforms.loki_receiver_remap_label]
+type = "remap"
+inputs = ["loki_receiver_remap"]
+source = '''
+if !exists(.kubernetes.namespace_name) {
+  .kubernetes.namespace_name = ""
+}
+if !exists(.kubernetes.pod_name) {
+  .kubernetes.pod_name = ""
+}
+if !exists(.kubernetes.container_name) {
+  .kubernetes.container_name = ""
+}
+'''
+
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["loki_receiver_remap_label"]
+endpoint = "https://logs-us-west1.grafana.net"
+out_of_order_action = "accept"
+healthcheck.enabled = false
+proxy.enabled = true
+proxy.http = "http://somewhere.org/proxy"
+proxy.https = "http://somewhere.org/proxy"
+proxy.no_proxy = ["needadummyentry.neveruseddomain"]
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+except_fields = ["_internal"]
+
+[sinks.loki_receiver.labels]
+k8s_container_name = "{{kubernetes.container_name}}"
+k8s_namespace_name = "{{kubernetes.namespace_name}}"
+k8s_node_name = "${VECTOR_SELF_NODE_NAME}"
+k8s_pod_name = "{{kubernetes.pod_name}}"
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+openshift_log_type = "{{log_type}}"

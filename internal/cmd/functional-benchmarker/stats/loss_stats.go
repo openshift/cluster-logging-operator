@@ -43,7 +43,7 @@ func (l *LossStats) LossStatsFor(stream string) (*StreamLossStats, error) {
 	l.init()
 	entries, found := l.entriesByLoader[stream]
 	if !found {
-		return nil, fmt.Errorf("No lost entries found for %s", stream)
+		return nil, fmt.Errorf("no lost entries found for %s", stream)
 	}
 
 	sort.Slice(entries, func(l int, r int) bool {

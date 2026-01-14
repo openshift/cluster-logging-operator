@@ -143,7 +143,7 @@ var _ = Describe("Reconciling the Collector", func() {
 			beforeEach = func() {
 				resourceNames = factory.ResourceNames(*forwarder)
 				collectorCABundle.Name = resourceNames.CaTrustBundle
-				trustedCABundleVolume.VolumeSource.ConfigMap.Name = resourceNames.CaTrustBundle
+				trustedCABundleVolume.ConfigMap.Name = resourceNames.CaTrustBundle
 				client = fake.NewFakeClient(
 					collectorSecret,
 					collectorCABundle,

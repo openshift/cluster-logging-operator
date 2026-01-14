@@ -52,7 +52,7 @@ func condNotReady(r string, format string, args ...interface{}) metav1.Condition
 func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("logfilemetricsexporter-controller fetching LFME instance")
 
-	lfmeInstance := loggingruntime.NewLogFileMetricExporter(request.NamespacedName.Namespace, request.NamespacedName.Name)
+	lfmeInstance := loggingruntime.NewLogFileMetricExporter(request.Namespace, request.Name)
 
 	if err := r.Client.Get(ctx, request.NamespacedName, lfmeInstance); err != nil {
 		log.V(2).Info("logfilemetricsexporter-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
@@ -70,7 +70,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	// Validate LogFileMetricExporter instance
-	if err, _ := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
+	if err := logfilemetricsexporter.Validate(lfmeInstance); err != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "validation failed: %v", err)
 		setCondition(&lfmeInstance.Status, condition)
 		return r.updateStatus(lfmeInstance)

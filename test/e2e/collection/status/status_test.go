@@ -91,14 +91,14 @@ var _ = Describe("ClusterLogForwarderReconciliation", func() {
 			func() error {
 				var resourceVersion string
 				log.V(3).Info("Retrieving CLF status for the first time")
-				if err := framework.Test.Client.Get(forwarder); err != nil {
+				if err := framework.Test.Get(forwarder); err != nil {
 					return err
 				}
 				resourceVersion = forwarder.ResourceVersion
 				log.V(3).Info("Sleeping for some time")
 				time.Sleep(15 * time.Second)
 				log.V(3).Info("Retrieving CLF status for the second time")
-				if err := framework.Test.Client.Get(forwarder); err != nil {
+				if err := framework.Test.Get(forwarder); err != nil {
 					return err
 				}
 				if resourceVersion != forwarder.ResourceVersion {

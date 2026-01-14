@@ -2840,6 +2840,8 @@ Type:: object
 Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
 The &#39;username@password&#39; part of `url` is ignored.
 
+|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
+
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
 |labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.

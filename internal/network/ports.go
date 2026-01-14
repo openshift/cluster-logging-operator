@@ -96,7 +96,7 @@ func getPortProtocolFromOutputURLs(output obs.OutputSpec) []factory.PortProtocol
 		}
 	case obs.OutputTypeLoki:
 		if output.Loki != nil {
-			urlSlice = append(urlSlice, output.Loki.URL)
+			urlSlice = append(urlSlice, output.Loki.URL, output.Loki.ProxyURL)
 		}
 	case obs.OutputTypeSyslog:
 		if output.Syslog != nil {

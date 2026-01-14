@@ -193,5 +193,8 @@ var _ = Describe("Generate vector config", func() {
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}),
+		Entry("with proxy", "with_proxy.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Loki.ProxyURL = "http://somewhere.org/proxy"
+		}),
 	)
 })

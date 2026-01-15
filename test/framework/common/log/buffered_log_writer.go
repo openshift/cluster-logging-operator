@@ -2,15 +2,17 @@ package log
 
 import (
 	"fmt"
-	logger "github.com/ViaQ/logerr/v2/log"
-	"github.com/go-logr/logr"
 	"io"
 	"os"
 	"path"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strings"
 	"sync"
+
+	logger "github.com/ViaQ/logerr/v2/log"
+	"github.com/go-logr/logr"
+	"github.com/openshift/cluster-logging-operator/test/helpers/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 func init() {
@@ -44,7 +46,7 @@ func (w *BufferedLogWriter) FlushToArtifactsDir(name string) {
 				w.log.Error(err, fmt.Sprintf("Unable to flush logs to file: %s", fullPath))
 			} else {
 				w.out = file
-				defer file.Close()
+				defer errors.LogIfError(file.Close())
 			}
 		}
 

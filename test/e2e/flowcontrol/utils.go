@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package flowcontrol
 
 import (
@@ -5,16 +6,18 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	log "github.com/ViaQ/logerr/v2/log/static"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"io"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/test/helpers/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -102,7 +105,7 @@ func QueryPrometheus(host, token, query string) map[string]interface{} {
 		Fail(fmt.Sprintf("Error when sending request to the server %v", err))
 	}
 
-	defer response.Body.Close()
+	defer errors.LogIfError(response.Body.Close())
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		Fail(fmt.Sprintf("%v", err))

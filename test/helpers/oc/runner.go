@@ -67,15 +67,15 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	var outbuf bytes.Buffer
 	var errbuf bytes.Buffer
 	if r.tostdout {
-		r.Cmd.Stdout = os.Stdout
-		r.Cmd.Stderr = os.Stderr
+		r.Stdout = os.Stdout
+		r.Stderr = os.Stderr
 	} else {
-		r.Cmd.Stdout = &outbuf
-		r.Cmd.Stderr = &errbuf
+		r.Stdout = &outbuf
+		r.Stderr = &errbuf
 	}
-	r.Cmd.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
+	r.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
 	cmdargs := strings.Join(r.args, " ")
-	err := r.Cmd.Start()
+	err := r.Start()
 	if err != nil {
 		log.V(1).Error(err, "could not start oc command", "arguments", r.args, "argstr", cmdargs)
 		return "", err
@@ -83,11 +83,11 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	// Wait for the process to finish or kill it after a timeout (whichever happens first):
 	done := make(chan error, 1)
 	go func() {
-		done <- r.Cmd.Wait()
+		done <- r.Wait()
 	}()
 	select {
 	case <-timeoutCh:
-		if err = r.Cmd.Process.Kill(); err != nil {
+		if err = r.Process.Kill(); err != nil {
 			log.V(1).Error(err, "failed to kill oc process")
 		}
 	case err = <-done:

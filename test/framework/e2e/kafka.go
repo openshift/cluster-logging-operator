@@ -3,10 +3,11 @@ package e2e
 import (
 	"context"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 	"strings"
 	"time"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/receivers/elasticsearch"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
@@ -28,7 +29,7 @@ type kafkaReceiver struct {
 func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	logs, err := kr.tc.consumedLogs(kr.app.Name, string(obs.InputTypeApplication))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
+		return nil, fmt.Errorf("failed to read consumed application logs: %s", err)
 	}
 	return logs.ByIndex(elasticsearch.ProjectIndexPrefix), nil
 }
@@ -103,11 +104,11 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 }
 
 func (kr *kafkaReceiver) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
-	return "Not Found", fmt.Errorf("Not implemented")
+	return "Not Found", fmt.Errorf("not implemented")
 }
 
 func (kr *kafkaReceiver) RetrieveLogs() (map[string]string, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
@@ -151,7 +152,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (types.Logs,
 		return nil, err
 	}
 	if len(pods.Items) == 0 {
-		return nil, fmt.Errorf("No pods found for %s", name)
+		return nil, fmt.Errorf("no pods found for %s", name)
 	}
 
 	cmd := "tail -n 5000 /shared/consumed.logs"
@@ -161,7 +162,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (types.Logs,
 	}
 
 	// Hack Teach kafka-console-consumer to output a proper json array
-	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
+	out := "[" + strings.TrimRight(strings.ReplaceAll(stdout, "\n", ","), ",") + "]"
 	logs, err := types.ParseLogs(out)
 	if err != nil {
 		return nil, types.ErrParse

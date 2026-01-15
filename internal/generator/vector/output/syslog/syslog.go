@@ -5,18 +5,16 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -197,10 +195,10 @@ func (s *Syslog) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	parseEncodingID := vectorhelpers.MakeID(id, "parse_encoding")
@@ -211,7 +209,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(sink)
 	}
 
-	syslogElements := []Element{
+	syslogElements := []framework.Element{
 		parseEncoding(parseEncodingID, inputs, templateFieldPairs, o.Syslog),
 		sink,
 	}
@@ -225,7 +223,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	)
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, urlScheme string, host string) *Syslog {
+func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, urlScheme string, host string) *Syslog {
 	var mode = strings.ToLower(urlScheme)
 	if urlScheme == TLS {
 		mode = TCP
@@ -278,7 +276,7 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 	return templateFields
 }
 
-func Encoding(id string, o obs.OutputSpec) []Element {
+func Encoding(id string, o obs.OutputSpec) []framework.Element {
 	sysLEncode := SyslogEncoding{
 		ComponentID:  id,
 		RFC:          strings.ToLower(string(o.Syslog.RFC)),
@@ -295,14 +293,14 @@ func Encoding(id string, o obs.OutputSpec) []Element {
 		sysLEncode.PayloadKey.Value = "payload_key"
 	}
 
-	encodingFields := []Element{
+	encodingFields := []framework.Element{
 		sysLEncode,
 	}
 
 	return encodingFields
 }
 
-func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateField, o *obs.Syslog) Element {
+func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateField, o *obs.Syslog) framework.Element {
 	return RemapEncodingFields{
 		ComponentID:    id,
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
@@ -446,7 +444,7 @@ func writeRulesToBuilder(builder *strings.Builder, rules []defaultRule) {
 	for _, rule := range rules {
 
 		if rule.cond != "" {
-			builder.WriteString(fmt.Sprintf("if %s {\n", rule.cond))
+			fmt.Fprintf(builder, "if %s {\n", rule.cond)
 		}
 
 		writeIfNotEmpty(builder, rule.appName)

@@ -33,7 +33,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		NewEventDataBuilder = func(verb, message string, podRef *corev1.ObjectReference) types.EventData {
 			newEvent := types.NewEvent(podRef, corev1.EventTypeNormal, "reason", message)
 			if verb == "UPDATED" {
-				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_" + message)
+				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_"+message)
 				return types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
 			} else {
 				return types.EventData{Verb: "ADDED", Event: newEvent}
@@ -66,7 +66,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 				Event: *event,
 				Verb:  types.AnyString,
 			}
-			tmpl.Kubernetes.Event.Event.Message = ""
+			tmpl.Kubernetes.Event.Message = ""
 			if oldEvent != nil {
 				tmpl.OldEvent = oldEvent
 			}
@@ -76,10 +76,11 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 
 		parseLogs = func(raw []string, outputType obs.OutputType) ([]types.EventRouterLog, error) {
 			var logs []types.EventRouterLog
-			if outputType == obs.OutputTypeHTTP {
+			switch outputType {
+			case obs.OutputTypeHTTP:
 				err := types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 				return logs, err
-			} else if outputType == obs.OutputTypeSyslog {
+			case obs.OutputTypeSyslog:
 				jsStr := make([]string, len(raw))
 				for i, s := range raw {
 					s, _ := syslog.ParseRFC5424SyslogLogs(s)
@@ -92,7 +93,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		}
 	)
 
-	DescribeTable("should be normalized to the ViaQ data model when sinking to different outputs", func(outputType obs.OutputType, verb, message, expectedMessage  string) {
+	DescribeTable("should be normalized to the ViaQ data model when sinking to different outputs", func(outputType obs.OutputType, verb, message, expectedMessage string) {
 		framework = functional.NewCollectorFunctionalFramework()
 		builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication)

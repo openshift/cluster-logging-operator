@@ -143,12 +143,12 @@ func GetComponentImage(component string) string {
 
 	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
-		log.Error(errors.New("Can't get component image"), "Environment variable name mapping missing for component", "component", component)
+		log.Error(errors.New("can not get component image"), "Environment variable name mapping missing for component", "component", component)
 		return ""
 	}
 	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		log.Error(errors.New("Can't get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
+		log.Error(errors.New("can not get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
 	}
 	log.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
 	return imageTag
@@ -207,7 +207,7 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 				continue
 			}
 			if lhsVol.ConfigMap != nil && rhsVol.ConfigMap != nil {
-				if lhsVol.ConfigMap.LocalObjectReference.Name != rhsVol.ConfigMap.LocalObjectReference.Name {
+				if lhsVol.ConfigMap.Name != rhsVol.ConfigMap.Name {
 					log.V(9).Info("PodVolumeEquivalent unmatched configMap.LocalObjectReference", "name", name, "left", lhsVol.ConfigMap, "right", rhsVol.ConfigMap)
 					return false
 				}

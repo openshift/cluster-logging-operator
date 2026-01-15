@@ -5,9 +5,11 @@ import (
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/splunk"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"strings"
 
@@ -72,6 +74,53 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 		outputTestLog := appLogs[0]
 		Expect(outputTestLog.LogType).To(Equal(string(obs.InputTypeApplication)))
+	})
+
+	It("should not send application logs more than 64Ki", func() {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication, func(spec *obs.InputSpec) {
+				spec.Name = "small-msg-app"
+				spec.Application.Tuning = &obs.ContainerInputTuningSpec{
+					MaxMessageSize: utils.GetPtr(resource.MustParse("64Ki")),
+				}
+			}).
+			ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+				output.Splunk.Index = "main"
+			})
+		framework.Secrets = append(framework.Secrets, secret)
+		Expect(framework.Deploy()).To(BeNil())
+
+		// Wait for splunk to be ready
+		splunk.WaitOnSplunk(framework)
+
+		// Write app logs
+		timestamp := "2020-11-04T18:13:59.061892+00:00"
+		applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		// Write large app logs
+		Expect(framework.WriteApplicationLogOfSizeAsPartials(65 * 1024)).To(BeNil())
+
+		//one more normal app log
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		// Parse the logs
+		var appLogs []types.ApplicationLog
+		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
+		Expect(err).To(BeNil())
+		jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+		err = types.ParseLogsFrom(jsonString, &appLogs, false)
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+
+		Expect(appLogs).To(HaveLen(2))
+		collectorLog, err := framework.ReadCollectorLogs()
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		Expect(collectorLog).To(
+			And(
+				ContainSubstring("Found line that exceeds max_merged_line_bytes; discarding."),
+				ContainSubstring("configured_limit=65536"),
+			),
+		)
 	})
 
 	It("should accept audit logs without timestamp unexpected type warning (see: https://issues.redhat.com/browse/LOG-4672)", func() {

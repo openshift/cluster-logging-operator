@@ -1,6 +1,6 @@
 module github.com/openshift/cluster-logging-operator
 
-go 1.23.4
+go 1.24
 
 require (
 	github.com/ViaQ/logerr/v2 v2.1.0

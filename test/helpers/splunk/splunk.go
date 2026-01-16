@@ -3,8 +3,8 @@ package splunk
 import (
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 )
 
 // WaitOnSplunk waits for Splunk to be ready by checking HEC health and service status

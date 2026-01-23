@@ -422,5 +422,21 @@ var _ = Describe("inputs", func() {
 		},
 			"infrastructure_container_with_max_merge_line_size.toml",
 		),
+		Entry("infrastructure input with containers source and MaxMessageSize", obs.InputSpec{
+			Name: "myinfra",
+			Type: obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{
+				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
+				Tuning: &obs.InfrastructureInputTuningSpec{
+					Container: &obs.ContainerInputTuningSpec{
+						RateLimitPerContainer: &obs.LimitSpec{
+							MaxRecordsPerSecond: 1024,
+						},
+					},
+				},
+			},
+		},
+			"infrastructure_container_with_throttle.toml",
+		),
 	)
 })

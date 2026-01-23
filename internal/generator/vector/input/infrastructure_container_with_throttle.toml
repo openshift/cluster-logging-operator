@@ -1,10 +1,11 @@
 # Logs from containers (including openshift containers)
-[sources.input_application_container]
+[sources.input_myinfra_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
+include_paths_glob_patterns = ["/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/openshift-logging_*/gateway/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_*/opa/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -14,9 +15,9 @@ namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
 use_apiserver_cache = true
 
-[transforms.input_application_container_meta]
+[transforms.input_myinfra_container_meta]
 type = "remap"
-inputs = ["input_application_container"]
+inputs = ["input_myinfra_container"]
 source = '''
   . = {"_internal": .}
   if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
@@ -27,10 +28,9 @@ source = '''
   } else {
       ._internal.log_type = "application"
   }
-
-  ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
-  ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+    ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+    ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+    ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 
   if !exists(._internal.level) {
   level = null
@@ -128,12 +128,10 @@ source = '''
   }
   ._internal.level = level
 }
-
 '''
-
-[transforms.input_application_container_throttle]
+[transforms.input_myinfra_container_throttle]
 type = "throttle"
-inputs = ["input_application_container_meta"]
+inputs = ["input_myinfra_container_meta"]
 window_secs = 1
 threshold = 1024
 key_field = "{{ _internal.file }}"

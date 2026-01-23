@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	perContainerLimitKeyField = `"{{ file }}"`
+	perContainerLimitKeyField = `"{{ _internal.file }}"`
 )
 
 func AddThrottleToInput(id, input string, maxRecordsPerSec int64) []Element {

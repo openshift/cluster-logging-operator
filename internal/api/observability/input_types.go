@@ -29,11 +29,21 @@ func init() {
 }
 
 func MaxRecordsPerSecond(input obs.InputSpec) (int64, bool) {
-	if input.Application != nil &&
-		input.Application.Tuning != nil &&
-		input.Application.Tuning.RateLimitPerContainer != nil {
-		return Threshold(input.Application.Tuning.RateLimitPerContainer)
+	if app := input.Application; app != nil {
+		if tuning := app.Tuning; tuning != nil {
+			if rateLimitPerContainer := tuning.RateLimitPerContainer; rateLimitPerContainer != nil {
+				return Threshold(rateLimitPerContainer)
+			}
+		}
 	}
+	if infra := input.Infrastructure; infra != nil {
+		if tuning := infra.Tuning; tuning != nil {
+			if rateLimitPerContainer := tuning.Container.RateLimitPerContainer; rateLimitPerContainer != nil {
+				return Threshold(rateLimitPerContainer)
+			}
+		}
+	}
+
 	return 0, false
 }
 

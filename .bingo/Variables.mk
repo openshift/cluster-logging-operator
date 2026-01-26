@@ -35,11 +35,11 @@ $(GEN_CRD_API_REFERENCE_DOCS): $(BINGO_DIR)/gen-crd-api-reference-docs.mod
 	@echo "(re)installing $(GOBIN)/gen-crd-api-reference-docs-v0.0.5"
 	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=gen-crd-api-reference-docs.mod -o=$(GOBIN)/gen-crd-api-reference-docs-v0.0.5 "github.com/ViaQ/gen-crd-api-reference-docs"
 
-GOLANGCI_LINT := $(GOBIN)/golangci-lint-v1.61.0
+GOLANGCI_LINT := $(GOBIN)/golangci-lint-v1.64.8
 $(GOLANGCI_LINT): $(BINGO_DIR)/golangci-lint.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
-	@echo "(re)installing $(GOBIN)/golangci-lint-v1.61.0"
-	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.61.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	@echo "(re)installing $(GOBIN)/golangci-lint-v1.64.8"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.64.8 "github.com/golangci/golangci-lint/cmd/golangci-lint"
 
 JUNITREPORT := $(GOBIN)/junitreport-v0.0.0-20220531132329-92dee95b5da2
 $(JUNITREPORT): $(BINGO_DIR)/junitreport.mod

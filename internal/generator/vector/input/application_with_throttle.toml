@@ -136,4 +136,4 @@ type = "throttle"
 inputs = ["input_application_container_meta"]
 window_secs = 1
 threshold = 1024
-key_field = "{{ file }}"
+key_field = "{{ _internal.file }}"

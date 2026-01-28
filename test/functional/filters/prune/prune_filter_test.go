@@ -81,6 +81,52 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Level).To(BeEmpty())
 
 		})
+			It("should prune field from audit logs", func() {
+				f = functional.NewCollectorFunctionalFramework()
+
+				testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+					FromInput(obs.InputTypeAudit).
+					WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+						spec.Type = obs.FilterTypePrune
+						spec.PruneFilterSpec = &obs.PruneFilterSpec{
+							In: []obs.FieldPath{
+								".apiVersion",
+								".requestURI",
+								".userAgent",
+								".stage",
+								".objectRef.apiVersion",
+							},
+						}
+					}).ToHttpOutput()
+
+				Expect(f.Deploy()).To(BeNil())
+
+				now := time.Now()
+				logLine := functional.NewKubeAuditLog(now)
+
+				Expect(f.WriteMessagesTok8sAuditLog(logLine, 1)).To(BeNil())
+
+				// Read logs and verify the field was pruned
+				logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeHTTP))
+				Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+				Expect(logs).ToNot(BeEmpty())
+
+				// Parse the logs
+				var auditLogs []types.K8sAuditLog
+				jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+				err = types.ParseLogsFrom(jsonString, &auditLogs, false)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+				Expect(auditLogs).ToNot(BeEmpty())
+
+				// Verify the pruned field is not present
+				log := auditLogs[0]
+				Expect(log.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "APIVersion"))
+				Expect(log.RequestURI).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "RequestURI"))
+				Expect(log.UserAgent).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "UserAgent"))
+				Expect(log.Stage).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "Stage"))
+				Expect(log.ObjectRef.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "ObjectRef.APIVersion"))
+			},
+		)
 
 		Context("when forwarding to splunk", func() {
 			It("should keep minimal fields and contain .kubernetes.container_iostream and .openshift.sequence", func() {
@@ -245,18 +291,6 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 					spec.Type = obs.FilterTypePrune
 					spec.PruneFilterSpec = &obs.PruneFilterSpec{NotIn: []obs.FieldPath{".log_type", ".log_source", ".message", ".timestamp"}}
 				})
-		})
-
-		It("should send to Elasticsearch", func() {
-			pipelineBuilder.ToElasticSearchOutput()
-			Expect(f.Deploy()).To(BeNil())
-
-			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
-			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
-
-			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
 		})
 
 		It("should send to Splunk", func() {

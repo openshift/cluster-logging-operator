@@ -3,10 +3,11 @@ package prune
 import (
 	_ "embed"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"regexp"
 	"strings"
 	"text/template"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 type Prune struct {
@@ -50,23 +51,40 @@ func (f PruneFilter) VRL() (string, error) {
 // to feed into VRL
 func generateQuotedPathSegmentArrayStr(fieldPathArray []obs.FieldPath) string {
 	quotedPathArray := []string{}
+
+	rootPaths := [][]string{
+		{`"_internal"`},
+		{`"_internal"`, `"structured"`},
+	}
+
+	formatSegments := func(path obs.FieldPath, root []string) string {
+		splitPathSegments := splitPath(string(path))
+		pathArray := append([]string{}, root...)
+		pathArray = append(pathArray, quotePathSegments(splitPathSegments)...)
+
+		return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
+	}
+
 	for _, fieldPath := range fieldPathArray {
-		f := func(path obs.FieldPath) string {
-			splitPathSegments := splitPath(string(path))
-			pathArray := []string{`"_internal"`}
-			pathArray = append(pathArray, quotePathSegments(splitPathSegments)...)
-			return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
+		for _, root := range rootPaths {
+			quotedPathArray = append(quotedPathArray, formatSegments(fieldPath, root))
 		}
-		quotedPathArray = append(quotedPathArray, f(fieldPath))
+
 		for _, d := range dedottedFields {
 			label, found := strings.CutPrefix(string(fieldPath), d)
 			if found && strings.ContainsAny(label, "/.") {
 				label = strings.ReplaceAll(label, ".", "_")
 				label = strings.ReplaceAll(label, "/", "_")
-				quotedPathArray = append(quotedPathArray, f(obs.FieldPath(d+label)))
+
+				transformedPath := obs.FieldPath(d + label)
+
+				for _, root := range rootPaths {
+					quotedPathArray = append(quotedPathArray, formatSegments(transformedPath, root))
+				}
 			}
 		}
 	}
+
 	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ","))
 }
 

@@ -62,16 +62,13 @@ WORKDIR /usr/bin
 CMD ["/usr/bin/cluster-logging-operator"]
 
 LABEL \
-        io.k8s.display-name="Cluster Logging Operator" \
-        io.k8s.description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
-        io.openshift.tags="openshift,logging,observability" \
-        com.redhat.delivery.appregistry="false" \
-        description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
-        maintainer="AOS Logging <team-logging@redhat.com>" \
-        License="Apache-2.0" \
-        name="openshift-logging/cluster-logging-rhel9-operator" \
         com.redhat.component="cluster-logging-operator-container" \
+        description="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
+        io.k8s.description="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
+        io.k8s.display-name="Cluster Logging Operator" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
-        summary="OpenShift operator that installs, configures, and manages cluster-wide logging for an OpenShift cluster" \
-
-
+        io.openshift.tags="openshift,logging,logcollection,observability" \
+        license="Apache-2.0" \
+        maintainer="AOS Logging <team-logging@redhat.com>" \
+        name="openshift-logging/cluster-logging-rhel9-operator" \
+        summary="Operator for log collection and forwarding agents of Red Hat Openshift Logging"

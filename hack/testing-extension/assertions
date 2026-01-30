@@ -1,0 +1,30 @@
+#!/bin/bash
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
+assert_resources_exist(){
+   assert_collector_exist
+   # verify ER
+   os::cmd::try_until_success "oc -n $LOGGING_NS get elasticsearch elasticsearch" ${TIMEOUT_MIN}
+}
+
+assert_collector_exist(){
+  local name=${1:-collector}
+   # verify DS
+   os::cmd::try_until_success "oc -n $LOGGING_NS get ds $name" ${TIMEOUT_MIN}
+}
+
+# assert_cl_clf_instance_does_not_exist checking is
+# 'oc -n $LOGGING_NS get clusterlogging instance' and 'oc -n $LOGGING_NS get clusterlogforwarder instance'
+# both will failure or or times out (60 sec)
+# Returns:
+#  - 0: success - resources was deleted in given timeout
+#  - !0 if clusterlogforwarder or clusterlogging instance still exist after 60 sec
+assert_cl_clf_instance_does_not_exist(){
+  os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogforwarder instance" "$((5 * $minute))"
+  local clf_return_code=$?
+  ret_code=0
+  if [ ${clf_return_code} -gt 0 ]; then
+    os::log::warning "waiting for deleting clusterlogforwarder instance"
+    ret_code=${clf_return_code}
+  fi
+  return ${ret_code}
+}

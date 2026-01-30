@@ -5,5 +5,5 @@ metadata:
 spec:
   channel: ${OPERATOR_PACKAGE_CHANNEL}
   name: cluster-logging
-  source: cluster-logging-catalog
-  sourceNamespace: ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}
+  source: ${CLUSTER_LOGGING_CATALOG}
+  sourceNamespace: ${CLUSTER_LOGGING_CATALOG_NAMESPACE}

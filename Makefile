@@ -299,7 +299,6 @@ test-upgrade: $(JUNITREPORT)
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
 	exit 0
-
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
@@ -318,6 +317,17 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	hack/test-e2e-olm.sh
+
+.PHONY: test-e2e-extension
+test-e2e-extension: $(JUNITREPORT) deploy-image
+	LOG_LEVEL=3 \
+        TEST_SUITE="logging/fast" \
+        RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+        RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+        IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
+        IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
+        IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
+	hack/test-e2e-extension.sh
 
 .PHONY: test-e2e-clo-metric
 test-e2e-clo-metric:

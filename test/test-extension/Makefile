@@ -2,7 +2,7 @@ all: update
 .PHONY: all
 
 OUT_DIR=bin
-BINARY=$(OUT_DIR)/logging-test
+BINARY=$(OUT_DIR)/test-e2e-extension
 
 GO_LD_FLAGS := -s -w
 ifeq ($(shell go env GOOS),darwin)

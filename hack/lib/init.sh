@@ -61,4 +61,4 @@ if [[ -n "${JUNIT_REPORT:-}" ]]; then
   export JUNIT_REPORT_OUTPUT="${LOG_DIR}/raw_test_output.log"
 fi
 
-go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.23.4
+#go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.23.4

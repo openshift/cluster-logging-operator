@@ -1,0 +1,81 @@
+= Test Extension
+Expand test coverage to end-to-end (E2E) and execute tests on pre-defined clusters, including AWS, Azure, GCP, AWS GovCloud, and AWS STS.
+
+== Credential
+Cloud credentials must be provided to execute tests that directly use cloud resources. For example, sending logs to CloudWatch. The credential formats are aligned with the standards used by AWS, GCP, and Azure.
+
+You can set the following environment variables to specify the credentials used during testing:
+
+KUBECONFIG: The configuration file for the Kubernetes cluster. The default value is $HOME/.kube/config. The user must have cluster-admin privileges.
+
+AWS_SHARED_CREDENTIALS_FILE: The AWS credentials file. The credentials must have permission to access CloudWatch, s2.
+
+AZURE_AUTH_LOCATION: The directory that contains the Azure credentials. The credentials must have permission to access Azure Monitor logs and Azure Blob Storage.
+
+GOOGLE_APPLICATION_CREDENTIALS: The Google credentials file. The service account must have permission to access Google Cloud Storage and write logs to Google Cloud Logging.
+
+==  Test suite
+The test can be executed by suite. 
+=== logging/fast
+=== logging/slow
+=== logging/serial
+=== logging/parallel
+
+== Execution
+
+=== go run 
+    cd $REPO_DIR/test/test-extension
+    go run cmd/main.go --help
+Usage:
+   [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  images      List test images
+  info        Display extension metadata
+  list        List items
+  run-suite   Run a group of tests by suite. This is more limited than origin, and intended for light local development use. Orchestration parameters, scheduling, isolation, etc are not obeyed, and Ginkgo tests are executed serially.
+  run-test    Runs tests by name
+  update      Update test metadata
+
+
+=== run as binary
+    make
+    bin/test-e2e-extension 
+Usage:
+   [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  images      List test images
+  info        Display extension metadata
+  list        List items
+  run-suite   Run a group of tests by suite. This is more limited than origin, and intended for light local development use. Orchestration parameters, scheduling, isolation, etc are not obeyed, and Ginkgo tests are executed serially.
+  run-test    Runs tests by name
+  update      Update test metadata
+
+    
+=== run as container
+    podman run --env-file=env.ini -v cred_dir:cred_dir quay.io/logging/openshift-logging-test:latest run-suite <xxx>
+
+=== run test from operator deployment
+    set the following environment variables to change the channel and location of the operator and operand images
+    LOKI_OPERATOR_CATALOG
+    LOKI_OPERATOR_CATALOG_IMAGE
+    LOKI_OPERATOR_CATALOG_NAMESPACE
+    LOKI_OPERATOR_NAMESPACE
+    OPERATOR_PACKAGE_CHANNEL
+    LOGGING_VERSION
+    LOGGING_VECTOR_VERSION
+    LOGGING_LOG_FILE_METRIC_EXPORTER_VERSION
+    IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY
+    IMAGE_CLUSTER_LOGGING_OPERATOR
+    IMAGE_LOGGING_VECTOR
+    IMAGE_LOG_FILE_METRIC_EXPORTER
+    CLUSTER_LOGGING_OPERATOR_NAMESPACE
+    CLUSTER_LOGGING_CATALOG
+    TEST_SUITE=""
+    $REPO_DIR/hack/test-e2e-extension.sh or run make test-e2e-extension
+

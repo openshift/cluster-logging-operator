@@ -16,7 +16,7 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
+var _ = g.Describe("[sig-openshift-logging] accepptance test", func() {
 	defer g.GinkgoRecover()
 	var (
 		oc      = compat_otp.NewCLI("log-accept", compat_otp.KubeConfigPath())
@@ -49,7 +49,7 @@ var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 	})
 
 	// author qitang@redhat.com
-	g.It("Author:qitang-CPaasrunBoth-Critical-74397-[InterOps] Forward logs to LokiStack.[Slow][Serial]", func() {
+	g.It("Author:qitang-Critical-74397-[InterOps] Forward logs to LokiStack.[Slow][Serial]", func() {
 		g.By("deploy LO")
 		LO.SubscribeOperator(oc)
 		s := exutil.GetStorageType(oc)
@@ -185,7 +185,7 @@ var _ = g.Describe("[sig-openshift-logging] LOGGING Logging", func() {
 		ls.ValidateExternalObjectStorageForLogs(oc, []string{"application", "audit", "infrastructure"})
 	})
 
-	g.It("Author:qitang-CPaasrunBoth-ConnectedOnly-Critical-74926-[InterOps] Forward logs to Cloudwatch.", func() {
+	g.It("Author:qitang-ConnectedOnly-Critical-74926-[InterOps] Forward logs to Cloudwatch.", func() {
 		clfNS := oc.Namespace()
 		cw := exutil.CloudwatchSpec{
 			CollectorSAName: "cloudwatch-" + exutil.GetRandomString(),
@@ -256,7 +256,7 @@ retry_max_duration_secs = 20`,
 	})
 
 	//author qitang@redhat.com
-	g.It("Author:qitang-CPaasrunBoth-ConnectedOnly-Critical-74924-Forward logs to GCL", func() {
+	g.It("Author:qitang-ConnectedOnly-Critical-74924-Forward logs to GCL", func() {
 		projectID, err := exutil.GetGCPProjectID(oc)
 		o.Expect(err).NotTo(o.HaveOccurred())
 		gcl := exutil.GoogleCloudLogging{
@@ -312,7 +312,7 @@ retry_max_duration_secs = 20`,
 	})
 
 	//author anli@redhat.com
-	g.It("Author:anli-CPaasrunBoth-ConnectedOnly-Critical-71772-Forward logs to AZMonitor -- full options", func() {
+	g.It("Author:anli-ConnectedOnly-Critical-71772-Forward logs to AZMonitor -- full options", func() {
 		platform := compat_otp.CheckPlatform(oc)
 		if platform == "azure" && compat_otp.IsWorkloadIdentityCluster(oc) {
 			g.Skip("Skip on the workload identity enabled cluster!")

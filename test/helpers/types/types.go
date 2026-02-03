@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 
@@ -419,10 +420,11 @@ type AuditLog struct {
 	AuditLinux               AuditLinux       `json:"audit.linux,omitempty"`
 	Message                  string           `json:"message,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata"`
-	TimestampLegacy          time.Time        `json:"@timestamp,omitempty"`
-	Timestamp                time.Time        `json:"timestamp,omitempty"`
+	TimestampLegacy          *time.Time        `json:"@timestamp,omitempty"`
+	Timestamp                *time.Time        `json:"timestamp,omitempty"`
 	Docker                   Docker           `json:"docker,omitempty"`
 	LogType                  string           `json:"log_type,omitempty"`
+	LogSource                string `json:"log_source,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`
 	Kubernetes               Kubernetes       `json:"kubernetes,omitempty"`
@@ -613,4 +615,51 @@ func NewEvent(ref *v1.ObjectReference, eventType, reason, message string) *v1.Ev
 		Count:          rand.Int31(), // nolint:gosec
 		Type:           eventType,
 	}
+}
+
+// CountNonEmptyFields counts non-zero leaf values in a value recursively.
+// Pointers are dereferenced, structs are traversed, and non-struct values
+// are counted as 1 if non-zero. Cycles are not supported.
+func CountNonEmptyFields(s interface{}) int {
+	v := reflect.ValueOf(s)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return 0
+		}
+		v = v.Elem()
+	}
+
+	if v.Kind() == reflect.Struct {
+		count := 0
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			if !field.CanInterface() {
+				continue
+			}
+			switch field.Kind() {
+			case reflect.Ptr:
+				if field.IsNil() {
+					continue
+				}
+				if field.Elem().Kind() == reflect.Struct {
+					count += CountNonEmptyFields(field.Interface())
+				} else if !field.IsZero() {
+					count++
+				}
+			case reflect.Struct:
+				if !field.IsZero() {
+					count += CountNonEmptyFields(field.Interface())
+				}
+			default:
+				if !field.IsZero() {
+					count++
+				}
+			}
+		}
+		return count
+	}
+	if !v.IsZero() {
+		return 1
+	}
+	return 0
 }

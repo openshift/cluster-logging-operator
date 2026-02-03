@@ -385,6 +385,18 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				})
 		})
 
+		It("should send to Elasticsearch", func() {
+			pipelineBuilder.ToElasticSearchOutput()
+			Expect(f.Deploy()).To(BeNil())
+
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
+			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
+			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
+		})
+
 		It("should send to Splunk", func() {
 			pipelineBuilder.ToSplunkOutput(*secretKey)
 			secret = runtime.NewSecret(f.Namespace, secretKey.SecretName,

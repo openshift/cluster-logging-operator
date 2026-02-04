@@ -150,4 +150,5 @@ if !exists(._internal.structured) {
 	SetOpenShiftOnRoot = `
 if exists(._internal.openshift) {.openshift = ._internal.openshift}
 if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels) }
-`)
+`
+)

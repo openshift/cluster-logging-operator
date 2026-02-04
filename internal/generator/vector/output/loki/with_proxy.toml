@@ -29,7 +29,6 @@ healthcheck.enabled = false
 proxy.enabled = true
 proxy.http = "http://somewhere.org/proxy"
 proxy.https = "http://somewhere.org/proxy"
-proxy.no_proxy = ["needadummyentry.neveruseddomain"]
 
 [sinks.loki_receiver.encoding]
 codec = "json"

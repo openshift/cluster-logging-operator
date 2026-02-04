@@ -6,7 +6,6 @@ method = "post"
 proxy.enabled = true
 proxy.http = "http://somewhere.org/proxy"
 proxy.https = "http://somewhere.org/proxy"
-proxy.no_proxy = ["needadummyentry.neveruseddomain"]
 
 [sinks.http_receiver.encoding]
 codec = "json"

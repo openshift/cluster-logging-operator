@@ -2842,6 +2842,13 @@ spec:
                           items:
                             type: string
                           type: array
+                        proxyURL:
+                          description: ProxyURL URL of a HTTP or HTTPS proxy to be
+                            used instead of direct connection.
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: self == '' ||  isURL(self)
                         tenantKey:
                           description: |-
                             TenantKey is the tenant for the logs. This supports vector's template syntax to allow dynamic per-event values.
@@ -2911,13 +2918,6 @@ spec:
                           x-kubernetes-validations:
                           - message: invalid URL
                             rule: isURL(self)
-                        proxyURL:
-                          description: ProxyURL URL of a HTTP or HTTPS proxy to be
-                            used instead of direct connection.
-                          type: string
-                          x-kubernetes-validations:
-                          - message: invalid URL
-                            rule: self == '' ||  isURL(self)
                       required:
                       - url
                       type: object

@@ -41,7 +41,7 @@ func (f *CollectorFunctionalFramework) AddOTELCollector(b *runtime.PodBuilder, o
 		"config.yaml": OTELReceiverConf,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "config.yaml", OTELReceiverConf)
-	if err := f.Test.Client.Create(config); err != nil {
+	if err := f.Test.Create(config); err != nil {
 		return err
 	}
 

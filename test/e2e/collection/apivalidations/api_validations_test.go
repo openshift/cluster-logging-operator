@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
+	"github.com/openshift/cluster-logging-operator/test/helpers/errors"
 )
 
 var _ = Describe("", func() {
@@ -42,7 +43,9 @@ var _ = Describe("", func() {
 		execCMD := exec.Command("sh", "-c", fmt.Sprintf("echo '%s' | oc -n %s create -f -", crYaml, deployNS))
 		reader, err := cmd.NewReader(execCMD)
 		Expect(err).ToNot(HaveOccurred())
-		defer reader.Close()
+		defer func() {
+			errors.LogIfError(reader.Close())
+		}()
 		buffer := bytes.NewBuffer([]byte{})
 		_, err = buffer.ReadFrom(reader)
 		assert(buffer.String(), err)

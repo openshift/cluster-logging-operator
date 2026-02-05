@@ -2,14 +2,15 @@ package observability
 
 import (
 	"fmt"
+	"os"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/utils/set"
-	"os"
 )
 
 func OutputTypeUnknown(t obsv1.OutputType) error {
-	return fmt.Errorf("Unknown output type %q", t)
+	return fmt.Errorf("unknown output type %q", t)
 }
 
 type Outputs []obsv1.OutputSpec

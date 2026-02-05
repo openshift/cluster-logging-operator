@@ -1279,6 +1279,8 @@ NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fie
 
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
+
 |notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record.
 
 Each field path expression must start with a &#34;.&#34;
@@ -1302,6 +1304,8 @@ Examples:
 NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
 
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
 
 |======================
 
@@ -1859,6 +1863,13 @@ Type:: array
 
 |lokiStack|object|  LokiStack configures forwarding log events to a Red Hat managed Loki deployment
 using the Red Hat tenancy model
+
+The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+1. .kubernetes.container_name
+2. .kubernetes.namespace_name
+3. .kubernetes.pod_name
+
+If these fields are not present in the log record, they will be set to the empty string.
 
 |name|string|  Name used to refer to the output from a `pipeline`.
 
@@ -2840,8 +2851,6 @@ Type:: object
 Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
 The &#39;username@password&#39; part of `url` is ignored.
 
-|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
-
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
 |labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
@@ -2876,6 +2885,8 @@ For example the default log record keys translate to these Loki labels:
 Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
 Loki queries can also query based on any log record field (not just labels) using query filters.
+
+|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 
 |tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values.
 
@@ -3043,6 +3054,11 @@ Note: the set of labels should be small, Loki imposes limits on the size and num
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
 Loki queries can also query based on any log record field (not just labels) using query filters.
 
+|otlpTraceContext|object|  OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages when data model is &#39;Otel&#39;.
+
+If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+
 |target|object|  Target points to the LokiStack resources that should be used as a target for the output.
 
 |tuning|object|  Tuning specs tuning for the output
@@ -3203,6 +3219,60 @@ This behavior can be changed by setting IgnoreGlobal to true.
 
 Type:: array
 
+=== .spec.outputs[].lokiStack.otlpTraceContext
+
+OtlpTraceContextSpec allows users to define custom field names and patterns for trace context extraction from log messages.
+The default field names (trace_id, span_id, trace_flags) are always tried first.
+https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|additionalSpanIdFieldNames|array|  AdditionalSpanIdFieldNames specifies alternative field names to search for span_id in log messages.
+The default &#34;span_id&#34; is always tried first.
+Use this when your application logs use different field names like &#34;spanID&#34;, &#34;SpanId&#34;, &#34;span-id&#34;, etc.
+
+|additionalTraceFlagsFieldNames|array|  AdditionalTraceFlagsFieldNames specifies alternative field names to search for trace_flags in log messages.
+The default &#34;trace_flags&#34; is always tried first.
+Use this when your application logs use different field names like &#34;traceFlags&#34;, &#34;TraceFlags&#34;, &#34;flags&#34;, etc.
+
+|additionalTraceIdFieldNames|array|  AdditionalTraceIdFieldNames specifies alternative field names to search for trace_id in log messages.
+The default &#34;trace_id&#34; is always tried first.
+Use this when your application logs use different field names like &#34;traceID&#34;, &#34;TraceId&#34;, &#34;trace-id&#34;, etc.
+
+|customPatterns|array|  CustomPatterns allows defining arbitrary regex patterns for extracting trace context from complex log formats.
+Each pattern can extract one or more of: trace_id, span_id, trace_flags using named capture groups.
+Patterns are tried sequentially after the default field name matching fails to find all values.
+
+Named capture groups must be: (?&lt;trace_id&gt;...), (?&lt;span_id&gt;...), (?&lt;trace_flags&gt;...)
+
+Example for W3C traceparent header format &#34;traceparent: 00-{trace_id}-{span_id}-{flags}&#34;:
+
+traceparent[=:]\s*[&#34;\&#39;]?00-(?&lt;trace_id&gt;[0-9a-fA-F]{32})-(?&lt;span_id&gt;[0-9a-fA-F]{16})-(?&lt;trace_flags&gt;[0-9a-fA-F]{2})[&#34;\&#39;]?
+
+NOTE: Single quotes are escaped so that the generated VRL regex pattern is valid.
+
+|======================
+
+=== .spec.outputs[].lokiStack.otlpTraceContext.additionalSpanIdFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.otlpTraceContext.additionalTraceFlagsFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.otlpTraceContext.additionalTraceIdFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].lokiStack.otlpTraceContext.customPatterns[]
+
+Type:: array
+
 === .spec.outputs[].lokiStack.target
 
 LokiStackTarget contains information about how to reach the LokiStack used as an output.
@@ -3250,6 +3320,11 @@ Type:: object
 |Property|Type|Description
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
+
+|otlpTraceContext|object|  OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages
+
+If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
 
 |tuning|object|  Tuning specs tuning for the output
 
@@ -3344,6 +3419,60 @@ Type:: object
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
 
 |======================
+
+=== .spec.outputs[].otlp.otlpTraceContext
+
+OtlpTraceContextSpec allows users to define custom field names and patterns for trace context extraction from log messages.
+The default field names (trace_id, span_id, trace_flags) are always tried first.
+https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|additionalSpanIdFieldNames|array|  AdditionalSpanIdFieldNames specifies alternative field names to search for span_id in log messages.
+The default &#34;span_id&#34; is always tried first.
+Use this when your application logs use different field names like &#34;spanID&#34;, &#34;SpanId&#34;, &#34;span-id&#34;, etc.
+
+|additionalTraceFlagsFieldNames|array|  AdditionalTraceFlagsFieldNames specifies alternative field names to search for trace_flags in log messages.
+The default &#34;trace_flags&#34; is always tried first.
+Use this when your application logs use different field names like &#34;traceFlags&#34;, &#34;TraceFlags&#34;, &#34;flags&#34;, etc.
+
+|additionalTraceIdFieldNames|array|  AdditionalTraceIdFieldNames specifies alternative field names to search for trace_id in log messages.
+The default &#34;trace_id&#34; is always tried first.
+Use this when your application logs use different field names like &#34;traceID&#34;, &#34;TraceId&#34;, &#34;trace-id&#34;, etc.
+
+|customPatterns|array|  CustomPatterns allows defining arbitrary regex patterns for extracting trace context from complex log formats.
+Each pattern can extract one or more of: trace_id, span_id, trace_flags using named capture groups.
+Patterns are tried sequentially after the default field name matching fails to find all values.
+
+Named capture groups must be: (?&lt;trace_id&gt;...), (?&lt;span_id&gt;...), (?&lt;trace_flags&gt;...)
+
+Example for W3C traceparent header format &#34;traceparent: 00-{trace_id}-{span_id}-{flags}&#34;:
+
+traceparent[=:]\s*[&#34;\&#39;]?00-(?&lt;trace_id&gt;[0-9a-fA-F]{32})-(?&lt;span_id&gt;[0-9a-fA-F]{16})-(?&lt;trace_flags&gt;[0-9a-fA-F]{2})[&#34;\&#39;]?
+
+NOTE: Single quotes are escaped so that the generated VRL regex pattern is valid.
+
+|======================
+
+=== .spec.outputs[].otlp.otlpTraceContext.additionalSpanIdFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].otlp.otlpTraceContext.additionalTraceFlagsFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].otlp.otlpTraceContext.additionalTraceIdFieldNames[]
+
+Type:: array
+
+=== .spec.outputs[].otlp.otlpTraceContext.customPatterns[]
+
+Type:: array
 
 === .spec.outputs[].otlp.tuning
 

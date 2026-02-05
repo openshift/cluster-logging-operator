@@ -33,7 +33,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		NewEventDataBuilder = func(verb, message string, podRef *corev1.ObjectReference) types.EventData {
 			newEvent := types.NewEvent(podRef, corev1.EventTypeNormal, "reason", message)
 			if verb == "UPDATED" {
-				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_" + message)
+				oldEvent := types.NewEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_"+message)
 				return types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
 			} else {
 				return types.EventData{Verb: "ADDED", Event: newEvent}
@@ -92,7 +92,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		}
 	)
 
-	DescribeTable("should be normalized to the ViaQ data model when sinking to different outputs", func(outputType obs.OutputType, verb, message, expectedMessage  string) {
+	DescribeTable("should be normalized to the ViaQ data model when sinking to different outputs", func(outputType obs.OutputType, verb, message, expectedMessage string) {
 		framework = functional.NewCollectorFunctionalFramework()
 		builder := testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication)

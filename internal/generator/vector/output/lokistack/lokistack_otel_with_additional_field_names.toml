@@ -1,11 +1,11 @@
 # Extract trace context from log messages
-[transforms.output_otel_collector_trace_context]
+[transforms.output_default_lokistack_trace_context]
 type = "remap"
-inputs = ["pipeline_my_pipeline_viaq_0"]
+inputs = ["pipeline_fake"]
 source = '''
 # Extract trace context using field name matching
 # Extract trace_id padded to 32 hex chars per W3C spec
-parsed, err = parse_regex(._internal.message, r'trace_id[=:]\s*["\']?(?<trace_id>[0-9a-fA-F]{1,32})["\']?')
+parsed, err = parse_regex(._internal.message, r'(trace_id|traceId|trace-id)[=:]\s*["\']?(?<trace_id>[0-9a-fA-F]{1,32})["\']?')
 if err == null && exists(parsed.trace_id) {
   # Buffer trace_id with leading zeros to 32 hex chars per W3C spec
   buffered_trace_id = "00000000000000000000000000000000" + downcase(string!(parsed.trace_id))
@@ -13,7 +13,7 @@ if err == null && exists(parsed.trace_id) {
 }
 
 # Extract span_id padded to 16 hex chars per W3C spec
-parsed, err = parse_regex(._internal.message, r'span_id[=:]\s*["\']?(?<span_id>[0-9a-fA-F]{1,16})["\']?')
+parsed, err = parse_regex(._internal.message, r'(span_id|spanId|span-id)[=:]\s*["\']?(?<span_id>[0-9a-fA-F]{1,16})["\']?')
 if err == null && exists(parsed.span_id) {
   # Buffer span_id with leading zeros to 16 hex chars per W3C spec
   buffered_span_id = "0000000000000000" + downcase(string!(parsed.span_id))
@@ -21,39 +21,53 @@ if err == null && exists(parsed.span_id) {
 }
 
 # Extract trace_flags
-parsed, err = parse_regex(._internal.message, r'trace_flags[=:]\s*["\']?(?<trace_flags>[0-9a-fA-F]{1,2})["\']?')
+parsed, err = parse_regex(._internal.message, r'(trace_flags|flags|trace-flags)[=:]\s*["\']?(?<trace_flags>[0-9a-fA-F]{1,2})["\']?')
 if err == null && exists(parsed.trace_flags) {
   ._internal.trace_flags = parsed.trace_flags
 }
 '''
 
-# Route logs separately by log_source
-[transforms.output_otel_collector_reroute]
+[transforms.output_default_lokistack_route]
 type = "route"
-inputs = ["output_otel_collector_trace_context"]
-route.auditd = '.log_source == "auditd"'
-route.container = '.log_source == "container"'
-route.kubeapi = '.log_source == "kubeAPI"'
-route.node = '.log_source == "node"'
-route.openshiftapi = '.log_source == "openshiftAPI"'
-route.ovn = '.log_source == "ovn"'
+inputs = ["output_default_lokistack_trace_context"]
+route.application = '.log_type == "application"'
+route.audit = '.log_type == "audit"'
+route.infrastructure = '.log_type == "infrastructure"'
 
-[transforms.output_otel_collector_reroute_unmatched]
-inputs = ["output_otel_collector_reroute._unmatched"]
+[transforms.output_default_lokistack_route_unmatched]
+inputs = ["output_default_lokistack_route._unmatched"]
 type = "log_to_metric"
 
-[[transforms.output_otel_collector_reroute_unmatched.metrics]]
+[[transforms.output_default_lokistack_route_unmatched.metrics]]
 field = "message"
 kind = "incremental"
 name = "component_event_unmatched_count"
 namespace = "logcollector"
-tags = {component_id = "output_otel_collector_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+tags = {component_id = "output_default_lokistack_route", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
+# Route logs separately by log_source
+[transforms.output_default_lokistack_application_reroute]
+type = "route"
+inputs = ["output_default_lokistack_route.application"]
+route.container = '.log_source == "container"'
+
+[transforms.output_default_lokistack_application_reroute_unmatched]
+inputs = ["output_default_lokistack_application_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_application_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_application_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
 type = "counter"
 
 # Normalize container log records to OTLP semantic conventions
-[transforms.output_otel_collector_container]
+[transforms.output_default_lokistack_application_container]
 type = "remap"
-inputs = ["output_otel_collector_reroute.container"]
+inputs = ["output_default_lokistack_application_reroute.container"]
 source = '''
 # Create base resource attributes
 resource.attributes = []
@@ -145,93 +159,73 @@ r.attributes = append(r.attributes,
 '''
 
 # Merge container logs and group by namespace, pod and container
-[transforms.output_otel_collector_groupby_container]
+[transforms.output_default_lokistack_application_groupby_container]
 type = "reduce"
-inputs = ["output_otel_collector_container"]
+inputs = ["output_default_lokistack_application_container"]
 expire_after_ms = 15000
 max_events = 1
 group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name"]
 merge_strategies.resource = "retain"
 merge_strategies.logRecords = "array"
 
-# Normalize node log events to OTLP semantic conventions
-[transforms.output_otel_collector_node]
+# Create new resource object for OTLP JSON payload
+[transforms.output_default_lokistack_application_resource_logs]
 type = "remap"
-inputs = ["output_otel_collector_reroute.node"]
+inputs = ["output_default_lokistack_application_groupby_container"]
 source = '''
-# Create base resource attributes
-resource.attributes = []
-resource.attributes = append(resource.attributes,
-  [
-    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
-    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
-    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
-    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
-  ]
-)
-if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
-    resource.attributes = append(resource.attributes,
-        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
-    )
-}}
-# Append backward compatibility attributes
-resource.attributes = append( resource.attributes,
-	[
-      {"key": "log_type", "value": {"stringValue": .log_type}},
-      {"key": "log_source", "value": {"stringValue": .log_source}},
-      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
-      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
-    ]
-)
-resource.attributes = append(resource.attributes,
-  [
-	{"key": "process.command_line", "value": {"stringValue": .systemd.t.CMDLINE}},
-	{"key": "process.executable.name", "value": {"stringValue": .systemd.t.COMM}},
-	{"key": "process.executable.path", "value": {"stringValue": .systemd.t.EXE}},
-	{"key": "process.pid", "value": {"stringValue": .systemd.t.PID}},
-	{"key": "service.name", "value": {"stringValue": .systemd.t.SYSTEMD_UNIT}}
-  ]
-)
-# Create logRecord object
-r = {"attributes": []}
-r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
-r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
-r.severityText = .level
-# Create body from original message or structured
-value = .message
-if (value == null) { value = encode_json(.structured) }
-r.body = {"stringValue": string!(value)}
-
-# Set trace context fields if any
-if exists(._internal.trace_id) {
-  r.traceId = ._internal.trace_id
-}
-if exists(._internal.span_id) {
-  r.spanId = ._internal.span_id
-}
-if exists(._internal.trace_flags) {
-  r.flags = ._internal.trace_flags
-}
-
-r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
-# Openshift object for grouping (dropped before sending)
-o = {
-    "log_type": .log_type,
-    "log_source": .log_source,
-    "hostname": .hostname,
-    "cluster_id": .openshift.cluster_id
-}
-. = {
-  "openshift": o,
-  "resource": resource,
-  "logRecords": r
-}
+  . = {
+        "resource": {
+           "attributes": .resource.attributes,
+        },
+        "scopeLogs": [
+          {"logRecords": .logRecords}
+        ]
+      }
 '''
 
+[sinks.output_default_lokistack_application]
+type = "opentelemetry"
+inputs = ["output_default_lokistack_application_resource_logs"]
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
+
+[sinks.output_default_lokistack_application.protocol.tls]
+ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
+
+[sinks.output_default_lokistack_application.protocol.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.test-sa-token/token]"
+
+# Route logs separately by log_source
+[transforms.output_default_lokistack_audit_reroute]
+type = "route"
+inputs = ["output_default_lokistack_route.audit"]
+route.auditd = '.log_source == "auditd"'
+route.kubeapi = '.log_source == "kubeAPI"'
+route.openshiftapi = '.log_source == "openshiftAPI"'
+route.ovn = '.log_source == "ovn"'
+
+[transforms.output_default_lokistack_audit_reroute_unmatched]
+inputs = ["output_default_lokistack_audit_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_audit_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_audit_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
 # Normalize audit log record to OTLP semantic conventions
-[transforms.output_otel_collector_auditd]
+[transforms.output_default_lokistack_audit_auditd]
 type = "remap"
-inputs = ["output_otel_collector_reroute.auditd"]
+inputs = ["output_default_lokistack_audit_reroute.auditd"]
 source = '''
 # Create base resource attributes
 resource.attributes = []
@@ -307,9 +301,9 @@ o = {
 '''
 
 # Normalize audit log kube record to OTLP semantic conventions
-[transforms.output_otel_collector_kubeapi]
+[transforms.output_default_lokistack_audit_kubeapi]
 type = "remap"
-inputs = ["output_otel_collector_reroute.kubeapi"]
+inputs = ["output_default_lokistack_audit_reroute.kubeapi"]
 source = '''
 # Create base resource attributes
 resource.attributes = []
@@ -352,6 +346,7 @@ if exists(._internal.span_id) {
 if exists(._internal.trace_flags) {
   r.flags = ._internal.trace_flags
 }
+
 
 # Openshift object for grouping (dropped before sending)
 o = {
@@ -368,9 +363,9 @@ o = {
 '''
 
 # Normalize audit openshiftAPI record to OTLP semantic conventions
-[transforms.output_otel_collector_openshiftapi]
+[transforms.output_default_lokistack_audit_openshiftapi]
 type = "remap"
-inputs = ["output_otel_collector_reroute.openshiftapi"]
+inputs = ["output_default_lokistack_audit_reroute.openshiftapi"]
 source = '''
 # Create base resource attributes
 resource.attributes = []
@@ -414,6 +409,7 @@ if exists(._internal.trace_flags) {
   r.flags = ._internal.trace_flags
 }
 
+
 # Openshift object for grouping (dropped before sending)
 o = {
     "log_type": .log_type,
@@ -429,9 +425,9 @@ o = {
 '''
 
 # Normalize audit log ovn records to OTLP semantic conventions
-[transforms.output_otel_collector_ovn]
+[transforms.output_default_lokistack_audit_ovn]
 type = "remap"
-inputs = ["output_otel_collector_reroute.ovn"]
+inputs = ["output_default_lokistack_audit_reroute.ovn"]
 source = '''
 # Create base resource attributes
 resource.attributes = []
@@ -495,9 +491,9 @@ o = {
 '''
 
 # Merge audit api and node logs and group by log_source
-[transforms.output_otel_collector_groupby_source]
+[transforms.output_default_lokistack_audit_groupby_source]
 type = "reduce"
-inputs = ["output_otel_collector_kubeapi","output_otel_collector_openshiftapi","output_otel_collector_ovn"]
+inputs = ["output_default_lokistack_audit_kubeapi","output_default_lokistack_audit_openshiftapi","output_default_lokistack_audit_ovn"]
 expire_after_ms = 15000
 max_events = 1
 group_by = [".openshift.cluster_id",".openshift.log_type",".openshift.log_source"]
@@ -505,9 +501,9 @@ merge_strategies.resource = "retain"
 merge_strategies.logRecords = "array"
 
 # Merge auditd host logs and group by hostname
-[transforms.output_otel_collector_groupby_host]
+[transforms.output_default_lokistack_audit_groupby_host]
 type = "reduce"
-inputs = ["output_otel_collector_auditd","output_otel_collector_node"]
+inputs = ["output_default_lokistack_audit_auditd"]
 expire_after_ms = 15000
 max_events = 1
 group_by = [".openshift.cluster_id",".openshift.hostname",".openshift.log_type",".openshift.log_source"]
@@ -515,9 +511,9 @@ merge_strategies.resource = "retain"
 merge_strategies.logRecords = "array"
 
 # Create new resource object for OTLP JSON payload
-[transforms.output_otel_collector_resource_logs]
+[transforms.output_default_lokistack_audit_resource_logs]
 type = "remap"
-inputs = ["output_otel_collector_groupby_container","output_otel_collector_groupby_host","output_otel_collector_groupby_source"]
+inputs = ["output_default_lokistack_audit_groupby_host","output_default_lokistack_audit_groupby_source"]
 source = '''
   . = {
         "resource": {
@@ -529,26 +525,260 @@ source = '''
       }
 '''
 
-[sinks.output_otel_collector]
+[sinks.output_default_lokistack_audit]
 type = "opentelemetry"
-inputs = ["output_otel_collector_resource_logs"]
-protocol.uri = "http://localhost:4318/v1/logs"
+inputs = ["output_default_lokistack_audit_resource_logs"]
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp/v1/logs"
 protocol.type = "http"
 protocol.method = "post"
 protocol.encoding.codec = "json"
 protocol.encoding.except_fields = ["_internal"]
 protocol.payload_prefix = "{\"resourceLogs\":"
 protocol.payload_suffix = "}"
-protocol.compression = "gzip"
 
-[sinks.output_otel_collector.protocol.batch]
-max_bytes = 10000000
+[sinks.output_default_lokistack_audit.protocol.tls]
+ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
 
-[sinks.output_otel_collector.buffer]
-type = "disk"
-when_full = "block"
-max_size = 268435488
+[sinks.output_default_lokistack_audit.protocol.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.test-sa-token/token]"
 
-[sinks.output_otel_collector.protocol.request]
-retry_initial_backoff_secs = 20
-retry_max_duration_secs = 35
+# Route logs separately by log_source
+[transforms.output_default_lokistack_infrastructure_reroute]
+type = "route"
+inputs = ["output_default_lokistack_route.infrastructure"]
+route.container = '.log_source == "container"'
+route.node = '.log_source == "node"'
+
+[transforms.output_default_lokistack_infrastructure_reroute_unmatched]
+inputs = ["output_default_lokistack_infrastructure_reroute._unmatched"]
+type = "log_to_metric"
+
+[[transforms.output_default_lokistack_infrastructure_reroute_unmatched.metrics]]
+field = "message"
+kind = "incremental"
+name = "component_event_unmatched_count"
+namespace = "logcollector"
+tags = {component_id = "output_default_lokistack_infrastructure_reroute", log_source = "{{ log_source }}", log_type = "{{ log_type }}", output_type = "lokistack"}
+type = "counter"
+
+# Normalize container log records to OTLP semantic conventions
+[transforms.output_default_lokistack_infrastructure_container]
+type = "remap"
+inputs = ["output_default_lokistack_infrastructure_reroute.container"]
+source = '''
+# Create base resource attributes
+resource.attributes = []
+resource.attributes = append(resource.attributes,
+  [
+    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+  ]
+)
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+resource.attributes = append( resource.attributes,
+  [
+    {"key": "k8s.pod.name", "value": {"stringValue": .kubernetes.pod_name}},
+	{"key": "k8s.pod.uid", "value": {"stringValue": .kubernetes.pod_id}},
+    {"key": "k8s.container.name", "value": {"stringValue": .kubernetes.container_name}},
+    {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
+  ]
+)
+if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+# Append backward compatibility attributes
+resource.attributes = append( resource.attributes,
+	[
+      {"key": "log_type", "value": {"stringValue": .log_type}},
+      {"key": "log_source", "value": {"stringValue": .log_source}},
+      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+    ]
+)
+# Append backward compatibility attributes for container logs
+resource.attributes = append( resource.attributes,
+	[{"key": "kubernetes.pod_name", "value": {"stringValue": .kubernetes.pod_name}},
+	{"key": "kubernetes.container_name", "value": {"stringValue": .kubernetes.container_name}},
+	{"key": "kubernetes.namespace_name", "value": {"stringValue": .kubernetes.namespace_name}}]
+)
+# Create logRecord object
+r = {"attributes": []}
+r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+r.severityText = .level
+# Create body from original message or structured
+value = .message
+if (value == null) { value = encode_json(.structured) }
+r.body = {"stringValue": string!(value)}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
+r.attributes = append(r.attributes,
+  [
+	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
+	{"key": "level", "value": {"stringValue": .level}}
+  ]
+)
+  # Openshift and kubernetes objects for grouping containers (dropped before sending)
+  o = {
+      "log_type": .log_type,
+      "log_source": .log_source,
+      "cluster_id": .openshift.cluster_id
+  }
+  .kubernetes = {
+      "namespace_name": .kubernetes.namespace_name,
+      "pod_name": .kubernetes.pod_name,
+      "container_name": .kubernetes.container_name
+  }
+  . = {
+    "openshift": o,
+    "kubernetes": .kubernetes,
+    "resource": resource,
+    "logRecords": r
+  }
+'''
+
+# Merge container logs and group by namespace, pod and container
+[transforms.output_default_lokistack_infrastructure_groupby_container]
+type = "reduce"
+inputs = ["output_default_lokistack_infrastructure_container"]
+expire_after_ms = 15000
+max_events = 1
+group_by = [".openshift.cluster_id",".kubernetes.namespace_name",".kubernetes.pod_name",".kubernetes.container_name"]
+merge_strategies.resource = "retain"
+merge_strategies.logRecords = "array"
+
+# Normalize node log events to OTLP semantic conventions
+[transforms.output_default_lokistack_infrastructure_node]
+type = "remap"
+inputs = ["output_default_lokistack_infrastructure_reroute.node"]
+source = '''
+# Create base resource attributes
+resource.attributes = []
+resource.attributes = append(resource.attributes,
+  [
+    {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+    {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+    {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+    {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+  ]
+)
+if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+    resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+    )
+}}
+# Append backward compatibility attributes
+resource.attributes = append( resource.attributes,
+	[
+      {"key": "log_type", "value": {"stringValue": .log_type}},
+      {"key": "log_source", "value": {"stringValue": .log_source}},
+      {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+      {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+    ]
+)
+resource.attributes = append(resource.attributes,
+  [
+	{"key": "process.command_line", "value": {"stringValue": .systemd.t.CMDLINE}},
+	{"key": "process.executable.name", "value": {"stringValue": .systemd.t.COMM}},
+	{"key": "process.executable.path", "value": {"stringValue": .systemd.t.EXE}},
+	{"key": "process.pid", "value": {"stringValue": .systemd.t.PID}},
+	{"key": "service.name", "value": {"stringValue": .systemd.t.SYSTEMD_UNIT}}
+  ]
+)
+# Create logRecord object
+r = {"attributes": []}
+r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+r.severityText = .level
+# Create body from original message or structured
+value = .message
+if (value == null) { value = encode_json(.structured) }
+r.body = {"stringValue": string!(value)}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
+r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
+# Openshift object for grouping (dropped before sending)
+o = {
+    "log_type": .log_type,
+    "log_source": .log_source,
+    "hostname": .hostname,
+    "cluster_id": .openshift.cluster_id
+}
+. = {
+  "openshift": o,
+  "resource": resource,
+  "logRecords": r
+}
+'''
+
+# Merge auditd host logs and group by hostname
+[transforms.output_default_lokistack_infrastructure_groupby_host]
+type = "reduce"
+inputs = ["output_default_lokistack_infrastructure_node"]
+expire_after_ms = 15000
+max_events = 1
+group_by = [".openshift.cluster_id",".openshift.hostname",".openshift.log_type",".openshift.log_source"]
+merge_strategies.resource = "retain"
+merge_strategies.logRecords = "array"
+
+# Create new resource object for OTLP JSON payload
+[transforms.output_default_lokistack_infrastructure_resource_logs]
+type = "remap"
+inputs = ["output_default_lokistack_infrastructure_groupby_container","output_default_lokistack_infrastructure_groupby_host"]
+source = '''
+  . = {
+        "resource": {
+           "attributes": .resource.attributes,
+        },
+        "scopeLogs": [
+          {"logRecords": .logRecords}
+        ]
+      }
+'''
+
+[sinks.output_default_lokistack_infrastructure]
+type = "opentelemetry"
+inputs = ["output_default_lokistack_infrastructure_resource_logs"]
+protocol.uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp/v1/logs"
+protocol.type = "http"
+protocol.method = "post"
+protocol.encoding.codec = "json"
+protocol.encoding.except_fields = ["_internal"]
+protocol.payload_prefix = "{\"resourceLogs\":"
+protocol.payload_suffix = "}"
+
+[sinks.output_default_lokistack_infrastructure.protocol.tls]
+ca_file = "/var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt"
+
+[sinks.output_default_lokistack_infrastructure.protocol.auth]
+strategy = "bearer"
+token = "SECRET[kubernetes_secret.test-sa-token/token]"

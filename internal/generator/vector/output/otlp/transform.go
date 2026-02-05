@@ -3,8 +3,10 @@ package otlp
 import (
 	"strings"
 
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	otlpv1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/otlp/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -61,6 +63,22 @@ r.body = {"stringValue": string!(value)}
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 `
+
+	LogRecordTraceContext = `
+	
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
+`
+
 	OVNLogAttributes = `
 # Fill up OVN logRecord object
 if exists(.level) { r.severityText = .level } 
@@ -175,6 +193,7 @@ func containerLogsVRL() string {
 		LogRecord,
 		LogRecordSeverity,
 		BodyFromMessage,
+		LogRecordTraceContext,
 		LogAttributes,
 		ContainerLogAttributes,
 		FinalGroupingContainers,
@@ -189,6 +208,7 @@ func nodeLogsVRL() string {
 		LogRecord,
 		LogRecordSeverity,
 		BodyFromMessage,
+		LogRecordTraceContext,
 		LogAttributes,
 		NodeLogAttributes,
 		FinalGrouping,
@@ -201,6 +221,7 @@ func auditHostLogsVRL() string {
 		BackwardCompatBaseResourceAttributes,
 		LogRecord,
 		BodyFromInternal,
+		LogRecordTraceContext,
 		LogAttributes,
 		HostLogAttributes,
 		FinalGrouping,
@@ -213,6 +234,7 @@ func auditAPILogsVRL() string {
 		BackwardCompatBaseResourceAttributes,
 		LogRecord,
 		BodyFromInternal,
+		LogRecordTraceContext,
 		LogAttributes,
 		FinalGrouping,
 	}), "\n")
@@ -224,6 +246,7 @@ func auditOVNLogsVRL() string {
 		BackwardCompatBaseResourceAttributes,
 		LogRecord,
 		BodyFromInternal,
+		LogRecordTraceContext,
 		LogAttributes,
 		OVNLogAttributes,
 		FinalGrouping,
@@ -298,5 +321,15 @@ func FormatResourceLog(id string, inputs []string) Element {
       ]
     }
 `),
+	}
+}
+
+// TransformTraceContext extracts trace context from log messages
+func TransformTraceContext(id string, inputs []string, traceContext *obs.OtlpTraceContextSpec) Element {
+	return elements.Remap{
+		Desc:        "Extract trace context from log messages",
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL:         strings.TrimSpace(otlpv1.GenerateAddLogRecordTraceContexts(traceContext)),
 	}
 }

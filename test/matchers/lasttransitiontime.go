@@ -24,9 +24,9 @@ func (m *LastTransitionTimeMatcher) Match(a interface{}) (success bool, err erro
 	expected := m.expected
 	actual, ok := a.(metav1.Time)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects metav1.Time")
+		return false, fmt.Errorf("matcher expects metav1.Time")
 	}
-	if expected.Time == time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC) {
+	if expected.Time.Equal(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)) {
 		if actual.Time.Before(time.Now().Add(time.Minute * time.Duration(-5))) {
 			return false, nil
 		}
@@ -36,7 +36,7 @@ func (m *LastTransitionTimeMatcher) Match(a interface{}) (success bool, err erro
 }
 
 func (m *LastTransitionTimeMatcher) FailureMessage(actual interface{}) (message string) {
-	if m.expected.Time == time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC) {
+	if m.expected.Time.Equal(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)) {
 		return fmt.Sprintf("Expected LastTransitionTime not be within the last 5 minutes, time now: %s, got: %s",
 			time.Now(), actual)
 	}
@@ -44,7 +44,7 @@ func (m *LastTransitionTimeMatcher) FailureMessage(actual interface{}) (message 
 }
 
 func (m *LastTransitionTimeMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	if m.expected.Time == time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC) {
+	if m.expected.Time.Equal(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)) {
 		return fmt.Sprintf("Expected LastTransitionTime to be within the last 5 minutes, time now: %s, got: %s",
 			time.Now(), actual)
 	}

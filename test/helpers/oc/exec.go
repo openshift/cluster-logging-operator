@@ -1,3 +1,4 @@
+//nolint:errcheck
 package oc
 
 import (
@@ -117,13 +118,13 @@ func (e *exec) args() []string {
 	if e.podGetter != nil {
 		e.podname, err = e.podGetter.Run()
 		if err != nil {
-			e.runner.err = err
+			e.err = err
 		}
 	}
 	if e.containerGetter != nil {
 		e.container, err = e.containerGetter.Run()
 		if err != nil {
-			e.runner.err = err
+			e.err = err
 		}
 	}
 	containerStr := ""

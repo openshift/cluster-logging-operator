@@ -42,7 +42,7 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 		"rsyslog.conf": rsyslogConf,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "rsyslog.conf", rsyslogConf)
-	if err := f.Test.Client.Create(config); err != nil {
+	if err := f.Test.Create(config); err != nil {
 		return err
 	}
 

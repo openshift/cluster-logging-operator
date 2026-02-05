@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -20,7 +21,7 @@ func ReconcileServiceAccount(k8sClient client.Client, namespace string, resNames
 	if namespace == constants.OpenshiftNS && resNames.ServiceAccount == constants.LogfilesmetricexporterName {
 		serviceAccount := runtime.NewServiceAccount(namespace, resNames.ServiceAccount)
 		utils.AddOwnerRefToObject(serviceAccount, owner)
-		serviceAccount.ObjectMeta.Finalizers = append(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+		serviceAccount.Finalizers = append(serviceAccount.Finalizers, metav1.FinalizerDeleteDependents)
 		if serviceAccount, err = reconcile.ServiceAccount(k8sClient, serviceAccount); err != nil {
 			return err
 		}

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	testerrors "github.com/openshift/cluster-logging-operator/test/helpers/errors"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -54,7 +55,7 @@ func PodWriter(pod *corev1.Pod, container, filename string) (io.WriteCloser, err
 func PodWrite(pod *corev1.Pod, container, filename string, data []byte) error {
 	w, err := PodWriter(pod, container, filename)
 	if err == nil {
-		defer w.Close()
+		defer func() { testerrors.LogIfError(w.Close()) }()
 		_, err = w.Write(data)
 	}
 	return err

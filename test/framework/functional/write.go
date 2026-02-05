@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
+	"github.com/openshift/cluster-logging-operator/test/helpers/errors"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -252,7 +253,7 @@ func (f *CollectorFunctionalFramework) WriteToHttpInputWithPortForwarder(inputNa
 			if err != nil {
 				return fmt.Errorf("WriteToHttpInputPF: POST %q: %w", url, err)
 			}
-			resp.Body.Close()
+			errors.LogIfError(resp.Body.Close())
 			return nil
 		}
 	}
@@ -266,9 +267,9 @@ type PortForwarder struct {
 
 func (f *CollectorFunctionalFramework) setupPortForwarder(podPort int32) (*PortForwarder, error) {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.Pod.Namespace, f.Pod.Name)
-	hostIP := strings.TrimPrefix(f.Test.Client.Host(), `https://`)
+	hostIP := strings.TrimPrefix(f.Test.Host(), `https://`)
 
-	transport, upgrader, err := spdy.RoundTripperFor(f.Test.Client.Cfg())
+	transport, upgrader, err := spdy.RoundTripperFor(f.Test.Cfg())
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +316,7 @@ func (f *CollectorFunctionalFramework) LogWriter(filename string) (io.WriteClose
 func (f *CollectorFunctionalFramework) WriteLog(filename string, data []byte) error {
 	w, err := f.LogWriter(filename)
 	if err == nil {
-		defer w.Close()
+		defer func() { errors.LogIfError(w.Close()) }()
 		_, err = w.Write(data)
 	}
 	return err

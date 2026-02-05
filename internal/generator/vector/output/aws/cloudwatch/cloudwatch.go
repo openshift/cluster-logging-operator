@@ -2,17 +2,20 @@ package cloudwatch
 
 import (
 	_ "embed"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
@@ -40,8 +43,8 @@ type CloudWatch struct {
 	Inputs         string
 	Region         string
 	GroupName      string
-	EndpointConfig Element
-	AuthConfig     Element
+	EndpointConfig framework.Element
+	AuthConfig     framework.Element
 	common.RootMixin
 }
 
@@ -72,13 +75,13 @@ func (e *CloudWatch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
+		return []framework.Element{
 			NormalizeStreamName(componentID, inputs),
-			Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
+			elements.Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
 		}
 	}
 	cwSink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
@@ -86,7 +89,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(cwSink)
 	}
 
-	return []Element{
+	return []framework.Element{
 		NormalizeStreamName(componentID, inputs),
 		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
 		cwSink,
@@ -99,7 +102,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, region, groupName string) *CloudWatch {
+func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, region, groupName string) *CloudWatch {
 	return &CloudWatch{
 		Desc:           "Cloudwatch Logs",
 		ComponentID:    id,
@@ -112,7 +115,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 	}
 }
 
-func endpointConfig(cw *obs.Cloudwatch) Element {
+func endpointConfig(cw *obs.Cloudwatch) framework.Element {
 	if cw == nil {
 		return Endpoint{}
 	}
@@ -121,7 +124,7 @@ func endpointConfig(cw *obs.Cloudwatch) Element {
 	}
 }
 
-func NormalizeStreamName(componentID string, inputs []string) Element {
+func NormalizeStreamName(componentID string, inputs []string) framework.Element {
 	vrl := strings.TrimSpace(`
 .stream_name = "default"
 if ( .log_type == "audit" ) {
@@ -140,7 +143,7 @@ if ( .log_source == "node" ) {
 del(.tag)
 del(.source_type)
 	`)
-	return Remap{
+	return elements.Remap{
 		Desc:        "Cloudwatch Stream Names",
 		ComponentID: componentID,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),

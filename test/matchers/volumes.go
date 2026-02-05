@@ -20,11 +20,11 @@ func IncludeVolume(expected interface{}) *VolumeMatcher {
 func (m *VolumeMatcher) Match(actual interface{}) (success bool, err error) {
 	expVolume, ok := m.expected.(v1.Volume)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects v1.Volume")
+		return false, fmt.Errorf("matcher expects v1.Volume")
 	}
 	actualVolumes, ok := actual.([]v1.Volume)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects []v1.Volume")
+		return false, fmt.Errorf("matcher expects []v1.Volume")
 	}
 	var found *v1.Volume
 	for i := range actualVolumes {
@@ -60,11 +60,11 @@ func IncludeVolumeMount(expected interface{}) *VolumeMountMatcher {
 func (m *VolumeMountMatcher) Match(actual interface{}) (success bool, err error) {
 	expVolume, ok := m.expected.(v1.VolumeMount)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects v1.VolumeMount")
+		return false, fmt.Errorf("matcher expects v1.VolumeMount")
 	}
 	actualVolumes, ok := actual.([]v1.VolumeMount)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects []v1.VolumeMount")
+		return false, fmt.Errorf("matcher expects []v1.VolumeMount")
 	}
 	var found *v1.VolumeMount
 	for i := range actualVolumes {

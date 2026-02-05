@@ -64,7 +64,7 @@ output {
 					pipelineConfFileName: pipelineConf,
 					logstashConfFileName: logstashConf,
 				})
-				if err := f.Test.Client.Create(config); err != nil {
+				if err := f.Test.Create(config); err != nil {
 					return err
 				}
 

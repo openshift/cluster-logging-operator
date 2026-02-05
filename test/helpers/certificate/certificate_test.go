@@ -1,3 +1,4 @@
+//nolint:errcheck
 package certificate_test
 
 import (

@@ -5,19 +5,17 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -53,10 +51,10 @@ func (k *Kafka) SetCompression(algo string) {
 	k.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	componentID := vectorhelpers.MakeID(id, "topic")
@@ -66,7 +64,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(sink)
 	}
 
-	elements := []Element{
+	elements := []framework.Element{
 		commontemplate.TemplateRemap(componentID, inputs, Topics(o), componentID, "Kafka Topic"),
 		sink,
 		common.NewEncoding(id, common.CodecJSON, func(e *common.Encoding) {
@@ -81,8 +79,8 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		elements = append(elements, tls.New(id, o.TLS,
 			secrets,
 			op,
-			Option{Name: tls.IncludeEnabled, Value: ""},
-			Option{Name: tls.ExcludeInsecureSkipVerify, Value: ""}))
+			framework.Option{Name: tls.IncludeEnabled, Value: ""},
+			framework.Option{Name: tls.ExcludeInsecureSkipVerify, Value: ""}))
 	}
 	elements = append(elements, newLibRDKafkaOptions(id, o, o.Kafka.Tuning))
 	return elements
@@ -101,7 +99,7 @@ func isTlsBrokers(o obs.OutputSpec) bool {
 	return isTls
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, topic string, op Options, brokers string) *Kafka {
+func sink(id string, o obs.OutputSpec, inputs []string, topic string, op utils.Options, brokers string) *Kafka {
 	return &Kafka{
 		ComponentID:      id,
 		Inputs:           vectorhelpers.MakeInputs(inputs...),

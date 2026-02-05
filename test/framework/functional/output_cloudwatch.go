@@ -77,7 +77,7 @@ func (f *CollectorFunctionalFramework) createCloudWatchService() error {
 		AddServicePort(5000, 5000).
 		WithSelector(map[string]string{"testname": "functional"})
 
-	if err := f.Test.Client.Create(service); err != nil {
+	if err := f.Test.Create(service); err != nil {
 		return fmt.Errorf("unable to create service: %v", err)
 	}
 	return nil
@@ -90,7 +90,7 @@ func (f *CollectorFunctionalFramework) createServiceRoute() error {
 		Termination:                   openshiftv1.TLSTerminationPassthrough,
 		InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
 	}
-	if err := f.Test.Client.Create(route); err != nil {
+	if err := f.Test.Create(route); err != nil {
 		return fmt.Errorf("unable to create route: %v", err)
 	}
 	return nil

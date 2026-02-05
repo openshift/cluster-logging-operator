@@ -3,13 +3,14 @@ package cluster
 import (
 	"bufio"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"os"
 	"path"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -167,7 +168,11 @@ func ReadAndParseFile(filePath string) (stats.PerfLogs, error) {
 	if err != nil {
 		log.Error(err, "Unable to open file for analysis", "file", filePath)
 	}
-	defer file.Close()
+	defer func() {
+		if exitError := file.Close(); exitError != nil {
+			log.Error(exitError, "Unable to close file for analysis", "file", filePath)
+		}
+	}()
 
 	entries := stats.PerfLogs{}
 	scanner := bufio.NewScanner(file)
@@ -218,7 +223,7 @@ func (r *ClusterRunner) FetchApplicationLogs() error {
 }
 
 func (r *ClusterRunner) Cleanup() {
-	if r.Options.DoCleanup {
+	if r.DoCleanup {
 		r.framework.Cleanup()
 	}
 }

@@ -2,17 +2,18 @@ package s3
 
 import (
 	_ "embed"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 type Endpoint struct {
@@ -56,9 +57,9 @@ type S3 struct {
 	Region         string
 	Bucket         string
 	KeyPrefix      string
-	Compression    Element
-	EndpointConfig Element
-	SecurityConfig Element
+	Compression    framework.Element
+	EndpointConfig framework.Element
+	SecurityConfig framework.Element
 	common.RootMixin
 }
 
@@ -91,11 +92,11 @@ func (s *S3) SetCompression(algo string) {
 	}
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	keyPrefixID := vectorhelpers.MakeID(id, "key_prefix")
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	sink := sink(id, o, []string{keyPrefixID}, secrets, op, o.S3.Region, o.S3.Bucket, keyPrefixID)
@@ -103,7 +104,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(sink)
 	}
 
-	return []Element{
+	return []framework.Element{
 		template.TemplateRemap(keyPrefixID, inputs, o.S3.KeyPrefix, keyPrefixID, "S3 Key Prefix"),
 		sink,
 		common.NewEncoding(id, common.CodecJSON),
@@ -115,7 +116,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options, region, bucket, keyPrefix string) *S3 {
+func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, region, bucket, keyPrefix string) *S3 {
 	return &S3{
 		Desc:           "Amazon S3",
 		ComponentID:    id,
@@ -130,7 +131,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 	}
 }
 
-func endpointConfig(s3 *obs.S3) Element {
+func endpointConfig(s3 *obs.S3) framework.Element {
 	if s3 == nil {
 		return Endpoint{}
 	}
@@ -139,7 +140,7 @@ func endpointConfig(s3 *obs.S3) Element {
 	}
 }
 
-func compressionConfig(s3 *obs.S3) Element {
+func compressionConfig(s3 *obs.S3) framework.Element {
 	if s3 == nil || s3.Tuning == nil || s3.Tuning.Compression == "" {
 		return Compression{}
 	}

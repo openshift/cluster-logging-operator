@@ -96,7 +96,7 @@ func AddSystemFilters(p *Pipeline) {
 
 	for _, refName := range p.FilterRefs {
 		spec, exists := p.filterMap[refName]
-		isEarlyStage := exists && (spec.FilterSpec.Type == obs.FilterTypeParse || spec.FilterSpec.Type == obs.FilterTypeDetectMultiline)
+		isEarlyStage := exists && (spec.Type == obs.FilterTypeParse || spec.Type == obs.FilterTypeDetectMultiline)
 		if isEarlyStage {
 			preFilters = append(preFilters, refName)
 		} else {

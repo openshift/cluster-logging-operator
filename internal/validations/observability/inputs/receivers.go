@@ -2,17 +2,18 @@ package inputs
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/golang-collections/collections/set"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
-	. "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"strings"
 )
 
 // ValidateReceiver validates receiver input specs
@@ -27,33 +28,33 @@ func ValidateReceiver(spec obs.InputSpec, secrets map[string]*corev1.Secret, con
 
 	if spec.Receiver == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil receiver spec", spec.Name)),
+			internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil receiver spec", spec.Name)),
 		}
 	}
 	if spec.Receiver.Type == obs.ReceiverTypeHTTP && spec.Receiver.HTTP == nil {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil HTTP receiver spec", spec.Name)),
+			internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil HTTP receiver spec", spec.Name)),
 		}
 	}
 	if spec.Receiver.Type == obs.ReceiverTypeHTTP && spec.Receiver.HTTP.Format == "" {
 		return []metav1.Condition{
-			NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s does not specify a format", spec.Name)),
+			internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s does not specify a format", spec.Name)),
 		}
 	}
 	if spec.Receiver.TLS != nil {
 		tlsSpec := obs.TLSSpec(*spec.Receiver.TLS)
-		keys := ValueReferences(tlsSpec)
+		keys := internalobs.ValueReferences(tlsSpec)
 		skipKeys := extractSecretKeysAsSet(context)
 		keys = removeGeneratedSecrets(keys, skipKeys)
 		if messages := common.ValidateValueReference(keys, secrets, configMaps); len(messages) > 0 {
 			return []metav1.Condition{
-				NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")),
+				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, strings.Join(messages, ",")),
 			}
 		}
 	}
 
 	return []metav1.Condition{
-		NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
+		internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("input %q is valid", spec.Name)),
 	}
 }
 

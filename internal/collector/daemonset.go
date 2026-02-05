@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -27,7 +28,7 @@ func Remove(k8sClient client.Client, namespace, name string) (err error) {
 	log.V(3).Info("Removing collector", "namespace", namespace, "name", name)
 	ds := runtime.NewDaemonSet(namespace, name)
 	if err = k8sClient.Delete(context.TODO(), ds); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting daemonset %s/%s: %v", namespace, name, err)
+		return fmt.Errorf("failure deleting daemonset %s/%s: %v", namespace, name, err)
 	}
 	return nil
 }

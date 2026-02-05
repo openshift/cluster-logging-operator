@@ -21,7 +21,7 @@ func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.C
 			if errors.IsNotFound(err) {
 				return k8Client.Create(context.TODO(), configMap)
 			}
-			return fmt.Errorf("Failed to get %v configmap: %v", key, err)
+			return fmt.Errorf("failed to get %v configmap: %v", key, err)
 		}
 		if configmaps.AreSame(current, configMap, opts...) && utils.HasSameOwner(current.OwnerReferences, configMap.OwnerReferences) {
 			return nil

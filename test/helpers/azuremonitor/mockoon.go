@@ -111,7 +111,7 @@ func extractStructuredLogs(output, logType string) ([]types.ApplicationLog, erro
 	var logs []MockoonLog
 
 	// Preprocess JSON output to make it valid JSON array
-	output = "[" + strings.Replace(output, "}\n{", "},{", -1) + "]"
+	output = "[" + strings.ReplaceAll(output, "}\n{", "},{") + "]"
 
 	dec := json.NewDecoder(bytes.NewBufferString(output))
 	if err := dec.Decode(&logs); err != nil {

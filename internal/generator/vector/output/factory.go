@@ -3,7 +3,7 @@ package output
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
@@ -19,13 +19,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/otlp"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op Options) []Element {
-	SetTLSProfileOptionsFrom(op, o)
+func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+	framework.SetTLSProfileOptionsFrom(op, o)
 
-	var els []Element
+	var els []framework.Element
 	baseID := helpers.MakeOutputID(o.Name)
 	if threshold, hasPolicy := internalobs.Threshold(o.Limit); hasPolicy && threshold > 0 {
 		// Vector Throttle component cannot have zero threshold

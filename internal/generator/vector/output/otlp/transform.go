@@ -3,7 +3,7 @@ package otlp
 import (
 	"strings"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	otlpv1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/otlp/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -252,7 +252,7 @@ func auditOVNLogsVRL() string {
 	}), "\n")
 }
 
-func TransformContainer(id string, inputs []string) Element {
+func TransformContainer(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize container log records to OTLP semantic conventions",
 		ComponentID: id,
@@ -261,7 +261,7 @@ func TransformContainer(id string, inputs []string) Element {
 	}
 }
 
-func TransformJournal(id string, inputs []string) Element {
+func TransformJournal(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize node log events to OTLP semantic conventions",
 		ComponentID: id,
@@ -270,7 +270,7 @@ func TransformJournal(id string, inputs []string) Element {
 	}
 }
 
-func TransformAuditHost(id string, inputs []string) Element {
+func TransformAuditHost(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize audit log record to OTLP semantic conventions",
 		ComponentID: id,
@@ -279,7 +279,7 @@ func TransformAuditHost(id string, inputs []string) Element {
 	}
 }
 
-func TransformAuditKube(id string, inputs []string) Element {
+func TransformAuditKube(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize audit log kube record to OTLP semantic conventions",
 		ComponentID: id,
@@ -287,7 +287,7 @@ func TransformAuditKube(id string, inputs []string) Element {
 		VRL:         auditAPILogsVRL(),
 	}
 }
-func TransformAuditOpenshift(id string, inputs []string) Element {
+func TransformAuditOpenshift(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize audit openshiftAPI record to OTLP semantic conventions",
 		ComponentID: id,
@@ -295,7 +295,7 @@ func TransformAuditOpenshift(id string, inputs []string) Element {
 		VRL:         auditAPILogsVRL(),
 	}
 }
-func TransformAuditOvn(id string, inputs []string) Element {
+func TransformAuditOvn(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Normalize audit log ovn records to OTLP semantic conventions",
 		ComponentID: id,
@@ -305,7 +305,7 @@ func TransformAuditOvn(id string, inputs []string) Element {
 }
 
 // FormatResourceLog Drops everything except resource.attributes and scopeLogs.logRecords
-func FormatResourceLog(id string, inputs []string) Element {
+func FormatResourceLog(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Create new resource object for OTLP JSON payload",
 		ComponentID: id,
@@ -324,7 +324,7 @@ func FormatResourceLog(id string, inputs []string) Element {
 }
 
 // TransformTraceContext extracts trace context from log messages
-func TransformTraceContext(id string, inputs []string) Element {
+func TransformTraceContext(id string, inputs []string) framework.Element {
 	return elements.Remap{
 		Desc:        "Extract trace context from log messages",
 		ComponentID: id,

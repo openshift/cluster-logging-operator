@@ -361,6 +361,80 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		Expect(found).To(BeTrue())
 	})
 
+	It("should extract and send trace context to lokistack when dataModel == Otel", func() {
+		const (
+			traceLogGenName = "trace-log-generator"
+			// Expected trace context values
+			expectedTraceID = "0af7651916cd43dd8448eb211c80319c"
+			expectedSpanID  = "b7ad6b7169203331"
+			expectedFlags   = "1"
+		)
+
+		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+
+		// Only collect application logs for this test
+		forwarder.Spec.Pipelines = []obs.PipelineSpec{
+			{
+				Name:       "trace-context-pipeline",
+				OutputRefs: []string{outputName},
+				InputRefs:  []string{string(obs.InputTypeApplication)},
+			},
+		}
+
+		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+		}
+		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
+			Fail(err.Error())
+		}
+
+		// Deploy log generator with trace context in the message
+		traceLogGenNS := e2e.CreateTestNamespaceWithPrefix("clo-test-trace")
+		traceGenOpt := framework.NewDefaultLogGeneratorOptions()
+
+		// Message containing trace context fields
+		traceGenOpt.Message = fmt.Sprintf(`Processing request trace_id="%s" span_id="%s" trace_flags="%s" status=200`,
+			expectedTraceID, expectedSpanID, expectedFlags)
+		if err = e2e.DeployLogGeneratorWithNamespaceName(traceLogGenNS, traceLogGenName, traceGenOpt); err != nil {
+			Fail(fmt.Sprintf("unable to deploy trace log generator %v.", err))
+		}
+
+		// Verify logs are received with the trace context message
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(found).To(BeTrue())
+
+		// Query for logs from our trace log generator namespace using OTEL-style label
+		otlpKey := "k8s_namespace_name"
+		res, err := lokistackReceiver.GetApplicationLogsByKeyValue(serviceAccount.Name, otlpKey, traceLogGenNS, framework.DefaultWaitForLogsTimeout)
+		Expect(err).To(BeNil())
+		Expect(res).ToNot(BeEmpty())
+		Expect(len(res)).To(Equal(1))
+
+		// Verify the log stream contains logs
+		stream := res[0]
+		Expect(stream.Values).ToNot(BeEmpty())
+
+		// Verify OTEL stream labels are present
+		streamLabels := stream.Stream
+		_, hasK8sNamespace := streamLabels["k8s_namespace_name"]
+		Expect(hasK8sNamespace).To(BeTrue(), "Expected OTEL-style label k8s_namespace_name")
+		_, hasK8sContainer := streamLabels["k8s_container_name"]
+		Expect(hasK8sContainer).To(BeTrue(), "Expected OTEL-style label k8s_container_name")
+
+		// Verify trace context stream labels are present
+		actTraceId, found := streamLabels["trace_id"]
+		Expect(found).To(BeTrue(), "Expected label trace_id")
+		Expect(actTraceId).To(Equal(expectedTraceID), "Expected trace_id to be %s, got %s", expectedTraceID, actTraceId)
+		actSpanId, found := streamLabels["span_id"]
+		Expect(found).To(BeTrue(), "Expected label span_id")
+		Expect(actSpanId).To(Equal(expectedSpanID), "Expected span_id to be %s, got %s", expectedSpanID, actSpanId)
+		actTraceFlags, found := streamLabels["flags"]
+		Expect(found).To(BeTrue(), "Expected label flags")
+		Expect(actTraceFlags).To(Equal(expectedFlags), "Expected flags to be %s, got %s", expectedFlags, actTraceFlags)
+	})
+
 	AfterEach(func() {
 		e2e.Cleanup()
 		e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})

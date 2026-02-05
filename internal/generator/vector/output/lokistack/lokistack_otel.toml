@@ -1,6 +1,61 @@
+# Extract trace context from log messages
+[transforms.output_default_lokistack_trace_context]
+type = "remap"
+inputs = ["pipeline_fake"]
+source = '''
+# 1. Try to extract trace context from structured log fields
+if exists(._internal.structured) {
+	if exists(._internal.structured.trace_id) {
+		._internal.trace_id = downcase(string!(._internal.structured.trace_id))
+	}
+	if exists(._internal.structured.span_id) {
+		._internal.span_id = downcase(string!(._internal.structured.span_id))
+	}
+	if exists(._internal.structured.trace_flags) {
+		._internal.trace_flags = ._internal.structured.trace_flags
+	}
+}
+
+# 2. If not structured, try parsing the message as JSON
+if !exists(._internal.structured) {
+	parsed, err = parse_json(._internal.message)
+	if err == null {
+		if exists(parsed.trace_id) {
+			._internal.trace_id = downcase(string!(parsed.trace_id))
+		}
+		if exists(parsed.span_id) {
+			._internal.span_id = downcase(string!(parsed.span_id))
+		}
+		if exists(parsed.trace_flags) {
+			._internal.trace_flags = parsed.trace_flags
+		}
+	}
+}
+
+# 3. Fall back to regex for any fields still missing
+if !exists(._internal.trace_id) {
+	parsed, err = parse_regex(._internal.message, r'(?i)(trace_id|traceId|traceID|trace\-id|trace\.id)[=:]\s*["\']?(?<trace_id>[0-9a-f]{32})["\']?')
+	if err == null && exists(parsed.trace_id) {
+		._internal.trace_id = downcase(string!(parsed.trace_id))
+	}
+}
+if !exists(._internal.span_id) {
+	parsed, err = parse_regex(._internal.message, r'(?i)(span_id|spanId|spanID|span\-id|span\.id)[=:]\s*["\']?(?<span_id>[0-9a-f]{16})["\']?')
+	if err == null && exists(parsed.span_id) {
+		._internal.span_id = downcase(string!(parsed.span_id))
+	}
+}
+if !exists(._internal.trace_flags) {
+	parsed, err = parse_regex(._internal.message, r'(?i)(trace_flags|traceFlags|flags|trace\-flags|trace\.flags)[=:]\s*["\']?(?<trace_flags>[0-9a-f]{1,2})["\']?')
+	if err == null && exists(parsed.trace_flags) {
+		._internal.trace_flags = parsed.trace_flags
+	}
+}
+'''
+
 [transforms.output_default_lokistack_route]
 type = "route"
-inputs = ["pipeline_fake"]
+inputs = ["output_default_lokistack_trace_context"]
 route.application = '.log_type == "application"'
 route.audit = '.log_type == "audit"'
 route.infrastructure = '.log_type == "infrastructure"'
@@ -92,6 +147,18 @@ r.severityText = .level
 value = .message
 if (value == null) { value = encode_json(.structured) }
 r.body = {"stringValue": string!(value)}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
 r.attributes = append(r.attributes,
   [
 	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
@@ -216,6 +283,18 @@ r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, forma
 r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
 # Fill up auditd logRecord object
 if exists(.level) { r.severityText = .level }
 kv = parse_key_value!(to_string!(get!(.,["_internal","message"])))
@@ -283,6 +362,18 @@ r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
+
 # Openshift object for grouping (dropped before sending)
 o = {
     "log_type": .log_type,
@@ -333,6 +424,18 @@ r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
 
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
+
 # Openshift object for grouping (dropped before sending)
 o = {
     "log_type": .log_type,
@@ -382,6 +485,18 @@ r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, forma
 r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
 # Create body from internal message
 r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
 # Fill up OVN logRecord object
 if exists(.level) { r.severityText = .level }
 ovnTokens = split(to_string!(get!(.,["_internal","message"])),"|")
@@ -530,6 +645,18 @@ r.severityText = .level
 value = .message
 if (value == null) { value = encode_json(.structured) }
 r.body = {"stringValue": string!(value)}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
 r.attributes = append(r.attributes,
   [
 	{"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
@@ -612,6 +739,18 @@ r.severityText = .level
 value = .message
 if (value == null) { value = encode_json(.structured) }
 r.body = {"stringValue": string!(value)}
+
+# Set trace context fields if any
+if exists(._internal.trace_id) {
+  r.traceId = ._internal.trace_id
+}
+if exists(._internal.span_id) {
+  r.spanId = ._internal.span_id
+}
+if exists(._internal.trace_flags) {
+  r.flags = ._internal.trace_flags
+}
+
 r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
 # Openshift object for grouping (dropped before sending)
 o = {

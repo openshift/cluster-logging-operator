@@ -40,6 +40,7 @@ type LogRecord struct {
 	SeverityText         string      `json:"severityText,omitempty"`
 	TraceID              string      `json:"traceId,omitempty"`
 	SpanID               string      `json:"spanId,omitempty"`
+	Flags                uint32      `json:"flags,omitempty"`
 	Body                 StringValue `json:"body,omitempty"`
 	Attributes           []Attribute `json:"attributes,omitempty"`
 }

@@ -21,6 +21,8 @@ import (
 const (
 	// OtlpLogSourcesOption Option identifier to restrict the generated code to this list of log sources
 	OtlpLogSourcesOption = "otlpLogSourcesOption"
+	// MigratedFromLokistackOption Option identifier to skip trace context extraction remap for outputs migrated from lokistack
+	MigratedFromLokistackOption = "migratedFromLokistackOption"
 )
 
 type Otlp struct {
@@ -88,9 +90,19 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	sources := logSources(opSources)
 	// TODO: create a pattern to filter by input so all this is not necessary
 	var els []Element
-	// Creates reroutes for 'container','node','auditd','kubeAPI','openshiftAPI','ovn'
 	rerouteID := vectorhelpers.MakeID(id, "reroute") // "output_my_id_reroute
-	els = append(els, RouteBySource(rerouteID, inputs, sources))
+
+	// Skip trace context extraction remap for outputs migrated from lokistack.
+	// This is because the trace context extraction remap is already applied in the lokistack output.
+	if fromLokistack, _ := utils.GetOption(op, MigratedFromLokistackOption, false); fromLokistack {
+		els = append(els, RouteBySource(rerouteID, inputs, sources))
+	} else {
+		// Push all logs bound for OTLP through trace context extraction remap first if not from lokistack
+		transformTraceContextID := vectorhelpers.MakeID(id, "trace", "context")
+		els = append(els, TransformTraceContext(transformTraceContextID, inputs))
+		els = append(els, RouteBySource(rerouteID, []string{transformTraceContextID}, sources))
+	}
+	// Creates reroutes for 'container','node','auditd','kubeAPI','openshiftAPI','ovn'
 	els = append(els, elements.NewUnmatched(rerouteID, op, nil))
 
 	groupBySourceInputs := []string{}

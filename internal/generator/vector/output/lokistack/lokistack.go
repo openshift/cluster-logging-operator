@@ -28,13 +28,22 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	tenants := determineTenants(inputSpecs)
 
 	routeID := vectorhelpers.MakeID(id, "route")
-	confs := []framework.Element{
-		elements.Route{
-			ComponentID: routeID,
-			Inputs:      vectorhelpers.MakeInputs(inputs...),
-			Routes:      buildRoutes(tenants),
-		},
+
+	var confs []framework.Element
+
+	initialInput := vectorhelpers.MakeInputs(inputs...)
+	// Add trace context extraction remap if data model is OpenTelemetry as top level remap
+	if o.LokiStack != nil && o.LokiStack.DataModel == obs.LokiStackDataModelOpenTelemetry {
+		transformTraceContextID := vectorhelpers.MakeID(id, "trace", "context")
+		confs = append(confs, otlp.TransformTraceContext(transformTraceContextID, inputs))
+		initialInput = vectorhelpers.MakeInputs(transformTraceContextID)
 	}
+
+	confs = append(confs, elements.Route{
+		ComponentID: routeID,
+		Inputs:      initialInput,
+		Routes:      buildRoutes(tenants),
+	})
 
 	confs = append(confs, elements.NewUnmatched(routeID, op, map[string]string{
 		"output_type": strings.ToLower(obs.OutputTypeLokiStack.String()),
@@ -95,6 +104,7 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 
 	if migratedOutput.Type == obs.OutputTypeOTLP {
 		op[otlp.OtlpLogSourcesOption] = getInputSources(inputSpecs, obs.InputType(inputType))
+		op[otlp.MigratedFromLokistackOption] = true
 		return otlp.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)
 	}
 

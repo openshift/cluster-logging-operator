@@ -129,4 +129,64 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			Entry("should pass with zstd", "zstd"),
 			Entry("should pass with no compression", "none"))
 	})
+
+	DescribeTable("should send logs with trace context", func(message string, expectedTraceID, expectedSpanID string, expectedFlag uint32) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToOtlpOutput()
+
+		Expect(framework.DeployWithVisitor(func(b *runtime.PodBuilder) error {
+			return framework.AddOTELCollector(b, string(obs.OutputTypeOTLP))
+		})).To(BeNil())
+
+		appNamespace = framework.Pod.Namespace
+
+		// Write message with trace context
+		crioLine := functional.NewCRIOLogMessage(timestamp, message, false)
+		Expect(framework.WriteMessagesToNamespace(crioLine, appNamespace, 1)).To(Succeed())
+
+		// Read logs
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeOTLP))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(raw).ToNot(BeEmpty())
+
+		logs, err := otlp.ParseLogs(raw[0])
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+
+		resourceLog := logs.ResourceLogs[0]
+		scopeLogs := resourceLog.ScopeLogs
+		Expect(scopeLogs).To(HaveLen(1))
+		logRecords := scopeLogs[0].LogRecords
+		Expect(logRecords).To(HaveLen(1))
+
+		logRecord := logRecords[0]
+		Expect(logRecord.TraceID).To(Equal(expectedTraceID), "Expected trace_id to match")
+		Expect(logRecord.SpanID).To(Equal(expectedSpanID), "Expected span_id to match")
+		Expect(logRecord.Flags).To(Equal(expectedFlag), "Expected trace_flags to match")
+	},
+		Entry("should extract trace context with '=' separator",
+			`Processing request trace_id="0af7651916cd43dd8448eb211c80319c" span_id="b7ad6b7169203331" trace_flags="01"`,
+			"0af7651916cd43dd8448eb211c80319c", "b7ad6b7169203331", uint32(1),
+		),
+		Entry("should extract trace context with ':' separator",
+			`host:192.168.0.1 trace_id:abcdef1234567890abcdef1234567890 span_id:fedcba9876543210 trace_flags:00 status:200`,
+			"abcdef1234567890abcdef1234567890", "fedcba9876543210", uint32(0),
+		),
+		Entry("should convert uppercase hex to lowercase",
+			`trace_id=ABCDEF1234567890ABCDEF1234567890 span_id=FEDCBA9876543210 trace_flags=00`,
+			"abcdef1234567890abcdef1234567890", "fedcba9876543210", uint32(0),
+		),
+		Entry("should extract trace context without quotes",
+			`trace_id=0af7651916cd43dd8448eb211c80319c span_id=b7ad6b7169203331 trace_flags=01`,
+			"0af7651916cd43dd8448eb211c80319c", "b7ad6b7169203331", uint32(1),
+		),
+		Entry("should extract trace context with single quotes",
+			`trace_id='0af7651916cd43dd8448eb211c80319c' span_id='b7ad6b7169203331' trace_flags='01'`,
+			"0af7651916cd43dd8448eb211c80319c", "b7ad6b7169203331", uint32(1),
+		),
+		Entry("should extract trace context flag with single digit",
+			`trace_id='0af7651916cd43dd8448eb211c80319c' span_id='b7ad6b7169203331' trace_flags='1'`,
+			"0af7651916cd43dd8448eb211c80319c", "b7ad6b7169203331", uint32(1),
+		),
+	)
 })

@@ -7,7 +7,7 @@ import (
 )
 
 func TestSafeMap(t *testing.T) {
-	var y float64 = 0.04
+	var y = 0.04
 	m := InitStringMap(map[string]string{"x": "y"})
 	assert.Equal(t, "y", m.Get("x"))
 	m.Set("x", "z")

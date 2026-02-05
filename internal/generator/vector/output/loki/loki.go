@@ -4,19 +4,17 @@ import (
 	"fmt"
 	"strings"
 
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
-
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -75,7 +73,7 @@ var (
 type Loki struct {
 	ComponentID string
 	Inputs      string
-	TenantID    Element
+	TenantID    framework.Element
 	Endpoint    string
 	Proxy       string
 	LokiLabel   []string
@@ -148,16 +146,16 @@ func (e *Loki) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
 
-	var tenantTemplate Element
+	var tenantTemplate framework.Element
 	sink := Output(id, o, []string{remapLabelID}, "")
 	if hasTenantKey(o.Loki) {
 		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
@@ -169,7 +167,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		strategy.VisitSink(sink)
 	}
 
-	return []Element{
+	return []framework.Element{
 		CleanupFields(componentID, inputs),
 		RemapLabels(remapLabelID, o, []string{componentID}),
 		tenantTemplate,
@@ -189,7 +187,7 @@ func Output(id string, o obs.OutputSpec, inputs []string, tenant string) *Loki {
 	return &Loki{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		Endpoint:    o.Loki.URLSpec.URL,
+		Endpoint:    o.Loki.URL,
 		Proxy:       o.Loki.ProxyURL,
 		TenantID:    Tenant(o.Loki, tenant),
 		RootMixin:   common.NewRootMixin(nil),
@@ -287,15 +285,15 @@ func formatLokiLabelValue(value string) string {
 	return fmt.Sprintf("{{%s}}", value)
 }
 
-func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
-	return Remap{
+func RemapLabels(id string, o obs.OutputSpec, inputs []string) framework.Element {
+	return elements.Remap{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         remapLabelsVrl(containerLabels),
 	}
 }
 
-func NewLabels(id string, o obs.OutputSpec) Element {
+func NewLabels(id string, o obs.OutputSpec) framework.Element {
 	return LokiLabels{
 		ComponentID: id,
 		Labels:      lokiLabels(o.Loki),
@@ -306,15 +304,15 @@ func hasTenantKey(l *obs.Loki) bool {
 	return l != nil && l.TenantKey != ""
 }
 
-func Tenant(l *obs.Loki, tenant string) Element {
+func Tenant(l *obs.Loki, tenant string) framework.Element {
 	if !hasTenantKey(l) {
-		return Nil
+		return framework.Nil
 	}
-	return KV("tenant_id", fmt.Sprintf(`"{{ _internal.%s }}"`, tenant))
+	return elements.KV("tenant_id", fmt.Sprintf(`"{{ _internal.%s }}"`, tenant))
 }
 
-func CleanupFields(id string, inputs []string) Element {
-	return Remap{
+func CleanupFields(id string, inputs []string) framework.Element {
+	return elements.Remap{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		VRL:         "del(.tag)",

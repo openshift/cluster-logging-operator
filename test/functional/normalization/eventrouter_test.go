@@ -66,7 +66,7 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 				Event: *event,
 				Verb:  types.AnyString,
 			}
-			tmpl.Kubernetes.Event.Event.Message = ""
+			tmpl.Kubernetes.Event.Message = ""
 			if oldEvent != nil {
 				tmpl.OldEvent = oldEvent
 			}
@@ -76,10 +76,11 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 
 		parseLogs = func(raw []string, outputType obs.OutputType) ([]types.EventRouterLog, error) {
 			var logs []types.EventRouterLog
-			if outputType == obs.OutputTypeHTTP {
+			switch outputType {
+			case obs.OutputTypeHTTP:
 				err := types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 				return logs, err
-			} else if outputType == obs.OutputTypeSyslog {
+			case obs.OutputTypeSyslog:
 				jsStr := make([]string, len(raw))
 				for i, s := range raw {
 					s, _ := syslog.ParseRFC5424SyslogLogs(s)

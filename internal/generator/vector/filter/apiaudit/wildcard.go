@@ -24,6 +24,8 @@ func matchAnyPath(wildcards []string) string {
 
 // anyWildcardRegexp returns an anchored regexp matching any of the given wildcards.
 // The suffix is appended to the regex for each wildcard.
+//
+//nolint:errcheck
 func anyWildcardRegexp(w io.Writer, wildcards []string, suffix string) {
 	fmt.Fprint(w, `r'^(`)
 	for i, wildcard := range wildcards {
@@ -38,6 +40,8 @@ func anyWildcardRegexp(w io.Writer, wildcards []string, suffix string) {
 }
 
 // wildcardRegexp writes an un-anchroed regexp equivalent to wildcard with leading or trailing "*"
+//
+//nolint:errcheck
 func wildcardRegexp(w io.Writer, wildcard string) {
 	if strings.HasPrefix(wildcard, "*") {
 		fmt.Fprint(w, ".*")

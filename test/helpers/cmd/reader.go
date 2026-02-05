@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	testerrors "github.com/openshift/cluster-logging-operator/test/helpers/errors"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -72,7 +73,7 @@ func (r *Reader) ReadLineContext(ctx context.Context) (string, error) {
 	case <-read:
 		return line, r.readErr(err)
 	case <-ctx.Done():
-		r.Close()
+		testerrors.LogIfError(r.Close())
 		return "", ctx.Err()
 	}
 }

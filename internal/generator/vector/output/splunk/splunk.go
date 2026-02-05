@@ -2,19 +2,18 @@ package splunk
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 // VRL template for detecting default Splunk 'source' field by .log_type and .log_source
@@ -84,11 +83,11 @@ type Splunk struct {
 	Inputs        string
 	Endpoint      string
 	DefaultToken  string
-	Index         Element
-	IndexedFields Element
-	Source        Element
-	SourceType    Element
-	HostKey       Element
+	Index         framework.Element
+	IndexedFields framework.Element
+	Source        framework.Element
+	SourceType    framework.Element
+	HostKey       framework.Element
 	common.RootMixin
 }
 
@@ -118,15 +117,15 @@ func (s *Splunk) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	inputID := vectorhelpers.MakeID(id, "timestamp")
 
-	var indexTemplate Element
+	var indexTemplate framework.Element
 	splunkIndexID := ""
 	if hasIndexKey(o.Splunk) {
 		splunkIndexID = vectorhelpers.MakeID(id, "splunk_index")
@@ -156,7 +155,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		op["indexed_fields"] = remapped
 	}
 	splunkMetadataID := vectorhelpers.MakeID(id, "metadata")
-	metadata := Remap{ComponentID: splunkMetadataID,
+	metadata := elements.Remap{ComponentID: splunkMetadataID,
 		Inputs: vectorhelpers.MakeInputs(inputID),
 		VRL:    builder.String()}
 
@@ -166,7 +165,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	if strategy != nil {
 		strategy.VisitSink(splunkSink)
 	}
-	return []Element{
+	return []framework.Element{
 		FixTimestampFormat(vectorhelpers.MakeID(id, "timestamp"), inputs),
 		indexTemplate,
 		metadata,
@@ -187,9 +186,9 @@ func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets ob
 		Endpoint:      o.Splunk.URL,
 		Index:         Tenant(o.Splunk, index),
 		RootMixin:     common.NewRootMixin("none"),
-		Source:        KV("source", `"{{ ._internal.splunk.source }}"`),
-		SourceType:    KV("sourcetype", `"{{ ._internal.splunk.sourcetype }}"`),
-		HostKey:       KV("host_key", `"._internal.hostname"`),
+		Source:        elements.KV("source", `"{{ ._internal.splunk.source }}"`),
+		SourceType:    elements.KV("sourcetype", `"{{ ._internal.splunk.sourcetype }}"`),
+		HostKey:       elements.KV("host_key", `"._internal.hostname"`),
 		IndexedFields: IndexedFields(o.Splunk, op),
 	}
 	authentication := o.Splunk.Authentication
@@ -199,7 +198,7 @@ func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets ob
 	return s
 }
 
-func FixTimestampFormat(componentID string, inputs []string) Element {
+func FixTimestampFormat(componentID string, inputs []string) framework.Element {
 	var vrl = `
 ts, err = parse_timestamp(._internal.timestamp,"%+")
 if err != null {
@@ -208,7 +207,7 @@ if err != null {
 	._internal.timestamp = ts
 }
 `
-	return Remap{
+	return elements.Remap{
 		Desc:        "Ensure timestamp field well formatted for Splunk",
 		ComponentID: componentID,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
@@ -220,17 +219,17 @@ func hasIndexKey(s *obs.Splunk) bool {
 	return s != nil && s.Index != ""
 }
 
-func Tenant(s *obs.Splunk, index string) Element {
+func Tenant(s *obs.Splunk, index string) framework.Element {
 	if !hasIndexKey(s) {
-		return Nil
+		return framework.Nil
 	}
-	return KV("index", fmt.Sprintf(`"{{ ._internal.%s }}"`, index))
+	return elements.KV("index", fmt.Sprintf(`"{{ ._internal.%s }}"`, index))
 }
 
-func IndexedFields(s *obs.Splunk, op utils.Options) Element {
+func IndexedFields(s *obs.Splunk, op utils.Options) framework.Element {
 	if s.IndexedFields != nil && op.Has("indexed_fields") {
 		in, _ := utils.GetOption[string](op, "indexed_fields", "")
-		return KV("indexed_fields", in)
+		return elements.KV("indexed_fields", in)
 	}
-	return Nil
+	return framework.Nil
 }

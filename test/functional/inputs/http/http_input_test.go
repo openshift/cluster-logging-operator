@@ -108,7 +108,7 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 	var (
 		framework   *functional.CollectorFunctionalFramework
 		events      auditv1.EventList
-		eventsBytes = []byte(strings.Replace(eventsString, "\n", "", -1))
+		eventsBytes = []byte(strings.ReplaceAll(eventsString, "\n", ""))
 	)
 
 	BeforeEach(func() {

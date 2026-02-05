@@ -1,6 +1,5 @@
 package file
 
-
 type sourceType string
 
 const SourceTypeFile sourceType = "file"

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	testerrors "github.com/openshift/cluster-logging-operator/test/helpers/errors"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
@@ -119,7 +120,7 @@ func (r *Receiver) Create(c *client.Client) error {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err == nil {
-			defer resp.Body.Close()
+			defer testerrors.LogIfError(resp.Body.Close())
 			err = test.HTTPError(resp)
 		}
 		return err == nil, nil
@@ -175,7 +176,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 		log.V(3).Error(err, "Loki Query", "url", u.String())
 		return nil, fmt.Errorf("%w\nURL: %v", err, u)
 	}
-	defer resp.Body.Close()
+	defer func() { testerrors.LogIfError(resp.Body.Close()) }()
 	qr := QueryResponse{}
 	if err = json.NewDecoder(resp.Body).Decode(&qr); err != nil {
 		return nil, err
@@ -274,7 +275,7 @@ func (r *Receiver) Labels() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get %q: %w", u, err)
 	}
-	defer resp.Body.Close()
+	defer testerrors.LogIfError(resp.Body.Close())
 	lr := labelResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&lr); err != nil {
 		return nil, err
@@ -295,6 +296,6 @@ func (r *Receiver) Push(sv ...StreamValues) error {
 	if err != nil {
 		return fmt.Errorf("post %q: %w", u, err)
 	}
-	resp.Body.Close()
+	testerrors.LogIfError(resp.Body.Close())
 	return nil
 }

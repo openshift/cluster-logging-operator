@@ -215,7 +215,7 @@ func (f *CollectorFunctionalFramework) GenerateESAccessToken(container string, o
 	auth = fmt.Sprintf(`-u '%s':'%s'`, ElasticUsername, ElasticPassword)
 
 	esPod := runtime.NewPod(f.Test.NS.Name, string(obs.OutputTypeElasticsearch))
-	if err := f.Test.Client.Get(esPod); err != nil {
+	if err := f.Test.Get(esPod); err != nil {
 		return "", err
 	}
 
@@ -265,7 +265,7 @@ func (f *CollectorFunctionalFramework) DeployESTokenPodWithService() (err error)
 		return err
 	}
 
-	if err = f.Test.Client.Create(esPod); err != nil {
+	if err = f.Test.Create(esPod); err != nil {
 		return err
 	}
 
@@ -273,7 +273,7 @@ func (f *CollectorFunctionalFramework) DeployESTokenPodWithService() (err error)
 		return err
 	}
 
-	if err = f.Test.Client.Get(esPod); err != nil {
+	if err = f.Test.Get(esPod); err != nil {
 		return err
 	}
 
@@ -291,7 +291,7 @@ func (f *CollectorFunctionalFramework) DeployESService(name string, labels map[s
 		AddServicePort(9200, 9200).
 		WithSelector(labels)
 
-	if err := f.Test.Client.Create(service); err != nil {
+	if err := f.Test.Create(service); err != nil {
 		return err
 	}
 	log.V(2).Info("waiting for service endpoints to be ready")

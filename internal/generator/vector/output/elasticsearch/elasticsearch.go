@@ -3,15 +3,15 @@ package elasticsearch
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 type Elasticsearch struct {
@@ -49,17 +49,17 @@ func (e *Elasticsearch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(id, helpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(id, helpers.MakeInputs(inputs...)),
 		}
 	}
 	componentID := helpers.MakeID(id, "index")
-	outputs := []Element{}
+	outputs := []framework.Element{}
 	if o.Elasticsearch.Version == 6 {
 		addID := helpers.MakeID(id, "add_id")
-		outputs = append(outputs, Remap{
+		outputs = append(outputs, elements.Remap{
 			ComponentID: addID,
 			Inputs:      helpers.MakeInputs(inputs...),
 			VRL: `._id = encode_base64(uuid_v4())
@@ -82,7 +82,7 @@ if exists(.kubernetes.event.metadata.uid) {
 		common.NewBatch(id, strategy),
 		common.NewBuffer(id, strategy),
 		Request(id, o.Elasticsearch, strategy),
-		tls.New(id, o.TLS, secrets, op, Option{Name: URL, Value: o.Elasticsearch.URL}),
+		tls.New(id, o.TLS, secrets, op, framework.Option{Name: framework.URL, Value: o.Elasticsearch.URL}),
 	)
 
 	if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil {
@@ -94,7 +94,7 @@ if exists(.kubernetes.event.metadata.uid) {
 	return outputs
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets observability.Secrets, op Options) *Elasticsearch {
+func Output(id string, o obs.OutputSpec, inputs []string, index string, secrets observability.Secrets, op utils.Options) *Elasticsearch {
 	idKey := genhelper.NewOptionalPair("id_key", nil)
 	if o.Elasticsearch.Version == 6 {
 		idKey.Value = "_id"

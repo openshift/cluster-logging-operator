@@ -43,7 +43,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 	//zookeeperm - configmap with zookeeperDeploymentName being "zookeeper", in b.Pod.Namespace
 	zookeepercm := kafka.NewZookeeperConfigMapFunctionalTestPod(b.Pod.Namespace)
 	log.V(2).Info("Creating zookeeper configmap", "namespace", zookeepercm.Namespace, "name", zookeepercm.Name)
-	if err := f.Test.Client.Create(zookeepercm); err != nil {
+	if err := f.Test.Create(zookeepercm); err != nil {
 		return err
 	}
 
@@ -80,7 +80,7 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 	// configmap for broker with DeploymentName=kafka, b.Pod.Namespace, and data specific to broker
 	brokercm := kafka.NewBrokerConfigMapFunctionalTestPod(b.Pod.Namespace)
 	log.V(2).Info("Creating Broker ConfigMap", "namespace", brokercm.Namespace, "name", brokercm.Name)
-	if err := f.Test.Client.Create(brokercm); err != nil {
+	if err := f.Test.Create(brokercm); err != nil {
 		return err
 	}
 

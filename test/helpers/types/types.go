@@ -420,11 +420,11 @@ type AuditLog struct {
 	AuditLinux               AuditLinux       `json:"audit.linux,omitempty"`
 	Message                  string           `json:"message,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata"`
-	TimestampLegacy          *time.Time        `json:"@timestamp,omitempty"`
-	Timestamp                *time.Time        `json:"timestamp,omitempty"`
+	TimestampLegacy          *time.Time       `json:"@timestamp,omitempty"`
+	Timestamp                *time.Time       `json:"timestamp,omitempty"`
 	Docker                   Docker           `json:"docker,omitempty"`
 	LogType                  string           `json:"log_type,omitempty"`
-	LogSource                string `json:"log_source,omitempty"`
+	LogSource                string           `json:"log_source,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`
 	Kubernetes               Kubernetes       `json:"kubernetes,omitempty"`

@@ -25,7 +25,7 @@ var (
 func ReconcileTrustedCABundleConfigMap(k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
 	cm := runtime.NewConfigMap(namespace, name, nil)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8sClient, cm, func() error {
-		cm.ObjectMeta.Labels = map[string]string{constants.InjectTrustedCABundleLabel: "true"}
+		cm.Labels = map[string]string{constants.InjectTrustedCABundleLabel: "true"}
 		cm.OwnerReferences = []metav1.OwnerReference{owner}
 		return nil
 	})

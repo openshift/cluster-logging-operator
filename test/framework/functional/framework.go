@@ -136,7 +136,9 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 			if err != nil {
 				log.Error(err, "Unable to retrieve logs", "container", container.Name)
 			}
-			fmt.Fprintln(f.delayedWriter, logs)
+			if _, err = fmt.Fprintln(f.delayedWriter, logs); err != nil {
+				log.Error(err, "Error writing", "container", container.Name)
+			}
 		}
 		f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName(), g.LineNumber()))
 	}
@@ -223,7 +225,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	runtime.NewConfigMapBuilder(certs).
 		Add("tls.key", string(serverCert.PrivateKeyPEM())).
 		Add("tls.crt", string(serverCert.CertificatePEM()))
-	if err = f.Test.Client.Create(certs); err != nil {
+	if err = f.Test.Create(certs); err != nil {
 		return err
 	}
 
@@ -232,7 +234,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	runtime.NewServiceBuilder(service).
 		AddServicePort(24231, 24231).
 		WithSelector(f.Labels)
-	if err = f.Test.Client.Create(service); err != nil {
+	if err = f.Test.Create(service); err != nil {
 		return err
 	}
 
@@ -243,7 +245,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			APIGroups: []string{""},
 		},
 	)
-	if err = f.Test.Client.Create(role); err != nil {
+	if err = f.Test.Create(role); err != nil {
 		return err
 	}
 	rolebinding := runtime.NewClusterRoleBinding(fmt.Sprintf("%s-%s", f.Test.NS.Name, f.Name),
@@ -258,7 +260,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			Namespace: f.Test.NS.Name,
 		},
 	)
-	if err = f.Test.Client.Create(rolebinding); err != nil {
+	if err = f.Test.Create(rolebinding); err != nil {
 		return err
 	}
 
@@ -301,10 +303,10 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 
 	log.V(2).Info("Creating pod", "pod", f.Pod)
-	if err = f.Test.Client.Create(f.Pod); err != nil {
+	if err = f.Test.Create(f.Pod); err != nil {
 		return err
 	}
-	if err = f.Test.Client.Get(f.Pod); err != nil {
+	if err = f.Test.Get(f.Pod); err != nil {
 		return err
 	}
 
@@ -318,7 +320,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 
 		return err
 	}
-	if err = f.Test.Client.Get(f.Pod); err != nil {
+	if err = f.Test.Get(f.Pod); err != nil {
 		return err
 	}
 	log.V(2).Info("waiting for service endpoints to be ready")
@@ -382,7 +384,7 @@ func (f *CollectorFunctionalFramework) deploySecrets() error {
 	for _, secret := range f.Secrets {
 		secret.Namespace = f.Namespace
 		log.V(2).Info("Creating secret", "namespace", secret.Namespace, "name", secret.Name)
-		if err := f.Test.Client.Create(secret); err != nil {
+		if err := f.Test.Create(secret); err != nil {
 			return err
 		}
 	}

@@ -17,7 +17,7 @@ func EqualDiff(expect interface{}) types.GomegaMatcher {
 type diffMatcher struct{ matchers.EqualMatcher }
 
 func (m *diffMatcher) FailureMessage(actual interface{}) (message string) {
-	return "Unexpected diff (-expected, +actual):\n" + cmp.Diff(m.EqualMatcher.Expected, actual)
+	return "Unexpected diff (-expected, +actual):\n" + cmp.Diff(m.Expected, actual)
 }
 
 // EqualLines matches multi-line text ignoring blank lines (but not leading/trailing space)

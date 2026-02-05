@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +24,7 @@ func List(client kubernetes.Reader, namespace, key, value string) (*core.Service
 func Delete(client kubernetes.Client, namespace, name string) error {
 	service := runtime.NewService(namespace, name)
 	if err := client.Delete(context.TODO(), service); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting service %s/%s: %v", namespace, name, err)
+		return fmt.Errorf("failure deleting service %s/%s: %v", namespace, name, err)
 	}
 
 	return nil

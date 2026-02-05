@@ -11,6 +11,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	testrt "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test"
+	testerrors "github.com/openshift/cluster-logging-operator/test/helpers/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -285,7 +286,7 @@ func (c *Client) ContainerLogs(namespace, podName, containerName string) string 
 	if err != nil {
 		return err.Error()
 	}
-	defer r.Close()
+	defer testerrors.LogIfError(r.Close())
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return err.Error()

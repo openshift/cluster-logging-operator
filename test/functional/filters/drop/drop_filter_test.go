@@ -76,7 +76,7 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			for _, msg := range logs {
 				Expect(msg.ViaQCommon.Message).ToNot(Equal("my error message"))
 				Expect(msg.ViaQCommon.Message).ToNot(Equal("debug message"))
-				if msg.ViaQCommon.Message == "information message" {
+				if msg.Message == "information message" {
 					hasInfoMessage = true
 				}
 			}

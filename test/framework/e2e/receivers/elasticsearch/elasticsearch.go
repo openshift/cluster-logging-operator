@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -135,11 +136,11 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 }
 
 func (es *ElasticLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
-	return "Not Found", fmt.Errorf("Not implemented")
+	return "Not Found", fmt.Errorf("not implemented")
 }
 
 func (es *ElasticLogStore) RetrieveLogs() (map[string]string, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (es *ElasticLogStore) ClusterLocalEndpoint() string {
@@ -157,7 +158,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		return nil, err
 	}
 	if len(pods.Items) == 0 {
-		return nil, errors.New("No pods found for elasticsearch")
+		return nil, errors.New("no pods found for elasticsearch")
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}

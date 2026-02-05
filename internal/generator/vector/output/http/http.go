@@ -3,14 +3,14 @@ package http
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 type Http struct {
@@ -53,21 +53,21 @@ func (h *Http) SetCompression(algo string) {
 	h.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op Options) []Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
-		return []Element{
-			Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
+		return []framework.Element{
+			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
 		}
 	}
-	var els []Element
+	var els []framework.Element
 	sink := Output(id, o, inputs, secrets, op)
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
-	return MergeElements(
+	return framework.MergeElements(
 
 		els,
-		[]Element{
+		[]framework.Element{
 			sink,
 			common.NewEncoding(id, common.CodecJSON),
 			common.NewAcknowledgments(id, strategy),
@@ -80,10 +80,10 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	)
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op Options) *Http {
+func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options) *Http {
 	return &Http{
 		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
+		Inputs:      helpers.MakeInputs(inputs...),
 		URI:         o.HTTP.URL,
 		Method:      Method(o.HTTP),
 		Proxy:       o.HTTP.ProxyURL,

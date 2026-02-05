@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -43,7 +43,7 @@ merge_strategies.logRecords = "array"
 `
 }
 
-func GroupByContainer(id string, inputs []string) Element {
+func GroupByContainer(id string, inputs []string) framework.Element {
 	return Reduce{
 		Desc:        "Merge container logs and group by namespace, pod and container",
 		ComponentID: id,
@@ -54,7 +54,7 @@ func GroupByContainer(id string, inputs []string) Element {
 	}
 }
 
-func GroupBySource(id string, inputs []string) Element {
+func GroupBySource(id string, inputs []string) framework.Element {
 	return Reduce{
 		Desc:        "Merge audit api and node logs and group by log_source",
 		ComponentID: id,
@@ -64,7 +64,7 @@ func GroupBySource(id string, inputs []string) Element {
 	}
 }
 
-func GroupByHost(id string, inputs []string) Element {
+func GroupByHost(id string, inputs []string) framework.Element {
 	return Reduce{
 		Desc:        "Merge auditd host logs and group by hostname",
 		ComponentID: id,

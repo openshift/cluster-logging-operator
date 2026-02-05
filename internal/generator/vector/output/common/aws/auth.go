@@ -1,36 +1,37 @@
 package aws
 
 import (
+	"strings"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	. "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"strings"
 )
 
 type AwsAuth struct {
-	KeyID           OptionalPair
-	KeySecret       OptionalPair
-	CredentialsPath OptionalPair
-	Profile         OptionalPair
-	AssumeRole      OptionalPair
-	ExternalID      OptionalPair
-	SessionName     OptionalPair
+	KeyID           helpers.OptionalPair
+	KeySecret       helpers.OptionalPair
+	CredentialsPath helpers.OptionalPair
+	Profile         helpers.OptionalPair
+	AssumeRole      helpers.OptionalPair
+	ExternalID      helpers.OptionalPair
+	SessionName     helpers.OptionalPair
 }
 
 func NewAuth() AwsAuth {
 	return AwsAuth{
-		KeyID:           NewOptionalPair("auth.access_key_id", nil),
-		KeySecret:       NewOptionalPair("auth.secret_access_key", nil),
-		CredentialsPath: NewOptionalPair("auth.credentials_file", nil),
-		Profile:         NewOptionalPair("auth.profile", nil),
-		AssumeRole:      NewOptionalPair("auth.assume_role", nil),
-		ExternalID:      NewOptionalPair("auth.external_id", nil),
-		SessionName:     NewOptionalPair("auth.session_name", nil),
+		KeyID:           helpers.NewOptionalPair("auth.access_key_id", nil),
+		KeySecret:       helpers.NewOptionalPair("auth.secret_access_key", nil),
+		CredentialsPath: helpers.NewOptionalPair("auth.credentials_file", nil),
+		Profile:         helpers.NewOptionalPair("auth.profile", nil),
+		AssumeRole:      helpers.NewOptionalPair("auth.assume_role", nil),
+		ExternalID:      helpers.NewOptionalPair("auth.external_id", nil),
+		SessionName:     helpers.NewOptionalPair("auth.session_name", nil),
 	}
 }
 

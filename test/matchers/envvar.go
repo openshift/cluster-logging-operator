@@ -21,11 +21,11 @@ func IncludeEnvVar(expected interface{}) *EnvVarMatcher {
 func (m *EnvVarMatcher) Match(actual interface{}) (success bool, err error) {
 	expVar, ok := m.expected.(v1.EnvVar)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects v1.EnvVar")
+		return false, fmt.Errorf("matcher expects v1.EnvVar")
 	}
 	actualVars, ok := actual.([]v1.EnvVar)
 	if !ok {
-		return false, fmt.Errorf("Matcher expects []v1.EnvVars")
+		return false, fmt.Errorf("matcher expects []v1.EnvVars")
 	}
 	var foundVar *v1.EnvVar
 	for i := range actualVars {

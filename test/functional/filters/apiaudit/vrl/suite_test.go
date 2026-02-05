@@ -5,11 +5,12 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -90,7 +91,7 @@ func FilteredBytes(policy *obs.KubeAPIAudit, b []byte) []byte {
 
 func vectorCmd(p *obs.KubeAPIAudit) *exec.Cmd {
 	vrl, err := apiaudit.NewFilter(p).VRL()
-	Expect(err).NotTo(HaveOccurred(), "%#v", *p)
+	Expect(err).NotTo(HaveOccurred(), "Failed converting the filter to VRL: %#v", *p)
 	conf := fmt.Sprintf(`
 # Vector config for tests that read from stdin and print filtered events to stdout
 [sources.in]
@@ -109,7 +110,7 @@ type = "console"
 inputs = ["policy"]
 encoding.codec = "json"
 `, vrl)
-	Expect(cmd.PodWrite(pod, "", "/tmp/vector.toml", []byte(conf))).To(Succeed())
+	Expect(cmd.PodWrite(pod, "", "/tmp/vector.toml", []byte(conf))).To(Succeed(), "Failed writing the configuration to the pod.")
 	cmd := testruntime.Exec(pod, "vector", "-c", "/tmp/vector.toml")
 	cmd.Stderr = test.Writer()
 	return cmd

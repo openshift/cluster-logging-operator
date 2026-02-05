@@ -203,9 +203,10 @@ func findMatchingParen(s string, start int) int {
 		}
 
 		if !inQuotes {
-			if s[i] == '(' {
+			switch s[i] {
+			case '(':
 				count++
-			} else if s[i] == ')' {
+			case ')':
 				count--
 				if count == 0 {
 					return i

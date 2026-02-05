@@ -152,5 +152,19 @@ var _ = Describe("Generate vector config", func() {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
 		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), false, func(spec *obs.OutputSpec) {}),
+		Entry("with Otel datamodel and additional trace context field names", "lokistack_otel_with_additional_field_names.toml", initOptions(), false, func(spec *obs.OutputSpec) {
+			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+			spec.LokiStack.OtlpTraceContext = &obs.OtlpTraceContextSpec{
+				AdditionalTraceIdFieldNames:    []string{"traceId", "trace-id"},
+				AdditionalSpanIdFieldNames:     []string{"spanId", "span-id"},
+				AdditionalTraceFlagsFieldNames: []string{"flags", "trace-flags"},
+			}
+		}),
+		Entry("with Otel datamodel and custom trace context patterns", "lokistack_otel_with_custom_trace_context_patterns.toml", initOptions(), false, func(spec *obs.OutputSpec) {
+			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+			spec.LokiStack.OtlpTraceContext = &obs.OtlpTraceContextSpec{
+				CustomPatterns: []string{`traceparent[=:]\s*["\']?00-(?<trace_id>[0-9a-fA-F]{32})-(?<span_id>[0-9a-fA-F]{16})-(?<trace_flags>[0-9a-fA-F]{2})["\']?`},
+			}
+		}),
 	)
 })

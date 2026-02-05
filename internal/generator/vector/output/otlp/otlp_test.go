@@ -170,5 +170,29 @@ var _ = Describe("Generate vector config", func() {
 			},
 			"otlp_with_auth_basic.toml",
 		),
+		Entry("with custom trace context patterns",
+			nil,
+			initOptions(),
+			false,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.OtlpTraceContext = &obs.OtlpTraceContextSpec{
+					CustomPatterns: []string{`traceparent[=:]\s*["\']?00-(?<trace_id>[0-9a-fA-F]{32})-(?<span_id>[0-9a-fA-F]{16})-(?<trace_flags>[0-9a-fA-F]{2})["\']?`},
+				}
+			},
+			"otlp_with_custom_trace_context_patterns.toml",
+		),
+		Entry("with additional field names",
+			nil,
+			initOptions(),
+			false,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.OtlpTraceContext = &obs.OtlpTraceContextSpec{
+					AdditionalTraceIdFieldNames:    []string{"traceId", "trace-id"},
+					AdditionalSpanIdFieldNames:     []string{"spanId", "span-id"},
+					AdditionalTraceFlagsFieldNames: []string{"flags", "trace-flags"},
+				}
+			},
+			"otlp_with_additional_field_names.toml",
+		),
 	)
 })

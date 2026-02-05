@@ -856,6 +856,7 @@ type LokiStackAuthentication struct {
 // LokiStack provides optional extra properties for `type: lokistack`
 // +kubebuilder:validation:XValidation:rule="!has(self.labelKeys) || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'labelKeys' cannot be set when data model is 'Otel'"
 // +kubebuilder:validation:XValidation:rule="!has(self.tuning) || !has(self.tuning.compression) || self.tuning.compression != 'snappy' || !has(self.dataModel) || self.dataModel == 'Viaq'", message="'snappy' compression cannot be used when data model is 'Otel'"
+// +kubebuilder:validation:XValidation:rule="!has(self.otlpTraceContext) || (has(self.dataModel) && self.dataModel == 'Otel')", message="'otlpTraceContext' can only be set when data model is 'Otel'"
 type LokiStack struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -911,6 +912,16 @@ type LokiStack struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Data Model"
 	DataModel LokiStackDataModel `json:"dataModel,omitempty"`
+
+	// OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages when data model is 'Otel'.
+	//
+	// If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+	// See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+	//
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Otlp Trace Context Extraction"
+	OtlpTraceContext *OtlpTraceContextSpec `json:"otlpTraceContext,omitempty"`
 }
 
 // LokiStackLabelKeys contains the configuration that maps log record's keys to Loki labels used to identify streams.
@@ -1423,6 +1434,59 @@ type OTLP struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
 	Tuning *OTLPTuningSpec `json:"tuning,omitempty"`
+
+	// OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages
+	//
+	// If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+	// See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Otlp Trace Context Extraction"
+	OtlpTraceContext *OtlpTraceContextSpec `json:"otlpTraceContext,omitempty"`
+}
+
+// OtlpTraceContextSpec allows users to define custom field names and patterns for trace context extraction from log messages.
+// The default field names (trace_id, span_id, trace_flags) are always tried first.
+// https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+type OtlpTraceContextSpec struct {
+	// AdditionalTraceIdFieldNames specifies alternative field names to search for trace_id in log messages.
+	// The default "trace_id" is always tried first.
+	// Use this when your application logs use different field names like "traceID", "TraceId", "trace-id", etc.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Additional Trace ID Names"
+	AdditionalTraceIdFieldNames []string `json:"additionalTraceIdFieldNames,omitempty"`
+
+	// AdditionalSpanIdFieldNames specifies alternative field names to search for span_id in log messages.
+	// The default "span_id" is always tried first.
+	// Use this when your application logs use different field names like "spanID", "SpanId", "span-id", etc.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Additional Span ID Names"
+	AdditionalSpanIdFieldNames []string `json:"additionalSpanIdFieldNames,omitempty"`
+
+	// AdditionalTraceFlagsFieldNames specifies alternative field names to search for trace_flags in log messages.
+	// The default "trace_flags" is always tried first.
+	// Use this when your application logs use different field names like "traceFlags", "TraceFlags", "flags", etc.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Additional Trace Flags Names"
+	AdditionalTraceFlagsFieldNames []string `json:"additionalTraceFlagsFieldNames,omitempty"`
+
+	// CustomPatterns allows defining arbitrary regex patterns for extracting trace context from complex log formats.
+	// Each pattern can extract one or more of: trace_id, span_id, trace_flags using named capture groups.
+	// Patterns are tried sequentially after the default field name matching fails to find all values.
+	//
+	// Named capture groups must be: (?<trace_id>...), (?<span_id>...), (?<trace_flags>...)
+	//
+	// Example for W3C traceparent header format "traceparent: 00-{trace_id}-{span_id}-{flags}":
+	//   traceparent[=:]\s*["\']?00-(?<trace_id>[0-9a-fA-F]{32})-(?<span_id>[0-9a-fA-F]{16})-(?<trace_flags>[0-9a-fA-F]{2})["\']?
+	//
+	// NOTE: Single quotes are escaped so that the generated VRL regex pattern is valid.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Custom Patterns"
+	CustomPatterns []string `json:"customPatterns,omitempty"`
 }
 
 type S3TuningSpec struct {

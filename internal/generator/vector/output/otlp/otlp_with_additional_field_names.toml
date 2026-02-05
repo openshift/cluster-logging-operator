@@ -5,7 +5,7 @@ inputs = ["pipeline_my_pipeline_viaq_0"]
 source = '''
 # Extract trace context using field name matching
 # Extract trace_id padded to 32 hex chars per W3C spec
-parsed, err = parse_regex(._internal.message, r'trace_id[=:]\s*["\']?(?<trace_id>[0-9a-fA-F]{1,32})["\']?')
+parsed, err = parse_regex(._internal.message, r'(trace_id|traceId|trace-id)[=:]\s*["\']?(?<trace_id>[0-9a-fA-F]{1,32})["\']?')
 if err == null && exists(parsed.trace_id) {
   # Buffer trace_id with leading zeros to 32 hex chars per W3C spec
   buffered_trace_id = "00000000000000000000000000000000" + downcase(string!(parsed.trace_id))
@@ -13,7 +13,7 @@ if err == null && exists(parsed.trace_id) {
 }
 
 # Extract span_id padded to 16 hex chars per W3C spec
-parsed, err = parse_regex(._internal.message, r'span_id[=:]\s*["\']?(?<span_id>[0-9a-fA-F]{1,16})["\']?')
+parsed, err = parse_regex(._internal.message, r'(span_id|spanId|span-id)[=:]\s*["\']?(?<span_id>[0-9a-fA-F]{1,16})["\']?')
 if err == null && exists(parsed.span_id) {
   # Buffer span_id with leading zeros to 16 hex chars per W3C spec
   buffered_span_id = "0000000000000000" + downcase(string!(parsed.span_id))
@@ -21,7 +21,7 @@ if err == null && exists(parsed.span_id) {
 }
 
 # Extract trace_flags
-parsed, err = parse_regex(._internal.message, r'trace_flags[=:]\s*["\']?(?<trace_flags>[0-9a-fA-F]{1,2})["\']?')
+parsed, err = parse_regex(._internal.message, r'(trace_flags|flags|trace-flags)[=:]\s*["\']?(?<trace_flags>[0-9a-fA-F]{1,2})["\']?')
 if err == null && exists(parsed.trace_flags) {
   ._internal.trace_flags = parsed.trace_flags
 }
@@ -539,16 +539,3 @@ protocol.encoding.codec = "json"
 protocol.encoding.except_fields = ["_internal"]
 protocol.payload_prefix = "{\"resourceLogs\":"
 protocol.payload_suffix = "}"
-protocol.compression = "gzip"
-
-[sinks.output_otel_collector.protocol.batch]
-max_bytes = 10000000
-
-[sinks.output_otel_collector.buffer]
-type = "disk"
-when_full = "block"
-max_size = 268435488
-
-[sinks.output_otel_collector.protocol.request]
-retry_initial_backoff_secs = 20
-retry_max_duration_secs = 35

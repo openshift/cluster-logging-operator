@@ -2842,6 +2842,13 @@ spec:
                           items:
                             type: string
                           type: array
+                        proxyURL:
+                          description: ProxyURL URL of a HTTP or HTTPS proxy to be
+                            used instead of direct connection.
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: self == '' ||  isURL(self)
                         tenantKey:
                           description: |-
                             TenantKey is the tenant for the logs. This supports vector's template syntax to allow dynamic per-event values.
@@ -2911,13 +2918,6 @@ spec:
                           x-kubernetes-validations:
                           - message: invalid URL
                             rule: isURL(self)
-                        proxyURL:
-                          description: ProxyURL URL of a HTTP or HTTPS proxy to be
-                            used instead of direct connection.
-                          type: string
-                          x-kubernetes-validations:
-                          - message: invalid URL
-                            rule: self == '' ||  isURL(self)
                       required:
                       - url
                       type: object
@@ -3087,6 +3087,53 @@ spec:
                                   type: array
                               type: object
                           type: object
+                        otlpTraceContext:
+                          description: |-
+                            OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages when data model is 'Otel'.
+
+                            If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+                            See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+                          properties:
+                            additionalSpanIdFieldNames:
+                              description: |-
+                                AdditionalSpanIdFieldNames specifies alternative field names to search for span_id in log messages.
+                                The default "span_id" is always tried first.
+                                Use this when your application logs use different field names like "spanID", "SpanId", "span-id", etc.
+                              items:
+                                type: string
+                              type: array
+                            additionalTraceFlagsFieldNames:
+                              description: |-
+                                AdditionalTraceFlagsFieldNames specifies alternative field names to search for trace_flags in log messages.
+                                The default "trace_flags" is always tried first.
+                                Use this when your application logs use different field names like "traceFlags", "TraceFlags", "flags", etc.
+                              items:
+                                type: string
+                              type: array
+                            additionalTraceIdFieldNames:
+                              description: |-
+                                AdditionalTraceIdFieldNames specifies alternative field names to search for trace_id in log messages.
+                                The default "trace_id" is always tried first.
+                                Use this when your application logs use different field names like "traceID", "TraceId", "trace-id", etc.
+                              items:
+                                type: string
+                              type: array
+                            customPatterns:
+                              description: |-
+                                CustomPatterns allows defining arbitrary regex patterns for extracting trace context from complex log formats.
+                                Each pattern can extract one or more of: trace_id, span_id, trace_flags using named capture groups.
+                                Patterns are tried sequentially after the default field name matching fails to find all values.
+
+                                Named capture groups must be: (?<trace_id>...), (?<span_id>...), (?<trace_flags>...)
+
+                                Example for W3C traceparent header format "traceparent: 00-{trace_id}-{span_id}-{flags}":
+                                  traceparent[=:]\s*["\']?00-(?<trace_id>[0-9a-fA-F]{32})-(?<span_id>[0-9a-fA-F]{16})-(?<trace_flags>[0-9a-fA-F]{2})["\']?
+
+                                NOTE: Single quotes are escaped so that the generated VRL regex pattern is valid.
+                              items:
+                                type: string
+                              type: array
+                          type: object
                         target:
                           description: Target points to the LokiStack resources that
                             should be used as a target for the output.
@@ -3156,6 +3203,10 @@ spec:
                         rule: '!has(self.tuning) || !has(self.tuning.compression)
                           || self.tuning.compression != ''snappy'' || !has(self.dataModel)
                           || self.dataModel == ''Viaq'''
+                      - message: '''otlpTraceContext'' can only be set when data model
+                          is ''Otel'''
+                        rule: '!has(self.otlpTraceContext) || (has(self.dataModel)
+                          && self.dataModel == ''Otel'')'
                     name:
                       description: Name used to refer to the output from a `pipeline`.
                       pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
@@ -3235,6 +3286,53 @@ spec:
                               - key
                               - secretName
                               type: object
+                          type: object
+                        otlpTraceContext:
+                          description: |-
+                            OtlpTraceContext allows custom regex patterns for extracting trace context (trace_id, span_id, trace_flags) from log messages
+
+                            If no custom patterns are configured, standard field names (trace_id, span_id, trace_flags) are extracted using common separator formats.
+                            See: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
+                          properties:
+                            additionalSpanIdFieldNames:
+                              description: |-
+                                AdditionalSpanIdFieldNames specifies alternative field names to search for span_id in log messages.
+                                The default "span_id" is always tried first.
+                                Use this when your application logs use different field names like "spanID", "SpanId", "span-id", etc.
+                              items:
+                                type: string
+                              type: array
+                            additionalTraceFlagsFieldNames:
+                              description: |-
+                                AdditionalTraceFlagsFieldNames specifies alternative field names to search for trace_flags in log messages.
+                                The default "trace_flags" is always tried first.
+                                Use this when your application logs use different field names like "traceFlags", "TraceFlags", "flags", etc.
+                              items:
+                                type: string
+                              type: array
+                            additionalTraceIdFieldNames:
+                              description: |-
+                                AdditionalTraceIdFieldNames specifies alternative field names to search for trace_id in log messages.
+                                The default "trace_id" is always tried first.
+                                Use this when your application logs use different field names like "traceID", "TraceId", "trace-id", etc.
+                              items:
+                                type: string
+                              type: array
+                            customPatterns:
+                              description: |-
+                                CustomPatterns allows defining arbitrary regex patterns for extracting trace context from complex log formats.
+                                Each pattern can extract one or more of: trace_id, span_id, trace_flags using named capture groups.
+                                Patterns are tried sequentially after the default field name matching fails to find all values.
+
+                                Named capture groups must be: (?<trace_id>...), (?<span_id>...), (?<trace_flags>...)
+
+                                Example for W3C traceparent header format "traceparent: 00-{trace_id}-{span_id}-{flags}":
+                                  traceparent[=:]\s*["\']?00-(?<trace_id>[0-9a-fA-F]{32})-(?<span_id>[0-9a-fA-F]{16})-(?<trace_flags>[0-9a-fA-F]{2})["\']?
+
+                                NOTE: Single quotes are escaped so that the generated VRL regex pattern is valid.
+                              items:
+                                type: string
+                              type: array
                           type: object
                         tuning:
                           description: Tuning specs tuning for the output

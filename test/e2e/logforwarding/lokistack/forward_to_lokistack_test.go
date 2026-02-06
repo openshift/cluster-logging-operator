@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
@@ -57,7 +56,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 
 		forwarder = obsruntime.NewClusterLogForwarder(deployNS, forwarderName, runtime.Initialize, func(clf *obs.ClusterLogForwarder) {
 			clf.Spec.ServiceAccount.Name = serviceAccount.Name
-			clf.Annotations = map[string]string{constants.AnnotationOtlpOutputTechPreview: "true"}
+			// Testing removal of otlp annotation validation LOG-8578
+			clf.Annotations = map[string]string{}
 			clf.Spec.Pipelines = append(clf.Spec.Pipelines, obs.PipelineSpec{
 				Name:       "all-logs-pipeline",
 				OutputRefs: []string{outputName},

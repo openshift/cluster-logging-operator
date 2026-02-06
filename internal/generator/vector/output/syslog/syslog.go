@@ -35,22 +35,22 @@ const (
 	defTag    = `to_string!(._syslog.tag || "")`
 
 	// Default values for Syslog fields for infrastructure logType if source 'node'
-	nodeAppName       = `._syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "-")`
-	nodeTag           = `._syslog.tag = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")`
-	nodeProcIdRFC3164 = `._syslog.proc_id = to_string!(._internal.systemd.t.PID || "")`
-	nodeProcIdRFC5424 = `._syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")`
+	nodeAppName       = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
+	nodeTag           = `._syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
+	nodeProcIdRFC3164 = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
+	nodeProcIdRFC5424 = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
 
 	// Default values for Syslog fields for application logType and infrastructure logType if source 'container'
-	containerAppName = `._syslog.app_name, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+	containerAppName = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
 if err != null {
   log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error") 
   ._syslog.app_name = "-"
 }
 `
 	containerFacility = `._syslog.facility = "user"`
-	containerSeverity = `._syslog.severity = ._internal.level`
-	containerProcId   = `._syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")`
-	containerTag      = `._syslog.tag, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "")
+	containerSeverity = `._syslog.severity = .level`
+	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "-")`
+	containerTag      = `._syslog.tag, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
 if err != null {
   log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error") 
   ._syslog.tag = ""
@@ -63,18 +63,18 @@ if err != null {
 `
 
 	// Default values for Syslog fields for audit logType
-	auditTag      = `._syslog.tag = ._internal.log_source`
+	auditTag      = `._syslog.tag = .log_source`
 	auditSeverity = `._syslog.severity = "informational"`
 	auditFacility = `._syslog.facility = "security"`
-	auditAppName  = `._syslog.app_name = ._internal.log_source`
-	auditProcId   = `._syslog.proc_id = to_string!(._internal.auditID || "-")`
+	auditAppName  = `._syslog.app_name = .log_source`
+	auditProcId   = `._syslog.proc_id = to_string!(.auditID || "-")`
 
-	msgId = `._syslog.msg_id = ._internal.log_source`
+	msgId = `._syslog.msg_id = .log_source`
 
 	// conditions
-	isInfrastructureNodeLogCond = `._internal.log_type == "infrastructure" && ._internal.log_source == "node"`
-	isContainerLogCond          = `._internal.log_source == "container"`
-	isAuditLogCond              = `._internal.log_type == "audit"`
+	isInfrastructureNodeLogCond = `.log_type == "infrastructure" && .log_source == "node"`
+	isContainerLogCond          = `.log_source == "container"`
+	isAuditLogCond              = `.log_type == "audit"`
 )
 
 type Syslog struct {

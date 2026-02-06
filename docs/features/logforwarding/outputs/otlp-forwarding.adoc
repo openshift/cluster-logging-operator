@@ -1,17 +1,11 @@
 = OTLP Output
 
 The OTLP output forwards logs using HTTP/JSON as defined by the OpenTelemetry Observability Framework.
-This is a configuration guide for the `ClusterLogForwarder` spec introduced to send logs to OTLP receivers.
+This is a configuration guide for the `ClusterLogForwarder` spec introduced to send logs to OTel receivers.
 
 
-*OTLP* describes the *protocol* for encoding, transporting, and delivering telemetry data between sources using the
+*OTLP* describes the *protocol* for encoding, transporting, and delivering `OTel` (open telemetry) data between sources using the
 https://opentelemetry.io/docs/specs/otlp/[OpenTelemetry OTLP Specification]
-
-.Technical Preview
-This feature is tech-preview and an annotation is required to enable it
-----
-observability.openshift.io/tech-preview-otlp-output: "enabled"
-----
 
 ---
 == Configuring the Forwarder
@@ -25,23 +19,21 @@ kind: ClusterLogForwarder
 metadata:
   name: my-logforwarder
   namespace: my-app-namespace
-  annotations:
-    observability.openshift.io/tech-preview-otlp-output: "enabled"  # <1>
 spec:
   serviceAccount:
     name: logger-admin
   outputs:
-    - type: otlp  # <2>
+    - type: otlp  # <1>
       name: otel-collector
       otlp:
-        url: 'http://my-otel-receiver-service:4318/v1/logs'  # <3>
+        url: 'http://my-otel-receiver-service:4318/v1/logs'  # <2>
         authentication:
           token:
-            from: serviceAccount  # <4>
+            from: serviceAccount  # <3>
         tuning:
-          compression: gzip  # <5>
+          compression: gzip  # <4>
       tls:
-        insecureSkipVerify: true  # <6>
+        insecureSkipVerify: true  # <5>
   pipelines:
     - name: my-pipeline
       inputRefs:
@@ -51,8 +43,7 @@ spec:
         - otel-collector
 
 ----
-. Tech preview `annotation` must be enabled
-. `type` is '*otlp*'
+. output `type` is '*otlp*'
 . `otlp` `url` specify a valid host:port of the otel receiver and *MAY* require termination with "*/v1/logs*" depending upon the configuration of the server
 . `otlp` `authentication` is optional and specifies a `token.from` and a value of '*serviceAccount*'
 .. The token can also be read from a secret

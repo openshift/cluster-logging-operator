@@ -27,8 +27,6 @@ func Validate(context internalcontext.ForwarderContext) {
 			messages = append(messages, ValidateAwsAuth(out, context)...)
 		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
-		case obs.OutputTypeLokiStack, obs.OutputTypeOTLP:
-			messages = append(messages, ValidateTechPreviewAnnotation(out, context)...)
 		case obs.OutputTypeElasticsearch:
 			messages = append(messages, validateElasticsearchHeaders(out)...)
 		}

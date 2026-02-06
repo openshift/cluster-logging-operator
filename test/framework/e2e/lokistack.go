@@ -11,6 +11,7 @@ import (
 	"time"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
+	testerrors "github.com/openshift/cluster-logging-operator/test/helpers/errors"
 	"github.com/pkg/errors"
 
 	openshiftv1 "github.com/openshift/api/route/v1"
@@ -395,7 +396,7 @@ func (ls LokistackLogStore) Query(logQL string, orgID, tenant, saName string, li
 		clolog.V(3).Error(err, "Loki Query", "url", u.String())
 		return nil, fmt.Errorf("%w\nURL: %v", err, u)
 	}
-	defer resp.Body.Close()
+	defer testerrors.LogIfError(resp.Body.Close())
 	qr := lokitesthelper.QueryResponse{}
 	if err = json.NewDecoder(resp.Body).Decode(&qr); err != nil {
 		return nil, err

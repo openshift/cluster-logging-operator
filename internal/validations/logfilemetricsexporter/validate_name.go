@@ -2,13 +2,14 @@ package logfilemetricsexporter
 
 import (
 	"fmt"
+
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/validations/errors"
 )
 
 // Check for singleton. Must be named instance and in openshift-logging namespace
-func validateName(instance *loggingv1alpha1.LogFileMetricExporter) (error, *loggingv1alpha1.LogFileMetricExporterStatus) {
+func validateName(instance *loggingv1alpha1.LogFileMetricExporter) error {
 	failMessage := ""
 	fail := false
 	if instance.Name != constants.SingletonName {
@@ -20,7 +21,7 @@ func validateName(instance *loggingv1alpha1.LogFileMetricExporter) (error, *logg
 		fail = true
 	}
 	if fail {
-		return errors.NewValidationError(failMessage), nil
+		return errors.NewValidationError(failMessage)
 	}
-	return nil, nil
+	return nil
 }

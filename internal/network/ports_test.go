@@ -1,3 +1,4 @@
+//nolint:errcheck
 package network
 
 import (

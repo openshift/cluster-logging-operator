@@ -68,7 +68,7 @@ func (f *CollectorFunctionalFramework) AddSplunkOutput(b *runtime.PodBuilder, ou
 	}
 	config := runtime.NewConfigMap(b.Pod.Namespace, string(obs.OutputTypeSplunk), data)
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name)
-	if err := f.Test.Client.Create(config); err != nil {
+	if err := f.Test.Create(config); err != nil {
 		return err
 	}
 	cb := b.AddContainer(string(obs.OutputTypeSplunk), SplunkImage).

@@ -97,7 +97,7 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 		return false, err
 	}
 	if len(pods.Items) == 0 {
-		return false, errors.New("No pods found for syslog receiver")
+		return false, errors.New("no pods found for syslog receiver")
 	}
 	podName := pods.Items[0].Name
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
@@ -130,7 +130,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 		return NotFound, err
 	}
 	if len(pods.Items) == 0 {
-		return NotFound, errors.New("No pods found for syslog receiver")
+		return NotFound, errors.New("no pods found for syslog receiver")
 	}
 	clolog.V(3).Info("Pod", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf(expr, logfile)
@@ -161,11 +161,11 @@ func (syslog *syslogReceiverLogStore) HasInfraStructureLogs(timeToWait time.Dura
 }
 
 func (syslog *syslogReceiverLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
-	return false, fmt.Errorf("Not implemented")
+	return false, fmt.Errorf("not implemented")
 }
 
 func (syslog *syslogReceiverLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
-	return false, fmt.Errorf("Not implemented")
+	return false, fmt.Errorf("not implemented")
 }
 
 func (syslog *syslogReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
@@ -173,11 +173,11 @@ func (syslog *syslogReceiverLogStore) GrepLogs(expr string, timeToWait time.Dura
 }
 
 func (syslog *syslogReceiverLogStore) RetrieveLogs() (map[string]string, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
-	panic("Not implemented")
+	panic("not implemented")
 }
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
@@ -337,8 +337,8 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	}
 
 	var rsyslogConf string
-	switch {
-	case protocol == corev1.ProtocolUDP:
+	switch protocol {
+	case corev1.ProtocolUDP:
 		rsyslogConf = UdpSyslogInput
 
 	default:
@@ -346,8 +346,8 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	}
 
 	if withTLS {
-		switch {
-		case protocol == corev1.ProtocolUDP:
+		switch protocol {
+		case corev1.ProtocolUDP:
 			rsyslogConf = UdpSyslogInputWithTLS
 
 		default:
@@ -374,7 +374,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 			Name: "certs", VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: secret.ObjectMeta.Name,
+					SecretName: secret.Name,
 				},
 			},
 		})

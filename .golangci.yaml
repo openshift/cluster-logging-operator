@@ -1,11 +1,3 @@
 version: "2"
 linters:
   default: standard
-  disable:
-    - errcheck
-  settings:
-    staticcheck:
-      checks:
-        - "-ST1001"
-        - "-ST1005"
-        - "-ST1019"

@@ -146,7 +146,7 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 
 func (builder *PodBuilder) AddConfigMapVolumeWithPermissions(name, configMapName string, permissions *int32) *PodBuilder {
 	return builder.AddConfigMapWith(name, configMapName, func(volume corev1.Volume) corev1.Volume {
-		volume.VolumeSource.ConfigMap.DefaultMode = permissions
+		volume.ConfigMap.DefaultMode = permissions
 		return volume
 	})
 }

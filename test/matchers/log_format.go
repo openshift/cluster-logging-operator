@@ -157,7 +157,7 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 			return false
 		}
 
-		if templateTime.UTC() == valueTime.UTC() {
+		if templateTime.UTC().Equal(valueTime.UTC()) {
 			return true
 		}
 

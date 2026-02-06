@@ -27,7 +27,7 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	case helpers.ComponentTypeCollectorDeployment:
 		return tc.WaitForDeployment(constants.OpenshiftNS, constants.CollectorName, defaultRetryInterval, defaultTimeout)
 	}
-	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
+	return fmt.Errorf("unable to waitfor unrecognized component: %v", component)
 }
 
 func (tc *E2ETestFramework) WaitForDaemonSet(namespace, name string) error {

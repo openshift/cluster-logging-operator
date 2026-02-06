@@ -24,7 +24,7 @@ func UnMarshalClusterLogForwarder(clfYaml string) (obs.ClusterLogForwarder, erro
 	if clfYaml != "" {
 		err := yaml.Unmarshal([]byte(clfYaml), forwarder)
 		if err != nil {
-			return *forwarder, fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
+			return *forwarder, fmt.Errorf("error Unmarshalling %q: %v", clfYaml, err)
 		}
 	}
 	return *forwarder, nil
@@ -34,7 +34,7 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	var err error
 	forwarder, err := UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
-		return "", fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
+		return "", fmt.Errorf("error Unmarshalling %q: %v", clfYaml, err)
 	}
 	log.V(2).Info("Unmarshalled", "forwarder", forwarder)
 

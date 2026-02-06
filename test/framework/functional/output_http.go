@@ -201,7 +201,7 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.
 		"vector.toml": toml,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.toml", toml)
-	if err := f.Test.Client.Create(config); err != nil {
+	if err := f.Test.Create(config); err != nil {
 		return err
 	}
 
@@ -228,7 +228,7 @@ func (f *CollectorFunctionalFramework) AddFluentdHttpOutput(b *runtime.PodBuilde
 		"fluent.conf": FluentdHttpSourceConf,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "fluent.conf", FluentdHttpSourceConf)
-	if err := f.Test.Client.Create(config); err != nil {
+	if err := f.Test.Create(config); err != nil {
 		return err
 	}
 

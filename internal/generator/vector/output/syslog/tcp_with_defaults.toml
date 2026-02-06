@@ -2,24 +2,24 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-._syslog.msg_id = ._internal.log_source
-if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
-    ._syslog.app_name = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "-")
-    ._syslog.proc_id = to_string!(._internal.systemd.t.PID || "-")
+._syslog.msg_id = .log_source
+if .log_type == "infrastructure" && .log_source == "node" {
+    ._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")
+    ._syslog.proc_id = to_string!(.systemd.t.PID || "-")
 }
-if ._internal.log_source == "container" {
-   ._syslog.app_name, err = join([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+if .log_source == "container" {
+   ._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
    if err != null {
      log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error")
   	 ._syslog.app_name = "-"
    }
-   ._syslog.proc_id = to_string!(._internal.kubernetes.pod_id || "-")
-   ._syslog.severity = ._internal.level
+   ._syslog.proc_id = to_string!(.kubernetes.pod_id || "-")
+   ._syslog.severity = .level
    ._syslog.facility = "user"
 }
-if ._internal.log_type == "audit" {
-   ._syslog.app_name = ._internal.log_source
-   ._syslog.proc_id = to_string!(._internal.auditID || "-")
+if .log_type == "audit" {
+   ._syslog.app_name = .log_source
+   ._syslog.proc_id = to_string!(.auditID || "-")
    ._syslog.severity = "informational"
    ._syslog.facility = "security"
 }

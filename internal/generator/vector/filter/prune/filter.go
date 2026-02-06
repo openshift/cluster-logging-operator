@@ -3,10 +3,11 @@ package prune
 import (
 	_ "embed"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"regexp"
 	"strings"
 	"text/template"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 type Prune struct {
@@ -34,6 +35,10 @@ func NewFilter(pruneFilterSpec *obs.PruneFilterSpec) PruneFilter {
 func (f PruneFilter) VRL() (string, error) {
 	Prune := Prune{}
 	if f.NotIn != nil {
+		f.NotIn = append(f.NotIn, "._internal")
+		// Always exclude internal fields from removal.
+		// They are needed for later calculations but will not be sent to storage
+		// because they are filtered out at export time.
 		Prune.NotIn = generateQuotedPathSegmentArrayStr(f.NotIn)
 	}
 	if f.In != nil {
@@ -53,9 +58,7 @@ func generateQuotedPathSegmentArrayStr(fieldPathArray []obs.FieldPath) string {
 	for _, fieldPath := range fieldPathArray {
 		f := func(path obs.FieldPath) string {
 			splitPathSegments := splitPath(string(path))
-			pathArray := []string{`"_internal"`}
-			pathArray = append(pathArray, quotePathSegments(splitPathSegments)...)
-			return fmt.Sprintf("[%s]", strings.Join(pathArray, ","))
+			return fmt.Sprintf("[%s]", strings.Join(quotePathSegments(splitPathSegments), ","))
 		}
 		quotedPathArray = append(quotedPathArray, f(fieldPath))
 		for _, d := range dedottedFields {

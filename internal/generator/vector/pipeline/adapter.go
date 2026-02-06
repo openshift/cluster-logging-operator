@@ -1,14 +1,14 @@
 package pipeline
 
 import (
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 	"os"
 	"strconv"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
+	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -81,18 +81,37 @@ func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputC
 	return pipeline
 }
 
-func AddPostFilters(p *Pipeline) {
-
-	postFilters := []string{v1.Viaq}
-	p.filterMap[v1.Viaq] = filter.InternalFilterSpec{
+func AddSystemFilters(p *Pipeline) {
+	postFilterName := v1.Viaq
+	p.filterMap[postFilterName] = filter.InternalFilterSpec{
 		FilterSpec:        &obs.FilterSpec{Type: v1.Viaq},
 		SuppliesTransform: true,
 		TranformFactory: func(id string, inputs ...string) framework.Element {
-			// Build all log_source VRL
 			return v1.New(id, inputs, p.inputSpecs)
 		},
 	}
-	p.FilterRefs = append(p.FilterRefs, postFilters...)
+
+	var preFilters []string
+	var otherFilters []string
+
+	for _, refName := range p.FilterRefs {
+		spec, exists := p.filterMap[refName]
+		isEarlyStage := exists && (spec.FilterSpec.Type == obs.FilterTypeParse || spec.FilterSpec.Type == obs.FilterTypeDetectMultiline)
+		if isEarlyStage {
+			preFilters = append(preFilters, refName)
+		} else {
+			otherFilters = append(otherFilters, refName)
+		}
+	}
+
+	// [Parse/Multiline] -> [Viaq] -> [Others]
+	newRefs := make([]string, 0, len(preFilters)+1+len(otherFilters))
+
+	newRefs = append(newRefs, preFilters...)
+	newRefs = append(newRefs, postFilterName)
+	newRefs = append(newRefs, otherFilters...)
+
+	p.FilterRefs = newRefs
 }
 
 func (p *Pipeline) Name() string {

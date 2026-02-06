@@ -79,6 +79,144 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Kubernetes.ContainerName).To(BeEmpty())
 			Expect(log.Kubernetes.NamespaceName).To(BeEmpty())
 			Expect(log.Level).To(BeEmpty())
+		})
+
+		It("should prune field from k8s audit logs", func() {
+			f = functional.NewCollectorFunctionalFramework()
+
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						In: []obs.FieldPath{
+							".apiVersion",
+							".requestURI",
+							".userAgent",
+							".stage",
+							".objectRef.apiVersion",
+						},
+					}
+				}).ToHttpOutput()
+
+			Expect(f.Deploy()).To(BeNil())
+
+			now := time.Now()
+			logLine := functional.NewKubeAuditLog(now)
+
+			Expect(f.WriteMessagesTok8sAuditLog(logLine, 1)).To(BeNil())
+
+			// Read logs and verify the field was pruned
+			logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			// Parse the logs
+			var auditLogs []types.K8sAuditLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &auditLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(auditLogs).ToNot(BeEmpty())
+
+			// Verify the pruned field is not present
+			log := auditLogs[0]
+			Expect(log.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "APIVersion"))
+			Expect(log.RequestURI).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "RequestURI"))
+			Expect(log.UserAgent).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "UserAgent"))
+			Expect(log.Stage).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "Stage"))
+			Expect(log.ObjectRef.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "ObjectRef.APIVersion"))
+		})
+
+		It("should prune field from audit logs", func() {
+			f = functional.NewCollectorFunctionalFramework()
+
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						In: []obs.FieldPath{
+							".apiVersion",
+							".requestURI",
+							".userAgent",
+							".stage",
+							".objectRef.apiVersion",
+						},
+					}
+				}).ToHttpOutput()
+
+			Expect(f.Deploy()).To(BeNil())
+
+			now := time.Now()
+			logLine := functional.NewAuditHostLog(now)
+
+			Expect(f.WriteMessagesToAuditLog(logLine, 1)).To(BeNil())
+
+			// Read logs and verify the field was pruned
+			logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			// Parse the logs
+			var auditLogs []types.AuditLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &auditLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(auditLogs).ToNot(BeEmpty())
+
+			// Verify the pruned field is not present
+			log := auditLogs[0]
+			Expect(log.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "APIVersion"))
+			Expect(log.RequestURI).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "RequestURI"))
+			Expect(log.UserAgent).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "UserAgent"))
+			Expect(log.Stage).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "Stage"))
+			Expect(log.ObjectRef.APIVersion).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", "ObjectRef.APIVersion"))
+		})
+
+		It("should prune notIn field from audit logs: '.auditID' (see: LOG-8291, LOG-8289)", func() {
+			f = functional.NewCollectorFunctionalFramework()
+
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				WithFilter(pruneFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						NotIn: []obs.FieldPath{
+							".auditID",
+							".log_type",
+							".log_source",
+							".k8s_audit_level",
+						},
+					}
+				}).ToHttpOutput()
+
+			Expect(f.Deploy()).To(BeNil())
+
+			now := time.Now()
+			logLine := functional.NewKubeAuditLog(now)
+
+			Expect(f.WriteMessagesTok8sAuditLog(logLine, 1)).To(BeNil())
+
+			// Read logs and verify the field was pruned
+			logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			// Parse the logs
+			var auditLogs []types.AuditLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &auditLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(auditLogs).ToNot(BeEmpty())
+
+			// Verify fields are not present
+			log := auditLogs[0]
+			fieldCount := types.CountNonEmptyFields(log)
+			Expect(fieldCount).To(Equal(4))
+			Expect(log.AuditID).To(Equal("a6299d35-5759-4f67-9bed-2b962cf21cf3"))
+			Expect(log.LogSource).To(Equal("kubeAPI"))
+			Expect(log.LogType).To(Equal("audit"))
+			Expect(log.K8SAuditLevel).To(Equal("Metadata"))
 
 		})
 
@@ -223,7 +361,6 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				Expect(log.Kubernetes.ContainerStream).To(BeEmpty(), fmt.Sprintf("Expected %s to be pruned", fieldToPrune))
 			})
 		})
-
 	})
 
 	Context("minimal set of fields (.log_type, .log_source, .message, .timestamp) for each output", func() {

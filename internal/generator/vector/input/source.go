@@ -78,7 +78,7 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 			ids = append(ids, cids...)
 		}
 		if sources.Has(obs.InfrastructureSourceNode) {
-			jels, jids := NewJournalSource(input)
+			jels, jids := NewJournalInput(input)
 			els = append(els, jels...)
 			ids = append(ids, jids...)
 		}

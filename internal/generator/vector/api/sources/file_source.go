@@ -1,12 +1,8 @@
-package file
-
-type sourceType string
-
-const SourceTypeFile sourceType = "file"
+package sources
 
 type File struct {
 	// Type is required to be 'file'
-	Type sourceType `json:"type" yaml:"type" toml:"type"`
+	Type SourceType `json:"type" yaml:"type" toml:"type"`
 
 	// Include is file paths to include for this source
 	Include []string `json:"include" yaml:"include" toml:"include"`
@@ -19,7 +15,7 @@ type File struct {
 	RotateWaitSecs                    int64  `json:"rotate_wait_secs,omitempty" yaml:"rotate_wait_secs,omitempty" toml:"rotate_wait_secs,omitempty"`
 }
 
-func New(include ...string) *File {
+func NewFile(include ...string) *File {
 	return &File{
 		Type:    SourceTypeFile,
 		Include: include,

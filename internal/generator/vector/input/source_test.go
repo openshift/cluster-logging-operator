@@ -48,7 +48,7 @@ var _ = Describe("inputs", func() {
 			},
 		}
 		conf, _ := NewSource(input, constants.OpenshiftNS, *factory.ResourceNames(clf), secrets, framework.NoOptions)
-		Expect(string(exp)).To(EqualConfigFrom(conf))
+		Expect(conf).To(MatchToml(string(exp)))
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),

@@ -3,6 +3,7 @@ package sources
 type SourceType string
 
 const (
-	SourceTypeFile     SourceType = "file"
-	SourceTypeJournalD SourceType = "journald"
+	SourceTypeFile            SourceType = "file"
+	SourceTypeInternalMetrics SourceType = "internal_metrics"
+	SourceTypeJournalD        SourceType = "journald"
 )

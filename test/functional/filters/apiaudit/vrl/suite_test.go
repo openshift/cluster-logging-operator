@@ -101,9 +101,7 @@ decoding.codec = "json"
 type = "remap"
 inputs = ["in"]
 source = '''
-. = {"_internal": {"structured": .}}
 %v
-. = ._internal.structured
 '''
 
 [sinks.console]

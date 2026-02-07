@@ -1279,6 +1279,8 @@ NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fie
 
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
 
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
+
 |notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record.
 
 Each field path expression must start with a &#34;.&#34;
@@ -1302,6 +1304,8 @@ Examples:
 NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
 
 NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
 
 |======================
 
@@ -1859,6 +1863,13 @@ Type:: array
 
 |lokiStack|object|  LokiStack configures forwarding log events to a Red Hat managed Loki deployment
 using the Red Hat tenancy model
+
+The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+1. .kubernetes.container_name
+2. .kubernetes.namespace_name
+3. .kubernetes.pod_name
+
+If these fields are not present in the log record, they will be set to the empty string.
 
 |name|string|  Name used to refer to the output from a `pipeline`.
 
@@ -2518,6 +2529,8 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
+|format|string|  Format defines data format used to send data to remote destination.
+
 |headers|object|  Headers specify optional headers to be sent with the request
 
 |method|string|  Method specifies the HTTP method to be used for sending logs. If not set, &#39;POST&#39; is used.
@@ -2840,8 +2853,6 @@ Type:: object
 Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
 The &#39;username@password&#39; part of `url` is ignored.
 
-|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
-
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 
 |labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
@@ -2876,6 +2887,8 @@ For example the default log record keys translate to these Loki labels:
 Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
 Loki queries can also query based on any log record field (not just labels) using query filters.
+
+|proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 
 |tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values.
 

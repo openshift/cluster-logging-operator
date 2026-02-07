@@ -664,6 +664,21 @@ type HTTPTuningSpec struct {
 	Compression string `json:"compression,omitempty"`
 }
 
+// HTTPFormat is used to define the data format of data to be sent.
+//
+// +kubebuilder:validation:Enum:=json;ndjson
+type HTTPFormat string
+
+func (s HTTPFormat) String() string {
+	return string(s)
+}
+
+// HTTPFormat type constants, must match JSON tags of HTTPFormat fields.
+const (
+	HTTPFormatJSON   HTTPFormat = "json"
+	HTTPFormatNDJSON HTTPFormat = "ndjson"
+)
+
 // HTTP provided configuration for sending json encoded logs to a generic HTTP endpoint.
 type HTTP struct {
 	URLSpec `json:",inline"`
@@ -705,6 +720,12 @@ type HTTP struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
 	ProxyURL string `json:"proxyURL,omitempty"`
+
+	// Format defines data format used to send data to remote destination.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Format"
+	Format HTTPFormat `json:"format,omitempty"`
 }
 
 type KafkaTuningSpec struct {

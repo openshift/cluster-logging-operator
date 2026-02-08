@@ -7,8 +7,10 @@ import (
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	helpers2 "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
@@ -21,7 +23,7 @@ const (
 
 var (
 	//// TODO: Remove ES/Kibana from excludes
-	loggingExcludes = source.NewContainerPathGlobBuilder().
+	loggingExcludes = helpers2.NewContainerPathGlobBuilder().
 			AddOther(
 			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.LogfilesmetricexporterName),
 			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.ElasticsearchName),
@@ -37,7 +39,7 @@ var (
 )
 
 // NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
+func NewContainerSource(spec obs.InputSpec, includes, excludes []string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	maxMsgSize := int64(0)
@@ -59,10 +61,33 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 	}
 
 	metaID := helpers.MakeID(base, "meta")
-	k8sLogs := source.NewKubernetesLogs(base, includes, excludes, maxMsgSize)
-	k8sLogs.ExtraLabelSelector = source.LabelSelectorFrom(selector)
+	k8sLogs := sources.NewKubernetesLogs(func(kl *sources.KubernetesLogs) {
+		kl.MaxReadBytes = 3145728
+		kl.GlobMinimumCooldownMillis = 15000
+		kl.AutoPartialMerge = true
+		kl.MaxMergedLineBytes = uint64(maxMsgSize)
+		kl.IncludePathsGlobPatterns = includes
+		kl.ExcludePathsGlobPatterns = excludes
+		kl.ExtraLabelSelector = helpers2.LabelSelectorFrom(selector)
+		kl.PodAnnotationFields = &sources.PodAnnotationFields{
+			PodLabels:      "kubernetes.labels",
+			PodNamespace:   "kubernetes.namespace_name",
+			PodAnnotations: "kubernetes.annotations",
+			PodUid:         "kubernetes.pod_id",
+			PodNodeName:    "hostname",
+		}
+		kl.NamespaceAnnotationFields = &sources.NamespaceAnnotationFields{
+			NamespaceUid: "kubernetes.namespace_id",
+		}
+		kl.RotateWaitSecs = 5
+		kl.UseApiServerCache = true
+	})
 	el := []framework.Element{
-		k8sLogs,
+		api.Config{
+			Sources: map[string]interface{}{
+				base: k8sLogs,
+			},
+		},
 		NewInternalNormalization(metaID, logSource, logType, base),
 	}
 	inputID := metaID

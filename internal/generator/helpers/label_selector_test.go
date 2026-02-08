@@ -1,9 +1,9 @@
-package source_test
+package helpers_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,7 +22,7 @@ const (
 )
 
 var _ = DescribeTable("#LabelSelectorFrom", func(s *LabelSelector, exp string) {
-	Expect(source.LabelSelectorFrom(s)).To(Equal(exp))
+	Expect(helpers.LabelSelectorFrom(s)).To(Equal(exp))
 },
 	Entry("should be empty for a nil selector", nil, ""),
 	Entry("should format a selector that exactly matches all the defined match labels", &LabelSelector{

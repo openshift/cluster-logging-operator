@@ -13,7 +13,7 @@ type Config struct {
 	// Api is the set of API keys to values
 	Api *Api `json:"api,omitempty" yaml:"api,omitempty" toml:"api,omitempty"`
 
-	// Secret is the set of secret ids to secret configurations
+	// Secrets is the set of secret ids to secret configurations
 	Secret map[string]interface{} `json:"secret,omitempty" yaml:"secret,omitempty" toml:"secret,omitempty"`
 
 	// Sources is the set of source ids to source configurations
@@ -43,5 +43,6 @@ func (c Config) String() string {
 	out := strings.ReplaceAll(toml.MustMarshal(c), "[transforms]", "")
 	out = strings.ReplaceAll(out, "[sources]", "")
 	out = strings.ReplaceAll(out, "[sinks]", "")
+	out = strings.ReplaceAll(out, "[secret]", "")
 	return out
 }

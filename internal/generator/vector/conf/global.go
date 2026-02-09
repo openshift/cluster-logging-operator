@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-// TODO: this needs to be verified
 func Global(namespace, forwarderName string) []framework.Element {
 	dataDir := vector.GetDataPath(namespace, forwarderName)
 	if dataDir == vector.DefaultDataPath {

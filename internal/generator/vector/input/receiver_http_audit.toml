@@ -1,7 +1,9 @@
 [sources.input_myreceiver]
 type = "http_server"
 address = "[::]:12345"
-decoding.codec = "json"
+
+[sources.input_myreceiver.decoding]
+codec = "json"
 
 [sources.input_myreceiver.tls]
 enabled = true

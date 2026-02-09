@@ -10,8 +10,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 const (
@@ -52,11 +50,7 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 		setOpenshiftSequence,
 	)
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return remap.New(id, strings.Join(vrls, "\n"), inputs)
 }
 
 // NewInternalNormalization returns configuration elements to normalize log entries to an internal, common data model
@@ -104,9 +98,5 @@ func NewReceiverInternalNormalization(id string, logSource interface{}, envelope
 		`._internal.message = del(._internal.structured.message)`,
 	}
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return remap.New(id, strings.Join(vrls, "\n"), inputs)
 }

@@ -69,23 +69,23 @@ func New(id string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op f
 	return conf
 }
 
-func ValuePath(resource *obs.ValueReference) string {
+func ValuePath(resource *obs.ValueReference, formatter ...string) string {
 	if resource == nil {
 		return ""
 	}
 	if resource.SecretName != "" {
-		return helpers.SecretPath(resource.SecretName, resource.Key)
+		return helpers.SecretPath(resource.SecretName, resource.Key, formatter...)
 	} else if resource.ConfigMapName != "" {
-		return helpers.ConfigPath(resource.ConfigMapName, resource.Key)
+		return helpers.ConfigPath(resource.ConfigMapName, resource.Key, formatter...)
 	}
 	return ""
 }
 
-func SecretPath(resource *obs.SecretReference) string {
+func SecretPath(resource *obs.SecretReference, formatter ...string) string {
 	if resource == nil || resource.SecretName == "" {
 		return ""
 	}
-	return helpers.SecretPath(resource.SecretName, resource.Key)
+	return helpers.SecretPath(resource.SecretName, resource.Key, formatter...)
 }
 
 func setTLSProfileFromOptions(t *TLSConf, op framework.Options) {

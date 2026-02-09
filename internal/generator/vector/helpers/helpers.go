@@ -73,13 +73,21 @@ func ListenOnAllLocalInterfacesAddress() string {
 }
 
 // ConfigPath is the quoted path for any configmap visible to the collector
-func ConfigPath(name string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join(constants.ConfigMapBaseDir, name, file))
+func ConfigPath(name string, file string, formatter ...string) string {
+	formatString := "%q"
+	if len(formatter) > 0 {
+		formatString = formatter[0]
+	}
+	return fmt.Sprintf(formatString, filepath.Join(constants.ConfigMapBaseDir, name, file))
 }
 
 // SecretPath is the quoted path for any secret visible to the collector
-func SecretPath(secretName string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join(constants.CollectorSecretsDir, secretName, file))
+func SecretPath(secretName string, file string, formatter ...string) string {
+	formatString := "%q"
+	if len(formatter) > 0 {
+		formatString = formatter[0]
+	}
+	return fmt.Sprintf(formatString, filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }
 
 // SecretFrom formated string SECRET[<secret_component_id>.<secret_name>#<secret_key>]

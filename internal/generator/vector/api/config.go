@@ -25,6 +25,19 @@ type Config struct {
 	Sinks map[string]interface{} `json:"sinks,omitempty" yaml:"sinks,omitempty" toml:"sinks,omitempty"`
 }
 
+func NewConfig(init func(*Config)) *Config {
+	c := &Config{
+		Secret:     make(map[string]interface{}),
+		Sources:    make(map[string]interface{}),
+		Transforms: make(map[string]interface{}),
+		Sinks:      make(map[string]interface{}),
+	}
+	if init != nil {
+		init(c)
+	}
+	return c
+}
+
 // Name is a deprecated method to adapt to the existing generator framework
 func (c Config) Name() string {
 	return "config"

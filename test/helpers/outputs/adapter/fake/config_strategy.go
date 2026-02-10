@@ -18,10 +18,6 @@ func (o Output) VisitSink(s common.SinkConfig) {
 	}
 }
 
-func (o Output) VisitAcknowledgements(a common.Acknowledgments) common.Acknowledgments {
-	return a
-}
-
 func (o Output) VisitBatch(b common.Batch) common.Batch {
 	if o.tuning.MaxWrite != nil && !o.tuning.MaxWrite.IsZero() {
 		b.MaxBytes.Value = o.tuning.MaxWrite.Value()

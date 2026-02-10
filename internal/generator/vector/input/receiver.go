@@ -37,7 +37,7 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourc
 				server := sources.NewHttpServer(helpers.ListenOnAllLocalInterfacesAddress(), spec.Receiver.Port)
 				server.TLS = tlsConfig
 				server.Decoding = &sources.Decoding{
-					Codec: sources.CodecTypeJSON,
+					Codec: api.CodecTypeJSON,
 				}
 				c.Sources[base] = server
 			}),

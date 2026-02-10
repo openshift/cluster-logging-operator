@@ -21,12 +21,6 @@ func NewHttpServer(listenAddress string, listenPort int32) *HttpServer {
 	}
 }
 
-type CodecType string
-
-const (
-	CodecTypeJSON CodecType = "json"
-)
-
 type Decoding struct {
-	Codec CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
+	Codec api.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
 }

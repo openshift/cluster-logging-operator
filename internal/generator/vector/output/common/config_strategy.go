@@ -2,7 +2,6 @@ package common
 
 // ConfigStrategy abstracts the generator specific sections from the domain
 type ConfigStrategy interface {
-	VisitAcknowledgements(a Acknowledgments) Acknowledgments
 	VisitBatch(b Batch) Batch
 	VisitRequest(r Request) Request
 	VisitBuffer(b Buffer) Buffer

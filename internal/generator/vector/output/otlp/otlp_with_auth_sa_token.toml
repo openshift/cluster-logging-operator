@@ -558,13 +558,17 @@ source = '''
 [sinks.output_otel_collector]
 type = "opentelemetry"
 inputs = ["output_otel_collector_resource_logs"]
-protocol.uri = "http://localhost:4318/v1/logs"
-protocol.type = "http"
-protocol.method = "post"
-protocol.encoding.codec = "json"
-protocol.encoding.except_fields = ["_internal"]
-protocol.payload_prefix = "{\"resourceLogs\":"
-protocol.payload_suffix = "}"
+
+[sinks.output_otel_collector.protocol]
+uri = "http://localhost:4318/v1/logs"
+type = "http"
+method = "post"
+payload_prefix = "{\"resourceLogs\":"
+payload_suffix = "}"
+
+[sinks.output_otel_collector.protocol.encoding]
+codec = "json"
+except_fields = ["_internal"]
 
 [sinks.output_otel_collector.protocol.auth]
 strategy = "bearer"

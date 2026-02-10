@@ -9,10 +9,7 @@ func NewAcknowledgments(id string, s ConfigStrategy) Acknowledgments {
 	a := Acknowledgments{
 		ID: id,
 	}
-	if s == nil {
-		return a
-	}
-	return s.VisitAcknowledgements(a)
+	return a
 }
 
 func (a Acknowledgments) Name() string {

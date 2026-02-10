@@ -6,7 +6,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	typehelpers "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
@@ -32,6 +34,28 @@ type TLSConf struct {
 	CertPath           string
 	KeyPath            string
 	PassPhrase         string
+}
+
+func NewTls(endpoint string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op utils.Options, options ...framework.Option) (conf *api.TLS) {
+	if !url.IsSecure(endpoint) {
+		return
+	}
+	conf = &api.TLS{}
+	if _, found := framework.HasOption(IncludeEnabled, options); found && spec != nil {
+		conf.Enabled = true
+	}
+	if spec != nil {
+		conf.CAFile = ValuePath(spec.CA, "%s")
+		conf.CRTFile = ValuePath(spec.Certificate, "%s")
+		conf.KeyFile = SecretPath(spec.Key, "%s")
+		conf.KeyPass = secrets.AsString(spec.KeyPassphrase)
+		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); !found && spec.InsecureSkipVerify {
+			conf.VerifyCertificate = false
+			conf.VerifyHostname = false
+		}
+	}
+	conf.SetTLSProfile(op)
+	return conf
 }
 
 func New(id string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op framework.Options, options ...framework.Option) framework.Element {

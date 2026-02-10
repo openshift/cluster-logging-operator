@@ -25,6 +25,12 @@ type Config struct {
 	Sinks map[string]interface{} `json:"sinks,omitempty" yaml:"sinks,omitempty" toml:"sinks,omitempty"`
 }
 
+type CodecType string
+
+const (
+	CodecTypeJSON CodecType = "json"
+)
+
 func NewConfig(init func(*Config)) *Config {
 	c := &Config{
 		Secret:     make(map[string]interface{}),

@@ -31,7 +31,7 @@ var _ = Describe("[Functional][Outputs][Logstash] Output to Logstash", func() {
 	}
 
 	const (
-		logStashImage        = "logstash:7.10.1"
+		logStashImage        = "quay.io/openshift-logging/logstash:7.10.1"
 		logstashConfFileName = "logstash.yml"
 		logstashConf         = `xpack.monitoring.enabled: false`
 		pipelineConfFileName = "pipeline.conf"

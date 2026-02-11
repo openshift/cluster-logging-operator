@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -49,10 +50,18 @@ const (
 	lokistackQuerier       = "-querier"
 	lokistackQueryFrontend = "-query-frontend"
 
-	LokistackName       = "lokistack-dev"
-	lokiOperatorChannel = "stable-6.2"
-	minioName           = "minio"
+	LokistackName = "lokistack-dev"
+
+	minioName = "minio"
 )
+
+var lokiOperatorChannel = "stable-6.4"
+
+func init() {
+	if value := os.Getenv("LOKI_OPERATOR_CHANNEL"); value != "" {
+		lokiOperatorChannel = value
+	}
+}
 
 type LokistackLogStore struct {
 	Name      string

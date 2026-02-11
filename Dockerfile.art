@@ -59,4 +59,4 @@ LABEL \
         url="https://catalog.redhat.com/en/software/containers/openshift-logging/cluster-logging-rhel9-operator/644799230dfd5adb35db6f60" \
         vendor="Red Hat, Inc." \
         version_minor="v6.3" \
-        version="v6.3.3"
+        version="v6.3.4"

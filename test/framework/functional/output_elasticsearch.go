@@ -33,9 +33,9 @@ const (
 var (
 	logTypeIndexMap  = map[string]string{}
 	esVersionToImage = map[ElasticsearchVersion]string{
-		ElasticsearchVersion6: "elasticsearch:6.8.23",
-		ElasticsearchVersion7: "elasticsearch:7.17.28",
-		ElasticsearchVersion8: "elasticsearch:8.17.5",
+		ElasticsearchVersion6: "quay.io/openshift-logging/elasticsearch:6.8.23",
+		ElasticsearchVersion7: "quay.io/openshift-logging/elasticsearch:7.17.28",
+		ElasticsearchVersion8: "quay.io/openshift-logging/elasticsearch:8.17.5",
 	}
 )
 

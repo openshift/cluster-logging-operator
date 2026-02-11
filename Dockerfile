@@ -19,7 +19,7 @@ COPY ${APP_DIR}/internal ./internal
 USER 0
 RUN make build
 
-FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
+FROM quay.io/openshift/origin-cli-artifacts:latest AS origincli
 
 RUN case $(uname -m) in \
     x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \

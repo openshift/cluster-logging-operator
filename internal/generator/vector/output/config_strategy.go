@@ -4,7 +4,6 @@ import (
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 )
 
@@ -51,18 +50,6 @@ func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
 		b.MaxSize.Value = minBufferSize
 	case obs.DeliveryModeAtMostOnce:
 		b.WhenFull.Value = common.BufferWhenFullDropNewest
-	}
-	return b
-}
-
-func (o Output) InitBuffer(b *sinks.Buffer) *sinks.Buffer {
-	switch o.tuning.DeliveryMode {
-	case obs.DeliveryModeAtLeastOnce:
-		b.WhenFull = sinks.BufferWhenFullBlock
-		b.Type = sinks.BufferTypeDisk
-		b.MaxSize = minBufferSize
-	case obs.DeliveryModeAtMostOnce:
-		b.WhenFull = sinks.BufferWhenFullDropNewest
 	}
 	return b
 }

@@ -51,7 +51,7 @@ func (ls logSources) Has(source string) bool {
 	return false
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, adapter observability.TunableOutput, op Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
@@ -153,21 +153,14 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 				c.Sinks[id] = sinks.NewOpenTelemetry(o.OTLP.URL, func(s *sinks.OpenTelemetry) {
 					s.Protocol.Type = "http"
 					s.Protocol.Method = sinks.MethodTypePost
-					s.Protocol.Encoding = &sinks.Encoding{
-						Codec:        api.CodecTypeJSON,
-						ExceptFields: []string{"_internal"},
-					}
+					s.Protocol.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
 					s.Protocol.PayloadPrefix = "{\"resourceLogs\":"
 					s.Protocol.PayloadSuffix = "}"
 					if o.OTLP.Tuning != nil {
 						s.Protocol.Compression = sinks.CompressionType(o.OTLP.Tuning.Compression)
-						s.Batch = sinks.NewBatch(o.OTLP.Tuning.MaxWrite)
-						s.Buffer = sinks.NewBuffer(func(buffer *sinks.Buffer) {
-							observability.InitBuffer(o.OTLP.Tuning.BaseOutputTuningSpec, buffer)
-						})
-						s.Protocol.Request = sinks.NewRequest(func(r *sinks.Request) {
-							observability.InitRequest(o.OTLP.Tuning.BaseOutputTuningSpec, r)
-						})
+						s.Batch = common.NewApiBatch(adapter)
+						s.Buffer = common.NewApiBuffer(adapter)
+						s.Protocol.Request = common.NewApiRequest(adapter)
 					}
 					if o.TLS != nil && url.IsSecure(o.OTLP.URL) {
 						s.Protocol.TLS = tls.NewTls(o.OTLP.URL, o.TLS, secrets, op)
@@ -176,7 +169,6 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 
 				}, formatResourceLogsID)
 			}),
-			//auth.HTTPAuth(protocolId, o.OTLP.Authentication, secrets, op),
 		},
 	)
 }

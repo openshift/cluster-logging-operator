@@ -19,6 +19,7 @@ const (
 
 var (
 	IncludeEnabledOption = framework.Option{Name: IncludeEnabled, Value: ""}
+	emptyTLSConf         = api.TLS{}
 )
 
 type TLSConf struct {
@@ -36,12 +37,14 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func NewTls(endpoint string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op utils.Options, options ...framework.Option) (conf *api.TLS) {
-	if !url.IsSecure(endpoint) {
-		return
+func NewTls(spec *obs.OutputTLSSpec, secrets observability.Secrets, op utils.Options, options ...framework.Option) (conf *api.TLS) {
+	if outURL, found := framework.HasOption(framework.URL, options); found {
+		if !url.IsSecure(outURL.(string)) {
+			return nil
+		}
 	}
 	conf = &api.TLS{}
-	if _, found := framework.HasOption(IncludeEnabled, options); found && spec != nil {
+	if _, found := framework.HasOption(IncludeEnabled, options); found {
 		conf.Enabled = true
 	}
 	if spec != nil {
@@ -50,12 +53,27 @@ func NewTls(endpoint string, spec *obs.OutputTLSSpec, secrets observability.Secr
 		conf.KeyFile = SecretPath(spec.Key, "%s")
 		conf.KeyPass = secrets.AsString(spec.KeyPassphrase)
 		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); !found && spec.InsecureSkipVerify {
-			conf.VerifyCertificate = false
-			conf.VerifyHostname = false
+			conf.VerifyCertificate = utils.GetPtr(false)
+			conf.VerifyHostname = utils.GetPtr(false)
 		}
 	}
-	conf.SetTLSProfile(op)
+	setTLSProfile(conf, op)
+	if *conf == emptyTLSConf {
+		return nil
+	}
 	return conf
+}
+
+// SetTLSProfile updates the tls and cipher specs from the options given
+// TODO: Remove internal/generator/vector/output/common/tls
+func setTLSProfile(t *api.TLS, op utils.Options) *api.TLS {
+	if version, found := op[framework.MinTLSVersion]; found {
+		t.MinTlsVersion = version.(string)
+	}
+	if ciphers, found := op[framework.Ciphers]; found {
+		t.CipherSuites = ciphers.(string)
+	}
+	return t
 }
 
 func New(id string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op framework.Options, options ...framework.Option) framework.Element {

@@ -23,3 +23,7 @@ func NewOutput(spec obs.OutputSpec, secrets map[string]*corev1.Secret, op genera
 		tuning:  internalobs.NewTuning(spec),
 	}
 }
+
+func (o Output) GetTuning() *internalobs.Tuning {
+	return &o.tuning
+}

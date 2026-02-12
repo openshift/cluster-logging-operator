@@ -23,8 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op utils.Options, adapter Output) []framework.Element {
 	framework.SetTLSProfileOptionsFrom(op, o)
+	SetTLSProfileOptionsFrom(op, o)
 
 	var els []framework.Element
 	baseID := helpers.MakeOutputID(o.Name)
@@ -46,7 +47,7 @@ func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, s
 	case obs.OutputTypeElasticsearch:
 		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeCloudwatch:
-		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, adapter, op)...)
 	case obs.OutputTypeS3:
 		els = append(els, s3.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeGoogleCloudLogging:
@@ -60,7 +61,7 @@ func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, s
 	case obs.OutputTypeAzureMonitor:
 		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeOTLP:
-		els = append(els, otlp.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, otlp.New(baseID, o, inputs, secrets, adapter, op)...)
 	}
 	return els
 }

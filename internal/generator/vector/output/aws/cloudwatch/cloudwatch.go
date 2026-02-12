@@ -9,6 +9,11 @@ import (
 
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -75,7 +80,7 @@ func (e *CloudWatch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, adapter observability.TunableOutput, op utils.Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	if genhelper.IsDebugOutput(op) {
@@ -84,21 +89,31 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 			elements.Debug(id, vectorhelpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	cwSink := sink(id, o, []string{groupNameID}, secrets, op, o.Cloudwatch.Region, groupNameID)
-	if strategy != nil {
-		strategy.VisitSink(cwSink)
-	}
+
+	newSink := sinks.NewAwsCloudwatchLogs(func(s *sinks.AwsCloudwatchLogs) {
+		s.Region = o.Cloudwatch.Region
+		s.GroupName = "{{ _internal.cw_group_name }}"
+		s.StreamName = "{{ stream_name }}"
+		s.Endpoint = o.Cloudwatch.URL
+		s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
+		if adapter.GetTuning().Compression == "" {
+			s.Compression = sinks.CompressionTypeNone
+		} else {
+			s.Compression = sinks.CompressionType(adapter.GetTuning().Compression)
+		}
+		s.Batch = common.NewApiBatch(adapter)
+		s.Buffer = common.NewApiBuffer(adapter)
+		s.Request = common.NewApiRequest(adapter)
+		s.TLS = tls.NewTls(o.TLS, secrets, op)
+		s.Auth = aws.NewAuthConfig(o.Name, o.Cloudwatch.Authentication, op)
+	}, groupNameID)
 
 	return []framework.Element{
 		NormalizeStreamName(componentID, inputs),
 		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
-		cwSink,
-		common.NewEncoding(id, common.CodecJSON),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
+		api.NewConfig(func(c *api.Config) {
+			c.Sinks[id] = newSink
+		}),
 	}
 }
 

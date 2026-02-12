@@ -1,46 +1,16 @@
 package observability
 
 import (
-	"time"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 )
 
-const (
-	minBufferSize = 268435488
-)
+type TunableOutput interface {
+	GetTuning() *Tuning
+}
 
 type Tuning struct {
 	obs.BaseOutputTuningSpec
 	Compression string
-}
-
-func InitBuffer(t obs.BaseOutputTuningSpec, b *sinks.Buffer) *sinks.Buffer {
-	switch t.DeliveryMode {
-	case obs.DeliveryModeAtLeastOnce:
-		b.WhenFull = sinks.BufferWhenFullBlock
-		b.Type = sinks.BufferTypeDisk
-		b.MaxSize = minBufferSize
-	case obs.DeliveryModeAtMostOnce:
-		b.WhenFull = sinks.BufferWhenFullDropNewest
-	}
-	return b
-}
-
-func InitRequest(t obs.BaseOutputTuningSpec, r *sinks.Request) *sinks.Request {
-	var duration time.Duration
-	if t.MinRetryDuration != nil && t.MinRetryDuration.Seconds() > 0 {
-		// time.Duration is default nanosecond. Convert to seconds first.
-		duration = *t.MinRetryDuration * time.Second
-		r.RetryInitialBackoffSecs = uint(duration.Seconds())
-	}
-	if t.MaxRetryDuration != nil && t.MaxRetryDuration.Seconds() > 0 {
-		duration = *t.MaxRetryDuration * time.Second
-		r.RetryMaxDurationSec = uint(duration.Seconds())
-	}
-
-	return r
 }
 
 func NewTuning(spec obs.OutputSpec) Tuning {

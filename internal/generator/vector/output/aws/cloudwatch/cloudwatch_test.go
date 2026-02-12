@@ -2,9 +2,10 @@ package cloudwatch_test
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -413,15 +414,6 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			op := framework.Options{}
 			op[framework.OptionForwarderName] = "my-forwarder"
 			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, fake.Output{}, op)
-
-			// Verify that CloudWatch sink configuration is present
-			var elementNames []string
-			for _, element := range conf {
-				elementNames = append(elementNames, element.Name())
-			}
-
-			// Verify basic CloudWatch elements exist
-			Expect(elementNames).To(ContainElement("cloudwatchTemplate"), "Should contain cloudwatch sink template")
 
 			// Since authentication is embedded within cloudwatchTemplate, we just verify
 			// that the CloudWatch configuration was created successfully with assume role

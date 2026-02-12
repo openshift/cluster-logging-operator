@@ -42,8 +42,3 @@ type MethodType string
 const (
 	MethodTypePost MethodType = "post"
 )
-
-type Encoding struct {
-	Codec        api.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
-	ExceptFields []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
-}

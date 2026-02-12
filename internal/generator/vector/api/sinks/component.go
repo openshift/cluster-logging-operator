@@ -1,13 +1,14 @@
 package sinks
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 )
 
 type SinkType string
 
 const (
-	SinkTypeOpenTelemetry SinkType = "opentelemetry"
+	SinkTypeAwsCloudwatchLogs SinkType = "aws_cloudwatch_logs"
+	SinkTypeOpenTelemetry     SinkType = "opentelemetry"
 )
 
 type CompressionType string
@@ -30,28 +31,11 @@ type Batch struct {
 	TimeoutSec float64 `json:"timeout_secs,omitempty" yaml:"timeout_secs,omitempty" toml:"timeout_secs,omitempty"`
 }
 
-func NewBatch(maxBytes *resource.Quantity) (b *Batch) {
-	if maxBytes != nil && !maxBytes.IsZero() {
-		b = &Batch{
-			MaxBytes: uint64(maxBytes.Value()),
-		}
-	}
-	return b
-}
-
 type Buffer struct {
 	Type      BufferType         `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
 	WhenFull  BufferWhenFullType `json:"when_full,omitempty" yaml:"when_full,omitempty" toml:"when_full,omitempty"`
 	MaxSize   uint               `json:"max_size,omitempty" yaml:"max_size,omitempty" toml:"max_size,omitempty"`
 	MaxEvents uint               `json:"max_events,omitempty" yaml:"max_events,omitempty" toml:"max_events,omitempty"`
-}
-
-func NewBuffer(init func(buffer *Buffer)) (b *Buffer) {
-	b = &Buffer{}
-	if init != nil {
-		init(b)
-	}
-	return b
 }
 
 type BufferType string
@@ -65,23 +49,24 @@ const (
 	BufferWhenFullDropNewest BufferWhenFullType = "drop_newest"
 )
 
-type Request struct {
-	RetryAttempts           uint `json:"retry_attempts,omitempty" yaml:"retry_attempts,omitempty" toml:"retry_attempts,omitempty"`
-	RetryInitialBackoffSecs uint `json:"retry_initial_backoff_secs,omitempty" yaml:"retry_initial_backoff_secs,omitempty" toml:"retry_initial_backoff_secs,omitempty"`
-	RetryMaxDurationSec     uint `json:"retry_max_duration_secs,omitempty" yaml:"retry_max_duration_secs,omitempty" toml:"retry_max_duration_secs,omitempty"`
+type Encoding struct {
+	Codec        api.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
+	ExceptFields []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
 }
 
-func NewRequest(init func(r *Request)) *Request {
-	r := &Request{}
-	if init != nil {
-		init(r)
-	}
-	return r
+type Request struct {
+	RetryAttempts           uint              `json:"retry_attempts,omitempty" yaml:"retry_attempts,omitempty" toml:"retry_attempts,omitempty"`
+	RetryInitialBackoffSecs uint              `json:"retry_initial_backoff_secs,omitempty" yaml:"retry_initial_backoff_secs,omitempty" toml:"retry_initial_backoff_secs,omitempty"`
+	RetryMaxDurationSec     uint              `json:"retry_max_duration_secs,omitempty" yaml:"retry_max_duration_secs,omitempty" toml:"retry_max_duration_secs,omitempty"`
+	Headers                 map[string]string `json:"headers,omitempty" yaml:"headers,omitempty" toml:"headers,omitempty"`
 }
 
 type BaseSink struct {
+	Compression      CompressionType   `json:"compression,omitempty" yaml:"compression,omitempty" toml:"compression,omitempty"`
+	Encoding         *Encoding         `json:"encoding,omitempty" yaml:"encoding,omitempty" toml:"encoding,omitempty"`
 	Acknowledgements *Acknowledgements `json:"acknowledgements,omitempty" yaml:"acknowledgements,omitempty" toml:"acknowledgements,omitempty"`
 	Batch            *Batch            `json:"batch,omitempty" yaml:"batch,omitempty" toml:"batch,omitempty"`
 	Buffer           *Buffer           `json:"buffer,omitempty" yaml:"buffer,omitempty" toml:"buffer,omitempty"`
 	Request          *Request          `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`
+	TLS              *api.TLS          `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
 }

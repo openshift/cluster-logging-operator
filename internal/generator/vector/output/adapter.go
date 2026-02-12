@@ -17,6 +17,10 @@ type Output struct {
 	tuning   internalobs.Tuning
 }
 
+func (o Output) GetTuning() *internalobs.Tuning {
+	return &o.tuning
+}
+
 func NewOutput(spec obs.OutputSpec, secrets map[string]*corev1.Secret, op generator.Options) *Output {
 	return &Output{
 		spec:    spec,
@@ -30,7 +34,7 @@ func (o *Output) Elements() []generator.Element {
 	if o == nil {
 		return []generator.Element{}
 	}
-	el := New(o.spec, o.inputIDs, o.secrets, o, o.op)
+	el := New(o.spec, o.inputIDs, o.secrets, o, o.op, *o)
 	return el
 }
 

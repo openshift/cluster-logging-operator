@@ -7,6 +7,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -18,13 +19,13 @@ import (
 )
 
 // New creates generate elements that represent configuration to forward logs to Loki using OpenShift Logging tenancy model
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
 	clfSpec, _ := utils.GetOption(op, vectorhelpers.CLFSpec, observability.ClusterLogForwarderSpec{})
 	if len(clfSpec.Inputs) == 0 || len(clfSpec.Pipelines) == 0 || len(clfSpec.Outputs) == 0 {
 		panic("ClusterLogForwarderSpec not found while generating LokiStack config")
 	}
 
-	inputSpecs := clfSpec.InputSpecsTo(o)
+	inputSpecs := clfSpec.InputSpecsTo(o.OutputSpec)
 	tenants := determineTenants(inputSpecs)
 
 	routeID := vectorhelpers.MakeID(id, "route")
@@ -50,7 +51,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	}))
 
 	for _, inputType := range tenants.List() {
-		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o, inputSpecs, secrets, strategy, op)...)
+		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o.OutputSpec, inputSpecs, secrets, strategy, op)...)
 	}
 
 	return confs
@@ -104,8 +105,9 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 
 	if migratedOutput.Type == obs.OutputTypeOTLP {
 		op[otlp.OtlpLogSourcesOption] = getInputSources(inputSpecs, obs.InputType(inputType))
-		op[otlp.MigratedFromLokistackOption] = true
-		return otlp.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)
+		adapter := adapters.NewOutput(migratedOutput)
+		adapter.InputIDs = append(adapter.InputIDs, factoryInput)
+		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)
 	}
 
 	return loki.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)

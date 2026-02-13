@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,7 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,7 +37,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		)
 
 		var (
-			adapter fake.Output
+			adapter *adapters.Output
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 				TLSSpec: obs.TLSSpec{
@@ -123,10 +123,10 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				visit(&outputSpec)
 			}
 			if tune {
-				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
 			}
+			adapter = adapters.NewOutput(outputSpec)
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, adapter, op)
+			conf := New(outputSpec.Name, adapter, []string{"cw-forward"}, secrets, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
 
@@ -413,7 +413,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 			op := framework.Options{}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := New(outputSpec.Name, outputSpec, []string{"cw-forward"}, secrets, fake.Output{}, op)
+			adapter := adapters.NewOutput(outputSpec)
+			conf := New(outputSpec.Name, adapter, []string{"cw-forward"}, secrets, op)
 
 			// Since authentication is embedded within cloudwatchTemplate, we just verify
 			// that the CloudWatch configuration was created successfully with assume role

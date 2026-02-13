@@ -1,4 +1,4 @@
-package output
+package adapters
 
 import (
 	"time"
@@ -12,20 +12,20 @@ const (
 	buffertTypeDisk = "disk"
 )
 
-func (o Output) VisitSink(s common.SinkConfig) {
+func (o *Output) VisitSink(s common.SinkConfig) {
 	if o.tuning.Compression != "" {
 		s.SetCompression(o.tuning.Compression)
 	}
 }
 
-func (o Output) VisitBatch(b common.Batch) common.Batch {
+func (o *Output) VisitBatch(b common.Batch) common.Batch {
 	if o.tuning.MaxWrite != nil && !o.tuning.MaxWrite.IsZero() {
 		b.MaxBytes.Value = o.tuning.MaxWrite.Value()
 	}
 	return b
 }
 
-func (o Output) VisitRequest(r common.Request) common.Request {
+func (o *Output) VisitRequest(r common.Request) common.Request {
 	var duration time.Duration
 	if o.tuning.MinRetryDuration != nil && o.tuning.MinRetryDuration.Seconds() > 0 {
 		// time.Duration is default nanosecond. Convert to seconds first.
@@ -42,7 +42,7 @@ func (o Output) VisitRequest(r common.Request) common.Request {
 
 // VisitBuffer modifies the buffer behavior depending upon the value
 // of the tuning.Delivery mode
-func (o Output) VisitBuffer(b common.Buffer) common.Buffer {
+func (o *Output) VisitBuffer(b common.Buffer) common.Buffer {
 	switch o.tuning.DeliveryMode {
 	case obs.DeliveryModeAtLeastOnce:
 		b.WhenFull.Value = common.BufferWhenFullBlock

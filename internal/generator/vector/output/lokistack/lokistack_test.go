@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -25,7 +25,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	var (
-		adapter fake.Output
+		adapter *adapters.Output
 		//- lokiStack:
 		//authentication:
 		//token:
@@ -142,9 +142,9 @@ var _ = Describe("Generate vector config", func() {
 			visit(&outputSpec)
 		}
 		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
 		}
-		conf := New(helpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipeline_fake"}, secrets, adapter, op)
+		adapter = adapters.NewOutput(outputSpec)
+		conf := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_fake"}, secrets, adapter, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), false, func(spec *obs.OutputSpec) {}),

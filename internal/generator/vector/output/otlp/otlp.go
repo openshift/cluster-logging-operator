@@ -8,6 +8,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
@@ -51,7 +52,7 @@ func (ls logSources) Has(source string) bool {
 	return false
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, adapter observability.TunableOutput, op Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
@@ -158,12 +159,12 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 					s.Protocol.PayloadSuffix = "}"
 					if o.OTLP.Tuning != nil {
 						s.Protocol.Compression = sinks.CompressionType(o.OTLP.Tuning.Compression)
-						s.Batch = common.NewApiBatch(adapter)
-						s.Buffer = common.NewApiBuffer(adapter)
-						s.Protocol.Request = common.NewApiRequest(adapter)
+						s.Batch = common.NewApiBatch(o)
+						s.Buffer = common.NewApiBuffer(o)
+						s.Protocol.Request = common.NewApiRequest(o)
 					}
 					if o.TLS != nil && url.IsSecure(o.OTLP.URL) {
-						s.Protocol.TLS = tls.NewTls(o.OTLP.URL, o.TLS, secrets, op)
+						s.Protocol.TLS = tls.NewTls(o, secrets, op)
 					}
 					s.Protocol.Auth = auth.NewHttpAuth(o.OTLP.Authentication, op)
 

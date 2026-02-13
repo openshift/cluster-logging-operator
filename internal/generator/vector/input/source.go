@@ -6,12 +6,13 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/utils/set"
 )
 
 // NewSource creates an input adapter to generate config for ViaQ sources to collect logs excluding the
 // collector container logs from the namespace where the collector is deployed
-func NewSource(input obs.InputSpec, collectorNS string, resNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) ([]framework.Element, []string) {
+func NewSource(input *internalobs.Input, resNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op utils.Options) ([]framework.Element, []string) {
 	els := []framework.Element{}
 	ids := []string{}
 	switch input.Type {
@@ -60,7 +61,7 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		eb.AddExtensions(excludeExtensions...)
 		includes := ib.Build()
 		excludes := eb.Build(infraNamespaces...)
-		return NewContainerSource(input, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer)
+		return NewContainerSource(input.InputSpec, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer)
 	case obs.InputTypeInfrastructure:
 		sources := set.Set[obs.InfrastructureSource]{}
 		if input.Infrastructure == nil {
@@ -73,12 +74,12 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 		}
 		if sources.Has(obs.InfrastructureSourceContainer) {
 			infraIncludes := helpers.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-			cels, cids := NewContainerSource(input, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer)
+			cels, cids := NewContainerSource(input.InputSpec, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}
 		if sources.Has(obs.InfrastructureSourceNode) {
-			jels, jids := NewJournalInput(input)
+			jels, jids := NewJournalInput(input.InputSpec)
 			els = append(els, jels...)
 			ids = append(ids, jids...)
 		}
@@ -94,22 +95,22 @@ func NewSource(input obs.InputSpec, collectorNS string, resNames factory.Forward
 			}
 		}
 		if sources.Has(obs.AuditSourceAuditd) {
-			cels, cids := NewAuditAuditdSource(input, op)
+			cels, cids := NewAuditAuditdSource(input.InputSpec, op)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}
 		if sources.Has(obs.AuditSourceKube) {
-			cels, cids := NewK8sAuditSource(input, op)
+			cels, cids := NewK8sAuditSource(input.InputSpec, op)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}
 		if sources.Has(obs.AuditSourceOpenShift) {
-			cels, cids := NewOpenshiftAuditSource(input, op)
+			cels, cids := NewOpenshiftAuditSource(input.InputSpec, op)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}
 		if sources.Has(obs.AuditSourceOVN) {
-			cels, cids := NewOVNAuditSource(input, op)
+			cels, cids := NewOVNAuditSource(input.InputSpec, op)
 			els = append(els, cels...)
 			ids = append(ids, cids...)
 		}

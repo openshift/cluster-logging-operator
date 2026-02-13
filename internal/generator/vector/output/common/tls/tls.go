@@ -37,7 +37,7 @@ type TLSConf struct {
 	PassPhrase         string
 }
 
-func NewTls(spec *obs.OutputTLSSpec, secrets observability.Secrets, op utils.Options, options ...framework.Option) (conf *api.TLS) {
+func NewTls(comp observability.TransportSpec, secrets observability.Secrets, op utils.Options, options ...framework.Option) (conf *api.TLS) {
 	if outURL, found := framework.HasOption(framework.URL, options); found {
 		if !url.IsSecure(outURL.(string)) {
 			return nil
@@ -47,12 +47,13 @@ func NewTls(spec *obs.OutputTLSSpec, secrets observability.Secrets, op utils.Opt
 	if _, found := framework.HasOption(IncludeEnabled, options); found {
 		conf.Enabled = true
 	}
-	if spec != nil {
+	if comp != nil && comp.GetTlsSpec() != nil {
+		spec := comp.GetTlsSpec()
 		conf.CAFile = ValuePath(spec.CA, "%s")
 		conf.CRTFile = ValuePath(spec.Certificate, "%s")
 		conf.KeyFile = SecretPath(spec.Key, "%s")
 		conf.KeyPass = secrets.AsString(spec.KeyPassphrase)
-		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); !found && spec.InsecureSkipVerify {
+		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); !found && comp.IsInsecureSkipVerify() {
 			conf.VerifyCertificate = utils.GetPtr(false)
 			conf.VerifyHostname = utils.GetPtr(false)
 		}

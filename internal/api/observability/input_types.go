@@ -4,10 +4,9 @@ import (
 	"regexp"
 	"sort"
 
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	"k8s.io/utils/set"
-
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 )
 
 var (
@@ -197,4 +196,33 @@ func (auditSources AuditSources) AsStrings() (result []string) {
 		result = append(result, string(s))
 	}
 	return result
+}
+
+// Input is an internal representation of the public API input
+type Input struct {
+	obs.InputSpec
+	Ids []string
+}
+
+func (i *Input) InputIDs() []string {
+	return i.Ids
+}
+
+func (i *Input) GetTlsSpec() *obs.TLSSpec {
+	if i.Receiver == nil || i.Receiver.TLS == nil {
+		return nil
+	}
+	tlsSpec := obs.TLSSpec(*i.Receiver.TLS)
+	return &tlsSpec
+}
+
+func (i *Input) IsInsecureSkipVerify() bool {
+	return false
+}
+
+func NewInput(spec obs.InputSpec) *Input {
+	i := Input{
+		InputSpec: spec,
+	}
+	return &i
 }

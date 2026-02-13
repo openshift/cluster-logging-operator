@@ -13,9 +13,12 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourceNames, secrets observability.Secrets, op generator.Options) ([]generator.Element, []string) {
+func NewViaqReceiverSource(spec *observability.Input, resNames factory.ForwarderResourceNames, secrets observability.Secrets, op utils.Options) ([]generator.Element, []string) {
 	base := helpers.MakeInputID(spec.Name)
-	tlsConfig := newInputTLS(spec.Receiver.TLS, secrets, op)
+	tlsConfig := tls.NewTls(spec, secrets, op)
+	if tlsConfig != nil {
+		tlsConfig.Enabled = true
+	}
 
 	var els []generator.Element
 	metaID := helpers.MakeID(base, "meta")
@@ -46,21 +49,6 @@ func NewViaqReceiverSource(spec obs.InputSpec, resNames factory.ForwarderResourc
 		)
 	}
 	return els, []string{metaID}
-}
-
-func newInputTLS(spec *obs.InputTLSSpec, secrets observability.Secrets, op utils.Options) *api.TLS {
-	if spec == nil {
-		return nil
-	}
-	inputTls := &api.TLS{
-		Enabled: true,
-		KeyFile: tls.SecretPath(spec.Key, "%s"),
-		CRTFile: tls.ValuePath(spec.Certificate, "%s"),
-		CAFile:  tls.ValuePath(spec.CA, "%s"),
-		KeyPass: secrets.AsString(spec.KeyPassphrase),
-	}
-	inputTls.SetTLSProfile(op)
-	return inputTls
 }
 
 func newItemsTransform(id, inputs string) (generator.Element, string) {

@@ -1,12 +1,11 @@
-package output
+package adapters
 
 import (
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -36,7 +35,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(BeEmpty())
@@ -49,7 +48,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "gzip",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
@@ -62,7 +61,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "gzip",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
@@ -75,7 +74,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "snappy",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("snappy"))
@@ -88,7 +87,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "gzip",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
@@ -101,7 +100,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "gzip",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
@@ -114,7 +113,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						Compression: "gzip",
 					},
 				},
-			}, nil, framework.NoOptions)
+			})
 			sink := &fakeSink{}
 			output.VisitSink(sink)
 			Expect(sink.Compression).To(Equal("gzip"))
@@ -129,7 +128,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{},
 				},
-			}, nil, nil)
+			})
 			Expect(``).To(EqualConfigFrom(common.NewRequest(ID, output)))
 		})
 
@@ -143,7 +142,7 @@ var _ = Describe("ConfigStrategy for tuning Outputs", func() {
 						},
 					},
 				},
-			}, nil, nil)
+			})
 
 			Expect(`
 [sinks.id.request]
@@ -160,7 +159,7 @@ retry_max_duration_secs = 35
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{},
 				},
-			}, nil, nil)
+			})
 			Expect(``).To(EqualConfigFrom(common.NewRequest(ID, output)))
 		})
 
@@ -174,7 +173,7 @@ retry_max_duration_secs = 35
 						},
 					},
 				},
-			}, nil, nil)
+			})
 
 			Expect(`
 [sinks.id.request]
@@ -191,7 +190,7 @@ retry_initial_backoff_secs = 25
 				Elasticsearch: &obs.Elasticsearch{
 					Tuning: &obs.ElasticsearchTuningSpec{},
 				},
-			}, nil, nil)
+			})
 			Expect(``).To(EqualConfigFrom(common.NewBatch(ID, output)))
 		})
 
@@ -205,7 +204,7 @@ retry_initial_backoff_secs = 25
 						},
 					},
 				},
-			}, nil, nil)
+			})
 
 			Expect(`
 [sinks.id.batch]
@@ -227,7 +226,7 @@ max_bytes = 1024
 						},
 					},
 				},
-			}, nil, nil)
+			})
 			It("should do nothing to enable acknowledgments", func() {
 				Expect(``).To(EqualConfigFrom(common.NewAcknowledgments(ID, output)))
 			})
@@ -252,7 +251,7 @@ max_size = 268435488
 						},
 					},
 				},
-			}, nil, nil)
+			})
 
 			It("should not enable acknowledgements and not be present", func() {
 				Expect("").To(EqualConfigFrom(common.NewAcknowledgments(ID, output)))

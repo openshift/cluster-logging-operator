@@ -9,6 +9,7 @@ import (
 
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
@@ -80,7 +81,7 @@ func (e *CloudWatch) SetCompression(algo string) {
 	e.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, adapter observability.TunableOutput, op utils.Options) []Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	if genhelper.IsDebugOutput(op) {
@@ -92,20 +93,20 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 
 	newSink := sinks.NewAwsCloudwatchLogs(func(s *sinks.AwsCloudwatchLogs) {
 		s.Region = o.Cloudwatch.Region
+		s.Endpoint = o.Cloudwatch.URL
+		s.Auth = aws.NewAuthConfig(o.Name, o.Cloudwatch.Authentication, op)
 		s.GroupName = "{{ _internal.cw_group_name }}"
 		s.StreamName = "{{ stream_name }}"
-		s.Endpoint = o.Cloudwatch.URL
 		s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
-		if adapter.GetTuning().Compression == "" {
+		if o.GetTuning() != nil && o.GetTuning().Compression == "" {
 			s.Compression = sinks.CompressionTypeNone
 		} else {
-			s.Compression = sinks.CompressionType(adapter.GetTuning().Compression)
+			s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 		}
-		s.Batch = common.NewApiBatch(adapter)
-		s.Buffer = common.NewApiBuffer(adapter)
-		s.Request = common.NewApiRequest(adapter)
-		s.TLS = tls.NewTls(o.TLS, secrets, op)
-		s.Auth = aws.NewAuthConfig(o.Name, o.Cloudwatch.Authentication, op)
+		s.Batch = common.NewApiBatch(o)
+		s.Buffer = common.NewApiBuffer(o)
+		s.Request = common.NewApiRequest(o)
+		s.TLS = tls.NewTls(o, secrets, op)
 	}, groupNameID)
 
 	return []framework.Element{

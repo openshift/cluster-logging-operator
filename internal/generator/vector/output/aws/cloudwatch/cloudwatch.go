@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -25,61 +24,6 @@ import (
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 )
-
-type Endpoint struct {
-	URL string
-}
-
-func (e Endpoint) Name() string {
-	return "awsEndpointTemplate"
-}
-
-func (e Endpoint) Template() (ret string) {
-	ret = `{{define "` + e.Name() + `" -}}`
-	if e.URL != "" {
-		ret += `endpoint = "{{ .URL }}"`
-	}
-	ret += `{{end}}`
-	return
-}
-
-type CloudWatch struct {
-	Desc           string
-	ComponentID    string
-	Inputs         string
-	Region         string
-	GroupName      string
-	EndpointConfig framework.Element
-	AuthConfig     framework.Element
-	common.RootMixin
-}
-
-func (e CloudWatch) Name() string {
-	return "cloudwatchTemplate"
-}
-
-func (e CloudWatch) Template() string {
-	return `{{define "` + e.Name() + `" -}}
-{{if .Desc -}}
-# {{.Desc}}
-{{end -}}
-[sinks.{{.ComponentID}}]
-type = "aws_cloudwatch_logs"
-inputs = {{.Inputs}}
-region = "{{.Region}}"
-{{.Compression}}
-group_name = "{{"{{"}} _internal.{{.GroupName}} {{"}}"}}"
-stream_name = "{{"{{ stream_name }}"}}"
-{{compose_one .AuthConfig}}
-healthcheck.enabled = false
-{{compose_one .EndpointConfig}}
-{{- end}}
-`
-}
-
-func (e *CloudWatch) SetCompression(algo string) {
-	e.Compression.Value = algo
-}
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
@@ -118,6 +62,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	}
 }
 
+<<<<<<< HEAD
 func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, region, groupName string) *CloudWatch {
 	return &CloudWatch{
 		Desc:           "Cloudwatch Logs",

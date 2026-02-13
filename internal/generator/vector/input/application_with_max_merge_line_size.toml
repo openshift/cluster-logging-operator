@@ -1,4 +1,3 @@
-# Logs from containers (including openshift containers)
 [sources.input_my_app_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
@@ -6,14 +5,18 @@ glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 max_merged_line_bytes = 1048576
 exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/kube*_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log"]
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
 use_apiserver_cache = true
+
+[sources.input_my_app_container.pod_annotation_fields]
+pod_labels = "kubernetes.labels"
+pod_namespace = "kubernetes.namespace_name"
+pod_annotations = "kubernetes.annotations"
+pod_uid = "kubernetes.pod_id"
+pod_node_name = "hostname"
+
+[sources.input_my_app_container.namespace_annotation_fields]
+namespace_uid = "kubernetes.namespace_id"
 
 [transforms.input_my_app_container_meta]
 type = "remap"

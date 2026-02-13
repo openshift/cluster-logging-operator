@@ -1,4 +1,4 @@
-package source
+package helpers
 
 import (
 	"fmt"
@@ -6,75 +6,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
-type KubernetesLogs struct {
-	framework.ComponentID
-	Desc               string
-	IncludePaths       string
-	ExcludePaths       string
-	ExtraLabelSelector string
-	MaxMergedLineBytes helpers.OptionalPair
-}
-
-func (kl KubernetesLogs) Name() string {
-	return "k8s_logs_template"
-}
-
-func (kl KubernetesLogs) Template() string {
-	return `{{define "` + kl.Name() + `" -}}
-# {{.Desc}}
-[sources.{{.ComponentID}}]
-type = "kubernetes_logs"
-max_read_bytes = 3145728
-glob_minimum_cooldown_ms = 15000
-auto_partial_merge = true
-{{ .MaxMergedLineBytes }}
-{{- if gt (len .IncludePaths) 0}}
-include_paths_glob_patterns = {{.IncludePaths}}
-{{- end}}
-{{- if gt (len .ExcludePaths) 0 }}
-exclude_paths_glob_patterns = {{.ExcludePaths}}
-{{- end}}
-{{- if gt (len .ExtraLabelSelector) 0 }}
-extra_label_selector = "{{.ExtraLabelSelector}}"
-{{- end}}
-pod_annotation_fields.pod_labels = "kubernetes.labels"
-pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = "kubernetes.annotations"
-pod_annotation_fields.pod_uid = "kubernetes.pod_id"
-pod_annotation_fields.pod_node_name = "hostname"
-namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
-rotate_wait_secs = 5
-use_apiserver_cache = true
-{{end}}`
-}
-
-// NewKubernetesLogs element which always excludes temp and gzip files
-func NewKubernetesLogs(id, includes, excludes string, maxMergedLineBytes int64) KubernetesLogs {
-	logs := KubernetesLogs{
-		ComponentID:  id,
-		Desc:         "Logs from containers (including openshift containers)",
-		IncludePaths: includes,
-		ExcludePaths: excludes,
-	}
-	if maxMergedLineBytes > 0 {
-		logs.MaxMergedLineBytes = helpers.NewOptionalPair("max_merged_line_bytes", maxMergedLineBytes)
-	}
-	return logs
-}
-
 const (
-	crioPodPathFmt                   = `"/var/log/pods/%s"`
-	crioNamespacePathFmt             = `"/var/log/pods/%s/*/*.log"`
-	crioNamespaceAndContainerPathFmt = `"/var/log/pods/%s/%s/*.log"`
-	crioNamespaceContainerCombined   = `"/var/log/pods/%s/*.log"`
-	crioContainerPathFmt             = `"/var/log/pods/*/%s/*.log"`
-	crioPathExtFmt                   = `"/var/log/pods/*/*/*.%s"`
-	crioEverything                   = `["/var/log/pods/*/*/*.log"]`
+	crioPodPathFmt                   = "/var/log/pods/%s"
+	crioNamespacePathFmt             = "/var/log/pods/%s/*/*.log"
+	crioNamespaceAndContainerPathFmt = "/var/log/pods/%s/%s/*.log"
+	crioNamespaceContainerCombined   = "/var/log/pods/%s/*.log"
+	crioContainerPathFmt             = "/var/log/pods/*/%s/*.log"
+	crioPathExtFmt                   = "/var/log/pods/*/*/*.%s"
+	crioEverything                   = "/var/log/pods/*/*/*.log"
 )
 
 // ContainerPathGlobFrom formats a list of kubernetes container file paths to include/exclude for
@@ -174,7 +116,7 @@ func (b *ContainerPathGlobBuilder) AddExtensions(extensions ...string) *Containe
 	}
 	return b
 }
-func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) string {
+func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) []string {
 	namespacesNotToCombine := sets.NewString()
 	for _, ns := range excludeNSFromContainers {
 		namespacesNotToCombine.Insert(normalizeNamespace(ns))
@@ -207,11 +149,10 @@ func (b *ContainerPathGlobBuilder) Build(excludeNSFromContainers ...string) stri
 	}
 	paths := uniq.List()
 	sort.Strings(paths)
-	pathString := joinContainerPathsForVector(paths)
-	if pathString == "" || pathString == crioEverything {
-		return ""
+	if len(paths) == 0 || len(paths) == 1 && paths[0] == crioEverything {
+		return []string{}
 	}
-	return pathString
+	return paths
 }
 
 func joinContainerPathsForVector(paths []string) string {

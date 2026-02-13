@@ -2515,6 +2515,13 @@ spec:
                               - secretName
                               type: object
                           type: object
+                        format:
+                          description: Format defines data format used to send data
+                            to remote destination.
+                          enum:
+                          - json
+                          - ndjson
+                          type: string
                         headers:
                           additionalProperties:
                             type: string

@@ -1,10 +1,11 @@
-package source
+package helpers
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func LabelSelectorFrom(selector *metav1.LabelSelector) string {

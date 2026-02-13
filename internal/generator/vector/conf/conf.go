@@ -5,6 +5,8 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -14,8 +16,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	InternalMetricsSourceName = "internal_metrics"
 )
 
 // Design of next generation conf generation:
@@ -103,12 +108,16 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 			`vector global options`,
 		},
 		{
-			Elements: source.MetricsSources(source.InternalMetricsSourceName),
+			Elements: []framework.Element{
+				api.NewConfig(func(c *api.Config) {
+					c.Sources[InternalMetricsSourceName] = sources.NewInternalMetrics()
+				}),
+			},
 		},
 		sections,
 		{
 			Elements: []framework.Element{
-				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{source.InternalMetricsSourceName}),
+				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites, op),
 			},
 		},

@@ -877,6 +877,9 @@ spec:
         path: outputs[0].http.authentication.username.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Format defines data format used to send data to remote destination.
+        displayName: Format
+        path: outputs[0].http.format
       - description: Headers specify optional headers to be sent with the request
         displayName: Headers
         path: outputs[0].http.headers

@@ -91,11 +91,7 @@ func NewJournalInternalNormalization(id string, logSource interface{}, envelopeV
 		setOpenshiftSequence,
 	}
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return remap.New(id, strings.Join(vrls, "\n"), inputs)
 }
 
 // NewJournalInternalNormalization returns configuration elements to normalize journal log entries to an internal, common data model

@@ -23,6 +23,7 @@ base_path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"
+scrap_interval_seconds = 2
 
 [transforms.bar]
 type = "remap"
@@ -42,6 +43,7 @@ secret:
 sources:
   internal_metrics:
     type: "internal_metrics"
+    scrap_interval_seconds: 2
 transforms:
   bar:
     type: "remap"

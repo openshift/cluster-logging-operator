@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-02-05T16:41:09Z"
+    createdAt: "2026-02-13T16:23:40Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -954,6 +954,9 @@ spec:
         path: outputs[0].http.authentication.username.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Format defines data format used to send data to remote destination.
+        displayName: Format
+        path: outputs[0].http.format
       - description: Headers specify optional headers to be sent with the request
         displayName: Headers
         path: outputs[0].http.headers

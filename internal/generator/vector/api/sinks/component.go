@@ -8,6 +8,7 @@ type SinkType string
 
 const (
 	SinkTypeAwsCloudwatchLogs SinkType = "aws_cloudwatch_logs"
+	SinkTypeAwsS3             SinkType = "aws_s3"
 	SinkTypeOpenTelemetry     SinkType = "opentelemetry"
 )
 

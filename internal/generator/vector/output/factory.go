@@ -45,7 +45,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeLokiStack:
 		els = append(els, lokistack.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeElasticsearch:
-		els = append(els, elasticsearch.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
+		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeCloudwatch:
 		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeS3:

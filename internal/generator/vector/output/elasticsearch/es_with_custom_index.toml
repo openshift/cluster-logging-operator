@@ -10,9 +10,11 @@ source = '''
 type = "elasticsearch"
 inputs = ["es_1_index"]
 endpoints = ["https://es.svc.infra.cluster:9200"]
-bulk.index = "{{ _internal.es_1_index }}"
-bulk.action = "create"
 api_version = "v8"
+
+[sinks.es_1.bulk]
+index = "{{ _internal.es_1_index }}"
+action = "create"
 
 [sinks.es_1.encoding]
 except_fields = ["_internal"]

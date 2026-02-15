@@ -4,14 +4,16 @@ inputs = ["application"]
 uri = "https://my-logstore.com"
 method = "post"
 
+[sinks.http_receiver.auth]
+strategy = "basic"
+user = "SECRET[kubernetes_secret.http-receiver/username]"
+password = "SECRET[kubernetes_secret.http-receiver/password]"
+
 [sinks.http_receiver.encoding]
 codec = "json"
 except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
-headers = {"h1"="v1","h2"="v2"}
-
-[sinks.http_receiver.auth]
-strategy = "basic"
-user = "SECRET[kubernetes_secret.http-receiver/username]"
-password = "SECRET[kubernetes_secret.http-receiver/password]"
+[sinks.http_receiver.request.headers]
+h1 = "v1"
+h2 = "v2"

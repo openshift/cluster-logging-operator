@@ -36,9 +36,3 @@ type OpenTelemetryProtocol struct {
 	Auth          *HttpAuth       `json:"auth,omitempty" yaml:"auth,omitempty" toml:"auth,omitempty"`
 	Request       *Request        `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`
 }
-
-type MethodType string
-
-const (
-	MethodTypePost MethodType = "post"
-)

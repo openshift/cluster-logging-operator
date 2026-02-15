@@ -9,6 +9,7 @@ type SinkType string
 const (
 	SinkTypeAwsCloudwatchLogs SinkType = "aws_cloudwatch_logs"
 	SinkTypeAwsS3             SinkType = "aws_s3"
+	SinkTypeHttp              SinkType = "http"
 	SinkTypeOpenTelemetry     SinkType = "opentelemetry"
 )
 
@@ -55,10 +56,17 @@ type Encoding struct {
 	ExceptFields []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
 }
 
+type Proxy struct {
+	Enabled bool   `json:"enabled,omitempty" yaml:"enabled,omitempty" toml:"enabled,omitempty"`
+	Http    string `json:"http,omitempty" yaml:"http,omitempty" toml:"http,omitempty"`
+	Https   string `json:"https,omitempty" yaml:"https,omitempty" toml:"https,omitempty"`
+}
+
 type Request struct {
 	RetryAttempts           uint              `json:"retry_attempts,omitempty" yaml:"retry_attempts,omitempty" toml:"retry_attempts,omitempty"`
 	RetryInitialBackoffSecs uint              `json:"retry_initial_backoff_secs,omitempty" yaml:"retry_initial_backoff_secs,omitempty" toml:"retry_initial_backoff_secs,omitempty"`
 	RetryMaxDurationSec     uint              `json:"retry_max_duration_secs,omitempty" yaml:"retry_max_duration_secs,omitempty" toml:"retry_max_duration_secs,omitempty"`
+	TimeoutSecs             uint              `json:"timeout_secs,omitempty" yaml:"timeout_secs,omitempty" toml:"timeout_secs,omitempty"`
 	Headers                 map[string]string `json:"headers,omitempty" yaml:"headers,omitempty" toml:"headers,omitempty"`
 }
 

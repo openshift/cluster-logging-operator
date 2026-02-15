@@ -3,10 +3,12 @@ type = "http"
 inputs = ["application"]
 uri = "https://my-logstore.com"
 method = "post"
-proxy.enabled = true
-proxy.http = "http://somewhere.org/proxy"
-proxy.https = "http://somewhere.org/proxy"
 
 [sinks.http_receiver.encoding]
 codec = "json"
 except_fields = ["_internal"]
+
+[sinks.http_receiver.proxy]
+enabled = true
+http = "http://somewhere.org/proxy"
+https = "http://somewhere.org/proxy"

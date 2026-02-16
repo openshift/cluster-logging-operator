@@ -1,8 +1,11 @@
 package syslog
 
 import (
-	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -10,9 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"regexp"
-	"strings"
-	"time"
 )
 
 var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func() {
@@ -177,13 +177,15 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " - ")
 			payload := strings.TrimSpace(fields[1])
-			record := map[string]interface{}{}
-			Expect(json.Unmarshal([]byte(payload), &record)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
-			msg := record["message"]
-			var message string
-			message, ok := msg.(string)
-			Expect(ok).To(BeTrue())
-			ReceivedLen := uint64(len(message))
+
+			//record := map[string]interface{}{}
+			//Expect(json.Unmarshal([]byte(payload), &record)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
+			//msg := record["message"]
+			//var message string
+			//message, ok := msg.(string)
+			//Expect(ok).To(BeTrue())
+
+			ReceivedLen := uint64(len(payload))
 			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
 

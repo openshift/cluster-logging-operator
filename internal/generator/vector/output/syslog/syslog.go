@@ -25,45 +25,47 @@ const (
 
 	vrlKeySyslogFacility = "._syslog.facility"
 	vrlKeySyslogSeverity = "._syslog.severity"
-	vrlKeyRFC3164ProcID  = "proc_id" // for RFC3164 proc_id
+	vrlKeyRFC3164ProcID  = "._syslog.proc_id" // for RFC3164 proc_id
 	vrlKeyRFC3164Tag     = "tag"     //for RFC3164 tag
 	vrlKeySyslogProcID   = "._syslog.proc_id"
 	vrlKeySyslogAppName  = "._syslog.app_name"
 	vrlKeySyslogMsgID    = "._syslog.msg_id"
 
-	defProcId = `to_string!(._syslog.proc_id || "-")`
-	defTag    = `to_string!(._syslog.tag || "")`
+	defProcId = `to_string!(._syslog.proc_id || "")
+if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_id))) { del(._syslog.proc_id) }
+`
+	defTag    = `to_string!(._syslog.app_name || "")`
 
 	// Default values for Syslog fields for infrastructure logType if source 'node'
 	nodeAppName       = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
-	nodeTag           = `._syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
+	nodeTag           = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
 	nodeProcIdRFC3164 = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
 	nodeProcIdRFC5424 = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
 
 	// Default values for Syslog fields for application logType and infrastructure logType if source 'container'
 	containerAppName = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
 if err != null {
-  log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error") 
+  log("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'", level: "error") 
   ._syslog.app_name = "-"
 }
 `
 	containerFacility = `._syslog.facility = "user"`
 	containerSeverity = `._syslog.severity = .level`
-	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "-")`
-	containerTag      = `._syslog.tag, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
+	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "")`
+	containerTag      = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
 if err != null {
   log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error") 
-  ._syslog.tag = ""
+  ._syslog.app_name = ""
 } else {
   #Remove non-alphanumeric characters
-  ._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
+  ._syslog.app_name = replace(._syslog.app_name, r'[^a-zA-Z0-9]', "")
   #Truncate the sanitized tag to 32 characters
-  ._syslog.tag = truncate(._syslog.tag, 32)
+  ._syslog.app_name = truncate(._syslog.app_name, 32)
 }
 `
 
 	// Default values for Syslog fields for audit logType
-	auditTag      = `._syslog.tag = .log_source`
+	auditTag      = `._syslog.app_name = .log_source`
 	auditSeverity = `._syslog.severity = "informational"`
 	auditFacility = `._syslog.facility = "security"`
 	auditAppName  = `._syslog.app_name = .log_source`
@@ -130,6 +132,7 @@ func (ser RemapEncodingFields) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
+.host = .hostname
 {{if .Defaults}}
 {{.Defaults}}
 {{end}}
@@ -137,14 +140,6 @@ source = '''
 {{range $templatePair := .EncodingFields.FieldVRLList -}}
 	{{$templatePair.Field}} = {{$templatePair.VRLString}}
 {{end -}}
-{{end}}
-
-{{if eq .RFC "RFC3164" -}}
-if proc_id != "-" && proc_id != "" {
-  ._syslog.tag = to_string(tag||"") + "[" + to_string(proc_id)  + "]"
-} else {
-  ._syslog.tag = to_string(tag)
-}
 {{end}}
 
 {{if .PayloadKey -}}
@@ -181,7 +176,7 @@ func (se SyslogEncoding) Template() string {
 [sinks.{{.ComponentID}}.encoding]
 codec = "syslog"
 except_fields = ["_internal"]
-rfc = "{{.RFC}}"
+syslog.rfc = "{{.RFC}}"
 {{ .Facility }}
 {{ .Severity }}
 {{ .AppName }}   
@@ -268,7 +263,7 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 
 	if s.RFC == obs.SyslogRFC3164 {
 		appendField(vrlKeyRFC3164ProcID, s.ProcId, defProcId)
-		appendField(vrlKeyRFC3164Tag, s.AppName, defTag)
+		appendField(vrlKeySyslogAppName, s.AppName, defTag)
 	} else {
 		appendField(vrlKeySyslogProcID, s.ProcId, "")
 		appendField(vrlKeySyslogAppName, s.AppName, "")
@@ -282,12 +277,11 @@ func Encoding(id string, o obs.OutputSpec) []Element {
 	sysLEncode := SyslogEncoding{
 		ComponentID:  id,
 		RFC:          strings.ToLower(string(o.Syslog.RFC)),
-		Facility:     syslogEncodeField("facility"),
-		Severity:     syslogEncodeField("severity"),
+		Facility:     syslogEncodeField("syslog.facility"),
+		Severity:     syslogEncodeField("syslog.severity"),
 		AppName:      AppName(o.Syslog),
-		ProcID:       syslogEncodeField("proc_id"),
+		ProcID:       syslogEncodeField("syslog.proc_id"),
 		MsgID:        MsgID(o.Syslog),
-		Tag:          Tag(o.Syslog),
 		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
 		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
 	}
@@ -324,25 +318,25 @@ func PayloadKey(plKey string) string {
 }
 
 func AppName(s *obs.Syslog) genhelper.OptionalPair {
-	if obs.SyslogRFC5424 != s.RFC {
-		return genhelper.NewNilPair()
-	}
-	return syslogEncodeField("app_name")
+	//if obs.SyslogRFC5424 != s.RFC {
+	//	return genhelper.NewNilPair()
+	//}
+	return syslogEncodeField("syslog.app_name")
 }
 
 func MsgID(s *obs.Syslog) genhelper.OptionalPair {
 	if obs.SyslogRFC5424 != s.RFC {
 		return genhelper.NewNilPair()
 	}
-	return syslogEncodeField("msg_id")
+	return syslogEncodeField("syslog.msg_id")
 }
 
-func Tag(s *obs.Syslog) genhelper.OptionalPair {
-	if obs.SyslogRFC3164 != s.RFC {
-		return genhelper.NewOptionalPair("", nil)
-	}
-	return syslogEncodeField("tag")
-}
+//func Tag(s *obs.Syslog) genhelper.OptionalPair {
+//	if obs.SyslogRFC3164 != s.RFC {
+//		return genhelper.NewOptionalPair("", nil)
+//	}
+//	return syslogEncodeField("syslog.app_name")
+//}
 
 // defaultRule defines the structure for syslog default configuration rules
 type defaultRule struct {
@@ -476,5 +470,5 @@ func writeIfNotEmpty(builder *strings.Builder, s string) {
 }
 
 func syslogEncodeField(field string) genhelper.OptionalPair {
-	return genhelper.NewOptionalPair(field, fmt.Sprintf("$$._syslog.%s", field))
+	return genhelper.NewOptionalPair(field, fmt.Sprintf("._%s", field))
 }

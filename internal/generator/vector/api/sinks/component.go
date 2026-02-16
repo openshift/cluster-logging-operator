@@ -9,6 +9,7 @@ type SinkType string
 const (
 	SinkTypeAwsCloudwatchLogs  SinkType = "aws_cloudwatch_logs"
 	SinkTypeAwsS3              SinkType = "aws_s3"
+	SinkTypeAzureMonitorLogs   SinkType = "azure_monitor_logs"
 	SinkTypeElasticsearch      SinkType = "elasticsearch"
 	SinkTypeGcpStackdriverLogs SinkType = "gcp_stackdriver_logs"
 	SinkTypeHttp               SinkType = "http"

@@ -59,7 +59,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeSyslog:
 		els = append(els, syslog.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeAzureMonitor:
-		els = append(els, azuremonitor.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
+		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeOTLP:
 		els = append(els, otlp.New(baseID, o, inputs, secrets, op)...)
 	}

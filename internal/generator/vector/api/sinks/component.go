@@ -13,6 +13,7 @@ const (
 	SinkTypeElasticsearch      SinkType = "elasticsearch"
 	SinkTypeGcpStackdriverLogs SinkType = "gcp_stackdriver_logs"
 	SinkTypeHttp               SinkType = "http"
+	SinkTypeKafka              SinkType = "kafka"
 	SinkTypeOpenTelemetry      SinkType = "opentelemetry"
 )
 
@@ -55,8 +56,9 @@ const (
 )
 
 type Encoding struct {
-	Codec        api.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
-	ExceptFields []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
+	Codec           api.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
+	TimestampFormat string        `json:"timestamp_format,omitempty" yaml:"timestamp_format,omitempty" toml:"timestamp_format,omitempty"`
+	ExceptFields    []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
 }
 
 type Proxy struct {

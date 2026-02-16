@@ -11,7 +11,9 @@ type = "kafka"
 inputs = ["kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "{{ _internal.kafka_receiver_topic }}"
-healthcheck.enabled = false
+
+[sinks.kafka_receiver.healthcheck]
+enabled = false
 
 [sinks.kafka_receiver.encoding]
 codec = "json"

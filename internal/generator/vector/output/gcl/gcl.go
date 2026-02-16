@@ -9,6 +9,14 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
@@ -16,58 +24,14 @@ import (
 )
 
 const (
-	OrganizationID   = "organization_id"
-	ProjectID        = "project_id"
-	BillingAccountID = "billing_account_id"
-	FolderID         = "folder_id"
-
-	DefaultSeverityKey = "level"
-
+	DefaultSeverityKey              = "level"
 	GoogleApplicationCredentialsKey = "google-application-credentials.json"
 )
 
-type GoogleCloudLogging struct {
-	Desc        string
-	ComponentID string
-	Inputs      string
-
-	LogDestination framework.Element
-
-	LogID       string
-	SeverityKey string
-
-	CredentialsPath string
-	common.RootMixin
-}
-
-func (g GoogleCloudLogging) Name() string {
-	return "vectorGCL"
-}
-
-func (g GoogleCloudLogging) Template() string {
-	return `{{define "` + g.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "gcp_stackdriver_logs"
-inputs = {{.Inputs}}
-{{kv .LogDestination -}}
-credentials_path = {{.CredentialsPath}}
-log_id = "{{"{{"}} _internal.{{.LogID}} {{"}}"}}"
-severity_key = "{{.SeverityKey}}"
-
-[sinks.{{.ComponentID}}.resource]
-type = "k8s_node"
-node_name = "{{"{{hostname}}"}}"
-{{end}}`
-}
-
-func (g *GoogleCloudLogging) SetCompression(algo string) {
-	g.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
-			elements.Debug(id, helpers.MakeInputs(inputs...)),
+			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	if o.GoogleCloudLogging == nil {
@@ -76,29 +40,28 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	componentID := helpers.MakeID(id, "log_id")
 	gclSeverityID := helpers.MakeID(id, "normalize_severity")
 	g := o.GoogleCloudLogging
-	gcl := &GoogleCloudLogging{
-		ComponentID:     id,
-		Inputs:          helpers.MakeInputs(gclSeverityID),
-		LogDestination:  LogDestination(g),
-		LogID:           componentID,
-		SeverityKey:     SeverityKey(g),
-		CredentialsPath: auth(g.Authentication, secrets),
-		RootMixin:       common.NewRootMixin(nil),
-	}
-
-	if strategy != nil {
-		strategy.VisitSink(gcl)
-	}
 	return []framework.Element{
 		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
-		NormalizeSeverity(gclSeverityID, []string{componentID}),
-		gcl,
-		common.NewEncoding(id, ""),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
+		NormalizeSeverity(gclSeverityID, componentID),
+		api.NewConfig(func(c *api.Config) {
+			c.Sinks[id] = sinks.NewGcpStackdriverLogs(func(s *sinks.GcpStackdriverLogs) {
+				LogDestination(s, o.GoogleCloudLogging)
+				s.LogId = fmt.Sprintf("{{ _internal.%s }}", componentID)
+				s.SeverityKey = DefaultSeverityKey
+				s.CredentialsPath = auth(g.Authentication, secrets)
+				s.Encoding = common.NewApiEncoding("")
+				s.Batch = common.NewApiBatch(o)
+				s.Buffer = common.NewApiBuffer(o)
+				s.Request = common.NewApiRequest(o)
+				s.TLS = tls.NewTls(o, secrets, op)
+				s.Resource = &sinks.Resource{
+					Type: "k8s_node",
+					ResourceLabels: map[string]string{
+						"node_name": "{{hostname}}",
+					},
+				}
+			}, gclSeverityID)
+		}),
 	}
 }
 
@@ -106,33 +69,28 @@ func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets observability.Secr
 	if spec == nil {
 		return ""
 	}
-	return secrets.Path(spec.Credentials)
+	return secrets.Path(spec.Credentials, "%s")
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order
-func LogDestination(g *obs.GoogleCloudLogging) framework.Element {
-	var key string
+func LogDestination(sink *sinks.GcpStackdriverLogs, g *obs.GoogleCloudLogging) {
+	value := g.ID.Value
 	switch g.ID.Type {
 	case obs.GoogleCloudLoggingIdTypeFolder:
-		key = FolderID
+		sink.FolderId = value
 	case obs.GoogleCloudLoggingIdTypeProject:
-		key = ProjectID
+		sink.ProjectId = value
 	case obs.GoogleCloudLoggingIdTypeBillingAccount:
-		key = BillingAccountID
+		sink.BillingAccountId = value
 	case obs.GoogleCloudLoggingIdTypeOrganization:
-		key = OrganizationID
+		sink.OrganizationId = value
 	}
-	return elements.KV(key, fmt.Sprintf("%q", g.ID.Value))
-}
-
-func SeverityKey(g *obs.GoogleCloudLogging) string {
-	return DefaultSeverityKey
 }
 
 // NormalizeSeverity normalizes log severity to conform to GCL's standard
 // Accepted Severity: DEFAULT, EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG
 // Ref: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity
-func NormalizeSeverity(componentID string, inputs []string) framework.Element {
+func NormalizeSeverity(componentID string, inputs ...string) framework.Element {
 	var vrl = `
 # Set audit log level to 'INFO'
 if .log_type == "audit" {
@@ -147,10 +105,5 @@ if .log_type == "audit" {
 	.level = upcase!(.level) 
 }
 `
-	return elements.Remap{
-		Desc:        "Normalize GCL severity levels",
-		ComponentID: componentID,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         vrl,
-	}
+	return remap.New(componentID, vrl, inputs...)
 }

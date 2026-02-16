@@ -6,7 +6,6 @@ source = '''
 ._internal.gcl_1_log_id = "vector-1"
 '''
 
-# Normalize GCL severity levels
 [transforms.gcl_1_normalize_severity]
 type = "remap"
 inputs = ["gcl_1_log_id"]

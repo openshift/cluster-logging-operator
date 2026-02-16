@@ -7,11 +7,12 @@ import (
 type SinkType string
 
 const (
-	SinkTypeAwsCloudwatchLogs SinkType = "aws_cloudwatch_logs"
-	SinkTypeAwsS3             SinkType = "aws_s3"
-	SinkTypeElasticsearch     SinkType = "elasticsearch"
-	SinkTypeHttp              SinkType = "http"
-	SinkTypeOpenTelemetry     SinkType = "opentelemetry"
+	SinkTypeAwsCloudwatchLogs  SinkType = "aws_cloudwatch_logs"
+	SinkTypeAwsS3              SinkType = "aws_s3"
+	SinkTypeElasticsearch      SinkType = "elasticsearch"
+	SinkTypeGcpStackdriverLogs SinkType = "gcp_stackdriver_logs"
+	SinkTypeHttp               SinkType = "http"
+	SinkTypeOpenTelemetry      SinkType = "opentelemetry"
 )
 
 type CompressionType string

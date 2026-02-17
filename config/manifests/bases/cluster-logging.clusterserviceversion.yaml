@@ -970,7 +970,7 @@ spec:
           The list represents only the initial set used by the collector's Kafka client for the
           first connection only. The collector's Kafka client fetches constantly an updated list
           from Kafka. These updates are not reconciled back to the collector configuration.
-          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme.
+          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme and include a port number.
           If none is provided, the target URL from the OutputSpec is used as fallback.
         displayName: Kafka Brokers
         path: outputs[0].kafka.brokers
@@ -1009,7 +1009,7 @@ spec:
         path: outputs[0].kafka.tuning.maxWrite
       - description: |-
           URL to send log records to. This field is optional.
-          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme, for example: 'tls://kafka.secure.com:9093/app-topic'.
+          If provided, it must be a valid URL with a 'tcp' or 'tls' scheme and include a port number, for example: 'tls://kafka.secure.com:9093/app-topic'.
           The 'username@password' part of `url` is ignored.
         displayName: Destination URL
         path: outputs[0].kafka.url
@@ -1904,7 +1904,7 @@ spec:
       - displayName: Delivery Mode
         path: outputs[0].syslog.tuning.deliveryMode
       - description: |-
-          An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+          An absolute URL, with a scheme and a port number. Valid schemes are: `tcp`, `tls`, `udp`
           For example, to send syslog records using UDP:
               url: udp://syslog.example.com:514
         displayName: Destination URL

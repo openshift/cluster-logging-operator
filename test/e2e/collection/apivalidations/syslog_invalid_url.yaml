@@ -4,14 +4,11 @@ metadata:
   name: clf-validation-test
 spec:
   outputs:
-    - name: kafka
-      kafka:
-        topic: clo-app-topic
-        url: tcp://foo:9090
-        brokers:
-        - tls://foo:9093
-        - tcp://bar:9092
-      type: kafka
+    - name: syslog
+      syslog:
+        rfc: RFC5424
+        url: http://notaurl
+      type: syslog
   pipelines:
   - inputRefs:
       - infrastructure
@@ -19,6 +16,6 @@ spec:
       - application
     name: thepipeline
     outputRefs:
-    - kafka
+    - syslog
   serviceAccount:
     name: clf-validation-test

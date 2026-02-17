@@ -779,11 +779,11 @@ type SASLAuthentication struct {
 type Kafka struct {
 
 	// URL to send log records to. This field is optional.
-	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme, for example: 'tls://kafka.secure.com:9093/app-topic'.
+	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme and include a port number, for example: 'tls://kafka.secure.com:9093/app-topic'.
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == '' || (isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://')))",message="must be a valid URL with a tcp or tls scheme"
+	// +kubebuilder:validation:Pattern=`^(tcp|tls)://([a-zA-Z0-9\-\.]+|\[[a-fA-F0-9:]+\]):[0-9]+(/.*)?$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
@@ -826,7 +826,7 @@ type Kafka struct {
 	// The list represents only the initial set used by the collector's Kafka client for the
 	// first connection only. The collector's Kafka client fetches constantly an updated list
 	// from Kafka. These updates are not reconciled back to the collector configuration.
-	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme.
+	// If provided, it must be a valid URL with a 'tcp' or 'tls' scheme and include a port number.
 	// If none is provided, the target URL from the OutputSpec is used as fallback.
 	//
 	// +kubebuilder:validation:Optional
@@ -834,7 +834,7 @@ type Kafka struct {
 	Brokers []BrokerURL `json:"brokers,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="isURL(self) && (self.startsWith('tcp://') || self.startsWith('tls://'))",message="each broker must be a valid URL with a tcp or tls scheme"
+// +kubebuilder:validation:Pattern=`^(tcp|tls)://([a-zA-Z0-9\-\.]+|\[[a-fA-F0-9:]+\]):[0-9]+(/.*)?$`
 type BrokerURL string
 
 type LokiTuningSpec struct {
@@ -1212,12 +1212,12 @@ type SyslogTuningSpec struct {
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {
 
-	// An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+	// An absolute URL, with a scheme and a port number. Valid schemes are: `tcp`, `tls`, `udp`
 	// For example, to send syslog records using UDP:
 	//     url: udp://syslog.example.com:514
 	//
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	// +kubebuilder:validation:Pattern=`^(tcp|tls|udp)://([a-zA-Z0-9\-\.]+|\[[a-fA-F0-9:]+\]):[0-9]+(/.*)?$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url"`
 

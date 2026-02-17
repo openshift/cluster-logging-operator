@@ -65,6 +65,10 @@ var _ = Describe("", func() {
 		Entry("should pass for syslog with valid tcp URL", "syslog_valid_url_tcp.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
+		Entry("should fail for syslog with invalid URL", "syslog_invalid_url.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
+		}),
 		Entry("should pass for kafka with valid URL or brokers", "kafka_valid_url_and_brokers.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
@@ -72,13 +76,12 @@ var _ = Describe("", func() {
 			Expect(err.Error()).To(MatchRegexp(".*URL.*brokers.*required.*"))
 		}),
 		Entry("should fail for kafka with invalid URL", "kafka_invalid_url.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp("must be a valid URL with a tcp or tls scheme"))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
 		}),
 		Entry("should fail for kafka invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
 			Expect(err).To(HaveOccurred())
-			//occurrenceCount := strings.Count(err.Error(), "each broker must be a valid URL with a tcp or tls scheme")
-			//Expect(occurrenceCount).To(Equal(2), "expect validation error appear twice")
-			Expect(err.Error()).To(ContainSubstring("each broker must be a valid URL with a tcp or tls scheme"))
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
 		}),
 		Entry("LOG-5788: for multilineException filter should not fail", "log5788_mulitiline_ex_filter.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())

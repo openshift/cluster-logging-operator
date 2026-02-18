@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
@@ -55,7 +56,7 @@ func (ls logSources) Has(source string) bool {
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
-			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
+			elements.Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	var opSources, _ = utils.GetOption(op, OtlpLogSourcesOption, allLogSources)
@@ -147,9 +148,9 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	formatResourceLogsID := helpers.MakeID(id, "resource", "logs")
 	els = append(els, FormatResourceLog(formatResourceLogsID, reduceInputs))
 
-	return MergeElements(
+	return framework.MergeElements(
 		els,
-		[]Element{
+		[]framework.Element{
 			api.NewConfig(func(c *api.Config) {
 				c.Sinks[id] = sinks.NewOpenTelemetry(o.OTLP.URL, func(s *sinks.OpenTelemetry) {
 					s.Protocol.Type = "http"

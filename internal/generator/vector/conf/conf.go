@@ -104,7 +104,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		sections.Elements = append(sections.Elements, output.New(o, o.InputIDs, secrets, o, op)...)
 	}
 
-	minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
+	//minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
 	return []framework.Section{
 		{
 			Global(namespace, forwarderName),
@@ -121,7 +121,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		{
 			Elements: []framework.Element{
 				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
-				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites, op),
+				metrics.PrometheusOutput([]string{metrics.AddNodenameToMetricTransformName}, op),
 			},
 		},
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -14,7 +15,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -58,7 +58,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	var (
-		adapter fake.Output
+		adapter *adapters.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -110,7 +110,7 @@ var _ = Describe("Generate vector config", func() {
 			MinRetryDuration: utils.GetPtr(time.Duration(20)),
 		}
 	)
-	DescribeTable("for Loki output", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
+	DescribeTable("for Loki output", func(expFile string, op framework.Options, visit func(spec *obs.OutputSpec)) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -119,20 +119,18 @@ var _ = Describe("Generate vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-		}
-		conf := New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"application"}, secrets, adapter, op)
+		adapter = adapters.NewOutput(outputSpec)
+		conf := New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with default labels", "with_default_labels.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {}),
-		Entry("with custom labels", "with_custom_labels.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with default labels", "with_default_labels.toml", framework.NoOptions, func(spec *obs.OutputSpec) {}),
+		Entry("with custom labels", "with_custom_labels.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.LabelKeys = []string{"kubernetes.labels.app", "kubernetes.container_name"}
 		}),
-		Entry("with tenant id", "with_tenant_id.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with tenant id", "with_tenant_id.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.TenantKey = `foo-{.foo.bar.baz||"none"}`
 		}),
-		Entry("with custom bearer token", "with_custom_bearer_token.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with custom bearer token", "with_custom_bearer_token.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
@@ -145,14 +143,14 @@ var _ = Describe("Generate vector config", func() {
 		}),
 		Entry("with custom bearer token", "with_sa_token.toml", framework.Options{
 			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
-		}, false, func(spec *obs.OutputSpec) {
+		}, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
 				Token: &obs.BearerToken{
 					From: obs.BearerTokenFromServiceAccount,
 				},
 			}
 		}),
-		Entry("with username/password token", "with_username_password.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with username/password token", "with_username_password.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{
 				Username: &obs.SecretReference{
 					Key:        constants.ClientUsername,
@@ -164,7 +162,7 @@ var _ = Describe("Generate vector config", func() {
 				},
 			}
 		}),
-		Entry("with TLS insecureSkipVerify=true", "with_insecure.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with TLS insecureSkipVerify=true", "with_insecure.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 				TLSSpec: obs.TLSSpec{
@@ -175,25 +173,24 @@ var _ = Describe("Generate vector config", func() {
 				},
 			}
 		}),
-		Entry("with TLS insecureSkipVerify=true, no certificate in secret", "with_insecure_nocert.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with TLS insecureSkipVerify=true, no certificate in secret", "with_insecure_nocert.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 			}
 		}),
-		Entry("with TLS", "with_tls.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with TLS", "with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 		}),
-		Entry("with TLS config with default minTLSVersion & ciphers", "with_default_tls.toml", testhelpers.FrameworkOptionWithDefaultTLSCiphers, false, func(spec *obs.OutputSpec) {
+		Entry("with TLS config with default minTLSVersion & ciphers", "with_default_tls.toml", testhelpers.FrameworkOptionWithDefaultTLSCiphers, func(spec *obs.OutputSpec) {
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 			}
 		}),
-		Entry("with tuning", "with_tuning.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		Entry("with tuning", "with_tuning.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.Tuning = &obs.LokiTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
-		}),
-		Entry("with proxy", "with_proxy.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		}), Entry("with proxy", "with_proxy.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.ProxyURL = "http://somewhere.org/proxy"
 		}),
 	)

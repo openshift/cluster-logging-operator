@@ -13,6 +13,7 @@ const (
 	SinkTypeElasticsearch      SinkType = "elasticsearch"
 	SinkTypeGcpStackdriverLogs SinkType = "gcp_stackdriver_logs"
 	SinkTypeHttp               SinkType = "http"
+	SinkTypeLoki               SinkType = "loki"
 	SinkTypeKafka              SinkType = "kafka"
 	SinkTypeOpenTelemetry      SinkType = "opentelemetry"
 )

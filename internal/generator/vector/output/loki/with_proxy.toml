@@ -25,14 +25,18 @@ type = "loki"
 inputs = ["loki_receiver_remap_label"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
-healthcheck.enabled = false
-proxy.enabled = true
-proxy.http = "http://somewhere.org/proxy"
-proxy.https = "http://somewhere.org/proxy"
+
+[sinks.loki_receiver.healthcheck]
+enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
 except_fields = ["_internal"]
+
+[sinks.loki_receiver.proxy]
+enabled = true
+http = "http://somewhere.org/proxy"
+https = "http://somewhere.org/proxy"
 
 [sinks.loki_receiver.labels]
 k8s_container_name = "{{kubernetes.container_name}}"

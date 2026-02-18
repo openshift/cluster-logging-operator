@@ -41,7 +41,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeKafka:
 		els = append(els, kafka.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeLoki:
-		els = append(els, loki.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
+		els = append(els, loki.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeLokiStack:
 		els = append(els, lokistack.New(baseID, o, inputs, secrets, strategy, op)...)
 	case obs.OutputTypeElasticsearch:

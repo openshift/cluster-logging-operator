@@ -51,7 +51,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	}))
 
 	for _, inputType := range tenants.List() {
-		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o.OutputSpec, inputSpecs, secrets, strategy, op)...)
+		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o.OutputSpec, inputSpecs, secrets, op)...)
 	}
 
 	return confs
@@ -95,7 +95,7 @@ func buildRoutes(tenants *sets.String) map[string]string {
 }
 
 func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inputSpecs []obs.InputSpec,
-	secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+	secrets observability.Secrets, op utils.Options) []framework.Element {
 
 	outputID := vectorhelpers.MakeID(id, inputType)
 	migratedOutput := GenerateOutput(o, inputType)
@@ -110,7 +110,7 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)
 	}
 
-	return loki.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)
+	return loki.New(outputID, adapters.NewOutput(migratedOutput), []string{factoryInput}, secrets, op)
 }
 
 func getInputSources(inputSpecs []obs.InputSpec, inputType obs.InputType) []string {

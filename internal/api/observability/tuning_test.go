@@ -42,6 +42,14 @@ var _ = Describe("Output", func() {
 				Tuning: baseSpec,
 			},
 		}, baseSpec, ""),
+		Entry("with AzureLogsIngestion", obs.OutputSpec{
+			Type: obs.OutputTypeAzureLogsIngestion,
+			AzureLogsIngestion: &obs.AzureLogsIngestion{
+				Tuning: &obs.AzureLogsIngestionTuningSpec{
+					BaseOutputTuningSpec: *baseSpec,
+				},
+			},
+		}, baseSpec, ""),
 		Entry("with GoogleCloudLogging", obs.OutputSpec{
 			Type: obs.OutputTypeGoogleCloudLogging,
 			GoogleCloudLogging: &obs.GoogleCloudLogging{

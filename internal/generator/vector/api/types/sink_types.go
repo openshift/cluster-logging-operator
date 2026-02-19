@@ -5,6 +5,7 @@ type SinkType string
 const (
 	SinkTypeAwsCloudwatchLogs  SinkType = "aws_cloudwatch_logs"
 	SinkTypeAwsS3              SinkType = "aws_s3"
+	SinkTypeAzureLogsIngestion SinkType = "azure_logs_ingestion"
 	SinkTypeAzureMonitorLogs   SinkType = "azure_monitor_logs"
 	SinkTypeElasticsearch      SinkType = "elasticsearch"
 	SinkTypeGcpStackdriverLogs SinkType = "gcp_stackdriver_logs"

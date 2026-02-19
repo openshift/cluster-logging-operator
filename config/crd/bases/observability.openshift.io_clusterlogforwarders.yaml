@@ -1833,9 +1833,188 @@ spec:
                 items:
                   description: OutputSpec defines a destination for log messages.
                   properties:
+                    azureLogsIngestion:
+                      description: AzureLogsIngestion configures forwarding log events
+                        to the Azure Monitor Logs Ingestion API
+                      properties:
+                        authentication:
+                          description: Authentication sets credentials for authenticating
+                            the requests to the Azure Logs Ingestion API.
+                          properties:
+                            clientSecret:
+                              description: ClientSecret contains the Azure AD service
+                                principal credentials.
+                              nullable: true
+                              properties:
+                                clientId:
+                                  description: ClientId is the Azure Active Directory
+                                    application (client) ID.
+                                  type: string
+                                secret:
+                                  description: Secret points to the secret containing
+                                    the Azure Active Directory client secret.
+                                  nullable: true
+                                  properties:
+                                    key:
+                                      description: Key contains the name of the key
+                                        inside the referenced Secret.
+                                      type: string
+                                    secretName:
+                                      description: SecretName contains the name of
+                                        the Secret containing the referenced value.
+                                      type: string
+                                  required:
+                                  - key
+                                  - secretName
+                                  type: object
+                                tenantId:
+                                  description: TenantId is the Azure Active Directory
+                                    tenant ID.
+                                  type: string
+                              required:
+                              - clientId
+                              - secret
+                              - tenantId
+                              type: object
+                            type:
+                              description: Type is the type of Azure authentication
+                                to configure.
+                              enum:
+                              - clientSecret
+                              - workloadIdentity
+                              type: string
+                            workloadIdentity:
+                              description: WorkloadIdentity contains the Azure AD
+                                Workload Identity credentials.
+                              nullable: true
+                              properties:
+                                clientId:
+                                  description: ClientId is the Azure Active Directory
+                                    application (client) ID.
+                                  type: string
+                                tenantId:
+                                  description: TenantId is the Azure Active Directory
+                                    tenant ID.
+                                  type: string
+                                token:
+                                  description: Token is the bearer token to be used
+                                    for authenticating the requests.
+                                  properties:
+                                    from:
+                                      description: From is the source from where to
+                                        find the token
+                                      enum:
+                                      - secret
+                                      - serviceAccount
+                                      type: string
+                                    secret:
+                                      description: Use Secret if the value should
+                                        be sourced from a Secret in the same namespace.
+                                      properties:
+                                        key:
+                                          description: Name of the key used to get
+                                            the value from the referenced Secret.
+                                          type: string
+                                        name:
+                                          description: Name of secret
+                                          type: string
+                                      required:
+                                      - key
+                                      - name
+                                      type: object
+                                  required:
+                                  - from
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: Additional secret spec is required when
+                                      bearer token is sourced from a secret
+                                    rule: self.from != 'secret' || has(self.secret)
+                              required:
+                              - clientId
+                              - tenantId
+                              - token
+                              type: object
+                          required:
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'clientSecret' || has(self.clientSecret)
+                          - message: Additional type specific spec is required for
+                              authentication
+                            rule: self.type != 'workloadIdentity' || has(self.workloadIdentity)
+                        dcrImmutableId:
+                          description: DcrImmutableId is the immutable ID of the Data
+                            Collection Rule (DCR).
+                          type: string
+                        streamName:
+                          description: StreamName is the name of the custom log stream
+                            in the DCR that the data should be sent to.
+                          type: string
+                        timestampField:
+                          description: |-
+                            TimestampField is the destination field (column) for the timestamp.
+                            Most schemas use "TimeGenerated" (default), but some use "Timestamp" (legacy) or "EventStartTime" (ASIM).
+                            https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-standard-columns#timegenerated
+                          type: string
+                        tokenScope:
+                          description: |-
+                            TokenScope is the token scope for dedicated Azure regions.
+                            Defaults to "https://monitor.azure.com/.default".
+                            https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+                          type: string
+                        tuning:
+                          description: Tuning specs tuning for the output
+                          properties:
+                            deliveryMode:
+                              description: |-
+                                DeliveryMode sets the delivery mode for log forwarding.
+                                This optional setting. When it is left unset, the system defaults to using an in-memory buffer.
+                                In-memory buffers offer the highest performance due to low latency, but they have two limitations:
+                                they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
+                              enum:
+                              - AtLeastOnce
+                              - AtMostOnce
+                              type: string
+                            maxRetryDuration:
+                              description: MaxRetryDuration is the maximum time to
+                                wait between retry attempts after a delivery failure.
+                              format: int64
+                              type: integer
+                            maxWrite:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: MaxWrite limits the maximum payload in
+                                terms of bytes of a single "send" to the output.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            minRetryDuration:
+                              description: MinRetryDuration is the minimum time to
+                                wait between attempts to retry after delivery a failure.
+                              format: int64
+                              type: integer
+                          type: object
+                        url:
+                          description: |-
+                            URL to send log records to.
+                            Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
+                            The 'username@password' part of `url` is ignored.
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid URL
+                            rule: isURL(self)
+                      required:
+                      - authentication
+                      - dcrImmutableId
+                      - streamName
+                      - url
+                      type: object
                     azureMonitor:
-                      description: AzureMonitor configures forwarding log events to
-                        the Azure Monitor Logs service
+                      description: |-
+                        DEPRECATED: Use AzureLogsIngestion instead. This output will be removed in a future release.
+                        AzureMonitor configures forwarding log events to the Azure Monitor Logs service
                       properties:
                         authentication:
                           description: Authentication sets credentials for authenticating
@@ -4154,6 +4333,7 @@ spec:
                     type:
                       description: Type of output sink.
                       enum:
+                      - azureLogsIngestion
                       - azureMonitor
                       - cloudwatch
                       - elasticsearch
@@ -4172,6 +4352,9 @@ spec:
                   - type
                   type: object
                   x-kubernetes-validations:
+                  - message: Additional type specific spec is required for the output
+                      type
+                    rule: self.type != 'azureLogsIngestion' || has(self.azureLogsIngestion)
                   - message: Additional type specific spec is required for the output
                       type
                     rule: self.type != 'azureMonitor' || has(self.azureMonitor)

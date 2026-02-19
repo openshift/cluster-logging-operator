@@ -31,6 +31,125 @@ var _ = Describe("helpers for output types", func() {
 	})
 })
 
+var _ = Describe("AzureLogsIngestion secret handling", func() {
+	Context("SecretReferences", func() {
+		It("should return client secret reference for client secret authentication", func() {
+			output := obsv1.OutputSpec{
+				Type: obsv1.OutputTypeAzureLogsIngestion,
+				AzureLogsIngestion: &obsv1.AzureLogsIngestion{
+					Authentication: &obsv1.AzureLogsIngestionAuthentication{
+						Type: obsv1.AzureLogsIngestionAuthTypeClientSecret,
+						ClientSecret: &obsv1.AzureLogsIngestionClientSecret{
+							TenantId: "tenant-id",
+							ClientId: "client-id",
+							Secret: &obsv1.SecretReference{
+								SecretName: "azure-secret",
+								Key:        "client_secret",
+							},
+						},
+					},
+				},
+			}
+
+			refs := SecretReferences(output)
+			Expect(refs).To(HaveLen(1))
+			Expect(refs[0].SecretName).To(Equal("azure-secret"))
+			Expect(refs[0].Key).To(Equal("client_secret"))
+		})
+
+		It("should return token secret reference for workload identity with secret-sourced token", func() {
+			output := obsv1.OutputSpec{
+				Type: obsv1.OutputTypeAzureLogsIngestion,
+				AzureLogsIngestion: &obsv1.AzureLogsIngestion{
+					Authentication: &obsv1.AzureLogsIngestionAuthentication{
+						Type: obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity,
+						WorkloadIdentity: &obsv1.AzureLogsIngestionWorkloadIdentity{
+							TenantId: "tenant-id",
+							ClientId: "client-id",
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromSecret,
+								Secret: &obsv1.BearerTokenSecretKey{
+									Name: "token-secret",
+									Key:  "token",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			refs := SecretReferences(output)
+			Expect(refs).To(HaveLen(1))
+			Expect(refs[0].SecretName).To(Equal("token-secret"))
+			Expect(refs[0].Key).To(Equal("token"))
+		})
+
+		It("should return empty for workload identity with service account token", func() {
+			output := obsv1.OutputSpec{
+				Type: obsv1.OutputTypeAzureLogsIngestion,
+				AzureLogsIngestion: &obsv1.AzureLogsIngestion{
+					Authentication: &obsv1.AzureLogsIngestionAuthentication{
+						Type: obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity,
+						WorkloadIdentity: &obsv1.AzureLogsIngestionWorkloadIdentity{
+							TenantId: "tenant-id",
+							ClientId: "client-id",
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
+						},
+					},
+				},
+			}
+
+			refs := SecretReferences(output)
+			Expect(refs).To(BeEmpty())
+		})
+	})
+
+	Context("NeedServiceAccountToken", func() {
+		It("should return true for workload identity with service account token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeAzureLogsIngestion,
+					AzureLogsIngestion: &obsv1.AzureLogsIngestion{
+						Authentication: &obsv1.AzureLogsIngestionAuthentication{
+							Type: obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity,
+							WorkloadIdentity: &obsv1.AzureLogsIngestionWorkloadIdentity{
+								TenantId: "tenant-id",
+								ClientId: "client-id",
+								Token: &obsv1.BearerToken{
+									From: obsv1.BearerTokenFromServiceAccount,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+		})
+
+		It("should return false for client secret authentication", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeAzureLogsIngestion,
+					AzureLogsIngestion: &obsv1.AzureLogsIngestion{
+						Authentication: &obsv1.AzureLogsIngestionAuthentication{
+							Type: obsv1.AzureLogsIngestionAuthTypeClientSecret,
+							ClientSecret: &obsv1.AzureLogsIngestionClientSecret{
+								TenantId: "tenant-id",
+								ClientId: "client-id",
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+	})
+})
+
 var _ = Describe("S3 secret handling", func() {
 	Context("SecretReferences", func() {
 		It("should return access key secrets for S3 with access key authentication", func() {

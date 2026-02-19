@@ -6,6 +6,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/azure/logsingestion"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -324,6 +325,36 @@ func (p *PipelineBuilder) ToAzureMonitorOutput(visitors ...func(output *obs.Outp
 		}
 	}
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeAzureMonitor))
+}
+
+func (p *PipelineBuilder) ToAzureLogsIngestionOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+	v := func(output *obs.OutputSpec) {
+		output.Name = string(obs.OutputTypeAzureLogsIngestion)
+		output.Type = obs.OutputTypeAzureLogsIngestion
+		output.AzureLogsIngestion = &obs.AzureLogsIngestion{
+			URLSpec: obs.URLSpec{
+				URL: "https://acme.com:3000",
+			},
+			DcrImmutableId: "dcr-test-functional-id",
+			StreamName:     "Custom-TestTable_CL",
+			Authentication: &obs.AzureLogsIngestionAuthentication{
+				Type: obs.AzureLogsIngestionAuthTypeClientSecret,
+				ClientSecret: &obs.AzureLogsIngestionClientSecret{
+					TenantId: "test-tenant-id",
+					ClientId: "test-client-id",
+					Secret: &obs.SecretReference{
+						Key:        logsingestion.ClientSecretKeyName,
+						SecretName: logsingestion.SecretName,
+					},
+				},
+			},
+			TokenScope: "http://acme.com:3000/.default",
+		}
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(v, string(obs.OutputTypeAzureLogsIngestion))
 }
 
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputName string) *ClusterLogForwarderBuilder {

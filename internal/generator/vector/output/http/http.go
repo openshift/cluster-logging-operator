@@ -12,11 +12,10 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -34,7 +33,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 			api.NewConfig(func(c *api.Config) {
 				c.Sinks[id] = sinks.NewHttp(o.HTTP.URL, func(s *sinks.Http) {
 					s.URI = o.HTTP.URL
-					s.Auth = auth.NewHttpAuth(o.HTTP.Authentication, op)
+					s.Auth = common.NewHttpAuth(o.HTTP.Authentication, op)
 					s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
 					s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 					s.Batch = common.NewApiBatch(o)

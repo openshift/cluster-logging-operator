@@ -789,14 +789,6 @@ source = '''
 
 '''
 
-[transforms.pipeline_pipeline_my_labels_1]
-type = "remap"
-inputs = ["pipeline_pipeline_viaq_0"]
-source = '''
-    ._internal.openshift.labels = .openshift.labels = {"key1":"value1","key2":"value2"}
-'''
-
-# Kafka Topic
 [transforms.output_kafka_receiver_topic]
 type = "remap"
 inputs = ["pipeline_pipeline_my_labels_1"]

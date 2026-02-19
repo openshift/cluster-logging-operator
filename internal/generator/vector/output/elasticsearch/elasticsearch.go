@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -41,7 +41,7 @@ if exists(.kubernetes.event.metadata.uid) {
 	}
 
 	outputs = append(outputs,
-		commontemplate.TemplateRemap(componentID, inputs, o.Elasticsearch.Index, componentID, "Elasticsearch Index"),
+		commontemplate.NewTemplateRemap(componentID, inputs, o.Elasticsearch.Index, componentID, "Elasticsearch Index"),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sinks.NewElasticsearch(o.Elasticsearch.URL, func(s *sinks.Elasticsearch) {
 				s.Bulk = &sinks.Bulk{

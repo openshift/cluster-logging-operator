@@ -7,8 +7,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 

@@ -11,11 +11,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
@@ -85,7 +84,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	var tenantTemplate framework.Element
 	sink := sinks.NewLoki(o.Loki.URL, func(s *sinks.Loki) {
 		s.OutOfOrderAction = sinks.LokiOutOfOrderActionAccept
-		s.Auth = auth.NewHttpAuth(o.Loki.Authentication, op)
+		s.Auth = common.NewHttpAuth(o.Loki.Authentication, op)
 		s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
 		s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 		s.Batch = common.NewApiBatch(o)
@@ -102,7 +101,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	}, remapLabelID)
 	if hasTenantKey(o.Loki) {
 		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
-		tenantTemplate = commontemplate.TemplateRemap(lokiTenantID, []string{remapLabelID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
+		tenantTemplate = commontemplate.NewTemplateRemap(lokiTenantID, []string{remapLabelID}, o.Loki.TenantKey, lokiTenantID, "Loki Tenant")
 		sink.Inputs = []string{lokiTenantID}
 		sink.TenantId = tenantId(o.Loki, lokiTenantID)
 	}

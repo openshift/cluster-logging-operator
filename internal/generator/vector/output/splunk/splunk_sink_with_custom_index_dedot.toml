@@ -10,7 +10,6 @@ if err != null {
 }
 '''
 
-# Splunk Index
 [transforms.splunk_hec_splunk_index]
 type = "remap"
 inputs = ["splunk_hec_timestamp"]

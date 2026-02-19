@@ -11,7 +11,8 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
@@ -52,9 +53,31 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 
 	return []framework.Element{
 		NormalizeStreamName(componentID, inputs),
-		commontemplate.TemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
+		commontemplate.NewTemplateRemap(groupNameID, []string{componentID}, o.Cloudwatch.GroupName, groupNameID, "Cloudwatch Groupname"),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = newSink
 		}),
 	}
+}
+
+func NormalizeStreamName(componentID string, inputs []string) Element {
+	vrl := strings.TrimSpace(`
+.stream_name = "default"
+if ( .log_type == "audit" ) {
+ .stream_name = (.hostname +"."+ downcase(.log_source)) ?? .stream_name
+}
+if ( .log_source == "container" ) {
+  k = .kubernetes
+  .stream_name = (k.namespace_name+"_"+k.pod_name+"_"+k.container_name) ?? .stream_name
+}
+if ( .log_type == "infrastructure" ) {
+ .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
+}
+if ( .log_source == "node" ) {
+ .stream_name =  ( .hostname + ".journal.system" ) ?? .stream_name
+}
+del(.tag)
+del(.source_type)
+	`)
+	return remap.New(componentID, vrl, inputs...)
 }

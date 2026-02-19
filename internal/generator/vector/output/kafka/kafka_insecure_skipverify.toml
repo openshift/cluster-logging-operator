@@ -1,7 +1,6 @@
-# Kafka Topic
 [transforms.kafka_receiver_topic]
 type = "remap"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["pipeline_1", "pipeline_2"]
 source = '''
 ._internal.kafka_receiver_topic = "mytopic"
 '''

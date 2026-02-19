@@ -8,7 +8,6 @@ source = '''
   }
 '''
 
-# Elasticsearch Index
 [transforms.es_1_index]
 type = "remap"
 inputs = ["es_1_add_id"]

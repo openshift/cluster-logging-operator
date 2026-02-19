@@ -12,9 +12,9 @@ import (
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -33,7 +33,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	}
 	componentID := vectorhelpers.MakeID(id, "topic")
 	elements := []framework.Element{
-		commontemplate.TemplateRemap(componentID, inputs, topic(o.Kafka), componentID, "Kafka Topic"),
+		commontemplate.NewTemplateRemap(componentID, inputs, topic(o.Kafka), componentID, "Kafka Topic"),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sinks.NewKafka(func(s *sinks.Kafka) {
 				s.BootstrapServers = brokers(o.Kafka)

@@ -15,9 +15,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -41,7 +41,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	gclSeverityID := helpers.MakeID(id, "normalize_severity")
 	g := o.GoogleCloudLogging
 	return []framework.Element{
-		commontemplate.TemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
+		commontemplate.NewTemplateRemap(componentID, inputs, o.GoogleCloudLogging.LogId, componentID, "GoogleCloudLogging LogId"),
 		NormalizeSeverity(gclSeverityID, componentID),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sinks.NewGcpStackdriverLogs(func(s *sinks.GcpStackdriverLogs) {

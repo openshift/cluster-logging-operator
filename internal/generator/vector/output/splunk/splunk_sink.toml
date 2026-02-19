@@ -9,6 +9,7 @@ if err != null {
 	._internal.timestamp = ts
 }
 '''
+
 [transforms.splunk_hec_metadata]
 type = "remap"
 inputs = ["splunk_hec_timestamp"]
@@ -25,6 +26,7 @@ if ._internal.log_type == "audit" {
 }
 ._internal.splunk.sourcetype = "_json"
 '''
+
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]

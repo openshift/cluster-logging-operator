@@ -1,4 +1,3 @@
-# Cloudwatch Stream Names
 [transforms.cw_normalize_streams]
 type = "remap"
 inputs = ["cw-forward"]
@@ -20,7 +19,6 @@ source = '''
   del(.tag)
   del(.source_type)
 '''
-# Cloudwatch Groupname
 [transforms.cw_group_name]
 type = "remap"
 inputs = ["cw_normalize_streams"]

@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
@@ -42,7 +42,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	}, keyPrefixID)
 
 	return []framework.Element{
-		template.TemplateRemap(keyPrefixID, inputs, o.S3.KeyPrefix, keyPrefixID, "S3 Key Prefix"),
+		template.NewTemplateRemap(keyPrefixID, inputs, o.S3.KeyPrefix, keyPrefixID, "S3 Key Prefix"),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = newSink
 		}),

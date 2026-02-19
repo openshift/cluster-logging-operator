@@ -1,4 +1,4 @@
-package auth
+package common
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"

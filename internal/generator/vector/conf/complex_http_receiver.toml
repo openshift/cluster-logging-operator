@@ -837,7 +837,6 @@ source = '''
 
 '''
 
-# Kafka Topic
 [transforms.output_kafka_receiver_topic]
 type = "remap"
 inputs = ["pipeline_pipeline_viaq_0"]

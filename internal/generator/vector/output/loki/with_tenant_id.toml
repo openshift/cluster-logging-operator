@@ -20,7 +20,6 @@ if !exists(.kubernetes.container_name) {
 }
 '''
 
-# Loki Tenant
 [transforms.loki_receiver_loki_tenant]
 type = "remap"
 inputs = ["loki_receiver_remap_label"]

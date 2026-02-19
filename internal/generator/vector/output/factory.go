@@ -11,7 +11,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azure/azurelogsingestion"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azure/azuremonitor"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
@@ -63,6 +64,8 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 		sinkId, sink, sinkTransforms = http.New(baseID, o, inputs, secrets, op)
 	case obs.OutputTypeSyslog:
 		sinkId, sink, sinkTransforms = syslog.New(baseID, o, inputs, secrets, op)
+	case obs.OutputTypeAzureLogsIngestion:
+		sinkId, sink, sinkTransforms = azurelogsingestion.New(baseID, o, inputs, secrets, op)
 	case obs.OutputTypeAzureMonitor:
 		sinkId, sink, sinkTransforms = azuremonitor.New(baseID, o, inputs, secrets, op)
 	case obs.OutputTypeOTLP:

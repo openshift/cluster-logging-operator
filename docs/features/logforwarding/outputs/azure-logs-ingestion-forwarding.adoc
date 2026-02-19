@@ -1,0 +1,231 @@
+=== Forwarding Logs to Azure Monitor via the Logs Ingestion API
+
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview[Azure Logs Ingestion Overview Documentation]
+
+The `azureLogsIngestion` output type sends log events to Azure Monitor using the Logs Ingestion API and a Data Collection Rule (DCR). This is the recommended replacement for the legacy HTTP Data Collector API used by `azureMonitor`.
+
+Since the HTTP Data Collector API is deprecated, and will be removed in **September** 2026, it is recommended to use the Logs Ingestion API instead. The `AzureMonitor` output type will be removed in the future.
+
+==== Prerequisites
+
+Before configuring the `ClusterLogForwarder`, you need the following Azure resources:
+
+. A **Data Collection Endpoint (DCE)** — provides the ingestion URL (e.g. `https://my-dce.westus-1.ingest.monitor.azure.com`).
+. A **Data Collection Rule (DCR)** — defines the target table and transformation. Note the DCR immutable ID (e.g. `dcr-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6`).
+. A **custom log table** in a Log Analytics workspace — the stream name is typically `Custom-<TableName>_CL` (e.g. `Custom-MyTable_CL`). The table schema must match the log format produced by the collector. An example of the ViaQ JSON log format for container logs can be found at link:../../../reference/datamodels/viaq/v1.adoc[ViaQ Data Model Reference], and a sample JSON payload is available at link:../../../../hack/logsamples/viaq_container.json[viaq_container.json]. Use these as a reference when defining your DCR transformation and custom table columns.
+. An **Azure AD application (service principal)** or **Workload Identity** with the _Monitoring Metrics Publisher_ role on the DCR.
+
+[NOTE]
+====
+For instructions on how to create these resources, see the https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-portal[Azure Logs Ingestion Tutorial].
+====
+
+==== Authentication
+
+Two authentication methods are supported:
+
+===== Client Secret Authentication
+
+Uses an Azure AD service principal with a client ID, tenant ID, and client secret stored in an OpenShift secret.
+
+. Create a secret containing the client secret:
++
+----
+oc create secret generic azure-log-ingestion-secret -n openshift-logging \
+  --from-literal=client_secret='<your-client-secret>'
+----
+
+. Reference it in the ClusterLogForwarder:
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+  - name: azure-logs-ingestion
+    type: azureLogsIngestion
+    azureLogsIngestion:
+      url: https://my-dce.westus-1.ingest.monitor.azure.com
+      dcrImmutableId: dcr-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+      streamName: Custom-MyTable_CL
+      authentication:
+        type: clientSecret
+        clientSecret:
+          tenantId: a0b1c2d3-e4f5-a6b7-c8d9-e0f1a2b3c4d5
+          clientId: b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6
+          secret:
+            key: client_secret
+            secretName: azure-log-ingestion-secret
+  pipelines:
+  - name: app-pipeline
+    inputRefs:
+    - application
+    outputRefs:
+    - azure-logs-ingestion
+----
+
+===== Workload Identity Authentication
+
+Uses Azure AD Workload Identity federation, where the collector pod authenticates using a projected service account token. This avoids storing long-lived credentials.
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+  - name: azure-logs-ingestion
+    type: azureLogsIngestion
+    azureLogsIngestion:
+      url: https://my-dce.westus-1.ingest.monitor.azure.com
+      dcrImmutableId: dcr-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+      streamName: Custom-MyTable_CL
+      authentication:
+        type: workloadIdentity
+        workloadIdentity:
+          tenantId: a0b1c2d3-e4f5-a6b7-c8d9-e0f1a2b3c4d5
+          clientId: b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6
+          token:
+            from: serviceAccount
+  pipelines:
+  - name: app-pipeline
+    inputRefs:
+    - application
+    outputRefs:
+    - azure-logs-ingestion
+----
+
+Alternatively, the token can be sourced from a secret:
+
+[source,yaml]
+----
+      authentication:
+        type: workloadIdentity
+        workloadIdentity:
+          tenantId: a0b1c2d3-e4f5-a6b7-c8d9-e0f1a2b3c4d5
+          clientId: b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6
+          token:
+            from: secret
+            secret:
+              key: token
+              name: my-token-secret
+----
+
+==== Optional Settings
+
+===== Token Scope
+
+For dedicated Azure regions (e.g. Azure China or Azure Government), override the default token scope (`https://monitor.azure.com/.default`):
+
+[source,yaml]
+----
+    azureLogsIngestion:
+      tokenScope: "https://monitor.azure.cn/.default"
+----
+
+===== Timestamp Field
+
+By default the timestamp is mapped to `TimeGenerated`. Some table schemas use a different column name. Override it with `timestampField`:
+
+[source,yaml]
+----
+    azureLogsIngestion:
+      timestampField: "Timestamp"
+----
+
+Common values:
+
+* `TimeGenerated` — default for most schemas
+* `Timestamp` — legacy schemas
+* `EventStartTime` — ASIM-based schemas
+
+===== TLS
+
+Custom TLS settings can be configured on the output, for example to provide a custom CA or to skip certificate verification:
+
+[source,yaml]
+----
+  outputs:
+  - name: azure-logs-ingestion
+    type: azureLogsIngestion
+    tls:
+      insecureSkipVerify: true
+      ca:
+        key: ca-bundle.crt
+        secretName: my-tls-secret
+      certificate:
+        key: tls.crt
+        secretName: my-tls-secret
+      key:
+        key: tls.key
+        secretName: my-tls-secret
+    azureLogsIngestion:
+      # ...
+----
+
+===== Tuning
+
+Standard output tuning parameters are supported:
+
+[source,yaml]
+----
+    azureLogsIngestion:
+      tuning:
+        deliveryMode: AtLeastOnce
+        maxWrite: 10M
+        maxRetryDuration: 35s
+        minRetryDuration: 20s
+----
+
+==== Field Reference
+
+|===
+|Field |Type |Required |Description
+
+|`url`
+|string
+|Yes
+|The Data Collection Endpoint (DCE) ingestion URL.
+
+|`dcrImmutableId`
+|string
+|Yes
+|The immutable ID of the Data Collection Rule.
+
+|`streamName`
+|string
+|Yes
+|The name of the custom log stream in the DCR (e.g. `Custom-MyTable_CL`).
+
+|`authentication`
+|object
+|Yes
+|Authentication configuration. See <<Authentication>> above.
+
+|`tokenScope`
+|string
+|No
+|OAuth2 token scope. Defaults to `https://monitor.azure.com/.default`.
+
+|`timestampField`
+|string
+|No
+|Destination column for the timestamp. Defaults to `TimeGenerated`.
+
+|`tuning`
+|object
+|No
+|Output tuning parameters (delivery mode, retry, buffer size).
+|===

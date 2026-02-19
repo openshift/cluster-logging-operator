@@ -1,0 +1,26 @@
+[sinks.output_azure_log_ingestion]
+type = "azure_logs_ingestion"
+inputs = ["pipelineName"]
+endpoint = "https://my-dce-abcdefghij.westus-1.ingest.monitor.azure.com"
+dcr_immutable_id = "dcr-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"
+stream_name = "Custom-MyTable_Logs_0_CL"
+
+[sinks.output_azure_log_ingestion.auth]
+azure_tenant_id = "a0b1c2d3-e4f5-a6b7-c8d9-e0f1a2b3c4d5"
+azure_client_id = "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"
+azure_client_secret = "SECRET[kubernetes_secret.azure-log-ingestion-secret/client_secret]"
+
+[sinks.output_azure_log_ingestion.encoding]
+except_fields = ["_internal"]
+
+[sinks.output_azure_log_ingestion.batch]
+max_bytes = 10000000
+
+[sinks.output_azure_log_ingestion.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488
+
+[sinks.output_azure_log_ingestion.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35

@@ -1847,7 +1847,10 @@ Type:: array
 |======================
 |Property|Type|Description
 
-|azureMonitor|object|  AzureMonitor configures forwarding log events to the Azure Monitor Logs service
+|azureLogsIngestion|object|  AzureLogsIngestion configures forwarding log events to the Azure Monitor Logs Ingestion API
+
+|azureMonitor|object|  DEPRECATED: Use AzureLogsIngestion instead. This output will be removed in a future release.
+AzureMonitor configures forwarding log events to the Azure Monitor Logs service
 
 |cloudwatch|object|  Cloudwatch configures forwarding log events to AWS Cloudwatch logs
 
@@ -1890,6 +1893,158 @@ Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.
 
 |type|string|  Type of output sink.
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion
+
+AzureLogsIngestion provides configuration for the output type `azureLogsIngestion`.
+This output sends log events to the Azure Monitor Logs Ingestion API using a Data Collection Rule (DCR).
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|url|string|  URL to send log records to.
+Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;).
+The &#39;username@password&#39; part of `url` is ignored.
+
+|authentication|object|  Authentication sets credentials for authenticating the requests to the Azure Logs Ingestion API.
+
+|dcrImmutableId|string|  DcrImmutableId is the immutable ID of the Data Collection Rule (DCR).
+
+|streamName|string|  StreamName is the name of the custom log stream in the DCR that the data should be sent to.
+
+|timestampField|string|  TimestampField is the destination field (column) for the timestamp.
+Most schemas use &#34;TimeGenerated&#34; (default), but some use &#34;Timestamp&#34; (legacy) or &#34;EventStartTime&#34; (ASIM).
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-standard-columns#timegenerated
+
+|tokenScope|string|  TokenScope is the token scope for dedicated Azure regions.
+Defaults to &#34;https://monitor.azure.com/.default&#34;.
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+
+|tuning|object|  Tuning specs tuning for the output
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication
+
+AzureLogsIngestionAuthentication contains configuration for authenticating requests to an Azure Log Ingestion output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clientSecret|object|  ClientSecret contains the Azure AD service principal credentials.
+
+|type|string|  Type is the type of Azure authentication to configure.
+
+|workloadIdentity|object|  WorkloadIdentity contains the Azure AD Workload Identity credentials.
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication.clientSecret
+
+AzureLogsIngestionClientSecret contains Azure AD service principal credentials for authenticating requests.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clientId|string|  ClientId is the Azure Active Directory application (client) ID.
+
+|secret|object|  Secret points to the secret containing the Azure Active Directory client secret.
+
+|tenantId|string|  TenantId is the Azure Active Directory tenant ID.
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication.clientSecret.secret
+
+SecretReference encodes a reference to a single key in a Secret in the same namespace.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Key contains the name of the key inside the referenced Secret.
+
+|secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication.workloadIdentity
+
+AzureLogsIngestionWorkloadIdentity contains Azure AD Workload Identity configuration.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|clientId|string|  ClientId is the Azure Active Directory application (client) ID.
+
+|tenantId|string|  TenantId is the Azure Active Directory tenant ID.
+
+|token|object|  Token is the bearer token to be used for authenticating the requests.
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication.workloadIdentity.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.authentication.workloadIdentity.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
+
+|======================
+
+=== .spec.outputs[].azureLogsIngestion.tuning
+
+AzureLogsIngestionTuningSpec contains tuning options for the Azure Logs Ingestion output.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|deliveryMode|string|  
+|maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
+
+|minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
+
+|maxRetryDuration|Duration|  MaxRetryDuration is the maximum time to wait between retry attempts after a delivery failure.
 
 |======================
 

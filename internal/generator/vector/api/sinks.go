@@ -57,6 +57,12 @@ func (sinkMap *Sinks) UnmarshalTOML(data interface{}) (err error) {
 				return fmt.Errorf("failed to unmarshal sink %s: %w", id, err)
 			}
 			sink = &s
+		case types.SinkTypeAzureLogsIngestion:
+			var s sinks.AzureLogsIngestion
+			if err = tree.Unmarshal(&s); err != nil {
+				return fmt.Errorf("failed to unmarshal sink %s: %w", id, err)
+			}
+			sink = &s
 		case types.SinkTypeAzureMonitorLogs:
 			var s sinks.AzureMonitorLogs
 			if err = tree.Unmarshal(&s); err != nil {

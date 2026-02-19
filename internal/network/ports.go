@@ -132,7 +132,11 @@ func getPortProtocolFromOutputURLs(output obs.OutputSpec) []factory.PortProtocol
 			return []factory.PortProtocol{defaultHTTPSTCPPort}
 		}
 		urlSlice = append(urlSlice, output.S3.URL)
-		// LokiStack internal port is 8080 for both HTTP and OTLP
+	case obs.OutputTypeAzureLogsIngestion:
+		if output.AzureLogsIngestion != nil {
+			urlSlice = append(urlSlice, output.AzureLogsIngestion.URL)
+		}
+	// LokiStack internal port is 8080 for both HTTP and OTLP
 	case obs.OutputTypeLokiStack:
 		return []factory.PortProtocol{{Port: 8080, Protocol: corev1.ProtocolTCP}}
 	case obs.OutputTypeGoogleCloudLogging, obs.OutputTypeAzureMonitor:

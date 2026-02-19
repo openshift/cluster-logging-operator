@@ -16,6 +16,10 @@ type Tuning struct {
 func NewTuning(spec obs.OutputSpec) Tuning {
 	t := Tuning{}
 	switch spec.Type {
+	case obs.OutputTypeAzureLogsIngestion:
+		if spec.AzureLogsIngestion != nil && spec.AzureLogsIngestion.Tuning != nil {
+			t.BaseOutputTuningSpec = spec.AzureLogsIngestion.Tuning.BaseOutputTuningSpec
+		}
 	case obs.OutputTypeAzureMonitor:
 		if spec.AzureMonitor != nil && spec.AzureMonitor.Tuning != nil {
 			t.BaseOutputTuningSpec = *spec.AzureMonitor.Tuning

@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/otlp"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -19,7 +18,7 @@ import (
 )
 
 // New creates generate elements that represent configuration to forward logs to Loki using OpenShift Logging tenancy model
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	clfSpec, _ := utils.GetOption(op, vectorhelpers.CLFSpec, observability.ClusterLogForwarderSpec{})
 	if len(clfSpec.Inputs) == 0 || len(clfSpec.Pipelines) == 0 || len(clfSpec.Outputs) == 0 {
 		panic("ClusterLogForwarderSpec not found while generating LokiStack config")

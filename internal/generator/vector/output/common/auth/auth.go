@@ -10,18 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-// HTTPAuth provides auth configuration for http authentication where username/password or bearer token
-// are viable options.  Bearer token takes precedence if both are provided
-func HTTPAuth(id string, spec *obs.HTTPAuthentication, secrets internalobs.Secrets, op utils.Options) framework.Element {
-	if spec != nil {
-		if spec.Token != nil {
-			return NewBearerToken(id, spec, secrets, op)
-		}
-		return NewBasic(id, spec, secrets)
-	}
-	return framework.Nil
-}
-
 func NewHttpAuth(spec *obs.HTTPAuthentication, op utils.Options) (auth *sinks.HttpAuth) {
 	if spec == nil {
 		return nil

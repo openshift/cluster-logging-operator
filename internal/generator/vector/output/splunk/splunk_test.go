@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
@@ -25,7 +25,7 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		aToken     = "atoken"
 	)
 	var (
-		adapter *adapters.Output
+		adapter *observability.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -86,7 +86,7 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		adapter = adapters.NewOutput(outputSpec)
+		adapter = observability.NewOutput(outputSpec)
 		conf := splunk.New(helpers.MakeID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

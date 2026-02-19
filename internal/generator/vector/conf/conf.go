@@ -5,7 +5,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
@@ -76,10 +75,10 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		inputCompMap[i.Name] = a
 	}
 
-	outputMap := map[string]*adapters.Output{}
+	outputMap := map[string]*internalobs.Output{}
 	op[framework.OptionForwarderName] = forwarderName
 	for _, spec := range clfspec.Outputs {
-		o := adapters.NewOutput(spec)
+		o := internalobs.NewOutput(spec)
 		outputMap[spec.Name] = o
 	}
 
@@ -101,7 +100,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		sections.Elements = append(sections.Elements, p.Elements()...)
 	}
 	for _, o := range sortAdapters(outputMap) {
-		sections.Elements = append(sections.Elements, output.New(o, o.InputIDs, secrets, o, op)...)
+		sections.Elements = append(sections.Elements, output.New(o, o.InputIDs, secrets, op)...)
 	}
 
 	//minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
@@ -129,7 +128,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 }
 
 // sortAdapters sorts ClusterLogForwarder adapters to ensure consistent generation of component configs
-func sortAdapters[V *internalobs.Input | *pipeline.Pipeline | *adapters.Output](m map[string]V) []V {
+func sortAdapters[V *internalobs.Input | *pipeline.Pipeline | *internalobs.Output](m map[string]V) []V {
 	keys := []string{}
 	for k := range m {
 		keys = append(keys, k)

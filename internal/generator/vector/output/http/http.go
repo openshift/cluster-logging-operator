@@ -13,13 +13,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
@@ -64,7 +65,7 @@ func method(h *obs.HTTP) sinks.MethodType {
 	return sinks.MethodType(strings.ToLower(h.Method))
 }
 
-func request(s *sinks.Http, o *adapters.Output) {
+func request(s *sinks.Http, o *observability.Output) {
 	s.Request = common.NewApiRequest(o)
 	if o.HTTP != nil && o.HTTP.Timeout != 0 {
 		if s.Request == nil {

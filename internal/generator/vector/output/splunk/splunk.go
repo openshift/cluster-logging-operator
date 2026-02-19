@@ -6,7 +6,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
@@ -14,9 +13,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -83,6 +82,7 @@ for_each(indexed_fields) -> |_, field| {
 `
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 type Splunk struct {
 	ComponentID   string
 	Inputs        string
@@ -122,7 +122,7 @@ func (s *Splunk) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),

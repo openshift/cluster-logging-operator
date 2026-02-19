@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -47,7 +46,7 @@ var _ = Describe("Pipeline adapters", func() {
 		}
 		inputMap map[string]helpers.InputComponent
 
-		outputMap         map[string]*adapters.Output
+		outputMap         map[string]*observability.Output
 		fakeElement       = &FakeElement{}
 		internalFilterMap = map[string]*filter.InternalFilterSpec{
 			"fakeFilter": {
@@ -73,7 +72,7 @@ var _ = Describe("Pipeline adapters", func() {
 		inputMap = map[string]helpers.InputComponent{
 			inputSpecs[0].Name: i,
 		}
-		outputMap = map[string]*adapters.Output{
+		outputMap = map[string]*observability.Output{
 			"referenced":    {},
 			"notReferenced": {},
 		}

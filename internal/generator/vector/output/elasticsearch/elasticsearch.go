@@ -10,17 +10,16 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, helpers.MakeInputs(inputs...)),
@@ -71,7 +70,7 @@ if exists(.kubernetes.event.metadata.uid) {
 	return outputs
 }
 
-func elasticsearchAuth(s *sinks.Elasticsearch, o *adapters.Output, op utils.Options) {
+func elasticsearchAuth(s *sinks.Elasticsearch, o *observability.Output, op utils.Options) {
 	if o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil {
 		if s.Request == nil {
 			s.Request = &sinks.Request{}

@@ -7,7 +7,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
@@ -15,9 +14,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -26,7 +25,7 @@ const (
 	SASLMechanismPlain = "PLAIN"
 )
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -56,7 +55,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	return elements
 }
 
-func kafkaTls(s *sinks.Kafka, o *adapters.Output, secrets observability.Secrets, op utils.Options) {
+func kafkaTls(s *sinks.Kafka, o *observability.Output, secrets observability.Secrets, op utils.Options) {
 	var additionalOptions []framework.Option
 	if o.TLS != nil && isTlsBrokers(o.Kafka) {
 		additionalOptions = []framework.Option{
@@ -67,7 +66,7 @@ func kafkaTls(s *sinks.Kafka, o *adapters.Output, secrets observability.Secrets,
 	s.TLS = tls.NewTls(o, secrets, op, additionalOptions...)
 }
 
-func librdKafkaOptions(s *sinks.Kafka, o *adapters.Output) {
+func librdKafkaOptions(s *sinks.Kafka, o *observability.Output) {
 	s.LibrdKafka_Options = map[string]string{}
 	if o.TLS != nil && isTlsBrokers(o.Kafka) && o.TLS.InsecureSkipVerify {
 		s.LibrdKafka_Options["enable.ssl.certificate.verification"] = "false"

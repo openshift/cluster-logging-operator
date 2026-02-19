@@ -9,7 +9,6 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -37,7 +36,7 @@ var _ = Describe("Generate vector config", func() {
 			},
 		}
 
-		adapter    *adapters.Output
+		adapter    *observability.Output
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
 				Type: obs.OutputTypeOTLP,
@@ -86,7 +85,7 @@ var _ = Describe("Generate vector config", func() {
 			visit(&outputSpec)
 		}
 		var conf []framework.Element
-		adapter = adapters.NewOutput(outputSpec)
+		adapter = observability.NewOutput(outputSpec)
 		conf = New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_my_pipeline_viaq_0"}, secret, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

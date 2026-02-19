@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,7 +37,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		)
 
 		var (
-			adapter *adapters.Output
+			adapter *observability.Output
 			tlsSpec = &obs.OutputTLSSpec{
 				InsecureSkipVerify: false,
 				TLSSpec: obs.TLSSpec{
@@ -124,7 +124,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			}
 			if tune {
 			}
-			adapter = adapters.NewOutput(outputSpec)
+			adapter = observability.NewOutput(outputSpec)
 			op[framework.OptionForwarderName] = "my-forwarder"
 			conf := New(outputSpec.Name, adapter, []string{"cw-forward"}, secrets, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
@@ -413,7 +413,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 			op := framework.Options{}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			adapter := adapters.NewOutput(outputSpec)
+			adapter := observability.NewOutput(outputSpec)
 			conf := New(outputSpec.Name, adapter, []string{"cw-forward"}, secrets, op)
 
 			// Since authentication is embedded within cloudwatchTemplate, we just verify

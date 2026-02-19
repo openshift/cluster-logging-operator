@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -25,7 +25,7 @@ var _ = Describe("Generate Vector config", func() {
 		aToken     = "my-token"
 	)
 	var (
-		adapter *adapters.Output
+		adapter *observability.Output
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
 				CA: &obs.ValueReference{
@@ -93,7 +93,7 @@ var _ = Describe("Generate Vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		adapter = adapters.NewOutput(outputSpec)
+		adapter = observability.NewOutput(outputSpec)
 		conf := New(outputSpec.Name, adapter, []string{"application"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

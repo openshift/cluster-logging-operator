@@ -1,8 +1,7 @@
-package adapters
+package observability
 
 import (
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	nhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -10,7 +9,7 @@ import (
 type Output struct {
 	obsv1.OutputSpec
 	InputIDs []string
-	tuning   observability.Tuning
+	tuning   Tuning
 }
 
 func (o *Output) GetTlsSpec() *obsv1.TLSSpec {
@@ -27,14 +26,14 @@ func (o *Output) IsInsecureSkipVerify() bool {
 	return o.TLS.InsecureSkipVerify
 }
 
-func (o *Output) GetTuning() *observability.Tuning {
+func (o *Output) GetTuning() *Tuning {
 	return &o.tuning
 }
 
 func NewOutput(spec obsv1.OutputSpec) *Output {
 	return &Output{
 		OutputSpec: spec,
-		tuning:     observability.NewTuning(spec),
+		tuning:     NewTuning(spec),
 	}
 }
 

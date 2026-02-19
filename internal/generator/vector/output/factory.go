@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
@@ -24,8 +23,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
-	framwework.SetTLSProfileOptionsFrom(op, o.OutputSpec)
+func New(o *internalobs.Output, inputs []string, secrets map[string]*corev1.Secret, op utils.Options) []framwork.Element {
+	SetTLSProfileOptionsFrom(op, o.OutputSpec)
 
 	var els []framework.Element
 	baseID := helpers.MakeOutputID(o.Name)

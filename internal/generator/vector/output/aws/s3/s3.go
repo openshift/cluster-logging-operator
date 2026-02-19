@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -20,7 +19,7 @@ import (
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	keyPrefixID := vectorhelpers.MakeID(id, "key_prefix")
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
@@ -33,7 +32,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		s.Bucket = o.S3.Bucket
 		s.KeyPrefix = fmt.Sprintf("{{ _internal.%s }}", keyPrefixID)
 		s.Endpoint = o.S3.URL
-		s.Auth = aws.NewAuthConfig(o.Name, o.S3.Authentication, op)
+		s.Auth = auth.New(o.Name, o.S3.Authentication, op)
 		s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
 		s.Batch = common.NewApiBatch(o)
 		s.Compression = sinks.CompressionType(o.GetTuning().Compression)

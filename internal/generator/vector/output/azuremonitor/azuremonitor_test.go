@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -32,7 +32,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 	)
 
 	var (
-		adapter *adapters.Output
+		adapter *observability.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -99,7 +99,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			visit(&outputSpec)
 		}
 
-		adapter = adapters.NewOutput(outputSpec)
+		adapter = observability.NewOutput(outputSpec)
 		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, nil)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

@@ -14,10 +14,13 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -79,31 +82,6 @@ if err != null {
 	isAuditLogCond              = `.log_type == "audit"`
 )
 
-type Syslog struct {
-	ComponentID string
-	Inputs      string
-	Address     string
-	Mode        string
-	common.RootMixin
-}
-
-func (s Syslog) Name() string {
-	return "SyslogVectorTemplate"
-}
-
-func (s Syslog) Template() string {
-	return `{{define "` + s.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "socket"
-inputs = {{.Inputs}}
-address = "{{.Address}}"
-mode = "{{.Mode}}"
-{{if eq .Mode "tcp"}}
-keepalive.time_secs = 60
-{{end}}
-{{end}}`
-}
-
 type FieldVRLStringPair struct {
 	Field     string
 	VRLString string
@@ -161,41 +139,7 @@ if is_null({{.PayloadKey}}) {
 `
 }
 
-type SyslogEncoding struct {
-	ComponentID  string
-	RFC          string
-	Facility     genhelper.OptionalPair
-	Severity     genhelper.OptionalPair
-	AppName      genhelper.OptionalPair
-	ProcID       genhelper.OptionalPair
-	Tag          genhelper.OptionalPair
-	MsgID        genhelper.OptionalPair
-	AddLogSource genhelper.OptionalPair
-	PayloadKey   genhelper.OptionalPair
-}
-
-func (se SyslogEncoding) Name() string {
-	return "syslogEncoding"
-}
-
-func (se SyslogEncoding) Template() string {
-	return `{{define "` + se.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = "syslog"
-except_fields = ["_internal"]
-rfc = "{{.RFC}}"
-{{ .Facility }}
-{{ .Severity }}
-{{ .AppName }}
-{{ .MsgID }}
-{{ .ProcID }}
-{{ .Tag }}
-{{ .AddLogSource }}
-{{ .PayloadKey }}
-{{end}}`
-}
-
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -207,7 +151,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 
 	mode := socketMode(u.Scheme)
 
-	return []Element{
+	return []framework.Element{
 		parseEncoding(parseEncodingID, inputs, templateFieldPairs, o.Syslog),
 		api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sinks.NewSocket(mode, func(s *sinks.Socket) {
@@ -312,30 +256,6 @@ func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
 	}
 
 	return templateFields
-}
-
-func Encoding(id string, o obs.OutputSpec) []framework.Element {
-	sysLEncode := SyslogEncoding{
-		ComponentID:  id,
-		RFC:          strings.ToLower(string(o.Syslog.RFC)),
-		Facility:     syslogEncodeField("facility"),
-		Severity:     syslogEncodeField("severity"),
-		AppName:      AppName(o.Syslog),
-		ProcID:       syslogEncodeField("proc_id"),
-		MsgID:        MsgID(o.Syslog),
-		Tag:          Tag(o.Syslog),
-		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
-		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
-	}
-	if o.Syslog.PayloadKey != "" {
-		sysLEncode.PayloadKey.Value = "payload_key"
-	}
-
-	encodingFields := []framework.Element{
-		sysLEncode,
-	}
-
-	return encodingFields
 }
 
 func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateField, o *obs.Syslog) framework.Element {

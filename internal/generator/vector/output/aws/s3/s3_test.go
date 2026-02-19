@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -87,7 +87,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 				visit(&outputSpec)
 			}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := s3.New(outputSpec.Name, adapters.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
+			conf := s3.New(outputSpec.Name, observability.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
 
@@ -197,7 +197,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 
 			op := framework.Options{}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := s3.New(outputSpec.Name, adapters.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
+			conf := s3.New(outputSpec.Name, observability.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
 
 			// Verify that s3 sink configuration is present
 			var elementNames []string

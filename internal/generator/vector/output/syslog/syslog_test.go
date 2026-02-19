@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
@@ -74,7 +74,7 @@ var _ = Describe("vector syslog clf output", func() {
 			visit(&outputSpec)
 		}
 
-		adapter := adapters.NewOutput(outputSpec)
+		adapter := observability.NewOutput(outputSpec)
 		conf := syslog.New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

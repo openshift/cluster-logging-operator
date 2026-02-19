@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -25,7 +24,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	var (
-		adapter *adapters.Output
+		adapter *observability.Output
 		//- lokiStack:
 		//authentication:
 		//token:
@@ -143,7 +142,7 @@ var _ = Describe("Generate vector config", func() {
 		}
 		if tune {
 		}
-		adapter = adapters.NewOutput(outputSpec)
+		adapter = observability.NewOutput(outputSpec)
 		conf := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_fake"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},

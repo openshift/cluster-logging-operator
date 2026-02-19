@@ -6,7 +6,6 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
@@ -14,10 +13,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
@@ -74,84 +73,7 @@ var (
 	}
 )
 
-<<<<<<< HEAD
-type Loki struct {
-	ComponentID string
-	Inputs      string
-	TenantID    framework.Element
-	Endpoint    string
-	Proxy       string
-	LokiLabel   []string
-	common.RootMixin
-}
-
-func (l Loki) Name() string {
-	return "lokiVectorTemplate"
-}
-
-func (l Loki) Template() string {
-	return `{{define "` + l.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "loki"
-inputs = {{.Inputs}}
-endpoint = "{{.Endpoint}}"
-out_of_order_action = "accept"
-healthcheck.enabled = false
-{{with .Proxy -}}
-proxy.enabled = true
-proxy.http = "{{.}}"
-proxy.https = "{{.}}"
-{{end -}}
-{{kv .TenantID -}}
-{{.Compression}}
-{{end}}`
-}
-
-type LokiEncoding struct {
-	ComponentID string
-	Codec       string
-}
-
-func (le LokiEncoding) Name() string {
-	return "lokiEncoding"
-}
-
-func (le LokiEncoding) Template() string {
-	return `{{define "` + le.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = {{.Codec}}
-{{end}}`
-}
-
-type LokiLabel struct {
-	Name  string
-	Value string
-}
-
-type LokiLabels struct {
-	ComponentID string
-	Labels      []LokiLabel
-}
-
-func (l LokiLabels) Name() string {
-	return "lokiLabels"
-}
-
-func (l LokiLabels) Template() string {
-	return `{{define "` + l.Name() + `" -}}
-[sinks.{{.ComponentID}}.labels]
-{{range $i, $label := .Labels -}}
-{{$label.Name}} = "{{$label.Value}}"
-{{end -}}
-{{end}}
-`
-}
-
-func (e *Loki) SetCompression(algo string) {
-	e.Compression.Value = algo
-}
-
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),

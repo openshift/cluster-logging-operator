@@ -53,7 +53,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeGoogleCloudLogging:
 		els = append(els, gcl.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeSplunk:
-		els = append(els, splunk.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
+		els = append(els, splunk.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeHTTP:
 		els = append(els, http.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeSyslog:

@@ -1,4 +1,3 @@
-# Ensure timestamp field well formatted for Splunk
 [transforms.splunk_hec_timestamp]
 type = "remap"
 inputs = ["pipelineName"]
@@ -40,7 +39,6 @@ if ._internal.log_type == "audit" {
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]
 endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
 index = "{{ ._internal.splunk_hec_splunk_index }}"
 timestamp_key = "._internal.timestamp"

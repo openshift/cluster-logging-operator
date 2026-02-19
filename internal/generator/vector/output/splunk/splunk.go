@@ -6,8 +6,12 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -78,6 +82,7 @@ for_each(indexed_fields) -> |_, field| {
 }
 `
 
+<<<<<<< HEAD
 type Splunk struct {
 	ComponentID   string
 	Inputs        string
@@ -117,7 +122,7 @@ func (s *Splunk) SetCompression(algo string) {
 	s.Compression.Value = algo
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -149,56 +154,50 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		builder.WriteString(fmt.Sprintf(payloadKeyTmpl, quotedPathArray))
 	}
 
+	var indexedFields []string
 	if o.Splunk.IndexedFields != nil {
 		pathSegmentArrayStr, remapped := vectorhelpers.GenerateQuotedPathSegmentArrayStr(o.Splunk.IndexedFields)
 		builder.WriteString(fmt.Sprintf(indexedFieldsRemap, pathSegmentArrayStr))
-		op["indexed_fields"] = remapped
+		indexedFields = remapped
 	}
 	splunkMetadataID := vectorhelpers.MakeID(id, "metadata")
-	metadata := elements.Remap{ComponentID: splunkMetadataID,
-		Inputs: vectorhelpers.MakeInputs(inputID),
-		VRL:    builder.String()}
+	metadata := remap.New(splunkMetadataID, builder.String(), inputID)
 
 	inputID = splunkMetadataID
-	splunkSink := sink(id, o, []string{inputID}, splunkIndexID, secrets, op)
 
-	if strategy != nil {
-		strategy.VisitSink(splunkSink)
-	}
 	return []framework.Element{
-		FixTimestampFormat(vectorhelpers.MakeID(id, "timestamp"), inputs),
+		fixTimestampFormat(vectorhelpers.MakeID(id, "timestamp"), inputs),
 		indexTemplate,
 		metadata,
-		splunkSink,
-		common.NewEncoding(id, common.CodecJSON),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		tls.New(id, o.TLS, secrets, op),
+		api.NewConfig(func(config *api.Config) {
+			config.Sinks[id] = sinks.NewSplunkHecLogs(o.Splunk.URL, func(s *sinks.SplunkHecLogs) {
+				s.Index = tenant(o.Splunk, splunkIndexID)
+				s.DefaultToken = defaultToken(o.Splunk)
+				s.Compression = sinks.CompressionType(o.GetTuning().Compression)
+				s.Source = "{{ ._internal.splunk.source }}"
+				s.SourceType = "{{ ._internal.splunk.sourcetype }}"
+				s.HostKey = "._internal.hostname"
+				s.TimestampKey = "._internal.timestamp"
+				s.IndexedFields = indexedFields
+				s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
+				s.Batch = common.NewApiBatch(o)
+				s.Buffer = common.NewApiBuffer(o)
+				s.Request = common.NewApiRequest(o)
+				s.TLS = tls.NewTls(o, secrets, op)
+			}, inputID)
+		}),
 	}
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, index string, secrets observability.Secrets, op utils.Options) *Splunk {
-	s := &Splunk{
-		ComponentID:   id,
-		Inputs:        vectorhelpers.MakeInputs(inputs...),
-		Endpoint:      o.Splunk.URL,
-		Index:         Tenant(o.Splunk, index),
-		RootMixin:     common.NewRootMixin("none"),
-		Source:        elements.KV("source", `"{{ ._internal.splunk.source }}"`),
-		SourceType:    elements.KV("sourcetype", `"{{ ._internal.splunk.sourcetype }}"`),
-		HostKey:       elements.KV("host_key", `"._internal.hostname"`),
-		IndexedFields: IndexedFields(o.Splunk, op),
-	}
-	authentication := o.Splunk.Authentication
+func defaultToken(o *obs.Splunk) string {
+	authentication := o.Authentication
 	if authentication != nil && authentication.Token != nil {
-		s.DefaultToken = vectorhelpers.SecretFrom(authentication.Token)
+		return vectorhelpers.SecretFrom(authentication.Token)
 	}
-	return s
+	return ""
 }
 
-func FixTimestampFormat(componentID string, inputs []string) framework.Element {
+func fixTimestampFormat(componentID string, inputs []string) framework.Element {
 	var vrl = `
 ts, err = parse_timestamp(._internal.timestamp,"%+")
 if err != null {
@@ -207,29 +206,16 @@ if err != null {
 	._internal.timestamp = ts
 }
 `
-	return elements.Remap{
-		Desc:        "Ensure timestamp field well formatted for Splunk",
-		ComponentID: componentID,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         vrl,
-	}
+	return remap.New(componentID, vrl, inputs...)
 }
 
 func hasIndexKey(s *obs.Splunk) bool {
 	return s != nil && s.Index != ""
 }
 
-func Tenant(s *obs.Splunk, index string) framework.Element {
+func tenant(s *obs.Splunk, index string) string {
 	if !hasIndexKey(s) {
-		return framework.Nil
+		return ""
 	}
-	return elements.KV("index", fmt.Sprintf(`"{{ ._internal.%s }}"`, index))
-}
-
-func IndexedFields(s *obs.Splunk, op utils.Options) framework.Element {
-	if s.IndexedFields != nil && op.Has("indexed_fields") {
-		in, _ := utils.GetOption[string](op, "indexed_fields", "")
-		return elements.KV("indexed_fields", in)
-	}
-	return framework.Nil
+	return fmt.Sprintf("{{ ._internal.%s }}", index)
 }

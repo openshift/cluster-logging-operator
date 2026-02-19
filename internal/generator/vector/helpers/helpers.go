@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -105,7 +104,7 @@ func SecretFrom(secretKey *v1.SecretReference) string {
 // and array of flattened path with replaced not allowed symbols to feed into VRL
 // E.g
 // [.kubernetes.namespace_labels."bar/baz0-9.test"] -> ([["kubernetes","namespace_labels","bar/baz0-9.test"]], ["_kubernetes_namespace_labels_bar_baz0-9_test"])
-func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, string) {
+func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, []string) {
 	var quotedPathArray []string
 	var flattenedArray []string
 
@@ -115,7 +114,7 @@ func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, s
 		if strings.ContainsAny(pathStr, "/.") {
 			flat := strings.NewReplacer(".", "_", "\"", "", "/", "_").Replace(pathStr)
 			flat = strings.TrimPrefix(flat, "_")
-			flattenedArray = append(flattenedArray, strconv.Quote(flat))
+			flattenedArray = append(flattenedArray, flat)
 		}
 
 		splitSegments := SplitPath(pathStr)
@@ -124,7 +123,7 @@ func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, s
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ",")),
-		fmt.Sprintf("[%s]", strings.Join(flattenedArray, ","))
+		flattenedArray
 }
 
 // SplitPath splits a fieldPath by `.` and reassembles the quoted path segments that also contain `.`

@@ -17,6 +17,7 @@ const (
 	SinkTypeKafka              SinkType = "kafka"
 	SinkTypeOpenTelemetry      SinkType = "opentelemetry"
 	SinkTypePrometheusExporter SinkType = "prometheus_exporter"
+	SinkTypeHecLogs            SinkType = "splunk_hec_logs"
 )
 
 type CompressionType string

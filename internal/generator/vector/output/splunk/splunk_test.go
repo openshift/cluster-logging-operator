@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -25,7 +25,7 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		aToken     = "atoken"
 	)
 	var (
-		adapter fake.Output
+		adapter *adapters.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -77,7 +77,7 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		}
 	)
 
-	DescribeTable("#New", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
+	DescribeTable("#New", func(expFile string, op utils.Options, visit func(spec *obs.OutputSpec)) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -86,39 +86,38 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-		}
-		conf := splunk.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, adapter, op)
+		adapter = adapters.NewOutput(outputSpec)
+		conf := splunk.New(helpers.MakeID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, false, nil),
-		Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, nil),
+		Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 		}),
-		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Splunk.Index = "foo"
 		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
 		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, false, func(spec *obs.OutputSpec) {
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Index = `foo-{.kubernetes.namespace_labels."test/logging.io"||"missing"}`
 		}),
-		Entry("with tuning", "splunk_tune.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		Entry("with tuning", "splunk_tune.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Tuning = &obs.SplunkTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
+				Compression:          "gzip",
 			}
 		}),
-		Entry("with indexed fields", "splunk_sink_with_indexed_fields.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		Entry("with indexed fields", "splunk_sink_with_indexed_fields.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
 		}),
-		Entry("with indexed fields & source", "splunk_sink_with_indexed_fields_and_source.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		Entry("with indexed fields & source", "splunk_sink_with_indexed_fields_and_source.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Source = `{.foo||"missing"}`
 			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
 		}),
-		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".openshift"
 		}))
 })

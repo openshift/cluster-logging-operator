@@ -11,7 +11,7 @@ var _ = Describe("helpers functions", func() {
 		It("should generate array of path segments and flat path for single value", func() {
 			pathExpression := []obs.FieldPath{`.kubernetes.labels.foo`}
 			expectedArrayPath := `[["kubernetes","labels","foo"]]`
-			expectedFlatPath := `["kubernetes_labels_foo"]`
+			expectedFlatPath := []string{"kubernetes_labels_foo"}
 			arrayPath, flatPath := GenerateQuotedPathSegmentArrayStr(pathExpression)
 			Expect(arrayPath).To(Equal(expectedArrayPath))
 			Expect(flatPath).To(Equal(expectedFlatPath))
@@ -19,7 +19,7 @@ var _ = Describe("helpers functions", func() {
 		It("should generate array of path segments and flat path for multiple value", func() {
 			pathExpression := []obs.FieldPath{`.kubernetes.labels.foo`, `.kubernetes.labels.bar`}
 			expectedArrayPath := `[["kubernetes","labels","foo"],["kubernetes","labels","bar"]]`
-			expectedFlatPath := `["kubernetes_labels_foo","kubernetes_labels_bar"]`
+			expectedFlatPath := []string{"kubernetes_labels_foo", "kubernetes_labels_bar"}
 			arrayPath, flatPath := GenerateQuotedPathSegmentArrayStr(pathExpression)
 			Expect(arrayPath).To(Equal(expectedArrayPath))
 			Expect(flatPath).To(Equal(expectedFlatPath))
@@ -27,7 +27,7 @@ var _ = Describe("helpers functions", func() {
 		It("should generate array of path segments and escaped flat path", func() {
 			pathExpression := []obs.FieldPath{`.kubernetes.labels."bar/baz0-9.test"`}
 			expectedArrayPath := `[["kubernetes","labels","bar/baz0-9.test"]]`
-			expectedFlatPath := `["kubernetes_labels_bar_baz0-9_test"]`
+			expectedFlatPath := []string{"kubernetes_labels_bar_baz0-9_test"}
 			arrayPath, flatPath := GenerateQuotedPathSegmentArrayStr(pathExpression)
 			Expect(arrayPath).To(Equal(expectedArrayPath))
 			Expect(flatPath).To(Equal(expectedFlatPath))
@@ -35,7 +35,7 @@ var _ = Describe("helpers functions", func() {
 		It("should generate array of path segments and escaped flat path", func() {
 			pathExpression := []obs.FieldPath{`.foo.bar."foo.bar.baz-ok".foo123."bar/baz0-9.test"`, `.foo.bar`}
 			expectedArrayPath := `[["foo","bar","foo.bar.baz-ok","foo123","bar/baz0-9.test"],["foo","bar"]]`
-			expectedFlatPath := `["foo_bar_foo_bar_baz-ok_foo123_bar_baz0-9_test","foo_bar"]`
+			expectedFlatPath := []string{"foo_bar_foo_bar_baz-ok_foo123_bar_baz0-9_test", "foo_bar"}
 			arrayPath, flatPath := GenerateQuotedPathSegmentArrayStr(pathExpression)
 			Expect(arrayPath).To(Equal(expectedArrayPath))
 			Expect(flatPath).To(Equal(expectedFlatPath))

@@ -10,6 +10,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
@@ -182,7 +186,7 @@ except_fields = ["_internal"]
 rfc = "{{.RFC}}"
 {{ .Facility }}
 {{ .Severity }}
-{{ .AppName }}   
+{{ .AppName }}
 {{ .MsgID }}
 {{ .ProcID }}
 {{ .Tag }}
@@ -191,11 +195,7 @@ rfc = "{{.RFC}}"
 {{end}}`
 }
 
-func (s *Syslog) SetCompression(algo string) {
-	s.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
@@ -204,37 +204,75 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	parseEncodingID := vectorhelpers.MakeID(id, "parse_encoding")
 	templateFieldPairs := getEncodingTemplatesAndFields(*o.Syslog)
 	u, _ := url.Parse(o.Syslog.URL)
-	sink := Output(id, o, []string{parseEncodingID}, secrets, op, u.Scheme, u.Host)
-	if strategy != nil {
-		strategy.VisitSink(sink)
-	}
 
-	syslogElements := []framework.Element{
+	mode := socketMode(u.Scheme)
+
+	return []Element{
 		parseEncoding(parseEncodingID, inputs, templateFieldPairs, o.Syslog),
-		sink,
+		api.NewConfig(func(c *api.Config) {
+			c.Sinks[id] = sinks.NewSocket(mode, func(s *sinks.Socket) {
+				s.Address = u.Host
+				if mode == sinks.SocketModeTCP {
+					s.Keepalive = &sinks.Keepalive{
+						TimeSecs: 60,
+					}
+				}
+				s.Encoding = buildSocketEncoding(o.OutputSpec)
+				s.TLS = tls.NewTls(o, secrets, op, tls.IncludeEnabledOption)
+				s.Buffer = common.NewApiBuffer(o)
+			}, parseEncodingID)
+		}),
 	}
-
-	syslogElements = append(syslogElements, Encoding(id, o)...)
-
-	return append(syslogElements,
-		common.NewAcknowledgments(id, strategy),
-		common.NewBuffer(id, strategy),
-		tls.New(id, o.TLS, secrets, op, tls.IncludeEnabledOption),
-	)
 }
 
-func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options, urlScheme string, host string) *Syslog {
-	var mode = strings.ToLower(urlScheme)
-	if urlScheme == TLS {
-		mode = TCP
+func socketMode(urlScheme string) sinks.SocketMode {
+	scheme := strings.ToLower(urlScheme)
+	switch scheme {
+	case TLS:
+		return sinks.SocketModeTCP
+	case TCP:
+		return sinks.SocketModeTCP
+	case "udp":
+		return sinks.SocketModeUDP
+	default:
+		// Pass through unknown schemes for vector validation
+		return sinks.SocketMode(scheme)
 	}
-	return &Syslog{
-		ComponentID: id,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		Address:     host,
-		Mode:        mode,
-		RootMixin:   common.NewRootMixin(nil),
+}
+
+func buildSocketEncoding(o obs.OutputSpec) *sinks.SocketEncoding {
+	encoding := &sinks.SocketEncoding{
+		Codec:        "syslog",
+		ExceptFields: []string{"_internal"},
+		RFC:          strings.ToLower(string(o.Syslog.RFC)),
+		Facility:     "$$._syslog.facility",
+		Severity:     "$$._syslog.severity",
+		ProcID:       "$$._syslog.proc_id",
 	}
+
+	// RFC-specific fields
+	if o.Syslog.RFC == obs.SyslogRFC5424 {
+		encoding.AppName = "$$._syslog.app_name"
+		encoding.MsgID = "$$._syslog.msg_id"
+	} else if o.Syslog.RFC == obs.SyslogRFC3164 {
+		encoding.Tag = "$$._syslog.tag"
+	}
+
+	// Add log source
+	if o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal {
+		addLogSource := true
+		encoding.AddLogSource = &addLogSource
+	} else {
+		addLogSource := false
+		encoding.AddLogSource = &addLogSource
+	}
+
+	// Payload key
+	if o.Syslog.PayloadKey != "" {
+		encoding.PayloadKey = "payload_key"
+	}
+
+	return encoding
 }
 
 // getEncodingTemplatesAndFields determines which encoding fields are templated

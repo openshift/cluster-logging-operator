@@ -57,7 +57,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeHTTP:
 		els = append(els, http.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeSyslog:
-		els = append(els, syslog.New(baseID, o.OutputSpec, inputs, secrets, strategy, op)...)
+		els = append(els, syslog.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeAzureMonitor:
 		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeOTLP:

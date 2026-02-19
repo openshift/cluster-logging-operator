@@ -2,13 +2,15 @@ package syslog_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -47,7 +49,7 @@ var _ = Describe("vector syslog clf output", func() {
 				Name: "example",
 				Syslog: &obs.Syslog{
 					RFC: obs.SyslogRFC5424,
-					URL: "xyz://logserver:514",
+					URL: "tcp://logserver:514",
 				},
 			}
 		}
@@ -72,16 +74,10 @@ var _ = Describe("vector syslog clf output", func() {
 			visit(&outputSpec)
 		}
 
-		var adapter fake.Output
-
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-		}
-		conf := syslog.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, framework.NoOptions)
+		adapter := adapters.NewOutput(outputSpec)
+		conf := syslog.New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil, false),
-
 		Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 		}, false),

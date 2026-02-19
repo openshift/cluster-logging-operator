@@ -24,8 +24,11 @@ func PrometheusOutput(inputs []string, op utils.Options) framework.Element {
 		address := fmt.Sprintf("%s:%s", helpers.ListenOnAllLocalInterfacesAddress(), prometheusExporterListenPort)
 		config.Sinks[prometheusOutputSinkName] = sinks.NewPrometheusExporter(address, func(s *sinks.PrometheusExporter) {
 			s.DefaultNamespace = "collector"
-			s.TLS = tls.NewTls(nil, nil, op, tls.IncludeEnabledOption)
-			//s.TLS.Enabled = true
+			s.TLS = tls.NewTls(nil, nil, op)
+			if s.TLS == nil {
+				s.TLS = &api.TLS{}
+			}
+			s.TLS.Enabled = true
 			s.TLS.KeyFile = "/etc/collector/metrics/tls.key"
 			s.TLS.CRTFile = "/etc/collector/metrics/tls.crt"
 		}, inputs...)

@@ -144,7 +144,7 @@ var _ = Describe("Generate vector config", func() {
 		if tune {
 		}
 		adapter = adapters.NewOutput(outputSpec)
-		conf := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_fake"}, secrets, adapter, op)
+		conf := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_fake"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), false, func(spec *obs.OutputSpec) {}),

@@ -44,9 +44,6 @@ func NewTls(comp observability.TransportSpec, secrets observability.Secrets, op 
 		}
 	}
 	conf = &api.TLS{}
-	if _, found := framework.HasOption(IncludeEnabled, options); found {
-		conf.Enabled = true
-	}
 	if comp != nil && comp.GetTlsSpec() != nil {
 		spec := comp.GetTlsSpec()
 		conf.CAFile = ValuePath(spec.CA, "%s")
@@ -61,6 +58,9 @@ func NewTls(comp observability.TransportSpec, secrets observability.Secrets, op 
 	setTLSProfile(conf, op)
 	if *conf == emptyTLSConf {
 		return nil
+	}
+	if _, found := framework.HasOption(IncludeEnabled, options); found {
+		conf.Enabled = true
 	}
 	return conf
 }

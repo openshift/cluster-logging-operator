@@ -1,0 +1,62 @@
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.25.7-202602171210.g5015a16.el9 AS builder
+
+ENV GOEXPERIMENT=strictfipsruntime
+ENV CGO_ENABLED=1
+
+COPY . /opt/app-root/src
+WORKDIR /opt/app-root/src
+
+RUN make build BUILD_OPTS="-tags strictfipsruntime"
+
+
+FROM quay.io/openshift/origin-cli-artifacts:4.21 AS origincli
+
+RUN case $(uname -m) in \
+    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
+    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
+    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
+    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
+    *) echo "Unsupported architecture"; exit 1 ;; \
+esac
+
+FROM registry.redhat.io/ubi9/ubi-minimal:9.7
+
+RUN INSTALL_PKGS=" \
+      cpio \
+      rsync \
+      file \
+      xz \
+      " && \
+    microdnf install -y $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    microdnf clean all && \
+    mkdir /tmp/ocp-clo && \
+    chmod og+w /tmp/ocp-clo
+
+COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/
+
+COPY --from=builder /opt/app-root/src/must-gather/collection-scripts/* /usr/bin/
+
+COPY --from=origincli /tmp/oc /usr/bin/oc
+
+USER 1000
+
+WORKDIR /usr/bin
+CMD ["/usr/bin/cluster-logging-operator"]
+
+LABEL \
+        com.redhat.component="cluster-logging-operator-container" \
+        description="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
+        distribution-scope="subscription" \
+        io.k8s.description="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
+        io.k8s.display-name="Cluster Logging Operator" \
+        io.openshift.maintainer.product="OpenShift Container Platform" \
+        io.openshift.tags="openshift,logging,logcollection,observability" \
+        license="Apache-2.0" \
+        maintainer="AOS Logging <team-logging@redhat.com>" \
+        name="openshift-logging/cluster-logging-rhel9-operator" \
+        summary="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
+        url="https://catalog.redhat.com/en/software/containers/openshift-logging/cluster-logging-rhel9-operator/644799230dfd5adb35db6f60" \
+        vendor="Red Hat, Inc." \
+        version_minor="v6.5" \
+        version="6.5.0"

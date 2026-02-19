@@ -1,0 +1,151 @@
+{
+  "uuid": "a3b4c5d6-e7f8-9a0b-c1d2-e3f4a5b6c7d8",
+  "lastMigration": 32,
+  "name": "Azure Log Ingestion API",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3000,
+  "hostname": "",
+  "routes": [
+    {
+      "uuid": "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6",
+      "documentation": "OAuth2 token endpoint - returns a fake access token",
+      "method": "post",
+      "endpoint": ":tenantId/oauth2/v2.0/token",
+      "responses": [
+        {
+          "uuid": "c2d3e4f5-a6b7-c8d9-e0f1-a2b3c4d5e6f7",
+          "body": "{\"token_type\":\"Bearer\",\"expires_in\":3600,\"access_token\":\"fake-access-token-for-testing\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Return fake OAuth2 access token",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "d3e4f5a6-b7c8-d9e0-f1a2-b3c4d5e6f7a8",
+      "documentation": "Data Collection Rule ingestion endpoint - accepts log data",
+      "method": "post",
+      "endpoint": "dataCollectionRules/:dcrId/streams/:streamName",
+      "responses": [
+        {
+          "uuid": "e4f5a6b7-c8d9-e0f1-a2b3-c4d5e6f7a8b9",
+          "body": "",
+          "latency": 0,
+          "statusCode": 204,
+          "label": "Accept log data",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "f5a6b7c8-d9e0-f1a2-b3c4-d5e6f7a8b9c0",
+      "type": "http",
+      "documentation": "Health check endpoint",
+      "method": "get",
+      "endpoint": "",
+      "responses": [
+        {
+          "uuid": "a6b7c8d9-e0f1-a2b3-c4d5-e6f7a8b9c0d1",
+          "body": "{\"status\":\"OK\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": true,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "/data/tls.crt",
+    "keyPath": "/data/tls.key",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [],
+  "folders": [],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6"
+    },
+    {
+      "type": "route",
+      "uuid": "d3e4f5a6-b7c8-d9e0-f1a2-b3c4d5e6f7a8"
+    },
+    {
+      "type": "route",
+      "uuid": "f5a6b7c8-d9e0-f1a2-b3c4-d5e6f7a8b9c0"
+    }
+  ],
+  "callbacks": []
+}

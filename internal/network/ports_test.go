@@ -323,6 +323,22 @@ var _ = Describe("Network Ports", func() {
 			Expect(getPortProtocolFromOutputURLs(output)).To(Equal(makeTCPPorts(443)))
 		})
 
+		DescribeTable("AzureLogsIngestion",
+			func(urlStr string, expectedPort int32) {
+				output := obs.OutputSpec{
+					Type: obs.OutputTypeAzureLogsIngestion,
+					AzureLogsIngestion: &obs.AzureLogsIngestion{
+						URLSpec: obs.URLSpec{URL: urlStr},
+					},
+				}
+				Expect(getPortProtocolFromOutputURLs(output)).To(Equal(makeTCPPorts(expectedPort)))
+			},
+			Entry("should extract port from Azure Logs Ingestion URL",
+				"https://my-dce.westus.ingest.monitor.azure.com:8443", int32(8443)),
+			Entry("should use default HTTPS port without explicit port",
+				"https://my-dce.westus.ingest.monitor.azure.com", constants.DefaultHTTPSPort),
+		)
+
 		It("should panic for unsupported output type", func() {
 			output := obs.OutputSpec{
 				Type: "unsupported",

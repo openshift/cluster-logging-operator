@@ -48,6 +48,10 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 	var auths []*obsv1.BearerToken
 	for _, o := range outputs {
 		switch {
+		case o.Type == obsv1.OutputTypeAzureLogsIngestion && o.AzureLogsIngestion != nil &&
+			o.AzureLogsIngestion.Authentication != nil && o.AzureLogsIngestion.Authentication.Type == obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity &&
+			o.AzureLogsIngestion.Authentication.WorkloadIdentity != nil && o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token != nil:
+			auths = append(auths, o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token)
 		case o.Type == obsv1.OutputTypeLoki && o.Loki.Authentication != nil && o.Loki.Authentication.Token != nil:
 			auths = append(auths, o.Loki.Authentication.Token)
 		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
@@ -104,6 +108,11 @@ func SecretReferencesAsValueReferences(o obsv1.OutputSpec) (configs []*obsv1.Val
 // to be nil if it was not specified for the output
 func SecretReferences(o obsv1.OutputSpec) []*obsv1.SecretReference {
 	switch o.Type {
+	case obsv1.OutputTypeAzureLogsIngestion:
+		if o.AzureLogsIngestion != nil && o.AzureLogsIngestion.Authentication != nil {
+			auth := o.AzureLogsIngestion.Authentication
+			return azureLogsIngestionKeys(auth)
+		}
 	case obsv1.OutputTypeAzureMonitor:
 		if o.AzureMonitor != nil && o.AzureMonitor.Authentication != nil {
 			return []*obsv1.SecretReference{o.AzureMonitor.Authentication.SharedKey}
@@ -214,6 +223,21 @@ func awsSecretKeys(auth *obsv1.AwsAuthentication) (keys []*obsv1.SecretReference
 func appendAssumeRoleKeys(auth *obsv1.AwsAuthentication, keys []*obsv1.SecretReference) []*obsv1.SecretReference {
 	if auth != nil && auth.AssumeRole != nil {
 		keys = append(keys, &auth.AssumeRole.RoleARN)
+	}
+	return keys
+}
+
+func azureLogsIngestionKeys(auth *obsv1.AzureLogsIngestionAuthentication) (keys []*obsv1.SecretReference) {
+	if auth.ClientSecret != nil {
+		keys = append(keys, auth.ClientSecret.Secret)
+	}
+	if auth.WorkloadIdentity != nil && auth.WorkloadIdentity.Token != nil &&
+		auth.WorkloadIdentity.Token.From == obsv1.BearerTokenFromSecret &&
+		auth.WorkloadIdentity.Token.Secret != nil {
+		keys = append(keys, &obsv1.SecretReference{
+			Key:        auth.WorkloadIdentity.Token.Secret.Key,
+			SecretName: auth.WorkloadIdentity.Token.Secret.Name,
+		})
 	}
 	return keys
 }

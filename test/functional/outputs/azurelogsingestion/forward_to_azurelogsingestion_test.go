@@ -1,7 +1,6 @@
-package azuremonitor
+package azurelogsingestion
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -13,9 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure/datacollector"
-	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
+	"github.com/openshift/cluster-logging-operator/test/helpers/azure/logsingestion"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -23,31 +20,25 @@ const (
 	failedReason = "reason=\"Service call failed. No retries or retries exhausted.\""
 )
 
-var _ = Describe("Forwarding to Azure Monitor Log ", func() {
+var _ = Describe("Forwarding to Azure Log Ingestion", func() {
 	var (
-		framework  *functional.CollectorFunctionalFramework
-		sharedKey  = rand.Word(16)
-		customerId = strings.ToLower(string(rand.Word(16)))
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-
 		framework = functional.NewCollectorFunctionalFramework()
-		secret := runtime.NewSecret(framework.Namespace, datacollector.SecretName,
+		secret := runtime.NewSecret(framework.Namespace, logsingestion.SecretName,
 			map[string][]byte{
-				constants.SharedKey: sharedKey,
+				logsingestion.ClientSecretKeyName: []byte("fake-client-secret-for-testing"),
 			},
 		)
 		framework.Secrets = append(framework.Secrets, secret)
 
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
-			ToAzureMonitorOutput(func(output *obs.OutputSpec) {
-				output.AzureMonitor.CustomerId = customerId
-			})
+			ToAzureLogsIngestionOutput()
 		Expect(framework.DeployWithVisitor(func(b *runtime.PodBuilder) error {
-			altHost := fmt.Sprintf("%s.%s", customerId, azure.AzureDomain)
-			return datacollector.NewMockoonVisitor(b, altHost, framework)
+			return logsingestion.NewMockoonVisitor(b, framework)
 		})).To(BeNil())
 	})
 
@@ -60,7 +51,7 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 		message := "This is my new test message"
-		var appLogTemplate = functional.NewApplicationLogTemplate()
+		appLogTemplate := functional.NewApplicationLogTemplate()
 		appLogTemplate.TimestampLegacy = nanoTime
 		appLogTemplate.Message = message
 		appLogTemplate.Level = "default"
@@ -72,17 +63,17 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 3)).To(BeNil())
 		time.Sleep(30 * time.Second)
 
-		//read log from collector container
+		// Read log from collector container and verify no service call failures
 		collectorLog, err := framework.ReadCollectorLogs()
 		Expect(err).To(BeNil())
 		Expect(strings.Count(collectorLog, failedReason)).To(BeEquivalentTo(0))
 
-		//read log from mock server container and validate it
-		appLogs, err := datacollector.ReadApplicationLog(framework)
+		// Read log from mock server container and validate it
+		appLogs, err := logsingestion.ReadApplicationLog(framework)
 		Expect(err).To(BeNil())
 		Expect(appLogs).ToNot(BeNil())
-		Expect(len(appLogs)).To(BeEquivalentTo(3))
-		for i := 0; i < 3; i++ {
+		Expect(appLogs).To(HaveLen(3))
+		for i := range 3 {
 			Expect(appLogs[i]).To(matchers.FitLogFormatTemplate(appLogTemplate))
 		}
 	})

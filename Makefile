@@ -27,8 +27,8 @@ export NAMESPACE?=openshift-logging
 export LOKI_OPERATOR_CHANNEL?=stable-6.4
 
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.47.0
-IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.1
-IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.3
+IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:latest
+IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:v0.5.0
 
 REPLICAS?=0
 export E2E_TEST_EXCLUDES?=flowcontrol
@@ -250,7 +250,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.16-v4.19"
+OPENSHIFT_VERSIONS?="v4.19-v4.22"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=stable-${LOGGING_VERSION}

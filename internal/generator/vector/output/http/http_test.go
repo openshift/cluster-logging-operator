@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -29,7 +29,7 @@ var _ = Describe("Generate vector config", func() {
 			aToken     = "atoken"
 		)
 		var (
-			adapter fake.Output
+			adapter *observability.Output
 			secrets = map[string]*corev1.Secret{
 				secretName: {
 					Data: map[string][]byte{
@@ -89,7 +89,7 @@ var _ = Describe("Generate vector config", func() {
 			}
 		)
 
-		DescribeTable("for HTTP output", func(visit func(spec *obs.OutputSpec), secrets map[string]*corev1.Secret, tune bool, op framework.Options, expFile string) {
+		DescribeTable("for HTTP output", func(visit func(spec *obs.OutputSpec), secrets map[string]*corev1.Secret, op framework.Options, expFile string) {
 			exp, err := tomlContent.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -99,13 +99,11 @@ var _ = Describe("Generate vector config", func() {
 				visit(&outputSpec)
 			}
 
-			if tune {
-				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-			}
-			conf := http.New(helpers.MakeID(outputSpec.Name), outputSpec, []string{"application"}, secrets, adapter, op)
+			adapter = observability.NewOutput(outputSpec)
+			conf := http.New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
-			Entry("with Basic auth", nil, secrets, false, framework.NoOptions, "http_with_auth_basic.toml"),
+			Entry("with Basic auth", nil, secrets, framework.NoOptions, "http_with_auth_basic.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication.Token = &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
@@ -114,11 +112,11 @@ var _ = Describe("Generate vector config", func() {
 						Name: secretName,
 					},
 				}
-			}, secrets, false, framework.NoOptions, "http_with_auth_token.toml"),
+			}, secrets, framework.NoOptions, "http_with_auth_token.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = tlsSpec
-			}, secrets, false, framework.NoOptions, "http_with_tls.toml"),
+			}, secrets, framework.NoOptions, "http_with_tls.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = &obs.OutputTLSSpec{
@@ -137,20 +135,20 @@ var _ = Describe("Generate vector config", func() {
 						},
 					},
 				}
-			}, secrets, false, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
+			}, secrets, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
 			Entry("with tuning", func(spec *obs.OutputSpec) {
 				spec.HTTP.Tuning = &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: *baseTune,
 				}
-			}, secrets, true, framework.NoOptions, "http_with_tuning.toml"),
+			}, secrets, framework.NoOptions, "http_with_tuning.toml"),
 			Entry("with ndjson", func(spec *obs.OutputSpec) {
 				spec.HTTP.Format = obs.HTTPFormatNDJSON
-			}, secrets, true, framework.NoOptions, "http_with_ndjson.toml"),
+			}, secrets, framework.NoOptions, "http_with_ndjson.toml"),
 			Entry("with proxy", func(spec *obs.OutputSpec) {
 				spec.HTTP.ProxyURL = "http://somewhere.org/proxy"
 				spec.HTTP.Headers = nil
 				spec.HTTP.Authentication = nil
-			}, secrets, true, framework.NoOptions, "http_with_proxy.toml"),
+			}, secrets, framework.NoOptions, "http_with_proxy.toml"),
 		)
 	})
 

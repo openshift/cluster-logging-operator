@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -25,7 +25,7 @@ var _ = Describe("Generate Vector config", func() {
 		aToken     = "my-token"
 	)
 	var (
-		adapter fake.Output
+		adapter *observability.Output
 		tlsSpec = &obs.OutputTLSSpec{
 			TLSSpec: obs.TLSSpec{
 				CA: &obs.ValueReference{
@@ -93,10 +93,8 @@ var _ = Describe("Generate Vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-		}
-		conf := New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, op)
+		adapter = observability.NewOutput(outputSpec)
+		conf := New(outputSpec.Name, adapter, []string{"application"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("with username,password", nil, false, framework.NoOptions, "es_with_auth_username_password.toml"),

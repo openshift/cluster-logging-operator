@@ -558,23 +558,27 @@ source = '''
 [sinks.output_otel_collector]
 type = "opentelemetry"
 inputs = ["output_otel_collector_resource_logs"]
-protocol.uri = "http://localhost:4318/v1/logs"
-protocol.type = "http"
-protocol.method = "post"
-protocol.encoding.codec = "json"
-protocol.encoding.except_fields = ["_internal"]
-protocol.payload_prefix = "{\"resourceLogs\":"
-protocol.payload_suffix = "}"
-protocol.compression = "gzip"
 
-[sinks.output_otel_collector.protocol.batch]
+[sinks.output_otel_collector.protocol]
+uri = "http://localhost:4318/v1/logs"
+type = "http"
+method = "post"
+payload_prefix = "{\"resourceLogs\":"
+payload_suffix = "}"
+compression = "gzip"
+
+[sinks.output_otel_collector.protocol.encoding]
+codec = "json"
+except_fields = ["_internal"]
+
+[sinks.output_otel_collector.protocol.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35
+
+[sinks.output_otel_collector.batch]
 max_bytes = 10000000
 
 [sinks.output_otel_collector.buffer]
 type = "disk"
 when_full = "block"
 max_size = 268435488
-
-[sinks.output_otel_collector.protocol.request]
-retry_initial_backoff_secs = 20
-retry_max_duration_secs = 35

@@ -9,9 +9,12 @@ codec = "json"
 except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
-headers = {"h1"="v1","h2"="v2"}
+[sinks.http_receiver.request.headers]
+h1 = "v1"
+h2 = "v2"
 
 [sinks.http_receiver.tls]
 key_file = "/var/run/ocp-collector/secrets/http-receiver/tls.key"
 crt_file = "/var/run/ocp-collector/config/http-receiver/my.crt"
 ca_file = "/var/run/ocp-collector/config/http-receiver/ca.crt"
+

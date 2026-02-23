@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/otlp"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -18,13 +17,13 @@ import (
 )
 
 // New creates generate elements that represent configuration to forward logs to Loki using OpenShift Logging tenancy model
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	clfSpec, _ := utils.GetOption(op, vectorhelpers.CLFSpec, observability.ClusterLogForwarderSpec{})
 	if len(clfSpec.Inputs) == 0 || len(clfSpec.Pipelines) == 0 || len(clfSpec.Outputs) == 0 {
 		panic("ClusterLogForwarderSpec not found while generating LokiStack config")
 	}
 
-	inputSpecs := clfSpec.InputSpecsTo(o)
+	inputSpecs := clfSpec.InputSpecsTo(o.OutputSpec)
 	tenants := determineTenants(inputSpecs)
 
 	routeID := vectorhelpers.MakeID(id, "route")
@@ -50,7 +49,7 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	}))
 
 	for _, inputType := range tenants.List() {
-		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o, inputSpecs, secrets, strategy, op)...)
+		confs = append(confs, generateSinkForTenant(id, routeID, inputType, o.OutputSpec, inputSpecs, secrets, op)...)
 	}
 
 	return confs
@@ -94,7 +93,7 @@ func buildRoutes(tenants *sets.String) map[string]string {
 }
 
 func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inputSpecs []obs.InputSpec,
-	secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+	secrets observability.Secrets, op utils.Options) []framework.Element {
 
 	outputID := vectorhelpers.MakeID(id, inputType)
 	migratedOutput := GenerateOutput(o, inputType)
@@ -105,10 +104,12 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 	if migratedOutput.Type == obs.OutputTypeOTLP {
 		op[otlp.OtlpLogSourcesOption] = getInputSources(inputSpecs, obs.InputType(inputType))
 		op[otlp.MigratedFromLokistackOption] = true
-		return otlp.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)
+		adapter := observability.NewOutput(migratedOutput)
+		adapter.InputIDs = append(adapter.InputIDs, factoryInput)
+		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)
 	}
 
-	return loki.New(outputID, migratedOutput, []string{factoryInput}, secrets, strategy, op)
+	return loki.New(outputID, observability.NewOutput(migratedOutput), []string{factoryInput}, secrets, op)
 }
 
 func getInputSources(inputSpecs []obs.InputSpec, inputType obs.InputType) []string {

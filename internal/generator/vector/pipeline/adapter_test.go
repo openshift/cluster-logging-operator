@@ -4,17 +4,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type FakeElement struct {
@@ -51,7 +46,7 @@ var _ = Describe("Pipeline adapters", func() {
 		}
 		inputMap map[string]helpers.InputComponent
 
-		outputMap         map[string]*output.Output
+		outputMap         map[string]*observability.Output
 		fakeElement       = &FakeElement{}
 		internalFilterMap = map[string]*filter.InternalFilterSpec{
 			"fakeFilter": {
@@ -72,10 +67,12 @@ var _ = Describe("Pipeline adapters", func() {
 		}
 	)
 	BeforeEach(func() {
+		i := observability.NewInput(inputSpecs[0])
+		i.Ids = []string{"input_app_in_container_meta"}
 		inputMap = map[string]helpers.InputComponent{
-			inputSpecs[0].Name: input.NewInput(inputSpecs[0], map[string]*corev1.Secret{}, "", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, utils.Options{}),
+			inputSpecs[0].Name: i,
 		}
-		outputMap = map[string]*output.Output{
+		outputMap = map[string]*observability.Output{
 			"referenced":    {},
 			"notReferenced": {},
 		}

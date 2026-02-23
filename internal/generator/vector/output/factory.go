@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/azuremonitor"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
@@ -23,8 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
-	framework.SetTLSProfileOptionsFrom(op, o)
+func New(o *internalobs.Output, inputs []string, secrets map[string]*corev1.Secret, op utils.Options) []framework.Element {
+	framework.SetTLSProfileOptionsFrom(op, o.OutputSpec)
 
 	var els []framework.Element
 	baseID := helpers.MakeOutputID(o.Name)
@@ -38,29 +37,29 @@ func New(o obs.OutputSpec, inputs []string, secrets map[string]*corev1.Secret, s
 
 	switch o.Type {
 	case obs.OutputTypeKafka:
-		els = append(els, kafka.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, kafka.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeLoki:
-		els = append(els, loki.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, loki.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeLokiStack:
-		els = append(els, lokistack.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, lokistack.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeElasticsearch:
-		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, elasticsearch.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeCloudwatch:
-		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, cloudwatch.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeS3:
-		els = append(els, s3.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, s3.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeGoogleCloudLogging:
-		els = append(els, gcl.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, gcl.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeSplunk:
-		els = append(els, splunk.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, splunk.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeHTTP:
-		els = append(els, http.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, http.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeSyslog:
-		els = append(els, syslog.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, syslog.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeAzureMonitor:
-		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, azuremonitor.New(baseID, o, inputs, secrets, op)...)
 	case obs.OutputTypeOTLP:
-		els = append(els, otlp.New(baseID, o, inputs, secrets, strategy, op)...)
+		els = append(els, otlp.New(baseID, o, inputs, secrets, op)...)
 	}
 	return els
 }

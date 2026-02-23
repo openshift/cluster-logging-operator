@@ -5,17 +5,22 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	InternalMetricsSourceName = "internal_metrics"
 )
 
 // Design of next generation conf generation:
@@ -62,18 +67,18 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 	op[helpers.CLFSpec] = internalobs.ClusterLogForwarderSpec(clfspec)
 
 	// Init inputs, outputs, pipelines
-	inputMap := map[string]*input.Input{}
+	inputMap := map[string]*internalobs.Input{}
 	inputCompMap := map[string]helpers.InputComponent{}
 	for _, i := range clfspec.Inputs {
-		a := input.NewInput(i, secrets, namespace, resNames, op)
+		a := internalobs.NewInput(i)
 		inputMap[i.Name] = a
 		inputCompMap[i.Name] = a
 	}
 
-	outputMap := map[string]*output.Output{}
+	outputMap := map[string]*internalobs.Output{}
 	op[framework.OptionForwarderName] = forwarderName
 	for _, spec := range clfspec.Outputs {
-		o := output.NewOutput(spec, secrets, op)
+		o := internalobs.NewOutput(spec)
 		outputMap[spec.Name] = o
 	}
 
@@ -87,29 +92,35 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 	// generate sections, deferring input wiring to config generation
 	sections := framework.Section{}
 	for _, i := range sortAdapters(inputMap) {
-		sections.Elements = append(sections.Elements, i.Elements()...)
+		elements, ids := input.NewSource(i, resNames, secrets, op)
+		i.Ids = ids
+		sections.Elements = append(sections.Elements, elements...)
 	}
 	for _, p := range sortAdapters(pipelineMap) {
 		sections.Elements = append(sections.Elements, p.Elements()...)
 	}
 	for _, o := range sortAdapters(outputMap) {
-		sections.Elements = append(sections.Elements, o.Elements()...)
+		sections.Elements = append(sections.Elements, output.New(o, o.InputIDs, secrets, op)...)
 	}
 
-	minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
+	//minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
 	return []framework.Section{
 		{
 			Global(namespace, forwarderName),
 			`vector global options`,
 		},
 		{
-			Elements: source.MetricsSources(source.InternalMetricsSourceName),
+			Elements: []framework.Element{
+				api.NewConfig(func(c *api.Config) {
+					c.Sources[InternalMetricsSourceName] = sources.NewInternalMetrics()
+				}),
+			},
 		},
 		sections,
 		{
 			Elements: []framework.Element{
-				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{source.InternalMetricsSourceName}),
-				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites, op),
+				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
+				metrics.PrometheusOutput([]string{metrics.AddNodenameToMetricTransformName}, op),
 			},
 		},
 	}
@@ -117,7 +128,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 }
 
 // sortAdapters sorts ClusterLogForwarder adapters to ensure consistent generation of component configs
-func sortAdapters[V *input.Input | *pipeline.Pipeline | *output.Output](m map[string]V) []V {
+func sortAdapters[V *internalobs.Input | *pipeline.Pipeline | *internalobs.Output](m map[string]V) []V {
 	keys := []string{}
 	for k := range m {
 		keys = append(keys, k)

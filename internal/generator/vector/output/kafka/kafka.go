@@ -10,86 +10,76 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (
-	defaultKafkaTopic = "topic"
+	defaultKafkaTopic  = "topic"
+	SASLMechanismPlain = "PLAIN"
 )
 
-type Kafka struct {
-	ComponentID      string
-	Inputs           string
-	BootstrapServers string
-	Topic            string
-	common.RootMixin
-}
-
-func (k Kafka) Name() string {
-	return "kafkaTemplate"
-}
-
-func (k Kafka) Template() string {
-	return `{{define "` + k.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "kafka"
-inputs = {{.Inputs}}
-bootstrap_servers = {{.BootstrapServers}}
-topic = "{{"{{"}} _internal.{{.Topic}} {{"}}"}}"
-healthcheck.enabled = false
-{{.Compression}}
-{{end}}
-`
-}
-
-func (k *Kafka) SetCompression(algo string) {
-	k.Compression.Value = algo
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	componentID := vectorhelpers.MakeID(id, "topic")
-	brokers := Brokers(o)
-	sink := sink(id, o, []string{componentID}, componentID, op, brokers)
-	if strategy != nil {
-		strategy.VisitSink(sink)
-	}
-
 	elements := []framework.Element{
-		commontemplate.TemplateRemap(componentID, inputs, Topics(o), componentID, "Kafka Topic"),
-		sink,
-		common.NewEncoding(id, common.CodecJSON, func(e *common.Encoding) {
-			e.TimeStampFormat.Value = common.TimeStampFormatRFC3339
+		commontemplate.NewTemplateRemap(componentID, inputs, topic(o.Kafka), componentID, "Kafka Topic"),
+		api.NewConfig(func(c *api.Config) {
+			c.Sinks[id] = sinks.NewKafka(func(s *sinks.Kafka) {
+				s.BootstrapServers = brokers(o.Kafka)
+				s.Topic = fmt.Sprintf("{{ _internal.%s }}", componentID)
+				s.Compression = sinks.CompressionType(o.GetTuning().Compression)
+				s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
+				s.Encoding.TimestampFormat = "rfc3339"
+				s.Batch = common.NewApiBatch(o)
+				s.Buffer = common.NewApiBuffer(o)
+				kafkaTls(s, o, secrets, op)
+				s.HealthCheck = &sinks.HealthCheck{
+					Enabled: false,
+				}
+				sasl(s, o.Kafka.Authentication)
+				librdKafkaOptions(s, o)
+			}, componentID)
 		}),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		SASLConf(id, o.Kafka.Authentication, secrets),
 	}
-	if o.TLS != nil && isTlsBrokers(o) {
-		elements = append(elements, tls.New(id, o.TLS,
-			secrets,
-			op,
-			framework.Option{Name: tls.IncludeEnabled, Value: ""},
-			framework.Option{Name: tls.ExcludeInsecureSkipVerify, Value: ""}))
-	}
-	elements = append(elements, newLibRDKafkaOptions(id, o, o.Kafka.Tuning))
 	return elements
 }
 
-func isTlsBrokers(o obs.OutputSpec) bool {
+func kafkaTls(s *sinks.Kafka, o *observability.Output, secrets observability.Secrets, op utils.Options) {
+	var additionalOptions []framework.Option
+	if o.TLS != nil && isTlsBrokers(o.Kafka) {
+		additionalOptions = []framework.Option{
+			{Name: tls.IncludeEnabled, Value: ""},
+			{Name: tls.ExcludeInsecureSkipVerify, Value: ""},
+		}
+	}
+	s.TLS = tls.NewTls(o, secrets, op, additionalOptions...)
+}
+
+func librdKafkaOptions(s *sinks.Kafka, o *observability.Output) {
+	s.LibrdKafka_Options = map[string]string{}
+	if o.TLS != nil && isTlsBrokers(o.Kafka) && o.TLS.InsecureSkipVerify {
+		s.LibrdKafka_Options["enable.ssl.certificate.verification"] = "false"
+	}
+	if o.GetTuning() != nil && o.GetTuning().MaxWrite != nil {
+		s.LibrdKafka_Options["message.max.bytes"] = fmt.Sprintf("%v", o.GetTuning().MaxWrite.Value())
+	}
+}
+
+func isTlsBrokers(o *obs.Kafka) bool {
 	isTls := true
-	if o.Kafka != nil {
-		for _, b := range o.Kafka.Brokers {
+	if o != nil {
+		for _, b := range o.Brokers {
 			if !strings.HasPrefix(string(b), "tls:") {
 				isTls = false
 				break
@@ -99,29 +89,36 @@ func isTlsBrokers(o obs.OutputSpec) bool {
 	return isTls
 }
 
-func sink(id string, o obs.OutputSpec, inputs []string, topic string, op utils.Options, brokers string) *Kafka {
-	return &Kafka{
-		ComponentID:      id,
-		Inputs:           vectorhelpers.MakeInputs(inputs...),
-		Topic:            topic,
-		BootstrapServers: fmt.Sprintf("%q", brokers),
-		RootMixin:        common.NewRootMixin(nil),
+func sasl(s *sinks.Kafka, spec *obs.KafkaAuthentication) {
+	if spec != nil {
+		saslAuth := spec.SASL
+		if saslAuth != nil && saslAuth.Username != nil && saslAuth.Password != nil {
+			s.Sasl = &sinks.Sasl{
+				Enabled:   true,
+				Username:  vectorhelpers.SecretFrom(saslAuth.Username),
+				Password:  vectorhelpers.SecretFrom(saslAuth.Password),
+				Mechanism: SASLMechanismPlain,
+			}
+			if saslAuth.Mechanism != "" {
+				s.Sasl.Mechanism = saslAuth.Mechanism
+			}
+		}
 	}
 }
 
-// Brokers returns the list of broker endpoints of a Kafka cluster.
+// brokers returns the list of broker endpoints of a Kafka cluster.
 // The list represents only the initial set used by the collector's Kafka client for the
 // first connection only. The collector's Kafka client fetches constantly an updated list
 // from Kafka. These updates are not reconciled back to the collector configuration.
 // The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
 // valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
 // Finally, if neither approach works the current collector process will be terminated.
-func Brokers(o obs.OutputSpec) string {
+func brokers(o *obs.Kafka) string {
 	brokerUrls := []string{}
-	if o.Kafka.URL != "" {
-		brokerUrls = append(brokerUrls, o.Kafka.URL)
+	if o.URL != "" {
+		brokerUrls = append(brokerUrls, o.URL)
 	}
-	for _, b := range o.Kafka.Brokers {
+	for _, b := range o.Brokers {
 		brokerUrls = append(brokerUrls, string(b))
 	}
 	brokerHosts := []string{}
@@ -134,15 +131,15 @@ func Brokers(o obs.OutputSpec) string {
 	return strings.Join(brokerHosts, ",")
 }
 
-// Topic returns the name of an existing kafka topic.
+// topic returns the name of an existing kafka topic.
 // The kafka topic is either extracted from the kafka OutputSpec `Topic` field in a multiple broker
 // setup or as a fallback from the OutputSpec URL if provided as a host path. Defaults to `topic`.
-func Topics(o obs.OutputSpec) string {
-	if o.Kafka != nil && o.Kafka.Topic != "" {
-		return o.Kafka.Topic
+func topic(o *obs.Kafka) string {
+	if o != nil && o.Topic != "" {
+		return o.Topic
 	}
 
-	url, _ := urlhelper.Parse(o.Kafka.URL)
+	url, _ := urlhelper.Parse(o.URL)
 	topic := strings.TrimLeft(url.Path, "/")
 	if topic != "" {
 		return topic

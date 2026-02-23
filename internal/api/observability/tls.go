@@ -5,6 +5,11 @@ import (
 	"k8s.io/utils/set"
 )
 
+type TransportSpec interface {
+	GetTlsSpec() *obsv1.TLSSpec
+	IsInsecureSkipVerify() bool
+}
+
 // SecretsForTLS returns the unique set of secret names for a TLS spec
 func SecretsForTLS(t obsv1.TLSSpec) []string {
 	secrets := set.New[string]()

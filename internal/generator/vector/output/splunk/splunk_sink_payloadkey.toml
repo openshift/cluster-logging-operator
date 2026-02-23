@@ -1,4 +1,3 @@
-# Ensure timestamp field well formatted for Splunk
 [transforms.splunk_hec_timestamp]
 type = "remap"
 inputs = ["pipelineName"]
@@ -10,6 +9,7 @@ if err != null {
 	._internal.timestamp = ts
 }
 '''
+
 [transforms.splunk_hec_metadata]
 type = "remap"
 inputs = ["splunk_hec_timestamp"]
@@ -43,11 +43,11 @@ if !is_null(payloadKey) {
 	}
 }
 '''
+
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]
 endpoint = "https://splunk-web:8088/endpoint"
-compression = "none"
 default_token = "SECRET[kubernetes_secret.vector-splunk-secret/hecToken]"
 timestamp_key = "._internal.timestamp"
 source = "{{ ._internal.splunk.source }}"

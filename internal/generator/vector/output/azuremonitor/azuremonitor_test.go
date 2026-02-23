@@ -8,11 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -33,7 +32,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 	)
 
 	var (
-		adapter fake.Output
+		adapter *observability.Output
 		secrets = map[string]*corev1.Secret{
 			secretName: {
 				Data: map[string][]byte{
@@ -89,7 +88,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		}
 	)
 
-	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), tune bool, expFile string) {
+	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -100,22 +99,20 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			visit(&outputSpec)
 		}
 
-		if tune {
-			adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-		}
-		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), outputSpec, []string{"pipelineName"}, secrets, adapter, nil)
+		adapter = observability.NewOutput(outputSpec)
+		conf := New(vectorhelpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, nil)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("for common case", nil, false, "azm_common.toml"),
+		Entry("for common case", nil, "azm_common.toml"),
 		Entry("for advance case", func(output *obs.OutputSpec) {
 			output.AzureMonitor.AzureResourceId = azureId
 			output.AzureMonitor.Host = hostCN
-		}, false, "azm_advance.toml"),
+		}, "azm_advance.toml"),
 		Entry("for common with tls case", func(output *obs.OutputSpec) {
 			output.TLS = tlsSpec
-		}, false, "azm_tls.toml"),
+		}, "azm_tls.toml"),
 		Entry("for common with tls case", func(output *obs.OutputSpec) {
 			output.AzureMonitor.Tuning = baseTune
-		}, true, "azm_tuning.toml"),
+		}, "azm_tuning.toml"),
 	)
 })

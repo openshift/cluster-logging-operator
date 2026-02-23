@@ -70,7 +70,7 @@ The minimal attributes required for processing:
 - Infrastructure logs (from system pods and nodes)
 - Audit logs (special node logs with legal/security implications)
 
-**Current Implementation**: Vector as the log collector/forwarder
+**Current Implementation**: [Vector](https://vector.dev) as the log collector/forwarder
 
 ## Adding New Output Types
 

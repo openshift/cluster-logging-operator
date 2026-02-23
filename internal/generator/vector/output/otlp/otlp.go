@@ -9,11 +9,13 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/auth"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -23,34 +25,6 @@ const (
 	// MigratedFromLokistackOption Option identifier to skip trace context extraction remap for outputs migrated from lokistack
 	MigratedFromLokistackOption = "migratedFromLokistackOption"
 )
-
-type Otlp struct {
-	ComponentID string
-	Inputs      string
-	URI         string
-	Compression genhelper.OptionalPair
-}
-
-func (p Otlp) Name() string {
-	return "vectorOtlpTemplate"
-}
-
-func (p Otlp) Template() string {
-	return `{{define "` + p.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "opentelemetry"
-inputs = {{.Inputs}}
-protocol.uri = "{{.URI}}"
-protocol.type = "http"
-protocol.method = "post"
-protocol.encoding.codec = "json"
-protocol.encoding.except_fields = ["_internal"]
-protocol.payload_prefix = "{\"resourceLogs\":"
-protocol.payload_suffix = "}"
-{{.Compression}}
-{{end}}
-`
-}
 
 const (
 	logSourceContainer    = string(obs.ApplicationSourceContainer)
@@ -76,7 +50,7 @@ func (ls logSources) Has(source string) bool {
 	return false
 }
 
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
@@ -170,20 +144,30 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	// Normalize all into resource and scopeLogs objects
 	formatResourceLogsID := helpers.MakeID(id, "resource", "logs")
 	els = append(els, FormatResourceLog(formatResourceLogsID, reduceInputs))
-	// Create sink and wrap in `resourceLogs`
-	sink := Output(id, o, []string{formatResourceLogsID}, secrets, op)
 
-	protocolId := id + ".protocol"
 	return framework.MergeElements(
 		els,
 		[]framework.Element{
-			sink,
-			common.NewAcknowledgments(id, strategy),
-			common.NewBatch(protocolId, strategy),
-			common.NewBuffer(id, strategy),
-			common.NewRequest(protocolId, strategy),
-			tls.New(protocolId, o.TLS, secrets, op),
-			auth.HTTPAuth(protocolId, o.OTLP.Authentication, secrets, op),
+			api.NewConfig(func(c *api.Config) {
+				c.Sinks[id] = sinks.NewOpenTelemetry(o.OTLP.URL, func(s *sinks.OpenTelemetry) {
+					s.Protocol.Type = "http"
+					s.Protocol.Method = sinks.MethodTypePost
+					s.Protocol.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
+					s.Protocol.PayloadPrefix = "{\"resourceLogs\":"
+					s.Protocol.PayloadSuffix = "}"
+					if o.OTLP.Tuning != nil {
+						s.Protocol.Compression = sinks.CompressionType(o.OTLP.Tuning.Compression)
+						s.Batch = common.NewApiBatch(o)
+						s.Buffer = common.NewApiBuffer(o)
+						s.Protocol.Request = common.NewApiRequest(o)
+					}
+					if o.TLS != nil && url.IsSecure(o.OTLP.URL) {
+						s.Protocol.TLS = tls.NewTls(o, secrets, op)
+					}
+					s.Protocol.Auth = common.NewHttpAuth(o.OTLP.Authentication, op)
+
+				}, formatResourceLogsID)
+			}),
 		},
 	)
 }
@@ -201,18 +185,5 @@ func RouteBySource(id string, inputs []string, logSources []string) framework.El
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
 		Routes:      routes,
-	}
-}
-
-func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, op utils.Options) *Otlp {
-	compression := genhelper.NewOptionalPair("protocol.compression", nil)
-	if o.OTLP.Tuning != nil && o.OTLP.Tuning.Compression != "" {
-		compression = genhelper.NewOptionalPair("protocol.compression", o.OTLP.Tuning.Compression)
-	}
-	return &Otlp{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		URI:         o.OTLP.URL,
-		Compression: compression,
 	}
 }

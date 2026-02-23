@@ -2,13 +2,14 @@ package s3_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/s3"
-	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -30,7 +31,6 @@ var _ = Describe("Generating vector config for s3 output", func() {
 		)
 
 		var (
-			adapter    fake.Output
 			initOutput = func() obs.OutputSpec {
 				return obs.OutputSpec{
 					Type: obs.OutputTypeS3,
@@ -77,7 +77,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			}
 		)
 
-		DescribeTable("should generate valid config", func(visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
+		DescribeTable("should generate valid config", func(visit func(spec *obs.OutputSpec), op framework.Options, expFile string) {
 			exp, err := testFiles.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -86,11 +86,8 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			if visit != nil {
 				visit(&outputSpec)
 			}
-			if tune {
-				adapter = *fake.NewOutput(outputSpec, secrets, framework.NoOptions)
-			}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := s3.New(outputSpec.Name, outputSpec, []string{"s3-forward"}, secrets, adapter, op)
+			conf := s3.New(outputSpec.Name, observability.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
 			Expect(string(exp)).To(EqualConfigFrom(conf))
 		},
 
@@ -108,7 +105,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						},
 					},
 				}
-			}, false, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
 
 			Entry("when a role_arn is provided by ccoctl", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
@@ -124,7 +121,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						},
 					},
 				}
-			}, false, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
 
 			Entry("when an assume_role is specified with accessKey auth", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
@@ -148,12 +145,12 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						ExternalID: "unique-external-id",
 					},
 				}
-			}, false, framework.NoOptions, "files/s3_key_auth_and_assume_role.toml"),
+			}, framework.NoOptions, "files/s3_key_auth_and_assume_role.toml"),
 
 			Entry("when URL is spec'd", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.URL = "http://mylogreceiver"
-			}, false, framework.NoOptions, "files/s3_with_url.toml"),
+			}, framework.NoOptions, "files/s3_with_url.toml"),
 		)
 	})
 
@@ -200,16 +197,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 
 			op := framework.Options{}
 			op[framework.OptionForwarderName] = "my-forwarder"
-			conf := s3.New(outputSpec.Name, outputSpec, []string{"s3-forward"}, secrets, fake.Output{}, op)
-
-			// Verify that s3 sink configuration is present
-			var elementNames []string
-			for _, element := range conf {
-				elementNames = append(elementNames, element.Name())
-			}
-
-			// Verify basic elements exist
-			Expect(elementNames).To(ContainElement("s3Template"), "Should contain s3 sink template")
+			conf := s3.New(outputSpec.Name, observability.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
 
 			// Verify the configuration was created successfully with assume role.
 			// The actual authentication fields are tested in unit tests

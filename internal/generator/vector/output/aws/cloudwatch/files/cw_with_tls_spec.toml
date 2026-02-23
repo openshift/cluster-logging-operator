@@ -1,4 +1,3 @@
-# Cloudwatch Stream Names
 [transforms.cw_normalize_streams]
 type = "remap"
 inputs = ["cw-forward"]
@@ -21,7 +20,6 @@ source = '''
   del(.source_type)
 '''
 
-# Cloudwatch Groupname
 [transforms.cw_group_name]
 type = "remap"
 inputs = ["cw_normalize_streams"]
@@ -29,17 +27,13 @@ source = '''
 ._internal.cw_group_name = to_string!(._internal.log_type||"missing")
 '''
 
-# Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
 inputs = ["cw_group_name"]
 region = "us-east-test"
-compression = "none"
 group_name = "{{ _internal.cw_group_name }}"
 stream_name = "{{ stream_name }}"
-auth.access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
-auth.secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"
-healthcheck.enabled = false
+compression = "none"
 
 [sinks.cw.encoding]
 codec = "json"
@@ -49,3 +43,10 @@ except_fields = ["_internal"]
 key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
+
+[sinks.cw.auth]
+access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
+secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"
+
+[sinks.cw.healthcheck]
+enabled = false

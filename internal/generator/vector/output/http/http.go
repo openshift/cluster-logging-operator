@@ -19,6 +19,7 @@ type Http struct {
 	URI         string
 	Method      string
 	Proxy       string
+	Format      obs.HTTPFormat
 	common.RootMixin
 }
 
@@ -33,6 +34,11 @@ type = "http"
 inputs = {{.Inputs}}
 uri = "{{.URI}}"
 method = "{{.Method}}"
+{{if eq .Format "` + string(obs.HTTPFormatJSON) + `"}}
+framing.method = "bytes"
+{{else if eq .Format "` + string(obs.HTTPFormatNDJSON) + `"}}
+framing.method = "newline_delimited"
+{{end}}
 {{with .Proxy -}}
 proxy.enabled = true
 proxy.http = "{{.}}"
@@ -81,6 +87,7 @@ func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.
 		URI:         o.HTTP.URL,
 		Method:      Method(o.HTTP),
 		Proxy:       o.HTTP.ProxyURL,
+		Format:      o.HTTP.Format,
 		RootMixin:   common.NewRootMixin(nil),
 	}
 }

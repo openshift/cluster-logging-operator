@@ -54,8 +54,7 @@ if err != null {
 	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "")`
 	containerTag      = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
 if err != null {
-  log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error") 
-  ._syslog.app_name = ""
+  log("K8s metadata (namespace, pod, or container) missing: unable to calculate syslog.app_name (TAG)", level: "error") 
 } else {
   #Remove non-alphanumeric characters
   ._syslog.app_name = replace(._syslog.app_name, r'[^a-zA-Z0-9]', "")
@@ -132,7 +131,10 @@ func (ser RemapEncodingFields) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
+if exists(.hostname) && .hostname != null && !is_empty(strip_whitespace(string!(.hostname))) {
 .host = .hostname
+}
+._syslog = {}
 {{if .Defaults}}
 {{.Defaults}}
 {{end}}
@@ -148,6 +150,29 @@ if is_null({{.PayloadKey}}) {
 } else {
 	.payload_key = {{.PayloadKey}}
 }
+
+if exists(._syslog.facility) {
+  if is_integer(._syslog.facility) {
+  	facility = to_syslog_facility!(int!(._syslog.facility))
+    ._syslog.facility = facility
+  } else {
+  	code = to_int!(._syslog.facility)
+  	facility = to_syslog_facility!(code)
+    ._syslog.facility = facility
+  }
+}
+
+if exists(._syslog.severity) {
+  if is_integer(._syslog.severity) {
+  	severity = to_syslog_severity!(int!(._syslog.severity))
+    ._syslog.severity = severity
+  } else {
+  	code = to_int!(._syslog.severity)
+  	severity = to_syslog_severity!(code)
+    ._syslog.severity = severity
+  }
+}
+
 {{end}}
 '''
 {{end -}}

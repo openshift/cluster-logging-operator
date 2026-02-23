@@ -128,7 +128,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			collectorLogs, err := framework.ReadCollectorLogs()
 			Expect(err).To(BeNil())
 			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
-			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'"))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'"))
 		})
 
 		It("RFC3164 should be able to send, no error in collector logs", func() {
@@ -155,7 +155,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			collectorLogs, err := framework.ReadCollectorLogs()
 			Expect(err).To(BeNil())
 			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
-			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty"))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing: unable to calculate syslog.app_name (TAG)"))
 		})
 	})
 

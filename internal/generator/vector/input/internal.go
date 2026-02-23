@@ -3,9 +3,10 @@ package input
 import (
 	"fmt"
 
-	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
-
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
+	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -70,21 +71,16 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		// Add kubernetes container iostream for all container sources
 		vrls = append(vrls, setKubernetesContainerIOStream)
 	}
-	vrls = append(vrls,
-		fmt.Sprintf(fmtLogSource, logSource),
+	vrls = append(vrls, fmt.Sprintf(fmtLogSource, logSource),
 		logTypeVRL,
 		setHostName,
 		setClusterID,
 		setOpenshiftSequence,
 		v1.SetLogLevel,
 	)
-
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	vrl := strings.Join(vrls, "\n")
+	return remap.New(id, vrl, inputs)
 }
 
 // NewJournalInternalNormalization returns configuration elements to normalize journal log entries to an internal, common data model

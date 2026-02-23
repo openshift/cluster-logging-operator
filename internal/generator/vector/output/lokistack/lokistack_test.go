@@ -131,7 +131,7 @@ var _ = Describe("Generate vector config", func() {
 			}
 		}
 	)
-	DescribeTable("for LokiStack output", func(expFile string, op framework.Options, tune bool, visit func(spec *obs.OutputSpec)) {
+	DescribeTable("for LokiStack output", func(expFile string, op framework.Options, visit func(spec *obs.OutputSpec)) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -140,16 +140,14 @@ var _ = Describe("Generate vector config", func() {
 		if visit != nil {
 			visit(&outputSpec)
 		}
-		if tune {
-		}
 		adapter = observability.NewOutput(outputSpec)
 		conf := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipeline_fake"}, secrets, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), false, func(spec *obs.OutputSpec) {}),
-		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), false, func(spec *obs.OutputSpec) {
+		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), func(spec *obs.OutputSpec) {}),
+		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
-		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), false, func(spec *obs.OutputSpec) {}),
+		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), func(spec *obs.OutputSpec) {}),
 	)
 })

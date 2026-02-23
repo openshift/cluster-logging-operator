@@ -7,7 +7,7 @@ type KubernetesLogs struct {
 
 	MaxReadBytes              uint     `json:"max_read_bytes,omitempty" toml:"max_read_bytes,omitempty"`
 	GlobMinimumCooldownMillis uint     `json:"glob_minimum_cooldown_ms,omitempty" toml:"glob_minimum_cooldown_ms,omitempty"`
-	AutoPartialMerge          bool     `json:"auto_partial_merge,omitempty" toml:"auto_partial_merge,omitempty" toml:"auto_partial_merge,omitempty"`
+	AutoPartialMerge          bool     `json:"auto_partial_merge,omitempty" toml:"auto_partial_merge,omitempty"`
 	MaxMergedLineBytes        uint64   `json:"max_merged_line_bytes,omitempty" toml:"max_merged_line_bytes,omitempty"`
 	IncludePathsGlobPatterns  []string `json:"include_paths_glob_patterns,omitempty" toml:"include_paths_glob_patterns,omitempty"`
 	ExcludePathsGlobPatterns  []string `json:"exclude_paths_glob_patterns,omitempty" toml:"exclude_paths_glob_patterns,omitempty"`

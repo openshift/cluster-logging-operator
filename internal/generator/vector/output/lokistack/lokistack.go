@@ -103,6 +103,7 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 
 	if migratedOutput.Type == obs.OutputTypeOTLP {
 		op[otlp.OtlpLogSourcesOption] = getInputSources(inputSpecs, obs.InputType(inputType))
+		op[otlp.MigratedFromLokistackOption] = true
 		adapter := observability.NewOutput(migratedOutput)
 		adapter.InputIDs = append(adapter.InputIDs, factoryInput)
 		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)

@@ -73,11 +73,7 @@ func generateConf(expected interface{}) (string, error) {
 	case expType.Kind() == reflect.String:
 		return expected.(string), nil
 	default:
-<<<<<<< HEAD
 		return "", fmt.Errorf("matcher does not support 'expected' kind %q or element type: %q, expected: %v", expType.Kind(), expType.Name(), expected)
-=======
-		return "", fmt.Errorf("Matcher does not support 'expected' kind %q or element type: %q, expected: %v", expType.Kind(), expType.Name(), expected)
->>>>>>> 807d6be92 (LOG-6385: Refactor audit input generation to use struct)
 	}
 	g := framework.MakeGenerator()
 	return g.GenerateConf(els...)

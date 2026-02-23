@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -27,7 +26,7 @@ const (
 func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
-			elements.Debug(id, vectorhelpers.MakeInputs(inputs...)),
+			elements.Debug(id, helpers.MakeInputs(inputs...)),
 		}
 	}
 	if o.GoogleCloudLogging == nil {

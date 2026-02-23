@@ -2665,7 +2665,7 @@ Type:: object
 The list represents only the initial set used by the collector&#39;s Kafka client for the
 first connection only. The collector&#39;s Kafka client fetches constantly an updated list
 from Kafka. These updates are not reconciled back to the collector configuration.
-If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number.
 If none is provided, the target URL from the OutputSpec is used as fallback.
 
 |topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
@@ -2687,7 +2687,7 @@ Example:
 |tuning|object|  Tuning specs tuning for the output
 
 |url|string|  URL to send log records to. This field is optional.
-If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;.
 The &#39;username@password&#39; part of `url` is ignored.
 
 |======================
@@ -3895,7 +3895,7 @@ Example:
 
 |tuning|object|  Tuning specs tuning for the output
 
-|url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+|url|string|  An absolute URL, with a scheme and a port number. Valid schemes are: `tcp`, `tls`, `udp`
 For example, to send syslog records using UDP:
 
 url: udp://syslog.example.com:514

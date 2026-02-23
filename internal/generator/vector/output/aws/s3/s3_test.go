@@ -199,12 +199,6 @@ var _ = Describe("Generating vector config for s3 output", func() {
 			op[framework.OptionForwarderName] = "my-forwarder"
 			conf := s3.New(outputSpec.Name, observability.NewOutput(outputSpec), []string{"s3-forward"}, secrets, op)
 
-			// Verify that s3 sink configuration is present
-			var elementNames []string
-			for _, element := range conf {
-				elementNames = append(elementNames, element.Name())
-			}
-
 			// Verify the configuration was created successfully with assume role.
 			// The actual authentication fields are tested in unit tests
 			Expect(len(conf)).To(BeNumerically(">", 0), "Should generate s3 configuration elements")

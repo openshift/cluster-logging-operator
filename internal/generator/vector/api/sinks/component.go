@@ -65,6 +65,22 @@ type Encoding struct {
 	ExceptFields    []string      `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
 }
 
+type FramingMethod string
+
+const (
+	FramingMethodBytes                 FramingMethod = "bytes"
+	FramingMethodCharacterDelimited    FramingMethod = "character_delimited"
+	FramingMethodLengthDelimited       FramingMethod = "length_delimited"
+	FramingMethodNewlineDelimited      FramingMethod = "newline_delimited"
+	FramingMethodVarintLengthDelimited FramingMethod = "varint_length_delimited"
+)
+
+type Framing struct {
+	Method             FramingMethod `json:"method,omitempty" yaml:"method,omitempty" toml:"method,omitempty"`
+	CharacterDelimiter string        `json:"character_delimited,omitempty" yaml:"character_delimited,omitempty" toml:"character_delimited,omitempty"`
+	MaxLength          uint          `json:"max_length,omitempty" yaml:"max_length,omitempty" toml:"max_length,omitempty"`
+}
+
 type Proxy struct {
 	Enabled bool   `json:"enabled,omitempty" yaml:"enabled,omitempty" toml:"enabled,omitempty"`
 	Http    string `json:"http,omitempty" yaml:"http,omitempty" toml:"http,omitempty"`

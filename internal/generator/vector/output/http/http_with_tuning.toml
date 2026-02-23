@@ -28,6 +28,3 @@ retry_max_duration_secs = 35
 [sinks.http_receiver.request.headers]
 h1 = "v1"
 h2 = "v2"
-
-
-

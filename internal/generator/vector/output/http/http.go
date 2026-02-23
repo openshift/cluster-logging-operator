@@ -30,6 +30,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 			api.NewConfig(func(c *api.Config) {
 				c.Sinks[id] = sinks.NewHttp(o.HTTP.URL, func(s *sinks.Http) {
 					s.URI = o.HTTP.URL
+					s.Framing = framing(o.HTTP)
 					s.Auth = common.NewHttpAuth(o.HTTP.Authentication, op)
 					s.Encoding = common.NewApiEncoding(api.CodecTypeJSON)
 					s.Compression = sinks.CompressionType(o.GetTuning().Compression)
@@ -49,6 +50,15 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 			}),
 		},
 	)
+}
+
+func framing(h *obs.HTTP) *sinks.Framing {
+	if h.Format == obs.HTTPFormatNDJSON {
+		return &sinks.Framing{
+			Method: sinks.FramingMethodNewlineDelimited,
+		}
+	}
+	return nil
 }
 
 func method(h *obs.HTTP) sinks.MethodType {

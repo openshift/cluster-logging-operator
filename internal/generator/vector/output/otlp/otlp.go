@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
@@ -54,7 +53,7 @@ func (ls logSources) Has(source string) bool {
 func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
-			elements.Debug(helpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
+			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
 		}
 	}
 	var opSources, _ = utils.GetOption(op, OtlpLogSourcesOption, allLogSources)

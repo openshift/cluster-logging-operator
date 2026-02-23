@@ -13,22 +13,6 @@ const (
 	SocketModeUnixDatagram SocketMode = "unix_datagram"
 )
 
-type FramingMethod string
-
-const (
-	FramingMethodBytes                 FramingMethod = "bytes"
-	FramingMethodCharacterDelimited    FramingMethod = "character_delimited"
-	FramingMethodLengthDelimited       FramingMethod = "length_delimited"
-	FramingMethodNewlineDelimited      FramingMethod = "newline_delimited"
-	FramingMethodVarintLengthDelimited FramingMethod = "varint_length_delimited"
-)
-
-type Framing struct {
-	Method             FramingMethod `json:"method,omitempty" yaml:"method,omitempty" toml:"method,omitempty"`
-	CharacterDelimiter string        `json:"character_delimited,omitempty" yaml:"character_delimited,omitempty" toml:"character_delimited,omitempty"`
-	MaxLength          uint          `json:"max_length,omitempty" yaml:"max_length,omitempty" toml:"max_length,omitempty"`
-}
-
 type Keepalive struct {
 	TimeSecs uint `json:"time_secs,omitempty" yaml:"time_secs,omitempty" toml:"time_secs,omitempty"`
 }

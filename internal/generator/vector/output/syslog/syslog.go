@@ -190,10 +190,11 @@ func buildSocketEncoding(o obs.OutputSpec) *sinks.SocketEncoding {
 	}
 
 	// RFC-specific fields
-	if o.Syslog.RFC == obs.SyslogRFC5424 {
+	switch o.Syslog.RFC {
+	case obs.SyslogRFC5424:
 		encoding.AppName = "$$._syslog.app_name"
 		encoding.MsgID = "$$._syslog.msg_id"
-	} else if o.Syslog.RFC == obs.SyslogRFC3164 {
+	case obs.SyslogRFC3164:
 		encoding.Tag = "$$._syslog.tag"
 	}
 

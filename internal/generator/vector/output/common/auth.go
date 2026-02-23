@@ -2,7 +2,6 @@ package common
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"

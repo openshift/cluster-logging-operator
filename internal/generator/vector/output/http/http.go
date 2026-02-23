@@ -7,29 +7,26 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/adapters"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{
 			elements.Debug(helpers.MakeID(id, "debug"), helpers.MakeInputs(inputs...)),
 		}
 	}
-	var els []Element
-	return MergeElements(
+	var els []framework.Element
+	return framework.MergeElements(
 
 		els,
-		[]Element{
+		[]framework.Element{
 			api.NewConfig(func(c *api.Config) {
 				c.Sinks[id] = sinks.NewHttp(o.HTTP.URL, func(s *sinks.Http) {
 					s.URI = o.HTTP.URL

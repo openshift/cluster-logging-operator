@@ -3,27 +3,24 @@ package cloudwatch
 import (
 	_ "embed"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/aws"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []Element {
+func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	componentID := vectorhelpers.MakeID(id, "normalize_streams")
 	groupNameID := vectorhelpers.MakeID(id, "group_name")
 	if genhelper.IsDebugOutput(op) {
@@ -60,7 +57,7 @@ func New(id string, o *observability.Output, inputs []string, secrets observabil
 	}
 }
 
-func NormalizeStreamName(componentID string, inputs []string) Element {
+func NormalizeStreamName(componentID string, inputs []string) framework.Element {
 	vrl := strings.TrimSpace(`
 .stream_name = "default"
 if ( .log_type == "audit" ) {

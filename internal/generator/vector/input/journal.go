@@ -5,7 +5,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
+	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -23,10 +23,10 @@ func newJournalLog(id string) JournalLog {
 	}
 }
 
-func NewJournalInput(input obs.InputSpec) ([]Element, []string) {
+func NewJournalInput(input obs.InputSpec) ([]framework.Element, []string) {
 	id := helpers.MakeInputID(input.Name, "journal")
 	metaID := helpers.MakeID(id, "meta")
-	el := []Element{
+	el := []framework.Element{
 		newJournalLog(id),
 		NewJournalInternalNormalization(metaID, obs.InfrastructureSourceNode, setEnvelope, id,
 			v1.FixJournalLogLevel,

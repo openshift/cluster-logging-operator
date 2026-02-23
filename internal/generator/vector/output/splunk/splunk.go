@@ -81,47 +81,6 @@ for_each(indexed_fields) -> |_, field| {
 }
 `
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-type Splunk struct {
-	ComponentID   string
-	Inputs        string
-	Endpoint      string
-	DefaultToken  string
-	Index         framework.Element
-	IndexedFields framework.Element
-	Source        framework.Element
-	SourceType    framework.Element
-	HostKey       framework.Element
-	common.RootMixin
-}
-
-func (s Splunk) Name() string {
-	return "SplunkVectorTemplate"
-}
-
-func (s Splunk) Template() string {
-	return `{{define "` + s.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "splunk_hec_logs"
-inputs = {{.Inputs}}
-endpoint = "{{.Endpoint}}"
-{{.Compression}}
-default_token = "{{.DefaultToken}}"
-{{kv .Index -}}
-timestamp_key = "._internal.timestamp"
-{{kv .IndexedFields}}
-{{kv .Source -}}
-{{kv .SourceType -}}
-{{kv .HostKey -}}
-{{end}}
-`
-}
-
-func (s *Splunk) SetCompression(algo string) {
-	s.Compression.Value = algo
-}
-
 func New(id string, o *observability.Output, inputs []string, secrets observability.Secrets, op utils.Options) []framework.Element {
 	if genhelper.IsDebugOutput(op) {
 		return []framework.Element{

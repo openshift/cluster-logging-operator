@@ -56,7 +56,9 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		})
 	})
 
+	//TODO: Enrichment and PayloadKey not supporting by Syslog form upstream
 	DescribeTable("should enrich logs based upon the enrichment type", func(source obs.InputType, enrichment obs.EnrichmentType) {
+		Skip("Enrichment and PayloadKey not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(source).
 			ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {

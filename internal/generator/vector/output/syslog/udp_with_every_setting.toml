@@ -2,19 +2,54 @@
 type = "remap"
 inputs = ["application"]
 source = '''
+# set .hostname to the '.host', required by syslog encoder
+hostname = to_string(.hostname) ?? ""
+if !is_empty(strip_whitespace(hostname)) {
+  .host = .hostname
+}
+._syslog = {}
 ._syslog.facility = "kern"
 ._syslog.severity = "critical"
-proc_id = "procID"
-tag = "appName"
-if proc_id != "-" && proc_id != "" {
-  ._syslog.tag = to_string(tag||"") + "[" + to_string(proc_id)  + "]"
-} else {
-  ._syslog.tag = to_string(tag)
+._syslog.proc_id = "procID"
+._syslog.app_name = "appName"
+
+# try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
+if exists(._syslog.facility) {
+  _, err = to_syslog_facility_code(._syslog.facility)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.facility)
+    if err2 == null {
+      facility, err3 = to_syslog_facility(code)
+      if err3 == null {
+        ._syslog.facility = facility
+      } else {
+        log("Invalid syslog facility code: " + to_string!(._syslog.facility) , level: "warn")
+      }
+    } else {
+      log("Invalid syslog facility value: " + to_string!(._syslog.facility), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
 }
-if is_null(.plKey) {
-    .payload_key = .
-} else {
-    .payload_key = .plKey
+
+if exists(._syslog.severity) {
+  _, err = to_syslog_severity(._syslog.severity)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.severity)
+    if err2 == null {
+      severity, err3 = to_syslog_level(code)
+      if err3 == null {
+        ._syslog.severity = severity
+      } else {
+        log("Invalid syslog severity code: " + to_string!(._syslog.severity), level: "warn")
+      }
+    } else {
+      log("Invalid syslog severity value: " + to_string!(._syslog.severity), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
 }
 '''
 
@@ -27,11 +62,10 @@ mode = "udp"
 [sinks.example.encoding]
 codec = "syslog"
 except_fields = ["_internal"]
-rfc = "rfc3164"
-facility = "$$._syslog.facility"
-severity = "$$._syslog.severity"
-proc_id = "$$._syslog.proc_id"
-tag = "$$._syslog.tag"
-add_log_source = false
-payload_key = "payload_key"
+syslog.rfc = "rfc3164"
+syslog.facility = "._syslog.facility"
+syslog.severity = "._syslog.severity"
+syslog.app_name = "._syslog.app_name"
+syslog.proc_id = "._syslog.proc_id"
+
 

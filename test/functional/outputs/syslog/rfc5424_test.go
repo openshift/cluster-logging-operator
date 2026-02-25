@@ -3,12 +3,13 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/gomega/format"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"strings"
-	"time"
 
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -34,7 +35,9 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		framework.Cleanup()
 	})
 
+	//TODO: PayloadKey not supporting by Syslog form upstream
 	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, payloadKey, expInfo string) {
+		Skip("Payload key not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
 			WithParseJson().
@@ -75,6 +78,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	)
 
 	DescribeTable("logforwarder configured with payload key", func(appName, msgId, procId, payloadKey string) {
+		Skip("Payload key not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
 			WithParseJson().

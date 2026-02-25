@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/syslog"
 	"github.com/openshift/cluster-logging-operator/test/helpers/outputs/adapter/fake"
@@ -20,26 +21,26 @@ var _ = Describe("vector syslog clf output", func() {
 	)
 
 	var (
-		//tlsSpec = &obs.OutputTLSSpec{
-		//	TLSSpec: obs.TLSSpec{
-		//		CA: &obs.ValueReference{
-		//			Key:        constants.TrustedCABundleKey,
-		//			SecretName: secretName,
-		//		},
-		//		Certificate: &obs.ValueReference{
-		//			Key:        constants.ClientCertKey,
-		//			SecretName: secretName,
-		//		},
-		//		Key: &obs.SecretReference{
-		//			Key:        constants.ClientPrivateKey,
-		//			SecretName: secretName,
-		//		},
-		//		KeyPassphrase: &obs.SecretReference{
-		//			Key:        constants.Passphrase,
-		//			SecretName: secretName,
-		//		},
-		//	},
-		//}
+		tlsSpec = &obs.OutputTLSSpec{
+			TLSSpec: obs.TLSSpec{
+				CA: &obs.ValueReference{
+					Key:        constants.TrustedCABundleKey,
+					SecretName: secretName,
+				},
+				Certificate: &obs.ValueReference{
+					Key:        constants.ClientCertKey,
+					SecretName: secretName,
+				},
+				Key: &obs.SecretReference{
+					Key:        constants.ClientPrivateKey,
+					SecretName: secretName,
+				},
+				KeyPassphrase: &obs.SecretReference{
+					Key:        constants.Passphrase,
+					SecretName: secretName,
+				},
+			},
+		}
 
 		initOutput = func() obs.OutputSpec {
 			return obs.OutputSpec{
@@ -80,11 +81,10 @@ var _ = Describe("vector syslog clf output", func() {
 		conf := syslog.New(outputSpec.Name, outputSpec, []string{"application"}, secrets, adapter, framework.NoOptions)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		//Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil, false),
-		//
-		//Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
-		//	spec.Syslog.URL = "tcp://logserver:514"
-		//}, false),
+		Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil, false),
+		Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tcp://logserver:514"
+		}, false),
 
 		Entry("should configure UDP with every setting", "udp_with_every_setting.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
@@ -95,37 +95,37 @@ var _ = Describe("vector syslog clf output", func() {
 				AppName:    "appName",
 				MsgId:      "msgID",
 				ProcId:     "procID",
-				PayloadKey: "{.plKey}",
+				PayloadKey: "{.plKey}", // TODO: ignored
 			}
 		}, false),
 
-		//Entry("should configure with defaults RFC3164", "rfc3164_with_defaults.toml", func(spec *obs.OutputSpec) {
-		//	spec.Syslog = &obs.Syslog{
-		//		URL: "udp://logserver:514",
-		//		RFC: obs.SyslogRFC3164,
-		//	}
-		//}, false),
+		Entry("should configure with defaults RFC3164", "rfc3164_with_defaults.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog = &obs.Syslog{
+				URL: "udp://logserver:514",
+				RFC: obs.SyslogRFC3164,
+			}
+		}, false),
 
-		//Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
-		//	spec.TLS = tlsSpec
-		//	spec.Syslog = &obs.Syslog{
-		//		URL:        "tls://logserver:6514",
-		//		RFC:        obs.SyslogRFC5424,
-		//		Facility:   `{.structured.facility||"user"}`,
-		//		Severity:   `{.structured.severity||"informational"}`,
-		//		AppName:    `{.structured.app_name||"none"}`,
-		//		MsgId:      `{.structured.msg_id||"none"}`,
-		//		ProcId:     `{.structured proc_id||"none"}`,
-		//		PayloadKey: `{.payload_key}`,
-		//	}
-		//}, false),
+		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
+			spec.TLS = tlsSpec
+			spec.Syslog = &obs.Syslog{
+				URL:        "tls://logserver:6514",
+				RFC:        obs.SyslogRFC5424,
+				Facility:   `{.structured.facility||"user"}`,
+				Severity:   `{.structured.severity||"informational"}`,
+				AppName:    `{.structured.app_name||"none"}`,
+				MsgId:      `{.structured.msg_id||"none"}`,
+				ProcId:     `{.structured proc_id||"none"}`,
+				PayloadKey: `{.payload_key}`, //TODO: ignored
+			}
+		}, false),
 
-		//Entry("should set buffer tuning parameters", "tcp_with_tuning.toml", func(spec *obs.OutputSpec) {
-		//	spec.Syslog.URL = "tcp://logserver:514"
-		//	spec.Syslog.Tuning = &obs.SyslogTuningSpec{
-		//		DeliveryMode: obs.DeliveryModeAtLeastOnce,
-		//	}
-		//}, true),
+		Entry("should set buffer tuning parameters", "tcp_with_tuning.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tcp://logserver:514"
+			spec.Syslog.Tuning = &obs.SyslogTuningSpec{
+				DeliveryMode: obs.DeliveryModeAtLeastOnce,
+			}
+		}, true),
 	)
 
 })

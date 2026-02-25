@@ -182,6 +182,35 @@ if exists(._syslog.severity) {
   }
   # else: already a valid name, leave it as-is
 }
+
+payload_key = {{.PayloadKey}}
+log("message before processing payload", level: "warn")
+log(.message, level: "warn")
+if payload_key != null && payload_key != "" {
+    payload_key = string!(payload_key)
+    path = split!(payload_key, ".")
+    
+    value, err = get(., path)
+    
+    if err == null && value != null {
+        # Path exists and has a value — safe to set
+        .message = value
+    } else {
+        # Path doesn't exist or is null — leave .message untouched
+        log("payload_key not found in event, skipping", level: "warn")
+    }
+} else {
+    # No payload_key set — copy the entire event into .message, excluding certain fields
+    excluded_fields = ["_internal", "_syslog"]  # Add your fields here
+    
+    temp = .
+    for_each(excluded_fields) -> |_index, field| {
+        temp = remove(temp, [field]) ?? temp
+    }
+    .message = temp
+}
+log("message after processing payload", level: "warn")
+log(.message)
 '''
 {{end -}}
 `
@@ -196,6 +225,8 @@ type SyslogEncoding struct {
 	ProcID       genhelper.OptionalPair
 	Tag          genhelper.OptionalPair
 	MsgID        genhelper.OptionalPair
+	AddLogSource genhelper.OptionalPair
+	PayloadKey   genhelper.OptionalPair
 }
 
 func (se SyslogEncoding) Name() string {
@@ -310,6 +341,11 @@ func Encoding(id string, o obs.OutputSpec) []Element {
 		AppName:      AppName(o.Syslog),
 		ProcID:       syslogEncodeField("syslog.proc_id"),
 		MsgID:        MsgID(o.Syslog),
+		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
+		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
+	}
+	if o.Syslog.PayloadKey != "" {
+		sysLEncode.PayloadKey.Value = "payload_key"
 	}
 
 	encodingFields := []Element{
@@ -324,7 +360,7 @@ func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateFie
 		ComponentID:    id,
 		Inputs:         vectorhelpers.MakeInputs(inputs...),
 		EncodingFields: templatePairs,
-		//PayloadKey:     PayloadKey(o.PayloadKey),
+		PayloadKey:     PayloadKey(o.PayloadKey),
 		RFC:            string(o.RFC),
 		Defaults:       buildDefaults(o),
 	}

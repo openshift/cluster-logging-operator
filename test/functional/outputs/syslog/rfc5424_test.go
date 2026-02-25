@@ -35,9 +35,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		framework.Cleanup()
 	})
 
-	//TODO: PayloadKey not supporting by Syslog form upstream
 	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, payloadKey, expInfo string) {
-		Skip("Payload key not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
 			WithParseJson().
@@ -78,7 +76,6 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	)
 
 	DescribeTable("logforwarder configured with payload key", func(appName, msgId, procId, payloadKey string) {
-		Skip("Payload key not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).
 			WithParseJson().
@@ -166,6 +163,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
 		})
 	})
+
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).

@@ -1,6 +1,7 @@
 package syslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -177,15 +178,13 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " - ")
 			payload := strings.TrimSpace(fields[1])
-
-			//record := map[string]interface{}{}
-			//Expect(json.Unmarshal([]byte(payload), &record)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
-			//msg := record["message"]
-			//var message string
-			//message, ok := msg.(string)
-			//Expect(ok).To(BeTrue())
-
-			ReceivedLen := uint64(len(payload))
+			record := map[string]interface{}{}
+			Expect(json.Unmarshal([]byte(payload), &record)).To(BeNil(), fmt.Sprintf("payload: %q", payload))
+			msg := record["message"]
+			var message string
+			message, ok := msg.(string)
+			Expect(ok).To(BeTrue())
+			ReceivedLen := uint64(len(message))
 			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
 

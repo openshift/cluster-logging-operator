@@ -32,9 +32,7 @@ const (
 
 	setClusterID                   = `._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}`
 	setOpenshiftSequence           = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
-	setEnvelope                    = `
-log(.)
-. = {"_internal": .}`
+	setEnvelope                    = `. = {"_internal": .}`
 	setKubernetesContainerIOStream = `if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}`
 	setEnvelopeToStructured        = `. = {"_internal": {"structured": .}}`
 	setHostName                    = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`

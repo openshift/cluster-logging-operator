@@ -3,12 +3,13 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/gomega/format"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"strings"
-	"time"
 
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -162,6 +163,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
 		})
 	})
+
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).

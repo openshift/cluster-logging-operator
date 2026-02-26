@@ -3,6 +3,10 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -10,9 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"regexp"
-	"strings"
-	"time"
 )
 
 var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func() {
@@ -128,7 +129,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			collectorLogs, err := framework.ReadCollectorLogs()
 			Expect(err).To(BeNil())
 			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
-			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'"))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'"))
 		})
 
 		It("RFC3164 should be able to send, no error in collector logs", func() {
@@ -155,7 +156,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 			collectorLogs, err := framework.ReadCollectorLogs()
 			Expect(err).To(BeNil())
 			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
-			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty"))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing: unable to calculate syslog.app_name (TAG)"))
 		})
 	})
 

@@ -2,6 +2,12 @@
 type = "remap"
 inputs = ["application"]
 source = '''
+# set .hostname to the '.host', required by syslog encoder
+hostname = to_string(.hostname) ?? ""
+if !is_empty(strip_whitespace(hostname)) {
+  .host = .hostname
+}
+._syslog = {}
 ._syslog.msg_id = .log_source
 
 if .log_type == "infrastructure" && .log_source == "node" {
@@ -11,10 +17,10 @@ if .log_type == "infrastructure" && .log_source == "node" {
 if .log_source == "container" {
    ._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
    if err != null {
-     log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error")
-  	 ._syslog.app_name = "-"
+     log("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'", level: "error")
+     ._syslog.app_name = "-"
    }
-   ._syslog.proc_id = to_string!(.kubernetes.pod_id || "-")
+   ._syslog.proc_id = to_string!(.kubernetes.pod_id || "")
    ._syslog.severity = .level
    ._syslog.facility = "user"
 }
@@ -24,6 +30,53 @@ if .log_type == "audit" {
    ._syslog.severity = "informational"
    ._syslog.facility = "security"
 }
+
+# try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
+if exists(._syslog.facility) {
+  _, err = to_syslog_facility_code(._syslog.facility)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.facility)
+    if err2 == null {
+      facility, err3 = to_syslog_facility(code)
+      if err3 == null {
+        ._syslog.facility = facility
+      } else {
+        log("Invalid syslog facility code: " + to_string!(._syslog.facility) , level: "warn")
+      }
+    } else {
+      log("Invalid syslog facility value: " + to_string!(._syslog.facility), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
+}
+
+if exists(._syslog.severity) {
+  _, err = to_syslog_severity(._syslog.severity)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.severity)
+    if err2 == null {
+      severity, err3 = to_syslog_level(code)
+      if err3 == null {
+        ._syslog.severity = severity
+      } else {
+        log("Invalid syslog severity code: " + to_string!(._syslog.severity), level: "warn")
+      }
+    } else {
+      log("Invalid syslog severity value: " + to_string!(._syslog.severity), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
+}
+
+# Payload key NOT configured, full payload set to .message field (skipping internal objects)
+excluded_fields = ["_internal", "_syslog"]
+temp = .
+for_each(excluded_fields) -> |_index, field| {
+  temp = remove(temp, [field]) ?? temp
+}
+.message = temp
 '''
 
 [sinks.example]
@@ -36,13 +89,12 @@ keepalive.time_secs = 60
 [sinks.example.encoding]
 codec = "syslog"
 except_fields = ["_internal"]
-rfc = "rfc5424"
-facility = "$$._syslog.facility"
-severity = "$$._syslog.severity"
-app_name = "$$._syslog.app_name"
-msg_id = "$$._syslog.msg_id"
-proc_id = "$$._syslog.proc_id"
-add_log_source = false
+syslog.rfc = "rfc5424"
+syslog.facility = "._syslog.facility"
+syslog.severity = "._syslog.severity"
+syslog.app_name = "._syslog.app_name"
+syslog.proc_id = "._syslog.proc_id"
+syslog.msg_id = "._syslog.msg_id"
 
 [sinks.example.buffer]
 type = "disk"

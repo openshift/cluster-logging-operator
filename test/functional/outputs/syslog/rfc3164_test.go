@@ -2,6 +2,7 @@ package syslog
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -56,7 +57,9 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		})
 	})
 
+	//TODO: Enrichment and PayloadKey not supporting by Syslog form upstream
 	DescribeTable("should enrich logs based upon the enrichment type", func(source obs.InputType, enrichment obs.EnrichmentType) {
+		//Skip("Enrichment and PayloadKey not supporting by Syslog form upstream")
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(source).
 			ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
@@ -74,11 +77,18 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(logs).To(HaveLen(1), "Expected the receiver to receive the message")
 
-		expMatch := fmt.Sprintf(".*:\\s*%s", payload)
+		logLine := strings.TrimSpace(logs[0])
+		Expect(logLine).To(MatchRegexp(`^<\d+>`))
+		Expect(logLine).To(MatchRegexp(`functionalcollector:`))
+
 		if enrichment == obs.EnrichmentTypeKubernetesMinimal {
-			expMatch = fmt.Sprintf(`namespace_name=.*, container_name=collector, pod_name=functional, message=%s`, payload)
+			Expect(logLine).To(MatchRegexp(`namespace_name="[^"]+"`))
+			Expect(logLine).To(ContainSubstring(`container_name="collector"`))
+			Expect(logLine).To(ContainSubstring(`pod_name="functional"`))
+			Expect(logLine).To(ContainSubstring(fmt.Sprintf("message=%q", payload)))
+		} else {
+			Expect(logLine).To(ContainSubstring(payload))
 		}
-		Expect(logs[0]).To(MatchRegexp(expMatch), fmt.Sprintf("Exp. message source info to be added. EnrichmentType=%v", enrichment))
 	},
 		Entry("should enrich application logs with container source info", obs.InputTypeApplication, obs.EnrichmentTypeKubernetesMinimal),
 		Entry("should do nothing additional to the application logs", obs.InputTypeApplication, obs.EnrichmentTypeNone),

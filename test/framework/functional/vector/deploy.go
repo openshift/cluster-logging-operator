@@ -81,7 +81,9 @@ if exists(.parsed) {
   }	
   del(.parsed)
 }
-.host = del(.hostname)
+if exists(.hostname) {
+  .host = del(.hostname)
+}
 if exists(.MESSAGE) {
   .message = del(.MESSAGE)
 }

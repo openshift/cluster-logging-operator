@@ -52,6 +52,26 @@ if exists(._syslog.severity) {
   }
   # else: already a valid name, leave it as-is
 }
+
+# Payload key configured, going to use the payload key for .message field
+payload_key = .payload_key
+if payload_key != null && payload_key != "" {
+  payload_key = string!(payload_key)
+  path = split!(payload_key, ".")
+  value, err = get(., path)
+  if err == null && value != null {
+    .message = value
+  } else {
+    log("payload_key not found in event, skipping", level: "warn")
+  }
+} else {
+  excluded_fields = ["_internal", "_syslog"]
+  temp = .
+  for_each(excluded_fields) -> |_index, field| {
+    temp = remove(temp, [field]) ?? temp
+  }
+  .message = temp
+}
 '''
 
 [sinks.example]

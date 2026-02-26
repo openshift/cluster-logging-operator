@@ -217,11 +217,11 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 
 .PHONY: test-functional
-test-functional:
+test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.53.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
-		./test/functional/outputs/syslog/... \
+		./test/functional/... \
 		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
 
 .PHONY: test-forwarder-generator

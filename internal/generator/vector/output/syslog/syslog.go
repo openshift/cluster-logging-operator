@@ -118,6 +118,7 @@ type RemapEncodingFields struct {
 	PayloadKey     string
 	RFC            string
 	Defaults       string
+	EnrichmentType   string
 }
 
 func (ser RemapEncodingFields) Name() string {
@@ -183,34 +184,52 @@ if exists(._syslog.severity) {
   # else: already a valid name, leave it as-is
 }
 
+{{if .PayloadKey -}}
+# Payload key configured, going to use the payload key for .message field 
 payload_key = {{.PayloadKey}}
-log("message before processing payload", level: "warn")
-log(.message, level: "warn")
 if payload_key != null && payload_key != "" {
-    payload_key = string!(payload_key)
-    path = split!(payload_key, ".")
-    
-    value, err = get(., path)
-    
-    if err == null && value != null {
-        # Path exists and has a value — safe to set
-        .message = value
-    } else {
-        # Path doesn't exist or is null — leave .message untouched
-        log("payload_key not found in event, skipping", level: "warn")
-    }
+  payload_key = string!(payload_key)
+  path = split!(payload_key, ".")
+  value, err = get(., path) 
+  if err == null && value != null {
+    .message = value
+  } else {
+    log("payload_key not found in event, skipping", level: "warn")
+  }
 } else {
-    # No payload_key set — copy the entire event into .message, excluding certain fields
-    excluded_fields = ["_internal", "_syslog"]  # Add your fields here
-    
-    temp = .
-    for_each(excluded_fields) -> |_index, field| {
-        temp = remove(temp, [field]) ?? temp
-    }
-    .message = temp
+  excluded_fields = ["_internal", "_syslog"]
+  temp = .
+  for_each(excluded_fields) -> |_index, field| {
+    temp = remove(temp, [field]) ?? temp
+  }
+  .message = temp
 }
-log("message after processing payload", level: "warn")
-log(.message)
+{{ else }}
+# Payload key NOT configured, full payload set to .message field (skipping internal objects)
+excluded_fields = ["_internal", "_syslog"]
+temp = .
+for_each(excluded_fields) -> |_index, field| {
+  temp = remove(temp, [field]) ?? temp
+}
+.message = temp
+{{ end }}
+
+{{ if eq .EnrichmentType "KubernetesMinimal" }}
+   # KubernetesMinimal
+   # Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
+   # This may result in the message body being an invalid JSON structure.
+   
+namespace = to_string(.kubernetes.namespace_name) ?? ""
+container = to_string(.kubernetes.container_name) ?? ""
+pod = to_string(.kubernetes.pod_name) ?? ""
+msg_value = encode_json(.message)
+
+.message = "namespace_name=\"" + namespace + "\"" +
+           ", container_name=\"" + container + "\"" +
+           ", pod_name=\"" + pod + "\"" +
+           ", message=" + msg_value
+
+{{ end }}
 '''
 {{end -}}
 `
@@ -225,8 +244,6 @@ type SyslogEncoding struct {
 	ProcID       genhelper.OptionalPair
 	Tag          genhelper.OptionalPair
 	MsgID        genhelper.OptionalPair
-	AddLogSource genhelper.OptionalPair
-	PayloadKey   genhelper.OptionalPair
 }
 
 func (se SyslogEncoding) Name() string {
@@ -341,12 +358,12 @@ func Encoding(id string, o obs.OutputSpec) []Element {
 		AppName:      AppName(o.Syslog),
 		ProcID:       syslogEncodeField("syslog.proc_id"),
 		MsgID:        MsgID(o.Syslog),
-		AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
-		PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
+		//AddLogSource: genhelper.NewOptionalPair("add_log_source", o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal),
+		//PayloadKey:   genhelper.NewOptionalPair("payload_key", nil),
 	}
-	if o.Syslog.PayloadKey != "" {
-		sysLEncode.PayloadKey.Value = "payload_key"
-	}
+	//if o.Syslog.PayloadKey != "" {
+	//	sysLEncode.PayloadKey.Value = "payload_key"
+	//}
 
 	encodingFields := []Element{
 		sysLEncode,
@@ -363,6 +380,7 @@ func parseEncoding(id string, inputs []string, templatePairs EncodingTemplateFie
 		PayloadKey:     PayloadKey(o.PayloadKey),
 		RFC:            string(o.RFC),
 		Defaults:       buildDefaults(o),
+		EnrichmentType: string(o.Enrichment),
 	}
 }
 

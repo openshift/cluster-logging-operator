@@ -29,11 +29,11 @@ $(BINGO): $(BINGO_DIR)/bingo.mod
 	@echo "(re)installing $(GOBIN)/bingo-v0.10.0"
 	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=bingo.mod -o=$(GOBIN)/bingo-v0.10.0 "github.com/bwplotka/bingo"
 
-CONTROLLER_GEN := $(GOBIN)/controller-gen-v0.16.3
+CONTROLLER_GEN := $(GOBIN)/controller-gen-v0.18.0
 $(CONTROLLER_GEN): $(BINGO_DIR)/controller-gen.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
-	@echo "(re)installing $(GOBIN)/controller-gen-v0.16.3"
-	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=controller-gen.mod -o=$(GOBIN)/controller-gen-v0.16.3 "sigs.k8s.io/controller-tools/cmd/controller-gen"
+	@echo "(re)installing $(GOBIN)/controller-gen-v0.18.0"
+	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=controller-gen.mod -o=$(GOBIN)/controller-gen-v0.18.0 "sigs.k8s.io/controller-tools/cmd/controller-gen"
 
 GEN_CRD_API_REFERENCE_DOCS := $(GOBIN)/gen-crd-api-reference-docs-v0.0.5
 $(GEN_CRD_API_REFERENCE_DOCS): $(BINGO_DIR)/gen-crd-api-reference-docs.mod
@@ -59,11 +59,11 @@ $(KUSTOMIZE): $(BINGO_DIR)/kustomize.mod
 	@echo "(re)installing $(GOBIN)/kustomize-v5.4.3"
 	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=kustomize.mod -o=$(GOBIN)/kustomize-v5.4.3 "sigs.k8s.io/kustomize/kustomize/v5"
 
-OPERATOR_SDK := $(GOBIN)/operator-sdk-v1.39.1
+OPERATOR_SDK := $(GOBIN)/operator-sdk-v1.42.0
 $(OPERATOR_SDK): $(BINGO_DIR)/operator-sdk.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
-	@echo "(re)installing $(GOBIN)/operator-sdk-v1.39.1"
-	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=operator-sdk.mod -o=$(GOBIN)/operator-sdk-v1.39.1 "github.com/operator-framework/operator-sdk/cmd/operator-sdk"
+	@echo "(re)installing $(GOBIN)/operator-sdk-v1.42.0"
+	@cd $(BINGO_DIR) && GOWORK=off GOOS=$(GOHOSTOS) GOARCH=$(GOHOSTARCH) GOARM=$(GOHOSTARM) $(GO) build -mod=mod -modfile=operator-sdk.mod -o=$(GOBIN)/operator-sdk-v1.42.0 "github.com/operator-framework/operator-sdk/cmd/operator-sdk"
 
 OPM := $(GOBIN)/opm-v1.23.0
 $(OPM): $(BINGO_DIR)/opm.mod

@@ -2,6 +2,7 @@ package syslog_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -81,7 +82,6 @@ var _ = Describe("vector syslog clf output", func() {
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
 		Entry("LOG-3948: should pass URL scheme to vector for validation", "xyz_defaults.toml", nil, false),
-
 		Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 		}, false),
@@ -95,7 +95,7 @@ var _ = Describe("vector syslog clf output", func() {
 				AppName:    "appName",
 				MsgId:      "msgID",
 				ProcId:     "procID",
-				PayloadKey: "{.plKey}",
+				PayloadKey: "{.plKey}", // TODO: ignored
 			}
 		}, false),
 
@@ -116,7 +116,7 @@ var _ = Describe("vector syslog clf output", func() {
 				AppName:    `{.structured.app_name||"none"}`,
 				MsgId:      `{.structured.msg_id||"none"}`,
 				ProcId:     `{.structured proc_id||"none"}`,
-				PayloadKey: `{.payload_key}`,
+				PayloadKey: `{.payload_key}`, //TODO: ignored
 			}
 		}, false),
 

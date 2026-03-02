@@ -70,7 +70,9 @@ if starts_with(pod_name, "eventrouter-") {
           del(.verb)
         }
         .kubernetes.event = del(.event)
-        .message = del(.kubernetes.event.message)
+        # escape 'new line' symbol see: LOG-8090 
+        msg = to_string!(del(.kubernetes.event.message))
+        .message = replace(msg, "\n", s'\n')
         . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
         del(.kubernetes.event.metadata.creationTimestamp)
 		. = compact(., nullish: true)

@@ -1,0 +1,515 @@
+= Log Throttling (Rate Limiting)
+
+Log throttling enables rate limiting of log records to control the volume of logs collected and forwarded. This helps
+prevent spikes in log volume from overwhelming the logging infrastructure and provides better resource management.
+
+== Overview
+
+The cluster-logging-operator supports two types of rate limiting:
+
+1. **Input Throttling**: Rate limits applied per container at the log collection point
+2. **Output Throttling**: Rate limits applied to the aggregate flow to a specific output destination
+
+Both throttling mechanisms measure the rate of logging and enforce throughput limits based upon a configurable value. When
+the rate limit is exceeded the log records are dropped in order to meet the threshold.
+
+== Input Throttling
+
+Input throttling controls the rate at which logs are collected from individual containers. The rate limit is applied
+**per container**, ensuring that no single container can flood the logging system.
+
+=== Use Cases for Input Throttling
+
+* **Preventing container log spikes**: Protect the system when individual containers have a spike in log
+volume (i.e. enter error loops, verbose logging states)
+* **Per-container fairness**: Ensure no single container monopolizes log collection resources
+* **Resource protection**: Prevent runaway containers from overwhelming collector memory and CPU
+
+=== Configuring Input Throttling
+
+Input throttling is configured through the `tuning` field on input specifications for both application and
+infrastructure container logs.
+
+==== Application Log Throttling
+
+.Application input throttling example
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  inputs:
+    - name: my-app-logs
+      type: application
+      application:
+        tuning:
+          rateLimitPerContainer:
+            maxRecordsPerSecond: 100  # <1>
+  outputs:
+    - name: my-loki
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+  pipelines:
+    - name: app-logs
+      inputRefs:
+        - my-app-logs
+      outputRefs:
+        - my-loki
+----
+<1> Each container from every application namespace will be limited to 100 log records per second
+
+==== Infrastructure Log Throttling
+
+For infrastructure logs from containers, configure the rate limit under the container-specific tuning section:
+
+.Infrastructure input throttling example
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  inputs:
+    - name: my-infra-logs
+      type: infrastructure
+      infrastructure:
+        sources:
+          - container
+        tuning:
+          container:
+            rateLimitPerContainer:
+              maxRecordsPerSecond: 50  # <1>
+  outputs:
+    - name: my-default
+      type: http
+      http:
+        url: https://my-collector.example.com
+  pipelines:
+    - name: infra-logs
+      inputRefs:
+        - my-infra-logs
+      outputRefs:
+        - my-default
+----
+<1> Each infrastructure container will be limited to 50 log records per second
+
+=== How Input Throttling Works
+
+The input throttling feature uses per-container tracking:
+
+1. **Per-container identification**: Each container is identified by namespace, pod name and container name
+2. **Time window**: Records are counted within a sliding window per container
+3. **Threshold enforcement**: When a container exceeds `maxRecordsPerSecond`, additional records are dropped
+4. **Independent limits**: Each container has its own independent counter and limit
+
+==== Understanding Input Throttling Scope
+
+Important considerations:
+
+* **Per container, not per pod**: If a pod has multiple containers, each container is regulated by its own independent rate limit
+* **Per collector deployment**: Each collector pod enforces the limit for containers on its node (in DaemonSet deployments)
+* **No cluster-wide aggregation**: The limit is not aggregated across all collector instances
+
+== Output Throttling
+
+Output throttling controls the aggregate rate at which logs are forwarded to a specific output destination. The rate
+limit applies to the **total combined flow** from a collector to that output, regardless of which containers the logs
+came from.
+
+=== Use Cases for Output Throttling
+
+* **Downstream protection**: Prevent overwhelming external log receivers with excessive traffic
+* **Cost control**: Limit ingestion costs for cloud-based logging services
+* **SLA compliance**: Ensure log forwarding stays within agreed-upon rate limits
+* **Multi-tenant fairness**: Control the total volume sent to shared output destinations
+
+=== Configuring Output Throttling
+
+Output throttling is configured using the `rateLimit` field on output specifications.
+
+==== Basic Output Throttling
+
+.Output throttling example
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+    - name: external-splunk
+      type: splunk
+      rateLimit:
+        maxRecordsPerSecond: 1000  # <1>
+      splunk:
+        url: https://splunk.example.com:8088
+  pipelines:
+    - name: all-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - external-splunk
+----
+<1> Limit total flow to Splunk to 1000 records per second per collector
+
+==== Multiple Outputs with Different Limits
+
+.Different rate limits for different outputs
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+    - name: production-loki
+      type: lokiStack
+      rateLimit:
+        maxRecordsPerSecond: 5000  # <1>
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+    - name: external-vendor
+      type: http
+      rateLimit:
+        maxRecordsPerSecond: 500  # <2>
+      http:
+        url: https://vendor-logs.example.com/ingest
+  pipelines:
+    - name: to-loki
+      inputRefs:
+        - application
+      outputRefs:
+        - production-loki
+    - name: to-vendor
+      inputRefs:
+        - infrastructure
+      outputRefs:
+        - external-vendor
+----
+<1> Higher limit for internal LokiStack
+<2> Lower limit for external vendor to control costs
+
+=== How Output Throttling Works
+
+1. **Aggregate tracking**: All logs destined for the output are counted together
+2. **Time window**: Records are counted within a sliding window
+3. **Threshold enforcement**: When the total flow exceeds `maxRecordsPerSecond`, additional records are dropped
+4. **Per-collector enforcement**: Each collector pod independently enforces the limit
+
+==== Understanding Output Throttling Scope
+
+Important considerations:
+
+* **Aggregate limit**: Combines logs from all sources (application, infrastructure, audit) going to that output
+* **Per collector pod**: In DaemonSet deployments, each collector pod enforces the limit independently
+* **Total cluster throughput**: With N collector pods, the cluster-wide maximum is approximately N × maxRecordsPerSecond
+
+== Combining Input and Output Throttling
+
+Input and output throttling can be used together for fine-grained control:
+
+.Combined input and output throttling
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  inputs:
+    - name: app-logs
+      type: application
+      application:
+        tuning:
+          rateLimitPerContainer:
+            maxRecordsPerSecond: 100  # <1>
+  outputs:
+    - name: cloud-storage
+      type: s3
+      rateLimit:
+        maxRecordsPerSecond: 2000  # <2>
+      s3:
+        bucket: my-log-bucket
+        region: us-east-1
+  pipelines:
+    - name: app-to-s3
+      inputRefs:
+        - app-logs
+      outputRefs:
+        - cloud-storage
+----
+<1> Each container limited to 100 records/sec
+<2> Total output to S3 limited to 2000 records/sec per collector
+
+With this configuration:
+
+* Individual containers cannot exceed 100 records/sec
+* The total flow to S3 cannot exceed 2000 records/sec per collector pod
+* If you have 20 active containers on a node, they could theoretically produce 2000 records/sec combined, hitting the output limit
+
+== Performance Considerations
+
+=== Resource Impact
+
+Enabling throttling adds minimal overhead:
+
+* **CPU**: Negligible impact - simple counter-based throttling logic
+* **Memory**: Small memory footprint for tracking counters
+* **Latency**: No additional latency during normal operation
+
+=== Choosing Appropriate Limits
+
+==== For Input Throttling
+
+When setting per-container limits, consider:
+
+* **Application logging patterns**: Normal vs. error state logging rates
+* **Burst tolerance**: Peak rates during startups or deployments
+* **Container diversity**: Different containers may need different limits
+
+Recommended approach:
+
+1. Monitor current container logging rates without throttling
+2. Set limits 50-100% above normal rates to allow for bursts
+3. Use namespace filtering to apply different limits to different environments
+
+==== For Output Throttling
+
+When setting output limits, consider:
+
+* **Downstream capacity**: Maximum ingestion rate of the receiving system
+* **Number of collectors**: Total cluster throughput = limit × number of collector pods
+* **Cost constraints**: Per-record or per-GB pricing models
+* **SLA requirements**: Contracted rate limits with log aggregation services
+
+Recommended approach:
+
+1. Determine the downstream system's maximum ingestion rate
+2. Divide by the number of collector pods to get per-collector limit
+3. Add 10-20% buffer for uneven distribution across collectors
+
+== Troubleshooting
+
+=== Verifying Throttle Configuration
+
+When throttling is enabled, the Vector configuration includes throttle sections:
+
+.Input throttle in Vector config
+[source,toml]
+----
+[transforms.input_application_container_throttle]
+type = "throttle"
+inputs = ["input_application_container_meta"]
+window_secs = 1
+threshold = 100
+key_field = "{{ _internal.file }}"
+----
+
+.Output throttle in Vector config
+[source,toml]
+----
+[transforms.output_my_loki_throttle]
+type = "throttle"
+inputs = ["application"]
+window_secs = 1
+threshold = 1000
+----
+
+=== Common Issues
+
+**Issue**: Logs are being dropped but limits seem reasonable
+
+* **Cause**: Multiple collector pods each enforce the limit independently
+* **Solution**: Account for all collector pods when calculating cluster-wide limits
+
+**Issue**: Different containers need different input limits
+
+* **Cause**: Input throttling applies to all containers matched by the input selector
+* **Solution**: Create multiple inputs with different limits and use namespace/label selectors to target specific containers
+
+**Issue**: Output throttling not affecting log flow
+
+* **Cause**: Limit set to 0 or missing
+* **Solution**: Ensure `maxRecordsPerSecond` is set to a value greater than 0
+
+**Issue**: Intermittent log drops during quiet periods
+
+* **Cause**: Bursts of logs within the 1-second window
+* **Solution**: Increase the limit or investigate why logs arrive in bursts rather than smoothly
+
+== Examples
+
+=== Example 1: Protecting External SaaS Logging Service
+
+Scenario: You're sending logs to an external logging service with a 10,000 records/sec rate limit across your 5-node cluster.
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+    - name: external-service
+      type: http
+      rateLimit:
+        maxRecordsPerSecond: 1800  # <1>
+      http:
+        url: https://logs.vendor.com/ingest
+  pipelines:
+    - name: to-external
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - external-service
+----
+<1> 10,000 / 5 nodes = 2,000 per node, with 10% buffer = 1,800
+
+=== Example 2: Different Limits for Different Namespaces
+
+Scenario: Production namespaces need higher limits than development namespaces.
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  inputs:
+    - name: production-apps
+      type: application
+      application:
+        includes:
+          - namespace: prod-*
+        tuning:
+          rateLimitPerContainer:
+            maxRecordsPerSecond: 500  # <1>
+    - name: development-apps
+      type: application
+      application:
+        includes:
+          - namespace: dev-*
+          - namespace: test-*
+        tuning:
+          rateLimitPerContainer:
+            maxRecordsPerSecond: 50  # <2>
+  outputs:
+    - name: splunk
+      type: splunk
+      splunk:
+        url: https://splunk.example.com:8088
+  pipelines:
+    - name: prod-pipeline
+      inputRefs:
+        - production-apps
+      outputRefs:
+        - splunk
+    - name: dev-pipeline
+      inputRefs:
+        - development-apps
+      outputRefs:
+        - splunk
+----
+<1> Higher limit for production workloads
+<2> Lower limit for development workloads
+
+=== Example 3: Tiered Output Limits
+
+Scenario: Send all logs to local storage with a high limit, and send filtered logs to an external service with a lower limit.
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-admin
+  outputs:
+    - name: local-loki
+      type: lokiStack
+      rateLimit:
+        maxRecordsPerSecond: 10000  # <1>
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+    - name: external-vendor
+      type: http
+      rateLimit:
+        maxRecordsPerSecond: 500  # <2>
+      http:
+        url: https://vendor.example.com/api/logs
+  filters:
+    - name: errors-only
+      type: drop
+      drop:
+        - test:
+            - field: .level
+              notMatches: "error|critical|alert|emergency"
+  pipelines:
+    - name: all-to-local
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - local-loki
+    - name: errors-to-vendor
+      inputRefs:
+        - application
+        - infrastructure
+      filterRefs:
+        - errors-only
+      outputRefs:
+        - external-vendor
+----
+<1> High limit for local storage
+<2> Low limit for external service to control costs
+
+== Related Features
+
+* **Drop Filter**: Selectively remove log records based on content to complement rate-based throttling
+* **Max Message Size**: Configure `maxMessageSize` in input tuning to control individual log record size
+* **Namespace Filtering**: Apply different rate limits to different namespaces using `includes`/`excludes`
+
+== Relevant Links
+
+* link:../../reference/operator/api_observability_v1.adoc[ClusterLogForwarder API Types]
+* link:filters/drop-filter.adoc[Drop Filter Documentation]

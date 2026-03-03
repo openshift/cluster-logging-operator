@@ -13,7 +13,6 @@ Open an issue in this repository
 
 == Index of topics
 * link:administration/README.adoc[Administration]
-* link:administration/configuration.md[Configuring and Tuning Cluster Logging]
 * link:administration/deploy-event-router.md[Deploying Event Router]
 * link:contributing/README.adoc[Contributing the Cluster Logging Operator]
 * link:contributing/REVIEW.adoc[PR Review Guidelines]

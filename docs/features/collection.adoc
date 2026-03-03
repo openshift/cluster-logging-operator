@@ -99,7 +99,16 @@ a|
 |======
 
 === Tuning
-.Vector Output Tuning
+.Input Tuning
+Following is the list of input tuning features to modify log collection:
+[options="header"]
+|======
+|Feature|Desc.
+|link:./logforwarding/log-throttling.adoc[Log throttling / Rate limiting]
+a|Enables rate limiting of the collection of log records
+|======
+
+.Output Tuning
 Following is a list of output tuning options based upon the https://github.com/openshift/enhancements/pull/1540/[enhancement document]. Not all outputs support all tuning options.
 [options="header"]
 |======
@@ -127,6 +136,8 @@ a| The compression algorithm to use to compress the data before sending over the
 |MaxWrite|The resource quantity that limits the maximum payload of a single "send" to the output.
 |MinRetryDuration|The minimum time to wait between attempts to retry after a delivery failure.
 |MaxRetryDuration|The maximum time to wait between retry attempts after a delivery failure.
+|link:./logforwarding/log-throttling.adoc[RateLimit]
+a|Enables rate limiting of to the aggregate flow to a specific output destination
 |======
 
 

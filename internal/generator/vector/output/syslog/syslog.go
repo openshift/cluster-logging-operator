@@ -129,11 +129,6 @@ func (ser RemapEncodingFields) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = '''
-# set .hostname to the '.host', required by syslog encoder   
-hostname = to_string(.hostname) ?? ""
-if !is_empty(strip_whitespace(hostname)) {
-  .host = .hostname
-}
 ._syslog = {}
 {{if .Defaults}}
 {{.Defaults}}

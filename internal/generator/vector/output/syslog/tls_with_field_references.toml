@@ -2,11 +2,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-# set .hostname to the '.host', required by syslog encoder
-hostname = to_string(.hostname) ?? ""
-if !is_empty(strip_whitespace(hostname)) {
-  .host = .hostname
-}
+
 ._syslog = {}
 ._syslog.facility = to_string!(._internal.structured.facility||"user")
 ._syslog.severity = to_string!(._internal.structured.severity||"informational")

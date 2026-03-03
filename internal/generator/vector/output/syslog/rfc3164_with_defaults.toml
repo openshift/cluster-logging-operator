@@ -2,11 +2,7 @@
 type = "remap"
 inputs = ["application"]
 source = '''
-# set .hostname to the '.host', required by syslog encoder
-hostname = to_string(.hostname) ?? ""
-if !is_empty(strip_whitespace(hostname)) {
-  .host = .hostname
-}
+
 ._syslog = {}
 if .log_type == "infrastructure" && .log_source == "node" {
    ._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")

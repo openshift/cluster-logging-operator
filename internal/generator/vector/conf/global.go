@@ -40,6 +40,9 @@ data_dir = "{{.DataDir}}"
 
 [api]
 enabled = true
+
+[log_schema]
+host_key = "hostname"
 {{end}}
 `
 }

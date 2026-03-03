@@ -51,5 +51,61 @@ var _ = Describe("[internal][validations] ClusterLogForwarder will validate head
 			}
 			Expect(validateElasticsearchHeaders(spec)).To(BeEmpty())
 		})
+
+		It("should fail validation when duplicate case-variant headers with same value", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Accept": "application/json",
+				"accept": "application/json",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("duplicate case-variant headers"))
+			Expect(results[0]).To(ContainSubstring("Accept"))
+		})
+
+		It("should fail validation when duplicate case-variant headers with different values", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Accept": "application/json",
+				"accept": "text/plain",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("duplicate case-variant headers"))
+			Expect(results[0]).To(ContainSubstring("Accept"))
+		})
+
+		It("should fail validation with multiple duplicate case-variant headers", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Accept":       "application/json",
+				"accept":       "application/json",
+				"Content-Type": "text/plain",
+				"content-type": "text/plain",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).ToNot(BeEmpty())
+			// Should have errors for both invalid headers and duplicates
+			Expect(len(results)).To(BeNumerically(">=", 2))
+		})
+
+		It("should fail validation with case-variant of forbidden header", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"authorization": "test",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("invalid headers"))
+		})
+
+		It("should fail validation when mixing different case variants", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"X-Custom-Header": "value1",
+				"x-custom-header": "value1",
+				"X-CUSTOM-HEADER": "value1",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("duplicate case-variant headers"))
+			Expect(results[0]).To(ContainSubstring("X-Custom-Header"))
+		})
 	})
 })

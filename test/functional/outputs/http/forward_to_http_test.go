@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -149,4 +149,34 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			Entry("should pass with no compression", "none"))
 	})
 
+	Context("timestamp in audit logs", func() {
+		DescribeTable("audit log should have a valid timestamp",
+			func(writeLog func() error, logSource obs.AuditSource) {
+				obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(obs.InputTypeAudit).
+					ToHttpOutput()
+
+				Expect(framework.Deploy()).To(Succeed())
+
+				Expect(writeLog()).To(Succeed())
+
+				logs, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeHTTP))
+				Expect(err).To(Succeed())
+				Expect(logs).ToNot(BeEmpty())
+				var auditLogs []types.AuditLogCommon
+				jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+				Expect(types.ParseLogsFrom(jsonString, &auditLogs, false)).To(Succeed())
+				Expect(auditLogs).To(HaveLen(1))
+				Expect(auditLogs[0].LogType).To(Equal(string(obs.InputTypeAudit)))
+				Expect(auditLogs[0].LogSource).To(Equal(string(logSource)))
+				Expect(auditLogs[0].Timestamp).ToNot(BeZero())
+			},
+			Entry("kubernetes audit log", func() error {
+				return framework.WriteK8sAuditLog(1)
+			}, obs.AuditSourceKube),
+			Entry("OpenShift audit log", func() error {
+				return framework.WriteOpenshiftAuditLog(1)
+			}, obs.AuditSourceOpenShift),
+		)
+	})
 })

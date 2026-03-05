@@ -2,6 +2,7 @@ package s3_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -154,6 +155,16 @@ var _ = Describe("Generating vector config for s3 output", func() {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.URL = "http://mylogreceiver"
 			}, false, framework.NoOptions, "files/s3_with_url.toml"),
+			Entry("should pass with 'none' compression", func(spec *obs.OutputSpec) {
+				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
+				spec.S3.URL = "http://mylogreceiver"
+				spec.S3.Tuning = &obs.S3TuningSpec{Compression: "none"}
+			} ,true,  framework.NoOptions, "files/s3_with_none_compession.toml"),
+			Entry("should pass with 'gzip' compression", func(spec *obs.OutputSpec) {
+				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
+				spec.S3.URL = "http://mylogreceiver"
+				spec.S3.Tuning = &obs.S3TuningSpec{Compression: "gzip"}
+			} ,true,  framework.NoOptions, "files/s3_with_gzip_compession.toml"),
 		)
 	})
 

@@ -33,23 +33,6 @@ func (e Endpoint) Template() (ret string) {
 	return
 }
 
-type Compression struct {
-	Algorithm string
-}
-
-func (c Compression) Name() string {
-	return "awsS3CompressionTemplate"
-}
-
-func (c Compression) Template() (ret string) {
-	ret = `{{define "` + c.Name() + `" -}}`
-	if c.Algorithm != "" && c.Algorithm != "none" {
-		ret += `compression = "{{ .Algorithm }}"`
-	}
-	ret += `{{end}}`
-	return
-}
-
 type S3 struct {
 	Desc           string
 	ComponentID    string
@@ -57,7 +40,6 @@ type S3 struct {
 	Region         string
 	Bucket         string
 	KeyPrefix      string
-	Compression    framework.Element
 	EndpointConfig framework.Element
 	SecurityConfig framework.Element
 	common.RootMixin
@@ -76,7 +58,7 @@ func (e S3) Template() string {
 type = "aws_s3"
 inputs = {{.Inputs}}
 region = "{{.Region}}"
-{{compose_one .Compression}}
+{{.Compression}}
 bucket = "{{.Bucket}}"
 key_prefix = "{{"{{"}} _internal.{{.KeyPrefix}} {{"}}"}}"
 {{compose_one .SecurityConfig}}
@@ -87,9 +69,7 @@ healthcheck.enabled = false
 }
 
 func (s *S3) SetCompression(algo string) {
-	s.Compression = Compression{
-		Algorithm: algo,
-	}
+	s.Compression.Value = algo
 }
 
 func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op utils.Options) []framework.Element {
@@ -124,10 +104,9 @@ func sink(id string, o obs.OutputSpec, inputs []string, secrets observability.Se
 		Region:         region,
 		Bucket:         bucket,
 		KeyPrefix:      keyPrefix,
-		Compression:    compressionConfig(o.S3),
 		SecurityConfig: aws.AuthConfig(o.Name, o.S3.Authentication, op, secrets),
 		EndpointConfig: endpointConfig(o.S3),
-		RootMixin:      common.NewRootMixin("none"),
+		RootMixin:      common.NewRootMixin(nil),
 	}
 }
 
@@ -140,11 +119,4 @@ func endpointConfig(s3 *obs.S3) framework.Element {
 	}
 }
 
-func compressionConfig(s3 *obs.S3) framework.Element {
-	if s3 == nil || s3.Tuning == nil || s3.Tuning.Compression == "" {
-		return Compression{}
-	}
-	return Compression{
-		Algorithm: s3.Tuning.Compression,
-	}
-}
+

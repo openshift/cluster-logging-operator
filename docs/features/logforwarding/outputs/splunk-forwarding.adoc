@@ -40,7 +40,7 @@ spec:
         indexedFields: ['.log_type', '.log_source'] # <5>
         payloadKey: '.kubernetes' # <6>
         tuning:
-            compression: gzip # <7>
+          compression: gzip # <7>
   pipelines:
     - name: my-logs
       inputRefs:

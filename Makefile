@@ -218,7 +218,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 
 .PHONY: test-functional
 test-functional:
-	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.53.0-rh \
+	RELATED_IMAGE_VECTOR=quay.io/vparfono/vector:v0.54.0-rh \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/outputs/syslog/... \

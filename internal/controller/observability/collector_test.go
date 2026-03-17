@@ -74,9 +74,11 @@ var _ = Describe("Reconciling the Collector", func() {
 			clf.Spec = obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{
-						Name:     "myreceiver",
-						Type:     obs.InputTypeReceiver,
-						Receiver: &obs.ReceiverSpec{},
+						Name: "myreceiver",
+						Type: obs.InputTypeReceiver,
+						Receiver: &obs.ReceiverSpec{
+							Type: obs.ReceiverTypeSyslog,
+						},
 					},
 				},
 				ServiceAccount: obs.ServiceAccount{

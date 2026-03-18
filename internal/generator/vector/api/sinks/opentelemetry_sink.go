@@ -43,6 +43,6 @@ type OpenTelemetryProtocol struct {
 	Request       *Request        `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`
 }
 
-func (s *OpenTelemetry) SinkType() string {
-	return string(s.Type)
+func (s *OpenTelemetry) SinkType() types.SinkType {
+	return s.Type
 }

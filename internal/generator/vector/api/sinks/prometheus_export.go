@@ -15,8 +15,8 @@ type PrometheusExporter struct {
 	TLS              *transport.TlsEnabled `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
 }
 
-func (p PrometheusExporter) SinkType() string {
-	return string(p.Type)
+func (p PrometheusExporter) SinkType() types.SinkType {
+	return p.Type
 }
 
 func NewPrometheusExporter(address string, init func(s *PrometheusExporter), inputs ...string) (s *PrometheusExporter) {

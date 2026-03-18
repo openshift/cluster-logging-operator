@@ -44,8 +44,8 @@ if exists(.kubernetes.event.metadata.uid) {
 		if len(o.Elasticsearch.Headers) > 0 {
 			if s.Request == nil {
 				s.Request = &sinks.Request{}
-				s.Request.Headers = o.Elasticsearch.Headers
 			}
+			s.Request.Headers = o.Elasticsearch.Headers
 		}
 		elasticsearchAuth(s, o, op)
 		if o.Elasticsearch.Version == 6 {

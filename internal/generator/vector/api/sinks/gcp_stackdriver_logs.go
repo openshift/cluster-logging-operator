@@ -43,6 +43,6 @@ func NewGcpStackdriverLogs(init func(s *GcpStackdriverLogs), inputs ...string) (
 	return s
 }
 
-func (s *GcpStackdriverLogs) SinkType() string {
-	return string(s.Type)
+func (s *GcpStackdriverLogs) SinkType() types.SinkType {
+	return s.Type
 }

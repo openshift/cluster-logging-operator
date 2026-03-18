@@ -37,6 +37,6 @@ func NewAwsCloudwatchLogs(init func(s *AwsCloudwatchLogs), inputs ...string) (s 
 	return s
 }
 
-func (s *AwsCloudwatchLogs) SinkType() string {
-	return string(s.Type)
+func (s *AwsCloudwatchLogs) SinkType() types.SinkType {
+	return s.Type
 }

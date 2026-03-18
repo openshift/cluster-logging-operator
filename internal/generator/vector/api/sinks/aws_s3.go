@@ -33,6 +33,6 @@ func NewAwsS3(init func(s *AwsS3), inputs ...string) (s *AwsS3) {
 	return s
 }
 
-func (s *AwsS3) SinkType() string {
-	return string(s.Type)
+func (s *AwsS3) SinkType() types.SinkType {
+	return s.Type
 }

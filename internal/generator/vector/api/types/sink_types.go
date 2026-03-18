@@ -14,9 +14,9 @@ const (
 	SinkTypeOpenTelemetry      SinkType = "opentelemetry"
 	SinkTypePrometheusExporter SinkType = "prometheus_exporter"
 	SinkTypeSocket             SinkType = "socket"
-	SinkTypeSpunkHecLogs       SinkType = "splunk_hec_logs"
+	SinkTypeSplunkHecLogs      SinkType = "splunk_hec_logs"
 )
 
 type Sink interface {
-	SinkType() string
+	SinkType() SinkType
 }

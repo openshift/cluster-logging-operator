@@ -34,7 +34,7 @@ func (sourceMap *Sources) UnmarshalTOML(data interface{}) (err error) {
 			return errors.Join(fmt.Errorf("unable to initialize tree from source %q", id), mapErr)
 		}
 		var typeExtractor struct {
-			Type types.SourceType `yaml:"type"`
+			Type types.SourceType `yaml:"type" toml:"type"`
 		}
 		var source types.Source
 		if err = tree.Unmarshal(&typeExtractor); err != nil {

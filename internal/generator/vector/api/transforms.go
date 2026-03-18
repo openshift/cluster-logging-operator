@@ -38,7 +38,7 @@ func (tMap *Transforms) UnmarshalTOML(data interface{}) (err error) {
 			return errors.Join(fmt.Errorf("unable to initialize tree from transform %q", id), mapErr)
 		}
 		var typeExtractor struct {
-			Type types.TransformType `yaml:"type"`
+			Type types.TransformType `yaml:"type" toml:"type"`
 		}
 		var transform types.Transform
 		if err = tree.Unmarshal(&typeExtractor); err != nil {

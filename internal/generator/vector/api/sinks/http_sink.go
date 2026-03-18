@@ -39,6 +39,6 @@ func NewHttp(url string, init func(s *Http), inputs ...string) (s *Http) {
 	return s
 }
 
-func (s *Http) SinkType() string {
-	return string(s.Type)
+func (s *Http) SinkType() types.SinkType {
+	return s.Type
 }

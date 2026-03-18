@@ -35,8 +35,8 @@ func NewKafka(init func(s *Kafka), inputs ...string) (s *Kafka) {
 	return s
 }
 
-func (s *Kafka) SinkType() string {
-	return string(s.Type)
+func (s *Kafka) SinkType() types.SinkType {
+	return s.Type
 }
 
 type Sasl struct {

@@ -38,7 +38,7 @@ func (sinkMap *Sinks) UnmarshalTOML(data interface{}) (err error) {
 			return errors.Join(fmt.Errorf("unable to initialize tree from sink %q", id), mapErr)
 		}
 		var typeExtractor struct {
-			Type types.SinkType `yaml:"type"`
+			Type types.SinkType `yaml:"type" toml:"type"`
 		}
 		var sink types.Sink
 		if err = tree.Unmarshal(&typeExtractor); err != nil {
@@ -111,7 +111,7 @@ func (sinkMap *Sinks) UnmarshalTOML(data interface{}) (err error) {
 				return fmt.Errorf("failed to unmarshal sink %s: %w", id, err)
 			}
 			sink = &s
-		case types.SinkTypeSpunkHecLogs:
+		case types.SinkTypeSplunkHecLogs:
 			var s sinks.SplunkHecLogs
 			if err = tree.Unmarshal(&s); err != nil {
 				return fmt.Errorf("failed to unmarshal sink %s: %w", id, err)

@@ -38,6 +38,6 @@ func NewLoki(endpoint string, init func(s *Loki), inputs ...string) (s *Loki) {
 	return s
 }
 
-func (s *Loki) SinkType() string {
-	return string(s.Type)
+func (s *Loki) SinkType() types.SinkType {
+	return s.Type
 }

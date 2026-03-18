@@ -23,7 +23,7 @@ type SplunkHecLogs struct {
 func NewSplunkHecLogs(endpoint string, init func(s *SplunkHecLogs), inputs ...string) (s *SplunkHecLogs) {
 	sort.Strings(inputs)
 	s = &SplunkHecLogs{
-		Type:     types.SinkTypeSpunkHecLogs,
+		Type:     types.SinkTypeSplunkHecLogs,
 		Inputs:   inputs,
 		Endpoint: endpoint,
 	}
@@ -33,6 +33,6 @@ func NewSplunkHecLogs(endpoint string, init func(s *SplunkHecLogs), inputs ...st
 	return s
 }
 
-func (s *SplunkHecLogs) SinkType() string {
-	return string(s.Type)
+func (s *SplunkHecLogs) SinkType() types.SinkType {
+	return s.Type
 }

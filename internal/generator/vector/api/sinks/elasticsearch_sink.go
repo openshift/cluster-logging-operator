@@ -31,8 +31,8 @@ func NewElasticsearch(url string, init func(s *Elasticsearch), inputs ...string)
 	return s
 }
 
-func (s *Elasticsearch) SinkType() string {
-	return string(s.Type)
+func (s *Elasticsearch) SinkType() types.SinkType {
+	return s.Type
 }
 
 type ElasticsearchAuth struct {

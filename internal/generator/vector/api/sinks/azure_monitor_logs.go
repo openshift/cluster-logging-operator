@@ -35,6 +35,6 @@ func NewAzureMonitorLogs(init func(s *AzureMonitorLogs), inputs ...string) (s *A
 	return s
 }
 
-func (s *AzureMonitorLogs) SinkType() string {
-	return string(s.Type)
+func (s *AzureMonitorLogs) SinkType() types.SinkType {
+	return s.Type
 }

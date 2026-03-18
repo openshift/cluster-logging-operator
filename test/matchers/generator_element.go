@@ -34,15 +34,21 @@ func (m *GeneratorElementMatcher) Match(expected interface{}) (_ bool, err error
 	}()
 	gformat.TruncatedDiff = true
 	gformat.MaxLength = 0
-	rawExp, expCastable := expected.([]byte)
-	if !expCastable {
-		expectedType := reflect.TypeOf(expected)
-		return false, fmt.Errorf("'expected' can not be converted to a string but is: %v", expectedType.Kind())
+	var expString string
+	expectedType := reflect.TypeOf(expected)
+	if expectedType.Kind() == reflect.String {
+		expString = expected.(string)
+	} else {
+		rawExp, expCastable := expected.([]byte)
+		if !expCastable {
+			return false, fmt.Errorf("'expected' can not be converted to a string but is: %v", expectedType.Kind())
+		}
+		expString = string(rawExp)
 	}
 	expConfig := &api.Config{}
-	if err = toml.Unmarshal(string(rawExp), expConfig); err != nil {
-		log.V(1).Info("expected config can not be unmarshalled as toml. trying another...", "err", err.Error(), "raw", string(rawExp))
-		if err = test.Unmarshal(string(rawExp), expConfig); err != nil {
+	if err = toml.Unmarshal(expString, expConfig); err != nil {
+		log.V(1).Info("expected config can not be unmarshalled as toml. trying another...", "err", err.Error(), "raw", expString)
+		if err = test.Unmarshal(expString, expConfig); err != nil {
 			return false, fmt.Errorf("'expected' can not be unmarshalled as yaml: %v", err)
 		}
 	}

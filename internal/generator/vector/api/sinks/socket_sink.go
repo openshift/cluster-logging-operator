@@ -63,6 +63,6 @@ func NewSocket(mode SocketMode, init func(s *Socket), inputs ...string) (s *Sock
 	return s
 }
 
-func (s *Socket) SinkType() string {
-	return string(s.Type)
+func (s *Socket) SinkType() types.SinkType {
+	return s.Type
 }

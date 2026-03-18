@@ -95,7 +95,7 @@ metadata:
     features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
-    olm.skipRange: '>=6.3.0-0 <6.5.0'
+    olm.skipRange: '>=6.4.0-0 <6.6.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/initialization-resource: |
       {
@@ -119,7 +119,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: cluster-logging.v6.5.0
+  name: cluster-logging.v6.6.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
@@ -2430,4 +2430,4 @@ spec:
     name: vector
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
-  version: 6.5.0
+  version: 6.6.0

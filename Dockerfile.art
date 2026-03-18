@@ -58,5 +58,5 @@ LABEL \
         summary="Operator for log collection and forwarding agents of Red Hat Openshift Logging" \
         url="https://catalog.redhat.com/en/software/containers/openshift-logging/cluster-logging-rhel9-operator/644799230dfd5adb35db6f60" \
         vendor="Red Hat, Inc." \
-        version_minor="v6.5" \
-        version="6.5.0"
+        version_minor="v6.6" \
+        version="6.6.0"

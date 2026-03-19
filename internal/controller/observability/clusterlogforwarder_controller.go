@@ -11,14 +11,17 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	configv1 "github.com/openshift/api/config/v1"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalinit "github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -213,7 +216,38 @@ func (r *ClusterLogForwarderReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Service{}).
 		Owns(&v1.ServiceMonitor{}).
+		Watches(
+			&configv1.APIServer{},
+			handler.EnqueueRequestsFromMapFunc(r.mapAPIServerToClusterLogForwarders),
+			builder.WithPredicates(tls.APIServerTLSProfileChangedPredicate(true)),
+		).
 		Complete(r)
+}
+
+// mapAPIServerToClusterLogForwarders maps APIServer changes to all ClusterLogForwarders
+func (r *ClusterLogForwarderReconciler) mapAPIServerToClusterLogForwarders(ctx context.Context, obj client.Object) []ctrl.Request {
+	if !tls.IsClusterAPIServer(obj) {
+		return nil
+	}
+
+	// List all ClusterLogForwarders across all namespaces
+	clfList := &obsv1.ClusterLogForwarderList{}
+	if err := r.NewForwarderContext().Client.List(ctx, clfList); err != nil {
+		log.Error(err, "Failed to list ClusterLogForwarders")
+		return nil
+	}
+
+	requests := make([]ctrl.Request, 0, len(clfList.Items))
+	for _, clf := range clfList.Items {
+		requests = append(requests, ctrl.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      clf.Name,
+				Namespace: clf.Namespace,
+			},
+		})
+	}
+	log.V(2).Info("APIServer TLS profile changed, enqueuing ClusterLogForwarders", "count", len(requests))
+	return requests
 }
 
 func validateForwarder(forwarderContext internalcontext.ForwarderContext) (valid bool) {

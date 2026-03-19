@@ -12,6 +12,7 @@ import (
 
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,6 +27,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	observabilitycontroller "github.com/openshift/cluster-logging-operator/internal/controller/observability"
+	tlsprofilecontroller "github.com/openshift/cluster-logging-operator/internal/controller/tlsprofile"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
@@ -85,7 +87,7 @@ func main() {
 
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "The address the metrics endpoint binds to. "+
-		"Use :8443 for HTTPS, or set to 0 to disable the metrics service.")
+		"Use :8443 for HTTPS or :8686 for HTTP, or set to 0 to disable the metrics service.")
 
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
@@ -121,6 +123,26 @@ func main() {
 		c.NextProtos = []string{"http/1.1"}
 	}
 	tlsOpts = append(tlsOpts, disableHTTP2)
+
+	// Create a temporary client to fetch cluster TLS profile
+	config := ctrl.GetConfigOrDie()
+	k8sClient, err := client.New(config, client.Options{Scheme: scheme})
+	if err != nil {
+		log.Error(err, "unable to create kubernetes client")
+		os.Exit(1)
+	}
+
+	// Fetch and apply cluster TLS profile
+	clusterTlsOpts, err := internaltls.GetTLSConfigOptions(k8sClient)
+	if err != nil {
+		log.Error(err, "unable to get TLS config options, using defaults")
+	} else {
+		tlsOpts = append(tlsOpts, clusterTlsOpts...)
+		log.Info("Configuring metrics server with cluster TLS profile")
+	}
+
+	// Store initial TLS profile for the watcher
+	initialTLSProfile, _ := internaltls.FetchAPIServerTlsProfile(k8sClient)
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
 	// More info:
@@ -228,6 +250,15 @@ func main() {
 		},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
+		os.Exit(1)
+	}
+
+	// Register TLS Profile Watcher
+	if err = (&tlsprofilecontroller.TLSProfileReconciler{
+		Client:         mgr.GetClient(),
+		InitialProfile: initialTLSProfile,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "TLSProfile")
 		os.Exit(1)
 	}
 

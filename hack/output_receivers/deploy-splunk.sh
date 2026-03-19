@@ -3,13 +3,14 @@
 DOMAIN=$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
 echo ${DOMAIN}
 
-oc apply -f https://github.com/splunk/splunk-operator/releases/download/2.0.0/splunk-operator-cluster.yaml
-oc adm policy add-scc-to-user nonroot -z splunk-operator-controller-manager -n splunk-operator
-oc adm policy add-scc-to-user nonroot -z default -n splunk-operator
+oc apply --server-side --force-conflicts -f https://github.com/splunk/splunk-operator/releases/download/2.8.1/splunk-operator-cluster.yaml
+oc adm policy add-scc-to-user privileged -z splunk-operator-controller-manager -n splunk-operator
+oc adm policy add-scc-to-user privileged -z default -n splunk-operator
+oc set image -n splunk-operator deployment/splunk-operator-controller-manager kube-rbac-proxy=registry.k8s.io/kubebuilder/kube-rbac-proxy:v0.13.1
 oc wait -n splunk-operator --timeout=180s --for=condition=available deployment/splunk-operator-controller-manager
 
 cat <<EOF | oc apply -n splunk-operator -f -
-apiVersion: enterprise.splunk.com/v3
+apiVersion: enterprise.splunk.com/v4
 kind: Standalone
 metadata:
   name: s1

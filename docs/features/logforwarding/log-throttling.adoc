@@ -54,6 +54,9 @@ spec:
     - name: my-loki
       type: lokiStack
       lokiStack:
+        authentication:
+            token:
+              from: serviceAccount
         target:
           name: logging-loki
           namespace: openshift-logging
@@ -158,6 +161,10 @@ spec:
       rateLimit:
         maxRecordsPerSecond: 1000  # <1>
       splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-secret
         url: https://splunk.example.com:8088
   pipelines:
     - name: all-logs
@@ -188,6 +195,9 @@ spec:
       rateLimit:
         maxRecordsPerSecond: 5000  # <1>
       lokiStack:
+        authentication:
+            token:
+              from: serviceAccount
         target:
           name: logging-loki
           namespace: openshift-logging
@@ -255,8 +265,12 @@ spec:
       rateLimit:
         maxRecordsPerSecond: 2000  # <2>
       s3:
+        authentication:
+          credentials:
+            secretName: my-aws-secret
         bucket: my-log-bucket
         region: us-east-1
+        keyPrefix: logs_{.kubernetes.namespace_name||"none"}/
   pipelines:
     - name: app-to-s3
       inputRefs:

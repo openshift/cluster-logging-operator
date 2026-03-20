@@ -1,4 +1,4 @@
-FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.24.6-202510150934.g4284440.el9 AS builder
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.25.7-202602171210.g5015a16.el9 AS builder
 
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
@@ -9,7 +9,7 @@ WORKDIR /opt/app-root/src
 RUN make build BUILD_OPTS="-tags strictfipsruntime"
 
 
-FROM quay.io/openshift/origin-cli-artifacts:4.17 AS origincli
+FROM quay.io/openshift/origin-cli-artifacts:4.19 AS origincli
 
 RUN case $(uname -m) in \
     x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \

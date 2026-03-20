@@ -25,48 +25,46 @@ const (
 
 	vrlKeySyslogFacility = "._syslog.facility"
 	vrlKeySyslogSeverity = "._syslog.severity"
-	vrlKeyRFC3164ProcID  = "proc_id" // for RFC3164 proc_id
-	vrlKeyRFC3164Tag     = "tag"     //for RFC3164 tag
 	vrlKeySyslogProcID   = "._syslog.proc_id"
 	vrlKeySyslogAppName  = "._syslog.app_name"
 	vrlKeySyslogMsgID    = "._syslog.msg_id"
 
-	defProcId = `to_string!(._syslog.proc_id || "-")`
-	defTag    = `to_string!(._syslog.tag || "")`
+	defProcIdRFC3164 = `to_string!(._syslog.proc_id || "")
+if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_id))) { del(._syslog.proc_id) }
+`
+	defAppNameRFC3164 = `to_string!(._syslog.app_name || "")`
 
 	// Default values for Syslog fields for infrastructure logType if source 'node'
-	nodeAppName       = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
-	nodeTag           = `._syslog.tag = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
-	nodeProcIdRFC3164 = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
-	nodeProcIdRFC5424 = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
+	nodeAppNameRFC5424  = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
+	nodeAppNameRFC3164  = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
+	nodeProcIdRFC3164   = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
+	nodeProcIdRFC5424   = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
 
 	// Default values for Syslog fields for application logType and infrastructure logType if source 'container'
-	containerAppName = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
+	containerAppNameRFC5424 = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
 if err != null {
-  log("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'", level: "error") 
+  log("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'", level: "error")
   ._syslog.app_name = "-"
+}
+`
+	containerAppNameRFC3164 = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
+if err != null {
+  log("K8s metadata (namespace, pod, or container) missing: unable to calculate syslog.app_name (TAG)", level: "error")
+} else {
+  #Remove non-alphanumeric characters
+  ._syslog.app_name = replace(._syslog.app_name, r'[^a-zA-Z0-9]', "")
+  #Truncate the sanitized tag to 32 characters
+  ._syslog.app_name = truncate(._syslog.app_name, 32)
 }
 `
 	containerFacility = `._syslog.facility = "user"`
 	containerSeverity = `._syslog.severity = .level`
-	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "-")`
-	containerTag      = `._syslog.tag, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
-if err != null {
-  log("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty", level: "error") 
-  ._syslog.tag = ""
-} else {
-  #Remove non-alphanumeric characters
-  ._syslog.tag = replace(._syslog.tag, r'[^a-zA-Z0-9]', "")
-  #Truncate the sanitized tag to 32 characters
-  ._syslog.tag = truncate(._syslog.tag, 32)
-}
-`
+	containerProcId   = `._syslog.proc_id = to_string!(.kubernetes.pod_id || "")`
 
 	// Default values for Syslog fields for audit logType
-	auditTag      = `._syslog.tag = .log_source`
+	auditAppName  = `._syslog.app_name = .log_source`
 	auditSeverity = `._syslog.severity = "informational"`
 	auditFacility = `._syslog.facility = "security"`
-	auditAppName  = `._syslog.app_name = .log_source`
 	auditProcId   = `._syslog.proc_id = to_string!(.auditID || "-")`
 
 	msgId = `._syslog.msg_id = .log_source`
@@ -75,23 +73,97 @@ if err != null {
 	isInfrastructureNodeLogCond = `.log_type == "infrastructure" && .log_source == "node"`
 	isContainerLogCond          = `.log_source == "container"`
 	isAuditLogCond              = `.log_type == "audit"`
-	defaultPayloadKey           = "payload_key"
+
+	facilitySeverityConversionVRL = `
+# try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
+if exists(._syslog.facility) {
+  _, err = to_syslog_facility_code(._syslog.facility)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.facility)
+    if err2 == null {
+      facility, err3 = to_syslog_facility(code)
+      if err3 == null {
+        ._syslog.facility = facility
+      } else {
+        log("Invalid syslog facility code: " + to_string!(._syslog.facility) , level: "warn")
+      }
+    } else {
+      log("Invalid syslog facility value: " + to_string!(._syslog.facility), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
+}
+
+if exists(._syslog.severity) {
+  _, err = to_syslog_severity(._syslog.severity)
+  if err != null {
+    # Field is not a valid name — try treating it as a code (int or string int)
+    code, err2 = to_int(._syslog.severity)
+    if err2 == null {
+      severity, err3 = to_syslog_level(code)
+      if err3 == null {
+        ._syslog.severity = severity
+      } else {
+        log("Invalid syslog severity code: " + to_string!(._syslog.severity), level: "warn")
+      }
+    } else {
+      log("Invalid syslog severity value: " + to_string!(._syslog.severity), level: "warn")
+    }
+  }
+  # else: already a valid name, leave it as-is
+}`
+
+	payloadKeyDefaultVRL = `
+# Payload key NOT configured, full payload set to .message field (skipping internal objects)
+excluded_fields = ["_internal", "_syslog"]
+temp = .
+for_each(excluded_fields) -> |_index, field| {
+  temp = remove(temp, [field]) ?? temp
+}
+.message = temp`
+
+	payloadKeyConfiguredVRL = `
+# Payload key configured, going to use the payload key for .message field
+payload_key = %s
+if payload_key != null && payload_key != "" {
+  payload_key = string!(payload_key)
+  path = split!(payload_key, ".")
+  value, err = get(., path)
+  if err == null && value != null {
+    .message = value
+  } else {
+    log("payload_key not found in event, skipping", level: "warn")
+  }
+} else {
+  excluded_fields = ["_internal", "_syslog"]
+  temp = .
+  for_each(excluded_fields) -> |_index, field| {
+    temp = remove(temp, [field]) ?? temp
+  }
+  .message = temp
+}`
+
+	kubernetesMinimalEnrichmentVRL = `
+# KubernetesMinimal
+# Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
+# This may result in the message body being an invalid JSON structure.
+
+namespace = to_string(.kubernetes.namespace_name) ?? ""
+container = to_string(.kubernetes.container_name) ?? ""
+pod = to_string(.kubernetes.pod_name) ?? ""
+msg_value = encode_json(.message)
+
+.message = "namespace_name=\"" + namespace + "\"" +
+           ", container_name=\"" + container + "\"" +
+           ", pod_name=\"" + pod + "\"" +
+           ", message=" + msg_value`
 )
-
-type FieldVRLStringPair struct {
-	Field     string
-	VRLString string
-}
-
-type EncodingTemplateField struct {
-	FieldVRLList []FieldVRLStringPair
-}
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	parseEncodingID := vectorhelpers.MakeID(id, "parse_encoding")
-	templateFieldPairs := getEncodingTemplatesAndFields(*o.Syslog)
 	tfs = api.Transforms{}
-	tfs[parseEncodingID] = parseEncoding(inputs, templateFieldPairs, o.Syslog)
+	tfs[parseEncodingID] = parseEncoding(inputs, o.Syslog)
 
 	u, _ := url.Parse(o.Syslog.URL)
 	mode := socketMode(u.Scheme)
@@ -110,125 +182,78 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 }
 
 func socketMode(urlScheme string) sinks.SocketMode {
-	scheme := strings.ToLower(urlScheme)
-	switch scheme {
-	case TLS:
-		return sinks.SocketModeTCP
-	case TCP:
+	switch strings.ToLower(urlScheme) {
+	case TCP, TLS:
 		return sinks.SocketModeTCP
 	case "udp":
 		return sinks.SocketModeUDP
 	default:
-		// Pass through unknown schemes for vector validation
-		return sinks.SocketMode(scheme)
+		return sinks.SocketMode(strings.ToLower(urlScheme))
 	}
 }
 
 func buildSocketEncoding(o obs.OutputSpec) *sinks.SocketEncoding {
-	encoding := &sinks.SocketEncoding{
-		Codec:        "syslog",
-		ExceptFields: []string{"_internal"},
-		RFC:          strings.ToLower(string(o.Syslog.RFC)),
-		Facility:     "$$._syslog.facility",
-		Severity:     "$$._syslog.severity",
-		ProcID:       "$$._syslog.proc_id",
+	syslogConfig := &sinks.SyslogEncodingConfig{
+		RFC:      strings.ToLower(string(o.Syslog.RFC)),
+		Facility: "._syslog.facility",
+		Severity: "._syslog.severity",
+		AppName:  "._syslog.app_name",
+		ProcID:   "._syslog.proc_id",
 	}
 
-	// RFC-specific fields
-	switch o.Syslog.RFC {
-	case obs.SyslogRFC5424:
-		encoding.AppName = "$$._syslog.app_name"
-		encoding.MsgID = "$$._syslog.msg_id"
-	case obs.SyslogRFC3164:
-		encoding.Tag = "$$._syslog.tag"
+	if o.Syslog.RFC == obs.SyslogRFC5424 {
+		syslogConfig.MsgID = "._syslog.msg_id"
 	}
 
-	// Add log source
-	if o.Syslog.Enrichment == obs.EnrichmentTypeKubernetesMinimal {
-		addLogSource := true
-		encoding.AddLogSource = &addLogSource
-	} else {
-		addLogSource := false
-		encoding.AddLogSource = &addLogSource
+	return &sinks.SocketEncoding{
+		Codec:  "syslog",
+		Syslog: syslogConfig,
 	}
-
-	// Payload key
-	if o.Syslog.PayloadKey != "" {
-		encoding.PayloadKey = defaultPayloadKey
-	}
-
-	return encoding
 }
 
-// getEncodingTemplatesAndFields determines which encoding fields are templated
-// so that the templates can be parsed to appropriate VRL
-func getEncodingTemplatesAndFields(s obs.Syslog) EncodingTemplateField {
-	templateFields := EncodingTemplateField{
-		FieldVRLList: []FieldVRLStringPair{},
-	}
+func parseEncoding(inputs []string, o *obs.Syslog) types.Transform {
+	vrls := []string{"\n._syslog = {}", buildDefaults(o)}
 
-	appendField := func(fieldName string, userTemplateValue string, defaultValue string) {
-		var vrlString string
-
-		if userTemplateValue != "" {
-			vrlString = commontemplate.TransformUserTemplateToVRL(userTemplateValue)
-		} else {
-			vrlString = defaultValue
+	appendField := func(field, userValue, defaultValue string) {
+		vrl := defaultValue
+		if userValue != "" {
+			vrl = commontemplate.TransformUserTemplateToVRL(userValue)
 		}
-
-		if vrlString != "" {
-			templateFields.FieldVRLList = append(templateFields.FieldVRLList, FieldVRLStringPair{
-				Field:     fieldName,
-				VRLString: vrlString,
-			})
+		if vrl != "" {
+			vrls = append(vrls, fmt.Sprintf("%s = %s", field, vrl))
 		}
 	}
 
-	appendField(vrlKeySyslogFacility, s.Facility, "")
-	appendField(vrlKeySyslogSeverity, s.Severity, "")
+	appendField(vrlKeySyslogFacility, o.Facility, "")
+	appendField(vrlKeySyslogSeverity, o.Severity, "")
 
-	if s.RFC == obs.SyslogRFC3164 {
-		appendField(vrlKeyRFC3164ProcID, s.ProcId, defProcId)
-		appendField(vrlKeyRFC3164Tag, s.AppName, defTag)
-	} else {
-		appendField(vrlKeySyslogProcID, s.ProcId, "")
-		appendField(vrlKeySyslogAppName, s.AppName, "")
-		appendField(vrlKeySyslogMsgID, s.MsgId, "")
-	}
-
-	return templateFields
-}
-
-func parseEncoding(inputs []string, templatePairs EncodingTemplateField, o *obs.Syslog) types.Transform {
-	vrls := []string{buildDefaults(o)}
-	for _, tf := range templatePairs.FieldVRLList {
-		vrls = append(vrls, fmt.Sprintf("%s = %s", tf.Field, tf.VRLString))
-	}
 	if o.RFC == obs.SyslogRFC3164 {
-		vrls = append(vrls, `
-if proc_id != "-" && proc_id != "" {
-  ._syslog.tag = to_string(tag||"") + "[" + to_string(proc_id)  + "]"
-} else {
-  ._syslog.tag = to_string(tag)
-}
-`)
+		appendField(vrlKeySyslogProcID, o.ProcId, defProcIdRFC3164)
+		appendField(vrlKeySyslogAppName, o.AppName, defAppNameRFC3164)
+	} else {
+		appendField(vrlKeySyslogProcID, o.ProcId, "")
+		appendField(vrlKeySyslogAppName, o.AppName, "")
+		appendField(vrlKeySyslogMsgID, o.MsgId, "")
 	}
+
+	vrls = append(vrls, facilitySeverityConversionVRL)
+
 	if key := PayloadKey(o.PayloadKey); key != "" {
-		vrls = append(vrls, fmt.Sprintf(`
-if is_null(%s) {
-	.payload_key = .
-} else {
-	.payload_key = %s
-}
-`, key, key))
+		vrls = append(vrls, fmt.Sprintf(payloadKeyConfiguredVRL, key))
+	} else {
+		vrls = append(vrls, payloadKeyDefaultVRL)
 	}
+
+	if o.Enrichment == obs.EnrichmentTypeKubernetesMinimal {
+		vrls = append(vrls, kubernetesMinimalEnrichmentVRL)
+	}
+
 	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs...)
 }
 
-// PayloadKey returns the whole message or if user templated, uses the specified field from the message.
-// This defaults to the whole message
+// PayloadKey returns the field path from a user template like "{.plKey}" -> ".plKey".
+// Returns empty string if no payload key is configured.
 func PayloadKey(plKey string) string {
-	// Default
 	if plKey == "" {
 		return ""
 	}
@@ -252,19 +277,37 @@ func buildDefaults(o *obs.Syslog) string {
 	}
 
 	var builder strings.Builder
-	var defaultRules []defaultRule
+	var rules []defaultRule
 
 	switch o.RFC {
 	case obs.SyslogRFC3164:
-		buildRFC3164Rules(o, &defaultRules)
+		buildRFC3164Rules(o, &rules)
 	case obs.SyslogRFC5424:
-		buildRFC5424Rules(o, &defaultRules)
-	default:
+		buildRFC5424Rules(o, &rules)
 	}
 
-	writeRulesToBuilder(&builder, defaultRules)
+	for _, rule := range rules {
+		if rule.cond != "" {
+			fmt.Fprintf(&builder, "if %s {\n", rule.cond)
+		}
+		for _, s := range []string{rule.appName, rule.procId, rule.severity, rule.facility, rule.msgId} {
+			if s != "" {
+				builder.WriteString(s + "\n")
+			}
+		}
+		if rule.cond != "" {
+			builder.WriteString("}\n")
+		}
+	}
 
 	return builder.String()
+}
+
+func defaultIfEmpty(val, defaultVal string) string {
+	if val == "" {
+		return defaultVal
+	}
+	return ""
 }
 
 // buildRFC3164Rules constructs the default rules for RFC3164 format
@@ -272,8 +315,8 @@ func buildRFC3164Rules(o *obs.Syslog, rules *[]defaultRule) {
 	if o.ProcId == "" || o.AppName == "" {
 		*rules = append(*rules, defaultRule{
 			cond:    isInfrastructureNodeLogCond,
-			appName: getDefaultForEmpty(o.AppName, nodeTag),
-			procId:  getDefaultForEmpty(o.ProcId, nodeProcIdRFC3164),
+			appName: defaultIfEmpty(o.AppName, nodeAppNameRFC3164),
+			procId:  defaultIfEmpty(o.ProcId, nodeProcIdRFC3164),
 		})
 	}
 
@@ -281,15 +324,15 @@ func buildRFC3164Rules(o *obs.Syslog, rules *[]defaultRule) {
 		*rules = append(*rules,
 			defaultRule{
 				cond:     isContainerLogCond,
-				appName:  getDefaultForEmpty(o.AppName, containerTag),
-				severity: getDefaultForEmpty(o.Severity, containerSeverity),
-				facility: getDefaultForEmpty(o.Facility, containerFacility),
+				appName:  defaultIfEmpty(o.AppName, containerAppNameRFC3164),
+				severity: defaultIfEmpty(o.Severity, containerSeverity),
+				facility: defaultIfEmpty(o.Facility, containerFacility),
 			},
 			defaultRule{
 				cond:     isAuditLogCond,
-				appName:  getDefaultForEmpty(o.AppName, auditTag),
-				severity: getDefaultForEmpty(o.Severity, auditSeverity),
-				facility: getDefaultForEmpty(o.Facility, auditFacility),
+				appName:  defaultIfEmpty(o.AppName, auditAppName),
+				severity: defaultIfEmpty(o.Severity, auditSeverity),
+				facility: defaultIfEmpty(o.Facility, auditFacility),
 			},
 		)
 	}
@@ -299,7 +342,6 @@ func buildRFC3164Rules(o *obs.Syslog, rules *[]defaultRule) {
 func buildRFC5424Rules(o *obs.Syslog, rules *[]defaultRule) {
 	if o.MsgId == "" {
 		*rules = append(*rules, defaultRule{
-			cond:  "",
 			msgId: msgId,
 		})
 	}
@@ -307,8 +349,8 @@ func buildRFC5424Rules(o *obs.Syslog, rules *[]defaultRule) {
 	if o.ProcId == "" || o.AppName == "" {
 		*rules = append(*rules, defaultRule{
 			cond:    isInfrastructureNodeLogCond,
-			appName: getDefaultForEmpty(o.AppName, nodeAppName),
-			procId:  getDefaultForEmpty(o.ProcId, nodeProcIdRFC5424),
+			appName: defaultIfEmpty(o.AppName, nodeAppNameRFC5424),
+			procId:  defaultIfEmpty(o.ProcId, nodeProcIdRFC5424),
 		})
 	}
 
@@ -316,52 +358,18 @@ func buildRFC5424Rules(o *obs.Syslog, rules *[]defaultRule) {
 		*rules = append(*rules,
 			defaultRule{
 				cond:     isContainerLogCond,
-				appName:  getDefaultForEmpty(o.AppName, containerAppName),
-				procId:   getDefaultForEmpty(o.ProcId, containerProcId),
-				severity: getDefaultForEmpty(o.Severity, containerSeverity),
-				facility: getDefaultForEmpty(o.Facility, containerFacility),
+				appName:  defaultIfEmpty(o.AppName, containerAppNameRFC5424),
+				procId:   defaultIfEmpty(o.ProcId, containerProcId),
+				severity: defaultIfEmpty(o.Severity, containerSeverity),
+				facility: defaultIfEmpty(o.Facility, containerFacility),
 			},
 			defaultRule{
 				cond:     isAuditLogCond,
-				appName:  getDefaultForEmpty(o.AppName, auditAppName),
-				procId:   getDefaultForEmpty(o.ProcId, auditProcId),
-				severity: getDefaultForEmpty(o.Severity, auditSeverity),
-				facility: getDefaultForEmpty(o.Facility, auditFacility),
+				appName:  defaultIfEmpty(o.AppName, auditAppName),
+				procId:   defaultIfEmpty(o.ProcId, auditProcId),
+				severity: defaultIfEmpty(o.Severity, auditSeverity),
+				facility: defaultIfEmpty(o.Facility, auditFacility),
 			},
 		)
-	}
-}
-
-// writeRulesToBuilder converts the rules collection into formatted string
-func writeRulesToBuilder(builder *strings.Builder, rules []defaultRule) {
-	for _, rule := range rules {
-
-		if rule.cond != "" {
-			fmt.Fprintf(builder, "if %s {\n", rule.cond)
-		}
-
-		writeIfNotEmpty(builder, rule.appName)
-		writeIfNotEmpty(builder, rule.procId)
-		writeIfNotEmpty(builder, rule.severity)
-		writeIfNotEmpty(builder, rule.facility)
-		writeIfNotEmpty(builder, rule.msgId)
-
-		if rule.cond != "" {
-			builder.WriteString("}\n")
-		}
-	}
-}
-
-func getDefaultForEmpty(val, defaultVal string) string {
-	if val == "" {
-		return defaultVal
-	}
-	return ""
-}
-
-// writeIfNotEmpty adds a string followed by newline to the builder if string is not empty
-func writeIfNotEmpty(builder *strings.Builder, s string) {
-	if s != "" {
-		builder.WriteString(s + "\n")
 	}
 }

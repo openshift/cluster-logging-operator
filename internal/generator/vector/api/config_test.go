@@ -16,6 +16,9 @@ data_dir = "/var/lib/vector/openshift-logging/collector"
 [api]
 enabled = true
 
+[log_schema]
+host_key = "hostname"
+
 # Load sensitive data from files
 [secret.kubernetes_secret]
 type = "file"
@@ -40,6 +43,8 @@ expire_metrics_secs: 60
 data_dir: "/var/lib/vector/openshift-logging/collector"
 api:
   enabled: true
+log_schema: 
+  host_key: "hostname"
 secret:
   kubernetes_secret:
     type: "file"

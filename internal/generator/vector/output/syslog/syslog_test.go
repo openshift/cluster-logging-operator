@@ -126,6 +126,11 @@ var _ = Describe("vector syslog clf output", func() {
 				DeliveryMode: obs.DeliveryModeAtLeastOnce,
 			}
 		}, true),
+
+		Entry("should configure KubernetesMinimal enrichment", "tcp_with_kubernetes_minimal_enrichment.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tcp://logserver:514"
+			spec.Syslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
+		}, false),
 	)
 
 })

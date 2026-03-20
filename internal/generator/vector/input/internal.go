@@ -5,25 +5,22 @@ import (
 
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms/remap"
-	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
 )
 
 const (
 	fmtLogSource     = `._internal.log_source = %q`
 	fmtLogType       = `._internal.log_type = %q`
 	logTypeContainer = `
-  # If namespace is infra, label log_type as infra
-  if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
-      ._internal.log_type = "infrastructure"
-  } else {
-      ._internal.log_type = "application"
-  }
+# If namespace is infra, label log_type as infra
+if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+  ._internal.log_type = "infrastructure"
+} else {
+  ._internal.log_type = "application"
+}
 `
 	parseStructured = `
 ._internal.structured = parse_json!(string!(._internal.message))
@@ -39,7 +36,7 @@ const (
 )
 
 // NewAuditInternalNormalization returns configuration elements to normalize audit log entries to an internal, common data model
-func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs string, parseIntoStructured bool, addVRLs ...string) framework.Element {
+func NewAuditInternalNormalization(logSource obs.AuditSource, inputs string, parseIntoStructured bool, addVRLs ...string) types.Transform {
 	vrls := []string{setEnvelope}
 	if parseIntoStructured {
 		vrls = append(vrls, parseStructured)
@@ -52,18 +49,14 @@ func NewAuditInternalNormalization(id string, logSource obs.AuditSource, inputs 
 		setOpenshiftSequence,
 	)
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs)
 }
 
 // NewInternalNormalization returns configuration elements to normalize log entries to an internal, common data model
-func NewInternalNormalization(id string, logSource, logType interface{}, inputs string, addVRLs ...string) framework.Element {
-	logTypeVRL := fmt.Sprintf(fmtLogType, logType)
+func NewInternalNormalization(logSource, logType interface{}, inputs string, addVRLs ...string) types.Transform {
 	vrls := []string{setEnvelope}
 
+	logTypeVRL := fmt.Sprintf(fmtLogType, logType)
 	if logSource == obs.InfrastructureSourceContainer {
 		logTypeVRL = logTypeContainer
 		// Add kubernetes container iostream for all container sources
@@ -77,12 +70,11 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 		v1.SetLogLevel,
 	)
 	vrls = append(vrls, addVRLs...)
-	vrl := strings.Join(vrls, "\n")
-	return remap.New(id, vrl, inputs)
+	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs)
 }
 
 // NewJournalInternalNormalization returns configuration elements to normalize journal log entries to an internal, common data model
-func NewJournalInternalNormalization(id string, logSource interface{}, envelopeVrl, inputs string, addVRLs ...string) framework.Element {
+func NewJournalInternalNormalization(logSource interface{}, envelopeVrl, inputs string, addVRLs ...string) types.Transform {
 	vrls := []string{
 		envelopeVrl,
 		fmt.Sprintf(fmtLogSource, logSource),
@@ -91,15 +83,11 @@ func NewJournalInternalNormalization(id string, logSource interface{}, envelopeV
 		setOpenshiftSequence,
 	}
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs)
 }
 
 // NewJournalInternalNormalization returns configuration elements to normalize journal log entries to an internal, common data model
-func NewReceiverInternalNormalization(id string, logSource interface{}, envelopeVrl, inputs string, addVRLs ...string) framework.Element {
+func NewReceiverInternalNormalization(logSource interface{}, envelopeVrl, inputs string, addVRLs ...string) types.Transform {
 	vrls := []string{
 		envelopeVrl,
 		fmt.Sprintf(fmtLogSource, logSource),
@@ -108,9 +96,5 @@ func NewReceiverInternalNormalization(id string, logSource interface{}, envelope
 		`._internal.message = del(._internal.structured.message)`,
 	}
 	vrls = append(vrls, addVRLs...)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs)
 }

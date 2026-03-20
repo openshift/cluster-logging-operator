@@ -19,16 +19,21 @@ enabled = true
 # Load sensitive data from files
 [secret.kubernetes_secret]
 type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"
+scrape_interval_seconds = 2
 
 [transforms.bar]
+inputs = ["internal_metrics"]
 type = "remap"
+source = "abc 123"
 
 [sinks.foo]
-type = "foo"
+inputs = ["bar"]
+type = "http"
+uri = "http://nowhwere:123"
 `
 	configYaml = `
 expire_metrics_secs: 60
@@ -38,24 +43,29 @@ api:
 secret:
   kubernetes_secret:
     type: "file"
-    base_path: "/var/run/ocp-collector/secrets"
+    path: "/var/run/ocp-collector/secrets"
 sources:
   internal_metrics:
     type: "internal_metrics"
+    scrape_interval_seconds: 2
 transforms:
   bar:
+    inputs: ["internal_metrics"]
     type: "remap"
+    source: "abc 123"
 sinks:
   foo:
-    type: "foo"
+    inputs: ["bar"]
+    type: "http"
+    uri: "http://nowhwere:123"
 `
 )
 
 var _ = Describe("Config", func() {
 
-	It("should highlevel roundtrip serialization without field loss", func() {
+	It("should high level round-trip serialization without field loss", func() {
 		config := &vectorapi.Config{}
-		toml.MustUnMarshal(configToml, config)
+		toml.MustUnmarshal(configToml, config)
 		Expect(test.YAMLString(config)).To(MatchYAML(configYaml))
 	})
 

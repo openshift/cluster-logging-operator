@@ -8,9 +8,8 @@ import (
 
 	"text/template"
 
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 )
 
 var (
@@ -26,7 +25,7 @@ type Template struct {
 	VRLString string
 }
 
-func TemplateRemap(componentID string, inputs []string, userTemplate, field, description string) framework.Element {
+func NewTemplateRemap(inputs []string, userTemplate, field string) types.Transform {
 	// Generate template
 	w := &strings.Builder{}
 
@@ -36,13 +35,7 @@ func TemplateRemap(componentID string, inputs []string, userTemplate, field, des
 			VRLString: TransformUserTemplateToVRL(userTemplate),
 		},
 	)
-
-	return elements.Remap{
-		Desc:        description,
-		ComponentID: componentID,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         w.String(),
-	}
+	return transforms.NewRemap(w.String(), inputs...)
 }
 
 // TransformUserTemplateToVRL converts the user entered template to VRL compatible syntax

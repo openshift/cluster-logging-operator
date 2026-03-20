@@ -6,9 +6,12 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	helpers2 "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
@@ -21,7 +24,7 @@ const (
 
 var (
 	//// TODO: Remove ES/Kibana from excludes
-	loggingExcludes = source.NewContainerPathGlobBuilder().
+	loggingExcludes = helpers2.NewContainerPathGlobBuilder().
 			AddOther(
 			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.LogfilesmetricexporterName),
 			fmt.Sprintf(nsPodPathFmt, constants.OpenshiftNS, constants.ElasticsearchName),
@@ -36,8 +39,10 @@ var (
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
 )
 
-// NewContainerSource generates config elements and the id reference of this input and normalizes
-func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string, logType obs.InputType, logSource interface{}) ([]framework.Element, []string) {
+// NewContainerSource generates the source and transforms to support this input and
+// returns an identifier id, source, transforms, and sets the list of ids to use for downstream components.
+func NewContainerSource(spec *adapters.Input, includes, excludes []string, logType obs.InputType, logSource interface{}) (id string, source types.Source, tfs api.Transforms) {
+	tfs = api.Transforms{}
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	maxMsgSize := int64(0)
@@ -59,21 +64,38 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 	}
 
 	metaID := helpers.MakeID(base, "meta")
-	k8sLogs := source.NewKubernetesLogs(base, includes, excludes, maxMsgSize)
-	k8sLogs.ExtraLabelSelector = source.LabelSelectorFrom(selector)
-	el := []framework.Element{
-		k8sLogs,
-		NewInternalNormalization(metaID, logSource, logType, base),
-	}
-	inputID := metaID
-	//TODO: DETERMINE IF key field is correct and actually works
-	if threshold, hasPolicy := internalobs.MaxRecordsPerSecond(spec); hasPolicy {
-		throttleID := helpers.MakeID(base, "throttle")
-		inputID = throttleID
-		el = append(el, AddThrottleToInput(throttleID, metaID, threshold)...)
-	}
+	source = sources.NewKubernetesLogs(func(kl *sources.KubernetesLogs) {
+		kl.MaxReadBytes = 3145728
+		kl.GlobMinimumCooldownMillis = 15000
+		kl.AutoPartialMerge = true
+		kl.MaxMergedLineBytes = uint64(maxMsgSize)
+		kl.IncludePathsGlobPatterns = includes
+		kl.ExcludePathsGlobPatterns = excludes
+		kl.ExtraLabelSelector = helpers2.LabelSelectorFrom(selector)
+		kl.PodAnnotationFields = &sources.PodAnnotationFields{
+			PodLabels:      "kubernetes.labels",
+			PodNamespace:   "kubernetes.namespace_name",
+			PodAnnotations: "kubernetes.annotations",
+			PodUid:         "kubernetes.pod_id",
+			PodNodeName:    "hostname",
+		}
+		kl.NamespaceAnnotationFields = &sources.NamespaceAnnotationFields{
+			NamespaceUid: "kubernetes.namespace_id",
+		}
+		kl.RotateWaitSecs = 5
+		kl.UseApiServerCache = true
+	})
+	tfs.Add(metaID, NewInternalNormalization(logSource, logType, base))
+	id = metaID
 
-	return el, []string{inputID}
+	//TODO: DETERMINE IF key field is correct and actually works
+	if threshold, hasPolicy := internalobs.MaxRecordsPerSecond(spec.InputSpec); hasPolicy {
+		throttleID := helpers.MakeID(base, "throttle")
+		id = throttleID
+		tfs.Add(throttleID, AddThrottleToInput(metaID, threshold))
+	}
+	spec.Ids = append(spec.Ids, id)
+	return base, source, tfs
 }
 
 // pruneInfraNS returns a pruned infra namespace list depending on which infra namespaces were included

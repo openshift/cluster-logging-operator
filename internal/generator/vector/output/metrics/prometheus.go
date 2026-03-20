@@ -1,7 +1,16 @@
 package metrics
 
 import (
+	"fmt"
+
+	configv1 "github.com/openshift/api/config/v1"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/transport"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
@@ -9,72 +18,41 @@ import (
 const (
 	AddNodenameToMetricTransformName = "add_nodename_to_metric"
 	PrometheusOutputSinkName         = "prometheus_output"
-	PrometheusExporterListenPort     = `24231`
+	prometheusExporterListenPort     = `24231`
 )
 
 type PrometheusExporter struct {
-	ID            string
-	Inputs        string
-	Address       string
-	TlsMinVersion string
-	CipherSuites  string
+	TLS *obs.TLSSpec
 }
 
-func (p PrometheusExporter) Name() string {
-	return "PrometheusExporterTemplate"
+func (p PrometheusExporter) GetTlsSpec() *obs.TLSSpec {
+	return p.TLS
 }
 
-func (p PrometheusExporter) Template() string {
-	return `{{define "` + p.Name() + `" -}}
-[sinks.{{.ID}}]
-type = "prometheus_exporter"
-inputs = {{.Inputs}}
-address = "{{.Address}}"
-default_namespace = "collector"
-
-[sinks.{{.ID}}.tls]
-enabled = true
-key_file = "/etc/collector/metrics/tls.key"
-crt_file = "/etc/collector/metrics/tls.crt"
-min_tls_version = "{{.TlsMinVersion}}"
-ciphersuites = "{{.CipherSuites}}"
-{{end}}`
+func (p PrometheusExporter) IsInsecureSkipVerify() bool {
+	return false
 }
 
-type AddNodenameToMetric struct {
-	ID     string
-	Inputs string
+func (p PrometheusExporter) GetTlsSecurityProfile() *configv1.TLSSecurityProfile {
+	return nil
 }
 
-func (a AddNodenameToMetric) Name() string {
-	return AddNodenameToMetricTransformName
-}
-
-func (a AddNodenameToMetric) Template() string {
-	return `{{define "` + a.Name() + `" -}}
-[transforms.{{.ID}}]
-type = "remap"
-inputs = {{.Inputs}}
-source = '''
-.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
-'''
-{{end}}`
-}
-
-func PrometheusOutput(id string, inputs []string, minTlsVersion string, cipherSuites string, op utils.Options) framework.Element {
+func PrometheusOutput(inputs []string, op utils.Options) (sink types.Sink) {
 	inputs = append(inputs, op.GetStringSet(framework.OptionLogsToMetricInputs)...)
-	return PrometheusExporter{
-		ID:            id,
-		Inputs:        helpers.MakeInputs(inputs...),
-		Address:       helpers.ListenOnAllLocalInterfacesAddress() + `:` + PrometheusExporterListenPort,
-		TlsMinVersion: minTlsVersion,
-		CipherSuites:  cipherSuites,
-	}
+	address := fmt.Sprintf("%s:%s", helpers.ListenOnAllLocalInterfacesAddress(), prometheusExporterListenPort)
+	return sinks.NewPrometheusExporter(address, func(s *sinks.PrometheusExporter) {
+		s.DefaultNamespace = "collector"
+		s.TLS = tls.NewTlsEnabled(nil, nil, op)
+		if s.TLS == nil {
+			s.TLS = &transport.TlsEnabled{}
+		}
+		s.TLS.Enabled = true
+		s.TLS.KeyFile = "/etc/collector/metrics/tls.key"
+		s.TLS.CRTFile = "/etc/collector/metrics/tls.crt"
+		tls.SetTLSProfile(&s.TLS.TLS, op)
+	}, inputs...)
 }
 
-func AddNodeNameToMetric(id string, inputs []string) framework.Element {
-	return AddNodenameToMetric{
-		ID:     id,
-		Inputs: helpers.MakeInputs(inputs...),
-	}
+func AddNodeNameToMetric(inputs []string) types.Transform {
+	return transforms.NewRemap(`.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")`, inputs...)
 }

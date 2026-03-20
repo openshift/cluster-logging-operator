@@ -3,10 +3,11 @@ package deployment
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	corev1 "k8s.io/api/core/v1"
-	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"

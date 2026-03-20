@@ -2,46 +2,23 @@ package conf
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-// TODO: this needs to be verified
-func Global(namespace, forwarderName string) []framework.Element {
+func Global(c *api.Config, namespace, forwarderName string) *api.Config {
 	dataDir := vector.GetDataPath(namespace, forwarderName)
 	if dataDir == vector.DefaultDataPath {
 		dataDir = ""
 	}
-	return []framework.Element{
-		GlobalOptions{
-			ExpireMetricsSecs: 60,
-			DataDir:           dataDir,
-		},
-		common.NewVectorSecret(),
+	c.Api = &api.Api{Enabled: true}
+	c.Global = api.Global{
+		ExpireMetricsSec: 60,
+		DataDir:          dataDir,
 	}
+	c.Secret = map[string]*api.Secret{
+		helpers.VectorSecretID: api.NewDirectorySecret(constants.CollectorSecretsDir),
+	}
+	return c
 }
-
-type GlobalOptions struct {
-	ExpireMetricsSecs int
-	DataDir           string
-}
-
-func (GlobalOptions) Name() string {
-	return "globalOptionsTemplate"
-}
-
-func (g GlobalOptions) Template() string {
-	return `
-{{define "` + g.Name() + `" -}}
-expire_metrics_secs = {{.ExpireMetricsSecs}}
-{{ if .DataDir}}
-data_dir = "{{.DataDir}}"
-{{end}}
-
-[api]
-enabled = true
-{{end}}
-`
-}
-
-// This is a temp fix for vector api no longer working

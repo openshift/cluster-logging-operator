@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -47,8 +49,12 @@ var _ = Describe("inputs", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 		}
-		conf, _ := NewSource(input, constants.OpenshiftNS, *factory.ResourceNames(clf), secrets, framework.NoOptions)
-		Expect(conf).To(MatchToml(string(exp)))
+		conf := api.NewConfig(func(config *api.Config) {
+			sources, transforms := NewSource(adapters.NewInput(input), *factory.ResourceNames(clf), secrets, framework.NoOptions)
+			config.AddSources(sources)
+			config.AddTransforms(transforms)
+		})
+		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),

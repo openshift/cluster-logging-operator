@@ -87,9 +87,9 @@ func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 }
 
 // Path returns the path to the given secret key if it exists or empty
-func (s Secrets) Path(key *obs.SecretReference) string {
+func (s Secrets) Path(key *obs.SecretReference, formatter ...string) string {
 	if s.Value(key) != nil {
-		return helpers.SecretPath(key.SecretName, key.Key)
+		return helpers.SecretPath(key.SecretName, key.Key, formatter...)
 	}
 	return ""
 }

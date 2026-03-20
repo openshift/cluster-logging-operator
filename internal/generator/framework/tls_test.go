@@ -1,13 +1,15 @@
 package framework_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	configv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
-	"strings"
 )
 
 var _ = Describe("Options#TLSProfileInfo", func() {
@@ -18,8 +20,8 @@ var _ = Describe("Options#TLSProfileInfo", func() {
 
 	Context("when a cluster profile is absent", func() {
 
-		It("should use the defaults when clf profile is nil and output.TLS is nil", func() {
-			minTLS, ciphers := TLSProfileInfo(options, obs.OutputSpec{}, ",")
+		It("should use the defaults when clf profile is nil and TLS spec is nil", func() {
+			minTLS, ciphers := TLSProfileInfo(options, nil, ",")
 			Expect(minTLS).To(BeEquivalentTo(tls.DefaultMinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(tls.DefaultTLSCiphers, ",")))
 		})
@@ -50,14 +52,14 @@ var _ = Describe("Options#TLSProfileInfo", func() {
 		})
 
 		It("should prefer the output profile over the cluster profile", func() {
-			minTLS, ciphers := TLSProfileInfo(options, outputSpec, ",")
+			minTLS, ciphers := TLSProfileInfo(options, adapters.NewOutput(outputSpec), ",")
 			spec := configv1.TLSProfiles[outputProfile.Type]
 			Expect(minTLS).To(BeEquivalentTo(spec.MinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(spec.Ciphers, ",")))
 		})
 
-		It("should prefer the cluster profile when the forwarder and output.TLS are nil", func() {
-			minTLS, ciphers := TLSProfileInfo(options, obs.OutputSpec{}, ",")
+		It("should prefer the cluster profile when the forwarder and TLS spec are nil", func() {
+			minTLS, ciphers := TLSProfileInfo(options, nil, ",")
 			Expect(minTLS).To(BeEquivalentTo(clusterMinTLSVersion))
 			Expect(ciphers).To(Equal(strings.Join(clusterCiphers, ",")))
 		})

@@ -1,9 +1,16 @@
 package observability
 
 import (
+	openshiftv1 "github.com/openshift/api/config/v1"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"k8s.io/utils/set"
 )
+
+type TransportLayerSecurity interface {
+	GetTlsSpec() *obsv1.TLSSpec
+	IsInsecureSkipVerify() bool
+	GetTlsSecurityProfile() *openshiftv1.TLSSecurityProfile
+}
 
 // SecretsForTLS returns the unique set of secret names for a TLS spec
 func SecretsForTLS(t obsv1.TLSSpec) []string {

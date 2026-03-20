@@ -5,17 +5,23 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/metrics"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/pipeline"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	InternalMetricsSourceName = "internal_metrics"
 )
 
 // Design of next generation conf generation:
@@ -58,66 +64,56 @@ import (
        output_mykafka_dedot
 */
 //nolint:govet // using declarative style
-func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op framework.Options) []framework.Section {
+func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) (config *api.Config) {
 	op[helpers.CLFSpec] = internalobs.ClusterLogForwarderSpec(clfspec)
 
 	// Init inputs, outputs, pipelines
-	inputMap := map[string]*input.Input{}
+	inputMap := map[string]*adapters.Input{}
 	inputCompMap := map[string]helpers.InputComponent{}
 	for _, i := range clfspec.Inputs {
-		a := input.NewInput(i, secrets, namespace, resNames, op)
+		a := adapters.NewInput(i)
 		inputMap[i.Name] = a
 		inputCompMap[i.Name] = a
 	}
 
-	outputMap := map[string]*output.Output{}
+	outputMap := map[string]*adapters.Output{}
 	op[framework.OptionForwarderName] = forwarderName
 	for _, spec := range clfspec.Outputs {
-		o := output.NewOutput(spec, secrets, op)
+		o := adapters.NewOutput(spec)
 		outputMap[spec.Name] = o
 	}
 
 	filters := filter.NewInternalFilterMap(internalobs.FilterMap(clfspec))
-	pipelineMap := map[string]*pipeline.Pipeline{}
+	pipelineMap := map[string]*adapters.Pipeline{}
 	for i, p := range clfspec.Pipelines {
-		a := pipeline.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs, pipeline.AddSystemFilters)
+		a := adapters.NewPipeline(i, p, inputCompMap, outputMap, filters, clfspec.Inputs, adapters.AddSystemFilters)
 		pipelineMap[p.Name] = a
 	}
 
-	// generate sections, deferring input wiring to config generation
-	sections := framework.Section{}
+	config = api.NewConfig(func(c *api.Config) {
+		Global(c, namespace, forwarderName)
+		c.Sources[InternalMetricsSourceName] = sources.NewInternalMetrics()
+	})
 	for _, i := range sortAdapters(inputMap) {
-		sections.Elements = append(sections.Elements, i.Elements()...)
+		sources, transforms := input.NewSource(i, resNames, secrets, op)
+		config.AddSources(sources)
+		config.AddTransforms(transforms)
 	}
 	for _, p := range sortAdapters(pipelineMap) {
-		sections.Elements = append(sections.Elements, p.Elements()...)
+		config.AddTransforms(p.Transforms())
 	}
 	for _, o := range sortAdapters(outputMap) {
-		sections.Elements = append(sections.Elements, o.Elements()...)
+		sinks, transforms := output.New(o, o.InputIDs, secrets, op)
+		config.AddSinks(sinks)
+		config.AddTransforms(transforms)
 	}
-
-	minTlsVersion, cipherSuites := framework.TLSProfileInfo(op, obs.OutputSpec{}, ",")
-	return []framework.Section{
-		{
-			Global(namespace, forwarderName),
-			`vector global options`,
-		},
-		{
-			Elements: source.MetricsSources(source.InternalMetricsSourceName),
-		},
-		sections,
-		{
-			Elements: []framework.Element{
-				metrics.AddNodeNameToMetric(metrics.AddNodenameToMetricTransformName, []string{source.InternalMetricsSourceName}),
-				metrics.PrometheusOutput(metrics.PrometheusOutputSinkName, []string{metrics.AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites, op),
-			},
-		},
-	}
-
+	config.Transforms[metrics.AddNodenameToMetricTransformName] = metrics.AddNodeNameToMetric([]string{InternalMetricsSourceName})
+	config.Sinks[metrics.PrometheusOutputSinkName] = metrics.PrometheusOutput([]string{metrics.AddNodenameToMetricTransformName}, op)
+	return config
 }
 
 // sortAdapters sorts ClusterLogForwarder adapters to ensure consistent generation of component configs
-func sortAdapters[V *input.Input | *pipeline.Pipeline | *output.Output](m map[string]V) []V {
+func sortAdapters[V *adapters.Input | *adapters.Pipeline | *adapters.Output](m map[string]V) []V {
 	keys := []string{}
 	for k := range m {
 		keys = append(keys, k)

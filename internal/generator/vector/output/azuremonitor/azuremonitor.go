@@ -1,75 +1,38 @@
 package azuremonitor
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/tls"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-type AzureMonitor struct {
-	ComponentID     string
-	Inputs          string
-	CustomerId      string
-	LogType         string
-	AzureResourceId string
-	SharedKey       string
-	Host            string
-}
-
-func (azm AzureMonitor) Name() string {
-	return "AzureMonitorVectorTemplate"
-}
-
-func (azm AzureMonitor) Template() string {
-	return `{{define "` + azm.Name() + `" -}}
-[sinks.{{.ComponentID}}]
-type = "azure_monitor_logs"
-inputs = {{.Inputs}}
-{{ if .AzureResourceId}}
-azure_resource_id = "{{.AzureResourceId}}"
-{{- end }}
-customer_id = "{{.CustomerId}}"
-{{ if .Host }}
-host = "{{.Host}}"
-{{- end }}
-log_type = "{{.LogType}}"
-shared_key = "{{.SharedKey}}"
-{{end}}`
-}
-
-func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Secrets, strategy common.ConfigStrategy, op framework.Options) []framework.Element {
-	if genhelper.IsDebugOutput(op) {
-		return []framework.Element{
-			elements.Debug(vectorhelpers.MakeID(id, "debug"), vectorhelpers.MakeInputs(inputs...)),
-		}
-	}
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	azm := o.AzureMonitor
-	e := AzureMonitor{
-		ComponentID:     id,
-		Inputs:          vectorhelpers.MakeInputs(inputs...),
-		CustomerId:      azm.CustomerId,
-		LogType:         azm.LogType,
-		AzureResourceId: azm.AzureResourceId,
-		Host:            azm.Host,
-	}
+	sink = sinks.NewAzureMonitorLogs(func(s *sinks.AzureMonitorLogs) {
+		azureSharedKey(s, azm)
+		s.CustomerId = azm.CustomerId
+		s.LogType = azm.LogType
+		s.AzureResourceId = azm.AzureResourceId
+		s.Host = azm.Host
+		s.Encoding = common.NewApiEncoding("")
+		s.Batch = common.NewApiBatch(o)
+		s.Buffer = common.NewApiBuffer(o)
+		s.Request = common.NewApiRequest(o)
+		s.TLS = tls.NewTls(o, secrets, op)
+	}, inputs...)
+	return id, sink, tfs
+}
+
+func azureSharedKey(s *sinks.AzureMonitorLogs, azm *obs.AzureMonitor) {
 	if azm.Authentication != nil && azm.Authentication.SharedKey != nil {
-		e.SharedKey = secrets.AsString(azm.Authentication.SharedKey)
-		e.SharedKey = vectorhelpers.SecretFrom(azm.Authentication.SharedKey)
-	}
-	confTLS := tls.New(id, o.TLS, secrets, op)
-	return []framework.Element{
-		e,
-		common.NewEncoding(id, ""),
-		common.NewAcknowledgments(id, strategy),
-		common.NewBatch(id, strategy),
-		common.NewBuffer(id, strategy),
-		common.NewRequest(id, strategy),
-		confTLS,
+		s.SharedKey = vectorhelpers.SecretFrom(azm.Authentication.SharedKey)
 	}
 }

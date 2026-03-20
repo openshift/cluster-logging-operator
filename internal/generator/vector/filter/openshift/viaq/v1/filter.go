@@ -6,8 +6,8 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
@@ -16,7 +16,7 @@ const (
 	logSourceContainer = string(obs.ApplicationSourceContainer)
 )
 
-func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Element {
+func New(inputs []string, inputSpecs []obs.InputSpec) types.Transform {
 
 	vrls := []string{
 		SetHostnameOnRoot,
@@ -37,11 +37,7 @@ func New(id string, inputs []string, inputSpecs []obs.InputSpec) framework.Eleme
 		`."@timestamp" = ._internal.timestamp`,
 		SetLogLevelOnRoot,
 	)
-	return elements.Remap{
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         strings.Join(vrls, "\n"),
-	}
+	return transforms.NewRemap(strings.Join(vrls, "\n"), inputs...)
 }
 
 func containerLogs() string {

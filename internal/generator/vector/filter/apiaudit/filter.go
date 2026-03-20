@@ -4,11 +4,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"net/http"
 	"strings"
 	"text/template"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -30,6 +32,16 @@ type Filter struct {
 
 func NewFilter(p *obs.KubeAPIAudit) Filter {
 	return Filter{p}
+}
+
+func New(spec *obs.KubeAPIAudit, inputs ...string) *transforms.Remap {
+	pf := NewFilter(spec)
+	vrl, err := pf.VRL()
+	if err != nil {
+		log.Error(err, "bad filter", "kubeAPIAudit", spec)
+		return nil
+	}
+	return transforms.NewRemap(vrl, inputs...)
 }
 
 func (p Filter) VRL() (string, error) {

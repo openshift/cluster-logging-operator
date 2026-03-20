@@ -1,82 +1,50 @@
 package otlp
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 )
 
 const (
-	MaxEventsGroupByContainer = "1"
-	MaxEventsGroupBySource    = "1"
-	MaxEventsGroupByHost      = "1"
+	MaxEventsGroupByContainer = uint64(1)
+	MaxEventsGroupBySource    = uint64(1)
+	MaxEventsGroupByHost      = uint64(1)
+	expireAfterMs             = 15000
 )
 
-type Reduce struct {
-	ComponentID string
-	Desc        string
-	Inputs      string
-	GroupBy     string
-	MaxEvents   string
+func GroupByContainer(inputs ...string) types.Transform {
+	return transforms.NewReduce(func(r *transforms.Reduce) {
+		r.ExpireAfterMs = expireAfterMs
+		r.MaxEvents = MaxEventsGroupByContainer
+		r.GroupBy = []string{".openshift.cluster_id",
+			".kubernetes.namespace_name", ".kubernetes.pod_name", ".kubernetes.container_name"}
+		r.MergeStrategies = &transforms.MergeStrategies{
+			LogRecords: transforms.MergeStrategiesLogRecordsArray,
+			Resource:   transforms.MergeStrategiesResourceRetain,
+		}
+	}, inputs...)
 }
 
-func (r Reduce) Name() string {
-	return "reduceTemplate"
+func GroupBySource(inputs ...string) types.Transform {
+	return transforms.NewReduce(func(r *transforms.Reduce) {
+		r.ExpireAfterMs = expireAfterMs
+		r.MaxEvents = MaxEventsGroupBySource
+		r.GroupBy = []string{".openshift.cluster_id", ".openshift.log_type", ".openshift.log_source"}
+		r.MergeStrategies = &transforms.MergeStrategies{
+			LogRecords: transforms.MergeStrategiesLogRecordsArray,
+			Resource:   transforms.MergeStrategiesResourceRetain,
+		}
+	}, inputs...)
 }
 
-func (r Reduce) Template() string {
-	return `{{define "reduceTemplate" -}}
-{{if .Desc -}}
-# {{.Desc}}
-{{end -}}
-[transforms.{{.ComponentID}}]
-type = "reduce"
-inputs = {{.Inputs}}
-expire_after_ms = 15000
-max_events = {{.MaxEvents}}
-group_by = {{.GroupBy}}
-merge_strategies.resource = "retain"
-merge_strategies.logRecords = "array"
-{{end}}
-`
-}
-
-func GroupByContainer(id string, inputs []string) framework.Element {
-	return Reduce{
-		Desc:        "Merge container logs and group by namespace, pod and container",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupByContainer,
-		GroupBy: MakeGroupBys(".openshift.cluster_id",
-			".kubernetes.namespace_name", ".kubernetes.pod_name", ".kubernetes.container_name"),
-	}
-}
-
-func GroupBySource(id string, inputs []string) framework.Element {
-	return Reduce{
-		Desc:        "Merge audit api and node logs and group by log_source",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupBySource,
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.log_type", ".openshift.log_source"),
-	}
-}
-
-func GroupByHost(id string, inputs []string) framework.Element {
-	return Reduce{
-		Desc:        "Merge auditd host logs and group by hostname",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupByHost,
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.hostname", ".openshift.log_type", ".openshift.log_source")}
-}
-
-func MakeGroupBys(fields ...string) string {
-	out := make([]string, len(fields))
-	for i, o := range fields {
-		out[i] = fmt.Sprintf("%q", o)
-	}
-	return fmt.Sprintf("[%s]", strings.Join(out, ","))
+func GroupByHost(inputs ...string) types.Transform {
+	return transforms.NewReduce(func(r *transforms.Reduce) {
+		r.ExpireAfterMs = expireAfterMs
+		r.MaxEvents = MaxEventsGroupByHost
+		r.GroupBy = []string{".openshift.cluster_id", ".openshift.hostname", ".openshift.log_type", ".openshift.log_source"}
+		r.MergeStrategies = &transforms.MergeStrategies{
+			LogRecords: transforms.MergeStrategiesLogRecordsArray,
+			Resource:   transforms.MergeStrategiesResourceRetain,
+		}
+	}, inputs...)
 }

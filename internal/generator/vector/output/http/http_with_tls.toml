@@ -9,7 +9,9 @@ codec = "json"
 except_fields = ["_internal"]
 
 [sinks.http_receiver.request]
-headers = {"h1"="v1","h2"="v2"}
+[sinks.http_receiver.request.headers]
+h1 = "v1"
+h2 = "v2"
 
 [sinks.http_receiver.tls]
 verify_certificate = false

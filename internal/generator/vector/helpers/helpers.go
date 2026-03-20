@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -29,19 +27,6 @@ var (
 	listenAllAddress string
 	listenAllOnce    sync.Once
 )
-
-func MakeInputs(in ...string) string {
-	out := make([]string, len(in))
-	for i, o := range in {
-		if strings.HasPrefix(o, "\"") && strings.HasSuffix(o, "\"") {
-			out[i] = o
-		} else {
-			out[i] = fmt.Sprintf("%q", o)
-		}
-	}
-	sort.Strings(out)
-	return fmt.Sprintf("[%s]", strings.Join(out, ","))
-}
 
 func TrimSpaces(in []string) []string {
 	o := make([]string, len(in))
@@ -73,13 +58,21 @@ func ListenOnAllLocalInterfacesAddress() string {
 }
 
 // ConfigPath is the quoted path for any configmap visible to the collector
-func ConfigPath(name string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join(constants.ConfigMapBaseDir, name, file))
+func ConfigPath(name string, file string, formatter ...string) string {
+	formatString := "%q"
+	if len(formatter) > 0 {
+		formatString = formatter[0]
+	}
+	return fmt.Sprintf(formatString, filepath.Join(constants.ConfigMapBaseDir, name, file))
 }
 
 // SecretPath is the quoted path for any secret visible to the collector
-func SecretPath(secretName string, file string) string {
-	return fmt.Sprintf("%q", filepath.Join(constants.CollectorSecretsDir, secretName, file))
+func SecretPath(secretName string, file string, formatter ...string) string {
+	formatString := "%q"
+	if len(formatter) > 0 {
+		formatString = formatter[0]
+	}
+	return fmt.Sprintf(formatString, filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }
 
 // SecretFrom formated string SECRET[<secret_component_id>.<secret_name>#<secret_key>]
@@ -97,7 +90,7 @@ func SecretFrom(secretKey *v1.SecretReference) string {
 // and array of flattened path with replaced not allowed symbols to feed into VRL
 // E.g
 // [.kubernetes.namespace_labels."bar/baz0-9.test"] -> ([["kubernetes","namespace_labels","bar/baz0-9.test"]], ["_kubernetes_namespace_labels_bar_baz0-9_test"])
-func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, string) {
+func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, []string) {
 	var quotedPathArray []string
 	var flattenedArray []string
 
@@ -107,7 +100,7 @@ func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, s
 		if strings.ContainsAny(pathStr, "/.") {
 			flat := strings.NewReplacer(".", "_", "\"", "", "/", "_").Replace(pathStr)
 			flat = strings.TrimPrefix(flat, "_")
-			flattenedArray = append(flattenedArray, strconv.Quote(flat))
+			flattenedArray = append(flattenedArray, flat)
 		}
 
 		splitSegments := SplitPath(pathStr)
@@ -116,7 +109,7 @@ func GenerateQuotedPathSegmentArrayStr(fieldPathArray []v1.FieldPath) (string, s
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(quotedPathArray, ",")),
-		fmt.Sprintf("[%s]", strings.Join(flattenedArray, ","))
+		flattenedArray
 }
 
 // SplitPath splits a fieldPath by `.` and reassembles the quoted path segments that also contain `.`

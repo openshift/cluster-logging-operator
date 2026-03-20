@@ -719,7 +719,10 @@ type Elasticsearch struct {
 
 // GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.
 type GoogleCloudLoggingAuthentication struct {
-	// Credentials points to the secret containing the `google-application-credentials.json`.
+	// Credentials points to the secret containing the Google Cloud credentials file.
+	// The authentication type is determined by inspecting the credentials file:
+	//   - type: "service_account" Uses static service account key authentication
+	//   - type: "external_account" Uses Workload Identity Federation (WIF) authentication
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Credentials File"

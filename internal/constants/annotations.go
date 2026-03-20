@@ -16,7 +16,8 @@ const (
 	// AnnotationOtlpOutputTechPreview is used to enable tech-preview of OTLP output and LokiStack with Otel data model
 	AnnotationOtlpOutputTechPreview = "observability.openshift.io/tech-preview-otlp-output"
 
-	AnnotationSecretHash = "observability.openshift.io/secret-hash"
+	AnnotationSecretHash    = "observability.openshift.io/secret-hash"
+	AnnotationConfigMapHash = "observability.openshift.io/configmap-hash"
 
 	// AnnotationMaxUnavailable (Deprecated) configures the maximum number of DaemonSet pods that can be unavailable during a rolling update.
 	// This can be an absolute number (e.g., 1) or a percentage (e.g., 10%). Default is 100%.

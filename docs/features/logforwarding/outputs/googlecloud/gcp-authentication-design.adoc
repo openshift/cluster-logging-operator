@@ -1,0 +1,155 @@
+= GCP Authentication Design - Simplified API
+
+== Design Decision
+
+The GCP authentication API uses a *simplified, credentials-only approach*. The authentication type (static token vs. Workload Identity Federation) is determined by *inspecting the credentials file content* at runtime, rather than requiring users to specify an explicit type field.
+
+== API Structure
+
+[source,go]
+----
+type GoogleCloudLoggingAuthentication struct {
+    // Credentials points to the secret containing the google credentials file.
+    // The authentication type is determined by inspecting the credentials file:
+    //   - type: "service_account" Uses static service account key authentication
+    //   - type: "external_account" Uses Workload Identity Federation (WIF) authentication
+    Credentials *SecretReference `json:"credentials"`
+}
+----
+
+
+* *Simplified User Experience*: Users only need to provide the secret containing the credentials file
+
+== Authentication Methods
+
+=== Static Service Account Token
+
+*Credentials File*: Standard GCP service account JSON file (`service_account.json`)
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: gcp-forwarder
+spec:
+  outputs:
+    - name: gcp-logging
+      type: googleCloudLogging
+      googleCloudLogging:
+        id:
+          type: project
+          value: my-project
+        logId: my-logs
+        authentication:
+          credentials:
+            secretName: gcp-secret
+            key: service_account.json
+----
+
+*Secret Content*:
+[source,json]
+----
+{
+  "type": "service_account",
+  "project_id": "my-project",
+  "private_key_id": "...",
+  "private_key": "...",
+  "client_email": "...",
+  "client_id": "...",
+  ...
+}
+----
+
+=== Workload Identity Federation (WIF) Authentication
+
+*Credentials File*: GCP external account credentials file (`external_account.json`)
+
+*Requirements*:
+
+* The external_account.json must reference the token file path: `/var/run/ocp-collector/serviceaccount/token`
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: gcp-forwarder
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-collector
+  outputs:
+    - name: gcp-logging
+      type: googleCloudLogging
+      googleCloudLogging:
+        id:
+          type: project
+          value: my-project
+        logId: my-logs
+        authentication:
+          credentials:
+            secretName: gcp-wif-secret
+            key: external_account.json
+----
+
+*Secret Content* (external_account.json):
+[source,json]
+----
+{
+  "type": "external_account",
+  "audience": "//iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID",
+  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+  "token_url": "https://sts.googleapis.com/v1/token",
+  "credential_source": {
+    "file": "/var/run/ocp-collector/serviceaccount/token"
+  },
+  "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/SA_EMAIL:generateAccessToken"
+}
+----
+
+[IMPORTANT]
+====
+The `audience` field MUST use your GCP *PROJECT NUMBER* (e.g., "12345678901"), NOT your project ID (e.g., "my-project"). Using the project ID will result in HTTP 403 Forbidden errors. Get your project number with:
+
+[source,bash]
+----
+gcloud projects describe PROJECT_ID --format="value(projectNumber)"
+----
+====
+
+== Implementation Details
+
+=== Service Account Token Projection
+
+*Key Decision*: The operator will *always projects the service account token* for GCP outputs, regardless of authentication type.
+
+*Rationale*:
+
+. *Secrets may not exist yet* - Users may have created the ClusterLogForwarder before creating secrets
+. *No file inspection in validation* - Validation code should not need to read secret contents
+. *Simplicity* - Eliminates complex file parsing, error handling, and caching logic
+. *No security impact* - Projecting an unused token is harmless; Vector only uses it if needed
+
+*Runtime Behavior*:
+
+* Vector reads the credentials file and inspects the `"type"` field
+* If `"type": "external_account"` → Vector uses the projected token for WIF authentication
+* If `"type": "service_account"` → Vector ignores the token and uses the static key directly
+
+* Token is mounted at: `/var/run/ocp-collector/serviceaccount/token`
+
+This detection happens *at runtime in the Vector collector client*, which  supports both authentication methods through the same `credentials_path` configuration.
+
+=== Vector Configuration
+
+Both authentication methods result in the same Vector sink configuration:
+
+[source,toml]
+----
+[sinks.gcp_logging]
+type = "gcp_stackdriver_logs"
+credentials_path = "/var/run/ocp-collector/secrets/gcp-secret/service_account.json"
+# OR
+credentials_path = "/var/run/ocp-collector/secrets/gcp-wif-secret/external_account.json"
+----

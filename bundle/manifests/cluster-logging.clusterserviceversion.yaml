@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-03-20T13:54:49Z"
+    createdAt: "2026-04-02T19:24:10Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -837,7 +837,11 @@ spec:
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
         path: outputs[0].googleCloudLogging.authentication
-      - description: Credentials points to the secret containing the `google-application-credentials.json`.
+      - description: |-
+          Credentials points to the secret containing the Google Cloud credentials file.
+          The authentication type is determined by inspecting the credentials file:
+            - type: "service_account" Uses static service account key authentication
+            - type: "external_account" Uses Workload Identity Federation (WIF) authentication
         displayName: Secret with Credentials File
         path: outputs[0].googleCloudLogging.authentication.credentials
       - description: Key contains the name of the key inside the referenced Secret.

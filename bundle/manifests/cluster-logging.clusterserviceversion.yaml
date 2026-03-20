@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-02-19T21:00:21Z"
+    createdAt: "2026-03-12T16:22:23Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -464,8 +464,136 @@ spec:
       - description: Outputs are named destinations for log messages.
         displayName: Log Forwarder Outputs
         path: outputs
-      - description: AzureMonitor configures forwarding log events to the Azure Monitor
-          Logs service
+      - description: AzureLogsIngestion configures forwarding log events to the Azure
+          Monitor Logs Ingestion API
+        displayName: Azure Log Ingestion
+        path: outputs[0].azureLogsIngestion
+      - description: Authentication sets credentials for authenticating the requests
+          to the Azure Logs Ingestion API.
+        displayName: Authentication Options
+        path: outputs[0].azureLogsIngestion.authentication
+      - description: ClientSecret contains the Azure AD service principal credentials.
+        displayName: Client Secret Credentials
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret
+      - description: ClientId is the Azure Active Directory application (client) ID.
+        displayName: Azure Client ID
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret.clientId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Secret points to the secret containing the Azure Active Directory
+          client secret.
+        displayName: Secret
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret.secret
+      - description: Key contains the name of the key inside the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: SecretName contains the name of the Secret containing the referenced
+          value.
+        displayName: Secret Name
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret.secret.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: TenantId is the Azure Active Directory tenant ID.
+        displayName: Azure Tenant ID
+        path: outputs[0].azureLogsIngestion.authentication.clientSecret.tenantId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Type is the type of Azure authentication to configure.
+        displayName: Authentication Type
+        path: outputs[0].azureLogsIngestion.authentication.type
+      - description: WorkloadIdentity contains the Azure AD Workload Identity credentials.
+        displayName: Workload Identity Credentials
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity
+      - description: ClientId is the Azure Active Directory application (client) ID.
+        displayName: Azure Client ID
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.clientId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: TenantId is the Azure Active Directory tenant ID.
+        displayName: Azure Tenant ID
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.tenantId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Token is the bearer token to be used for authenticating the requests.
+        displayName: Token
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token.secret.name
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: DcrImmutableId is the immutable ID of the Data Collection Rule
+          (DCR).
+        displayName: DCR Immutable ID
+        path: outputs[0].azureLogsIngestion.dcrImmutableId
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: StreamName is the name of the custom log stream in the DCR that
+          the data should be sent to.
+        displayName: Stream Name
+        path: outputs[0].azureLogsIngestion.streamName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          TimestampField is the destination field (column) for the timestamp.
+          Most schemas use "TimeGenerated" (default), but some use "Timestamp" (legacy) or "EventStartTime" (ASIM).
+          https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-standard-columns#timegenerated
+        displayName: Timestamp Field
+        path: outputs[0].azureLogsIngestion.timestampField
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          TokenScope is the token scope for dedicated Azure regions.
+          Defaults to "https://monitor.azure.com/.default".
+          https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+        displayName: Token Scope
+        path: outputs[0].azureLogsIngestion.tokenScope
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Tuning specs tuning for the output
+        displayName: Tuning Options
+        path: outputs[0].azureLogsIngestion.tuning
+      - displayName: Delivery Mode
+        path: outputs[0].azureLogsIngestion.tuning.deliveryMode
+      - description: MaxRetryDuration is the maximum time to wait between retry attempts
+          after a delivery failure.
+        displayName: Maximum Retry Duration
+        path: outputs[0].azureLogsIngestion.tuning.maxRetryDuration
+      - description: MaxWrite limits the maximum payload in terms of bytes of a single
+          "send" to the output.
+        displayName: Batch Size
+        path: outputs[0].azureLogsIngestion.tuning.maxWrite
+      - description: MinRetryDuration is the minimum time to wait between attempts
+          to retry after delivery a failure.
+        displayName: Minimum Retry Duration
+        path: outputs[0].azureLogsIngestion.tuning.minRetryDuration
+      - description: |-
+          URL to send log records to.
+          Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
+          The 'username@password' part of `url` is ignored.
+        displayName: Destination URL
+        path: outputs[0].azureLogsIngestion.url
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          DEPRECATED: Use AzureLogsIngestion instead. This output will be removed in a future release.
+          AzureMonitor configures forwarding log events to the Azure Monitor Logs service
         displayName: Azure Monitor
         path: outputs[0].azureMonitor
       - description: Authentication sets credentials for authenticating the requests.

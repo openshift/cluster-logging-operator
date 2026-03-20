@@ -11,7 +11,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azuremonitor"
+	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
+	"github.com/openshift/cluster-logging-operator/test/helpers/azure/datacollector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
@@ -479,7 +480,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 				output.AzureMonitor.CustomerId = customerId
 			})
 
-			secret := runtime.NewSecret(f.Namespace, azuremonitor.AzureSecretName,
+			secret := runtime.NewSecret(f.Namespace, datacollector.SecretName,
 				map[string][]byte{
 					constants.SharedKey: sharedKey,
 				},
@@ -487,15 +488,15 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			f.Secrets = append(f.Secrets, secret)
 
 			Expect(f.DeployWithVisitor(func(b *runtime.PodBuilder) error {
-				altHost := fmt.Sprintf("%s.%s", customerId, azuremonitor.AzureDomain)
-				return azuremonitor.NewMockoonVisitor(b, altHost, f)
+				altHost := fmt.Sprintf("%s.%s", customerId, azure.AzureDomain)
+				return datacollector.NewMockoonVisitor(b, altHost, f)
 			})).To(BeNil())
 
 			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "This is my test message", false)
 			Expect(f.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
 
 			time.Sleep(30 * time.Second)
-			appLogs, err := azuremonitor.ReadApplicationLogFromMockoon(f)
+			appLogs, err := datacollector.ReadApplicationLog(f)
 			Expect(err).To(BeNil())
 			Expect(appLogs).ToNot(BeNil())
 		})

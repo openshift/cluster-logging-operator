@@ -23,7 +23,7 @@ import (
 
 // OutputType is used to define the type of output to be created.
 //
-// +kubebuilder:validation:Enum:=azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;s3;splunk;syslog;otlp
+// +kubebuilder:validation:Enum:=azureLogsIngestion;azureMonitor;cloudwatch;elasticsearch;http;kafka;loki;lokiStack;googleCloudLogging;s3;splunk;syslog;otlp
 type OutputType string
 
 func (s OutputType) String() string {
@@ -32,6 +32,7 @@ func (s OutputType) String() string {
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
+	OutputTypeAzureLogsIngestion OutputType = "azureLogsIngestion"
 	OutputTypeAzureMonitor       OutputType = "azureMonitor"
 	OutputTypeCloudwatch         OutputType = "cloudwatch"
 	OutputTypeElasticsearch      OutputType = "elasticsearch"
@@ -49,6 +50,7 @@ const (
 var (
 	// OutputTypes contains all supported output types.
 	OutputTypes = []OutputType{
+		OutputTypeAzureLogsIngestion,
 		OutputTypeAzureMonitor,
 		OutputTypeCloudwatch,
 		OutputTypeElasticsearch,
@@ -66,6 +68,7 @@ var (
 
 // OutputSpec defines a destination for log messages.
 //
+// +kubebuilder:validation:XValidation:rule="self.type != 'azureLogsIngestion' || has(self.azureLogsIngestion)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'azureMonitor' || has(self.azureMonitor)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'cloudwatch' || has(self.cloudwatch)", message="Additional type specific spec is required for the output type"
 // +kubebuilder:validation:XValidation:rule="self.type != 'elasticsearch' || has(self.elasticsearch)", message="Additional type specific spec is required for the output type"
@@ -106,6 +109,13 @@ type OutputSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Rate Limiting"
 	Limit *LimitSpec `json:"rateLimit,omitempty"`
 
+	// AzureLogsIngestion configures forwarding log events to the Azure Monitor Logs Ingestion API
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Log Ingestion"
+	AzureLogsIngestion *AzureLogsIngestion `json:"azureLogsIngestion,omitempty"`
+
+	// DEPRECATED: Use AzureLogsIngestion instead. This output will be removed in a future release.
 	// AzureMonitor configures forwarding log events to the Azure Monitor Logs service
 	//
 	// +kubebuilder:validation:Optional
@@ -283,6 +293,138 @@ type HTTPAuthentication struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Password"
 	Password *SecretReference `json:"password,omitempty"`
+}
+
+// AzureLogsIngestionAuthType sets the authentication type used for Azure Log Ingestion.
+//
+// +kubebuilder:validation:Enum:=clientSecret;workloadIdentity
+type AzureLogsIngestionAuthType string
+
+const (
+	// AzureLogsIngestionAuthTypeClientSecret uses Azure AD service principal client credentials.
+	AzureLogsIngestionAuthTypeClientSecret AzureLogsIngestionAuthType = "clientSecret"
+
+	// AzureLogsIngestionAuthTypeWorkloadIdentity uses Azure AD Workload Identity credentials
+	// from the environment (typically via pod-injected service account tokens).
+	AzureLogsIngestionAuthTypeWorkloadIdentity AzureLogsIngestionAuthType = "workloadIdentity"
+)
+
+// AzureLogsIngestionAuthentication contains configuration for authenticating requests to an Azure Log Ingestion output.
+// +kubebuilder:validation:XValidation:rule="self.type != 'clientSecret' || has(self.clientSecret)", message="Additional type specific spec is required for authentication"
+// +kubebuilder:validation:XValidation:rule="self.type != 'workloadIdentity' || has(self.workloadIdentity)", message="Additional type specific spec is required for authentication"
+type AzureLogsIngestionAuthentication struct {
+	// Type is the type of Azure authentication to configure.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
+	Type AzureLogsIngestionAuthType `json:"type"`
+
+	// ClientSecret contains the Azure AD service principal credentials.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Client Secret Credentials"
+	ClientSecret *AzureLogsIngestionClientSecret `json:"clientSecret,omitempty"`
+
+	// WorkloadIdentity contains the Azure AD Workload Identity credentials.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Workload Identity Credentials"
+	WorkloadIdentity *AzureLogsIngestionWorkloadIdentity `json:"workloadIdentity,omitempty"`
+}
+
+// AzureLogsIngestionClientSecret contains Azure AD service principal credentials for authenticating requests.
+type AzureLogsIngestionClientSecret struct {
+	// TenantId is the Azure Active Directory tenant ID.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Tenant ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	TenantId string `json:"tenantId"`
+
+	// ClientId is the Azure Active Directory application (client) ID.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Client ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	ClientId string `json:"clientId"`
+
+	// Secret points to the secret containing the Azure Active Directory client secret.
+	//
+	// +nullable
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret"
+	Secret *SecretReference `json:"secret"`
+}
+
+// AzureLogsIngestionWorkloadIdentity contains Azure AD Workload Identity configuration.
+type AzureLogsIngestionWorkloadIdentity struct {
+	// TenantId is the Azure Active Directory tenant ID.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Tenant ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	TenantId string `json:"tenantId"`
+
+	// ClientId is the Azure Active Directory application (client) ID.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Azure Client ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	ClientId string `json:"clientId"`
+
+	// Token is the bearer token to be used for authenticating the requests.
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Token *BearerToken `json:"token"`
+}
+
+// AzureLogsIngestionTuningSpec contains tuning options for the Azure Logs Ingestion output.
+type AzureLogsIngestionTuningSpec struct {
+	BaseOutputTuningSpec `json:",inline"`
+}
+
+// AzureLogsIngestion provides configuration for the output type `azureLogsIngestion`.
+// This output sends log events to the Azure Monitor Logs Ingestion API using a Data Collection Rule (DCR).
+type AzureLogsIngestion struct {
+	URLSpec `json:",inline"`
+
+	// Authentication sets credentials for authenticating the requests to the Azure Logs Ingestion API.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Options"
+	Authentication *AzureLogsIngestionAuthentication `json:"authentication"`
+
+	// DcrImmutableId is the immutable ID of the Data Collection Rule (DCR).
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="DCR Immutable ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	DcrImmutableId string `json:"dcrImmutableId"`
+
+	// StreamName is the name of the custom log stream in the DCR that the data should be sent to.
+	//
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stream Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	StreamName string `json:"streamName"`
+
+	// TokenScope is the token scope for dedicated Azure regions.
+	// Defaults to "https://monitor.azure.com/.default".
+	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token Scope",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	TokenScope string `json:"tokenScope,omitempty"`
+
+	// TimestampField is the destination field (column) for the timestamp.
+	// Most schemas use "TimeGenerated" (default), but some use "Timestamp" (legacy) or "EventStartTime" (ASIM).
+	// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-standard-columns#timegenerated
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Timestamp Field",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	TimestampField string `json:"timestampField,omitempty"`
+
+	// Tuning specs tuning for the output
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tuning Options"
+	Tuning *AzureLogsIngestionTuningSpec `json:"tuning,omitempty"`
 }
 
 // AzureMonitorAuthentication contains configuration for authenticating requests to a AzureMonitor output.

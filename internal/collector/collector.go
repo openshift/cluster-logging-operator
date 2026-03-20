@@ -63,7 +63,7 @@ type Factory struct {
 	ImageName              string
 	Visit                  Visitor
 	Secrets                internalobs.Secrets
-	ConfigMaps             map[string]*v1.ConfigMap
+	ConfigMaps             internalobs.ConfigMaps
 	ForwarderSpec          obs.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
 	PodLabelVisitor        PodLabelVisitor
@@ -102,7 +102,7 @@ func (f *Factory) MaxUnavailable() intstr.IntOrString {
 	return intstr.Parse(DefaultMaxUnavailable)
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, annotations map[string]string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps internalobs.ConfigMaps, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, annotations map[string]string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -130,6 +130,7 @@ func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.Confi
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable(), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
+	ds.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return ds
 }
 
@@ -137,6 +138,7 @@ func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.Conf
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	dpl.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
+	dpl.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return dpl
 }
 

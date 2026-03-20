@@ -13,7 +13,8 @@ const (
 	// CLO's default log level for vector is `warn`: https://issues.redhat.com/browse/LOG-3435
 	AnnotationVectorLogLevel = "observability.openshift.io/log-level"
 
-	AnnotationSecretHash = "observability.openshift.io/secret-hash"
+	AnnotationSecretHash    = "observability.openshift.io/secret-hash"
+	AnnotationConfigMapHash = "observability.openshift.io/configmap-hash"
 
 	// AnnotationMaxUnavailable (Deprecated) configures the maximum number of DaemonSet pods that can be unavailable during a rolling update.
 	// This can be an absolute number (e.g., 1) or a percentage (e.g., 10%). Default is 100%.

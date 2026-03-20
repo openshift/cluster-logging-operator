@@ -20,18 +20,19 @@ type Keepalive struct {
 	TimeSecs uint `json:"time_secs,omitempty" yaml:"time_secs,omitempty" toml:"time_secs,omitempty"`
 }
 
+type SyslogEncodingConfig struct {
+	RFC      string `json:"rfc,omitempty" yaml:"rfc,omitempty" toml:"rfc,omitempty"`
+	Facility string `json:"facility,omitempty" yaml:"facility,omitempty" toml:"facility,omitempty"`
+	Severity string `json:"severity,omitempty" yaml:"severity,omitempty" toml:"severity,omitempty"`
+	AppName  string `json:"app_name,omitempty" yaml:"app_name,omitempty" toml:"app_name,omitempty"`
+	MsgID    string `json:"msg_id,omitempty" yaml:"msg_id,omitempty" toml:"msg_id,omitempty"`
+	ProcID   string `json:"proc_id,omitempty" yaml:"proc_id,omitempty" toml:"proc_id,omitempty"`
+}
+
 type SocketEncoding struct {
-	Codec        string   `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
-	ExceptFields []string `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
-	RFC          string   `json:"rfc,omitempty" yaml:"rfc,omitempty" toml:"rfc,omitempty"`
-	Facility     string   `json:"facility,omitempty" yaml:"facility,omitempty" toml:"facility,omitempty"`
-	Severity     string   `json:"severity,omitempty" yaml:"severity,omitempty" toml:"severity,omitempty"`
-	AppName      string   `json:"app_name,omitempty" yaml:"app_name,omitempty" toml:"app_name,omitempty"`
-	MsgID        string   `json:"msg_id,omitempty" yaml:"msg_id,omitempty" toml:"msg_id,omitempty"`
-	ProcID       string   `json:"proc_id,omitempty" yaml:"proc_id,omitempty" toml:"proc_id,omitempty"`
-	Tag          string   `json:"tag,omitempty" yaml:"tag,omitempty" toml:"tag,omitempty"`
-	AddLogSource *bool    `json:"add_log_source,omitempty" yaml:"add_log_source,omitempty" toml:"add_log_source,omitempty"`
-	PayloadKey   string   `json:"payload_key,omitempty" yaml:"payload_key,omitempty" toml:"payload_key,omitempty"`
+	Codec        string                `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
+	ExceptFields []string              `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
+	Syslog       *SyslogEncodingConfig `json:"syslog,omitempty" yaml:"syslog,omitempty" toml:"syslog,omitempty"`
 }
 
 type Socket struct {

@@ -464,6 +464,7 @@ var _ = Describe("Factory#Daemonset", func() {
 		It("should have correct annotations", func() {
 			actDs := *factory.NewDaemonSet(constants.OpenshiftNS, "test", nil, tls.GetClusterTLSProfileSpec(nil))
 			Expect(actDs.Spec.Template.Annotations).To(HaveKey(constants.AnnotationSecretHash))
+			Expect(actDs.Spec.Template.Annotations).To(HaveKey(constants.AnnotationConfigMapHash))
 			Expect(actDs.Spec.Template.Annotations).To(HaveKey(targetAnnotation))
 		})
 	})
@@ -719,6 +720,7 @@ var _ = Describe("Factory#Deployment", func() {
 		It("should have correct annotations", func() {
 			actDpl := *factory.NewDeployment(constants.OpenshiftNS, "test", nil, tls.GetClusterTLSProfileSpec(nil))
 			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(constants.AnnotationSecretHash))
+			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(constants.AnnotationConfigMapHash))
 			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(targetAnnotation))
 		})
 	})

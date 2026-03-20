@@ -13,6 +13,7 @@ func Global(c *api.Config, namespace, forwarderName string) *api.Config {
 		dataDir = ""
 	}
 	c.Api = &api.Api{Enabled: true}
+	c.LogSchema = &api.LogSchema{HostKey: "hostname"}
 	c.Global = api.Global{
 		ExpireMetricsSec: 60,
 		DataDir:          dataDir,

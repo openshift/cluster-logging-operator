@@ -20,6 +20,9 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 [api]
 enabled = true
 
+[log_schema]
+host_key = "hostname"
+
 [secret.kubernetes_secret]
 type = "directory"
 path = "/var/run/ocp-collector/secrets"
@@ -31,9 +34,12 @@ path = "/var/run/ocp-collector/secrets"
 		It("should not include a global data directory for that forwarder", func() {
 			Expect(`
 	expire_metrics_secs = 60
-	
+
 	[api]
 	enabled = true
+
+    [log_schema]
+    host_key = "hostname"
 	
 	[secret.kubernetes_secret]
 	type = "directory"

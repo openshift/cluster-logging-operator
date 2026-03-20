@@ -7,6 +7,9 @@ type Config struct {
 	// Api is the set of API keys to values
 	Api *Api `json:"api,omitempty" yaml:"api,omitempty" toml:"api,omitempty"`
 
+	//
+	LogSchema *LogSchema `json:"log_schema,omitempty" yaml:"log_schema,omitempty" toml:"log_schema,omitempty"`
+
 	// Secrets is the set of secret ids to secret configurations
 	Secret map[string]*Secret `json:"secret,omitempty" yaml:"secret,omitempty" toml:"secret,omitempty"`
 

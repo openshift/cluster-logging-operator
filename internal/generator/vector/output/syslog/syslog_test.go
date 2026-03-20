@@ -95,7 +95,7 @@ var _ = Describe("vector syslog clf output", func() {
 				AppName:    "appName",
 				MsgId:      "msgID",
 				ProcId:     "procID",
-				PayloadKey: "{.plKey}",
+				PayloadKey: "{.plKey}", // TODO: ignored
 			}
 		}, false),
 
@@ -116,7 +116,7 @@ var _ = Describe("vector syslog clf output", func() {
 				AppName:    `{.structured.app_name||"none"}`,
 				MsgId:      `{.structured.msg_id||"none"}`,
 				ProcId:     `{.structured proc_id||"none"}`,
-				PayloadKey: `{.payload_key}`,
+				PayloadKey: `{.payload_key}`, //TODO: ignored
 			}
 		}, false),
 
@@ -126,6 +126,11 @@ var _ = Describe("vector syslog clf output", func() {
 				DeliveryMode: obs.DeliveryModeAtLeastOnce,
 			}
 		}, true),
+
+		Entry("should configure KubernetesMinimal enrichment", "tcp_with_kubernetes_minimal_enrichment.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tcp://logserver:514"
+			spec.Syslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
+		}, false),
 	)
 
 })

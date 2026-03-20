@@ -2057,9 +2057,9 @@ Type:: object
 
 |groupName|string|  GroupName defines the strategy for grouping logstreams
 
-The GroupName can be a combination of static and dynamic values consisting of field paths followed by &#34;\|\|&#34; followed by another field path or a static value.
+The GroupName can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets &#34;{}&#34; and MUST end with a static fallback value separated with &#34;\|\|&#34;.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
@@ -2295,7 +2295,7 @@ A dynamic value is encased in single curly brackets `{}` and MUST end with a sta
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
-When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app\|infra\|audit)-write$
+When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern `^(app|infra|audit)-write$`
 where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
 with the openshiftLabels filter. See the product documentation for examples.
 
@@ -2435,19 +2435,19 @@ Type:: object
 
 |logId|string|  LogId is the log ID to which to publish logs. This identifies log stream.
 
-The LogId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The LogId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
@@ -2665,29 +2665,29 @@ Type:: object
 The list represents only the initial set used by the collector&#39;s Kafka client for the
 first connection only. The collector&#39;s Kafka client fetches constantly an updated list
 from Kafka. These updates are not reconciled back to the collector configuration.
-If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number.
 If none is provided, the target URL from the OutputSpec is used as fallback.
 
 |topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
 
-The Topic can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The Topic can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
 |url|string|  URL to send log records to. This field is optional.
-If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;.
+If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;.
 The &#39;username@password&#39; part of `url` is ignored.
 
 |======================
@@ -2892,19 +2892,19 @@ Loki queries can also query based on any log record field (not just labels) usin
 
 |tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values.
 
-The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
@@ -3644,19 +3644,19 @@ The &#39;username@password&#39; part of `url` is ignored.
 
 |index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 
-The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |indexedFields|array|  IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits.
 Nested fields are flattened into top-level fields.
@@ -3677,19 +3677,19 @@ log to be dropped, potentially leading to inconsistent or incomplete log events.
 Examples: `.kubernetes`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
 
 |source|string|  Source identifies the origin of a log event.
-The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+The Source can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 If not specified will be detected according to .log_source and .log_type value.
 Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
@@ -3769,19 +3769,19 @@ Type:: object
 AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
 This supports template syntax to allow dynamic per-event values.
 
-The AppName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The AppName can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of &#34;tag&#34; when this is empty
 |enrichment|string|  Enrichment is an additional modification to the log message before forwarding it to the receiver.
@@ -3809,30 +3809,30 @@ uucp cron authpriv ftp ntp security console solaris-cron
 
 local0 local1 local2 local3 local4 local5 local6 local7
 
-The Facility can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+The Facility can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. {.foo||&#34;user&#34;}
+1. {.foo\|\|&#34;user&#34;}
 
 |msgId|string|  MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
-The MsgId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The MsgId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 MsgId needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
 
@@ -3854,19 +3854,19 @@ Example:
 
 |procId|string|  ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
 
-The ProcId can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+The ProcId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. foo-{.bar||&#34;none&#34;}
+1. foo-{.bar\|\|&#34;none&#34;}
 
-2. {.foo||.bar||&#34;missing&#34;}
+2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
-3. foo.{.bar.baz||.qux.quux.corge||.grault||&#34;nil&#34;}-waldo.fred{.plugh||&#34;none&#34;}
+3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
 
@@ -3884,18 +3884,18 @@ The value can be a decimal integer or one of these case-insensitive keywords:
 
 Emergency Alert Critical Error Warning Notice Informational Debug
 
-The Severity can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
-A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+The Severity can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
 
 Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
 Example:
 
-1. {.foo||&#34;Error&#34;}
+1. {.foo\|\|&#34;Error&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
-|url|string|  An absolute URL, with a scheme. Valid schemes are: `tcp`, `tls`, `udp`
+|url|string|  An absolute URL, with a scheme and a port number. Valid schemes are: `tcp`, `tls`, `udp`
 For example, to send syslog records using UDP:
 
 url: udp://syslog.example.com:514

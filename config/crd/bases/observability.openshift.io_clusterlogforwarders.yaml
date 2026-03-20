@@ -2099,19 +2099,19 @@ spec:
                           description: |-
                             GroupName defines the strategy for grouping logstreams
 
-                            The GroupName can be a combination of static and dynamic values consisting of field paths followed by "\|\|" followed by another field path or a static value.
+                            The GroupName can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 
-                            A dynamic value is encased in single curly brackets "{}" and MUST end with a static fallback value separated with "\|\|".
+                            A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
                             Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
                             Example:
 
-                             1. foo-{.bar\|\|"none"}
+                             1. foo-{.bar||"none"}
 
-                             2. {.foo\|\|.bar\|\|"missing"}
+                             2. {.foo||.bar||"missing"}
 
-                             3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
+                             3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         region:
@@ -2259,23 +2259,23 @@ spec:
                           description: |-
                             Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
 
-                            The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+                            The Index can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 
-                            A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
+                            A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 
                             Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
-                            When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern ^(app\|infra\|audit)-write$
+                            When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern `^(app|infra|audit)-write$`
                             where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
                             with the openshiftLabels filter. See the product documentation for examples.
 
                             Example:
 
-                             1. foo-{.bar\|\|"none"}
+                             1. foo-{.bar||"none"}
 
-                             2. {.foo\|\|.bar\|\|"missing"}
+                             2. {.foo||.bar||"missing"}
 
-                             3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}
+                             3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         tuning:
@@ -3500,22 +3500,22 @@ spec:
                         keyPrefix:
                           description: |-
                             KeyPrefix is a templated string that defines the S3 key prefix for log objects.  It is a combination of
-                            static or dynamic values consisting of field paths separated by `\|\|` and ending with a static
-                            fallback value (e.g. logs_{.kubernetes.namespace_name\|\|.hostname\|\|"unknown"}_my_workload_{.openshift.sequence_id\|\|"none"}).
+                            static or dynamic values consisting of field paths separated by `||` and ending with a static
+                            fallback value (e.g. logs_{.kubernetes.namespace_name||.hostname||"unknown"}_my_workload_{.openshift.sequence_id||"none"}).
 
                             Prefixes are necessary for partitioning logs from other objects in the bucket.  If the prefix represents a
                             directory, it must end in `/` to act as a directory path. A trailing `/` (forward slash) is not automatically added.
 
                             Dynamic values are encased in single curly brackets `{}` and MUST end with a static fallback value separated
-                            with `\|\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+                            with `||`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
 
                             Examples:
 
-                             1. logs_{.kubernetes.namespace_name\|\|"none"}/
+                             1. logs_{.kubernetes.namespace_name||"none"}/
 
-                             2. {.log_type\|\|.log_source\|\|"missing"}/
+                             2. {.log_type||.log_source||"missing"}/
 
-                             3. my_workload.{.hostname\|\|.qux.quux.corge\|\|.grault\|\|"nil"}-waldo.fred{.plugh\|\|"none"}/
+                             3. my_workload.{.hostname||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}/
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
                         region:

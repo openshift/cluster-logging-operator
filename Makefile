@@ -100,6 +100,7 @@ docs: docs/reference/operator/api_observability_v1.adoc docs/reference/operator/
 
 docs/reference/operator/api_observability_v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api" -config "$(PWD)/config/docs/config_observability_v1.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+	@perl -pi -e 's/\|\|/\\|\\|/g' "$(PWD)/$@"
 .PHONY: docs/reference/operator/api_observability_v1.adoc
 
 docs/reference/operator/api_logging_v1alpha1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)

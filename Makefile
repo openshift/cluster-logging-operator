@@ -148,10 +148,16 @@ clean:
 spotless: clean
 	go clean -cache -testcache
 
+ifeq ($(shell uname -sm),Darwin arm64)
+DOCKERFILE?=Dockerfile.macos-dev
+else
+DOCKERFILE?=Dockerfile
+endif
+
 .PHONY: image
 image: .target/image
-.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version bundle .bingo api internal -type f 2>/dev/null) Dockerfile  go.mod go.sum
-	podman build -t $(IMAGE_TAG) . -f Dockerfile
+.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version bundle .bingo api internal -type f 2>/dev/null) $(DOCKERFILE)  go.mod go.sum
+	podman build -t $(IMAGE_TAG) . -f $(DOCKERFILE)
 	touch $@
 
 # Notes:

@@ -1,0 +1,5 @@
+---
+packageName: cluster-logging
+channels:
+- name: stable-6.4
+  currentCSV: cluster-logging-operator.v6.4.4

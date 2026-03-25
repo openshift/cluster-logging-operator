@@ -4,31 +4,27 @@ inputs = ["application"]
 source = '''
 
 ._syslog = {}
+._syslog.msg_id = .log_source
 if .log_type == "infrastructure" && .log_source == "node" {
-   ._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")
-   ._syslog.proc_id = to_string!(.systemd.t.PID || "")
+    ._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")
+    ._syslog.proc_id = to_string!(.systemd.t.PID || "-")
 }
 if .log_source == "container" {
-   	._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "")
-   	if err != null {
-   	   log("K8s metadata (namespace, pod, or container) missing: unable to calculate syslog.app_name (TAG)", level: "error")
-    } else {
-  	   #Remove non-alphanumeric characters
-  	   ._syslog.app_name = replace(._syslog.app_name, r'[^a-zA-Z0-9]', "")
-  	   #Truncate the sanitized tag to 32 characters
-  	   ._syslog.app_name = truncate(._syslog.app_name, 32)
-  	}
-    ._syslog.severity = .level
-    ._syslog.facility = "user"
+   ._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")
+   if err != null {
+     log("K8s metadata (namespace, pod, or container) missing; syslog.app_name set to '-'", level: "error")
+  	 ._syslog.app_name = "-"
+   }
+   ._syslog.proc_id = to_string!(.kubernetes.pod_id || "")
+   ._syslog.severity = .level
+   ._syslog.facility = "user"
 }
 if .log_type == "audit" {
    ._syslog.app_name = .log_source
+   ._syslog.proc_id = to_string!(.auditID || "-")
    ._syslog.severity = "informational"
    ._syslog.facility = "security"
 }
-._syslog.proc_id = to_string!(._syslog.proc_id || "")
-if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_id))) { del(._syslog.proc_id) }
-._syslog.app_name = to_string!(._syslog.app_name || "")
 
 # try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
 if exists(._syslog.facility) {
@@ -76,18 +72,34 @@ for_each(excluded_fields) -> |_index, field| {
   temp = remove(temp, [field]) ?? temp
 }
 .message = temp
+
+# KubernetesMinimal
+# Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
+# This may result in the message body being an invalid JSON structure.
+
+namespace = to_string(.kubernetes.namespace_name) ?? ""
+container = to_string(.kubernetes.container_name) ?? ""
+pod = to_string(.kubernetes.pod_name) ?? ""
+msg_value = encode_json(.message)
+
+.message = "namespace_name=\"" + namespace + "\"" +
+           ", container_name=\"" + container + "\"" +
+           ", pod_name=\"" + pod + "\"" +
+           ", message=" + msg_value
 '''
 
 [sinks.example]
 type = "socket"
 inputs = ["example_parse_encoding"]
 address = "logserver:514"
-mode = "udp"
+mode = "tcp"
+keepalive.time_secs = 60
 
 [sinks.example.encoding]
 codec = "syslog"
-syslog.rfc = "rfc3164"
+syslog.rfc = "rfc5424"
 syslog.facility = "._syslog.facility"
 syslog.severity = "._syslog.severity"
 syslog.app_name = "._syslog.app_name"
 syslog.proc_id = "._syslog.proc_id"
+syslog.msg_id = "._syslog.msg_id"

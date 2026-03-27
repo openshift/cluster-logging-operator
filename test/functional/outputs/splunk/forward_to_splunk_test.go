@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -10,8 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,44 +122,81 @@ var _ = Describe("Forwarding to Splunk", func() {
 		)
 	})
 
-	It("should accept audit logs without timestamp unexpected type warning (see: https://issues.redhat.com/browse/LOG-4672)", func() {
-		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(obs.InputTypeAudit).
-			ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
-				output.Splunk.Index = "main"
-			})
-		framework.Secrets = append(framework.Secrets, secret)
-		Expect(framework.Deploy()).To(BeNil())
+	Context("timestamp in audit logs", func() {
+		It("should accept audit logs with NOT well formatted timestamp unexpected type warning (see: https://issues.redhat.com/browse/LOG-4672)", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+					output.Splunk.Index = "main"
+				})
+			framework.Secrets = append(framework.Secrets, secret)
+			Expect(framework.Deploy()).To(BeNil())
 
-		// Wait for splunk to be ready
-		splunk.WaitOnSplunk(framework)
+			// Wait for splunk to be ready
+			splunk.WaitOnSplunk(framework)
 
-		// Write audit logs
-		timestamp, _ := time.Parse(time.RFC3339Nano, "2024-04-16T09:46:19.116+00:00")
-		auditLogLine := functional.NewAuditHostLog(timestamp)
-		writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, 1)
-		Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing audit logs")
+			now := time.Now()
+			logLine := functional.NewKubeAuditLog(now)
 
-		// Read audit logs
-		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeAudit))
-		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
-		Expect(logs).ToNot(BeEmpty())
+			Expect(framework.WriteMessagesTok8sAuditLog(logLine, 1)).To(BeNil())
 
-		// Parse the logs
-		var auditLogs []types.AuditLog
-		jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
-		err = types.ParseLogsFrom(jsonString, &auditLogs, false)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		Expect(len(auditLogs)).To(Equal(1), "Expected one audit log")
+			// Read logs and verify the field was pruned
+			logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeAudit))
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
 
-		Expect(auditLogs[0].LogType).To(Equal(string(obs.InputTypeAudit)), "Expected audit log type")
-		Expect(auditLogs[0].Level).To(Equal("default"), "Expected audit log level to default")
+			// Parse the logs
+			var auditLogs []types.K8sAuditLog
+			jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+			err = types.ParseLogsFrom(jsonString, &auditLogs, false)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(auditLogs).ToNot(BeEmpty())
 
-		collectorLog, err := framework.ReadCollectorLogs()
-		Expect(err).To(BeNil(), "Expected no errors reading the collector logs")
-		Expect(collectorLog).ToNot(BeEmpty(), "Expected collector logs to not be empty")
-		tsWarn := "Timestamp was an unexpected type. Deferring to Splunk to set the timestamp"
-		Expect(strings.Contains(collectorLog, tsWarn)).To(BeFalse(), "Expected collector logs to NOT contain timestamp unexpected type warning")
+			Expect(len(auditLogs)).To(Equal(1), "Expected one audit log")
+
+			Expect(auditLogs[0].LogType).To(Equal(string(obs.InputTypeAudit)), "Expected audit log type")
+			Expect(auditLogs[0].Timestamp).ToNot(BeZero(), "Expected audit log timestamp")
+
+			collectorLog, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil(), "Expected no errors reading the collector logs")
+			Expect(collectorLog).ToNot(BeEmpty(), "Expected collector logs to not be empty")
+			tsWarn := "Timestamp was an unexpected type. Deferring to Splunk to set the timestamp"
+			Expect(strings.Contains(collectorLog, tsWarn)).To(BeFalse(), "Expected collector logs to NOT contain timestamp unexpected type warning")
+		})
+
+		DescribeTable("audit log should have a valid timestamp",
+			func(writeLog func(f *functional.CollectorFunctionalFramework) error, logSource obs.AuditSource) {
+				obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(obs.InputTypeAudit).
+					ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+						output.Splunk.Index = "main"
+					})
+				framework.Secrets = append(framework.Secrets, secret)
+				Expect(framework.Deploy()).To(BeNil())
+
+				// Wait for splunk to be ready
+				splunk.WaitOnSplunk(framework)
+
+				Expect(writeLog(framework)).To(Succeed())
+
+				logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeAudit))
+				Expect(err).To(Succeed())
+				Expect(logs).ToNot(BeEmpty())
+				var auditLogs []types.AuditLogCommon
+				jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
+				Expect(types.ParseLogsFrom(jsonString, &auditLogs, false)).To(Succeed())
+				Expect(auditLogs).To(HaveLen(1))
+				Expect(auditLogs[0].LogType).To(Equal(string(obs.InputTypeAudit)))
+				Expect(auditLogs[0].LogSource).To(Equal(string(logSource)))
+				Expect(auditLogs[0].Timestamp).ToNot(BeZero())
+			},
+			Entry("kubernetes audit log", func(f *functional.CollectorFunctionalFramework) error {
+				return f.WriteK8sAuditLog(1)
+			}, obs.AuditSourceKube),
+			Entry("OpenShift audit log", func(f *functional.CollectorFunctionalFramework) error {
+				return f.WriteOpenshiftAuditLog(1)
+			}, obs.AuditSourceOpenShift),
+		)
 	})
 
 	Context("splunk index", func() {

@@ -1,0 +1,19 @@
+apiVersion: "observability.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: collector
+  namespace: openshift-logging 
+spec:
+  collector:
+    resources:
+      limits:
+        memory: 4Gi
+  serviceAccount:
+    name: logcollector
+  pipelines:
+  - name: infra
+    inputRefs:
+    - application
+    - infrastructure
+    outputRefs:
+      - replaceme

@@ -52,6 +52,24 @@ spec:
         namespace: openshift-logging
         service: collector
         severity: info
+    - alert: ClusterLogForwarderAzureMonitorLogsDeprecation
+      annotations:
+        message: A ClusterLogForwarder in namespace {{$labels.resource_namespace}}
+          is configured to forward logs to Azure Monitor using the deprecated HTTP
+          Data Collector API.
+        summary: |-
+          The Azure Monitor HTTP Data Collector API used by the azureMonitor output type will be retired on September 14, 2026.
+          After this date, log forwarding to Azure Monitor using this output type will stop functioning.
+          Administrators must migrate to the Azure Monitor Logs Ingestion output.
+          See the Microsoft migration guide: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/custom-logs-migrate
+          See the Microsoft Logs Ingestion API documentation: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+      expr: |
+        log_forwarder_output_type{output="azureMonitor"} > 0
+      for: 1m
+      labels:
+        namespace: openshift-logging
+        service: clusterlogforwarder
+        severity: warning
     - alert: CollectorNodeDown
       annotations:
         description: Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod

@@ -24,3 +24,16 @@ var _ = Describe("#MinTLSVersion", func() {
 		Expect(string(configv1.VersionTLS13)).To(Equal(MinTLSVersion(configv1.TLSProfileSpec{MinTLSVersion: configv1.VersionTLS13})))
 	})
 })
+
+var _ = Describe("#TLSGroups", func() {
+	It("should return the default groups when none are provided", func() {
+		Expect(TLSGroups(nil)).To(Equal(DefaultTLSGroups))
+	})
+	It("should return the default groups when an empty slice is provided", func() {
+		Expect(TLSGroups([]string{})).To(Equal(DefaultTLSGroups))
+	})
+	It("should return the provided groups when they are defined", func() {
+		groups := []string{"X25519", "secp256r1"}
+		Expect(TLSGroups(groups)).To(Equal([]string{"X25519", "secp256r1"}))
+	})
+})

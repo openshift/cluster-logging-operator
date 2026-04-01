@@ -18,6 +18,10 @@ var (
 	DefaultTLSCiphers = configv1.TLSProfiles[DefaultTLSProfileType].Ciphers
 	// DefaultMinTLSVersion is the default minimum TLS version for API servers
 	DefaultMinTLSVersion = configv1.TLSProfiles[DefaultTLSProfileType].MinTLSVersion
+	// DefaultTLSGroups are the default TLS groups (elliptic curves) for key exchange.
+	// TODO: When openshift/api is updated to include Groups in TLSProfileSpec,
+	// read from configv1.TLSProfiles[DefaultTLSProfileType].Groups directly.
+	DefaultTLSGroups = []string{"X25519", "secp256r1", "secp384r1", "X25519MLKEM768"}
 )
 
 // FetchAPIServerTlsProfile fetches tlsSecurityProfile configured in APIServer
@@ -46,6 +50,16 @@ func MinTLSVersion(profile configv1.TLSProfileSpec) string {
 		return string(DefaultMinTLSVersion)
 	}
 	return string(profile.MinTLSVersion)
+}
+
+// TLSGroups returns the TLS groups for key exchange.
+// TODO: When openshift/api is updated with the Groups field in TLSProfileSpec,
+// update this to accept configv1.TLSProfileSpec like TLSCiphers and MinTLSVersion.
+func TLSGroups(groups []string) []string {
+	if len(groups) == 0 {
+		return DefaultTLSGroups
+	}
+	return groups
 }
 
 // GetClusterTLSProfileSpec returns TLSProfileSpec

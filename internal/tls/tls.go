@@ -2,9 +2,12 @@ package tls
 
 import (
 	"context"
+	"reflect"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 const (
@@ -68,4 +71,38 @@ func GetClusterTLSProfileSpec(apiServerTLSProfile *configv1.TLSSecurityProfile) 
 	}
 
 	return defaultProfile
+}
+
+// IsClusterAPIServer returns true if the object is the cluster APIServer resource
+func IsClusterAPIServer(obj client.Object) bool {
+	apiServer, ok := obj.(*configv1.APIServer)
+	return ok && apiServer.Name == APIServerName
+}
+
+// APIServerTLSProfileChangedPredicate returns a predicate that filters APIServer events
+// to only those that involve changes to the TLS security profile.
+// The reconcileOnCreate parameter controls whether to reconcile when the APIServer is created.
+func APIServerTLSProfileChangedPredicate(reconcileOnCreate bool) predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			if !reconcileOnCreate {
+				return false
+			}
+			return IsClusterAPIServer(e.Object)
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			if !IsClusterAPIServer(e.ObjectNew) {
+				return false
+			}
+			oldAPIServer, oldOk := e.ObjectOld.(*configv1.APIServer)
+			newAPIServer, newOk := e.ObjectNew.(*configv1.APIServer)
+			if !oldOk || !newOk {
+				return false
+			}
+			return !reflect.DeepEqual(oldAPIServer.Spec.TLSSecurityProfile, newAPIServer.Spec.TLSSecurityProfile)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+	}
 }

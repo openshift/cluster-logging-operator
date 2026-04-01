@@ -2,6 +2,7 @@ package oc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	osexec "os/exec"
@@ -100,6 +101,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
+		err = errors.Join(err, errors.New(errout))
 		log.V(2).Info("command result", "arguments", r.args, "output", errout, "error", err, "argstr", cmdargs)
 		return errout, err
 	}

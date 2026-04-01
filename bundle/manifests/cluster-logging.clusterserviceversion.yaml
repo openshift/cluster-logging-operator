@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-03-20T13:54:49Z"
+    createdAt: "2026-04-01T19:32:33Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2225,6 +2225,18 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        - apiGroups:
           - apps
           resources:
           - daemonsets
@@ -2362,10 +2374,17 @@ spec:
                 kubectl.kubernetes.io/default-container: cluster-logging-operator
                 target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
               labels:
+                control-plane: controller-manager
                 name: cluster-logging-operator
             spec:
               containers:
-              - command:
+              - args:
+                - --metrics-secure=true
+                - --metrics-bind-address=:8686
+                - --metrics-cert-path=/var/run/secrets/metrics-certs
+                - --metrics-cert-name=tls.crt
+                - --metrics-cert-key=tls.key
+                command:
                 - cluster-logging-operator
                 env:
                 - name: WATCH_NAMESPACE
@@ -2394,11 +2413,20 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
+                volumeMounts:
+                - mountPath: /var/run/secrets/metrics-certs
+                  name: metrics-certs
+                  readOnly: true
               nodeSelector:
                 kubernetes.io/os: linux
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: cluster-logging-operator
+              volumes:
+              - name: metrics-certs
+                secret:
+                  optional: true
+                  secretName: cluster-logging-operator-metrics-certs
     strategy: deployment
   installModes:
   - supported: true

@@ -169,7 +169,7 @@ var _ = Describe("Manager", Ordered, func() {
 						"image": %q,
 						"command": ["/bin/sh", "-c"],
 						"args": [
-							"for i in $(seq 1 30); do curl -v -H 'Authorization: Bearer %s' --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt https://%s.%s.svc.cluster.local:8686/metrics && exit 0 || sleep 2; done; exit 1"
+							"for i in $(seq 1 30); do curl -v -H 'Authorization: Bearer %s' --cacert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt https://%s.%s.svc.cluster.local:8443/metrics && exit 0 || sleep 2; done; exit 1"
 						],
 						"volumeMounts": [{
 							"name": "service-ca",

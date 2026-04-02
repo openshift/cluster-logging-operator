@@ -8,10 +8,6 @@ metadata:
   name: cluster-logging-operator-metrics
 spec:
   ports:
-    - name: http-metrics
-      port: 8686
-      protocol: TCP
-      targetPort: 8686
     - name: https-metrics
       port: 8443
       protocol: TCP

@@ -9,9 +9,9 @@ metadata:
 spec:
   ports:
     - name: https-metrics
-      port: 8686
+      port: 8443
       protocol: TCP
-      targetPort: 8686
+      targetPort: 8443
   selector:
     name: cluster-logging-operator
   sessionAffinity: None

@@ -16,7 +16,7 @@ spec:
       - name: cluster-logging-operator
         args:
         - --metrics-secure=true
-        - --metrics-bind-address=:8686
+        - --metrics-bind-address=:8443
         - --metrics-cert-path=/var/run/secrets/metrics-certs
         - --metrics-cert-name=tls.crt
         - --metrics-cert-key=tls.key

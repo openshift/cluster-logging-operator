@@ -84,8 +84,8 @@ func main() {
 	var probeAddr string
 
 	var tlsOpts []func(*tls.Config)
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8686", "The address the metrics endpoint binds to. "+
-		"Use :8443 for HTTPS or :8686 for HTTP, or set to 0 to disable the metrics service.")
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "The address the metrics endpoint binds to. "+
+		"Use :8443 for HTTPS, or set to 0 to disable the metrics service.")
 
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+

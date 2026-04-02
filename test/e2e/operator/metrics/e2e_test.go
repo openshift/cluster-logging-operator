@@ -46,6 +46,10 @@ var _ = Describe("Manager", Ordered, func() {
 	// and deleting the namespace.
 	AfterAll(func() {
 		if os.Getenv("DO_CLEANUP") == "" {
+			By("cleaning up labeling the namespace to revert enforcing the restricted security policy")
+			_, err := oc.Literal().From("oc label --overwrite ns %s pod-security.kubernetes.io/enforce=privileged", namespace).Run()
+			Expect(err).NotTo(HaveOccurred(), "Failed to label namespace with privileged policy")
+
 			By("cleaning up the curl pod for metrics")
 			_, _ = oc.Literal().From("oc delete pod curl-metrics -n %s", namespace).Run()
 		}

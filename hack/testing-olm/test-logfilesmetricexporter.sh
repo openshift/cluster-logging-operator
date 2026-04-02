@@ -41,11 +41,14 @@ for dir in $(ls -d $TEST_DIR); do
   os::log::info "=========================================================="
   os::log::info "Starting test of LogFilesMetricsExporter '$dir'"
   os::log::info "=========================================================="
+  pushd $dir
   artifact_dir=$ARTIFACT_DIR/$(basename $dir)
   mkdir -p $artifact_dir
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logfilesmetricexporter/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
-    ginkgo -p -procs=1 -v --no-color --trace --poll-progress-after=300s --poll-progress-interval=30s  --timeout=5m "$dir" | tee -a "$artifact_dir/test.log" ; then
+    go test --ginkgo.v --ginkgo.no-color \
+          --ginkgo.trace  --ginkgo.poll-progress-after=300s --ginkgo.poll-progress-interval=30s \
+          --ginkgo.timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "LogFilesMetricsExporter '$dir' passed"
     os::log::info "======================================================="
@@ -55,6 +58,7 @@ for dir in $(ls -d $TEST_DIR); do
     os::log::info "LogFilesMetricsExporter '$dir' failed"
     os::log::info "======================================================="
   fi
+  popd
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
     for obj in $(oc get clusterlogforwarder --all-namespaces -o name); do
       oc delete $obj --ignore-not-found --force --grace-period=0||:

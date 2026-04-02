@@ -15,7 +15,7 @@ package controller
 // +kubebuilder:rbac:groups=scheduling.k8s.io,resources=priorityclasses,verbs=delete
 // +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=create;use;get;list;watch
 
-// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions;apiservers,verbs=get;list;watch
 
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders,verbs=*
 // +kubebuilder:rbac:groups=observability.openshift.io,resources=clusterlogforwarders/status,verbs=get;update;patch

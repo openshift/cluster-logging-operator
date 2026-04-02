@@ -7,12 +7,14 @@ import (
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	configv1 "github.com/openshift/api/config/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	logmetricexporter "github.com/openshift/cluster-logging-operator/internal/metrics/logfilemetricexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/validations/logfilemetricsexporter"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -22,9 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -120,7 +124,29 @@ func (r *ReconcileLogFileMetricExporter) SetupWithManager(mgr ctrl.Manager) erro
 		Owns(&corev1.Service{}).
 		Owns(&monitoringv1.ServiceMonitor{}).
 		Owns(&networkingv1.NetworkPolicy{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(
+			&configv1.APIServer{},
+			handler.EnqueueRequestsFromMapFunc(r.mapAPIServerToLogFileMetricExporter),
+			builder.WithPredicates(tls.APIServerTLSProfileChangedPredicate(true)),
+		).
 		Complete(r)
+}
+
+// mapAPIServerToLogFileMetricExporter maps APIServer changes to the singleton LogFileMetricExporter
+func (r *ReconcileLogFileMetricExporter) mapAPIServerToLogFileMetricExporter(_ context.Context, obj client.Object) []ctrl.Request {
+	if !tls.IsClusterAPIServer(obj) {
+		return nil
+	}
+
+	log.V(2).Info("APIServer TLS profile changed, enqueuing LogFileMetricExporter")
+	return []ctrl.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
+			},
+		},
+	}
 }
 
 func setCondition(status *loggingv1alpha1.LogFileMetricExporterStatus, newCond metav1.Condition) bool {

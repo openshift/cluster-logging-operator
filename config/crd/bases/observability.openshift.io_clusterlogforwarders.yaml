@@ -2348,8 +2348,11 @@ spec:
                             the requests.
                           properties:
                             credentials:
-                              description: Credentials points to the secret containing
-                                the `google-application-credentials.json`.
+                              description: |-
+                                Credentials points to the secret containing the Google Cloud credentials file.
+                                The authentication type is determined by inspecting the credentials file:
+                                  - type: "service_account" Uses static service account key authentication
+                                  - type: "external_account" Uses Workload Identity Federation (WIF) authentication
                               properties:
                                 key:
                                   description: Key contains the name of the key inside

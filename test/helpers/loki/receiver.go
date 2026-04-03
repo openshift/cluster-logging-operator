@@ -157,6 +157,9 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	q.Add("query", logQL)
 	q.Add("limit", strconv.Itoa(limit))
 	q.Add("direction", "FORWARD")
+	now := time.Now()
+	q.Add("start", strconv.FormatInt(now.Add(-24*time.Hour).UnixNano(), 10))
+	q.Add("end", strconv.FormatInt(now.Add(24*time.Hour).UnixNano(), 10))
 	u.RawQuery = q.Encode()
 	log.V(3).Info("Loki Query", "url", u.String(), "org-id", orgID)
 	header := http.Header{}

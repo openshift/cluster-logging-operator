@@ -4,19 +4,33 @@ const (
 	HandleEventRouterLog = `
 
 if exists(._internal.kubernetes.pod_name) && starts_with(string!(._internal.kubernetes.pod_name), "eventrouter-") {
-  
+
   parsed, err = parse_json(._internal.message)
   if err != null {
     log("Unable to process EventRouter log: " + err, level: "info")
   } else {
     ._internal.event = parsed
     if exists(._internal.event.event) && is_object(._internal.event.event) {
-        ._internal.kubernetes.event = del(._internal.event.event)
-        ._internal.kubernetes.event.verb = del(._internal.event.verb)
-        # escape 'new line' symbol see: LOG-8090 
-        msg = to_string!(del(._internal.kubernetes.event.message))
-        ._internal.message = replace(msg, "\n", s'\n')
-        ._internal."@timestamp" = .kubernetes.event.metadata.creationTimestamp
+      ._internal.kubernetes.event = del(._internal.event.event)
+      ._internal.kubernetes.event.verb = del(._internal.event.verb)
+      # escape 'new line' symbol see: LOG-8090
+      msg = to_string!(del(._internal.kubernetes.event.message))
+      ._internal.message = replace(msg, "\n", s'\n')
+      # Determine event timestamp: prefer lastTimestamp, then firstTimestamp (v1 events),
+      # fall back to eventTime (events.k8s.io/v1), then creationTimestamp
+      # lastTimestamp -> firstTimestamp -> eventTime -> creationTimestamp
+      ts = ._internal.kubernetes.event.lastTimestamp
+      if ts == null || ts == "" || ts == "0001-01-01T00:00:00Z" {
+        ts = ._internal.kubernetes.event.firstTimestamp
+      }
+      if ts == null || ts == "" || ts == "0001-01-01T00:00:00Z" {
+        ts = ._internal.kubernetes.event.eventTime
+      }
+      if ts == null || ts == "" {
+        ts = ._internal.kubernetes.event.metadata.creationTimestamp
+      }
+      ._internal."@timestamp" = ts
+      ._internal.timestamp = ts
     } else {
       log("Unable to merge EventRouter log message into record: " + err, level: "info")
     }
@@ -34,22 +48,20 @@ if !exists(._internal.level) {
   message = ._internal.message
 
   # attempt 1: parse as logfmt (e.g. level=error msg="Failed to connect")
-  
-  parsed_logfmt, err = parse_logfmt(message)  
+  parsed_logfmt, err = parse_logfmt(message)
   if err == null && is_string(parsed_logfmt.level) {
     level = downcase!(parsed_logfmt.level)
   }
 
   # attempt 2: parse as klog (e.g. I0920 14:22:00.089385 1 scheduler.go:592] "Successfully bound pod to node")
   if level == null {
-    parsed_klog, err = parse_klog(message)  
+    parsed_klog, err = parse_klog(message)
     if err == null && is_string(parsed_klog.level) {
       level = parsed_klog.level
     }
   }
 
-  # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc. 
-  
+  # attempt 3: parse with groks template (if previous attempts failed) for classic text logs like Logback, Log4j etc.
   if level == null {
     parsed_grok, err = parse_groks(message,
       patterns: [
@@ -62,18 +74,17 @@ if !exists(._internal.level) {
         "_message": "%{GREEDYDATA:message}"
       }
     )
-    
     if err == null && is_string(parsed_grok.level) {
-      level = downcase!(parsed_grok.level)      
+      level = downcase!(parsed_grok.level)
     }
   }
 
   if level == null {
     level = "default"
- 
+
     # attempt 4: Match on well known structured patterns
     # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
-  
+
     if match!(message, r'^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"') {
       level = "emergency"
     } else if match!(message, r'^A[0-9]+|level=alert|Value:alert|"level":"alert"') {
@@ -93,7 +104,7 @@ if !exists(._internal.level) {
     } else if match!(message, r'^T[0-9]+|level=trace|Value:trace|"level":"trace"') {
       level = "trace"
     }
-  
+
     # attempt 5: Match on the keyword that appears earliest in the message
     if level == "default" {
       level_patterns = r'(?i)(?<emergency>emergency|<emergency>)|(?<alert>alert|<alert>)|(?<critical>critical|<critical>)|(?<error>error|<error>)|(?<warn>warn(?:ing)?|<warn>)|(?<notice>notice|<notice>)|(?:\b(?<info>info)\b|<info>)|(?<debug>debug|<debug>)|(?<trace>trace|<trace>)'

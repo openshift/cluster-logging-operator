@@ -107,5 +107,52 @@ var _ = Describe("[internal][validations] ClusterLogForwarder will validate head
 			Expect(results[0]).To(ContainSubstring("duplicate case-variant headers"))
 			Expect(results[0]).To(ContainSubstring("X-Custom-Header"))
 		})
+
+		It("should produce deterministic messages for multiple forbidden headers", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Content-Type":  "text/plain",
+				"Authorization": "test",
+			}
+			expected := validateElasticsearchHeaders(spec)
+			for i := 0; i < 100; i++ {
+				Expect(validateElasticsearchHeaders(spec)).To(Equal(expected),
+					"validation messages should be stable across invocations")
+			}
+		})
+
+		It("should produce deterministic messages for multiple duplicate header groups", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Accept":          "application/json",
+				"accept":          "text/plain",
+				"X-Custom-Header": "value1",
+				"x-custom-header": "value2",
+			}
+			expected := validateElasticsearchHeaders(spec)
+			for i := 0; i < 100; i++ {
+				Expect(validateElasticsearchHeaders(spec)).To(Equal(expected),
+					"validation messages should be stable across invocations")
+			}
+		})
+
+		It("should produce sorted header names in forbidden headers message", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"Content-Type":  "text/plain",
+				"Authorization": "test",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).To(HaveLen(1))
+			Expect(results[0]).To(Equal("invalid headers found: Authorization,Content-Type"))
+		})
+
+		It("should produce sorted variant names in duplicate headers message", func() {
+			spec.Elasticsearch.Headers = map[string]string{
+				"X-Custom-Header": "value1",
+				"x-custom-header": "value1",
+				"X-CUSTOM-HEADER": "value1",
+			}
+			results := validateElasticsearchHeaders(spec)
+			Expect(results).To(HaveLen(1))
+			Expect(results[0]).To(Equal("duplicate case-variant headers 'X-CUSTOM-HEADER', 'X-Custom-Header', 'x-custom-header' found, use canonical form 'X-Custom-Header'"))
+		})
 	})
 })

@@ -2,7 +2,9 @@ package outputs
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -29,11 +31,14 @@ func validateElasticsearchHeaders(output obs.OutputSpec) (results []string) {
 			canonicalHeaders[canonicalName] = append(canonicalHeaders[canonicalName], headerName)
 		}
 		if len(invalidHeaders) > 0 {
+			slices.Sort(invalidHeaders)
 			log.V(3).Info("validateElasticsearchHeaders failed", "reason", "invalid headers found: ", strings.Join(invalidHeaders, ","))
 			results = append(results, fmt.Sprintf("invalid headers found: %s", strings.Join(invalidHeaders, ",")))
 		}
-		for canonicalName, originals := range canonicalHeaders {
+		for _, canonicalName := range slices.Sorted(maps.Keys(canonicalHeaders)) {
+			originals := canonicalHeaders[canonicalName]
 			if len(originals) > 1 {
+				slices.Sort(originals)
 				log.V(3).Info("validateElasticsearchHeaders failed", "reason", "duplicate case-variant headers", "headers", originals)
 				results = append(results, fmt.Sprintf("duplicate case-variant headers '%s' found, use canonical form '%s'", strings.Join(originals, "', '"), canonicalName))
 			}

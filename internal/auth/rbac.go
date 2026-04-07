@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -9,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const systemAuthDelegatorClusterRoleName = "system:auth-delegator"
 
 // ReconcileRBAC reconciles the RBAC specifically for the service account and SCC
 func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string, owner metav1.OwnerReference) error {
@@ -23,6 +26,30 @@ func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string
 
 	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, rbacName, desiredSCCRole.Name, saName, owner)
 	return reconcile.RoleBinding(k8sClient, desiredSCCRoleBinding)
+}
+
+// ReconcileMetricsAuthRBAC reconciles the ClusterRoleBinding that binds system:auth-delegator to the service account
+func ReconcileMetricsAuthRBAC(k8sClient client.Client, commonName, saNamespace, saName string) error {
+	name := fmt.Sprintf("%s-metrics-auth", commonName)
+	desiredMetricsAuthRoleBinding := NewMetricsAuthClusterRoleBinding(name, saNamespace, saName)
+	return reconcile.ClusterRoleBinding(k8sClient, desiredMetricsAuthRoleBinding.Name, func() *rbacv1.ClusterRoleBinding { return desiredMetricsAuthRoleBinding })
+}
+
+// NewMetricsAuthClusterRoleBinding binds the system:auth-delegator ClusterRole to the given service account.
+func NewMetricsAuthClusterRoleBinding(name, saNamespace, saName string) *rbacv1.ClusterRoleBinding {
+	return runtime.NewClusterRoleBinding(
+		name,
+		rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "ClusterRole",
+			Name:     systemAuthDelegatorClusterRoleName,
+		},
+		rbacv1.Subject{
+			Kind:      "ServiceAccount",
+			Name:      saName,
+			Namespace: saNamespace,
+		},
+	)
 }
 
 // NewMetaDataReaderClusterRoleBinding stubs a clusterrolebinding to allow reading of pod metadata (i.e. labels)

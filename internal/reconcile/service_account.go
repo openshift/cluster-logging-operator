@@ -16,6 +16,7 @@ func ServiceAccount(k8Client client.Client, desired *v1.ServiceAccount) (*v1.Ser
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, sa, func() error {
 		sa.Annotations = desired.Annotations
 		sa.OwnerReferences = desired.OwnerReferences
+		sa.Finalizers = desired.Finalizers
 		return nil
 	})
 

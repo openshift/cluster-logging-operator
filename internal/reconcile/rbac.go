@@ -7,6 +7,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -43,25 +44,29 @@ func RoleBinding(k8Client client.Client, desired *rbacv1.RoleBinding) error {
 }
 
 func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRoleBinding) error {
-	wantRoleBinding := generator()
-	crb := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
-	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8sClient, crb, func() error {
-		// Update the clusterrolebinding with our desired state
-		crb.RoleRef = wantRoleBinding.RoleRef
-		crb.Subjects = wantRoleBinding.Subjects
-		return nil
-	})
-
-	if err == nil {
-		log.V(3).Info(fmt.Sprintf("reconciled clusterRoleBinding - operation: %s", op))
+	desired := generator()
+	existing := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
+	err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(existing), existing)
+	if apierrors.IsNotFound(err) {
+		log.V(3).Info("Creating clusterRoleBinding", "name", name)
+		return k8sClient.Create(context.TODO(), desired)
 	}
-	return err
-}
+	if err != nil {
+		return err
+	}
 
-func DeleteClusterRole(k8sClient client.Client, name string) error {
-	object := runtime.NewClusterRole(name)
-	log.V(3).Info("Deleting", "object", object)
-	return k8sClient.Delete(context.TODO(), object)
+	if existing.RoleRef != desired.RoleRef {
+		log.V(3).Info("Deleting clusterRoleBinding due to roleRef change", "name", name)
+		if err := k8sClient.Delete(context.TODO(), existing); err != nil {
+			return err
+		}
+		log.V(3).Info("Recreating clusterRoleBinding", "name", name)
+		return k8sClient.Create(context.TODO(), desired)
+	}
+
+	existing.Subjects = desired.Subjects
+	log.V(3).Info("Updating clusterRoleBinding", "name", name)
+	return k8sClient.Update(context.TODO(), existing)
 }
 
 func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {

@@ -18,6 +18,10 @@ Not all output types support per-output proxy configuration. The following table
 | Yes
 | Fully supported. Set `proxyURL` in the `loki` spec.
 
+| LokiStack
+| No
+| Although LokiStack uses Loki/OTLP under the hood, it is a distinct output type and does not expose `proxyURL`. Relies on cluster-wide proxy env vars only.
+
 | Elasticsearch
 | No
 | The underlying Vector sink supports proxy, but the CLF API does not yet expose it. Relies on cluster-wide proxy env vars only.
@@ -55,9 +59,9 @@ Not all output types support per-output proxy configuration. The following table
 | Uses a TCP/UDP socket sink. HTTP proxy is not applicable at the Vector sink level.
 |===
 
-For output types that do not support `proxyURL`, proxy behavior is controlled entirely by the cluster-wide proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) set on the collector container. Many of the output types listed above have proxy support in the underlying Vector sink, making them candidates for future `proxyURL` support in the CLF API.
+For output types that do not support `proxyURL`, proxy behavior is controlled entirely by the cluster-wide proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`) set on the collector container. These environment variables are configured at the OpenShift cluster level and are not configurable through the ClusterLogForwarder API. The operator automatically passes these cluster-wide proxy settings to the collector deployment. Many of the output types listed above have proxy support in the underlying Vector sink, making them candidates for future `proxyURL` support in the CLF API.
 
-NOTE: The `proxyURL` field was added incrementally based on user demand: first for HTTP (LOG-6069, Sep 2024), then for Loki (LOG-8645, Jan 2026). There is no technical barrier to adding it for other HTTP-based outputs (Elasticsearch, Splunk, CloudWatch, Google Cloud Logging, Azure Monitor, S3) — the underlying Vector sinks already support proxy configuration, and the operator's internal `Proxy` struct is generic and reusable. Adding `proxyURL` to a new output type requires only adding the field to the API type, wiring it in the output's config generator, and regenerating the CRDs.
+NOTE: Support for `proxyURL` on additional output types (Elasticsearch, Splunk, CloudWatch, Google Cloud Logging, Azure Monitor, S3) is tracked in https://redhat.atlassian.net/browse/OBSDA-1202[OBSDA-1202].
 
 == Overview
 
@@ -65,9 +69,14 @@ There are two proxy mechanisms that can affect log forwarding:
 
 . **Cluster-wide proxy** — Configured at the OpenShift cluster level. The operator passes `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` environment variables to the collector container. These are honored automatically by the collector for all outbound connections unless overridden.
 
-. **Per-output `proxyURL`** — An explicit proxy URL set on an individual HTTP or Loki output in the ClusterLogForwarder spec. This generates a dedicated proxy configuration block for that specific output.
+. **Per-output `proxyURL`** — An explicit proxy URL set on an individual output in the ClusterLogForwarder spec. This generates a dedicated proxy configuration block for that specific output.
 
-IMPORTANT: When `proxyURL` is set on an output, it **fully replaces** the cluster-wide proxy environment variables for that output. The two mechanisms do not merge. The cluster-wide `NO_PROXY` list is also ignored for that output.
+IMPORTANT: Proxy configuration follows a precedence hierarchy. When multiple proxy mechanisms are active, the following order determines which takes effect (highest to lowest priority):
+
+1. **Per-output `proxyURL`** — Explicit proxy on the output spec (HTTP or Loki)
+2. **Cluster-wide proxy env vars** — `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` set on the collector container
+
+When `proxyURL` is set on an output, it takes full precedence and overrides any cluster-wide proxy environment variables (including `NO_PROXY` exclusions) for that output.
 
 == Configuring proxyURL on an HTTP Output
 

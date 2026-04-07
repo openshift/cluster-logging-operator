@@ -17,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,6 +129,17 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
 			To(Equal(svcURL))
+
+		Expect(smInstance.Spec.Endpoints[0].BearerTokenFile).
+			To(Equal("/var/run/secrets/kubernetes.io/serviceaccount/token"))
+
+		// Metrics Auth RBAC
+		// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator
+		metricsAuthBinding := &rbacv1.ClusterRoleBinding{}
+		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: fmt.Sprintf("%s-metrics-auth", constants.LogfilesmetricexporterName)}, metricsAuthBinding)).Should(Succeed())
+		Expect(metricsAuthBinding.RoleRef.Name).To(Equal("system:auth-delegator"))
+		Expect(metricsAuthBinding.Subjects).To(HaveLen(1))
+		Expect(metricsAuthBinding.Subjects[0].Name).To(Equal(constants.LogfilesmetricexporterName))
 	})
 
 	Context("when the logfilemetricexporter NetworkPolicy is reconciled", func() {

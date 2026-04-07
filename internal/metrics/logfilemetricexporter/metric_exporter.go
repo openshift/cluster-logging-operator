@@ -51,6 +51,11 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
+	if err := auth.ReconcileMetricsAuthRBAC(requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileMetricsRBAC")
+		return err
+	}
+
 	if err := network.ReconcileService(requestClient, lfmeInstance.Namespace, resNames.CommonName, lfmeInstance.Name, constants.LogfilesmetricexporterName, constants.MetricsPortName, ExporterMetricsSecretName, exporterPort, owner, commonLabels); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileService")
 		return err

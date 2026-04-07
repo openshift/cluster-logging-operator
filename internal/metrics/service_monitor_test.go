@@ -69,5 +69,8 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", serviceName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
 			To(Equal(svcURL))
+
+		Expect(smInstance.Spec.Endpoints[0].BearerTokenFile).
+			To(Equal("/var/run/secrets/kubernetes.io/serviceaccount/token"))
 	})
 })

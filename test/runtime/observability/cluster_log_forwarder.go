@@ -193,7 +193,7 @@ func (p *PipelineBuilder) ToS3Output(auth obs.AwsAuthentication, bucketName, key
 		output.Type = obs.OutputTypeS3
 		output.TLS = &obs.OutputTLSSpec{InsecureSkipVerify: true}
 		output.S3 = &obs.S3{
-			URL:            "https://localhost:" + string(port),
+			URL:            "http://localhost:" + port,
 			Region:         "us-east-2",
 			Bucket:         bucketName,
 			KeyPrefix:      keyPrefix,

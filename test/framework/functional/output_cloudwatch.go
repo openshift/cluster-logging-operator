@@ -55,13 +55,9 @@ func (f *CollectorFunctionalFramework) AddCloudWatchOutput(b *runtime.PodBuilder
 					},
 				},
 			},
-			EndpointResolver: aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-				return aws.Endpoint{
-					PartitionID:   "aws",
-					URL:           "https://" + route.Spec.Host,
-					SigningRegion: "us-east-1",
-				}, nil
-			}),
+		},
+		func(o *cwl.Options) {
+			o.BaseEndpoint = aws.String("https://" + route.Spec.Host)
 		})
 
 	b.AddContainer(string(obs.OutputTypeCloudwatch), cloudwatchMotoImage).

@@ -9,14 +9,17 @@ source = '''
 type = "remap"
 inputs = ["loki_receiver_remap"]
 source = '''
+if !exists(.kubernetes.container_name) {
+  .kubernetes.container_name = ""
+}
+if !exists(.kubernetes.labels."app") {
+  .kubernetes.labels."app" = ""
+}
 if !exists(.kubernetes.namespace_name) {
   .kubernetes.namespace_name = ""
 }
 if !exists(.kubernetes.pod_name) {
   .kubernetes.pod_name = ""
-}
-if !exists(.kubernetes.container_name) {
-  .kubernetes.container_name = ""
 }
 '''
 

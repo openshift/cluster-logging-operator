@@ -143,7 +143,7 @@ var _ = Describe("Generate vector config", func() {
 				},
 			}
 		}),
-		Entry("with custom bearer token", "with_sa_token.toml", framework.Options{
+		Entry("with service account token", "with_sa_token.toml", framework.Options{
 			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
 		}, false, func(spec *obs.OutputSpec) {
 			spec.Loki.Authentication = &obs.HTTPAuthentication{

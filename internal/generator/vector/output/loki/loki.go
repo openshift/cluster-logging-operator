@@ -26,7 +26,6 @@ const (
 	lokiLabelKubernetesPodName       = "kubernetes.pod_name"
 	lokiLabelKubernetesHost          = "kubernetes.host"
 	lokiLabelKubernetesContainerName = "kubernetes.container_name"
-	podNamespace                     = "kubernetes.namespace_name"
 
 	// OTel
 	otellogType                          = "openshift.log_type"
@@ -64,6 +63,9 @@ var (
 		lokiLabelKubernetesHost,
 	}
 
+	// labelNameReplacer sanitizes label keys into valid Loki label names.
+	labelNameReplacer = strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
+
 	viaqOtelLabelMap = map[string]string{
 		logType:                          otellogType,
 		lokiLabelKubernetesNamespaceName: otellokiLabelKubernetesNamespaceName,
@@ -77,7 +79,6 @@ type Loki struct {
 	Inputs      string
 	TenantID    Element
 	Endpoint    string
-	LokiLabel   []string
 	common.RootMixin
 }
 
@@ -95,22 +96,6 @@ out_of_order_action = "accept"
 healthcheck.enabled = false
 {{kv .TenantID -}}
 {{.Compression}}
-{{end}}`
-}
-
-type LokiEncoding struct {
-	ComponentID string
-	Codec       string
-}
-
-func (le LokiEncoding) Name() string {
-	return "lokiEncoding"
-}
-
-func (le LokiEncoding) Template() string {
-	return `{{define "` + le.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding]
-codec = {{.Codec}}
 {{end}}`
 }
 
@@ -147,6 +132,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		return []Element{
 			Debug(id, vectorhelpers.MakeInputs(inputs...)),
 		}
+	}
+	if o.Loki == nil {
+		return nil
 	}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
@@ -206,8 +194,7 @@ func lokiLabelKeys(l *obs.Loki) []string {
 func lokiLabels(lo *obs.Loki) []LokiLabel {
 	ls := []LokiLabel{}
 	for _, k := range lokiLabelKeys(lo) {
-		r := strings.NewReplacer(".", "_", "/", "_", "\\", "_", "-", "_")
-		name := r.Replace(k)
+		name := labelNameReplacer.Replace(k)
 		l := LokiLabel{
 			Name:  name,
 			Value: formatLokiLabelValue(k),
@@ -245,7 +232,7 @@ func generateCustomLabelValues(value string) string {
 	case otellokiLabelKubernetesContainerName:
 		labelVal = lokiLabelKubernetesContainerName
 	case lokiLabelKubernetesNamespaceName, otellokiLabelKubernetesNamespaceName:
-		labelVal = podNamespace
+		labelVal = lokiLabelKubernetesNamespaceName
 	case otellokiLabelKubernetesPodName:
 		labelVal = lokiLabelKubernetesPodName
 	// Special case for the kubernetes node name (same as kubernetes.host)
@@ -257,6 +244,25 @@ func generateCustomLabelValues(value string) string {
 	return fmt.Sprintf("{{%s}}", labelVal)
 }
 
+// sanitizeLabelKeySuffix checks if key is a kubernetes.labels.* or kubernetes.namespace_labels.* key
+// and returns (prefix, sanitizedSuffix, true). For other keys returns ("", "", false).
+func sanitizeLabelKeySuffix(key string) (string, string, bool) {
+	if strings.HasPrefix(key, "kubernetes.labels.") || strings.HasPrefix(key, "kubernetes.namespace_labels.") {
+		parts := strings.SplitAfterN(key, "labels.", 2)
+		r := strings.NewReplacer("/", "_", ".", "_")
+		return parts[0], r.Replace(parts[1]), true
+	}
+	return "", "", false
+}
+
+// vrlFieldPath converts a label key to a VRL-safe field path for initialization.
+func vrlFieldPath(key string) string {
+	if prefix, suffix, ok := sanitizeLabelKeySuffix(key); ok {
+		return prefix + "\"" + suffix + "\""
+	}
+	return key
+}
+
 func remapLabelsVrl(labels []string) string {
 	k8sEventLabel := `
 if !exists(.%s) {
@@ -264,27 +270,40 @@ if !exists(.%s) {
 }`
 	sb := strings.Builder{}
 	for _, v := range labels {
-		sb.WriteString(fmt.Sprintf(k8sEventLabel, v, v))
+		path := vrlFieldPath(v)
+		sb.WriteString(fmt.Sprintf(k8sEventLabel, path, path))
 	}
 	return sb.String()
 }
 
 func formatLokiLabelValue(value string) string {
-	if strings.HasPrefix(value, "kubernetes.labels.") || strings.HasPrefix(value, "kubernetes.namespace_labels.") {
-		parts := strings.SplitAfterN(value, "labels.", 2)
-		r := strings.NewReplacer("/", "_", ".", "_")
-		key := r.Replace(parts[1])
-		key = fmt.Sprintf(`\"%s\"`, key)
-		value = fmt.Sprintf("%s%s", parts[0], key)
+	if prefix, suffix, ok := sanitizeLabelKeySuffix(value); ok {
+		value = fmt.Sprintf(`%s\"%s\"`, prefix, suffix)
 	}
 	return fmt.Sprintf("{{%s}}", value)
+}
+
+// remapLabelKeys returns label keys that need VRL initialization to prevent
+// missing field errors in Loki sink templates. Includes container metadata
+// fields plus custom labelKeys that are read directly from log records.
+func remapLabelKeys(l *obs.Loki) []string {
+	if l == nil || len(l.LabelKeys) == 0 {
+		return containerLabels
+	}
+	keys := *sets.NewString(containerLabels...)
+	for _, k := range l.LabelKeys {
+		if generateCustomLabelValues(k) == "" {
+			keys.Insert(k)
+		}
+	}
+	return keys.List()
 }
 
 func RemapLabels(id string, o obs.OutputSpec, inputs []string) Element {
 	return Remap{
 		ComponentID: id,
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
-		VRL:         remapLabelsVrl(containerLabels),
+		VRL:         remapLabelsVrl(remapLabelKeys(o.Loki)),
 	}
 }
 

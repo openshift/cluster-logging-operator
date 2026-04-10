@@ -21,6 +21,28 @@ var _ = Describe("Loki generator helpers", func() {
 		Entry(" for a label without kubernetes.labels prefix", "kubernetes.host", `kubernetes.host`),
 	)
 
+	DescribeTable("#remapLabelKeys", func(labelKeys []string, expected []string) {
+		lo := &obs.Loki{LabelKeys: labelKeys}
+		Expect(remapLabelKeys(lo)).To(BeEquivalentTo(expected))
+	},
+		Entry("returns containerLabels when no custom keys",
+			nil,
+			containerLabels,
+		),
+		Entry("includes custom direct record field keys",
+			[]string{"kubernetes.labels.app"},
+			[]string{"kubernetes.container_name", "kubernetes.labels.app", "kubernetes.namespace_name", "kubernetes.pod_name"},
+		),
+		Entry("excludes keys with custom values (env vars, mapped fields)",
+			[]string{"kubernetes.host", "k8s.node_name"},
+			[]string{"kubernetes.container_name", "kubernetes.namespace_name", "kubernetes.pod_name"},
+		),
+		Entry("includes only direct record fields from mixed input",
+			[]string{"kubernetes.labels.app", "kubernetes.host", "kubernetes.namespace_name"},
+			[]string{"kubernetes.container_name", "kubernetes.labels.app", "kubernetes.namespace_name", "kubernetes.pod_name"},
+		),
+	)
+
 	DescribeTable("#lokiLabels should correctly format labels", func(label, expKey, expValue string) {
 		lo := &obs.Loki{
 			LabelKeys: []string{label},

@@ -66,7 +66,7 @@ following Cluster Log Forwarder's conventions.
 
 === `sourceType`
 In Splunk, the `sourceType` field is used to format and categorise data. Splunk is bundled with many pretrained types and has the capability of defining custom types. Use this field to reference a source type defined in Splunk.
-If not specified, `sourceType` will be "_json" or be determined automatically when using PayloadKey based on the type of the final event payload.
+If not specified, `sourceType` will be "_json" or be determined automatically when using `payloadKey` based on the type of the final event payload.
 
 === `indexedFields`
 

@@ -3853,6 +3853,20 @@ spec:
                              3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
                           pattern: ^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$
                           type: string
+                        sourceType:
+                          description: |-
+                            SourceType can be used to specify a pretrained or custom sourcetype in Splunk.
+                            If not specified, `sourceType` will be "_json" or be determined automatically when using PayloadKey based on the type of the final event payload.
+                            Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+
+                            Examples:
+
+                             1. "access_combined"
+
+                             2. "log4j"
+
+                             3. "my:custom:sourcetype"
+                          type: string
                         tuning:
                           description: Tuning specs tuning for the output
                           nullable: true

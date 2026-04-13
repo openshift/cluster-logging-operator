@@ -1320,6 +1320,22 @@ type Splunk struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Source",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Source string `json:"source,omitempty"`
 
+	// SourceType can be used to specify a pretrained or custom sourcetype in Splunk.
+	// If not specified, `sourceType` will be "_json" or be determined automatically when using PayloadKey based on the type of the final event payload.
+	// Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+	//
+	// Examples:
+	//
+	//  1. "access_combined"
+	//
+	//  2. "log4j"
+	//
+	//  3. "my:custom:sourcetype"
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="SourceType",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SourceType string `json:"sourceType,omitempty"`
+
 	// PayloadKey specifies record field to use as payload.
 	// The PayloadKey must be a single field path.
 	//

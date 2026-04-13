@@ -1839,6 +1839,22 @@ spec:
         path: outputs[0].splunk.source
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          SourceType can be used to specify a pretrained or custom sourcetype in Splunk.
+          If not specified, `sourceType` will be "_json" or be determined automatically when using PayloadKey based on the type of the final event payload.
+          Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+
+          Examples:
+
+           1. "access_combined"
+
+           2. "log4j"
+
+           3. "my:custom:sourcetype"
+        displayName: SourceType
+        path: outputs[0].splunk.sourceType
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].splunk.tuning

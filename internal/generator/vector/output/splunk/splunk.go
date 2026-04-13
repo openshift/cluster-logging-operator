@@ -33,11 +33,13 @@ if ._internal.log_type == "audit" {
 }
 `
 
-// VRL template to set payload for log event and detecting 'sourcetype'.
-// If payload is object will be set 'sourcetype':"_json",
+// VRL template to set payload for log event and detecting 'sourcetype' when sourcetype has not been defined.
+// If sourcetype is not defined and payload is object, will be set 'sourcetype':"_json",
 // 'sourcetype': "generic_single_line" otherwise
 var payloadKeyTmpl = `
 payloadKey = %s
+setSourcetype = %t
+
 if !is_null(payloadKey) {
 	value = get!(., payloadKey) 
 	if !is_null(value) {
@@ -45,13 +47,18 @@ if !is_null(payloadKey) {
         . = {}
         . = set!(., payloadKey, value)
         ._internal = internal
-		if is_object(value) {
-			._internal.splunk.sourcetype = "_json"
-		} else {
-			._internal.splunk.sourcetype = "generic_single_line"
-		}
+
+        if setSourcetype {
+            if is_object(value) {
+                ._internal.splunk.sourcetype = "_json"
+            } else {
+                ._internal.splunk.sourcetype = "generic_single_line"
+            }
+        }
 	} else {
-		._internal.splunk.sourcetype = "_json"
+        if setSourcetype {
+            ._internal.splunk.sourcetype = "_json"
+        }
 	}
 }
 `
@@ -98,13 +105,18 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		builder.WriteString(sourceTmpl)
 	}
 
-	builder.WriteString("\n._internal.splunk.sourcetype = \"_json\"\n")
+	if o.Splunk.SourceType != "" {
+		builder.WriteString(fmt.Sprintf("\n._internal.splunk.sourcetype = %s\n", commontemplate.TransformUserTemplateToVRL(o.Splunk.SourceType)))
+	} else {
+		builder.WriteString("\n._internal.splunk.sourcetype = \"_json\"\n")
+	}
 
 	if o.Splunk.PayloadKey != "" {
 		path := vectorhelpers.SplitPath(string(o.Splunk.PayloadKey))
 		quotedSegments := vectorhelpers.QuotePathSegments(path)
 		quotedPathArray := fmt.Sprintf("[%s]", strings.Join(quotedSegments, ","))
-		builder.WriteString(fmt.Sprintf(payloadKeyTmpl, quotedPathArray))
+		setSourcetype := o.Splunk.SourceType == ""
+		builder.WriteString(fmt.Sprintf(payloadKeyTmpl, quotedPathArray, setSourcetype))
 	}
 
 	var indexedFields []string

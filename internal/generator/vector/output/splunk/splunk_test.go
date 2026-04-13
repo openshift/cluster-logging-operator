@@ -123,5 +123,8 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		}),
 		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".openshift"
+		}),
+		Entry("with sourceType", "splunk_sink_sourcetype.toml", framework.NoOptions, true, func(spec *obs.OutputSpec) {
+			spec.Splunk.SourceType = "my:custom:sourcetype"
 		}))
 })

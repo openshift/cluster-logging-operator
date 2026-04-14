@@ -129,5 +129,21 @@ var _ = Describe("Generate vector config", func() {
 				MaxWrite:     utils.GetPtr(resource.MustParse("10M")),
 			}
 		}),
+		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic and custom CA", "kafka_sasl_ca_with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Kafka.URL = "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
+			spec.Kafka.Topic = "topic"
+			spec.TLS = &obs.OutputTLSSpec{
+				TLSSpec: obs.TLSSpec{
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: secretName,
+					},
+				},
+			}
+			spec.Kafka.Authentication = &obs.KafkaAuthentication{
+				SASL: saslAuth,
+			}
+			spec.Kafka.Authentication.SASL.Mechanism = SASL_SCRAM_256
+		}),
 	)
 })

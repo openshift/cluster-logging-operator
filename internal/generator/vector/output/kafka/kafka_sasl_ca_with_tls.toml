@@ -1,0 +1,30 @@
+[transforms.kafka_receiver_topic]
+type = "remap"
+inputs = ["pipeline_1", "pipeline_2"]
+source = '''
+._internal.kafka_receiver_topic = "topic"
+'''
+
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["kafka_receiver_topic"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "{{ _internal.kafka_receiver_topic }}"
+
+[sinks.kafka_receiver.healthcheck]
+enabled = false
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+except_fields = ["_internal"]
+
+[sinks.kafka_receiver.sasl]
+enabled = true
+username = "SECRET[kubernetes_secret.kafka-receiver-1/username]"
+password = "SECRET[kubernetes_secret.kafka-receiver-1/password]"
+mechanism = "SCRAM-SHA-256"
+
+[sinks.kafka_receiver.tls]
+enabled = true
+ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"

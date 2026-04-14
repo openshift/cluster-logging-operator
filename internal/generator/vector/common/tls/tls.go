@@ -20,7 +20,7 @@ var (
 
 func NewTlsEnabled(comp observability.TransportLayerSecurity, secrets observability.Secrets, op utils.Options, options ...framework.Option) *transport.TlsEnabled {
 	tls := NewTls(comp, secrets, op, options...)
-	if tls != nil && tls.CRTFile != "" {
+	if tls != nil && (tls.CAFile != "" || (tls.CRTFile != "" && tls.KeyFile != "")) {
 		return &transport.TlsEnabled{
 			TLS:     *tls,
 			Enabled: true,

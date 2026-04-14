@@ -24,6 +24,8 @@ import (
 const (
 	defaultKafkaTopic  = "topic"
 	SASLMechanismPlain = "PLAIN"
+	SASL_SCRAM_512     = "SCRAM-SHA-512"
+	SASL_SCRAM_256     = "SCRAM-SHA-256"
 )
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {

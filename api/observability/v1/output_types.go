@@ -1321,7 +1321,7 @@ type Splunk struct {
 	Source string `json:"source,omitempty"`
 
 	// SourceType can be used to specify a pretrained or custom sourcetype in Splunk.
-	// If not specified, `sourceType` will be "_json" or be determined automatically when using `payloadKey` based on the type of the final event payload.
+	// If not specified, the Splunk source type used is `_json` but may be overridden when using `payloadKey`, depending on the structure of the final event payload.
 	// Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 	//
 	// Examples:

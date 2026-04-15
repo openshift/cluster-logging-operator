@@ -65,8 +65,90 @@ To ensure consistency and meaningful categorization, the `source` value can be d
 following Cluster Log Forwarder's conventions.
 
 === `sourceType`
-In Splunk, the `sourceType` field is used to format and categorise data. Splunk is bundled with many pretrained types and has the capability of defining custom types. Use this field to reference a source type defined in Splunk.
-If not specified, `sourceType` will be "_json" or be determined automatically when using `payloadKey` based on the type of the final event payload.
+In Splunk, the source type is used to define how incoming data should be parsed, interpreted, and categorised. Splunk includes many built-in source types and also allows for custom source types to be defined. The `sourceType` field should reference a source type configured in Splunk.
+
+If not specified, the Splunk source type used is `_json` but may be overridden when using `payloadKey`, depending on the structure of the final event payload.
+
+An example of a use case for this field is where a custom Splunk source type has been created to interpret particular log message content where key/value pairs are extracted and transformed into Splunk fields for use with dashboards.
+
+Here is an example of a CLF where log events for an app are forwarded to a Splunk output sink with a user-defined source type :
+
+```
+spec:
+  inputs:
+    - application:
+        includes:
+          - container: myapp
+            namespace: my-app-*
+      name: myapp
+      type: application
+  outputs:
+    - name: splunk-myapp
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-myapp
+        sourceType: 'myapp:sourcetype'
+        url: 'https://splunk.customer.com:8088'
+      type: splunk
+  pipelines:
+    - name: myapp
+      inputRefs:
+        - myapp
+      outputRefs:
+        - splunk-myapp
+```
+
+If a source type needs to be referenced for a particular application's log events, but is not appropriate for others, be sure to structure the ClusterLogFowarder so that it does not misrepresent the format of log events by using a single Splunk output sink.
+
+Here is an example of a CLF where cluster-wide general app log events are forwarded to a Splunk output sink using the default source type of `_json`, and log events for an app are forwarded to a different Splunk output sink with a user-defined source type :
+
+```
+spec:
+  inputs:
+    - name: application-general
+      application:
+        excludes:
+          - container: myapp
+            namespace: my-app-*
+      type: application
+    - name: application-myapp
+      application:
+        includes:
+          - container: myapp
+            namespace: my-app-*
+      type: application
+  outputs:
+    - name: splunk-application-general
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-application-general
+        url: 'https://splunk.customer.com:8088'
+      type: splunk
+    - name: splunk-application-myapp
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-application-myapp
+        sourceType: 'myapp:sourcetype'
+        url: 'https://splunk.customer.com:8088'
+      type: splunk
+  pipelines:
+    - name: splunk-application-general
+      inputRefs:
+        - application-general
+      outputRefs:
+        - splunk-application-general
+    - name: splunk-application-myapp
+      inputRefs:
+        - application-myapp
+      outputRefs:
+        - splunk-application-myapp
+```
 
 === `indexedFields`
 
@@ -196,7 +278,7 @@ Below the table with default value depends on log_type and log_source will be us
 |`index`|||| not configured by default
 |`source`|SYSLOG_IDENTIFIER|ns_name_podName_containerName|.log_source|
 |`indexedFields`|||| not configured by default
-|`sourceType`|`_json` or `generic_single_line`|`_json` or `generic_single_line`|`_json` or `generic_single_line`| Can be explicitly defined, otherwise will be determined automatically based on the type of the final event payload
+|`sourceType`|`_json` or `generic_single_line`|`_json` or `generic_single_line`|`_json` or `generic_single_line`| Can be explicitly defined, otherwise will be determined based on the type of the final event payload
 |`host`|`.hostname`|`.hostname`|`.hostname`|not configurable
 |`payloadKey`|||| not configured by default
 

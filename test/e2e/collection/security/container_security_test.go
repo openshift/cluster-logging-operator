@@ -3,12 +3,13 @@ package security
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"time"
+
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"runtime"
-	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -36,7 +37,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 			touchFile := mount + "/1"
 			result, err := runInCollectorContainer("touch", touchFile)
 			Expect(result).To(MatchRegexp("touch:.cannot.*touch.*" + touchFile + ".*Read-only file system"))
-			Expect(err).To(MatchError("exit status 1"))
+			Expect(err).To(MatchError(ContainSubstring("exit status 1")))
 		}
 
 		verifyNamespaceLabels = func() {

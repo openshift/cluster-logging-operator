@@ -30,6 +30,8 @@ type Getter interface {
 	OutputYaml() Getter
 	// argument for -o jsonpath output
 	OutputJsonpath(string) Getter
+	// argument for -o name output
+	OutputName() Getter
 }
 
 type get struct {
@@ -93,23 +95,36 @@ func (g *get) OutputYaml() Getter {
 	return g
 }
 
+func (g *get) OutputName() Getter {
+	g.output = "-o name"
+	return g
+}
+
 func (g *get) OutputJsonpath(path string) Getter {
 	g.output = fmt.Sprintf("-o jsonpath=%s", path)
 	return g
 }
 
 func (g *get) args() []string {
-	namespaceStr := ""
+	var args []string
 	if g.namespace != "" {
-		namespaceStr = fmt.Sprintf("-n %s", g.namespace)
+		args = append(args, "-n", g.namespace)
 	}
-	str := ""
+	args = append(args, "get", g.kind)
+	if g.name != "" {
+		prefix := fmt.Sprintf("%s/", g.kind)
+		if strings.HasPrefix(g.name, prefix) {
+			g.name, _ = strings.CutPrefix(g.name, prefix)
+		}
+		args = append(args, g.name)
+	}
 	if g.selector != "" {
-		str = fmt.Sprintf("-l %s", g.selector)
-	} else if g.name != "" {
-		str = g.name
+		args = append(args, "-l", g.selector)
 	}
-	return sanitizeArgs(fmt.Sprintf("%s get %s %s %s", namespaceStr, g.kind, str, g.output))
+	if g.output != "" {
+		args = append(args, strings.Split(g.output, " ")...)
+	}
+	return args
 }
 
 func (g *get) String() string {

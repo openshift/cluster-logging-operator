@@ -6,7 +6,11 @@ metadata:
   name: cluster-logging-operator-metrics-monitor
 spec:
   endpoints:
-  - port: http-metrics
+  - port: https-metrics
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: cluster-logging-operator-metrics.openshift-logging.svc
   namespaceSelector: {}
   selector:
     matchLabels:

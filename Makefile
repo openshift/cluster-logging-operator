@@ -232,6 +232,12 @@ test-functional: test-functional-benchmarker-vector
 		./test/functional/... \
 		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
 
+.PHONY: test-helpers
+test-helpers:
+	go test -race \
+		./test/helpers/... \
+		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
+
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator
 	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/clusterlogforwarder/logforwarder.yaml > /dev/null

@@ -69,18 +69,23 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			Expect(f.WriteMessagesToApplicationLog(msg3, 1)).To(BeNil())
 			Expect(f.WritesApplicationLogs(5)).To(Succeed())
 
-			logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
-			hasInfoMessage := false
-			for _, msg := range logs {
-				Expect(msg.ViaQCommon.Message).ToNot(Equal("my error message"))
-				Expect(msg.ViaQCommon.Message).ToNot(Equal("debug message"))
-				if msg.Message == "information message" {
-					hasInfoMessage = true
+			Eventually(func() bool {
+				logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+				if err != nil || len(logs) == 0 {
+					return false
 				}
-			}
-			Expect(hasInfoMessage).To(BeTrue())
+				hasInfoMessage := false
+				for _, msg := range logs {
+					// Should not have dropped messages
+					if msg.ViaQCommon.Message == "my error message" || msg.ViaQCommon.Message == "debug message" {
+						return false
+					}
+					if msg.Message == "information message" {
+						hasInfoMessage = true
+					}
+				}
+				return hasInfoMessage
+			}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected to find 'information message' and not find dropped messages")
 		})
 
 		It("should drop logs that have `.responseStatus.code` not equals 403", func() {
@@ -109,16 +114,28 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(404), 10)).To(BeNil())
 			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(200), 10)).To(BeNil())
 
-			logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
-			Expect(err).To(BeNil(), "Error fetching logs from %s: %v", obs.OutputTypeElasticsearch, err)
-			Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", obs.OutputTypeElasticsearch)
-			Expect(len(logs)).To(BeEquivalentTo(10))
-			var auditLogs []types.OpenshiftAuditLog
-			err = types.StrictlyParseLogs(utils.ToJsonLogs(logs), &auditLogs)
-			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %v", logs)
-			for _, auditLog := range auditLogs {
-				Expect(auditLog.ResponseStatus.Code).To(Equal(403))
-			}
+			Eventually(func() bool {
+				logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
+				if err != nil || len(logs) == 0 {
+					return false
+				}
+				// Should have exactly 10 logs (all with code 403)
+				if len(logs) != 10 {
+					return false
+				}
+				var auditLogs []types.OpenshiftAuditLog
+				err = types.StrictlyParseLogs(utils.ToJsonLogs(logs), &auditLogs)
+				if err != nil {
+					return false
+				}
+				// All logs should have responseStatus.code == 403
+				for _, auditLog := range auditLogs {
+					if auditLog.ResponseStatus.Code != 403 {
+						return false
+					}
+				}
+				return true
+			}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected exactly 10 audit logs with responseStatus.code=403")
 		})
 
 	})

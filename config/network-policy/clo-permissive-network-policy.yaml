@@ -16,9 +16,9 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow metrics (Port 8686)
+    # Allow metrics (Port 8443)
     - ports:
-      - port: http-metrics
+      - port: https-metrics
         protocol: TCP
   egress:
     # Allow DNS resolution

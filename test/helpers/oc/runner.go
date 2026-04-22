@@ -2,9 +2,11 @@ package oc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	osexec "os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +38,22 @@ func init() {
 // CMD is the command to be run by the runner
 const CMD string = "oc"
 
+// RunOption is a functional option for configuring Run behavior
+type RunOption func(*runOptions)
+
+// runOptions holds configuration for Run execution
+type runOptions struct {
+	returnRawOutput bool
+}
+
+// WithRawOutput returns the actual command output without sanitization.
+// Logs will still be sanitized for security.
+func WithRawOutput() RunOption {
+	return func(opts *runOptions) {
+		opts.returnRawOutput = true
+	}
+}
+
 // runner encapsulates os/exec/Cmd, collects args, and runs CMD
 type runner struct {
 	*osexec.Cmd
@@ -51,17 +69,25 @@ type runner struct {
 	err error
 }
 
-func (r *runner) Run() (string, error) {
+func (r *runner) Run(opts ...RunOption) (string, error) {
 	if r.err != nil {
 		return "composed command failed", r.err
 	}
 	r.setArgs(r.collectArgsFunc())
+
+	// Apply options
+	options := &runOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	// never write to this channel
-	return r.runCmd(make(chan time.Time, 1))
+	return r.runCmd(make(chan time.Time, 1), options)
 }
 
-func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
-	log.V(2).Info("Running command", "cmd", CMD, "args", r.args)
+func (r *runner) runCmd(timeoutCh <-chan time.Time, options *runOptions) (string, error) {
+	sanitizedArgs := SanitizeTokensInArgs(r.args)
+	log.V(2).Info("Running command", "cmd", CMD, "args", sanitizedArgs)
 	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer
@@ -74,10 +100,10 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 		r.Stderr = &errbuf
 	}
 	r.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
-	cmdargs := strings.Join(r.args, " ")
+	cmdargs := SanitizeTokenInString(strings.Join(r.args, " "))
 	err := r.Start()
 	if err != nil {
-		log.V(1).Error(err, "could not start oc command", "arguments", r.args, "argstr", cmdargs)
+		log.V(1).Error(err, "could not start oc command", "arguments", sanitizedArgs, "argstr", cmdargs)
 		return "", err
 	}
 	// Wait for the process to finish or kill it after a timeout (whichever happens first):
@@ -92,7 +118,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 		}
 	case err = <-done:
 		if err != nil {
-			log.V(1).Error(err, "oc finished with error", "args", r.args, "argstr", cmdargs)
+			log.V(1).Error(err, "oc finished with error", "args", sanitizedArgs, "argstr", cmdargs)
 		}
 	}
 	if err != nil {
@@ -100,27 +126,45 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		log.V(2).Info("command result", "arguments", r.args, "output", errout, "error", err, "argstr", cmdargs)
+		err = errors.Join(err, errors.New(errout))
+		sanitizedErrout := SanitizeTokenInString(errout)
+		log.V(2).Info("command result", "arguments", sanitizedArgs, "output", sanitizedErrout, "error", err, "argstr", cmdargs)
 		return errout, err
 	}
 	if r.tostdout {
 		return "", nil
 	}
 	out := strings.TrimSpace(outbuf.String())
-	if len(out) > 500 {
-		log.V(2).Info("output(truncated 500/length)", "arguments", r.args, "length", len(out), "result", truncateString(out, 500), "argstr", cmdargs)
+	sanitizedOut := SanitizeTokenInString(out)
+	// Log raw output at high verbosity for debugging
+	log.V(9).Info("command output", "arguments", r.args, "output", out, "argstr", cmdargs)
+	// Always log sanitized output for security
+	if len(sanitizedOut) > 500 {
+		log.V(2).Info("output(truncated 500/length)", "arguments", sanitizedArgs, "length", len(sanitizedOut), "result", truncateString(sanitizedOut, 500), "argstr", cmdargs)
 	} else {
-		log.V(2).Info("command output", "arguments", r.args, "output", out, "argstr", cmdargs)
+		log.V(2).Info("command output", "arguments", sanitizedArgs, "output", sanitizedOut, "argstr", cmdargs)
 	}
-	return out, nil
+
+	// Return raw or sanitized output based on options
+	if options != nil && options.returnRawOutput {
+		return out, nil
+	}
+	return sanitizedOut, nil
 }
 
-func (r *runner) RunFor(d time.Duration) (string, error) {
+func (r *runner) RunFor(d time.Duration, opts ...RunOption) (string, error) {
 	if r.err != nil {
 		return "composed command failed", r.err
 	}
 	r.setArgs(r.collectArgsFunc())
-	return r.runCmd(time.After(d))
+
+	// Apply options
+	options := &runOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return r.runCmd(time.After(d), options)
 }
 
 func (r *runner) Kill() error {
@@ -179,4 +223,57 @@ func truncateString(str string, num int) string {
 		trunc = str[0:num] + " ..."
 	}
 	return trunc
+}
+
+// SanitizeTokenInString replaces serviceaccount tokens with REDACTED_TOKEN
+// Matches patterns like:
+// - --from-literal=token=<token>
+// - JWT tokens (eyJ...)
+func SanitizeTokenInString(s string) string {
+	jwtRegex := regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+	return jwtRegex.ReplaceAllString(s, "[REDACTED]")
+	//// Replace --from-literal=token=<value>
+	//const tokenPattern = "--from-literal=token="
+	//if idx := strings.Index(s, tokenPattern); idx != -1 {
+	//	// Find the start of the token value
+	//	start := idx + len(tokenPattern)
+	//	// Find the end of the token value (next space or end of string)
+	//	end := start
+	//	for end < len(s) && s[end] != ' ' {
+	//		end++
+	//	}
+	//	// Replace the token value with REDACTED_TOKEN
+	//	s = s[:start] + "REDACTED_TOKEN" + s[end:]
+	//}
+	//
+	//// Replace JWT-like tokens (base64 strings starting with eyJ)
+	//// Pattern: eyJ followed by base64 characters
+	//lines := strings.Split(s, "\n")
+	//for j, line := range lines {
+	//	words := strings.Fields(line)
+	//	for i, word := range words {
+	//		if strings.HasPrefix(word, "eyJ") && len(word) > 20 {
+	//			words[i] = "REDACTED_TOKEN"
+	//		}
+	//	}
+	//	lines[j] = strings.Join(words, " ")
+	//}
+	//return strings.Join(lines, "\n")
+}
+
+// SanitizeTokensInArgs sanitizes tokens in argument slices
+func SanitizeTokensInArgs(args []string) []string {
+	sanitized := make([]string, len(args))
+	for i, arg := range args {
+		// Check for --from-literal=token=<value>
+		if strings.HasPrefix(arg, "--from-literal=token=") {
+			sanitized[i] = "--from-literal=token=REDACTED_TOKEN"
+		} else if strings.HasPrefix(arg, "eyJ") && len(arg) > 20 {
+			// JWT token
+			sanitized[i] = "REDACTED_TOKEN"
+		} else {
+			sanitized[i] = arg
+		}
+	}
+	return sanitized
 }

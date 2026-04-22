@@ -6,7 +6,14 @@ metadata:
   name: cluster-logging-operator-metrics-monitor
 spec:
   endpoints:
-    - port: http-metrics
+    - port: https-metrics
+      scheme: https
+      tlsConfig:
+        # Service serving certificates are signed by the service-ca which is not a CA in the
+        # kube-root-ca.crt bundle. Use the service-ca.crt from the ConfigMap created by the
+        # service.beta.openshift.io/serving-cert-secret-name annotation.
+        caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+        serverName: cluster-logging-operator-metrics.openshift-logging.svc
   namespaceSelector: {}
   selector:
     matchLabels:

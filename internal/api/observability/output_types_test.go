@@ -1,12 +1,13 @@
 package observability_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/test"
-	"strings"
 )
 
 var _ = Describe("helpers for output types", func() {
@@ -275,7 +276,7 @@ var _ = Describe("S3 secret handling", func() {
 			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
 		})
 
-		It("should return true for GCP output type regardless of non-sts key", func() {
+		It("should return false for GCP service account credentials (no token)", func() {
 			outputs := Outputs{
 				obsv1.OutputSpec{
 					Type: obsv1.OutputTypeGoogleCloudLogging,
@@ -290,10 +291,10 @@ var _ = Describe("S3 secret handling", func() {
 				},
 			}
 
-			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
 		})
 
-		It("should return true for GCP output type regardless of key", func() {
+		It("should return true for GCP WIF with BearerTokenFromServiceAccount token", func() {
 			outputs := Outputs{
 				obsv1.OutputSpec{
 					Type: obsv1.OutputTypeGoogleCloudLogging,
@@ -303,12 +304,40 @@ var _ = Describe("S3 secret handling", func() {
 								SecretName: "gcp-creds",
 								Key:        "external_account.json",
 							},
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
 						},
 					},
 				},
 			}
 
 			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+		})
+
+		It("should return false for GCP WIF with secret token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeGoogleCloudLogging,
+					GoogleCloudLogging: &obsv1.GoogleCloudLogging{
+						Authentication: &obsv1.GoogleCloudLoggingAuthentication{
+							Credentials: &obsv1.SecretReference{
+								SecretName: "gcp-creds",
+								Key:        "external_account.json",
+							},
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromSecret,
+								Secret: &obsv1.BearerTokenSecretKey{
+									Name: "my-token-secret",
+									Key:  "token",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
 		})
 
 		It("should return true for Loki with service account token", func() {

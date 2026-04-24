@@ -719,14 +719,22 @@ type Elasticsearch struct {
 
 // GoogleCloudLoggingAuthentication contains configuration for authenticating requests to a GoogleCloudLogging output.
 type GoogleCloudLoggingAuthentication struct {
-	// Credentials points to the secret containing the Google Cloud credentials file.
-	// The authentication type is determined by inspecting the credentials file:
-	//   - type: "service_account" Uses static service account key authentication
-	//   - type: "external_account" Uses Workload Identity Federation (WIF) authentication
+	// Credentials points to the secret containing the GCP credentials JSON file.
+	// For service account auth, this is a service_account key file.
+	// For Workload Identity Federation (WIF), this is an external_account configuration file.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Secret with Credentials File"
 	Credentials *SecretReference `json:"credentials"`
+
+	// Token specifies the source of the bearer token used as the subject token for
+	// GCP Workload Identity Federation token exchange. Only needed when the credentials
+	// file is an external_account type.
+	//
+	// +kubebuilder:validation:Optional
+	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token"
+	Token *BearerToken `json:"token,omitempty"`
 }
 
 type GoogleCloudLoggingTuningSpec struct {

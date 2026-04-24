@@ -55,12 +55,6 @@ func (outputs Outputs) NeedServiceAccountToken() bool {
 
 // needsServiceAccountToken returns true if the output requires service account token projection
 func needsServiceAccountToken(o obsv1.OutputSpec) bool {
-	// For GCP we always project the service account token
-	if o.Type == obsv1.OutputTypeGoogleCloudLogging && o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
-		return true
-	}
-
-	// If any output has explicit service account token config
 	token := getOutputBearerToken(o)
 	return token != nil && token.From == obsv1.BearerTokenFromServiceAccount
 }
@@ -91,6 +85,16 @@ func getOutputBearerToken(o obsv1.OutputSpec) *obsv1.BearerToken {
 	case obsv1.OutputTypeOTLP:
 		if o.OTLP != nil && o.OTLP.Authentication != nil {
 			return o.OTLP.Authentication.Token
+		}
+	case obsv1.OutputTypeAzureLogsIngestion:
+		if o.AzureLogsIngestion != nil && o.AzureLogsIngestion.Authentication != nil &&
+			o.AzureLogsIngestion.Authentication.Type == obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity &&
+			o.AzureLogsIngestion.Authentication.WorkloadIdentity != nil {
+			return o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token
+		}
+	case obsv1.OutputTypeGoogleCloudLogging:
+		if o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
+			return o.GoogleCloudLogging.Authentication.Token
 		}
 	}
 	return nil
@@ -154,10 +158,7 @@ func SecretReferences(o obsv1.OutputSpec) []*obsv1.SecretReference {
 		}
 	case obsv1.OutputTypeGoogleCloudLogging:
 		if o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
-			auth := o.GoogleCloudLogging.Authentication
-			if auth.Credentials != nil {
-				return []*obsv1.SecretReference{auth.Credentials}
-			}
+			return gclSecretKeys(o.GoogleCloudLogging.Authentication)
 		}
 	case obsv1.OutputTypeHTTP:
 		if o.HTTP != nil && o.HTTP.Authentication != nil {
@@ -246,6 +247,21 @@ func awsSecretKeys(auth *obsv1.AwsAuthentication) (keys []*obsv1.SecretReference
 func appendAssumeRoleKeys(auth *obsv1.AwsAuthentication, keys []*obsv1.SecretReference) []*obsv1.SecretReference {
 	if auth != nil && auth.AssumeRole != nil {
 		keys = append(keys, &auth.AssumeRole.RoleARN)
+	}
+	return keys
+}
+
+func gclSecretKeys(auth *obsv1.GoogleCloudLoggingAuthentication) (keys []*obsv1.SecretReference) {
+	if auth.Credentials != nil {
+		keys = append(keys, auth.Credentials)
+	}
+	if auth.Token != nil &&
+		auth.Token.From == obsv1.BearerTokenFromSecret &&
+		auth.Token.Secret != nil {
+		keys = append(keys, &obsv1.SecretReference{
+			Key:        auth.Token.Secret.Key,
+			SecretName: auth.Token.Secret.Name,
+		})
 	}
 	return keys
 }

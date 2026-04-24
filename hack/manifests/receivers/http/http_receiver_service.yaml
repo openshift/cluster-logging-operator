@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-receiver
+spec:
+  ports:
+  - port: 8090
+    protocol: TCP
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: http-receiver
+#spec:
+#  clusterIP: None # CRITICAL: This explicitly makes the service headless
+#  #  selector:
+#  #    app: targeted-receiver # Directs traffic straight to the pod matching this label
+#  ports:
+#    - port: 80
+#      targetPort: 8090

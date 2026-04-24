@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-receiver
+spec:
+  replicas: 1
+  template:
+    spec:
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: http-receiver
+        name: config
+      containers:
+      - name: receiver
+        image: quay.io/openshift-logging/vector:latest
+        command:
+        - /usr/bin/vector
+        - --config-toml=/etc/vector/vector.toml
+        - --watch-config
+        ports:
+        - containerPort: 8090
+        volumeMounts:
+        - mountPath: /etc/vector
+          name: config

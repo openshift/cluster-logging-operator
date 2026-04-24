@@ -26,6 +26,7 @@ const (
 	ElasticsearchVersion6 ElasticsearchVersion = 6
 	ElasticsearchVersion7 ElasticsearchVersion = 7
 	ElasticsearchVersion8 ElasticsearchVersion = 8
+	ElasticsearchVersion9 ElasticsearchVersion = 9 //this has the same API as 8
 	ElasticPassword                            = "default-password"
 	ElasticUsername                            = "elastic"
 )
@@ -36,6 +37,7 @@ var (
 		ElasticsearchVersion6: "quay.io/openshift-logging/elasticsearch:6.8.23",
 		ElasticsearchVersion7: "quay.io/openshift-logging/elasticsearch:7.17.28",
 		ElasticsearchVersion8: "quay.io/openshift-logging/elasticsearch:8.17.5",
+		ElasticsearchVersion9: "quay.io/openshift-logging/elasticsearch:9.3.3",
 	}
 )
 

@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-04-16T20:34:26Z"
+    createdAt: "2026-04-24T14:35:45Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -952,8 +952,8 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: |-
-          Version specifies the version of Elasticsearch to be used.
-          Must be one of: 6-8
+          Version specifies the API version of Elasticsearch to be used. Must be one of: 6-8
+          The value of '8' should be used when forwarding to Elasticsearch version v8 or greater.
         displayName: ElasticSearch Version
         path: outputs[0].elasticsearch.version
         x-descriptors:

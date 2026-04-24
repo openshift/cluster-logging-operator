@@ -118,6 +118,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 		Entry("Elasticsearch v6", functional.ElasticsearchVersion6),
 		Entry("Elasticsearch v7", functional.ElasticsearchVersion7),
 		Entry("Elasticsearch v8", functional.ElasticsearchVersion8),
+		Entry("Elasticsearch v9", functional.ElasticsearchVersion9),
 	)
 
 	Context("with tuning parameters", func() {

@@ -701,8 +701,8 @@ type Elasticsearch struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Index",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Index string `json:"index"`
 
-	// Version specifies the version of Elasticsearch to be used.
-	// Must be one of: 6-8
+	// Version specifies the API version of Elasticsearch to be used. Must be one of: 6-8
+	// The value of '8' should be used when forwarding to Elasticsearch version v8 or greater.
 	//
 	// +kubebuilder:validation:Minimum:=6
 	// +kubebuilder:validation:Maximum:=8

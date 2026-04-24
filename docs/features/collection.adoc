@@ -37,6 +37,7 @@ a|
 - v6.8.1
 - v7.12.2
 - v8.6.1
+- v9.3.3
 |Google Cloud Logging||
 
 |Kafka|kafka 0.11

@@ -36,7 +36,7 @@ if exists(.kubernetes.event.metadata.uid) {
 			Action: sinks.BulkActionCreate,
 			Index:  fmt.Sprintf("{{ _internal.%s }}", componentID),
 		}
-		s.ApiVersion = fmt.Sprintf("v%d", o.Elasticsearch.Version)
+		s.ApiVersion = apiVersionFrom(o.Elasticsearch.Version)
 		s.Encoding = common.NewApiEncoding("")
 		s.Batch = common.NewApiBatch(o)
 		s.Buffer = common.NewApiBuffer(o)
@@ -54,6 +54,19 @@ if exists(.kubernetes.event.metadata.uid) {
 		s.TLS = tls.NewTls(o, secrets, op)
 	}, componentID)
 	return id, sink, tfs
+}
+
+func apiVersionFrom(version int) sinks.ElasticsearchApiVersion {
+	switch version {
+	case 6:
+		return sinks.ElasticsearchApiVersion6
+	case 7:
+		return sinks.ElasticsearchApiVersion7
+	case 8:
+		return sinks.ElasticsearchApiVersion8
+	default:
+		return sinks.ElasticsearchApiVersion8
+	}
 }
 
 func elasticsearchAuth(s *sinks.Elasticsearch, o *adapters.Output, op utils.Options) {

@@ -2464,8 +2464,8 @@ Example:
 
 |tuning|object|  Tuning specs tuning for the output
 
-|version|int|  Version specifies the version of Elasticsearch to be used.
-Must be one of: 6-8
+|version|int|  Version specifies the API version of Elasticsearch to be used. Must be one of: 6-8
+The value of &#39;8&#39; should be used when forwarding to Elasticsearch version v8 or greater.
 
 |======================
 

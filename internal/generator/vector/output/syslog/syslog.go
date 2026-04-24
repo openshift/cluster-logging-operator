@@ -35,10 +35,10 @@ if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_i
 	defAppNameRFC3164 = `to_string!(._syslog.app_name || "")`
 
 	// Default values for Syslog fields for infrastructure logType if source 'node'
-	nodeAppNameRFC5424  = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
-	nodeAppNameRFC3164  = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
-	nodeProcIdRFC3164   = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
-	nodeProcIdRFC5424   = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
+	nodeAppNameRFC5424 = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "-")`
+	nodeAppNameRFC3164 = `._syslog.app_name = to_string!(.systemd.u.SYSLOG_IDENTIFIER || "")`
+	nodeProcIdRFC3164  = `._syslog.proc_id = to_string!(.systemd.t.PID || "")`
+	nodeProcIdRFC5424  = `._syslog.proc_id = to_string!(.systemd.t.PID || "-")`
 
 	// Default values for Syslog fields for application logType and infrastructure logType if source 'container'
 	containerAppNameRFC5424 = `._syslog.app_name, err = join([.kubernetes.namespace_name, .kubernetes.pod_name, .kubernetes.container_name], "_")

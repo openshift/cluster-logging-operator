@@ -2508,8 +2508,8 @@ spec:
                             rule: isURL(self)
                         version:
                           description: |-
-                            Version specifies the version of Elasticsearch to be used.
-                            Must be one of: 6-8
+                            Version specifies the API version of Elasticsearch to be used. Must be one of: 6-8
+                            The value of '8' should be used when forwarding to Elasticsearch version v8 or greater.
                           maximum: 8
                           minimum: 6
                           type: integer

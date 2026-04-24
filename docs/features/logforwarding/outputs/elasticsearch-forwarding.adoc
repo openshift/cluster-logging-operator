@@ -59,6 +59,9 @@ spec:
 <4> Use username and password to authenticate to the server
 <5> Enable Mutual Transport Layer Security (mTLS) between collector and elasticsearch, the spec identifies the keys and secret to the respective certificates that they represent.
 
+NOTE: The `version` field represents the Elasticsearch cluster's API version.  It should be set to `8` for
+Elasticsearch deployments of `v8` or greater.
+
 == Custom Index Configuration
 
 https://docs.openshift.com/container-platform/4.12/logging/log_collection_forwarding/cluster-logging-enabling-json-logging.html[Official Cluster Logging Operator Documentation on JSON Parsing]

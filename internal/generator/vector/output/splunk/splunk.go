@@ -33,13 +33,11 @@ if ._internal.log_type == "audit" {
 }
 `
 
-// VRL template to set payload for log event and detecting 'sourcetype' when sourcetype has not been defined.
-// If sourcetype is not defined and payload is object, will be set 'sourcetype':"_json",
+// VRL template to set payload for log event and detecting 'sourcetype'.
+// If payload is object will be set 'sourcetype':"_json",
 // 'sourcetype': "generic_single_line" otherwise
 var payloadKeyTmpl = `
 payloadKey = %s
-setSourcetype = %t
-
 if !is_null(payloadKey) {
 	value = get!(., payloadKey) 
 	if !is_null(value) {
@@ -47,18 +45,32 @@ if !is_null(payloadKey) {
         . = {}
         . = set!(., payloadKey, value)
         ._internal = internal
-
-        if setSourcetype {
-            if is_object(value) {
-                ._internal.splunk.sourcetype = "_json"
-            } else {
-                ._internal.splunk.sourcetype = "generic_single_line"
-            }
-        }
+		if is_object(value) {
+			._internal.splunk.sourcetype = "_json"
+		} else {
+			._internal.splunk.sourcetype = "generic_single_line"
+		}
 	} else {
-        if setSourcetype {
-            ._internal.splunk.sourcetype = "_json"
-        }
+		._internal.splunk.sourcetype = "_json"
+	}
+}
+`
+
+// VRL template to set payload for log event and sourcetype.
+// If payload is key is invalid, sourcetype will fall back to '_json'
+var payloadKeysourceTypeTmpl = `
+payloadKey = %s
+sourceType = %s
+if !is_null(payloadKey) {
+	value = get!(., payloadKey) 
+	if !is_null(value) {
+        internal = ._internal
+        . = {}
+        . = set!(., payloadKey, value)
+        ._internal = internal
+	    ._internal.splunk.sourcetype = sourceType
+	} else {
+		._internal.splunk.sourcetype = "_json"
 	}
 }
 `
@@ -105,18 +117,17 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		builder.WriteString(sourceTmpl)
 	}
 
-	if o.Splunk.SourceType != "" {
-		builder.WriteString(fmt.Sprintf("\n._internal.splunk.sourcetype = %s\n", commontemplate.TransformUserTemplateToVRL(o.Splunk.SourceType)))
-	} else {
-		builder.WriteString("\n._internal.splunk.sourcetype = \"_json\"\n")
-	}
-
 	if o.Splunk.PayloadKey != "" {
 		path := vectorhelpers.SplitPath(string(o.Splunk.PayloadKey))
 		quotedSegments := vectorhelpers.QuotePathSegments(path)
 		quotedPathArray := fmt.Sprintf("[%s]", strings.Join(quotedSegments, ","))
-		setSourcetype := o.Splunk.SourceType == ""
-		builder.WriteString(fmt.Sprintf(payloadKeyTmpl, quotedPathArray, setSourcetype))
+		if o.Splunk.SourceType != "" {
+			builder.WriteString(fmt.Sprintf(payloadKeysourceTypeTmpl, quotedPathArray, commontemplate.TransformUserTemplateToVRL(o.Splunk.SourceType)))
+		} else {
+			builder.WriteString(fmt.Sprintf(payloadKeyTmpl, quotedPathArray))
+		}
+	} else {
+		builder.WriteString("\n._internal.splunk.sourcetype = \"_json\"\n")
 	}
 
 	var indexedFields []string

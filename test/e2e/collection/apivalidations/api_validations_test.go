@@ -126,5 +126,15 @@ var _ = Describe("", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(MatchRegexp("azureMonitor.logType: Required value"))
 		}),
+		Entry("should pass for Splunk with payloadKey", "splunk-payloadkey.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Splunk if sourceType is used with payloadKey", "splunk-payloadkey-and-sourcetype.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for Splunk if sourceType is not used with payloadKey", "splunk-sourcetype.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp("sourceType can only be set when payloadKey is defined"))
+		}),
 	)
 })

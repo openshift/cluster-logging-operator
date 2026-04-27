@@ -1,4 +1,3 @@
-# Ensure timestamp field well formatted for Splunk
 [transforms.splunk_hec_timestamp]
 type = "remap"
 inputs = ["pipelineName"]
@@ -10,6 +9,7 @@ if err != null {
 	._internal.timestamp = ts
 }
 '''
+
 [transforms.splunk_hec_metadata]
 type = "remap"
 inputs = ["splunk_hec_timestamp"]
@@ -24,8 +24,22 @@ if ._internal.log_source == "container" {
 if ._internal.log_type == "audit" {
    ._internal.splunk.source = ._internal.log_source
 }
-._internal.splunk.sourcetype = "my:custom:sourcetype"
+payloadKey = ["message"]
+sourceType = to_string!(._internal.foo||"missing")
+if !is_null(payloadKey) {
+	value = get!(., payloadKey) 
+	if !is_null(value) {
+        internal = ._internal
+        . = {}
+        . = set!(., payloadKey, value)
+        ._internal = internal
+	    ._internal.splunk.sourcetype = sourceType
+	} else {
+		._internal.splunk.sourcetype = "_json"
+	}
+}
 '''
+
 [sinks.splunk_hec]
 type = "splunk_hec_logs"
 inputs = ["splunk_hec_metadata"]

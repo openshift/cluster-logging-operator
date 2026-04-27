@@ -24,29 +24,21 @@ if ._internal.log_source == "container" {
 if ._internal.log_type == "audit" {
    ._internal.splunk.source = ._internal.log_source
 }
-._internal.splunk.sourcetype = "_json"
 payloadKey = ["openshift"]
-setSourcetype = true
-
 if !is_null(payloadKey) {
 	value = get!(., payloadKey)
 	if !is_null(value) {
-		internal = ._internal
-		. = {}
-		. = set!(., payloadKey, value)
-		._internal = internal
-
-		if setSourcetype {
-			if is_object(value) {
-				._internal.splunk.sourcetype = "_json"
-			} else {
-				._internal.splunk.sourcetype = "generic_single_line"
-			}
+        internal = ._internal
+        . = {}
+        . = set!(., payloadKey, value)
+        ._internal = internal
+		if is_object(value) {
+			._internal.splunk.sourcetype = "_json"
+		} else {
+			._internal.splunk.sourcetype = "generic_single_line"
 		}
 	} else {
-		if setSourcetype {
-			._internal.splunk.sourcetype = "_json"
-		}
+		._internal.splunk.sourcetype = "_json"
 	}
 }
 '''

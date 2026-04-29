@@ -6,7 +6,9 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	gcl "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/test/helpers/azure/logsingestion"
+	gclhelper "github.com/openshift/cluster-logging-operator/test/helpers/gcl"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -355,6 +357,30 @@ func (p *PipelineBuilder) ToAzureLogsIngestionOutput(visitors ...func(output *ob
 		}
 	}
 	return p.ToOutputWithVisitor(v, string(obs.OutputTypeAzureLogsIngestion))
+}
+
+func (p *PipelineBuilder) ToGoogleCloudLoggingOutput(visitors ...func(output *obs.OutputSpec)) *ClusterLogForwarderBuilder {
+	v := func(output *obs.OutputSpec) {
+		output.Name = string(obs.OutputTypeGoogleCloudLogging)
+		output.Type = obs.OutputTypeGoogleCloudLogging
+		output.GoogleCloudLogging = &obs.GoogleCloudLogging{
+			ID: obs.GoogleCloudLoggingId{
+				Type:  obs.GoogleCloudLoggingIdTypeProject,
+				Value: "test-project",
+			},
+			LogId: "test-log-id",
+			Authentication: &obs.GoogleCloudLoggingAuthentication{
+				Credentials: &obs.SecretReference{
+					Key:        gcl.GoogleApplicationCredentialsKey,
+					SecretName: gclhelper.SecretName,
+				},
+			},
+		}
+		for _, v := range visitors {
+			v(output)
+		}
+	}
+	return p.ToOutputWithVisitor(v, string(obs.OutputTypeGoogleCloudLogging))
 }
 
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisitor, outputName string) *ClusterLogForwarderBuilder {

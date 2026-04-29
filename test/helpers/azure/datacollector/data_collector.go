@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
+	"github.com/openshift/cluster-logging-operator/test/helpers/mockoon"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
@@ -22,7 +22,7 @@ const (
 )
 
 func NewMockoonVisitor(pb *runtime.PodBuilder, azureAltHost string, framework *functional.CollectorFunctionalFramework) error {
-	configMap := runtime.NewConfigMap(framework.Namespace, azure.Mockoon, map[string]string{})
+	configMap := runtime.NewConfigMap(framework.Namespace, mockoon.ContainerName, map[string]string{})
 	runtime.NewConfigMapBuilder(configMap).Add(apiJsonFile, apiConfig)
 	if err := framework.Test.Create(configMap); err != nil {
 		return err
@@ -34,10 +34,10 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, azureAltHost string, framework *f
 	}
 
 	mountPath := "/data"
-	pb.AddConfigMapVolume("data", azure.Mockoon).
+	pb.AddConfigMapVolume("data", mockoon.ContainerName).
 		AddHostAlias(hostAlias).
-		AddContainer(azure.Mockoon, azure.Image).
-		AddContainerPort(azure.Mockoon, azure.Port).
+		AddContainer(mockoon.ContainerName, mockoon.Image).
+		AddContainerPort(mockoon.ContainerName, mockoon.Port).
 		WithCmdArgs([]string{
 			fmt.Sprintf("--data=%s/%s", mountPath, apiJsonFile),
 			"--log-transaction",
@@ -47,7 +47,7 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, azureAltHost string, framework *f
 }
 
 func ReadApplicationLog(framework *functional.CollectorFunctionalFramework) ([]types.ApplicationLog, error) {
-	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, azure.Mockoon).Run()
+	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, mockoon.ContainerName).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func ReadApplicationLog(framework *functional.CollectorFunctionalFramework) ([]t
 }
 
 func extractStructuredLogs(output, logType string) ([]types.ApplicationLog, error) {
-	logs, err := azure.DecodeMockoonLogs(output)
+	logs, err := mockoon.DecodeLogs(output)
 	if err != nil {
 		return nil, err
 	}

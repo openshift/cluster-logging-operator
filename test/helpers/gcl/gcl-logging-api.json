@@ -1,0 +1,156 @@
+{
+  "uuid": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "lastMigration": 32,
+  "name": "GCP Cloud Logging API",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 443,
+  "hostname": "",
+  "routes": [
+    {
+      "uuid": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+      "documentation": "OAuth2 token endpoint - accepts JWT bearer assertion and returns a fake access token",
+      "method": "post",
+      "endpoint": "token",
+      "responses": [
+        {
+          "uuid": "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+          "body": "{\"access_token\":\"fake-gcl-access-token\",\"token_type\":\"Bearer\",\"expires_in\":3600}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Return fake OAuth2 access token for GCP",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+      "documentation": "GCP Cloud Logging v2 entries:write endpoint - accepts log entries",
+      "method": "post",
+      "endpoint": "v2/entries:write",
+      "responses": [
+        {
+          "uuid": "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Accept log entries",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+      "type": "http",
+      "documentation": "Health check endpoint",
+      "method": "get",
+      "endpoint": "",
+      "responses": [
+        {
+          "uuid": "7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d",
+          "body": "{\"status\":\"OK\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": true,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "/data/tls.crt",
+    "keyPath": "/data/tls.key",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json"
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [],
+  "folders": [],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e"
+    },
+    {
+      "type": "route",
+      "uuid": "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"
+    },
+    {
+      "type": "route",
+      "uuid": "6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c"
+    }
+  ],
+  "callbacks": []
+}

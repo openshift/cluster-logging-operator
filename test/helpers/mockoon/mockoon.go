@@ -1,4 +1,4 @@
-package azure
+package mockoon
 
 import (
 	"bytes"
@@ -9,13 +9,12 @@ import (
 )
 
 const (
-	Mockoon     = "mockoon"
-	Port        = 3000
-	Image       = "quay.io/openshift-logging/mockoon-cli:6.2.0"
-	AzureDomain = "acme.com"
+	ContainerName = "mockoon"
+	Port          = 3000
+	Image         = "quay.io/openshift-logging/mockoon-cli:6.2.0"
 )
 
-type MockoonLog struct {
+type Log struct {
 	App             string      `json:"app,omitempty"`
 	EnvironmentName string      `json:"environmentName,omitempty"`
 	EnvironmentUUID string      `json:"environmentUUID,omitempty"`
@@ -28,13 +27,16 @@ type MockoonLog struct {
 	Timestamp       time.Time   `json:"timestamp"`
 	Transaction     Transaction `json:"transaction"`
 }
+
 type Headers struct {
 	Key   string `json:"key,omitempty"`
 	Value string `json:"value,omitempty"`
 }
+
 type QueryParams struct {
 	APIVersion string `json:"api-version,omitempty"`
 }
+
 type Request struct {
 	Body        string      `json:"body,omitempty"`
 	Headers     []Headers   `json:"headers,omitempty"`
@@ -45,12 +47,14 @@ type Request struct {
 	Route       string      `json:"route,omitempty"`
 	URLPath     string      `json:"urlPath,omitempty"`
 }
+
 type Response struct {
 	Body          string    `json:"body,omitempty"`
 	Headers       []Headers `json:"headers,omitempty"`
 	StatusCode    int       `json:"statusCode,omitempty"`
 	StatusMessage string    `json:"statusMessage,omitempty"`
 }
+
 type Transaction struct {
 	Proxied           bool     `json:"proxied,omitempty"`
 	Request           Request  `json:"request,omitempty"`
@@ -59,19 +63,19 @@ type Transaction struct {
 	RouteUUID         string   `json:"routeUUID,omitempty"`
 }
 
-// DecodeMockoonLogs parses Mockoon's NDJSON transaction log output into structured log entries.
-func DecodeMockoonLogs(output string) ([]MockoonLog, error) {
+// DecodeLogs parses Mockoon's NDJSON transaction log output into structured log entries.
+func DecodeLogs(output string) ([]Log, error) {
 	output = "[" + strings.ReplaceAll(output, "}\n{", "},{") + "]"
-	var logs []MockoonLog
+	var logs []Log
 	if err := json.NewDecoder(bytes.NewBufferString(output)).Decode(&logs); err != nil {
 		return nil, fmt.Errorf("error decoding logs: %v", err)
 	}
 	return logs, nil
 }
 
-// MockoonLine builds a single Mockoon transaction log line as JSON. Useful for tests.
-func MockoonLine(method, path string, status int, body string) string {
-	entry := MockoonLog{
+// NewLogLine builds a single Mockoon transaction log line as JSON. Useful for tests.
+func NewLogLine(method, path string, status int, body string) string {
+	entry := Log{
 		App:            "mockoon-server",
 		Level:          "info",
 		Message:        "Transaction recorded",

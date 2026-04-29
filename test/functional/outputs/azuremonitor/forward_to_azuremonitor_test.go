@@ -13,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
 	"github.com/openshift/cluster-logging-operator/test/helpers/azure/datacollector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
@@ -46,7 +45,7 @@ var _ = Describe("Forwarding to Azure Monitor Log ", func() {
 				output.AzureMonitor.CustomerId = customerId
 			})
 		Expect(framework.DeployWithVisitor(func(b *runtime.PodBuilder) error {
-			altHost := fmt.Sprintf("%s.%s", customerId, azure.AzureDomain)
+			altHost := fmt.Sprintf("%s.%s", customerId, "acme.com")
 			return datacollector.NewMockoonVisitor(b, altHost, framework)
 		})).To(BeNil())
 	})

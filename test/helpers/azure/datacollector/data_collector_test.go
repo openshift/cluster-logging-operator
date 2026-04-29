@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
+	"github.com/openshift/cluster-logging-operator/test/helpers/mockoon"
 )
 
 //go:embed test_mockoon.log
@@ -21,14 +21,14 @@ var _ = Describe("Parsing Mockoon logs for Azure Monitor (Data Collector API)", 
 	})
 
 	It("should ignore non-POST requests", func() {
-		input := azure.MockoonLine("GET", "/api/logs", 200, `[{"log_type":"application","message":"should be ignored"}]`)
+		input := mockoon.NewLogLine("GET", "/api/logs", 200, `[{"log_type":"application","message":"should be ignored"}]`)
 		logs, err := extractStructuredLogs(input, "application")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs).To(BeEmpty())
 	})
 
 	It("should ignore non-200 responses", func() {
-		input := azure.MockoonLine("POST", "/api/logs", 500, `[{"log_type":"application","message":"should be ignored"}]`)
+		input := mockoon.NewLogLine("POST", "/api/logs", 500, `[{"log_type":"application","message":"should be ignored"}]`)
 		logs, err := extractStructuredLogs(input, "application")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs).To(BeEmpty())
@@ -42,16 +42,16 @@ var _ = Describe("Parsing Mockoon logs for Azure Monitor (Data Collector API)", 
 	})
 
 	It("should skip malformed body without error", func() {
-		input := azure.MockoonLine("POST", "/api/logs", 200, `not-valid-json`)
+		input := mockoon.NewLogLine("POST", "/api/logs", 200, `not-valid-json`)
 		logs, err := extractStructuredLogs(input, "application")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs).To(BeEmpty())
 	})
 
 	It("should aggregate logs across multiple batches", func() {
-		line1 := azure.MockoonLine("POST", "/api/logs", 200,
+		line1 := mockoon.NewLogLine("POST", "/api/logs", 200,
 			`[{"log_type":"application","message":"batch1-msg1"}]`)
-		line2 := azure.MockoonLine("POST", "/api/logs", 200,
+		line2 := mockoon.NewLogLine("POST", "/api/logs", 200,
 			`[{"log_type":"application","message":"batch2-msg1"},{"log_type":"infrastructure","message":"infra-msg"}]`)
 		input := strings.Join([]string{line1, line2}, "\n")
 

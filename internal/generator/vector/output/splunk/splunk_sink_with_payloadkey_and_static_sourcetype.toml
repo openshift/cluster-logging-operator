@@ -25,7 +25,7 @@ if ._internal.log_type == "audit" {
    ._internal.splunk.source = ._internal.log_source
 }
 payloadKey = ["message"]
-sourceType = to_string!(._internal.kubernetes.labels."splunk/sourcetype"||"generic_single_line")
+sourceType = "custom-type"
 if !is_null(payloadKey) {
 	value = get!(., payloadKey) 
 	if !is_null(value) {

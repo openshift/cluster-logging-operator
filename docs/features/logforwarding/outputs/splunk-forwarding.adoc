@@ -37,9 +37,9 @@ spec:
         url: 'http://example-splunk-hec-service:8088' # <2>
         index: '{.log_type||"main"}' # <3>
         source: '{.log_source||"undefined"}' # <4>
-        sourceType: '{.log_source||"undefined"}' # <5>
+        sourceType: '{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}' # <5>
         indexedFields: ['.log_type', '.log_source'] # <6>
-        payloadKey: '.kubernetes' # <7>
+        payloadKey: '.message' # <7>
         tuning:
           compression: gzip # <8>
   pipelines:
@@ -85,7 +85,7 @@ metadata:
   name: myapp
   labels:
     app: myapp
-    splunk_sourcetype: log4j
+    splunk/sourcetype: log4j
 spec:
   containers:
     - name: myapp
@@ -125,7 +125,7 @@ spec:
           key: hecToken
           secretName: splunk-secret
       payloadKey: .message
-      sourceType: '{.kubernetes.labels.splunk_sourcetype||"generic_single_line"}'
+      sourceType: '{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}'
       url: http://splunk.customer.com:8088
     type: splunk
   pipelines:

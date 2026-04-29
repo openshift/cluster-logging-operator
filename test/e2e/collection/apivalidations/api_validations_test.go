@@ -40,7 +40,8 @@ var _ = Describe("", func() {
 			Fail(err.Error())
 		}
 
-		execCMD := exec.Command("sh", "-c", fmt.Sprintf("echo '%s' | oc -n %s create -f -", crYaml, deployNS))
+		execCMD := exec.Command("oc", "-n", deployNS, "create", "-f", "-")
+		execCMD.Stdin = bytes.NewReader(crYaml)
 		reader, err := cmd.NewReader(execCMD)
 		Expect(err).ToNot(HaveOccurred())
 		defer func() {
@@ -129,10 +130,17 @@ var _ = Describe("", func() {
 		Entry("should pass for Splunk with payloadKey", "splunk-payloadkey.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
-		Entry("should pass for Splunk if sourceType is used with payloadKey", "splunk-payloadkey-and-sourcetype.yaml", func(out string, err error) {
+		Entry("should pass for Splunk if static sourceType is used with payloadKey", "splunk-payloadkey-and-sourcetype.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
-		Entry("should fail for Splunk if sourceType is not used with payloadKey", "splunk-sourcetype.yaml", func(out string, err error) {
+		Entry("should pass for Splunk if templated sourceType is used with payloadKey", "splunk-payloadkey-and-templated-sourcetype.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for Splunk if static sourceType is not used with payloadKey", "splunk-sourcetype.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp("sourceType can only be set when payloadKey is defined"))
+		}),
+		Entry("should fail for Splunk if templated sourceType is not used with payloadKey", "splunk-templated-sourcetype.yaml", func(out string, err error) {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(MatchRegexp("sourceType can only be set when payloadKey is defined"))
 		}),

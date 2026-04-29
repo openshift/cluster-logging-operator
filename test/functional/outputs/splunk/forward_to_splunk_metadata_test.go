@@ -369,7 +369,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 				})
 
 			framework.Secrets = append(framework.Secrets, secret)
-			framework.Labels["splunk_sourcetype"] = "log4j"
+			framework.Labels["splunk/sourcetype"] = "log4j"
 			framework.Labels["slash/test.dot"] = "log4j"
 
 			Expect(framework.Deploy()).To(BeNil())
@@ -407,8 +407,8 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			}
 		},
 			Entry("should send only 'message' payload with static sourcetype", "custom-type", "custom-type"),
-			Entry("should send only 'message' payload with dynamic sourcetype field", `{.kubernetes.labels.splunk_sourcetype||"generic_single_line"}`, "log4j"),
-			Entry("should send only 'message' payload with static + dynamic sourcetype field", `foo-{.kubernetes.labels.splunk_sourcetype||"generic_single_line"}`, "foo-log4j"),
+			Entry("should send only 'message' payload with dynamic sourcetype field", `{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "log4j"),
+			Entry("should send only 'message' payload with static + dynamic sourcetype field", `foo-{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "foo-log4j"),
 			Entry("should send only 'message' payload with static + label with dot/slash sourcetype field", `foo-{.kubernetes.labels."slash/test.dot"||"generic_single_line"}`, "foo-log4j"),
 			Entry("should send only 'message' payload with static + fallback value's sourcetype field", `foo-{.missing||"generic_single_line"}`, "foo-generic_single_line"),
 			Entry("should send only 'message' payload with fallback value's sourcetype field", `{.missing||"generic_single_line"}`, "generic_single_line"))

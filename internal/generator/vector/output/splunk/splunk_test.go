@@ -124,8 +124,12 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".openshift"
 		}),
-		Entry("with payloadKey and sourceType", "splunk_sink_with_payloadkey_and_sourcetype.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with payloadKey and dynamic sourceType", "splunk_sink_with_payloadkey_and_sourcetype.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".message"
-			spec.Splunk.SourceType = `{.foo||"missing"}`
+			spec.Splunk.SourceType = `{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`
+		}),
+		Entry("with payloadKey and static sourceType", "splunk_sink_with_payloadkey_and_static_sourcetype.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Splunk.PayloadKey = ".message"
+			spec.Splunk.SourceType = "custom-type"
 		}))
 })

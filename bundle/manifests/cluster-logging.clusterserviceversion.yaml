@@ -82,7 +82,11 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
+<<<<<<< HEAD
     createdAt: "2026-04-24T14:35:45Z"
+=======
+    createdAt: "2026-04-29T10:37:29Z"
+>>>>>>> 633bc2f53 (Updated sourceType examples in the docs, api and tests to use a pod label. Added an API validation test where sourceType is templated, and fixed single quote bug in API validation tests during oc apply.)
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1931,13 +1935,15 @@ spec:
 
           Examples:
 
-           1. "log4j"
+           1. {.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}
 
-           2. foo-{.bar||"none"}
+           2. "log4j"
 
-           3. {.foo||.bar||"missing"}
+           3. foo-{.bar||"none"}
 
-           4. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+           4. {.foo||.bar||"missing"}
+
+           5. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
         displayName: SourceType
         path: outputs[0].splunk.sourceType
         x-descriptors:

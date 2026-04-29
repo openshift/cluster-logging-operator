@@ -1335,13 +1335,15 @@ type Splunk struct {
 	//
 	// Examples:
 	//
-	//  1. "log4j"
+	//  1. {.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}
 	//
-	//  2. foo-{.bar||"none"}
+	//  2. "log4j"
 	//
-	//  3. {.foo||.bar||"missing"}
+	//  3. foo-{.bar||"none"}
 	//
-	//  4. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//  4. {.foo||.bar||"missing"}
+	//
+	//  5. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
 	//
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`

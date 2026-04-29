@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
 	"github.com/openshift/cluster-logging-operator/test/helpers/azure/datacollector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
@@ -488,7 +487,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			f.Secrets = append(f.Secrets, secret)
 
 			Expect(f.DeployWithVisitor(func(b *runtime.PodBuilder) error {
-				altHost := fmt.Sprintf("%s.%s", customerId, azure.AzureDomain)
+				altHost := fmt.Sprintf("%s.%s", customerId, "acme.com")
 				return datacollector.NewMockoonVisitor(b, altHost, f)
 			})).To(BeNil())
 

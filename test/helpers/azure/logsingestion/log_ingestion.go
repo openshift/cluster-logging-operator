@@ -9,8 +9,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers/azure"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
+	"github.com/openshift/cluster-logging-operator/test/helpers/mockoon"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
@@ -23,6 +23,7 @@ const (
 	apiJsonFile         = "azure-log-ingestion-api.json"
 	SecretName          = "azure-client-secret"
 	ClientSecretKeyName = "client_secret"
+	acme                = "acme.com"
 )
 
 // NewMockoonVisitor sets up a Mockoon mock server for the Azure Log Ingestion API.
@@ -33,9 +34,9 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, framework *functional.CollectorFu
 	// The CA and server cert must have different Organization names so that OpenSSL
 	// can distinguish the issuer from the subject when building the certificate chain.
 	ca := certificate.NewCA(nil, "Test CA")
-	serverCert := certificate.NewCert(ca, "test", azure.AzureDomain)
+	serverCert := certificate.NewCert(ca, "test", acme)
 
-	configMap := runtime.NewConfigMap(framework.Namespace, azure.Mockoon, map[string]string{})
+	configMap := runtime.NewConfigMap(framework.Namespace, mockoon.ContainerName, map[string]string{})
 	runtime.NewConfigMapBuilder(configMap).
 		Add(apiJsonFile, apiConfig).
 		Add("tls.crt", string(serverCert.CertificatePEM())).
@@ -47,16 +48,16 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, framework *functional.CollectorFu
 
 	hostAlias := v1.HostAlias{
 		IP:        "127.0.0.1",
-		Hostnames: []string{azure.AzureDomain},
+		Hostnames: []string{acme},
 	}
 
 	mountPath := "/data"
 	mockoonDataVolume := "mockoon-data"
 
-	pb.AddConfigMapVolume(mockoonDataVolume, azure.Mockoon).
+	pb.AddConfigMapVolume(mockoonDataVolume, mockoon.ContainerName).
 		AddHostAlias(hostAlias).
-		AddContainer(azure.Mockoon, azure.Image).
-		AddContainerPort(azure.Mockoon, azure.Port).
+		AddContainer(mockoon.ContainerName, mockoon.Image).
+		AddContainerPort(mockoon.ContainerName, mockoon.Port).
 		WithCmdArgs([]string{
 			fmt.Sprintf("--data=%s/%s", mountPath, apiJsonFile),
 			"--log-transaction",
@@ -67,7 +68,7 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, framework *functional.CollectorFu
 	// trust the Mockoon TLS certificate.
 	combinedBundle := "/tmp/ca-bundle.crt"
 	pb.GetContainer(constants.CollectorName).
-		AddEnvVar("AZURE_AUTHORITY_HOST", fmt.Sprintf("https://%s:%d", azure.AzureDomain, azure.Port)).
+		AddEnvVar("AZURE_AUTHORITY_HOST", fmt.Sprintf("https://%s:%d", acme, mockoon.Port)).
 		AddEnvVar("SSL_CERT_FILE", combinedBundle).
 		WithCmd([]string{"sh", "-c", fmt.Sprintf(
 			"cat /etc/pki/tls/certs/ca-bundle.crt %s/ca.crt > %s && exec /opt/app-root/src/run.sh",
@@ -81,7 +82,7 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, framework *functional.CollectorFu
 // ReadApplicationLog reads and parses application logs from the
 // Mockoon container used for the Azure Log Ingestion API mock.
 func ReadApplicationLog(framework *functional.CollectorFunctionalFramework) ([]types.ApplicationLog, error) {
-	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, azure.Mockoon).Run()
+	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, mockoon.ContainerName).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +90,7 @@ func ReadApplicationLog(framework *functional.CollectorFunctionalFramework) ([]t
 }
 
 func extractLogs(output string) ([]types.ApplicationLog, error) {
-	logs, err := azure.DecodeMockoonLogs(output)
+	logs, err := mockoon.DecodeLogs(output)
 	if err != nil {
 		return nil, err
 	}

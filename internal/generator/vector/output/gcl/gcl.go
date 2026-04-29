@@ -36,7 +36,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		LogDestination(s, o.GoogleCloudLogging)
 		s.LogId = fmt.Sprintf("{{ _internal.%s }}", componentID)
 		s.SeverityKey = DefaultSeverityKey
-		s.CredentialsPath = auth(g.Authentication, secrets)
+		s.CredentialsPath = auth(g.Authentication)
 		s.Encoding = common.NewApiEncoding("")
 		s.Batch = common.NewApiBatch(o)
 		s.Buffer = common.NewApiBuffer(o)
@@ -50,11 +50,11 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	return id, sink, tfs
 }
 
-func auth(spec *obs.GoogleCloudLoggingAuthentication, secrets observability.Secrets) string {
-	if spec == nil {
+func auth(spec *obs.GoogleCloudLoggingAuthentication) string {
+	if spec == nil || spec.Credentials == nil {
 		return ""
 	}
-	return secrets.Path(spec.Credentials, "%s")
+	return helpers.SecretPath(spec.Credentials.SecretName, spec.Credentials.Key, "%s")
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order

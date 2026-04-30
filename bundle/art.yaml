@@ -2,8 +2,8 @@ updates:
   - file: "manifests/cluster-logging.clusterserviceversion.yaml" # relative to this file
     update_list:
       - search: "olm.skipRange: '>=6.0.0-0 <6.2.0'"
-        replace: "olm.skipRange: '>=6.0.0-0 <6.2.10'"
+        replace: "olm.skipRange: '>=6.0.0-0 <6.2.11'"
       - search: "version: 6.2.0"
-        replace: "version: 6.2.10"
+        replace: "version: 6.2.11"
       - search: "name: cluster-logging.v6.2.0"
-        replace: "name: cluster-logging.v6.2.10"
+        replace: "name: cluster-logging.v6.2.11"

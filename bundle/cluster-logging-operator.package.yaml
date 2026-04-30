@@ -2,4 +2,4 @@
 packageName: cluster-logging
 channels:
 - name: stable-6.2
-  currentCSV: cluster-logging-operator.v6.2.10
+  currentCSV: cluster-logging-operator.v6.2.11

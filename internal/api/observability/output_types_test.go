@@ -1,12 +1,13 @@
 package observability_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/test"
-	"strings"
 )
 
 var _ = Describe("helpers for output types", func() {
@@ -273,6 +274,133 @@ var _ = Describe("S3 secret handling", func() {
 			}
 
 			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+
+		It("should return false for GCP service account credentials (no token)", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeGoogleCloudLogging,
+					GoogleCloudLogging: &obsv1.GoogleCloudLogging{
+						Authentication: &obsv1.GoogleCloudLoggingAuthentication{
+							Credentials: &obsv1.SecretReference{
+								SecretName: "gcp-creds",
+								Key:        "service_account.json",
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+
+		It("should return true for GCP WIF with BearerTokenFromServiceAccount token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeGoogleCloudLogging,
+					GoogleCloudLogging: &obsv1.GoogleCloudLogging{
+						Authentication: &obsv1.GoogleCloudLoggingAuthentication{
+							Credentials: &obsv1.SecretReference{
+								SecretName: "gcp-creds",
+								Key:        "external_account.json",
+							},
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+		})
+
+		It("should return false for GCP WIF with secret token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeGoogleCloudLogging,
+					GoogleCloudLogging: &obsv1.GoogleCloudLogging{
+						Authentication: &obsv1.GoogleCloudLoggingAuthentication{
+							Credentials: &obsv1.SecretReference{
+								SecretName: "gcp-creds",
+								Key:        "external_account.json",
+							},
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromSecret,
+								Secret: &obsv1.BearerTokenSecretKey{
+									Name: "my-token-secret",
+									Key:  "token",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+
+		It("should return true for Loki with service account token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeLoki,
+					Loki: &obsv1.Loki{
+						Authentication: &obsv1.HTTPAuthentication{
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+		})
+
+		It("should return false for Loki with token from secret", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeLoki,
+					Loki: &obsv1.Loki{
+						Authentication: &obsv1.HTTPAuthentication{
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromSecret,
+								Secret: &obsv1.BearerTokenSecretKey{
+									Name: "token-secret",
+									Key:  "token",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+
+		It("should return true when at least one output needs service account token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeS3,
+					S3: &obsv1.S3{
+						Authentication: &obsv1.AwsAuthentication{
+							Type: obsv1.AwsAuthTypeAccessKey,
+						},
+					},
+				},
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeLoki,
+					Loki: &obsv1.Loki{
+						Authentication: &obsv1.HTTPAuthentication{
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
 		})
 	})
 })

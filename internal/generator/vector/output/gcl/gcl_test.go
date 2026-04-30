@@ -20,7 +20,8 @@ import (
 
 var _ = Describe("Generate Vector config", func() {
 	const (
-		secretName = "gcl-1"
+		secretName    = "gcl-1"
+		wifSecretName = "gcl-wif"
 	)
 	var (
 		adapter *adapters.Output
@@ -66,6 +67,11 @@ var _ = Describe("Generate Vector config", func() {
 					constants.ClientPrivateKey:          []byte("dummy"),
 				},
 			},
+			wifSecretName: {
+				Data: map[string][]byte{
+					gcl.GoogleApplicationCredentialsKey: []byte("dummy-wif-credentials"),
+				},
+			},
 		}
 
 		baseTune = &obs.BaseOutputTuningSpec{
@@ -91,7 +97,18 @@ var _ = Describe("Generate Vector config", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with service account token", nil, framework.NoOptions, "gcl_with_token.toml"),
+		Entry("with service account auth", nil, framework.NoOptions, "gcl_with_token.toml"),
+		Entry("with workload identity auth", func(spec *obs.OutputSpec) {
+			spec.GoogleCloudLogging.Authentication = &obs.GoogleCloudLoggingAuthentication{
+				Credentials: &obs.SecretReference{
+					Key:        gcl.GoogleApplicationCredentialsKey,
+					SecretName: wifSecretName,
+				},
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				},
+			}
+		}, framework.NoOptions, "gcl_with_workload_identity.toml"),
 		Entry("with TLS config", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 		}, framework.NoOptions, "gcl_with_tls.toml"),

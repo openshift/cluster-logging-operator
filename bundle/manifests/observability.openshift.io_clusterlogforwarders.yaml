@@ -2527,8 +2527,10 @@ spec:
                             the requests.
                           properties:
                             credentials:
-                              description: Credentials points to the secret containing
-                                the `google-application-credentials.json`.
+                              description: |-
+                                Credentials points to the secret containing the GCP credentials JSON file.
+                                For service account auth, this is a service_account key file.
+                                For Workload Identity Federation (WIF), this is an external_account configuration file.
                               properties:
                                 key:
                                   description: Key contains the name of the key inside
@@ -2542,6 +2544,42 @@ spec:
                               - key
                               - secretName
                               type: object
+                            token:
+                              description: |-
+                                Token specifies the source of the bearer token used as the subject token for
+                                GCP Workload Identity Federation token exchange. Only needed when the credentials
+                                file is an external_account type.
+                              nullable: true
+                              properties:
+                                from:
+                                  description: From is the source from where to find
+                                    the token
+                                  enum:
+                                  - secret
+                                  - serviceAccount
+                                  type: string
+                                secret:
+                                  description: Use Secret if the value should be sourced
+                                    from a Secret in the same namespace.
+                                  properties:
+                                    key:
+                                      description: Name of the key used to get the
+                                        value from the referenced Secret.
+                                      type: string
+                                    name:
+                                      description: Name of secret
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                              required:
+                              - from
+                              type: object
+                              x-kubernetes-validations:
+                              - message: Additional secret spec is required when bearer
+                                  token is sourced from a secret
+                                rule: self.from != 'secret' || has(self.secret)
                           required:
                           - credentials
                           type: object

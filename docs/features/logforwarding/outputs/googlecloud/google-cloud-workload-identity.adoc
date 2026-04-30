@@ -1,0 +1,569 @@
+= Google Cloud Logging with Workload Identity Federation
+
+== Overview
+
+Workload Identity Federation (WIF) enables OpenShift workloads to authenticate to Google Cloud Platform (GCP) using short-lived tokens instead of long-lived service account keys. This eliminates the security risks associated with managing and rotating service account keys.
+
+The operator determines the authentication method from the credentials file content. A credentials file with `"type": "external_account"` indicates WIF authentication, while `"type": "service_account"` indicates static key-based authentication. When using WIF, a `token` field must also be configured to specify the bearer token source for the STS token exchange.
+
+=== How It Works
+
+The authentication flow consists of four steps:
+
+1. **OpenShift Service Account Token**: The collector pod receives a JWT token from its OpenShift service account
+2. **STS Token Exchange**: The OpenShift JWT is exchanged for a federated access token via GCP's Security Token Service (STS)
+3. **Service Account Impersonation**: The federated token is used to impersonate a GCP service account
+4. **Cloud Logging Access**: The impersonated service account token accesses the Cloud Logging API
+
+This approach provides temporary access credentials that automatically rotate, improving security and reducing operational overhead.
+
+---
+
+== Prerequisites
+
+IMPORTANT: Your OpenShift cluster *must* be installed on GCP with Workload Identity Federation enabled.
+
+WARNING: *CRITICAL* - WIF audiences and principals MUST use your GCP PROJECT NUMBER, NOT your project ID. Using the project ID (e.g., "my-project") instead of the project number (e.g., "913082575863") will cause HTTP 403 Forbidden errors. Get your project number with: `gcloud projects describe PROJECT_ID --format="value(projectNumber)"`
+
+To use WIF with cluster logging, your cluster must be installed with the following configuration:
+
+* **Credentials Mode**: `Manual` (enables WIF support)
+* **Workload Identity Pool**: Created during cluster installation using `ccoctl`
+* **OIDC Provider**: Configured to trust OpenShift service account tokens
+
+If your cluster was not installed with WIF support, you cannot use this authentication method. You must use service account keys instead.
+
+.Verify WIF is enabled on your cluster
+To check if your cluster supports WIF, look for the workload identity pool:
+
+[source,bash]
+----
+# Check cluster authentication mode
+oc get authentication cluster -o jsonpath='{.spec.type}'
+# Should output: Manual or similar
+
+# List the workload identity pools in your GCP project
+gcloud iam workload-identity-pools list \
+  --location=global \
+  --project="${PROJECT_ID}"
+----
+
+The workload identity pool name typically matches the cluster name or installation resource name used during installation.
+
+---
+
+== Configuration
+
+There are two approaches to configuring WIF for cluster logging:
+
+1. **Recommended**: Using the `ccoctl` utility (automated)
+2. **Manual**: Using `gcloud` commands directly (advanced users)
+
+=== Recommended: Using ccoctl
+
+The `ccoctl` utility automates the creation of GCP service accounts, IAM bindings, and credentials. This is the recommended approach for OpenShift clusters on GCP.
+
+==== Step 1: Set Environment Variables
+
+[source,bash]
+----
+export PROJECT_ID="your-gcp-project-id"
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")  # <1>
+export REGION="us-east1"
+export LOGGING_NS="openshift-logging"
+export SA_NAME="logging-collector"
+export SECRET_NAME="gcp-logging-secret"
+export POOL_ID="your-cluster-name"  # <2>
+export PROVIDER_ID="your-cluster-name"  # <3>
+export GCP_SA_NAME="openshift-logging-admin"
+export SERVICE_ACCOUNT_EMAIL="${GCP_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+----
+<1> *CRITICAL*: PROJECT_NUMBER (not PROJECT_ID) is required for audience and principal values
+<2> The workload identity pool ID created during cluster installation (typically matches cluster name)
+<3> The workload identity provider ID (typically same as pool ID)
+
+==== Step 2: Create OpenShift Service Account and RBAC
+
+[source,bash]
+----
+# Create service account
+oc create serviceaccount ${SA_NAME} -n ${LOGGING_NS}
+
+# Create cluster role for log collection
+cat <<EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: logging-collector-writer
+rules:
+- apiGroups:
+  - observability.openshift.io
+  resources:
+  - logs
+  resourceNames:
+  - application
+  - audit
+  - infrastructure
+  verbs:
+  - collect
+EOF
+
+# Create cluster role binding
+cat <<EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: logging-writer-${SA_NAME}-${LOGGING_NS}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: logging-collector-writer
+subjects:
+- kind: ServiceAccount
+  name: ${SA_NAME}
+  namespace: ${LOGGING_NS}
+EOF
+----
+
+==== Step 3: Create CredentialsRequest
+
+Create a CredentialsRequest that describes the required GCP permissions:
+
+[source,yaml]
+----
+apiVersion: cloudcredential.openshift.io/v1
+kind: CredentialsRequest
+metadata:
+  name: ${SECRET_NAME}-credrequest
+  namespace: openshift-cloud-credential-operator
+spec:
+  providerSpec:
+    apiVersion: cloudcredential.openshift.io/v1
+    kind: GCPProviderSpec
+    predefinedRoles:
+      - roles/logging.admin  # <1>
+    skipServiceCheck: true
+    audience: "//iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}"  # <2>
+    serviceAccountEmail: ${SERVICE_ACCOUNT_EMAIL}  # <3>
+  cloudTokenPath: /var/run/ocp-collector/serviceaccount  # <4>
+  secretRef:
+    name: ${SECRET_NAME}  # <5>
+    namespace: ${LOGGING_NS}
+  serviceAccountNames:
+    - ${SA_NAME}  # <6>
+----
+<1> GCP IAM role granting log write permissions
+<2> *CRITICAL*: Audience MUST use PROJECT_NUMBER (not PROJECT_ID) - using project ID will cause 403 errors
+<3> Email of the GCP service account to create/use
+<4> Path where the OpenShift service account token will be mounted (NOTE: `ccoctl` does not respect this setting; you must manually update the secret in Step 5)
+<5> Name of the OpenShift secret to create
+<6> OpenShift service account that will use these credentials
+
+Save this to a file (e.g., `credrequest.yaml`).
+
+==== Step 4: Create GCP Resources Using ccoctl
+
+[source,bash]
+----
+# Create a directory for the credentials request
+mkdir -p credreqs
+
+# Copy your credentials request file
+cp credrequest.yaml credreqs/
+
+# Run ccoctl to create GCP resources
+ccoctl gcp create-all \
+  --name="${POOL_ID}" \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --credentials-requests-dir=credreqs \
+  --output-dir=output
+----
+
+This command creates:
+
+* GCP service account (if it doesn't exist)
+* IAM policy bindings for `roles/logging.admin`
+* Workload identity binding between OpenShift SA and GCP SA
+* An OpenShift Secret manifest with the external account credentials
+
+==== Step 5: Apply the Generated Secret
+
+[source,bash]
+----
+oc apply -f output/manifests/${LOGGING_NS}-${SECRET_NAME}-credentials.yaml
+----
+
+Verify the secret was created:
+
+[source,bash]
+----
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS}
+----
+
+IMPORTANT: The `ccoctl` utility does not respect the `cloudTokenPath` setting in the CredentialsRequest. It will generate credentials with the default OpenShift service account token path. You must manually update the secret to use the correct path for the cluster-logging-operator collector.
+
+Update the generated secret:
+
+[source,bash]
+----
+# Extract the credentials file (key name may be service_account.json)
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.service_account\.json}' | base64 -d > /tmp/creds.json
+
+# Update the credential_source.file path for the collector
+jq '.credential_source.file = "/var/run/ocp-collector/serviceaccount/token"' /tmp/creds.json > /tmp/external_account.json
+
+# Recreate the secret with the correct key name and path
+oc delete secret ${SECRET_NAME} -n ${LOGGING_NS}
+oc create secret generic ${SECRET_NAME} -n ${LOGGING_NS} \
+  --from-file=external_account.json=/tmp/external_account.json
+
+# Verify the changes
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.external_account\.json}' | base64 -d | jq .credential_source
+----
+
+The output should show:
+[source,json]
+----
+{
+  "file": "/var/run/ocp-collector/serviceaccount/token"
+}
+----
+
+==== Step 6: Create ClusterLogForwarder
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: gcp-forwarder
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-collector  # <1>
+  outputs:
+    - name: gcp-logging
+      type: googleCloudLogging
+      googleCloudLogging:
+        id:
+          type: project
+          value: your-gcp-project-id  # <2>
+        logId: openshift-logs  # <3>
+        authentication:
+          credentials:
+            key: external_account.json  # <4>
+            secretName: gcp-logging-secret  # <5>
+          token:  # <6>
+            from: serviceAccount
+  pipelines:
+    - name: send-to-gcp
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - gcp-logging
+----
+<1> Must match the service account created in Step 2
+<2> Your GCP project ID
+<3> The log name that will appear in Cloud Logging
+<4> The key in the secret containing the external_account credentials file. The operator validates the credentials file `type` field.
+<5> The secret name from Step 5
+<6> The bearer token source for the WIF token exchange. Use `from: serviceAccount` to use the projected service account token.
+
+---
+
+=== Alternative: Manual Configuration
+
+For advanced use cases or when `ccoctl` is not available, you can manually configure WIF using `gcloud` commands.
+
+WARNING: This approach requires careful attention to detail. The recommended approach using `ccoctl` is preferred for most users.
+
+==== Step 1: Set Environment Variables
+
+[source,bash]
+----
+export PROJECT_ID="your-gcp-project-id"
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")  # <1>
+export LOGGING_NS="openshift-logging"
+export SA_NAME="logging-collector"
+export SECRET_NAME="gcp-logging-secret"
+export POOL_ID="your-cluster-workload-identity-pool"  # <2>
+export PROVIDER_ID="your-cluster-workload-identity-provider"  # <3>
+export GCP_SA_NAME="openshift-logging-admin"
+export SERVICE_ACCOUNT_EMAIL="${GCP_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+----
+<1> *CRITICAL*: Get PROJECT_NUMBER - audiences and principals MUST use this, not PROJECT_ID
+<2> Find this with: `gcloud iam workload-identity-pools list --location=global --project=${PROJECT_ID}`
+<3> Find this with: `gcloud iam workload-identity-pools providers list --workload-identity-pool=${POOL_ID} --location=global --project=${PROJECT_ID}`
+
+==== Step 2: Create GCP Service Account
+
+[source,bash]
+----
+gcloud iam service-accounts create ${GCP_SA_NAME} \
+  --display-name="OpenShift Logging Admin" \
+  --project="${PROJECT_ID}"
+----
+
+==== Step 3: Grant Logging Permissions
+
+[source,bash]
+----
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/logging.admin"
+----
+
+==== Step 4: Bind OpenShift SA to GCP Workload Identity
+
+[source,bash]
+----
+# Allow the OpenShift service account to impersonate the GCP service account
+gcloud iam service-accounts add-iam-policy-binding ${SERVICE_ACCOUNT_EMAIL} \
+  --project="${PROJECT_ID}" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/system:serviceaccount:${LOGGING_NS}:${SA_NAME}"
+----
+
+WARNING: *CRITICAL* - The principal MUST use PROJECT_NUMBER (not PROJECT_ID): `principal://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/subject/system:serviceaccount:NAMESPACE:SA_NAME`
+
+==== Step 5: Generate Credentials Configuration
+
+WARNING: *CRITICAL* - The `gcloud iam workload-identity-pools create-cred-config` command MUST use PROJECT_NUMBER in the pool path. Using PROJECT_ID will create credentials with the wrong audience, causing HTTP 403 Forbidden errors.
+
+[source,bash]
+----
+gcloud iam workload-identity-pools create-cred-config \
+  "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}" \
+  --service-account="${SERVICE_ACCOUNT_EMAIL}" \
+  --credential-source-file=/var/run/ocp-collector/serviceaccount/token \
+  --credential-source-type=text \
+  --output-file=external_account.json
+----
+
+This creates a file `external_account.json` with the following structure:
+
+[source,json]
+----
+{
+  "type": "external_account",
+  "audience": "//iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID",
+  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+  "token_url": "https://sts.googleapis.com/v1/token",
+  "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/SERVICE_ACCOUNT_EMAIL:generateAccessToken",
+  "credential_source": {
+    "file": "/var/run/ocp-collector/serviceaccount/token"
+  }
+}
+----
+
+IMPORTANT: Verify the `audience` field uses PROJECT_NUMBER (numeric), not PROJECT_ID (string).
+
+==== Step 6: Create OpenShift Secret
+
+[source,bash]
+----
+oc create secret generic ${SECRET_NAME} \
+  -n ${LOGGING_NS} \
+  --from-file=external_account.json=external_account.json
+----
+
+==== Step 7: Create ClusterLogForwarder
+
+Follow Step 6 from the ccoctl approach above.
+
+---
+
+== Verification
+
+After deploying your ClusterLogForwarder, verify the configuration:
+
+=== Check Collector Pods
+
+[source,bash]
+----
+oc get pods -n openshift-logging -l component=collector
+----
+
+=== Check Pod Logs
+
+[source,bash]
+----
+oc logs -n openshift-logging -l component=collector --tail=50
+----
+
+Look for successful authentication messages. Errors related to authentication will appear here.
+
+=== Verify Logs in GCP Console
+
+1. Open the https://console.cloud.google.com/logs[GCP Cloud Logging Console]
+2. Select your project
+3. Look for logs with the `logId` specified in your ClusterLogForwarder
+4. Use the following query to filter logs (replace with your project ID and logId):
++
+[source]
+----
+logName="projects/<your-project-id>/logs/<your-log-id>"
+----
+
+---
+
+== Troubleshooting
+
+=== Common Issues
+
+==== 403 Forbidden Errors - Wrong Audience (PROJECT_ID vs PROJECT_NUMBER)
+
+**Symptom**: Logs show `403 Forbidden` errors with messages like "Events dropped" or "Not retriable; dropping the request"
+
+**Cause**: *MOST COMMON CAUSE* - The `audience` field in `external_account.json` uses PROJECT_ID instead of PROJECT_NUMBER
+
+**Diagnosis**:
+[source,bash]
+----
+# Check current audience in credentials
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.external_account\.json}' | base64 -d | jq -r '.audience'
+
+# Should output something like:
+# //iam.googleapis.com/projects/913082575863/locations/global/...  (PROJECT_NUMBER - CORRECT)
+# NOT:
+# //iam.googleapis.com/projects/my-project/locations/global/...     (PROJECT_ID - WRONG)
+
+# Get your project number:
+gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)"
+----
+
+**Fix**:
+[source,bash]
+----
+# Extract and fix the credentials
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} \
+  -o jsonpath='{.data.external_account\.json}' | base64 -d > /tmp/creds.json
+
+# Get project number
+PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+
+# Update audience to use PROJECT_NUMBER
+jq ".audience = \"//iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}\"" \
+  /tmp/creds.json > /tmp/external_account.json
+
+# Recreate secret
+oc delete secret ${SECRET_NAME} -n ${LOGGING_NS}
+oc create secret generic ${SECRET_NAME} -n ${LOGGING_NS} \
+  --from-file=external_account.json=/tmp/external_account.json
+
+# Restart collector pods
+oc rollout restart daemonset -n ${LOGGING_NS} -l component=collector
+----
+
+==== 403 Forbidden Errors - Missing Permissions
+
+**Symptom**: Logs show `403 Permission Denied` errors
+
+**Cause**: The GCP service account lacks necessary permissions
+
+**Fix**:
+[source,bash]
+----
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/logging.admin"
+----
+
+==== STS Token Exchange Fails
+
+**Symptom**: Logs show "STS token exchange failed" or "invalid audience"
+
+**Cause**: Audience mismatch or workload identity provider not configured correctly
+
+**Fix**:
+
+1. Verify the audience in your credentials file matches your workload identity pool:
++
+[source,bash]
+----
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.service_account\.json}' | base64 -d | jq .audience
+----
+
+2. Compare with your actual pool (using PROJECT_NUMBER, not PROJECT_ID):
++
+[source,bash]
+----
+PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+echo "//iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}"
+----
++
+WARNING: The audience MUST use PROJECT_NUMBER (e.g., "913082575863"), NOT PROJECT_ID (e.g., "my-project")
+
+==== Service Account Impersonation Fails
+
+**Symptom**: "Service account impersonation failed" or "403 Caller does not have permission"
+
+**Cause**: The workload identity binding is missing or incorrect
+
+**Fix**:
+[source,bash]
+----
+PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format="value(projectNumber)")
+gcloud iam service-accounts add-iam-policy-binding ${SERVICE_ACCOUNT_EMAIL} \
+  --project="${PROJECT_ID}" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principal://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/subject/system:serviceaccount:${LOGGING_NS}:${SA_NAME}"
+----
++
+WARNING: The principal MUST use PROJECT_NUMBER, not PROJECT_ID
+
+==== Wrong Credentials File Type
+
+**Symptom**: Validation error indicating credentials type does not match authentication type
+
+**Cause**: The `type` field in the credentials JSON file is not a supported value.
+
+**Fix**: Ensure the credentials file has a valid `type` field:
+
+* For WIF: The credentials file must have `"type": "external_account"` (generated by `gcloud iam workload-identity-pools create-cred-config` or `ccoctl`)
+* For service account keys: The credentials file must have `"type": "service_account"` (downloaded from GCP Console)
+
+The operator validates the credentials file content and will report a status condition if it is invalid.
+
+==== OpenShift Token Not Found
+
+**Symptom**: "OpenShift token not found" errors
+
+**Cause**: Service account token not properly mounted
+
+**Fix**: Verify the token path is correct in the credentials file:
+
+The collector mounts the OpenShift service account token at `/var/run/ocp-collector/serviceaccount/token`.
+
+Check the credential_source.file path in your secret:
+[source,bash]
+----
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.external_account\.json}' | base64 -d | jq .credential_source.file
+----
+
+If it shows the default OpenShift path (e.g., `/var/run/secrets/openshift/serviceaccount/token`), update it:
+
+[source,bash]
+----
+# Extract credentials
+oc get secret ${SECRET_NAME} -n ${LOGGING_NS} -o jsonpath='{.data.external_account\.json}' | base64 -d > /tmp/creds.json
+
+# Update the path
+jq '.credential_source.file = "/var/run/ocp-collector/serviceaccount/token"' /tmp/creds.json > /tmp/external_account.json
+
+# Recreate secret
+oc delete secret ${SECRET_NAME} -n ${LOGGING_NS}
+oc create secret generic ${SECRET_NAME} -n ${LOGGING_NS} \
+  --from-file=external_account.json=/tmp/external_account.json
+----
+
+---
+
+== Additional Resources
+
+* https://cloud.google.com/iam/docs/workload-identity-federation[Workload Identity Federation Documentation]
+* https://cloud.google.com/iam/docs/configuring-workload-identity-federation[Configuring Workload Identity Federation]
+* https://docs.openshift.com/container-platform/latest/authentication/managing_cloud_provider_credentials/cco-mode-manual.html[OpenShift Manual Credentials Mode]
+* https://github.com/openshift/cloud-credential-operator[Cloud Credential Operator]

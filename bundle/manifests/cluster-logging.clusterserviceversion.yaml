@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-04-24T14:35:45Z"
+    createdAt: "2026-04-30T19:37:39Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -965,7 +965,10 @@ spec:
       - description: Authentication sets credentials for authenticating the requests.
         displayName: Authentication Options
         path: outputs[0].googleCloudLogging.authentication
-      - description: Credentials points to the secret containing the `google-application-credentials.json`.
+      - description: |-
+          Credentials points to the secret containing the GCP credentials JSON file.
+          For service account auth, this is a service_account key file.
+          For Workload Identity Federation (WIF), this is an external_account configuration file.
         displayName: Secret with Credentials File
         path: outputs[0].googleCloudLogging.authentication.credentials
       - description: Key contains the name of the key inside the referenced Secret.
@@ -977,6 +980,29 @@ spec:
           value.
         displayName: Secret Name
         path: outputs[0].googleCloudLogging.authentication.credentials.secretName
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          Token specifies the source of the bearer token used as the subject token for
+          GCP Workload Identity Federation token exchange. Only needed when the credentials
+          file is an external_account type.
+        displayName: Token
+        path: outputs[0].googleCloudLogging.authentication.token
+      - description: From is the source from where to find the token
+        displayName: Token Source
+        path: outputs[0].googleCloudLogging.authentication.token.from
+      - description: Use Secret if the value should be sourced from a Secret in the
+          same namespace.
+        displayName: Token Secret
+        path: outputs[0].googleCloudLogging.authentication.token.secret
+      - description: Name of the key used to get the value from the referenced Secret.
+        displayName: Key Name
+        path: outputs[0].googleCloudLogging.authentication.token.secret.key
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Name of secret
+        displayName: Secret Name
+        path: outputs[0].googleCloudLogging.authentication.token.secret.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: ID must be one of the required ID fields for the output

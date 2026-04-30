@@ -43,36 +43,61 @@ func (outputs Outputs) ConfigmapNames() []string {
 	return names.UnsortedList()
 }
 
-// NeedServiceAccountToken returns true if any output needs to be configured to use the token associated with the service account
+// NeedServiceAccountToken returns true if any output needs to be configured to use a projected service account token
 func (outputs Outputs) NeedServiceAccountToken() bool {
-	var auths []*obsv1.BearerToken
 	for _, o := range outputs {
-		switch {
-		case o.Type == obsv1.OutputTypeAzureLogsIngestion && o.AzureLogsIngestion != nil &&
-			o.AzureLogsIngestion.Authentication != nil && o.AzureLogsIngestion.Authentication.Type == obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity &&
-			o.AzureLogsIngestion.Authentication.WorkloadIdentity != nil && o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token != nil:
-			auths = append(auths, o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token)
-		case o.Type == obsv1.OutputTypeLoki && o.Loki.Authentication != nil && o.Loki.Authentication.Token != nil:
-			auths = append(auths, o.Loki.Authentication.Token)
-		case o.Type == obsv1.OutputTypeLokiStack && o.LokiStack.Authentication != nil && o.LokiStack.Authentication.Token != nil:
-			auths = append(auths, o.LokiStack.Authentication.Token)
-		case o.Type == obsv1.OutputTypeCloudwatch && o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.AwsAuthTypeIAMRole:
-			auths = append(auths, &o.Cloudwatch.Authentication.IamRole.Token)
-		case o.Type == obsv1.OutputTypeS3 && o.S3 != nil && o.S3.Authentication.Type == obsv1.AwsAuthTypeIAMRole:
-			auths = append(auths, &o.S3.Authentication.IamRole.Token)
-		case o.Type == obsv1.OutputTypeElasticsearch && o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil && o.Elasticsearch.Authentication.Token != nil:
-			auths = append(auths, o.Elasticsearch.Authentication.Token)
-		case o.Type == obsv1.OutputTypeOTLP && o.OTLP.Authentication != nil && o.OTLP.Authentication.Token != nil:
-			auths = append(auths, o.OTLP.Authentication.Token)
-		}
-	}
-	for _, token := range auths {
-		if token.From == obsv1.BearerTokenFromServiceAccount {
+		if needsServiceAccountToken(o) {
 			return true
 		}
 	}
-
 	return false
+}
+
+// needsServiceAccountToken returns true if the output requires service account token projection
+func needsServiceAccountToken(o obsv1.OutputSpec) bool {
+	token := getOutputBearerToken(o)
+	return token != nil && token.From == obsv1.BearerTokenFromServiceAccount
+}
+
+// getOutputBearerToken extracts the bearer token configuration from an output, if present
+func getOutputBearerToken(o obsv1.OutputSpec) *obsv1.BearerToken {
+	switch o.Type {
+	case obsv1.OutputTypeLoki:
+		if o.Loki != nil && o.Loki.Authentication != nil {
+			return o.Loki.Authentication.Token
+		}
+	case obsv1.OutputTypeLokiStack:
+		if o.LokiStack != nil && o.LokiStack.Authentication != nil {
+			return o.LokiStack.Authentication.Token
+		}
+	case obsv1.OutputTypeCloudwatch:
+		if o.Cloudwatch != nil && o.Cloudwatch.Authentication.Type == obsv1.AwsAuthTypeIAMRole {
+			return &o.Cloudwatch.Authentication.IamRole.Token
+		}
+	case obsv1.OutputTypeS3:
+		if o.S3 != nil && o.S3.Authentication.Type == obsv1.AwsAuthTypeIAMRole {
+			return &o.S3.Authentication.IamRole.Token
+		}
+	case obsv1.OutputTypeElasticsearch:
+		if o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil {
+			return o.Elasticsearch.Authentication.Token
+		}
+	case obsv1.OutputTypeOTLP:
+		if o.OTLP != nil && o.OTLP.Authentication != nil {
+			return o.OTLP.Authentication.Token
+		}
+	case obsv1.OutputTypeAzureLogsIngestion:
+		if o.AzureLogsIngestion != nil && o.AzureLogsIngestion.Authentication != nil &&
+			o.AzureLogsIngestion.Authentication.Type == obsv1.AzureLogsIngestionAuthTypeWorkloadIdentity &&
+			o.AzureLogsIngestion.Authentication.WorkloadIdentity != nil {
+			return o.AzureLogsIngestion.Authentication.WorkloadIdentity.Token
+		}
+	case obsv1.OutputTypeGoogleCloudLogging:
+		if o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
+			return o.GoogleCloudLogging.Authentication.Token
+		}
+	}
+	return nil
 }
 
 // SecretNames returns a unique set of unordered secret names
@@ -133,8 +158,7 @@ func SecretReferences(o obsv1.OutputSpec) []*obsv1.SecretReference {
 		}
 	case obsv1.OutputTypeGoogleCloudLogging:
 		if o.GoogleCloudLogging != nil && o.GoogleCloudLogging.Authentication != nil {
-			a := o.GoogleCloudLogging.Authentication
-			return []*obsv1.SecretReference{a.Credentials}
+			return gclSecretKeys(o.GoogleCloudLogging.Authentication)
 		}
 	case obsv1.OutputTypeHTTP:
 		if o.HTTP != nil && o.HTTP.Authentication != nil {
@@ -223,6 +247,21 @@ func awsSecretKeys(auth *obsv1.AwsAuthentication) (keys []*obsv1.SecretReference
 func appendAssumeRoleKeys(auth *obsv1.AwsAuthentication, keys []*obsv1.SecretReference) []*obsv1.SecretReference {
 	if auth != nil && auth.AssumeRole != nil {
 		keys = append(keys, &auth.AssumeRole.RoleARN)
+	}
+	return keys
+}
+
+func gclSecretKeys(auth *obsv1.GoogleCloudLoggingAuthentication) (keys []*obsv1.SecretReference) {
+	if auth.Credentials != nil {
+		keys = append(keys, auth.Credentials)
+	}
+	if auth.Token != nil &&
+		auth.Token.From == obsv1.BearerTokenFromSecret &&
+		auth.Token.Secret != nil {
+		keys = append(keys, &obsv1.SecretReference{
+			Key:        auth.Token.Secret.Key,
+			SecretName: auth.Token.Secret.Name,
+		})
 	}
 	return keys
 }

@@ -1,7 +1,7 @@
 
-=== Steps to send logs to Google Cloud Logging
+=== Steps to send logs to Google Cloud Logging using a service account key
 
-. Create a secret which contains google application credentials (the credentials which will be used to send logs to Google Cloud Logging)
+. Create a secret which contains the GCP service account key JSON file (the credentials which will be used to send logs to Google Cloud Logging)
 +
 ----
     oc -n openshift-logging create secret generic gcp-secret --from-file=google-application-credentials.json
@@ -25,6 +25,8 @@
 ----
 +
 Replace `project_id` and `private_key` with real values.
+
+NOTE: The credentials file must have `"type": "service_account"`. The operator validates that the secret content matches the declared authentication type.
 
 . Create a Cluster Log Forwarder instance with following yaml.
 +
@@ -51,9 +53,9 @@ spec:
         id:
           type: project
           value: openshift-gce-devel
-        logId : app-gcp
+        logId: app-gcp
         authentication:
-          credentials:
+          credentials:  # <1>
             key: google-application-credentials.json
             secretName: gcp-secret
   pipelines:
@@ -65,6 +67,9 @@ spec:
       outputRefs:
         - gcp-1
 ----
+<1> Points to the secret containing the GCP service account key JSON file.
+
+For Workload Identity Federation (WIF) authentication, see link:google-cloud-workload-identity.adoc[Google Cloud Logging with Workload Identity Federation].
 
 . Login to google console and check logs
 +

@@ -24,19 +24,16 @@ if ._internal.log_source == "container" {
 if ._internal.log_type == "audit" {
    ._internal.splunk.source = ._internal.log_source
 }
-payloadKey = ["openshift"]
+payloadKey = ["message"]
+sourceType = "custom-type"
 if !is_null(payloadKey) {
-	value = get!(., payloadKey)
+	value = get!(., payloadKey) 
 	if !is_null(value) {
         internal = ._internal
         . = {}
         . = set!(., payloadKey, value)
         ._internal = internal
-		if is_object(value) {
-			._internal.splunk.sourcetype = "_json"
-		} else {
-			._internal.splunk.sourcetype = "generic_single_line"
-		}
+	    ._internal.splunk.sourcetype = sourceType
 	} else {
 		._internal.splunk.sourcetype = "_json"
 	}

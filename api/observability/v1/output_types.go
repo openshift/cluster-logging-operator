@@ -1251,6 +1251,7 @@ type SplunkAuthentication struct {
 
 // Splunk Deliver log data to Splunk’s HTTP Event Collector
 // Provides optional extra properties for `type: splunk_hec` ('splunk_hec_logs' after Vector 0.23
+// +kubebuilder:validation:XValidation:rule="!has(self.sourceType) || has(self.payloadKey)",message="sourceType can only be set when payloadKey is defined"
 type Splunk struct {
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -1319,6 +1320,35 @@ type Splunk struct {
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Source",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Source string `json:"source,omitempty"`
+
+	// SourceType can be used to specify a pretrained or custom source type in Splunk, but can only be set when PayloadKey is defined.
+	//
+	// WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match.
+	//
+	// If SourceType is not specified, the source type used is `_json`. If using PayloadKey without SourceType, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
+	// Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+	//
+	// The SourceType can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+	//
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	//
+	// Examples:
+	//
+	//  1. {.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}
+	//
+	//  2. "log4j"
+	//
+	//  3. foo-{.bar||"none"}
+	//
+	//  4. {.foo||.bar||"missing"}
+	//
+	//  5. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="SourceType",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SourceType string `json:"sourceType,omitempty"`
 
 	// PayloadKey specifies record field to use as payload.
 	// The PayloadKey must be a single field path.

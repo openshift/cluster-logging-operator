@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-04-24T14:35:45Z"
+    createdAt: "2026-04-30T08:25:28Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -1914,6 +1914,34 @@ spec:
            3. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
         displayName: Source
         path: outputs[0].splunk.source
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          SourceType can be used to specify a pretrained or custom source type in Splunk, but can only be set when PayloadKey is defined.
+
+          WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match.
+
+          If SourceType is not specified, the source type used is `_json`. If using PayloadKey without SourceType, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
+          Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+
+          The SourceType can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
+          A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
+
+          Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+
+          Examples:
+
+           1. {.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}
+
+           2. "log4j"
+
+           3. foo-{.bar||"none"}
+
+           4. {.foo||.bar||"missing"}
+
+           5. foo.{.bar.baz||.qux.quux.corge||.grault||"nil"}-waldo.fred{.plugh||"none"}
+        displayName: SourceType
+        path: outputs[0].splunk.sourceType
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
       - description: Tuning specs tuning for the output

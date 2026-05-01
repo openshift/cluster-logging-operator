@@ -37,10 +37,11 @@ spec:
         url: 'http://example-splunk-hec-service:8088' # <2>
         index: '{.log_type||"main"}' # <3>
         source: '{.log_source||"undefined"}' # <4>
-        indexedFields: ['.log_type', '.log_source'] # <5>
-        payloadKey: '.kubernetes' # <6>
+        sourceType: '{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}' # <5>
+        indexedFields: ['.log_type', '.log_source'] # <6>
+        payloadKey: '.message' # <7>
         tuning:
-          compression: gzip # <7>
+          compression: gzip # <8>
   pipelines:
     - name: my-logs
       inputRefs:
@@ -53,14 +54,89 @@ spec:
 2. `url`: The base URL of the Splunk instance.
 3. `index`: Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used. This supports template syntax to allow dynamic per-event values.
 4. `source`: Optional. The source of events sent to this sink. This supports template syntax to allow dynamic per-event values.
-5. `indexedFields`: Optional. Fields to be added to Splunk index.
-6. `payloadKey`: Optional. Specifies record field to use as payload.
-7. `compression`: Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
+5. `sourceType`: Optional. Can be used to specify a https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/10.2/configure-source-types/list-of-pretrained-source-types[pretrained] or custom sourcetype in Splunk when the payloadKey is additionally defined. If not specified, it will default to `_json`.
+6. `indexedFields`: Optional. Fields to be added to Splunk index.
+7. `payloadKey`: Optional. Specifies record field to use as payload.
+8. `compression`: Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
 
 === `source`
 In Splunk, the `source` field typically identifies the origin of a log event.
 To ensure consistency and meaningful categorization, the `source` value can be dynamically derived from the `log_type` and `log_source` fields,
 following Cluster Log Forwarder's conventions.
+
+=== `sourceType`
+In Splunk, the source type is used to define how incoming data should be parsed, interpreted, and categorised. Splunk includes many built-in source types and also allows for custom source types to be defined. The `sourceType` field should reference a source type configured in Splunk.
+
+This field must be used in combination with `payloadKey`.
+
+If `sourceType` is not specified, the source type used is `_json`. If using `payloadKey` without `sourceType`, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
+
+WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match.
+
+The `sourceType` field can be defined in the CLF as a templated field to get its value from the stuctured log event, such as a pod label. 
+
+Below is an example of a pod which defines the source type to use in a label named `splunk_sourcetype`:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+    splunk/sourcetype: log4j
+spec:
+  containers:
+    - name: myapp
+      image: myapp:latest
+      ports:
+        - containerPort: 80
+----
+
+Below is an example of the CLF which sets `payloadKey` to `.message` and uses a template to set the `sourceType` to match the `splunk_sourcetype` pod label. If the label does not exist, the source type of "generic_single_line" will be used, which is a built-in Splunk source type.
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: collector
+  namespace: openshift-logging
+spec:
+  collector:
+    resources:
+      limits:
+        cpu: "6"
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 64Mi
+  inputs:
+  - application: {}
+    name: application
+    type: application
+  managementState: Managed
+  outputs:
+  - name: splunk
+    splunk:
+      authentication:
+        token:
+          key: hecToken
+          secretName: splunk-secret
+      payloadKey: .message
+      sourceType: '{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}'
+      url: http://splunk.customer.com:8088
+    type: splunk
+  pipelines:
+  - inputRefs:
+    - application
+    name: forward-pipeline
+    outputRefs:
+    - splunk
+  serviceAccount:
+    name: logging-admin
+----
 
 === `indexedFields`
 
@@ -164,20 +240,19 @@ Transformed field:
 
 === `payloadKey`
 
-By default, `payloadKey` is not set, which means the complete log record is forwarded as the payload.
+By default, `payloadKey` is not set, which means the complete log event payload is forwarded. This field can be used to narrow down the final payload to a specific field within the log event. For example, for the payload to contain only the log message, payloadKey should be set to `.message`.
 
+Unless `sourceType` has been defined, the selected `payloadKey` field will be checked and a Splunk source type will be nominated :
+
+* Splunk source type:
+** `_json` — used when `payloadKey` points to an object.
+** `generic_single_line` — used when the payload is a primitive value (e.g., string, number, boolean).
 
 NOTE: Use `payloadKey` carefully. Selecting a single field as the payload may cause other important information in the log to be dropped, potentially leading to inconsistent or incomplete log events.
 
+=== `host`
 
-=== `sourceType` and `host`
-
-The `sourceType` and `host` fields are *not configurable* through the Cluster Log Forwarder API. They are set automatically as described below, independent of the `.log_type` or `.log_source` values.
-
-* `sourceType`:
-Determined automatically based on the type of the final event payload.
-** `_json` — used when `payloadKey` is not set or when `payloadKey` points to an object.
-** `generic_single_line` — when the payload is a primitive value (e.g., string, number, boolean).
+The  `host` field is *not configurable* through the Cluster Log Forwarder API. 
 
 * `host`: Set to the value of `.hostname`
 This ensures that each log event carries the correct *originating host* information.
@@ -190,7 +265,7 @@ Below the table with default value depends on log_type and log_source will be us
 |`index`|||| not configured by default
 |`source`|SYSLOG_IDENTIFIER|ns_name_podName_containerName|.log_source|
 |`indexedFields`|||| not configured by default
-|`sourceType`|`_json` or `generic_single_line`|`_json` or `generic_single_line`|`_json` or `generic_single_line`| Determined automatically based on the type of the final event payload
+|`sourceType`|`_json` or `generic_single_line`|`_json` or `generic_single_line`|`_json` or `generic_single_line`| Can be explicitly defined, otherwise will be determined based on the type of the final event payload
 |`host`|`.hostname`|`.hostname`|`.hostname`|not configurable
 |`payloadKey`|||| not configured by default
 

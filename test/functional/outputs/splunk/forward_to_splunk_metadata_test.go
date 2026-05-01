@@ -356,6 +356,62 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Entry("should send only 'openshift' payload of application logs", ".openshift", "_json", regexOpenshift),
 			Entry("should send only 'message' payload of application logs", ".message", "generic_single_line", regexMessage),
 			Entry("should send full application log if payload not found", ".not_found", "_json", nil))
+
+		DescribeTable("with user defined payloadKey and sourcetype", func(sourceType string, expSourceType string) {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {
+					// Force payloadKey to only send message
+					output.Splunk.PayloadKey = ".message"
+
+					// Set sourceType
+					output.Splunk.SourceType = sourceType
+				})
+
+			framework.Secrets = append(framework.Secrets, secret)
+			framework.Labels["splunk/sourcetype"] = "log4j"
+			framework.Labels["slash/test.dot"] = "log4j"
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Wait for splunk to be ready
+			splunk.WaitOnSplunk(framework)
+
+			// Write app logs
+			timestamp := "2020-11-04T18:13:59.061892+00:00"
+			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
+
+			// Read logs from Splunk
+			logs, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex)
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+			Expect(len(logs)).To(Equal(2))
+
+			// PayloadKey validation
+			for _, v := range logs {
+				Expect(v).To(ContainSubstring(`{"message":"This is my test message"}`), "Expected only message payload in Splunk event")
+			}
+
+			// Ensure full structured log is not present
+			for _, v := range logs {
+				Expect(v).ToNot(ContainSubstring(`"openshift"`), "Did not expect full structured payload when using payloadKey=.message")
+			}
+
+			// Sourcetype validation
+			result, err := framework.ReadFieldByIndexFromSplunk(functional.SplunkDefaultIndex, "sourcetype", "json")
+			Expect(err).To(BeNil(), "Expected no errors getting sourcetype from splunk")
+
+			for _, v := range result {
+				Expect(strings.HasSuffix(v, fmt.Sprintf(`"result":{"sourcetype":"%s"}}`, expSourceType))).To(BeTrue(), "Expected matching sourcetype")
+			}
+		},
+			Entry("should send only 'message' payload with static sourcetype", "custom-type", "custom-type"),
+			Entry("should send only 'message' payload with dynamic sourcetype field", `{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "log4j"),
+			Entry("should send only 'message' payload with static + dynamic sourcetype field", `foo-{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "foo-log4j"),
+			Entry("should send only 'message' payload with static + label with dot/slash sourcetype field", `foo-{.kubernetes.labels."slash/test.dot"||"generic_single_line"}`, "foo-log4j"),
+			Entry("should send only 'message' payload with static + fallback value's sourcetype field", `foo-{.missing||"generic_single_line"}`, "foo-generic_single_line"),
+			Entry("should send only 'message' payload with fallback value's sourcetype field", `{.missing||"generic_single_line"}`, "generic_single_line"))
 	})
 })
 

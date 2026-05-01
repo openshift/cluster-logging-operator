@@ -1,0 +1,31 @@
+apiVersion: "observability.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  serviceAccount:
+    name: clf-validation-test
+  inputs:
+    - application:
+        includes:
+          - container: myapp
+            namespace: my-app-*
+      name: myapp
+      type: application
+  outputs:
+    - name: splunk-myapp
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: splunk-myapp
+        payloadKey: .message
+        sourceType: log4j
+        url: 'https://splunk.customer.com:8088'
+      type: splunk
+  pipelines:
+    - name: myapp
+      inputRefs:
+        - myapp
+      outputRefs:
+        - splunk-myapp

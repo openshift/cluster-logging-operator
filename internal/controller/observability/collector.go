@@ -70,7 +70,7 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	}
 
 	// Add ClusterRoleBinding to allow the collector to validate bearer tokens for metrics endpoint
-	if err = auth.ReconcileMetricsAuthRBAC(context.Client, resourceNames.CommonName, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name); err != nil {
+	if err = auth.ReconcileMetricsAuthRBAC(context.Client, resourceNames.MetricsAuthClusterRoleBinding, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name); err != nil {
 		log.V(3).Error(err, "auth.ReconcileMetricsAuthRBAC")
 		return
 	}

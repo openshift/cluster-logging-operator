@@ -2,6 +2,7 @@ package observability_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -231,7 +232,7 @@ var _ = Describe("Reconciling the Collector", func() {
 
 			// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator
 			metricsAuthBinding := &rbacv1.ClusterRoleBinding{}
-			metricsAuthKey := types.NamespacedName{Name: clfName + "-metrics-auth"}
+			metricsAuthKey := types.NamespacedName{Name: fmt.Sprintf("cluster-logging-%s-%s-metrics-auth", namespaceName, clfName)}
 			Expect(client.Get(context.TODO(), metricsAuthKey, metricsAuthBinding)).Should(Succeed(), "Exp. to create a ClusterRoleBinding for metrics auth")
 			Expect(metricsAuthBinding.RoleRef.Name).To(Equal("system:auth-delegator"))
 			Expect(metricsAuthBinding.Subjects).To(HaveLen(1))

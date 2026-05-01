@@ -20,7 +20,9 @@ import (
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalinit "github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	validations "github.com/openshift/cluster-logging-operator/internal/validations/observability"
@@ -75,7 +77,11 @@ func (r *ClusterLogForwarderReconciler) Reconcile(_ context.Context, req ctrl.Re
 	}
 
 	if cxt.Forwarder.DeletionTimestamp != nil {
-		// Resource is being deleted, no further reconciliation
+		// Resource is being deleted, clean up cluster-scoped resources
+		if err := cleanupClusterScopedResources(cxt); err != nil {
+			log.V(3).Error(err, "Failed to cleanup cluster-scoped resources")
+			return defaultRequeue, err
+		}
 		return defaultRequeue, nil
 	}
 
@@ -137,6 +143,13 @@ func RemoveStaleWorkload(k8Client client.Client, forwarder *obsv1.ClusterLogForw
 		remove = collector.Remove
 	}
 	return remove(k8Client, forwarder.Namespace, forwarder.Name)
+}
+
+// cleanupClusterScopedResources removes cluster-scoped resources that cannot be garbage collected
+func cleanupClusterScopedResources(context internalcontext.ForwarderContext) error {
+	resourceNames := factory.ResourceNames(*context.Forwarder)
+	// Delete the metrics auth ClusterRoleBinding (NotFound errors are ignored by DeleteMetricsAuthRBAC)
+	return auth.DeleteMetricsAuthRBAC(context.Client, resourceNames.MetricsAuthClusterRoleBinding)
 }
 
 func MapSecrets(k8Client client.Client, namespace string, inputs internalobs.Inputs, outputs internalobs.Outputs) (secretMap map[string]*corev1.Secret, err error) {

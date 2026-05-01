@@ -38,7 +38,8 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		CommonName:                       constants.LogfilesmetricexporterName,
 		ServiceAccount:                   constants.LogfilesmetricexporterName,
 		ServiceAccountTokenSecret:        constants.LogfilesmetricexporterName + "-token",
-		MetadataReaderClusterRoleBinding: "cluster-logging-" + constants.LogfilesmetricexporterName + "-metadata-reader",
+		MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", lfmeInstance.Namespace, constants.LogfilesmetricexporterName),
+		MetricsAuthClusterRoleBinding:    fmt.Sprintf("cluster-logging-%s-%s-metrics-auth", lfmeInstance.Namespace, constants.LogfilesmetricexporterName),
 	}
 
 	if err := auth.ReconcileServiceAccount(requestClient, lfmeInstance.Namespace, resNames, owner); err != nil {
@@ -51,7 +52,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	if err := auth.ReconcileMetricsAuthRBAC(requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount); err != nil {
+	if err := auth.ReconcileMetricsAuthRBAC(requestClient, resNames.MetricsAuthClusterRoleBinding, lfmeInstance.Namespace, resNames.ServiceAccount); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileMetricsRBAC")
 		return err
 	}

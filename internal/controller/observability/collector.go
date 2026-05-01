@@ -69,6 +69,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return
 	}
 
+	// Add ClusterRoleBinding to allow the collector to validate bearer tokens for metrics endpoint
+	if err = auth.ReconcileMetricsAuthRBAC(context.Client, resourceNames.CommonName, context.Forwarder.Namespace, context.Forwarder.Spec.ServiceAccount.Name); err != nil {
+		log.V(3).Error(err, "auth.ReconcileMetricsAuthRBAC")
+		return
+	}
+
 	// TODO: This can be the same per NS but what is the ownerref?  Multiple CLFs will clash
 	if err = collector.ReconcileTrustedCABundleConfigMap(context.Client, context.Forwarder.Namespace, resourceNames.CaTrustBundle, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileTrustedCABundleConfigMap")

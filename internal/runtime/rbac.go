@@ -68,3 +68,29 @@ func NewClusterRoleBinding(name string, roleRef rbacv1.RoleRef, subjects ...rbac
 	Initialize(binding, "", name)
 	return binding
 }
+
+// NewNonResourceURLPolicyRule creates a PolicyRule for nonResourceURLs
+func NewNonResourceURLPolicyRule(nonResourceURLs, verbs []string) rbacv1.PolicyRule {
+	return rbacv1.PolicyRule{
+		NonResourceURLs: nonResourceURLs,
+		Verbs:           verbs,
+	}
+}
+
+// NewClusterRoleRef creates a RoleRef for a ClusterRole
+func NewClusterRoleRef(roleName string) rbacv1.RoleRef {
+	return rbacv1.RoleRef{
+		APIGroup: rbacv1.GroupName,
+		Kind:     "ClusterRole",
+		Name:     roleName,
+	}
+}
+
+// NewServiceAccountSubject creates a Subject for a ServiceAccount
+func NewServiceAccountSubject(name, namespace string) rbacv1.Subject {
+	return rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      name,
+		Namespace: namespace,
+	}
+}

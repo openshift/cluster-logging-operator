@@ -50,6 +50,11 @@ func PrometheusOutput(inputs []string, op utils.Options) (sink types.Sink) {
 		s.TLS.KeyFile = "/etc/collector/metrics/tls.key"
 		s.TLS.CRTFile = "/etc/collector/metrics/tls.crt"
 		tls.SetTLSProfile(&s.TLS.TLS, op)
+		s.Auth = &sinks.PrometheusExporterAuth{
+			Strategy: sinks.PrometheusExporterAuthStrategySar,
+			Path:     "/metrics",
+			Verb:     "get",
+		}
 	}, inputs...)
 }
 

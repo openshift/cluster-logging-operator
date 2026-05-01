@@ -23,6 +23,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -227,6 +228,15 @@ var _ = Describe("Reconciling the Collector", func() {
 
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(client.Get(context.TODO(), key, sm)).Should(Succeed(), "Exp. to create a ServiceMonitor for metrics")
+
+			// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator
+			metricsAuthBinding := &rbacv1.ClusterRoleBinding{}
+			metricsAuthKey := types.NamespacedName{Name: clfName + "-metrics-auth"}
+			Expect(client.Get(context.TODO(), metricsAuthKey, metricsAuthBinding)).Should(Succeed(), "Exp. to create a ClusterRoleBinding for metrics auth")
+			Expect(metricsAuthBinding.RoleRef.Name).To(Equal("system:auth-delegator"))
+			Expect(metricsAuthBinding.Subjects).To(HaveLen(1))
+			Expect(metricsAuthBinding.Subjects[0].Name).To(Equal(saName))
+			Expect(metricsAuthBinding.Subjects[0].Namespace).To(Equal(namespaceName))
 
 		},
 			Entry("when deployed as a DaemonSet", forwarder),

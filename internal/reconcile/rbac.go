@@ -71,6 +71,11 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 
 func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {
 	object := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
-	log.V(3).Info("Deleting", "object", object)
-	return k8sClient.Delete(context.TODO(), object)
+	log.V(3).Info("Deleting ClusterRoleBinding", "name", name)
+	err := k8sClient.Delete(context.TODO(), object)
+	// Ignore NotFound errors - resource is already deleted
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }

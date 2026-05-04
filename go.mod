@@ -1,6 +1,8 @@
 module github.com/openshift/cluster-logging-operator
 
-go 1.24
+go 1.25.0
+
+toolchain go1.25.7
 
 require (
 	github.com/ViaQ/logerr/v2 v2.1.0
@@ -16,6 +18,7 @@ require (
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298
 	github.com/openshift/hypershift/api v0.0.0-20250331115040-26fc3ceb1929
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
+	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
 	github.com/prometheus/client_golang v1.20.5
@@ -23,9 +26,9 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vspaz/wls-go v0.0.0-20230405190232-47d1e477c82c
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac
-	golang.org/x/net v0.37.0
-	golang.org/x/sync v0.12.0
-	golang.org/x/sys v0.32.0
+	golang.org/x/net v0.52.0
+	golang.org/x/sync v0.20.0
+	golang.org/x/sys v0.42.0
 	gonum.org/v1/plot v0.16.0
 	k8s.io/api v0.32.2
 	k8s.io/apimachinery v0.32.2
@@ -84,7 +87,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.61.0 // indirect
@@ -103,12 +105,12 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/image v0.25.0 // indirect
+	golang.org/x/image v0.39.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/term v0.41.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.31.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240826202546-f6391c0de4c7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240826202546-f6391c0de4c7 // indirect

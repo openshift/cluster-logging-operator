@@ -54,9 +54,9 @@ spec:
 2. `url`: The base URL of the Splunk instance.
 3. `index`: Optional. The name of the index to send events to. If not specified, the default index defined within Splunk is used. This supports template syntax to allow dynamic per-event values.
 4. `source`: Optional. The source of events sent to this sink. This supports template syntax to allow dynamic per-event values.
-5. `sourceType`: Optional. Can be used to specify a https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/10.2/configure-source-types/list-of-pretrained-source-types[pretrained] or custom sourcetype in Splunk when the payloadKey is additionally defined. If not specified, it will default to `_json`.
+5. `sourceType`: Optional. Can be used to specify a https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/10.2/configure-source-types/list-of-pretrained-source-types[pretrained] or custom sourcetype in Splunk when the payloadKey is additionally defined. If `sourceType` is not specified, the Splunk source type used will be `_json`.
 6. `indexedFields`: Optional. Fields to be added to Splunk index.
-7. `payloadKey`: Optional. Specifies record field to use as payload.
+7. `payloadKey`: Optional. Specifies record field to use as payload. If `payloadKey` is defined and `sourceType` is not defined, then the Splunk source type will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
 8. `compression`: Optional. Compression configuration, available are: `none`, `gzip`. Default is `none`.
 
 === `source`
@@ -94,7 +94,7 @@ spec:
         - containerPort: 80
 ----
 
-Below is an example of the CLF which sets `payloadKey` to `.message` and uses a template to set the `sourceType` to match the `splunk_sourcetype` pod label. If the label does not exist, the source type of "generic_single_line" will be used, which is a built-in Splunk source type.
+Below is an example of the CLF which sets `payloadKey` to `.message` and uses a template to set the `sourceType` to match the `splunk/sourcetype` pod label. If the label does not exist, the source type of "generic_single_line" will be used, which is a built-in Splunk source type.
 
 [source,yaml]
 ----

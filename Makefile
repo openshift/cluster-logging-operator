@@ -31,6 +31,7 @@ export LOKI_OPERATOR_CHANNEL?=stable-6.4
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.54.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:latest
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:v0.5.0
+IMAGE_TLS_SCANNER?=quay.io/jcantril/tls-scanner:latest
 
 REPLICAS?=0
 export E2E_TEST_EXCLUDES?=flowcontrol
@@ -224,6 +225,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	@echo \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	IMAGE_TLS_SCANNER=$(IMAGE_TLS_SCANNER) \
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker-vector
@@ -320,6 +322,7 @@ test-e2e: $(JUNITREPORT)
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
+	IMAGE_TLS_SCANNER=$(IMAGE_TLS_SCANNER) \
 	EXCLUDES="$(E2E_TEST_EXCLUDES)" CLF_EXCLUDES="$(CLF_TEST_EXCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
@@ -329,6 +332,7 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
+	IMAGE_TLS_SCANNER=$(IMAGE_TLS_SCANNER) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	EXCLUDES=$(E2E_TEST_EXCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \

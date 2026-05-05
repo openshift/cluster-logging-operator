@@ -57,7 +57,7 @@ spec:
 5. `sourceType`: Optional. Can be used to specify a https://help.splunk.com/en/splunk-enterprise/get-started/get-data-in/10.2/configure-source-types/list-of-pretrained-source-types[pretrained] or custom sourcetype in Splunk when the payloadKey is additionally defined. If not specified, it will default to `_json`.
 6. `indexedFields`: Optional. Fields to be added to Splunk index.
 7. `payloadKey`: Optional. Specifies record field to use as payload.
-8. `compression`: Optional. Compression configuration, available to are: `none`, `gzip`. Default is `none`.
+8. `compression`: Optional. Compression configuration, available are: `none`, `gzip`. Default is `none`.
 
 === `source`
 In Splunk, the `source` field typically identifies the origin of a log event.
@@ -75,7 +75,7 @@ WARNING: The administrator is responsible for configuring the pipeline so the so
 
 The `sourceType` field can be defined in the CLF as a templated field to get its value from the stuctured log event, such as a pod label. 
 
-Below is an example of a pod which defines the source type to use in a label named `splunk_sourcetype`:
+Below is an example of a pod which defines the source type to use in a label named `splunk/sourcetype`:
 
 [source,yaml]
 ----

@@ -1348,7 +1348,7 @@ type Splunk struct {
 	//
 	//  1. {.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}
 	//
-	//  2. "log4j"
+	//  2. log4j
 	//
 	//  3. foo-{.bar||"none"}
 	//

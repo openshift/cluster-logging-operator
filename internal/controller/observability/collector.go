@@ -159,8 +159,16 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 	metricsSelector := metrics.BuildSelector(constants.CollectorName, resourceNames.CommonName)
-	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, ownerRef, metricsSelector, constants.MetricsPortName); err != nil {
-		log.Error(err, "collector.ReconcileServiceMonitor")
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, resourceNames.CommonName, ownerRef, metricsSelector, constants.MetricsPortName, metrics.FullRelabelConfigs, constants.MetricsCollectionProfileFull); err != nil {
+		log.Error(err, "collector.ReconcileServiceMonitor full")
+		return err
+	}
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, constants.MetricsCollectionProfileMinimal+"-"+resourceNames.CommonName, resourceNames.CommonName, ownerRef, metricsSelector, constants.MetricsPortName, metrics.CollectorMinimalRelabelConfigs, constants.MetricsCollectionProfileMinimal); err != nil {
+		log.Error(err, "collector.ReconcileServiceMonitor minimal")
+		return err
+	}
+	if err := metrics.ReconcileServiceMonitor(context.Client, context.Forwarder.Namespace, constants.MetricsCollectionProfileTelemetry+"-"+resourceNames.CommonName, resourceNames.CommonName, ownerRef, metricsSelector, constants.MetricsPortName, metrics.CollectorTelemetryRelabelConfigs, constants.MetricsCollectionProfileTelemetry); err != nil {
+		log.Error(err, "collector.ReconcileServiceMonitor telemetry")
 		return err
 	}
 

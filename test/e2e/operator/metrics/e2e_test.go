@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"github.com/openshift/cluster-logging-operator/test/helpers/prometheus"
 )
 
 const (
@@ -274,6 +275,17 @@ var _ = Describe("Manager", Ordered, func() {
 				fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"}`,
 					strings.ToLower("clusterlogforwarder"),
 				)))
+		})
+
+		It("should have operator metrics scraped by Prometheus via the ServiceMonitor", func() {
+			By("querying Thanos for an operator metric to validate the ServiceMonitor pipeline")
+			Eventually(func(g Gomega) {
+				response, err := prometheus.Query(fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"}`,
+					strings.ToLower("clusterlogforwarder")))
+				g.Expect(err).NotTo(HaveOccurred(), "Failed to query metric")
+				g.Expect(prometheus.HasResults(response)).To(BeTrue())
+			}, 5*time.Minute, 30*time.Second).Should(Succeed(),
+				"Operator metrics should appear in Prometheus, indicating the ServiceMonitor is correctly configured")
 		})
 	})
 })

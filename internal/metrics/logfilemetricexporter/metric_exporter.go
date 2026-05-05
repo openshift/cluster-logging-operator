@@ -77,8 +77,16 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	}
 
 	metricsSelector := metrics.BuildSelector(constants.LogfilesmetricexporterName, lfmeInstance.Name)
-	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, owner, metricsSelector, constants.MetricsPortName); err != nil {
-		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor")
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, resNames.CommonName, resNames.CommonName, owner, metricsSelector, constants.MetricsPortName, metrics.FullRelabelConfigs, constants.MetricsCollectionProfileFull); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor full")
+		return err
+	}
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, constants.MetricsCollectionProfileMinimal+"-"+resNames.CommonName, resNames.CommonName, owner, metricsSelector, constants.MetricsPortName, metrics.LFMEMinimalRelabelConfigs, constants.MetricsCollectionProfileMinimal); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor minimal")
+		return err
+	}
+	if err := metrics.ReconcileServiceMonitor(requestClient, lfmeInstance.Namespace, constants.MetricsCollectionProfileTelemetry+"-"+resNames.CommonName, resNames.CommonName, owner, metricsSelector, constants.MetricsPortName, metrics.LFMETelemetryRelabelConfigs, constants.MetricsCollectionProfileTelemetry); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileServiceMonitor telemetry")
 		return err
 	}
 

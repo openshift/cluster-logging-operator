@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"github.com/openshift/cluster-logging-operator/test/helpers/prometheus"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -98,5 +99,22 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 			return regexp.MatchString(`log_logged_bytes_total{.*} [1-9][0-9]*`, out)
 		})
 		Expect(err).ToNot(HaveOccurred(), "Exp. to scrape metrics with a bearer token")
+	})
+
+	It("should have LFME metrics scraped by Prometheus via the ServiceMonitor", func() {
+		e2e.AddCleanup(func() error {
+			return oc.Literal().From("oc -n openshift-logging delete --ignore-not-found logfilemetricexporter instance").Output()
+		})
+		err = createLFME(validCR)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
+
+		By("querying Thanos for an LFME metric to validate the ServiceMonitor pipeline")
+		Eventually(func(g Gomega) {
+			response, err := prometheus.Query(`log_logged_bytes_total{namespace="openshift-logging"}`)
+			g.Expect(err).NotTo(HaveOccurred(), "Failed to query metric")
+			g.Expect(prometheus.HasResults(response)).To(BeTrue())
+		}, 5*time.Minute, 30*time.Second).Should(Succeed(),
+			"LFME metrics should appear in Prometheus, indicating the ServiceMonitor is correctly configured")
 	})
 })

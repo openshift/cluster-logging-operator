@@ -227,8 +227,31 @@ var _ = Describe("Reconciling the Collector", func() {
 			service := &corev1.Service{}
 			Expect(client.Get(context.TODO(), key, service)).Should(Succeed(), "Exp. to create a Service for metrics")
 
-			sm := &monitoringv1.ServiceMonitor{}
-			Expect(client.Get(context.TODO(), key, sm)).Should(Succeed(), "Exp. to create a ServiceMonitor for metrics")
+			By("verifying the full profile ServiceMonitor")
+			fullSM := &monitoringv1.ServiceMonitor{}
+			Expect(client.Get(context.TODO(), key, fullSM)).Should(Succeed(), "Exp. to create a full profile ServiceMonitor")
+			Expect(fullSM.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileFull))
+			Expect(fullSM.Spec.Endpoints).ToNot(BeEmpty())
+			Expect(fullSM.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(1), "full profile should only have the rename rule")
+
+			By("verifying the minimal profile ServiceMonitor")
+			minimalKey := types.NamespacedName{Name: constants.MetricsCollectionProfileMinimal + "-" + clfName, Namespace: namespaceName}
+			minimalSM := &monitoringv1.ServiceMonitor{}
+			Expect(client.Get(context.TODO(), minimalKey, minimalSM)).Should(Succeed(), "Exp. to create a minimal profile ServiceMonitor")
+			Expect(minimalSM.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileMinimal))
+			Expect(minimalSM.Spec.Endpoints).ToNot(BeEmpty())
+			Expect(minimalSM.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(3), "minimal profile should have rename + keep + drop")
+			Expect(string(minimalSM.Spec.Endpoints[0].MetricRelabelConfigs[1].Action)).To(Equal("keep"))
+			Expect(string(minimalSM.Spec.Endpoints[0].MetricRelabelConfigs[2].Action)).To(Equal("drop"))
+
+			By("verifying the telemetry profile ServiceMonitor")
+			telemetryKey := types.NamespacedName{Name: constants.MetricsCollectionProfileTelemetry + "-" + clfName, Namespace: namespaceName}
+			telemetrySM := &monitoringv1.ServiceMonitor{}
+			Expect(client.Get(context.TODO(), telemetryKey, telemetrySM)).Should(Succeed(), "Exp. to create a telemetry profile ServiceMonitor")
+			Expect(telemetrySM.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileTelemetry))
+			Expect(telemetrySM.Spec.Endpoints).ToNot(BeEmpty())
+			Expect(telemetrySM.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(2), "telemetry profile should have rename + keep")
+			Expect(string(telemetrySM.Spec.Endpoints[0].MetricRelabelConfigs[1].Action)).To(Equal("keep"))
 
 			// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator
 			metricsAuthBinding := &rbacv1.ClusterRoleBinding{}

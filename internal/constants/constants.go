@@ -39,18 +39,21 @@ const (
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 
 	//ServiceAccountSecretPath is the path to find the projected serviceAccount token and other SA secrets
-	ServiceAccountSecretPath   = "/var/run/ocp-collector/serviceaccount"
-	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
-	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
-	ElasticsearchName          = "elasticsearch"
-	VectorName                 = "vector"
-	KibanaName                 = "kibana"
-	LogfilesmetricexporterName = "logfilesmetricexporter"
-	LogfilesmetricexporterPort = int32(2112)
-	MetricsPortName            = "metrics"
-	MetricsPort                = int32(24231)
-	PodSecurityLabelEnforce    = "pod-security.kubernetes.io/enforce"
-	PodSecurityLabelValue      = "privileged"
+	ServiceAccountSecretPath          = "/var/run/ocp-collector/serviceaccount"
+	TrustedCABundleMountFile          = "tls-ca-bundle.pem"
+	TrustedCABundleMountDir           = "/etc/pki/ca-trust/extracted/pem/"
+	ElasticsearchName                 = "elasticsearch"
+	VectorName                        = "vector"
+	KibanaName                        = "kibana"
+	LogfilesmetricexporterName        = "logfilesmetricexporter"
+	LogfilesmetricexporterPort        = int32(2112)
+	MetricsPortName                   = "metrics"
+	MetricsPort                       = int32(24231)
+	MetricsCollectionProfileFull      = "full"
+	MetricsCollectionProfileMinimal   = "minimal"
+	MetricsCollectionProfileTelemetry = "telemetry"
+	PodSecurityLabelEnforce           = "pod-security.kubernetes.io/enforce"
+	PodSecurityLabelValue             = "privileged"
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir         = "/var/run/ocp-collector/secrets" //nolint:gosec
 	ConfigMapBaseDir            = "/var/run/ocp-collector/config"

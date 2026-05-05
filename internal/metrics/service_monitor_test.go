@@ -22,8 +22,6 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 	_ = monitoringv1.AddToScheme(scheme.Scheme)
 
 	var (
-
-		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
 		namespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{"test": "true"},
@@ -45,21 +43,23 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 		smInstance        = &monitoringv1.ServiceMonitor{}
 	)
 
-	It("should successfully reconcile the ServiceMonitor", func() {
-		// Reconcile the exporter daemonset
+	It("should reconcile a full profile ServiceMonitor with only the rename rule", func() {
 		Expect(ReconcileServiceMonitor(
 			reqClient,
 			constants.OpenshiftNS,
 			serviceName,
+			serviceName,
 			owner,
 			selector,
 			portName,
+			FullRelabelConfigs,
+			constants.MetricsCollectionProfileFull,
 		)).To(Succeed())
 
-		// Get and check the ServiceMonitor
 		Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())
 
 		Expect(smInstance.Name).To(Equal(serviceName))
+		Expect(smInstance.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileFull))
 
 		expJobLabel := fmt.Sprintf("monitor-%s", serviceName)
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
@@ -72,5 +72,85 @@ var _ = Describe("Reconcile ServiceMonitor", func() {
 
 		Expect(smInstance.Spec.Endpoints[0].BearerTokenFile).
 			To(Equal("/var/run/secrets/kubernetes.io/serviceaccount/token"))
+
+		By("verifying MetricRelabelConfigs contains only the rename rule")
+		relabelConfigs := smInstance.Spec.Endpoints[0].MetricRelabelConfigs
+		Expect(relabelConfigs).To(HaveLen(1))
+		Expect(relabelConfigs[0].Regex).To(Equal("(.*)-(.*)"))
+		Expect(relabelConfigs[0].TargetLabel).To(Equal("__name__"))
+	})
+
+	It("should reconcile a minimal profile ServiceMonitor with collector relabel configs", func() {
+		minimalName := constants.MetricsCollectionProfileMinimal + "-" + serviceName
+		Expect(ReconcileServiceMonitor(
+			reqClient,
+			constants.OpenshiftNS,
+			minimalName,
+			serviceName,
+			owner,
+			selector,
+			portName,
+			CollectorMinimalRelabelConfigs,
+			constants.MetricsCollectionProfileMinimal,
+		)).To(Succeed())
+
+		sm := &monitoringv1.ServiceMonitor{}
+		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: minimalName, Namespace: constants.OpenshiftNS}, sm)).Should(Succeed())
+
+		Expect(sm.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileMinimal))
+
+		By("verifying TLS ServerName uses the service name, not the ServiceMonitor name")
+		svcURL := fmt.Sprintf("%s.openshift-logging.svc", serviceName)
+		Expect(sm.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).To(Equal(svcURL))
+
+		By("verifying MetricRelabelConfigs contains rename + keep + drop")
+		relabelConfigs := sm.Spec.Endpoints[0].MetricRelabelConfigs
+		Expect(relabelConfigs).To(HaveLen(3))
+
+		Expect(relabelConfigs[0].Regex).To(Equal("(.*)-(.*)"))
+		Expect(string(relabelConfigs[1].Action)).To(Equal("keep"))
+		Expect(relabelConfigs[1].SourceLabels).To(Equal([]monitoringv1.LabelName{"__name__"}))
+		Expect(relabelConfigs[1].Regex).To(Equal(CollectorMinimalRelabelConfigs[1].Regex))
+		Expect(string(relabelConfigs[2].Action)).To(Equal("drop"))
+		Expect(relabelConfigs[2].SourceLabels).To(Equal([]monitoringv1.LabelName{"component_kind", "__name__"}))
+	})
+
+	It("should update an existing ServiceMonitor on re-reconciliation", func() {
+		By("creating with full profile")
+		Expect(ReconcileServiceMonitor(
+			reqClient,
+			constants.OpenshiftNS,
+			"update-test",
+			"update-test",
+			owner,
+			selector,
+			portName,
+			FullRelabelConfigs,
+			constants.MetricsCollectionProfileFull,
+		)).To(Succeed())
+
+		sm := &monitoringv1.ServiceMonitor{}
+		key := types.NamespacedName{Name: "update-test", Namespace: constants.OpenshiftNS}
+		Expect(reqClient.Get(context.TODO(), key, sm)).Should(Succeed())
+		Expect(sm.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileFull))
+		Expect(sm.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(1))
+
+		By("re-reconciling with minimal profile and different relabel configs")
+		Expect(ReconcileServiceMonitor(
+			reqClient,
+			constants.OpenshiftNS,
+			"update-test",
+			"update-test",
+			owner,
+			selector,
+			portName,
+			CollectorMinimalRelabelConfigs,
+			constants.MetricsCollectionProfileMinimal,
+		)).To(Succeed())
+
+		updated := &monitoringv1.ServiceMonitor{}
+		Expect(reqClient.Get(context.TODO(), key, updated)).Should(Succeed())
+		Expect(updated.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileMinimal))
+		Expect(updated.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(3))
 	})
 })

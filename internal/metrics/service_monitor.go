@@ -17,7 +17,7 @@ const (
 	prometheusBearerTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
-func newServiceMonitor(namespace, name string, owner metav1.OwnerReference, selector map[string]string, portName string) *monitoringv1.ServiceMonitor {
+func newServiceMonitor(namespace, name, serviceName string, owner metav1.OwnerReference, selector map[string]string, portName string, metricRelabelConfigs []*monitoringv1.RelabelConfig, profile string) *monitoringv1.ServiceMonitor {
 	var endpoint = []monitoringv1.Endpoint{
 		{
 			Port:            portName,
@@ -27,26 +27,18 @@ func newServiceMonitor(namespace, name string, owner metav1.OwnerReference, sele
 			TLSConfig: &monitoringv1.TLSConfig{
 				CAFile: prometheusCAFile,
 				SafeTLSConfig: monitoringv1.SafeTLSConfig{
-					ServerName: fmt.Sprintf("%s.%s.svc", name, namespace),
+					ServerName: fmt.Sprintf("%s.%s.svc", serviceName, namespace),
 				},
 			},
-			// Replaces labels that have `-` with `_`
-			// Example:
-			// app_kubernetes_io_part-of -> app_kubernetes_io_part_of
-			MetricRelabelConfigs: []*monitoringv1.RelabelConfig{
-				{
-					SourceLabels: []monitoringv1.LabelName{
-						"__name__",
-					},
-					TargetLabel: "__name__",
-					Regex:       "(.*)-(.*)",
-					Replacement: "${1}_${2}",
-				},
-			},
+			MetricRelabelConfigs: metricRelabelConfigs,
 		},
 	}
 
 	desired := runtime.NewServiceMonitor(namespace, name)
+	if desired.Labels == nil {
+		desired.Labels = map[string]string{}
+	}
+	desired.Labels[constants.LabelMetricsCollectionProfile] = profile
 	desired.Spec = monitoringv1.ServiceMonitorSpec{
 		JobLabel:  fmt.Sprintf("monitor-%s", name),
 		Endpoints: endpoint,
@@ -77,7 +69,7 @@ func BuildSelector(component, instance string) map[string]string {
 	}
 }
 
-func ReconcileServiceMonitor(k8sClient client.Client, namespace, name string, owner metav1.OwnerReference, selector map[string]string, portName string) error {
-	desired := newServiceMonitor(namespace, name, owner, selector, portName)
+func ReconcileServiceMonitor(k8sClient client.Client, namespace, name, serviceName string, owner metav1.OwnerReference, selector map[string]string, portName string, metricRelabelConfigs []*monitoringv1.RelabelConfig, profile string) error {
+	desired := newServiceMonitor(namespace, name, serviceName, owner, selector, portName, metricRelabelConfigs, profile)
 	return reconcile.ServiceMonitor(k8sClient, desired)
 }

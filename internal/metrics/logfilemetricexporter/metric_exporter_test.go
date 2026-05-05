@@ -115,11 +115,11 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		Expect(serviceInstance.Annotations[constants.AnnotationServingCertSecretName]).
 			To(Equal(ExporterMetricsSecretName))
 
-		// ServiceMonitor
-		// Get and check the ServiceMonitor
+		// ServiceMonitor (full profile)
 		Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())
 
 		Expect(smInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
+		Expect(smInstance.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileFull))
 
 		expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
@@ -132,6 +132,27 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 
 		Expect(smInstance.Spec.Endpoints[0].BearerTokenFile).
 			To(Equal("/var/run/secrets/kubernetes.io/serviceaccount/token"))
+		Expect(smInstance.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(1), "full profile should only have the rename rule")
+
+		// ServiceMonitor (minimal profile)
+		minimalName := constants.MetricsCollectionProfileMinimal + "-" + constants.LogfilesmetricexporterName
+		minimalSM := &monitoringv1.ServiceMonitor{}
+		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: minimalName, Namespace: namespace.Name}, minimalSM)).Should(Succeed())
+		Expect(minimalSM.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileMinimal))
+		Expect(minimalSM.Spec.Endpoints).ToNot(BeEmpty())
+		Expect(minimalSM.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).To(Equal(svcURL))
+		Expect(minimalSM.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(2), "LFME minimal profile should have rename + keep")
+		Expect(string(minimalSM.Spec.Endpoints[0].MetricRelabelConfigs[1].Action)).To(Equal("keep"))
+
+		// ServiceMonitor (telemetry profile)
+		telemetryName := constants.MetricsCollectionProfileTelemetry + "-" + constants.LogfilesmetricexporterName
+		telemetrySM := &monitoringv1.ServiceMonitor{}
+		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: telemetryName, Namespace: namespace.Name}, telemetrySM)).Should(Succeed())
+		Expect(telemetrySM.Labels[constants.LabelMetricsCollectionProfile]).To(Equal(constants.MetricsCollectionProfileTelemetry))
+		Expect(telemetrySM.Spec.Endpoints).ToNot(BeEmpty())
+		Expect(telemetrySM.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).To(Equal(svcURL))
+		Expect(telemetrySM.Spec.Endpoints[0].MetricRelabelConfigs).To(HaveLen(2), "LFME telemetry profile should have rename + keep")
+		Expect(string(telemetrySM.Spec.Endpoints[0].MetricRelabelConfigs[1].Action)).To(Equal("keep"))
 
 		// Metrics Auth RBAC
 		// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator

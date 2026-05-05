@@ -14,6 +14,8 @@ const (
 	LabelLoggingServiceType      = "logging.observability.openshift.io/service-type"
 	LabelLoggingInputServiceType = "logging.observability.openshift.io/input-service-type"
 
+	LabelMetricsCollectionProfile = "monitoring.openshift.io/collection-profile"
+
 	ServiceTypeMetrics = "metrics"
 	ServiceTypeInput   = "input"
 )

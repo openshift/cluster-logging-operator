@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"reflect"
@@ -328,6 +329,7 @@ func GetProxyEnvVars() []v1.EnvVar {
 				if len(constants.ExtraNoProxyList) > 0 {
 					value = strings.Join(constants.ExtraNoProxyList, ",") + "," + value
 				}
+				value = normalizeNoProxy(value)
 			}
 			envVars = append(envVars, v1.EnvVar{
 				Name:  strings.ToLower(envvar),
@@ -336,6 +338,43 @@ func GetProxyEnvVars() []v1.EnvVar {
 		}
 	}
 	return envVars
+}
+
+// normalizeNoProxy ensures that plain domain entries in a NO_PROXY value also
+// match subdomains when consumed by Vector's no-proxy crate, which unlike Go's
+// httpproxy only does exact matching for plain domains. For each plain domain
+// entry, a dot-prefixed duplicate is added so that Vector's WithDot matching
+// covers subdomains. IPs, CIDRs, wildcards, and already dot-prefixed entries
+// are left unchanged.
+// This is workaround can be removed after fixing https://github.com/jdrouet/no-proxy/pull/12
+func normalizeNoProxy(value string) string {
+	if value == "" {
+		return ""
+	}
+	entries := strings.Split(value, ",")
+	var result []string
+	for _, entry := range entries {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		result = append(result, entry)
+		if entry == "*" || strings.HasPrefix(entry, ".") {
+			continue
+		}
+		host := entry
+		if h, _, err := net.SplitHostPort(entry); err == nil {
+			host = h
+		}
+		if net.ParseIP(host) != nil {
+			continue
+		}
+		if _, _, err := net.ParseCIDR(entry); err == nil {
+			continue
+		}
+		result = append(result, "."+entry)
+	}
+	return strings.Join(result, ",")
 }
 
 // WrapError wraps some types of error to provide more informative Error() message.

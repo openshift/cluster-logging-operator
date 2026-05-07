@@ -160,9 +160,66 @@ var _ = Describe("GetProxyEnvVars", func() {
 		envvars := GetProxyEnvVars()
 		Expect(envvars).To(HaveLen(3)) //proxy,noproxy vars
 		for _, envvar := range envvars {
-			Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+			if envvar.Name == "no_proxy" {
+				Expect(envvar.Value).To(Equal("no_proxy,.no_proxy"), "Exp. no_proxy to be normalized with dot-prefixed duplicate")
+			} else {
+				Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+			}
 		}
 	})
+	It("should normalize no_proxy plain domains for Vector compatibility", func() {
+		Expect(os.Setenv("no_proxy", "apps.example.com,.cluster.local,10.0.0.1")).To(Succeed())
+		result := GetProxyEnvVars()
+		for _, envvar := range result {
+			if envvar.Name == "no_proxy" {
+				Expect(envvar.Value).To(Equal("apps.example.com,.apps.example.com,.cluster.local,10.0.0.1"))
+			}
+		}
+	})
+})
+
+var _ = Describe("normalizeNoProxy", func() {
+	DescribeTable("should normalize entries correctly",
+		func(input, expected string) {
+			Expect(normalizeNoProxy(input)).To(Equal(expected))
+		},
+		Entry("plain domain gets dot-prefixed duplicate",
+			"example.com",
+			"example.com,.example.com"),
+		Entry("multiple plain domains",
+			"example.com,apps.example.com",
+			"example.com,.example.com,apps.example.com,.apps.example.com"),
+		Entry("leading-dot entry unchanged",
+			".example.com",
+			".example.com"),
+		Entry("wildcard unchanged",
+			"*",
+			"*"),
+		Entry("IP address unchanged",
+			"10.0.0.1",
+			"10.0.0.1"),
+		Entry("IPv6 address unchanged",
+			"::1",
+			"::1"),
+		Entry("CIDR unchanged",
+			"10.0.0.0/24",
+			"10.0.0.0/24"),
+		Entry("localhost gets dot-prefixed duplicate",
+			"localhost",
+			"localhost,.localhost"),
+		Entry("mixed entries",
+			"apps.example.com,.cluster.local,10.0.0.1,*,169.254.169.254,10.128.0.0/14",
+			"apps.example.com,.apps.example.com,.cluster.local,10.0.0.1,*,169.254.169.254,10.128.0.0/14"),
+		Entry("entries with whitespace",
+			" example.com , .local , 10.0.0.1 ",
+			"example.com,.example.com,.local,10.0.0.1"),
+		Entry("empty string",
+			"",
+			""),
+		Entry("domain with port gets dot-prefixed duplicate",
+			"example.com:8080",
+			"example.com:8080,.example.com:8080"),
+	)
 })
 
 var _ = Describe("TestOwnership", func() {

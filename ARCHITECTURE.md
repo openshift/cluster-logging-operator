@@ -327,6 +327,28 @@ ClusterLogForwarder Status includes:
 - Deployment status (Deployed/Failing)
 - Collector readiness status
 
+## Build Artifacts
+
+### Dockerfiles
+
+**Dockerfile** - Development and CI image
+- Standard build used for local development and CI/CD testing
+- Compiles Go binary inside container for cross-platform compatibility
+- Base: `golang:1.24`
+- Used by: `make image`, `make deploy` (for development/testing)
+
+**Dockerfile.art** - Red Hat production image
+- Official production image distributed by Red Hat
+- Builds using Red Hat's internal OSBS (OpenShift Build Service) golang builder
+- Enables strict FIPS mode for security and compliance requirements
+- Required for Red Hat official builds and certified releases
+
+**Dockerfile.macos-dev** - macOS development image
+- Development convenience for Apple Silicon Macs
+- Avoids QEMU amd64 emulation (which segfaults on ARM machines)
+- Expects pre-built binary at `bin/cluster-logging-operator`
+- Usage: Cross-compile on host with `GOOS=linux GOARCH=amd64 make build`, then `docker build -f Dockerfile.macos-dev`
+
 ## Security Considerations
 
 1. **Secret Management**: Credentials stored in Kubernetes Secrets, not in configs

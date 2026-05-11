@@ -42,7 +42,7 @@ var _ = Describe("Helpers", func() {
 	DescribeTable("JSONLine",
 		func(v interface{}, s string) { Expect(JSONLine(v)).To(EqualLines(s)) },
 		Entry("map", m, `{"a":"b","c":"d"}`),
-		Entry("configmap", cm, `{"metadata":{"creationTimestamp":null},"data":{"a":"b","c":"d"}}`),
+		Entry("configmap", cm, `{"metadata":{},"data":{"a":"b","c":"d"}}`),
 	)
 
 	DescribeTable("JSONString",
@@ -52,9 +52,7 @@ var _ = Describe("Helpers", func() {
   "c": "d"
 }`),
 		Entry("configmap", cm, `{
-  "metadata": {
-    "creationTimestamp": null
-  },
+  "metadata": {},
   "data": {
     "a": "b",
     "c": "d"
@@ -72,8 +70,7 @@ var _ = Describe("Helpers", func() {
   data:
     a: b
     c: d
-  metadata:
-    creationTimestamp: null
+  metadata: {}
 `),
 	)
 

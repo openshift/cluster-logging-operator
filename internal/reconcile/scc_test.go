@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -34,12 +35,15 @@ var _ = Describe("reconciling ", func() {
 
 	var _ = DescribeTable("SCC", func(initial *security.SecurityContextConstraints, desired security.SecurityContextConstraints) {
 
-		globalScheme := scheme.Scheme
+		globalScheme := k8sruntime.NewScheme()
+		Expect(scheme.AddToScheme(globalScheme)).To(Succeed())
 		Expect(security.Install(globalScheme)).To(Succeed())
 
-		k8sClient := fake.NewFakeClient()
+		var k8sClient client.Client
 		if initial != nil {
-			k8sClient = fake.NewFakeClient(initial)
+			k8sClient = fake.NewClientBuilder().WithScheme(globalScheme).WithObjects(initial).Build()
+		} else {
+			k8sClient = fake.NewClientBuilder().WithScheme(globalScheme).Build()
 		}
 		reader := k8sClient.(client.Reader)
 
@@ -51,6 +55,8 @@ var _ = Describe("reconciling ", func() {
 
 		act.ResourceVersion = "" //dont care here
 		desired.ResourceVersion = ""
+		act.TypeMeta = metav1.TypeMeta{} //dont care here
+		desired.TypeMeta = metav1.TypeMeta{}
 
 		Expect(cmp.Diff(act, &desired)).To(BeEmpty(), "Exp. the spec to be the same")
 		Expect(cmp.Diff(act, initial)).To(Not(BeEmpty()), "Exp. the spec to have been updated")

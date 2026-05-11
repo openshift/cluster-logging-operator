@@ -11,6 +11,7 @@ export PATH:=$(GOBIN):$(PATH)
 
 include .bingo/Variables.mk
 
+export GOTOOLCHAIN=auto
 export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=
 export GO111MODULE=on

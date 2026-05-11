@@ -15,7 +15,6 @@ var _ = Describe("NewMetaDataReaderClusterRoleBinding", func() {
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  creationTimestamp: null
   name: metadata-reader-openshift-logging-logcollector
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -35,7 +34,6 @@ var _ = Describe("ServiceAccount SCC Role & RoleBinding", func() {
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  creationTimestamp: null
   name: my-sa-scc
   namespace: openshift-logging
 rules:
@@ -55,7 +53,6 @@ rules:
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  creationTimestamp: null
   name: my-sa-scc
   namespace: openshift-logging
 roleRef:

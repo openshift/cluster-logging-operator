@@ -56,7 +56,7 @@ The Cluster Logging Operator (CLO) is a Kubernetes operator for configuring log 
 ### Data Flow Architecture
 
 Logs flow through the collector in this pattern:
-```
+```text
 collect from source → move to ._internal → transform → apply output datamodel → apply sink changes → send
 ```
 

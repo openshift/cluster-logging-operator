@@ -4,7 +4,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-ov
 
 The `azureLogsIngestion` output type sends log events to Azure Monitor using the Logs Ingestion API and a Data Collection Rule (DCR). This is the recommended replacement for the legacy HTTP Data Collector API used by `azureMonitor`.
 
-Since the HTTP Data Collector API is deprecated, and will be removed in **September** 2026, it is recommended to use the Logs Ingestion API instead. The `AzureMonitor` output type will be removed in the future.
+Since the HTTP Data Collector API is deprecated, and will be removed in **September 14th 2026**, it is recommended to use the Logs Ingestion API instead. The `AzureMonitor` output type will be removed in the future.
 
 ==== Prerequisites
 
@@ -43,7 +43,7 @@ oc create secret generic azure-log-ingestion-secret -n openshift-logging \
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  name: instance
+  name: azure-logs-ingestion
   namespace: openshift-logging
 spec:
   serviceAccount:
@@ -80,7 +80,7 @@ Uses Azure AD Workload Identity federation, where the collector pod authenticate
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
-  name: instance
+  name: azure-logs-ingestion
   namespace: openshift-logging
 spec:
   serviceAccount:
@@ -184,10 +184,13 @@ Standard output tuning parameters are supported:
     azureLogsIngestion:
       tuning:
         deliveryMode: AtLeastOnce
-        maxWrite: 10M
+        maxWrite: 1M
         maxRetryDuration: 35s
         minRetryDuration: 20s
 ----
+
+CAUTION: The Azure Logs Ingestion API enforces a 1MB request body limit. The collector defaults to a batch size of 1,000,000 bytes (`max_bytes`), if unset, to stay within this limit. If `maxWrite` in `tuning` exceeds 1MB, requests may be rejected by Azure.
+See the https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api[Azure Logs Ingestion API Service Limits] documentation for more information.
 
 ==== Field Reference
 

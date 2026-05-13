@@ -140,10 +140,20 @@ var _ = Describe("Generating vector config for Azure Log Ingestion output:", fun
 		Entry("with tls settings", func(output *obs.OutputSpec) {
 			output.TLS = tlsSpec
 		}, false, "azli_tls.toml"),
-		Entry("with tuning parameters", func(output *obs.OutputSpec) {
+		Entry("with tuning parameters exceeding 1MB cap", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.Tuning = &obs.AzureLogsIngestionTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}, true, "azli_tuning.toml"),
+		Entry("with tuning parameters under 1MB limit", func(output *obs.OutputSpec) {
+			output.AzureLogsIngestion.Tuning = &obs.AzureLogsIngestionTuningSpec{
+				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+					DeliveryMode:     obs.DeliveryModeAtLeastOnce,
+					MaxWrite:         utils.GetPtr(resource.MustParse("500Ki")),
+					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+					MinRetryDuration: utils.GetPtr(time.Duration(20)),
+				},
+			}
+		}, true, "azli_tuning_under_limit.toml"),
 	)
 })

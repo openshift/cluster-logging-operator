@@ -14,3 +14,6 @@ azure_client_secret = "SECRET[kubernetes_secret.azure-log-ingestion-secret/clien
 
 [sinks.output_azure_log_ingestion.encoding]
 except_fields = ["_internal"]
+
+[sinks.output_azure_log_ingestion.batch]
+max_bytes = 1000000

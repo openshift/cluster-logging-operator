@@ -1,5 +1,7 @@
 === Steps to forward to Azure Monitor Log via HTTP Data Collector API
 
+WARNING: Forwarding Logs using the `AzureMonitor` output (HTTP Data Collector API) will be retired on **September 14, 2026**. Please use the link:azure-logs-ingestion-forwarding.adoc[AzureLogsIngestion] output type instead.
+
 (https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-collector-api?tabs=powershell)
 
 . Create a secret containing your `shared_key` using the following command (primary or the secondary key for the workspace that's making the request):

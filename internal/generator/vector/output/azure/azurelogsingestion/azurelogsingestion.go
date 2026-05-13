@@ -19,6 +19,9 @@ import (
 const (
 	azureCredentialKindWorkloadIdentity = "workload_identity"
 	azureCredentialKindClientSecret     = "client_secret_credential"
+
+	// Azure Monitor Logs Ingestion API has a 1MB request body limit
+	AzureDefaultMaxBytes = 1_000_000
 )
 
 func auth(s *sinks.AzureLogsIngestion, azli *obs.AzureLogsIngestion) {
@@ -72,7 +75,14 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		s.TimestampField = azli.TimestampField
 		auth(s, azli)
 		s.Encoding = common.NewApiEncoding("")
-		s.Batch = common.NewApiBatch(o)
+		if batch := common.NewApiBatch(o); batch != nil {
+			if batch.MaxBytes > AzureDefaultMaxBytes {
+				batch.MaxBytes = AzureDefaultMaxBytes
+			}
+			s.Batch = batch
+		} else {
+			s.Batch = &sinks.Batch{MaxBytes: AzureDefaultMaxBytes}
+		}
 		s.Buffer = common.NewApiBuffer(o)
 		s.Request = common.NewApiRequest(o)
 		s.TLS = tls.NewTls(o, secrets, op)

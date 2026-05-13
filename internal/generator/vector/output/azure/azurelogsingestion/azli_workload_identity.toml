@@ -13,3 +13,6 @@ token_file_path = "/var/run/ocp-collector/serviceaccount/token"
 
 [sinks.output_azure_log_ingestion.encoding]
 except_fields = ["_internal"]
+
+[sinks.output_azure_log_ingestion.batch]
+max_bytes = 1000000

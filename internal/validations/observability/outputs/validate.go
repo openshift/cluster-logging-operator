@@ -31,6 +31,8 @@ func Validate(context internalcontext.ForwarderContext) {
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
 		case obs.OutputTypeElasticsearch:
 			messages = append(messages, validateElasticsearchHeaders(out)...)
+		case obs.OutputTypeAzureLogsIngestion:
+			messages = append(messages, validateAzureLogsIngestionMaxWrite(out)...)
 		}
 		// Set condition
 		if len(messages) > 0 {

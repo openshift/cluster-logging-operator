@@ -15,4 +15,13 @@ azure_client_secret = "SECRET[kubernetes_secret.azure-log-ingestion-secret/clien
 except_fields = ["_internal"]
 
 [sinks.output_azure_log_ingestion.batch]
-max_bytes = 1000000
+max_bytes = 512000
+
+[sinks.output_azure_log_ingestion.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488
+
+[sinks.output_azure_log_ingestion.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35

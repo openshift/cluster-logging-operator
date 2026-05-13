@@ -19,7 +19,7 @@ spec:
           token:
             key: hecToken
             secretName: splunk-myapp
-        sourceType: log4j
+        sourceType: my:custom:sourcetype
         url: 'https://splunk.customer.com:8088'
       type: splunk
   pipelines:

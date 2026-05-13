@@ -127,13 +127,25 @@ var _ = Describe("", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(MatchRegexp("azureMonitor.logType: Required value"))
 		}),
+		Entry("should pass for Splunk with static source", "splunk-source.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Splunk with templated dynamic source", "splunk-templated-source-1.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Splunk with templated static + dynamic source", "splunk-templated-source-2.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
 		Entry("should pass for Splunk with payloadKey", "splunk-payloadkey.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
 		Entry("should pass for Splunk if static sourceType is used with payloadKey", "splunk-payloadkey-and-sourcetype.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
-		Entry("should pass for Splunk if templated sourceType is used with payloadKey", "splunk-payloadkey-and-templated-sourcetype.yaml", func(out string, err error) {
+		Entry("should pass for Splunk if templated dynamic sourceType is used with payloadKey", "splunk-payloadkey-and-templated-sourcetype-1.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should pass for Splunk if templated static + dynamic sourceType is used with payloadKey", "splunk-payloadkey-and-templated-sourcetype-2.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
 		Entry("should fail for Splunk if static sourceType is not used with payloadKey", "splunk-sourcetype.yaml", func(out string, err error) {

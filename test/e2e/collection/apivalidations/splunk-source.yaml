@@ -19,8 +19,7 @@ spec:
           token:
             key: hecToken
             secretName: splunk-myapp
-        payloadKey: .message
-        sourceType: my:custom:sourcetype
+        source: my:custom:source
         url: 'https://splunk.customer.com:8088'
       type: splunk
   pipelines:

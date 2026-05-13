@@ -301,10 +301,11 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			}
 
 		},
+			Entry("should send application logs with static source field", `my:custom:source`, "my:custom:source", obs.InputTypeApplication),
 			Entry("should send application logs with dynamic source field", `{.log_type||"missing"}`, "application", obs.InputTypeApplication),
-			Entry("should send application logs with static + dynamic source field", `foo-{.log_type||"missing"}`, "foo-application", obs.InputTypeApplication),
-			Entry("should send application logs with static + label with dot/slash source field", `foo-{.kubernetes.labels."slash/test.dot"||"missing"}`, "foo-application", obs.InputTypeApplication),
-			Entry("should send application logs with static + fallback value's source field", `foo-{.missing||"application"}`, "foo-application", obs.InputTypeApplication),
+			Entry("should send application logs with static + dynamic source field", `foo:{.log_type||"missing"}`, "foo:application", obs.InputTypeApplication),
+			Entry("should send application logs with static + label with dot/slash source field", `foo:{.kubernetes.labels."slash/test.dot"||"missing"}`, "foo:application", obs.InputTypeApplication),
+			Entry("should send application logs with static + fallback value's source field", `foo:{.missing||"application"}`, "foo:application", obs.InputTypeApplication),
 			Entry("should send application logs with default source ", "", "", obs.InputTypeApplication),
 			Entry("should send audit logs with default source ", "", "", obs.InputTypeAudit),
 			Entry("should send journal logs with default source ", "", "", obs.InputTypeInfrastructure))
@@ -406,11 +407,11 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 				Expect(strings.HasSuffix(v, fmt.Sprintf(`"result":{"sourcetype":"%s"}}`, expSourceType))).To(BeTrue(), "Expected matching sourcetype")
 			}
 		},
-			Entry("should send only 'message' payload with static sourcetype", "custom-type", "custom-type"),
+			Entry("should send only 'message' payload with static sourcetype", "my:custom:sourcetype", "my:custom:sourcetype"),
 			Entry("should send only 'message' payload with dynamic sourcetype field", `{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "log4j"),
-			Entry("should send only 'message' payload with static + dynamic sourcetype field", `foo-{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "foo-log4j"),
-			Entry("should send only 'message' payload with static + label with dot/slash sourcetype field", `foo-{.kubernetes.labels."slash/test.dot"||"generic_single_line"}`, "foo-log4j"),
-			Entry("should send only 'message' payload with static + fallback value's sourcetype field", `foo-{.missing||"generic_single_line"}`, "foo-generic_single_line"),
+			Entry("should send only 'message' payload with static + dynamic sourcetype field", `foo:{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`, "foo:log4j"),
+			Entry("should send only 'message' payload with static + label with dot/slash sourcetype field", `foo:{.kubernetes.labels."slash/test.dot"||"generic_single_line"}`, "foo:log4j"),
+			Entry("should send only 'message' payload with static + fallback value's sourcetype field", `foo:{.missing||"generic_single_line"}`, "foo:generic_single_line"),
 			Entry("should send only 'message' payload with fallback value's sourcetype field", `{.missing||"generic_single_line"}`, "generic_single_line"))
 	})
 })

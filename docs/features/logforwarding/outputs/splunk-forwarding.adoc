@@ -75,6 +75,8 @@ WARNING: The administrator is responsible for configuring the pipeline so the so
 
 The `sourceType` field can be defined in the CLF as a templated field to get its value from the stuctured log event, such as a pod label. 
 
+NOTE: Colon chars are commonly used in Splunk as hierarchical separators, such as with a custom source type of `my:custom:sourcetype`. Colon chars are not permitted by Kubernetes in pod label values, so any instances of `:` have to be set directly in the CLF within the `sourceType` field.
+
 Below is an example of a pod which defines the source type to use in a label named `splunk/sourcetype`:
 
 [source,yaml]

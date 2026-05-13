@@ -19,8 +19,7 @@ spec:
           token:
             key: hecToken
             secretName: splunk-myapp
-        payloadKey: .message
-        sourceType: my:custom:sourcetype
+        source: '{.kubernetes.labels."splunk/source"||"generic_single_line"}'
         url: 'https://splunk.customer.com:8088'
       type: splunk
   pipelines:

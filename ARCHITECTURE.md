@@ -11,13 +11,13 @@ The Cluster Logging Operator manages log collection and forwarding in OpenShift 
 1. **Declarative Configuration**: Users specify desired state via CRDs; the operator ensures the cluster matches that state
 2. **Separation of Concerns**: Collector logic is separated from forwarding logic through Vector's transform and sink model
 3. **Multi-tenancy**: Infrastructure, application, and audit logs are isolated to support per-tenant controls
-4. **Template-Based Generation**: Complex configurations are generated from templates to ensure consistency and maintainability
+4. **Struct-Based Generation**: Complex configurations are generated using Go structs to ensure consistency and maintainability
 
 ## Architecture Diagram
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         User (via kubectl)                          │
+│                          User (via oc)                              │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
                              ▼
@@ -84,7 +84,7 @@ The Cluster Logging Operator manages log collection and forwarding in OpenShift 
 
 The configuration generator translates ClusterLogForwarder specs into Vector configurations.
 
-**Key Design**: Template-based generation for consistency and maintainability
+**Key Design**: Struct-based generation for consistency and maintainability
 
 ```text
      ClusterLogForwarder Spec
@@ -104,7 +104,7 @@ The configuration generator translates ClusterLogForwarder specs into Vector con
 
 **Output Structure** (`internal/generator/vector/output/`)
 
-Each output type is a separate package implementing the Element interface:
+Each output type is a separate package:
 - `aws/` - AWS CloudWatch
 - `azurelogsingestion/` - Azure Logs Ingestion
 - `azuremonitor/` - Azure Monitor
@@ -119,8 +119,8 @@ Each output type is a separate package implementing the Element interface:
 - `syslog/` - Syslog
 
 Each output module:
-1. Defines Go types for configuration
-2. Implements template-based Vector TOML generation
+1. Defines Go struct types for configuration
+2. Assembles the transforms and sink configuration to represent an output
 3. Handles output-specific validation and transformations
 
 ### 4. Data Flow Architecture
@@ -166,17 +166,17 @@ Sources → internal preprocessing → global transforms → output-specific tra
 
 **Tradeoff**: Operator must stay updated with Vector releases and API changes
 
-### 2. Template-Based Configuration Generation
+### 2. Struct-Based Configuration Generation
 
-**Decision**: Generate Vector configs from Go templates rather than programmatic construction
+**Decision**: Generate Vector configs using Go structs rather than templates
 
 **Rationale**:
+- Type-safe configuration construction
 - Maintains consistency across different output types
-- Easier to review and modify configurations
+- Easier to review, test, and extend
 - Simpler to add new outputs
-- Closer to how users would write configurations manually
 
-**Tradeoff**: Requires careful template management and testing
+**Tradeoff**: Requires keeping structs in sync with Vector's configuration schema
 
 ### 3. Separate Input, Output, and Transform Definitions
 
@@ -191,14 +191,14 @@ Sources → internal preprocessing → global transforms → output-specific tra
 
 ### 4. DaemonSet-Based Collection
 
-**Decision**: Deploy Vector as a DaemonSet on each node for node-level logs, Deployments for centralized collection
+**Decision**: Deploy Vector as a DaemonSet on each node for node-level logs
 
 **Rationale**:
 - DaemonSets ensure collection from every node
 - Reduces network hops for node-local logs
-- Deployments handle cluster-wide logs (API audit, etc.)
+- Deployments are used for the case where the collector acts as an audit log receiver with no need to collect off a node
 
-**Tradeoff**: Multiple collection processes may have higher resource overhead than single centralized collector
+**Tradeoff**: Multiple collection processes may have higher resource overhead than a single centralized collector
 
 ## Important Tradeoffs Still in Effect
 
@@ -224,7 +224,7 @@ Sources → internal preprocessing → global transforms → output-specific tra
 
 **Trade**: Allowing arbitrary Vector configuration increases flexibility but risks unsupported or broken configurations.
 
-**Mitigation**: Provide a well-defined CRD with validation; discourage direct Vector config modification.
+**Mitigation**: Provide a well-defined CRD with validation; disallow direct Vector config modification.
 
 ## Adding New Features
 
@@ -234,8 +234,8 @@ See [docs/contributing/how-to-add-new-output.md](docs/contributing/how-to-add-ne
 
 Basic approach:
 1. Add output type definition to `api/observability/v1/output_types.go`
-2. Create generator package in `internal/generator/vector/output/[type]/`
-3. Implement Element interface with Go templates for TOML generation
+2. Add struct definitions to `internal/generator/vector/api/` (sinks, sources, transforms as needed)
+3. Create generator package in `internal/generator/vector/output/[type]/`
 4. Register in `internal/generator/vector/outputs.go`
 5. Add functional tests in `test/functional/outputs/`
 
@@ -260,11 +260,9 @@ Filters are transformations applied to logs:
 ### Unit Tests
 
 Test individual components in isolation:
-- Template generation correctness
+- Configuration generation correctness
 - Configuration validation
 - Data transformations
-
-Location: Throughout codebase with `*_test.go` files
 
 ### Functional Tests
 
@@ -302,7 +300,7 @@ Location: `test/e2e/`
 
 ## Version Compatibility
 
-- **Go**: 1.24+ (see `go.mod` for the exact version)
+- **Go**: See `go.mod` for the exact version
 - **Vector**: See Dockerfile for the exact version
 
 ## Monitoring and Observability
@@ -334,12 +332,11 @@ ClusterLogForwarder Status includes:
 **Dockerfile** - Development and CI image
 - Standard build used for local development and CI/CD testing
 - Compiles Go binary inside container for cross-platform compatibility
-- Base: `golang:1.24`
 - Used by: `make image`, `make deploy` (for development/testing)
 
 **Dockerfile.art** - Red Hat production image
 - Official production image distributed by Red Hat
-- Builds using Red Hat's internal OSBS (OpenShift Build Service) golang builder
+- Builds using Red Hat's internal build system
 - Enables strict FIPS mode for security and compliance requirements
 - Required for Red Hat official builds and certified releases
 

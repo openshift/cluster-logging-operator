@@ -16,7 +16,7 @@ This repository contains the source code and configuration for the Cluster Loggi
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go (see `go.mod` for the required version)
 - Podman or Docker
 - Kubernetes cluster (or local cluster like Kind, minikube, or Code Ready Containers)
 - kubeconfig configured for your target cluster
@@ -73,7 +73,7 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
   - [Feature Documentation](docs/features/)
   - [API Reference](docs/reference/)
 
-For official OpenShift Logging documentation, see the [OpenShift Container Platform documentation](https://docs.openshift.com/container-platform/latest/logging/cluster-logging-deploying.html).
+For official OpenShift Logging documentation, see the [OpenShift Container Platform documentation](https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/logging).
 
 ## Contributing
 
@@ -90,5 +90,5 @@ This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE)
 ## Getting Help
 
 - Open an issue in this repository for bugs, feature requests, or documentation problems
-- Check existing [issues](https://github.com/openshift/cluster-logging-operator/issues) and [discussions](https://github.com/openshift/cluster-logging-operator/discussions)
-- Visit the [OpenShift Logging documentation](https://docs.openshift.com/container-platform/latest/logging/) for user-facing information
+- Check existing [issues](https://redhat.atlassian.net/browse/LOG)
+- Visit the [OpenShift Logging documentation](https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/logging) for user-facing information

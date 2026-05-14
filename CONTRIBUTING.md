@@ -24,8 +24,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ### Before Making Changes
 
-- Check existing [issues](https://github.com/openshift/cluster-logging-operator/issues) to avoid duplicate work
-- For significant changes, open an issue to discuss the approach first
+- Check existing [issues](https://github.com/openshift/cluster-logging-operator/issues) and the [LOG Jira project](https://redhat.atlassian.net/browse/LOG) to avoid duplicate work
+- For significant changes, open a Jira issue or GitHub issue to discuss the approach first
 - Review the [ARCHITECTURE.md](ARCHITECTURE.md) to understand the design
 
 ### Making Changes
@@ -113,7 +113,7 @@ make test-unit
 
 ### Functional Tests
 
-Functional tests verify output connector integration:
+Functional tests verify output connector integration (requires cluster):
 ```bash
 make test-functional
 ```
@@ -138,15 +138,16 @@ make test-e2e-local
 When modifying CRD types in `api/`:
 1. Update the struct tags and comments
 2. Run `make generate` to update generated code
-3. Add tests for validation logic
-4. Update relevant documentation
+3. Run `make bundle docs` to update bundle manifests and documentation
+4. Add tests for validation logic
+5. Update relevant documentation
 
 ### Configuration Generation
 
 When adding new output types:
 1. Add type definition to `api/observability/v1/output_types.go`
-2. Create generator in `internal/generator/vector/output/[type]/`
-3. Implement the Element interface with Go templates
+2. Add struct definitions to `internal/generator/vector/api/` (sinks, sources, transforms as needed)
+3. Create generator in `internal/generator/vector/output/[type]/`
 4. Add entry point to `internal/generator/vector/outputs.go`
 5. Add functional tests in `test/functional/outputs/`
 
@@ -158,7 +159,7 @@ Comprehensive guide: [How to Add a New Output Type](docs/contributing/how-to-add
 
 Quick summary:
 1. Add API type definitions
-2. Implement configuration generation with templates
+2. Add struct definitions and implement configuration generation
 3. Add functional tests to verify connectivity and log forwarding
 4. Update documentation
 
@@ -194,7 +195,7 @@ For navigation tips, see [ARCHITECTURE.md](ARCHITECTURE.md#key-directories).
 ### Build Issues
 
 - Run `make clean` then `make build` to start fresh
-- Ensure Go version is 1.24 or later
+- Ensure Go version matches what is specified in `go.mod`
 - Check that all dependencies are installed: `make tools`
 
 ## Development Tools
@@ -233,9 +234,8 @@ See [docs/contributing/REVIEW.adoc](docs/contributing/REVIEW.adoc) for detailed 
 ## Questions?
 
 - Check [docs/](docs/) for detailed information
-- Open a [discussion](https://github.com/openshift/cluster-logging-operator/discussions)
 - Create an [issue](https://github.com/openshift/cluster-logging-operator/issues) with a question label
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the Apache License 2.0.
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.

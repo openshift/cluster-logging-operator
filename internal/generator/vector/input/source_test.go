@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
@@ -327,6 +328,29 @@ var _ = Describe("inputs", func() {
 			},
 		},
 			"audit_ovn.toml",
+		),
+		Entry("with an audit input with ignoreOlder of 7 days for all sources", obs.InputSpec{
+			Name: string(obs.InputTypeAudit),
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Tuning: &obs.AuditInputTuningSpec{
+					IgnoreOlder: &metav1.Duration{Duration: 168 * time.Hour},
+				},
+			},
+		},
+			"audit_with_ignore_older.toml",
+		),
+		Entry("with an audit input for auditd with ignoreOlder of 24 hours", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceAuditd},
+				Tuning: &obs.AuditInputTuningSpec{
+					IgnoreOlder: &metav1.Duration{Duration: 24 * time.Hour},
+				},
+			},
+		},
+			"audit_host_with_ignore_older.toml",
 		),
 		Entry("with an http audit receiver input should generate an http receiver audit source", obs.InputSpec{
 			Type: obs.InputTypeReceiver,

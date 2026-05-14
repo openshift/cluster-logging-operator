@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-04-30T19:37:39Z"
+    createdAt: "2026-05-14T13:46:42Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -383,6 +383,17 @@ spec:
           This field is optional and its exclusion results in the collection of all audit sources.
         displayName: Log Sources
         path: inputs[0].audit.sources
+      - description: Tuning is the audit input tuning spec
+        displayName: Audit Input Tuning
+        path: inputs[0].audit.tuning
+      - description: |-
+          IgnoreOlder specifies the maximum duration since the last modification
+          of an audit log file before the collector ignores it. When the collector restarts, files
+          that have not been modified within this time window may not be collected.
+          Increase this value for audit sources with infrequent writes to prevent data loss.
+          The default value is 3600 (1 hour).
+        displayName: Ignore Older
+        path: inputs[0].audit.tuning.ignoreOlder
       - description: Infrastructure, Enables `infrastructure` logs.
         displayName: Infrastructure Logs Input
         path: inputs[0].infrastructure

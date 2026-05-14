@@ -1599,6 +1599,22 @@ spec:
                             - ovn
                             type: string
                           type: array
+                        tuning:
+                          description: Tuning is the audit input tuning spec
+                          properties:
+                            ignoreOlder:
+                              description: |-
+                                IgnoreOlder specifies the maximum duration since the last modification
+                                of an audit log file before the collector ignores it. When the collector restarts, files
+                                that have not been modified within this time window may not be collected.
+                                Increase this value for audit sources with infrequent writes to prevent data loss.
+                                The default value is 3600 (1 hour).
+                              type: string
+                          type: object
+                          x-kubernetes-validations:
+                          - message: must be at least 1 second
+                            rule: '!has(self.ignoreOlder) || duration(self.ignoreOlder)
+                              >= duration(''1s'')'
                       type: object
                     infrastructure:
                       description: Infrastructure, Enables `infrastructure` logs.

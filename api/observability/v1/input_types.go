@@ -264,6 +264,21 @@ var (
 	}
 )
 
+// AuditInputTuningSpec is the audit input tuning spec
+// +kubebuilder:validation:XValidation:rule="!has(self.ignoreOlder) || duration(self.ignoreOlder) >= duration('1s')",message="must be at least 1 second"
+type AuditInputTuningSpec struct {
+
+	// IgnoreOlder specifies the maximum duration since the last modification
+	// of an audit log file before the collector ignores it. When the collector restarts, files
+	// that have not been modified within this time window may not be collected.
+	// Increase this value for audit sources with infrequent writes to prevent data loss.
+	// The default value is 3600 (1 hour).
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Ignore Older"
+	IgnoreOlder *metav1.Duration `json:"ignoreOlder,omitempty"`
+}
+
 // Audit enables audit logs.
 type Audit struct {
 	// Sources defines the list of audit sources to collect.
@@ -272,6 +287,12 @@ type Audit struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Log Sources"
 	Sources []AuditSource `json:"sources,omitempty"`
+
+	// Tuning is the audit input tuning spec
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Audit Input Tuning"
+	Tuning *AuditInputTuningSpec `json:"tuning,omitempty"`
 }
 
 // ReceiverType specifies the type of receiver that should be created.

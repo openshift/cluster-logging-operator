@@ -1561,6 +1561,8 @@ Type:: object
 |sources|array|  Sources defines the list of audit sources to collect.
 This field is optional and its exclusion results in the collection of all audit sources.
 
+|tuning|object|  Tuning is the audit input tuning spec
+
 |======================
 
 === .spec.inputs[].audit.sources[]
@@ -1568,6 +1570,35 @@ This field is optional and its exclusion results in the collection of all audit 
 AuditSource defines which type of audit log source is used.
 
 Type:: array
+
+=== .spec.inputs[].audit.tuning
+
+AuditInputTuningSpec is the audit input tuning spec
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ignoreOlder|object|  IgnoreOlder specifies the maximum duration since the last modification
+of an audit log file before the collector ignores it. When the collector restarts, files
+that have not been modified within this time window may not be collected.
+Increase this value for audit sources with infrequent writes to prevent data loss.
+The default value is 3600 (1 hour).
+
+|======================
+
+=== .spec.inputs[].audit.tuning.ignoreOlder
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Duration|int|  
+|======================
 
 === .spec.inputs[].infrastructure
 
@@ -2618,7 +2649,13 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|credentials|object|  Credentials points to the secret containing the `google-application-credentials.json`.
+|credentials|object|  Credentials points to the secret containing the GCP credentials JSON file.
+For service account auth, this is a service_account key file.
+For Workload Identity Federation (WIF), this is an external_account configuration file.
+
+|token|object|  Token specifies the source of the bearer token used as the subject token for
+GCP Workload Identity Federation token exchange. Only needed when the credentials
+file is an external_account type.
 
 |======================
 
@@ -2635,6 +2672,37 @@ Type:: object
 |key|string|  Key contains the name of the key inside the referenced Secret.
 
 |secretName|string|  SecretName contains the name of the Secret containing the referenced value.
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.authentication.token
+
+BearerToken allows configuring the source of a bearer token used for authentication.
+The token can either be read from a secret or from a Kubernetes ServiceAccount.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|from|string|  From is the source from where to find the token
+
+|secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
+
+|======================
+
+=== .spec.outputs[].googleCloudLogging.authentication.token.secret
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|key|string|  Name of the key used to get the value from the referenced Secret.
+
+|name|string|  Name of secret
 
 |======================
 

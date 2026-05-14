@@ -18,6 +18,13 @@ const (
 	RotateWaitSecs        = 5
 )
 
+func auditIgnoreOlderSecs(input *adapters.Input) int64 {
+	if input.Audit != nil && input.Audit.Tuning != nil && input.Audit.Tuning.IgnoreOlder != nil {
+		return int64(input.Audit.Tuning.IgnoreOlder.Seconds())
+	}
+	return IgnoreOlderSecs
+}
+
 func NewAuditAuditdSource(input *adapters.Input) (id string, _ types.Source, tfs api.Transforms) {
 	tfs = api.Transforms{}
 	id = helpers.MakeInputID(input.Name, "host")
@@ -25,7 +32,7 @@ func NewAuditAuditdSource(input *adapters.Input) (id string, _ types.Source, tfs
 	f := sourcesfile.NewFile("/var/log/audit/audit.log")
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
-	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
 	f.MaxLineBytes = MaxLineBytes
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
@@ -42,7 +49,7 @@ func NewK8sAuditSource(input *adapters.Input) (id string, _ types.Source, tfs ap
 	f := sourcesfile.NewFile("/var/log/kube-apiserver/audit.log")
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
-	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
 	f.MaxLineBytes = MaxLineBytes
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
@@ -58,7 +65,7 @@ func NewOpenshiftAuditSource(input *adapters.Input) (id string, _ types.Source, 
 	f := sourcesfile.NewFile("/var/log/oauth-apiserver/audit.log", "/var/log/openshift-apiserver/audit.log", "/var/log/oauth-server/audit.log")
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
-	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
 	f.MaxLineBytes = MaxLineBytes
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
@@ -74,7 +81,7 @@ func NewOVNAuditSource(input *adapters.Input) (id string, _ types.Source, tfs ap
 	f := sourcesfile.NewFile("/var/log/ovn/acl-audit-log.log")
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
-	f.IgnoreOlderSecs = IgnoreOlderSecs
+	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
 	f.MaxLineBytes = MaxLineBytes
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs

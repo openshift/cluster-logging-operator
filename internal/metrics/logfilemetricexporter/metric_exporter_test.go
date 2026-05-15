@@ -136,7 +136,8 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		// Metrics Auth RBAC
 		// Verify the metrics auth ClusterRoleBinding exists and references system:auth-delegator
 		metricsAuthBinding := &rbacv1.ClusterRoleBinding{}
-		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: fmt.Sprintf("%s-metrics-auth", constants.LogfilesmetricexporterName)}, metricsAuthBinding)).Should(Succeed())
+		expectedMetricsAuthName := fmt.Sprintf("cluster-logging-%s-%s-metrics-auth", namespace.Name, constants.LogfilesmetricexporterName)
+		Expect(reqClient.Get(context.TODO(), types.NamespacedName{Name: expectedMetricsAuthName}, metricsAuthBinding)).Should(Succeed())
 		Expect(metricsAuthBinding.RoleRef.Name).To(Equal("system:auth-delegator"))
 		Expect(metricsAuthBinding.Subjects).To(HaveLen(1))
 		Expect(metricsAuthBinding.Subjects[0].Name).To(Equal(constants.LogfilesmetricexporterName))

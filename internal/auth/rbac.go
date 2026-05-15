@@ -29,10 +29,14 @@ func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string
 }
 
 // ReconcileMetricsAuthRBAC reconciles the ClusterRoleBinding that binds system:auth-delegator to the service account
-func ReconcileMetricsAuthRBAC(k8sClient client.Client, commonName, saNamespace, saName string) error {
-	name := fmt.Sprintf("%s-metrics-auth", commonName)
+func ReconcileMetricsAuthRBAC(k8sClient client.Client, name, saNamespace, saName string) error {
 	desiredMetricsAuthRoleBinding := NewMetricsAuthClusterRoleBinding(name, saNamespace, saName)
 	return reconcile.ClusterRoleBinding(k8sClient, desiredMetricsAuthRoleBinding.Name, func() *rbacv1.ClusterRoleBinding { return desiredMetricsAuthRoleBinding })
+}
+
+// DeleteMetricsAuthRBAC deletes the ClusterRoleBinding for metrics authentication
+func DeleteMetricsAuthRBAC(k8sClient client.Client, name string) error {
+	return reconcile.DeleteClusterRoleBinding(k8sClient, name)
 }
 
 // NewMetricsAuthClusterRoleBinding binds the system:auth-delegator ClusterRole to the given service account.

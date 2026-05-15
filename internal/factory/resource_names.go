@@ -12,6 +12,7 @@ type ForwarderResourceNames struct {
 	SecretMetrics                    string
 	ConfigMap                        string
 	MetadataReaderClusterRoleBinding string
+	MetricsAuthClusterRoleBinding    string
 	CaTrustBundle                    string
 	ServiceAccount                   string
 	InternalLogStoreSecret           string
@@ -38,6 +39,7 @@ func ResourceNames(clf obsv1.ClusterLogForwarder) *ForwarderResourceNames {
 		SecretMetrics:                    resBaseName + "-metrics",
 		ConfigMap:                        resBaseName + "-config",
 		MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", clf.Namespace, resBaseName),
+		MetricsAuthClusterRoleBinding:    fmt.Sprintf("cluster-logging-%s-%s-metrics-auth", clf.Namespace, resBaseName),
 		ForwarderName:                    clf.Name,
 		CaTrustBundle:                    resBaseName + "-trustbundle",
 		ServiceAccount:                   clf.Spec.ServiceAccount.Name,

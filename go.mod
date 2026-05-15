@@ -138,3 +138,5 @@ require (
 )
 
 replace github.com/openshift/cluster-logging-operator/api/observability => ./api/observability/
+
+replace github.com/moby/spdystream => github.com/moby/spdystream v0.5.1

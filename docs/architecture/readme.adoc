@@ -2,7 +2,7 @@
 
 === Summary
 
-Cluster Logging collects logs from various sources withing a cluster and forwards them to destinations where they are stored or further processed.  This primary goal of this solution is to facilitate the process of identifying the logs to be collected and where they should be forwarded.  Cluster Logging is capable of forwarding logs to various outputs which include an opt-in managed LokiStack.
+Cluster Logging collects logs from various sources within a cluster and forwards them to destinations where they are stored or further processed.  This primary goal of this solution is to facilitate the process of identifying the logs to be collected and where they should be forwarded.  Cluster Logging is capable of forwarding logs to various outputs which include an opt-in managed LokiStack.
 
 **Note**: The remaining portion of this documentation primarily focuses on log collection and forwarding.
 

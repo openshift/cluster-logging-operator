@@ -5,7 +5,7 @@
 
     {{ if not (fieldEmbedded .Member) }}
     === {{ .Path }}
-    ===== Description
+    ==== Description
        {{ $extra := "" }}
        {{ if (isDeprecatedMember .Member) }}
           {{ $extra = "**(DEPRECATED)**" }}
@@ -15,7 +15,7 @@
        {{ end }}
       {{$extra}} {{ (comments .CommentLines) }}
 
-    =====  Type
+    ====  Type
     * {{ (yamlType .Type) }}
     {{ end }}
     {{ if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) }}

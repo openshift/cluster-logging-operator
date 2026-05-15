@@ -18,7 +18,7 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 
 // KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
 //
-// # Policy Filtering
+// == Policy Filtering
 //
 // Policy event rules are the same format as the [Kube Audit Policy] with some minor extensions.
 // The extensions are described here, see the [Kube Audit Policy] for the standard rule behavior.
@@ -34,11 +34,11 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 //   - RequestResponse: All data is included: metadata, request body and response body. Note the response body can be very large.
 //     For example the a command like `oc get -A pods` generates a response body containing the YAML description of every pod in the cluster.
 //
-// # Extensions
+// == Extensions
 //
 // The following features are extensions to the standard [Kube Audit Policy]
 //
-// ## Wildcards
+// === Wildcards
 //
 // Names of users, groups, namespaces, and resources can have a leading or trailing '*' character.
 // For example namespace 'openshift-*' matches 'openshift-apiserver' or 'openshift-authentication.
@@ -48,7 +48,7 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // fields with a forward slash.  This means rules that rely upon a resource type that may or
 // may not include the subresource should be adjusted to cover all the required use-cases (i.e. ['pod','pod/*']).
 //
-// ## Default Rules
+// === Default Rules
 //
 // Events that do not match any rule in the policy are filtered as follows:
 // - User events (ie. non-system and non-serviceaccount) are forwarded
@@ -59,7 +59,7 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // If you want to disable these defaults, end your rules list with rule that has only a `level` field.
 // An empty rule matches any event, and prevents the defaults from taking effect.
 //
-// ## Omit Response Codes
+// === Omit Response Codes
 //
 // You can drop events based on the HTTP status code in the response. See the OmitResponseCodes field.
 //

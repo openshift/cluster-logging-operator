@@ -1097,7 +1097,7 @@ spec:
                                 field:
                                   description: |-
                                     A dot delimited path to a field in the log record. It must start with a `.`.
-                                    The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+                                    The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
                                     If segments contain characters outside of this range, the segment must be quoted.
                                     Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
                                   pattern: ^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$
@@ -1129,7 +1129,7 @@ spec:
                       description: |-
                         KubeAPIAudit filter Kube API server audit logs, as described in [Kubernetes Auditing].
 
-                        # Policy Filtering
+                        == Policy Filtering
 
                         Policy event rules are the same format as the [Kube Audit Policy] with some minor extensions.
                         The extensions are described here, see the [Kube Audit Policy] for the standard rule behavior.
@@ -1145,11 +1145,11 @@ spec:
                           - RequestResponse: All data is included: metadata, request body and response body. Note the response body can be very large.
                             For example the a command like `oc get -A pods` generates a response body containing the YAML description of every pod in the cluster.
 
-                        # Extensions
+                        == Extensions
 
                         The following features are extensions to the standard [Kube Audit Policy]
 
-                        ## Wildcards
+                        === Wildcards
 
                         Names of users, groups, namespaces, and resources can have a leading or trailing '*' character.
                         For example namespace 'openshift-*' matches 'openshift-apiserver' or 'openshift-authentication.
@@ -1159,7 +1159,7 @@ spec:
                         fields with a forward slash.  This means rules that rely upon a resource type that may or
                         may not include the subresource should be adjusted to cover all the required use-cases (i.e. ['pod','pod/*']).
 
-                        ## Default Rules
+                        === Default Rules
 
                         Events that do not match any rule in the policy are filtered as follows:
                         - User events (ie. non-system and non-serviceaccount) are forwarded
@@ -1170,7 +1170,7 @@ spec:
                         If you want to disable these defaults, end your rules list with rule that has only a `level` field.
                         An empty rule matches any event, and prevents the defaults from taking effect.
 
-                        ## Omit Response Codes
+                        === Omit Response Codes
 
                         You can drop events based on the HTTP status code in the response. See the OmitResponseCodes field.
 
@@ -1802,7 +1802,7 @@ spec:
                             1. http
                                - Currently only supports kubernetes audit logs (log_type = "audit")
                             2. syslog
-                               - Currently only supports node infrastucture logs (log_type = "infrastructure")
+                               - Currently only supports node infrastructure logs (log_type = "infrastructure")
                           enum:
                           - http
                           - syslog

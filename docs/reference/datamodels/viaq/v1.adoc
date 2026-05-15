@@ -15,823 +15,409 @@ nolint:govet
 [options="header"]
 |======================
 |Property|Type|Description
-
 |involvedObject
-
-|object
-
-a|  The object that this event is about.
-
+|object a|  The object that this event is about.
 |reason
-
-|string
-
-a|  *(optional)* This should be a short, machine understandable string that gives the reason
-for the transition into the object&#39;s current status.
-TODO: provide exact specification for format.
-
+|string a|  *(optional)* This should be a short, machine understandable string that gives the reason for the transition into the object&#39;s current status. TODO: provide exact specification for format.
 |message
-
-|string
-
-a|  *(optional)* A human-readable description of the status of this operation.
-TODO: decide on maximum length.
-
+|string a|  *(optional)* A human-readable description of the status of this operation. TODO: decide on maximum length.
 |source
-
-|object
-
-a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
-
+|object a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
 |firstTimestamp
-
-|string
-
-a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
-
+|string a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 |lastTimestamp
-
-|string
-
-a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
-
+|string a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
 |count
-
-|int
-
-a|  *(optional)* The number of times this event has occurred.
-
+|int a|  *(optional)* The number of times this event has occurred.
 |type
-
-|string
-
-a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
-
+|string a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 |eventTime
-
-|object
-
-a|  *(optional)* Time when this Event was first observed.
-
+|object a|  *(optional)* Time when this Event was first observed.
 |series
-
-|object
-
-a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
-
+|object a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 |action
-
-|string
-
-a|  *(optional)* What action was taken/failed regarding to the Regarding object.
-
+|string a|  *(optional)* What action was taken/failed regarding to the Regarding object.
 |related
-
-|object
-
-a|  *(optional)* Optional secondary object for more complex actions.
-
+|object a|  *(optional)* Optional secondary object for more complex actions.
 |reportingComponent
-
-|string
-
-a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
-
+|string a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 |reportingInstance
-
-|string
-
-a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
-
+|string a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |action
-
-|string
-
-a|  *(optional)* What action was taken/failed regarding to the Regarding object.
-
+|string a|  *(optional)* What action was taken/failed regarding to the Regarding object.
 |count
-
-|int
-
-a|  *(optional)* The number of times this event has occurred.
-
+|int a|  *(optional)* The number of times this event has occurred.
 |eventTime
-
-|object
-
-a|  *(optional)* Time when this Event was first observed.
-
+|object a|  *(optional)* Time when this Event was first observed.
 |firstTimestamp
-
-|string
-
-a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
-
+|string a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 |involvedObject
-
-|object
-
-a|  The object that this event is about.
-
+|object a|  The object that this event is about.
 |lastTimestamp
-
-|string
-
-a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
-
+|string a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
 |message
-
-|string
-
-a|  *(optional)* A human-readable description of the status of this operation.
-TODO: decide on maximum length.
-
+|string a|  *(optional)* A human-readable description of the status of this operation. TODO: decide on maximum length.
 |reason
-
-|string
-
-a|  *(optional)* This should be a short, machine understandable string that gives the reason
-for the transition into the object&#39;s current status.
-TODO: provide exact specification for format.
-
+|string a|  *(optional)* This should be a short, machine understandable string that gives the reason for the transition into the object&#39;s current status. TODO: provide exact specification for format.
 |related
-
-|object
-
-a|  *(optional)* Optional secondary object for more complex actions.
-
+|object a|  *(optional)* Optional secondary object for more complex actions.
 |reportingComponent
-
-|string
-
-a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
-
+|string a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 |reportingInstance
-
-|string
-
-a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
-
+|string a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 |series
-
-|object
-
-a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
-
+|object a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 |source
-
-|object
-
-a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
-
+|object a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
 |type
-
-|string
-
-a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
-
+|string a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 |======================
 
 === .action
 
-===== Description
+==== Description
 
 *(optional)* What action was taken/failed regarding to the Regarding object.
 
-=====  Type
+====  Type
 
 * string
 
 === .count
 
-===== Description
+==== Description
 
 *(optional)* The number of times this event has occurred.
 
-=====  Type
+====  Type
 
 * int
 
 === .eventTime
 
-===== Description
+==== Description
 
 *(optional)* Time when this Event was first observed.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |Time
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 === .eventTime.Time
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .firstTimestamp
 
-===== Description
+==== Description
 
 *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject
 
-===== Description
+==== Description
 
 The object that this event is about.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |apiVersion
-
-|string
-
-a|  *(optional)* API version of the referent.
-
+|string a|  *(optional)* API version of the referent.
 |fieldPath
-
-|string
-
-a|  *(optional)* If referring to a piece of an object instead of an entire object, this string
-should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-For example, if the object reference is to a container within a pod, this would take on a value like:
-&#34;spec.containers{name}&#34; (where &#34;name&#34; refers to the name of the container that triggered
-the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with
-index 2 in this pod). This syntax is chosen only to have some well-defined way of
-referencing a part of an object.
-TODO: this design is not final and this field is subject to change in the future.
-
+|string a|  *(optional)* If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a pod, this would take on a value like: &#34;spec.containers`{name}`&#34; (where &#34;name&#34; refers to the name of the container that triggered the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with index 2 in this pod). This syntax is chosen only to have some well-defined way of referencing a part of an object. TODO: this design is not final and this field is subject to change in the future.
 |kind
-
-|string
-
-a|  *(optional)* Kind of the referent.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-
+|string a|  *(optional)* Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 |name
-
-|string
-
-a|  *(optional)* Name of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-
+|string a|  *(optional)* Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 |namespace
-
-|string
-
-a|  *(optional)* Namespace of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-
+|string a|  *(optional)* Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 |resourceVersion
-
-|string
-
-a|  *(optional)* Specific resourceVersion to which this reference is made, if any.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-
+|string a|  *(optional)* Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 |uid
-
-|string
-
-a|  *(optional)* UID of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
-
+|string a|  *(optional)* UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
 |======================
 
 === .involvedObject.apiVersion
 
-===== Description
+==== Description
 
 *(optional)* API version of the referent.
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.fieldPath
 
-===== Description
+==== Description
 
 *(optional)* If referring to a piece of an object instead of an entire object, this string
 should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
 For example, if the object reference is to a container within a pod, this would take on a value like:
-&#34;spec.containers{name}&#34; (where &#34;name&#34; refers to the name of the container that triggered
+&#34;spec.containers`{name}`&#34; (where &#34;name&#34; refers to the name of the container that triggered
 the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with
 index 2 in this pod). This syntax is chosen only to have some well-defined way of
 referencing a part of an object.
 TODO: this design is not final and this field is subject to change in the future.
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.kind
 
-===== Description
+==== Description
 
 *(optional)* Kind of the referent.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.name
 
-===== Description
+==== Description
 
 *(optional)* Name of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.namespace
 
-===== Description
+==== Description
 
 *(optional)* Namespace of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.resourceVersion
 
-===== Description
+==== Description
 
 *(optional)* Specific resourceVersion to which this reference is made, if any.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 
-=====  Type
+====  Type
 
 * string
 
 === .involvedObject.uid
 
-===== Description
+==== Description
 
 *(optional)* UID of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
 
-=====  Type
+====  Type
 
 * string
 
 === .lastTimestamp
 
-===== Description
+==== Description
 
 *(optional)* The time at which the most recent occurrence of this event was recorded.
 
-=====  Type
+====  Type
 
 * string
 
 === .message
 
-===== Description
+==== Description
 
 *(optional)* A human-readable description of the status of this operation.
 TODO: decide on maximum length.
 
-=====  Type
+====  Type
 
 * string
 
 === .reason
 
-===== Description
+==== Description
 
 *(optional)* This should be a short, machine understandable string that gives the reason
 for the transition into the object&#39;s current status.
 TODO: provide exact specification for format.
 
-=====  Type
+====  Type
 
 * string
 
 === .related
 
-===== Description
+==== Description
 
 *(optional)* Optional secondary object for more complex actions.
 
-=====  Type
+====  Type
 
 * object
 
 === .reportingComponent
 
-===== Description
+==== Description
 
 *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 
-=====  Type
+====  Type
 
 * string
 
 === .reportingInstance
 
-===== Description
+==== Description
 
 *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 
-=====  Type
+====  Type
 
 * string
 
 === .series
 
-===== Description
+==== Description
 
 *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 
-=====  Type
+====  Type
 
 * object
 
 === .source
 
-===== Description
+==== Description
 
 *(optional)* The component reporting this event. Should be a short machine understandable string.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |component
-
-|string
-
-a|  *(optional)* Component from which the event is generated.
-
+|string a|  *(optional)* Component from which the event is generated.
 |host
-
-|string
-
-a|  *(optional)* Node name on which the event is generated.
-
+|string a|  *(optional)* Node name on which the event is generated.
 |======================
 
 === .source.component
 
-===== Description
+==== Description
 
 *(optional)* Component from which the event is generated.
 
-=====  Type
+====  Type
 
 * string
 
 === .source.host
 
-===== Description
+==== Description
 
 *(optional)* Node name on which the event is generated.
 
-=====  Type
+====  Type
 
 * string
 
 === .type
 
-===== Description
+==== Description
 
 *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 
-=====  Type
+====  Type
 
 * string
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |======================
 
 === .@timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -847,23 +433,23 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .hostname
 
-===== Description
+==== Description
 
 The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 
-=====  Type
+====  Type
 
 * string
 
 === .level
 
-===== Description
+==== Description
 
 The normalized log level
 
@@ -895,26 +481,26 @@ The two following values are not part of `syslog.h` but are widely used:
 
 Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 
-=====  Type
+====  Type
 
 * string
 
 === .log_source
 
-===== Description
+==== Description
 
 LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
 Application logs are always sourced from containers
 Infrastructure logs are sourced from containers or journal logs from the node
 Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 
-=====  Type
+====  Type
 
 * string
 
 === .log_type
 
-===== Description
+==== Description
 
 The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
 
@@ -925,230 +511,185 @@ The source type of the log. The `log_type` field may contain one of these string
 ** Kubernetes and OpenShift apiservers audit logs.
 ** OVN audit logs
 
-=====  Type
+====  Type
 
 * string
 
 === .message
 
-===== Description
+==== Description
 
 *(optional)* Original log entry text, UTF-8 encoded
 
 This field may be absent or empty if a non-empty `structured` field is present.
 See the description of `structured` for additional details.
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift
 
-===== Description
+==== Description
 
 Openshift specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |cluster_id
-
-|string
-
-a|  ClusterID is the unique id of the cluster where the workload is deployed
-
+|string a|  ClusterID is the unique id of the cluster where the workload is deployed
 |labels
-
-|object
-
-a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
-to be sent with the log Records
-
+|object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-
-|string
-
-a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
-of log records.  This was added as a workaround for logstores that do not have nano-second precision.
-
+|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 === .openshift.cluster_id
 
-===== Description
+==== Description
 
 ClusterID is the unique id of the cluster where the workload is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
 to be sent with the log Records
 
-=====  Type
+====  Type
 
 * object
 
 === .openshift.sequence
 
-===== Description
+==== Description
 
 Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |collector
-
-|object
-
-a|  Collector metadata
-
+|object a|  Collector metadata
 |======================
 
 === .pipeline_metadata.collector
 
-===== Description
+==== Description
 
 Collector metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |inputname
-
-|string
-
-a| **(DEPRECATED)** 
-
+|string a| **(DEPRECATED)** 
 |ipaddr4
-
-|string
-
-a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
-
+|string a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
 |name
-
-|string
-
-a|  Name is the implementation of the collector agent
-
+|string a|  Name is the implementation of the collector agent
 |original_raw_message
-
-|string
-
-a|  OriginalRawMessage captures the original message for eventrouter logs
-
+|string a|  OriginalRawMessage captures the original message for eventrouter logs
 |received_at
-
-|string
-
-a|  ReceivedAt the time the collector received the log entry
-
+|string a|  ReceivedAt the time the collector received the log entry
 |version
-
-|string
-
-a|  Version is collector version information
-
+|string a|  Version is collector version information
 |======================
 
 === .pipeline_metadata.collector.inputname
 
-===== Description
+==== Description
 
 **(DEPRECATED)** 
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.ipaddr4
 
-===== Description
+==== Description
 
 *(optional)* Ipaddr4 is the ipV4 address of the collector
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.name
 
-===== Description
+==== Description
 
 Name is the implementation of the collector agent
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.original_raw_message
 
-===== Description
+==== Description
 
 OriginalRawMessage captures the original message for eventrouter logs
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.received_at
 
-===== Description
+==== Description
 
 ReceivedAt the time the collector received the log entry
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.version
 
-===== Description
+==== Description
 
 Version is collector version information
 
-=====  Type
+====  Type
 
 * string
 
 === .timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -1163,25 +704,25 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_index_name
 
-===== Description
+==== Description
 
 *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
 
 The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_msg_id
 
-===== Description
+==== Description
 
 *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
 
@@ -1192,7 +733,7 @@ in Elasticsearch, this field will give you the exact document corresponding to t
 
 This is only present when deploying fluentd collector implementations
 
-=====  Type
+====  Type
 
 * string
 
@@ -1203,326 +744,66 @@ The data model for collected logs from containers.
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |docker
-
-|object
-
-a| **(DEPRECATED)** *(optional)* 
-
+|object a| **(DEPRECATED)** *(optional)* 
 |kubernetes
-
-|object
-
-a|  The Kubernetes-specific metadata
-
+|object a|  The Kubernetes-specific metadata
 |structured
-
-|object
-
-a|  *(optional)* Original log entry as a structured object.
-
-Example:
-`{&#34;pid&#34;:21631,&#34;ppid&#34;:21618,&#34;worker&#34;:0,&#34;message&#34;:&#34;starting fluentd worker pid=21631 ppid=21618 worker=0&#34;}`
-
-This field may be present if the forwarder was configured to parse structured JSON logs.
-If the original log entry was a valid structured log, this field will contain an equivalent JSON structure.
-Otherwise this field will be empty or absent, and the `message` field will contain the original log message.
-The `structured` field includes the same sub-fields as the original log message.
-
+|object a|  *(optional)* Original log entry as a structured object. Example: ``{&#34;pid&#34;:21631,&#34;ppid&#34;:21618,&#34;worker&#34;:0,&#34;message&#34;:&#34;starting fluentd worker pid=21631 ppid=21618 worker=0&#34;}`` This field may be present if the forwarder was configured to parse structured JSON logs. If the original log entry was a valid structured log, this field will contain an equivalent JSON structure. Otherwise this field will be empty or absent, and the `message` field will contain the original log message. The `structured` field includes the same sub-fields as the original log message.
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |======================
 
 === .@timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -1538,23 +819,23 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .hostname
 
-===== Description
+==== Description
 
 The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 
-=====  Type
+====  Type
 
 * string
 
 === .level
 
-===== Description
+==== Description
 
 The normalized log level
 
@@ -1586,26 +867,26 @@ The two following values are not part of `syslog.h` but are widely used:
 
 Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 
-=====  Type
+====  Type
 
 * string
 
 === .log_source
 
-===== Description
+==== Description
 
 LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
 Application logs are always sourced from containers
 Infrastructure logs are sourced from containers or journal logs from the node
 Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 
-=====  Type
+====  Type
 
 * string
 
 === .log_type
 
-===== Description
+==== Description
 
 The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
 
@@ -1616,230 +897,185 @@ The source type of the log. The `log_type` field may contain one of these string
 ** Kubernetes and OpenShift apiservers audit logs.
 ** OVN audit logs
 
-=====  Type
+====  Type
 
 * string
 
 === .message
 
-===== Description
+==== Description
 
 *(optional)* Original log entry text, UTF-8 encoded
 
 This field may be absent or empty if a non-empty `structured` field is present.
 See the description of `structured` for additional details.
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift
 
-===== Description
+==== Description
 
 Openshift specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |cluster_id
-
-|string
-
-a|  ClusterID is the unique id of the cluster where the workload is deployed
-
+|string a|  ClusterID is the unique id of the cluster where the workload is deployed
 |labels
-
-|object
-
-a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
-to be sent with the log Records
-
+|object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-
-|string
-
-a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
-of log records.  This was added as a workaround for logstores that do not have nano-second precision.
-
+|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 === .openshift.cluster_id
 
-===== Description
+==== Description
 
 ClusterID is the unique id of the cluster where the workload is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
 to be sent with the log Records
 
-=====  Type
+====  Type
 
 * object
 
 === .openshift.sequence
 
-===== Description
+==== Description
 
 Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |collector
-
-|object
-
-a|  Collector metadata
-
+|object a|  Collector metadata
 |======================
 
 === .pipeline_metadata.collector
 
-===== Description
+==== Description
 
 Collector metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |inputname
-
-|string
-
-a| **(DEPRECATED)** 
-
+|string a| **(DEPRECATED)** 
 |ipaddr4
-
-|string
-
-a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
-
+|string a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
 |name
-
-|string
-
-a|  Name is the implementation of the collector agent
-
+|string a|  Name is the implementation of the collector agent
 |original_raw_message
-
-|string
-
-a|  OriginalRawMessage captures the original message for eventrouter logs
-
+|string a|  OriginalRawMessage captures the original message for eventrouter logs
 |received_at
-
-|string
-
-a|  ReceivedAt the time the collector received the log entry
-
+|string a|  ReceivedAt the time the collector received the log entry
 |version
-
-|string
-
-a|  Version is collector version information
-
+|string a|  Version is collector version information
 |======================
 
 === .pipeline_metadata.collector.inputname
 
-===== Description
+==== Description
 
 **(DEPRECATED)** 
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.ipaddr4
 
-===== Description
+==== Description
 
 *(optional)* Ipaddr4 is the ipV4 address of the collector
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.name
 
-===== Description
+==== Description
 
 Name is the implementation of the collector agent
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.original_raw_message
 
-===== Description
+==== Description
 
 OriginalRawMessage captures the original message for eventrouter logs
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.received_at
 
-===== Description
+==== Description
 
 ReceivedAt the time the collector received the log entry
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.version
 
-===== Description
+==== Description
 
 Version is collector version information
 
-=====  Type
+====  Type
 
 * string
 
 === .timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -1854,25 +1090,25 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_index_name
 
-===== Description
+==== Description
 
 *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
 
 The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_msg_id
 
-===== Description
+==== Description
 
 *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
 
@@ -1883,313 +1119,247 @@ in Elasticsearch, this field will give you the exact document corresponding to t
 
 This is only present when deploying fluentd collector implementations
 
-=====  Type
+====  Type
 
 * string
 
 === .docker
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* 
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |container_id
-
-|string
-
-a|  ContainerID is the id of the container producing the log
-
+|string a|  ContainerID is the id of the container producing the log
 |======================
 
 === .docker.container_id
 
-===== Description
+==== Description
 
 ContainerID is the id of the container producing the log
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes
 
-===== Description
+==== Description
 
 The Kubernetes-specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |annotations
-
-|object
-
-a|  *(optional)* Annotations associated with the Kubernetes pod
-
+|object a|  *(optional)* Annotations associated with the Kubernetes pod
 |container_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_iostream
-
-|string
-
-a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
-
+|string a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 |container_name
-
-|string
-
-a|  ContainerName of the the pod container that produced the log
-
+|string a|  ContainerName of the the pod container that produced the log
 |flat_labels
-
-|array
-
-a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
-
+|array a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
 |host
-
-|string
-
-a|  *(optional)* Host is the kubernetes node name that hosts the pod
-
+|string a|  *(optional)* Host is the kubernetes node name that hosts the pod
 |labels
-
-|object
-
-a|  *(optional)* Labels present on the Pod at time the log was generated
-
+|object a|  *(optional)* Labels present on the Pod at time the log was generated
 |master_url
-
-|string
-
-a| **(DEPRECATED)** MasterURL is the url to the apiserver
-
+|string a| **(DEPRECATED)** MasterURL is the url to the apiserver
 |namespace_id
-
-|string
-
-a|  *(optional)* NamespaceID is the unique uuid of the namespace
-
+|string a|  *(optional)* NamespaceID is the unique uuid of the namespace
 |namespace_labels
-
-|object
-
-a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
-
+|object a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
 |namespace_name
-
-|string
-
-a|  NamespaceName where the pod is deployed
-
+|string a|  NamespaceName where the pod is deployed
 |pod_id
-
-|string
-
-a|  *(optional)* PodID is the unique uuid of the pod
-
+|string a|  *(optional)* PodID is the unique uuid of the pod
 |pod_name
-
-|string
-
-a|  PodName is the name of the pod
-
+|string a|  PodName is the name of the pod
 |======================
 
 === .kubernetes.annotations
 
-===== Description
+==== Description
 
 *(optional)* Annotations associated with the Kubernetes pod
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.container_id
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_image
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_image_id
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_iostream
 
-===== Description
+==== Description
 
 *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_name
 
-===== Description
+==== Description
 
 ContainerName of the the pod container that produced the log
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.flat_labels[]
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
 
-=====  Type
+====  Type
 
 * array
 
 === .kubernetes.host
 
-===== Description
+==== Description
 
 *(optional)* Host is the kubernetes node name that hosts the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels present on the Pod at time the log was generated
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.master_url
 
-===== Description
+==== Description
 
 **(DEPRECATED)** MasterURL is the url to the apiserver
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.namespace_id
 
-===== Description
+==== Description
 
 *(optional)* NamespaceID is the unique uuid of the namespace
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.namespace_labels
 
-===== Description
+==== Description
 
 *(optional)* NamespaceLabels are the labels present on the pod namespace
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.namespace_name
 
-===== Description
+==== Description
 
 NamespaceName where the pod is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.pod_id
 
-===== Description
+==== Description
 
 *(optional)* PodID is the unique uuid of the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.pod_name
 
-===== Description
+==== Description
 
 PodName is the name of the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .structured
 
-===== Description
+==== Description
 
 *(optional)* Original log entry as a structured object.
 
 Example:
-`{&#34;pid&#34;:21631,&#34;ppid&#34;:21618,&#34;worker&#34;:0,&#34;message&#34;:&#34;starting fluentd worker pid=21631 ppid=21618 worker=0&#34;}`
+``{&#34;pid&#34;:21631,&#34;ppid&#34;:21618,&#34;worker&#34;:0,&#34;message&#34;:&#34;starting fluentd worker pid=21631 ppid=21618 worker=0&#34;}``
 
 This field may be present if the forwarder was configured to parse structured JSON logs.
 If the original log entry was a valid structured log, this field will contain an equivalent JSON structure.
 Otherwise this field will be empty or absent, and the `message` field will contain the original log message.
 The `structured` field includes the same sub-fields as the original log message.
 
-=====  Type
+====  Type
 
 * object
 
@@ -2200,313 +1370,64 @@ The data model for event logs collected from the EventRouter.
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |kubernetes
-
-|object
-
-a|  The Kubernetes-specific metadata
-
+|object a|  The Kubernetes-specific metadata
 |old_event
-
-|object
-
-a|  OldEvent is a core KubernetesEvent that was replaced by
-kubernetes.event
-
+|object a|  OldEvent is a core KubernetesEvent that was replaced by kubernetes.event
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |======================
 
 === .@timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -2522,23 +1443,23 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .hostname
 
-===== Description
+==== Description
 
 The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 
-=====  Type
+====  Type
 
 * string
 
 === .level
 
-===== Description
+==== Description
 
 The normalized log level
 
@@ -2570,26 +1491,26 @@ The two following values are not part of `syslog.h` but are widely used:
 
 Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 
-=====  Type
+====  Type
 
 * string
 
 === .log_source
 
-===== Description
+==== Description
 
 LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
 Application logs are always sourced from containers
 Infrastructure logs are sourced from containers or journal logs from the node
 Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 
-=====  Type
+====  Type
 
 * string
 
 === .log_type
 
-===== Description
+==== Description
 
 The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
 
@@ -2600,230 +1521,185 @@ The source type of the log. The `log_type` field may contain one of these string
 ** Kubernetes and OpenShift apiservers audit logs.
 ** OVN audit logs
 
-=====  Type
+====  Type
 
 * string
 
 === .message
 
-===== Description
+==== Description
 
 *(optional)* Original log entry text, UTF-8 encoded
 
 This field may be absent or empty if a non-empty `structured` field is present.
 See the description of `structured` for additional details.
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift
 
-===== Description
+==== Description
 
 Openshift specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |cluster_id
-
-|string
-
-a|  ClusterID is the unique id of the cluster where the workload is deployed
-
+|string a|  ClusterID is the unique id of the cluster where the workload is deployed
 |labels
-
-|object
-
-a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
-to be sent with the log Records
-
+|object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-
-|string
-
-a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
-of log records.  This was added as a workaround for logstores that do not have nano-second precision.
-
+|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 === .openshift.cluster_id
 
-===== Description
+==== Description
 
 ClusterID is the unique id of the cluster where the workload is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
 to be sent with the log Records
 
-=====  Type
+====  Type
 
 * object
 
 === .openshift.sequence
 
-===== Description
+==== Description
 
 Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |collector
-
-|object
-
-a|  Collector metadata
-
+|object a|  Collector metadata
 |======================
 
 === .pipeline_metadata.collector
 
-===== Description
+==== Description
 
 Collector metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |inputname
-
-|string
-
-a| **(DEPRECATED)** 
-
+|string a| **(DEPRECATED)** 
 |ipaddr4
-
-|string
-
-a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
-
+|string a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
 |name
-
-|string
-
-a|  Name is the implementation of the collector agent
-
+|string a|  Name is the implementation of the collector agent
 |original_raw_message
-
-|string
-
-a|  OriginalRawMessage captures the original message for eventrouter logs
-
+|string a|  OriginalRawMessage captures the original message for eventrouter logs
 |received_at
-
-|string
-
-a|  ReceivedAt the time the collector received the log entry
-
+|string a|  ReceivedAt the time the collector received the log entry
 |version
-
-|string
-
-a|  Version is collector version information
-
+|string a|  Version is collector version information
 |======================
 
 === .pipeline_metadata.collector.inputname
 
-===== Description
+==== Description
 
 **(DEPRECATED)** 
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.ipaddr4
 
-===== Description
+==== Description
 
 *(optional)* Ipaddr4 is the ipV4 address of the collector
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.name
 
-===== Description
+==== Description
 
 Name is the implementation of the collector agent
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.original_raw_message
 
-===== Description
+==== Description
 
 OriginalRawMessage captures the original message for eventrouter logs
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.received_at
 
-===== Description
+==== Description
 
 ReceivedAt the time the collector received the log entry
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.version
 
-===== Description
+==== Description
 
 Version is collector version information
 
-=====  Type
+====  Type
 
 * string
 
 === .timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -2838,25 +1714,25 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_index_name
 
-===== Description
+==== Description
 
 *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
 
 The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_msg_id
 
-===== Description
+==== Description
 
 *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
 
@@ -2867,931 +1743,626 @@ in Elasticsearch, this field will give you the exact document corresponding to t
 
 This is only present when deploying fluentd collector implementations
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes
 
-===== Description
+==== Description
 
 The Kubernetes-specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |annotations
-
-|object
-
-a|  *(optional)* Annotations associated with the Kubernetes pod
-
+|object a|  *(optional)* Annotations associated with the Kubernetes pod
 |container_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_iostream
-
-|string
-
-a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
-
+|string a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 |container_name
-
-|string
-
-a|  ContainerName of the the pod container that produced the log
-
+|string a|  ContainerName of the the pod container that produced the log
 |flat_labels
-
-|array
-
-a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
-
+|array a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
 |host
-
-|string
-
-a|  *(optional)* Host is the kubernetes node name that hosts the pod
-
+|string a|  *(optional)* Host is the kubernetes node name that hosts the pod
 |labels
-
-|object
-
-a|  *(optional)* Labels present on the Pod at time the log was generated
-
+|object a|  *(optional)* Labels present on the Pod at time the log was generated
 |master_url
-
-|string
-
-a| **(DEPRECATED)** MasterURL is the url to the apiserver
-
+|string a| **(DEPRECATED)** MasterURL is the url to the apiserver
 |namespace_id
-
-|string
-
-a|  *(optional)* NamespaceID is the unique uuid of the namespace
-
+|string a|  *(optional)* NamespaceID is the unique uuid of the namespace
 |namespace_labels
-
-|object
-
-a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
-
+|object a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
 |namespace_name
-
-|string
-
-a|  NamespaceName where the pod is deployed
-
+|string a|  NamespaceName where the pod is deployed
 |pod_id
-
-|string
-
-a|  *(optional)* PodID is the unique uuid of the pod
-
+|string a|  *(optional)* PodID is the unique uuid of the pod
 |pod_name
-
-|string
-
-a|  PodName is the name of the pod
-
+|string a|  PodName is the name of the pod
 |event
-
-|object
-
-a|  Event is the core KubernetesEvent
-
+|object a|  Event is the core KubernetesEvent
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |annotations
-
-|object
-
-a|  *(optional)* Annotations associated with the Kubernetes pod
-
+|object a|  *(optional)* Annotations associated with the Kubernetes pod
 |container_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_image_id
-
-|string
-
-a|  *(optional)* 
-
+|string a|  *(optional)* 
 |container_iostream
-
-|string
-
-a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
-
+|string a|  *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 |container_name
-
-|string
-
-a|  ContainerName of the the pod container that produced the log
-
+|string a|  ContainerName of the the pod container that produced the log
 |flat_labels
-
-|array
-
-a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
-
+|array a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
 |host
-
-|string
-
-a|  *(optional)* Host is the kubernetes node name that hosts the pod
-
+|string a|  *(optional)* Host is the kubernetes node name that hosts the pod
 |labels
-
-|object
-
-a|  *(optional)* Labels present on the Pod at time the log was generated
-
+|object a|  *(optional)* Labels present on the Pod at time the log was generated
 |master_url
-
-|string
-
-a| **(DEPRECATED)** MasterURL is the url to the apiserver
-
+|string a| **(DEPRECATED)** MasterURL is the url to the apiserver
 |namespace_id
-
-|string
-
-a|  *(optional)* NamespaceID is the unique uuid of the namespace
-
+|string a|  *(optional)* NamespaceID is the unique uuid of the namespace
 |namespace_labels
-
-|object
-
-a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
-
+|object a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
 |namespace_name
-
-|string
-
-a|  NamespaceName where the pod is deployed
-
+|string a|  NamespaceName where the pod is deployed
 |pod_id
-
-|string
-
-a|  *(optional)* PodID is the unique uuid of the pod
-
+|string a|  *(optional)* PodID is the unique uuid of the pod
 |pod_name
-
-|string
-
-a|  PodName is the name of the pod
-
+|string a|  PodName is the name of the pod
 |======================
 
 === .kubernetes.annotations
 
-===== Description
+==== Description
 
 *(optional)* Annotations associated with the Kubernetes pod
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.container_id
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_image
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_image_id
 
-===== Description
+==== Description
 
 *(optional)* 
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_iostream
 
-===== Description
+==== Description
 
 *(optional)* The name of the stream the log line was submitted to (e.g.: stdout, stderr)
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.container_name
 
-===== Description
+==== Description
 
 ContainerName of the the pod container that produced the log
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.flat_labels[]
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
 
-=====  Type
+====  Type
 
 * array
 
 === .kubernetes.host
 
-===== Description
+==== Description
 
 *(optional)* Host is the kubernetes node name that hosts the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels present on the Pod at time the log was generated
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.master_url
 
-===== Description
+==== Description
 
 **(DEPRECATED)** MasterURL is the url to the apiserver
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.namespace_id
 
-===== Description
+==== Description
 
 *(optional)* NamespaceID is the unique uuid of the namespace
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.namespace_labels
 
-===== Description
+==== Description
 
 *(optional)* NamespaceLabels are the labels present on the pod namespace
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.namespace_name
 
-===== Description
+==== Description
 
 NamespaceName where the pod is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.pod_id
 
-===== Description
+==== Description
 
 *(optional)* PodID is the unique uuid of the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.pod_name
 
-===== Description
+==== Description
 
 PodName is the name of the pod
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event
 
-===== Description
+==== Description
 
 Event is the core KubernetesEvent
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |action
-
-|string
-
-a|  *(optional)* What action was taken/failed regarding to the Regarding object.
-
+|string a|  *(optional)* What action was taken/failed regarding to the Regarding object.
 |count
-
-|int
-
-a|  *(optional)* The number of times this event has occurred.
-
+|int a|  *(optional)* The number of times this event has occurred.
 |eventTime
-
-|object
-
-a|  *(optional)* Time when this Event was first observed.
-
+|object a|  *(optional)* Time when this Event was first observed.
 |firstTimestamp
-
-|string
-
-a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
-
+|string a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 |involvedObject
-
-|object
-
-a|  The object that this event is about.
-
+|object a|  The object that this event is about.
 |lastTimestamp
-
-|string
-
-a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
-
+|string a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
 |message
-
-|string
-
-a|  *(optional)* A human-readable description of the status of this operation.
-TODO: decide on maximum length.
-
+|string a|  *(optional)* A human-readable description of the status of this operation. TODO: decide on maximum length.
 |reason
-
-|string
-
-a|  *(optional)* This should be a short, machine understandable string that gives the reason
-for the transition into the object&#39;s current status.
-TODO: provide exact specification for format.
-
+|string a|  *(optional)* This should be a short, machine understandable string that gives the reason for the transition into the object&#39;s current status. TODO: provide exact specification for format.
 |related
-
-|object
-
-a|  *(optional)* Optional secondary object for more complex actions.
-
+|object a|  *(optional)* Optional secondary object for more complex actions.
 |reportingComponent
-
-|string
-
-a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
-
+|string a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 |reportingInstance
-
-|string
-
-a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
-
+|string a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 |series
-
-|object
-
-a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
-
+|object a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 |source
-
-|object
-
-a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
-
+|object a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
 |type
-
-|string
-
-a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
-
+|string a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 |verb
-
-|string
-
-a|  Verb is indicates if event was created or updated
-
+|string a|  Verb is indicates if event was created or updated
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |action
-
-|string
-
-a|  *(optional)* What action was taken/failed regarding to the Regarding object.
-
+|string a|  *(optional)* What action was taken/failed regarding to the Regarding object.
 |count
-
-|int
-
-a|  *(optional)* The number of times this event has occurred.
-
+|int a|  *(optional)* The number of times this event has occurred.
 |eventTime
-
-|object
-
-a|  *(optional)* Time when this Event was first observed.
-
+|object a|  *(optional)* Time when this Event was first observed.
 |firstTimestamp
-
-|string
-
-a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
-
+|string a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 |involvedObject
-
-|object
-
-a|  The object that this event is about.
-
+|object a|  The object that this event is about.
 |lastTimestamp
-
-|string
-
-a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
-
+|string a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
 |message
-
-|string
-
-a|  *(optional)* A human-readable description of the status of this operation.
-TODO: decide on maximum length.
-
+|string a|  *(optional)* A human-readable description of the status of this operation. TODO: decide on maximum length.
 |reason
-
-|string
-
-a|  *(optional)* This should be a short, machine understandable string that gives the reason
-for the transition into the object&#39;s current status.
-TODO: provide exact specification for format.
-
+|string a|  *(optional)* This should be a short, machine understandable string that gives the reason for the transition into the object&#39;s current status. TODO: provide exact specification for format.
 |related
-
-|object
-
-a|  *(optional)* Optional secondary object for more complex actions.
-
+|object a|  *(optional)* Optional secondary object for more complex actions.
 |reportingComponent
-
-|string
-
-a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
-
+|string a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 |reportingInstance
-
-|string
-
-a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
-
+|string a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 |series
-
-|object
-
-a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
-
+|object a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 |source
-
-|object
-
-a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
-
+|object a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
 |type
-
-|string
-
-a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
-
+|string a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 |======================
 
 === .kubernetes.event.action
 
-===== Description
+==== Description
 
 *(optional)* What action was taken/failed regarding to the Regarding object.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.count
 
-===== Description
+==== Description
 
 *(optional)* The number of times this event has occurred.
 
-=====  Type
+====  Type
 
 * int
 
 === .kubernetes.event.eventTime
 
-===== Description
+==== Description
 
 *(optional)* Time when this Event was first observed.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |Time
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 === .kubernetes.event.eventTime.Time
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.firstTimestamp
 
-===== Description
+==== Description
 
 *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject
 
-===== Description
+==== Description
 
 The object that this event is about.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |apiVersion
-
-|string
-
-a|  *(optional)* API version of the referent.
-
+|string a|  *(optional)* API version of the referent.
 |fieldPath
-
-|string
-
-a|  *(optional)* If referring to a piece of an object instead of an entire object, this string
-should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-For example, if the object reference is to a container within a pod, this would take on a value like:
-&#34;spec.containers{name}&#34; (where &#34;name&#34; refers to the name of the container that triggered
-the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with
-index 2 in this pod). This syntax is chosen only to have some well-defined way of
-referencing a part of an object.
-TODO: this design is not final and this field is subject to change in the future.
-
+|string a|  *(optional)* If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a pod, this would take on a value like: &#34;spec.containers`{name}`&#34; (where &#34;name&#34; refers to the name of the container that triggered the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with index 2 in this pod). This syntax is chosen only to have some well-defined way of referencing a part of an object. TODO: this design is not final and this field is subject to change in the future.
 |kind
-
-|string
-
-a|  *(optional)* Kind of the referent.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-
+|string a|  *(optional)* Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 |name
-
-|string
-
-a|  *(optional)* Name of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-
+|string a|  *(optional)* Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 |namespace
-
-|string
-
-a|  *(optional)* Namespace of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-
+|string a|  *(optional)* Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 |resourceVersion
-
-|string
-
-a|  *(optional)* Specific resourceVersion to which this reference is made, if any.
-More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-
+|string a|  *(optional)* Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 |uid
-
-|string
-
-a|  *(optional)* UID of the referent.
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
-
+|string a|  *(optional)* UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
 |======================
 
 === .kubernetes.event.involvedObject.apiVersion
 
-===== Description
+==== Description
 
 *(optional)* API version of the referent.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.fieldPath
 
-===== Description
+==== Description
 
 *(optional)* If referring to a piece of an object instead of an entire object, this string
 should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
 For example, if the object reference is to a container within a pod, this would take on a value like:
-&#34;spec.containers{name}&#34; (where &#34;name&#34; refers to the name of the container that triggered
+&#34;spec.containers`{name}`&#34; (where &#34;name&#34; refers to the name of the container that triggered
 the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with
 index 2 in this pod). This syntax is chosen only to have some well-defined way of
 referencing a part of an object.
 TODO: this design is not final and this field is subject to change in the future.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.kind
 
-===== Description
+==== Description
 
 *(optional)* Kind of the referent.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.name
 
-===== Description
+==== Description
 
 *(optional)* Name of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.namespace
 
-===== Description
+==== Description
 
 *(optional)* Namespace of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.resourceVersion
 
-===== Description
+==== Description
 
 *(optional)* Specific resourceVersion to which this reference is made, if any.
 More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.involvedObject.uid
 
-===== Description
+==== Description
 
 *(optional)* UID of the referent.
 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.lastTimestamp
 
-===== Description
+==== Description
 
 *(optional)* The time at which the most recent occurrence of this event was recorded.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.message
 
-===== Description
+==== Description
 
 *(optional)* A human-readable description of the status of this operation.
 TODO: decide on maximum length.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.reason
 
-===== Description
+==== Description
 
 *(optional)* This should be a short, machine understandable string that gives the reason
 for the transition into the object&#39;s current status.
 TODO: provide exact specification for format.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.related
 
-===== Description
+==== Description
 
 *(optional)* Optional secondary object for more complex actions.
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.event.reportingComponent
 
-===== Description
+==== Description
 
 *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.reportingInstance
 
-===== Description
+==== Description
 
 *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.series
 
-===== Description
+==== Description
 
 *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
 
-=====  Type
+====  Type
 
 * object
 
 === .kubernetes.event.source
 
-===== Description
+==== Description
 
 *(optional)* The component reporting this event. Should be a short machine understandable string.
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |component
-
-|string
-
-a|  *(optional)* Component from which the event is generated.
-
+|string a|  *(optional)* Component from which the event is generated.
 |host
-
-|string
-
-a|  *(optional)* Node name on which the event is generated.
-
+|string a|  *(optional)* Node name on which the event is generated.
 |======================
 
 === .kubernetes.event.source.component
 
-===== Description
+==== Description
 
 *(optional)* Component from which the event is generated.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.source.host
 
-===== Description
+==== Description
 
 *(optional)* Node name on which the event is generated.
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.type
 
-===== Description
+==== Description
 
 *(optional)* Type of this event (Normal, Warning), new types could be added in the future
 
-=====  Type
+====  Type
 
 * string
 
 === .kubernetes.event.verb
 
-===== Description
+==== Description
 
 Verb is indicates if event was created or updated
 
-=====  Type
+====  Type
 
 * string
 
 === .old_event
 
-===== Description
+==== Description
 
 OldEvent is a core KubernetesEvent that was replaced by
 kubernetes.event
 
-=====  Type
+====  Type
 
 * object
 
@@ -3802,330 +2373,70 @@ The data model for collected logs from node journal.
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |_STREAM_ID
-
-|string
-
-a|  
-
+|string a|  
 |_SYSTEMD_INVOCATION_ID
-
-|string
-
-a|  
-
+|string a|  
 |systemd
-
-|object
-
-a|  
-
+|object a|  
 |tag
-
-|string
-
-a|  
-
+|string a|  
 |time
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |@timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
-field that is reserved for a particular use.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. If the creation time is not known when the log payload was first collected. The “@” prefix denotes a field that is reserved for a particular use. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |hostname
-
-|string
-
-a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
-
+|string a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 |level
-
-|string
-
-a|  The normalized log level
-
-The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
-
-The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
-
-* `0` = `emerg`, system is unusable.
-
-* `1` = `alert`, action must be taken immediately.
-
-* `2` = `crit`, critical conditions.
-
-* `3` = `err`, error conditions.
-
-* `4` = `warn`, warning conditions.
-
-* `5` = `notice`, normal but significant condition.
-
-* `6` = `info`, informational.
-
-* `7` = `debug`, debug-level messages.
-
-The two following values are not part of `syslog.h` but are widely used:
-
-* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
-
-* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
-
-Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
-
+|string a|  The normalized log level The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others. The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]: * `0` = `emerg`, system is unusable. * `1` = `alert`, action must be taken immediately. * `2` = `crit`, critical conditions. * `3` = `err`, error conditions. * `4` = `warn`, warning conditions. * `5` = `notice`, normal but significant condition. * `6` = `info`, informational. * `7` = `debug`, debug-level messages. The two following values are not part of `syslog.h` but are widely used: * `8` = `trace`, trace-level messages, which are more verbose than `debug` messages. * `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize. Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 |log_source
-
-|string
-
-a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
-Application logs are always sourced from containers
-Infrastructure logs are sourced from containers or journal logs from the node
-Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
-
+|string a|  LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType. Application logs are always sourced from containers Infrastructure logs are sourced from containers or journal logs from the node Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 |log_type
-
-|string
-
-a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
-
-* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
-* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
-* &#34;audit&#34;:
-** Node logs from auditd (/var/log/audit/audit.log)
-** Kubernetes and OpenShift apiservers audit logs.
-** OVN audit logs
-
+|string a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;. * &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers. * &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects. * &#34;audit&#34;: ** Node logs from auditd (/var/log/audit/audit.log) ** Kubernetes and OpenShift apiservers audit logs. ** OVN audit logs
 |message
-
-|string
-
-a|  *(optional)* Original log entry text, UTF-8 encoded
-
-This field may be absent or empty if a non-empty `structured` field is present.
-See the description of `structured` for additional details.
-
+|string a|  *(optional)* Original log entry text, UTF-8 encoded This field may be absent or empty if a non-empty `structured` field is present. See the description of `structured` for additional details.
 |openshift
-
-|object
-
-a|  Openshift specific metadata
-
+|object a|  Openshift specific metadata
 |pipeline_metadata
-
-|object
-
-a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
-Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
-fluentd collector implementations
-
+|object a| **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here. Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying fluentd collector implementations
 |timestamp
-
-|string
-
-a|  A UTC value that marks when the log payload was created.
-
-Value derived from legacy `@timestamp` for forward compatibility.
-
-format:
-
-* yyyy-MM-dd HH:mm:ss,SSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
-* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
-* dateOptionalTime
-
-example: `2024-11-24T14:06:05.071000000Z`
-
+|string a|  A UTC value that marks when the log payload was created. Value derived from legacy `@timestamp` for forward compatibility. format: * yyyy-MM-dd HH:mm:ss,SSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ * yyyy-MM-dd&#39;T&#39;HH:mm:ssZ * dateOptionalTime example: `2024-11-24 T14:06:05.071000000Z`
 |viaq_index_name
-
-|string
-
-a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
-
-The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
-
+|string a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write). The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 |viaq_msg_id
-
-|string
-
-a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
-
-It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
-or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
-logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
-in Elasticsearch, this field will give you the exact document corresponding to the record.
-
-This is only present when deploying fluentd collector implementations
-
+|string a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified. It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218), or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another logging store or application other than Elasticsearch, but you still need to correlate data with the data stored in Elasticsearch, this field will give you the exact document corresponding to the record. This is only present when deploying fluentd collector implementations
 |======================
 
 === .@timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -4141,23 +2452,23 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .hostname
 
-===== Description
+==== Description
 
 The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
 
-=====  Type
+====  Type
 
 * string
 
 === .level
 
-===== Description
+==== Description
 
 The normalized log level
 
@@ -4189,26 +2500,26 @@ The two following values are not part of `syslog.h` but are widely used:
 
 Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
 
-=====  Type
+====  Type
 
 * string
 
 === .log_source
 
-===== Description
+==== Description
 
 LogSource is the source of a log used along with the LogType to distinguish a subcategory of the LogType.
 Application logs are always sourced from containers
 Infrastructure logs are sourced from containers or journal logs from the node
 Audit logs are sourced from: kubernetes and openshift API servers, node auditd, and OVN
 
-=====  Type
+====  Type
 
 * string
 
 === .log_type
 
-===== Description
+==== Description
 
 The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
 
@@ -4219,230 +2530,185 @@ The source type of the log. The `log_type` field may contain one of these string
 ** Kubernetes and OpenShift apiservers audit logs.
 ** OVN audit logs
 
-=====  Type
+====  Type
 
 * string
 
 === .message
 
-===== Description
+==== Description
 
 *(optional)* Original log entry text, UTF-8 encoded
 
 This field may be absent or empty if a non-empty `structured` field is present.
 See the description of `structured` for additional details.
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift
 
-===== Description
+==== Description
 
 Openshift specific metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |cluster_id
-
-|string
-
-a|  ClusterID is the unique id of the cluster where the workload is deployed
-
+|string a|  ClusterID is the unique id of the cluster where the workload is deployed
 |labels
-
-|object
-
-a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
-to be sent with the log Records
-
+|object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-
-|string
-
-a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
-of log records.  This was added as a workaround for logstores that do not have nano-second precision.
-
+|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 === .openshift.cluster_id
 
-===== Description
+==== Description
 
 ClusterID is the unique id of the cluster where the workload is deployed
 
-=====  Type
+====  Type
 
 * string
 
 === .openshift.labels
 
-===== Description
+==== Description
 
 *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
 to be sent with the log Records
 
-=====  Type
+====  Type
 
 * object
 
 === .openshift.sequence
 
-===== Description
+==== Description
 
 Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata
 
-===== Description
+==== Description
 
 **(DEPRECATED)** *(optional)* Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
 Data in this subgroup is forwarded for troubleshooting and tracing purposes.  This is only present when deploying
 fluentd collector implementations
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |collector
-
-|object
-
-a|  Collector metadata
-
+|object a|  Collector metadata
 |======================
 
 === .pipeline_metadata.collector
 
-===== Description
+==== Description
 
 Collector metadata
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |inputname
-
-|string
-
-a| **(DEPRECATED)** 
-
+|string a| **(DEPRECATED)** 
 |ipaddr4
-
-|string
-
-a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
-
+|string a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
 |name
-
-|string
-
-a|  Name is the implementation of the collector agent
-
+|string a|  Name is the implementation of the collector agent
 |original_raw_message
-
-|string
-
-a|  OriginalRawMessage captures the original message for eventrouter logs
-
+|string a|  OriginalRawMessage captures the original message for eventrouter logs
 |received_at
-
-|string
-
-a|  ReceivedAt the time the collector received the log entry
-
+|string a|  ReceivedAt the time the collector received the log entry
 |version
-
-|string
-
-a|  Version is collector version information
-
+|string a|  Version is collector version information
 |======================
 
 === .pipeline_metadata.collector.inputname
 
-===== Description
+==== Description
 
 **(DEPRECATED)** 
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.ipaddr4
 
-===== Description
+==== Description
 
 *(optional)* Ipaddr4 is the ipV4 address of the collector
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.name
 
-===== Description
+==== Description
 
 Name is the implementation of the collector agent
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.original_raw_message
 
-===== Description
+==== Description
 
 OriginalRawMessage captures the original message for eventrouter logs
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.received_at
 
-===== Description
+==== Description
 
 ReceivedAt the time the collector received the log entry
 
-=====  Type
+====  Type
 
 * string
 
 === .pipeline_metadata.collector.version
 
-===== Description
+==== Description
 
 Version is collector version information
 
-=====  Type
+====  Type
 
 * string
 
 === .timestamp
 
-===== Description
+==== Description
 
 A UTC value that marks when the log payload was created.
 
@@ -4457,25 +2723,25 @@ format:
 
 example: `2024-11-24T14:06:05.071000000Z`
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_index_name
 
-===== Description
+==== Description
 
 *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
 
 The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
 
-=====  Type
+====  Type
 
 * string
 
 === .viaq_msg_id
 
-===== Description
+==== Description
 
 *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
 
@@ -4486,645 +2752,477 @@ in Elasticsearch, this field will give you the exact document corresponding to t
 
 This is only present when deploying fluentd collector implementations
 
-=====  Type
+====  Type
 
 * string
 
 === ._STREAM_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === ._SYSTEMD_INVOCATION_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |k
-
-|object
-
-a|  
-
+|object a|  
 |t
-
-|object
-
-a|  
-
+|object a|  
 |u
-
-|object
-
-a|  
-
+|object a|  
 |======================
 
 === .systemd.k
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |KERNEL_DEVICE
-
-|string
-
-a|  
-
+|string a|  
 |KERNEL_SUBSYSTEM
-
-|string
-
-a|  
-
+|string a|  
 |UDEV_DEVLINK
-
-|string
-
-a|  
-
+|string a|  
 |UDEV_DEVNODE
-
-|string
-
-a|  
-
+|string a|  
 |UDEV_SYSNAME
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 === .systemd.k.KERNEL_DEVICE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.k.KERNEL_SUBSYSTEM
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.k.UDEV_DEVLINK
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.k.UDEV_DEVNODE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.k.UDEV_SYSNAME
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |AUDIT_LOGINUID
-
-|string
-
-a|  
-
+|string a|  
 |AUDIT_SESSION
-
-|string
-
-a|  
-
+|string a|  
 |BOOT_ID
-
-|string
-
-a|  
-
+|string a|  
 |CAP_EFFECTIVE
-
-|string
-
-a|  
-
+|string a|  
 |CMDLINE
-
-|string
-
-a|  
-
+|string a|  
 |COMM
-
-|string
-
-a|  
-
+|string a|  
 |EXE
-
-|string
-
-a|  
-
+|string a|  
 |GID
-
-|string
-
-a|  
-
+|string a|  
 |HOSTNAME
-
-|string
-
-a|  
-
+|string a|  
 |LINE_BREAK
-
-|string
-
-a|  
-
+|string a|  
 |MACHINE_ID
-
-|string
-
-a|  
-
+|string a|  
 |PID
-
-|string
-
-a|  
-
+|string a|  
 |SELINUX_CONTEXT
-
-|string
-
-a|  
-
+|string a|  
 |STREAM_ID
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_CGROUP
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_INVOCATION_ID
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_OWNER_UID
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_SESSION
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_SLICE
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_UNIT
-
-|string
-
-a|  
-
+|string a|  
 |SYSTEMD_USER_UNIT
-
-|string
-
-a|  
-
+|string a|  
 |TRANSPORT
-
-|string
-
-a|  
-
+|string a|  
 |UID
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 === .systemd.t.AUDIT_LOGINUID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.AUDIT_SESSION
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.BOOT_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.CAP_EFFECTIVE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.CMDLINE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.COMM
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.EXE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.GID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.HOSTNAME
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.LINE_BREAK
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.MACHINE_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.PID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SELINUX_CONTEXT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.STREAM_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_CGROUP
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_INVOCATION_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_OWNER_UID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_SESSION
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_SLICE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_UNIT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.SYSTEMD_USER_UNIT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.TRANSPORT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.t.UID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
 |CODE_FILE
-
-|string
-
-a|  
-
+|string a|  
 |CODE_FUNCTION
-
-|string
-
-a|  
-
+|string a|  
 |CODE_LINE
-
-|string
-
-a|  
-
+|string a|  
 |ERRNO
-
-|string
-
-a|  
-
+|string a|  
 |MESSAGE_ID
-
-|string
-
-a|  
-
+|string a|  
 |RESULT
-
-|string
-
-a|  
-
+|string a|  
 |SYSLOG_FACILITY
-
-|string
-
-a|  
-
+|string a|  
 |SYSLOG_IDENTIFIER
-
-|string
-
-a|  
-
+|string a|  
 |SYSLOG_PID
-
-|string
-
-a|  
-
+|string a|  
 |UNIT
-
-|string
-
-a|  
-
+|string a|  
 |======================
 
 === .systemd.u.CODE_FILE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.CODE_FUNCTION
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.CODE_LINE
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.ERRNO
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.MESSAGE_ID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.RESULT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.SYSLOG_FACILITY
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.SYSLOG_IDENTIFIER
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.SYSLOG_PID
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .systemd.u.UNIT
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .tag
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 
 === .time
 
-===== Description
+==== Description
 
-=====  Type
+====  Type
 
 * string
 

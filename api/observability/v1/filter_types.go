@@ -106,7 +106,7 @@ type DropTest struct {
 // +kubebuilder:validation:XValidation:rule="!(has(self.matches) && has(self.notMatches))", message="only one of matches or notMatches can be defined per field"
 type DropCondition struct {
 	// A dot delimited path to a field in the log record. It must start with a `.`.
-	// The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+	// The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
 	// If segments contain characters outside of this range, the segment must be quoted.
 	// Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
 	//

@@ -116,7 +116,7 @@ spec:
         path: filters[0].drop[0].test
       - description: |-
           A dot delimited path to a field in the log record. It must start with a `.`.
-          The path can contain alpha-numeric characters and underscores (a-zA-Z0-9_).
+          The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
           If segments contain characters outside of this range, the segment must be quoted.
           Examples: `.kubernetes.namespace_name`, `.log_type`, '.kubernetes.labels.foobar', `.kubernetes.labels."foo-bar/baz"`
         displayName: Field Path
@@ -389,7 +389,7 @@ spec:
           1. http
              - Currently only supports kubernetes audit logs (log_type = "audit")
           2. syslog
-             - Currently only supports node infrastucture logs (log_type = "infrastructure")
+             - Currently only supports node infrastructure logs (log_type = "infrastructure")
         displayName: Receiver Type
         path: inputs[0].receiver.type
       - description: Type of output sink.

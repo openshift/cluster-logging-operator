@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -13,18 +14,22 @@ import (
 var _ = Describe("ReconcileForDashboards", func() {
 	var (
 		fakeClient client.Client
+		scheme     *runtime.Scheme
 
 		GetDashboard = func() *corev1.ConfigMap {
 			key := client.ObjectKeyFromObject(newDashboardConfigMap())
 			actual := &corev1.ConfigMap{}
 			Expect(fakeClient.Get(context.TODO(), key, actual)).To(Succeed(), "Exp the configmap to exist")
 			actual.ResourceVersion = ""
+			actual.TypeMeta = corev1.ConfigMap{}.TypeMeta
 			return actual
 		}
 
 		setup = func(cm *corev1.ConfigMap) {
 			if cm != nil {
-				fakeClient = fake.NewFakeClient(cm)
+				fakeClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(cm).Build()
+			} else {
+				fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 			}
 		}
 		exp     = newDashboardConfigMap()
@@ -32,8 +37,12 @@ var _ = Describe("ReconcileForDashboards", func() {
 	)
 
 	BeforeEach(func() {
-		fakeClient = fake.NewFakeClient()
+		scheme = runtime.NewScheme()
+		Expect(corev1.AddToScheme(scheme)).To(Succeed())
+		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 		initial = newDashboardConfigMap()
+		exp = newDashboardConfigMap()
+		exp.TypeMeta = corev1.ConfigMap{}.TypeMeta
 	})
 
 	Context("when the configmap does not exist", func() {

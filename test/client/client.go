@@ -225,7 +225,7 @@ func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	i, _ := c.rests.Load(gv)
 	r, _ := i.(rest.Interface)
 	if r == nil {
-		if r, err = apiutil.RESTClientForGVK(gv.WithKind(""), false, c.cfg, testrt.Codecs, c.httpClient); err == nil {
+		if r, err = apiutil.RESTClientForGVK(gv.WithKind(""), false, false, c.cfg, testrt.Codecs, c.httpClient); err == nil {
 			c.rests.Store(gv, r)
 		}
 	}

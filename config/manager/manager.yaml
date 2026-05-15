@@ -48,6 +48,8 @@ spec:
                 fieldPath: metadata.name
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
+          - name: KUBE_FEATURE_WatchListClient
+            value: "false"
           - name: RELATED_IMAGE_VECTOR
             value: quay.io/openshift-logging/vector:v0.54.0
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER

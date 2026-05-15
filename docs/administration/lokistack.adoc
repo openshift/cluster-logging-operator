@@ -21,7 +21,7 @@ Openshift LokiStack Docs:: https://docs.openshift.com/container-platform/4.16/ob
   aws s3api create-bucket --acl private --region us-east-1 --bucket my-bucket-logging-loki
 ----
 +
-.Addtional option required for any region other than *us-east-1*
+.Additional option required for any region other than *us-east-1*
 ----
   --create-bucket-configuration LocationConstraint="$REGION"
 ----
@@ -392,7 +392,7 @@ For the internal loki gateway service, we use the url format *<service_name>.<na
 ----
 NOTE: Use `logcli help` and `logcli query help` to see all options for interacting with loki
 
-== Addtional References
+== Additional References
 Loki Operator user-guide:: https://github.com/grafana/loki/blob/main/operator/docs/user-guides/forwarding_logs_to_gateway.md
 Loki Operator object-storage:: https://github.com/grafana/loki/blob/main/operator/docs/lokistack/object_storage.md
 Observability Operator plugin:: https://github.com/rhobs/observability-operator/blob/main/docs/user-guides/observability-ui-plugins.md#logging

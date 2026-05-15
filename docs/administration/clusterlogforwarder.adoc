@@ -1,7 +1,7 @@
 = Cluster Log Forwarding
 
 The link:../reference/operator/api_observability_v1.adoc[ClusterLogForwarder] custom resource is the API for specifying the collection and forwarding
-of cluster logs (e.g. application, infrastructure, audit).  This API is part of the *observability.openshift.io* group and replaces the similiarly named
+of cluster logs (e.g. application, infrastructure, audit).  This API is part of the *observability.openshift.io* group and replaces the similarly named
 link:https://github.com/openshift/cluster-logging-operator/blob/release-5.9/docs/reference/operator/api.adoc[resource] that was part of the *logging.openshift.io* group
 
 == High-level Features

@@ -6,7 +6,7 @@
 == Overview
 Logging version 6.0 is a major change from earlier releases and is the realization of several longstanding goals.
 
-The following documentation is intended to assist administrators in converting exising **ClusterLogging.logging.openshift.io** and **ClusterLogForwarder.logging.openshift.io** specifications to the new observability API.
+The following documentation is intended to assist administrators in converting existing **ClusterLogging.logging.openshift.io** and **ClusterLogForwarder.logging.openshift.io** specifications to the new observability API.
 
 We've provided an overview of the changes, as well as complete **ClusterLogForwarder** resource examples for several common use cases.
 

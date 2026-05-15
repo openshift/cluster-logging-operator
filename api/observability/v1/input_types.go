@@ -324,7 +324,7 @@ type ReceiverSpec struct {
 	// 1. http
 	//    - Currently only supports kubernetes audit logs (log_type = "audit")
 	// 2. syslog
-	//    - Currently only supports node infrastucture logs (log_type = "infrastructure")
+	//    - Currently only supports node infrastructure logs (log_type = "infrastructure")
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Receiver Type"

@@ -1527,7 +1527,7 @@ type Syslog struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern:=`^(([a-zA-Z0-9-_.\/])*(\{(\.[a-zA-Z0-9_]+|\."[^"]+")+((\|\|)(\.[a-zA-Z0-9_]+|\.?"[^"]+")+)*\|\|"[^"]*"\})*)*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="App Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	// TODO: DETERMIN HOW to default the app name that isnt based on fluentd assumptions of "tag" when this is empty
+	// TODO: DETERMINE HOW to default the app name that isn't based on fluentd assumptions of "tag" when this is empty
 	AppName string `json:"appName,omitempty"`
 
 	// ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.

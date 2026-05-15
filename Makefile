@@ -101,17 +101,23 @@ build-debug:
 docs: docs/reference/operator/api_observability_v1.adoc docs/reference/operator/api_logging_v1alpha1.adoc docs/reference/datamodels/viaq/v1.adoc
 .PHONY: docs
 
+.PHONY: docs-spell-check
+docs-spell-check:
+	podman run --rm -v $(PWD):/workdir:z registry.access.redhat.com/ubi9/python-312:latest sh -c 'pip install --quiet codespell && codespell /workdir/docs/ -I /workdir/.codespellignore'
+
 docs/reference/operator/api_observability_v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api" -config "$(PWD)/config/docs/config_observability_v1.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
-	@perl -pi -e 's/\|\|/\\|\\|/g' "$(PWD)/$@"
+	@perl hack/fix-asciidoc.pl "$(PWD)/$@"
 .PHONY: docs/reference/operator/api_observability_v1.adoc
 
 docs/reference/operator/api_logging_v1alpha1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/api" -config "$(PWD)/config/docs/config_logging_v1alpha1.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+	@perl hack/fix-asciidoc.pl "$(PWD)/$@"
 .PHONY: docs/reference/operator/api_observability_v1.adoc
 
 docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
 	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config_observability_v1.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
+	@perl hack/fix-asciidoc.pl "$(PWD)/$@"
 .PHONY: docs/reference/datamodels/viaq/v1.adoc
 
 # Run the CLO locally - see HACKING.md

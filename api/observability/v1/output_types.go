@@ -1315,7 +1315,7 @@ type Splunk struct {
 	// Source identifies the origin of a log event.
 	// The Source can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
 	// If not specified will be detected according to .log_source and .log_type value.
 	// Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 	//
@@ -1342,7 +1342,7 @@ type Splunk struct {
 	// The SourceType can be a combination of static and dynamic values consisting of field paths followed by `||` followed by another field path or a static value.
 	// A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `||`.
 	//
-	// Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+	// Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
 	//
 	// Examples:
 	//

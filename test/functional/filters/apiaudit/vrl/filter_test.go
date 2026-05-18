@@ -1,12 +1,15 @@
 package apiaudit
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	authv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	. "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
@@ -233,6 +236,251 @@ var _ = Describe("Policy to VRL Filter", func() {
 			Expect(Filtered(p, Event{Verb: "patch", User: authv1.UserInfo{Username: "system:serviceaccount:foo"}})).To(HaveLevel(LevelNone))
 			// Other system events
 			Expect(Filtered(p, Event{Verb: "update", User: authv1.UserInfo{Username: "system:blah"}})).To(HaveLevel(LevelRequest))
+		})
+	})
+
+	Context("omit managed fields", func() {
+		createEventWithManagedFields := func() Event {
+			reqObj := &v1.PartialObjectMetadata{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-object",
+					Namespace: "test-namespace",
+					ManagedFields: []v1.ManagedFieldsEntry{
+						{
+							Manager:   "test-manager",
+							Operation: v1.ManagedFieldsOperationUpdate,
+						},
+					},
+				},
+			}
+			respObj := &v1.PartialObjectMetadata{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-object",
+					Namespace: "test-namespace",
+					ManagedFields: []v1.ManagedFieldsEntry{
+						{
+							Manager:   "test-manager",
+							Operation: v1.ManagedFieldsOperationUpdate,
+						},
+					},
+				},
+			}
+			reqJSON, _ := json.Marshal(reqObj)
+			respJSON, _ := json.Marshal(respObj)
+
+			return Event{
+				Level:          LevelRequestResponse,
+				AuditID:        "test-audit-id",
+				Verb:           "update",
+				User:           authv1.UserInfo{Username: "test-user"},
+				RequestObject:  &apiruntime.Unknown{Raw: reqJSON},
+				ResponseObject: &apiruntime.Unknown{Raw: respJSON},
+			}
+		}
+
+		It("should remove managedFields when OmitManagedFields is true", func() {
+			omitTrue := true
+			p := &obs.KubeAPIAudit{
+				Rules: []PolicyRule{
+					{
+						Level:             LevelRequestResponse,
+						OmitManagedFields: &omitTrue,
+					},
+				},
+			}
+			event := createEventWithManagedFields()
+			filtered := Filtered(p, event)
+
+			Expect(filtered).NotTo(BeNil())
+			Expect(filtered.Level).To(Equal(LevelRequestResponse))
+
+			// Verify managedFields were removed from requestObject
+			reqMeta := &v1.PartialObjectMetadata{}
+			err := json.Unmarshal(filtered.RequestObject.Raw, reqMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal RequestObject")
+			Expect(reqMeta.ObjectMeta.ManagedFields).To(BeNil())
+
+			// Verify managedFields were removed from responseObject
+			respMeta := &v1.PartialObjectMetadata{}
+			err = json.Unmarshal(filtered.ResponseObject.Raw, respMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal ResponseObject")
+			Expect(respMeta.ObjectMeta.ManagedFields).To(BeNil())
+		})
+
+		It("should keep managedFields when OmitManagedFields is false", func() {
+			omitFalse := false
+			p := &obs.KubeAPIAudit{
+				Rules: []PolicyRule{
+					{
+						Level:             LevelRequestResponse,
+						OmitManagedFields: &omitFalse,
+					},
+				},
+			}
+			event := createEventWithManagedFields()
+			filtered := Filtered(p, event)
+
+			Expect(filtered).NotTo(BeNil())
+			Expect(filtered.Level).To(Equal(LevelRequestResponse))
+
+			// Verify managedFields were kept in requestObject
+			reqMeta := &v1.PartialObjectMetadata{}
+			err := json.Unmarshal(filtered.RequestObject.Raw, reqMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal RequestObject")
+			Expect(reqMeta.ObjectMeta.ManagedFields).To(HaveLen(1))
+
+			// Verify managedFields were kept in responseObject
+			respMeta := &v1.PartialObjectMetadata{}
+			err = json.Unmarshal(filtered.ResponseObject.Raw, respMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal ResponseObject")
+			Expect(respMeta.ObjectMeta.ManagedFields).To(HaveLen(1))
+		})
+
+		It("should keep managedFields when OmitManagedFields is not set", func() {
+			p := &obs.KubeAPIAudit{
+				Rules: []PolicyRule{
+					{
+						Level: LevelRequestResponse,
+						// OmitManagedFields not set (nil)
+					},
+				},
+			}
+			event := createEventWithManagedFields()
+			filtered := Filtered(p, event)
+
+			Expect(filtered).NotTo(BeNil())
+			Expect(filtered.Level).To(Equal(LevelRequestResponse))
+
+			// Verify managedFields were kept in requestObject
+			reqMeta := &v1.PartialObjectMetadata{}
+			err := json.Unmarshal(filtered.RequestObject.Raw, reqMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal RequestObject")
+			Expect(reqMeta.ObjectMeta.ManagedFields).To(HaveLen(1))
+
+			// Verify managedFields were kept in responseObject
+			respMeta := &v1.PartialObjectMetadata{}
+			err = json.Unmarshal(filtered.ResponseObject.Raw, respMeta)
+			Expect(err).To(BeNil(), "Failed to unmarshal ResponseObject")
+			Expect(respMeta.ObjectMeta.ManagedFields).To(HaveLen(1))
+		})
+
+		Context("with event containing .metadata.managedFields", func() {
+			createEventWithRootManagedFields := func() []byte {
+				event := createEventWithManagedFields()
+				eventJSON, _ := json.Marshal(event)
+
+				// Parse as map to add root-level metadata.managedFields
+				var eventMap map[string]interface{}
+				_ = json.Unmarshal(eventJSON, &eventMap)
+				eventMap["metadata"] = map[string]interface{}{
+					"managedFields": []map[string]interface{}{
+						{
+							"manager":   "root-manager",
+							"operation": "Update",
+						},
+					},
+				}
+				modifiedJSON, _ := json.Marshal(eventMap)
+				return modifiedJSON
+			}
+
+			It("should remove .metadata.managedFields when OmitManagedFields is true", func() {
+				omitTrue := true
+				p := &obs.KubeAPIAudit{
+					Rules: []PolicyRule{
+						{
+							Level:             LevelRequestResponse,
+							OmitManagedFields: &omitTrue,
+						},
+					},
+				}
+				eventJSON := createEventWithRootManagedFields()
+				filteredJSON := FilteredBytes(p, eventJSON)
+
+				// Parse filtered output to verify .metadata.managedFields was removed
+				var filteredMap map[string]interface{}
+				err := json.Unmarshal(filteredJSON, &filteredMap)
+				Expect(err).To(BeNil(), "Failed to unmarshal filtered output")
+
+				// Verify root-level metadata.managedFields was removed
+				if metadata, exists := filteredMap["metadata"]; exists {
+					metadataMap := metadata.(map[string]interface{})
+					_, hasManaged := metadataMap["managedFields"]
+					Expect(hasManaged).To(BeFalse(), ".metadata.managedFields should be removed")
+				}
+			})
+
+			It("should keep .metadata.managedFields when OmitManagedFields is false", func() {
+				omitFalse := false
+				p := &obs.KubeAPIAudit{
+					Rules: []PolicyRule{
+						{
+							Level:             LevelRequestResponse,
+							OmitManagedFields: &omitFalse,
+						},
+					},
+				}
+				eventJSON := createEventWithRootManagedFields()
+				filteredJSON := FilteredBytes(p, eventJSON)
+
+				// Parse filtered output to verify .metadata.managedFields was kept
+				var filteredMap map[string]interface{}
+				err := json.Unmarshal(filteredJSON, &filteredMap)
+				Expect(err).To(BeNil(), "Failed to unmarshal filtered output")
+
+				// Verify root-level metadata.managedFields was kept
+				metadata, exists := filteredMap["metadata"]
+				Expect(exists).To(BeTrue(), ".metadata should exist")
+				metadataMap := metadata.(map[string]interface{})
+				managedFields, hasManaged := metadataMap["managedFields"]
+				Expect(hasManaged).To(BeTrue(), ".metadata.managedFields should be kept")
+				Expect(managedFields).To(HaveLen(1))
+			})
+
+			It("should remove all managedFields from all locations when OmitManagedFields is true", func() {
+				omitTrue := true
+				p := &obs.KubeAPIAudit{
+					Rules: []PolicyRule{
+						{
+							Level:             LevelRequestResponse,
+							OmitManagedFields: &omitTrue,
+						},
+					},
+				}
+				eventJSON := createEventWithRootManagedFields()
+				filteredJSON := FilteredBytes(p, eventJSON)
+
+				var filteredMap map[string]interface{}
+				err := json.Unmarshal(filteredJSON, &filteredMap)
+				Expect(err).To(BeNil(), "Failed to unmarshal filtered output")
+
+				// Verify root-level metadata.managedFields was removed
+				if metadata, exists := filteredMap["metadata"]; exists {
+					metadataMap := metadata.(map[string]interface{})
+					_, hasManaged := metadataMap["managedFields"]
+					Expect(hasManaged).To(BeFalse(), ".metadata.managedFields should be removed")
+				}
+
+				// Verify requestObject.metadata.managedFields was removed
+				if reqObj, exists := filteredMap["requestObject"]; exists {
+					reqMap := reqObj.(map[string]interface{})
+					if reqMeta, exists := reqMap["metadata"]; exists {
+						reqMetaMap := reqMeta.(map[string]interface{})
+						_, hasManaged := reqMetaMap["managedFields"]
+						Expect(hasManaged).To(BeFalse(), ".requestObject.metadata.managedFields should be removed")
+					}
+				}
+
+				// Verify responseObject.metadata.managedFields was removed
+				if respObj, exists := filteredMap["responseObject"]; exists {
+					respMap := respObj.(map[string]interface{})
+					if respMeta, exists := respMap["metadata"]; exists {
+						respMetaMap := respMeta.(map[string]interface{})
+						_, hasManaged := respMetaMap["managedFields"]
+						Expect(hasManaged).To(BeFalse(), ".responseObject.metadata.managedFields should be removed")
+					}
+				}
+			})
 		})
 	})
 })

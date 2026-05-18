@@ -59,6 +59,7 @@ spec:
       annotations:
         description: Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod
           }} collector component for more than 10m.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/CollectorNodeDown.md
         summary: Collector cannot be scraped
       expr: |
         up{app_kubernetes_io_component = "collector", app_kubernetes_io_part_of = "cluster-logging"} == 0

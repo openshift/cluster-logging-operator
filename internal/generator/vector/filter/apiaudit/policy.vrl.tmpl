@@ -5,6 +5,7 @@ if is_string(.auditID) && is_string(.verb) {
   namespace = if is_null(.objectRef.namespace) { "" } else { string!(.objectRef.namespace) }
   username = if is_null(.user.username) { "" } else { string!(.user.username) }
   if sub != "" { res = res + "/" + sub }
+  omit_managed = false
   {{with .OmitStages -}}
   if includes({{. | json}}, .stage) { # Policy OmitStages
     .level = "None"
@@ -30,6 +31,9 @@ if is_string(.auditID) && is_string(.verb) {
   {{- with .OmitStages}}
     if includes({{. | json}}, .stage) { .level = "None" }
   {{- end}}
+  {{- with .OmitManagedFields}}
+    omit_managed = {{.}}
+  {{- end}}
   } else {{end -}}
   {
     # No rule matched, apply default rules for system events.
@@ -54,6 +58,12 @@ if is_string(.auditID) && is_string(.verb) {
       del(.requestObject)
     } else if .level == "Request" {
       del(.responseObject)
+    }
+    # Omit managed fields if requested
+    if omit_managed {
+      del(.metadata.managedFields)
+      del(.requestObject.metadata.managedFields)
+      del(.responseObject.metadata.managedFields)
     }
   }
 }

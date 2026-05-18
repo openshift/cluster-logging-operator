@@ -169,6 +169,57 @@ When a destination is listed in the cluster-wide `NO_PROXY` environment variable
 
 This means setting `proxyURL` on an output is an intentional override that routes traffic through the specified proxy regardless of any cluster-wide proxy exclusions.
 
+== Known Limitation: NO_PROXY Domain Matching Behavior
+
+The Vector log collector uses a Rust library (`no-proxy` crate) to evaluate `NO_PROXY` entries. This library handles plain domain entries differently than Go's `httpproxy` package used by OpenShift and most Kubernetes components:
+
+[cols="1,2,2",options="header"]
+|===
+| NO_PROXY Entry | Go (OpenShift behavior) | Vector (collector behavior)
+
+| `example.com`
+| Matches `example.com` **and all subdomains** (e.g., `sub.example.com`)
+| Matches `example.com` **only** (exact match)
+
+| `.example.com`
+| Matches subdomains only (e.g., `sub.example.com`), **not** `example.com` itself
+| Matches subdomains only (e.g., `sub.example.com`), **not** `example.com` itself
+
+| `10.0.0.1`
+| Exact IP match
+| Exact IP match
+
+| `10.0.0.0/24`
+| CIDR range match
+| CIDR range match
+
+| `*`
+| Matches all hosts
+| Matches all hosts
+|===
+
+This means that if the cluster-wide proxy configuration sets `noProxy: apps.example.com`, OpenShift components (using Go) will bypass the proxy for both `apps.example.com` and `elasticsearch.apps.example.com`, but the Vector collector will only bypass the proxy for `apps.example.com` exactly — traffic to `elasticsearch.apps.example.com` will still be sent through the proxy.
+
+=== Workaround
+
+To ensure both the domain itself and all its subdomains bypass the proxy in Vector, include both the plain domain and the leading-dot form in your `NO_PROXY` / `noProxy` configuration:
+
+For example, in the cluster-wide proxy configuration:
+
+[source,yaml]
+----
+apiVersion: config.openshift.io/v1
+kind: Proxy
+metadata:
+  name: cluster
+spec:
+  noProxy: "apps.example.com,.apps.example.com"
+----
+
+IMPORTANT: Using only `.apps.example.com` (with leading dot) will match subdomains like `elasticsearch.apps.example.com` but will **not** match `apps.example.com` itself. You need both entries for full coverage.
+
+NOTE: This is a known upstream issue in the `no-proxy` Rust crate used by Vector. Once the upstream fix is released and adopted by Vector, plain domain entries will match subdomains as expected.
+
 == Validation
 
 The `proxyURL` field is validated to be a valid URL. An invalid URL will be rejected by the API server:

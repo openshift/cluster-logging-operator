@@ -256,6 +256,8 @@ type BaseOutputTuningSpec struct {
 // In-memory buffers offer the highest performance due to low latency, but they have two limitations:
 // they will consume memory, and they do not provide durability — buffered data is lost on process termination or failure.
 //
+// Valid values are: AtLeastOnce, AtMostOnce.
+//
 // +kubebuilder:validation:Enum:=AtLeastOnce;AtMostOnce
 type DeliveryMode string
 

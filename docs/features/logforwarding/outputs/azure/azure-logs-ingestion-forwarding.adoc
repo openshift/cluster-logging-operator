@@ -192,6 +192,24 @@ Standard output tuning parameters are supported:
 CAUTION: The Azure Logs Ingestion API enforces a 1MB request body limit. The collector defaults to a batch size of 1,000,000 bytes (`max_bytes`), if unset, to stay within this limit. If `maxWrite` in `tuning` exceeds 1MB, requests may be rejected by Azure.
 See the https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#logs-ingestion-api[Azure Logs Ingestion API Service Limits] documentation for more information.
 
+==== Azure Reserved Keywords
+
+Azure Monitor silently drops fields whose names conflict with reserved or standard column names. The Logs Ingestion API returns HTTP 200 (success) even when fields are dropped, making this data loss invisible.
+
+To prevent data loss, the Cluster Logging Operator automatically renames the `kind` field to `openshift_kind` before forwarding. This affects OpenShift audit logs, where `kind` is always set to `"Event"`.
+
+[NOTE]
+====
+If you define a custom table schema in Azure, use the column name `openshift_kind` instead of `kind` to capture this field.
+====
+
+If you prefer a different name, you can rename `openshift_kind` to any non-reserved name using a https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-transformations[data collection transformation] in your `Data Collection Rule`.
+
+For more information on Azure reserved and standard column names, see:
+
+* https://learn.microsoft.com/en-us/azure/azure-monitor/logs/create-custom-table[Add or delete tables and columns in Azure Monitor Logs] -- lists system and reserved columns that cannot be used as custom column names.
+* https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-standard-columns[Standard columns in Azure Monitor Logs] -- documents the standard columns present in every table.
+
 ==== Field Reference
 
 |===

@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
@@ -23,6 +24,15 @@ const (
 	// Azure Monitor Logs Ingestion API has a 1MB request body limit
 	AzureDefaultMaxBytes = 1_000_000
 )
+
+// RemapReservedKeywords renames fields that Azure silently drops as reserved keywords (HTTP 200, no error).
+func RemapReservedKeywords(inputs ...string) types.Transform {
+	return transforms.NewRemap(`
+if exists(.kind) {
+  .openshift_kind = del(.kind)
+}
+`, inputs...)
+}
 
 func auth(s *sinks.AzureLogsIngestion, azli *obs.AzureLogsIngestion) {
 	if azli == nil || azli.Authentication == nil {
@@ -66,6 +76,12 @@ func auth(s *sinks.AzureLogsIngestion, azli *obs.AzureLogsIngestion) {
 }
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
+	tfs = api.Transforms{}
+
+	remapReservedKeywordsID := vectorhelpers.MakeID(id, "remap_reserved_keywords")
+	tfs[remapReservedKeywordsID] = RemapReservedKeywords(inputs...)
+	inputs = []string{remapReservedKeywordsID}
+
 	azli := o.AzureLogsIngestion
 	sink = sinks.NewAzureLogsIngestion(func(s *sinks.AzureLogsIngestion) {
 		s.Endpoint = azli.URL

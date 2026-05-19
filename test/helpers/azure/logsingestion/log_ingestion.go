@@ -82,32 +82,67 @@ func NewMockoonVisitor(pb *runtime.PodBuilder, framework *functional.CollectorFu
 // ReadApplicationLog reads and parses application logs from the
 // Mockoon container used for the Azure Log Ingestion API mock.
 func ReadApplicationLog(framework *functional.CollectorFunctionalFramework) ([]types.ApplicationLog, error) {
-	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, mockoon.ContainerName).Run()
+	output, err := readMockoonLogs(framework)
 	if err != nil {
 		return nil, err
 	}
-	return extractLogs(output)
+	return extractLogsAs[types.ApplicationLog](output)
 }
 
-func extractLogs(output string) ([]types.ApplicationLog, error) {
+// ReadAuditLog reads and parses audit logs from the
+// Mockoon container used for the Azure Log Ingestion API mock.
+func ReadAuditLog(framework *functional.CollectorFunctionalFramework) ([]types.AuditLogCommon, error) {
+	output, err := readMockoonLogs(framework)
+	if err != nil {
+		return nil, err
+	}
+	return extractLogsAs[types.AuditLogCommon](output)
+}
+
+// ReadInfraLog reads and parses infrastructure logs from the
+// Mockoon container used for the Azure Log Ingestion API mock.
+func ReadInfraLog(framework *functional.CollectorFunctionalFramework) ([]types.InfraLog, error) {
+	output, err := readMockoonLogs(framework)
+	if err != nil {
+		return nil, err
+	}
+	return extractLogsAs[types.InfraLog](output)
+}
+
+// ReadRawLogs reads logs as raw maps from the Mockoon container, preserving
+// all fields regardless of struct tags. Useful for asserting on renamed or
+// non-standard field names (e.g. openshift_kind).
+func ReadRawLogs(framework *functional.CollectorFunctionalFramework) ([]map[string]interface{}, error) {
+	output, err := readMockoonLogs(framework)
+	if err != nil {
+		return nil, err
+	}
+	return extractLogsAs[map[string]interface{}](output)
+}
+
+func readMockoonLogs(framework *functional.CollectorFunctionalFramework) (string, error) {
+	return oc.Literal().From("oc logs -n %s pod/%s -c %s", framework.Test.NS.Name, framework.Name, mockoon.ContainerName).Run()
+}
+
+func extractLogsAs[T any](output string) ([]T, error) {
 	logs, err := mockoon.DecodeLogs(output)
 	if err != nil {
 		return nil, err
 	}
 
-	var appLogs []types.ApplicationLog
+	var result []T
 	for _, log := range logs {
 		if log.RequestMethod == "POST" && log.ResponseStatus == 204 &&
 			strings.Contains(log.RequestPath, "dataCollectionRules") {
-			appLog := log.Transaction.Request.Body
-			var tmp []types.ApplicationLog
-			if err := types.ParseLogsFrom(utils.ToJsonLogs([]string{appLog}), &tmp, false); err != nil {
+			body := log.Transaction.Request.Body
+			var tmp []T
+			if err := types.ParseLogsFrom(utils.ToJsonLogs([]string{body}), &tmp, false); err != nil {
 				fmt.Printf("error parsing log: %v\n", err)
 				continue
 			}
-			appLogs = append(appLogs, tmp...)
+			result = append(result, tmp...)
 		}
 	}
 
-	return appLogs, nil
+	return result, nil
 }

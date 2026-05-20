@@ -12,7 +12,7 @@ to the processing pipelines.
 
 ## Results
 
-The benchmark utility will generate results in a directory prefixed with "benchmark" and write similiar
+The benchmark utility will generate results in a directory prefixed with "benchmark" and write similar
 results to stdout.
 
 ```

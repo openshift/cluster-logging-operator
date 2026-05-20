@@ -33,7 +33,7 @@ var _ = Describe("[Functional][Filters][MultilineException] Multi-line exception
 
 		jsV8Exception = `V8 errors stack trace
 			eval at Foo.a (eval at Bar.z (myscript.js:10:3))
-			at new Contructor.Name (native)
+			at new Constructor.Name (native)
 			at new FunctionName (unknown location)
 			at Type.functionName [as methodName] (file(copy).js?query='yes':12:9)
 			at functionName [as methodName] (native)

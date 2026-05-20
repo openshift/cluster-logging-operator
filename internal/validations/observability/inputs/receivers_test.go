@@ -73,7 +73,7 @@ var _ = Describe("#ValidateReceiver", func() {
 			conds := ValidateReceiver(spec, secrets, configMaps, utils.NoOptions)
 			Expect(conds).To(Not(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, "")))
 		})
-		Context("for secrets provied by the cert signing service", func() {
+		Context("for secrets provided by the cert signing service", func() {
 			It("should skip validation", func() {
 
 				context := utils.Options{

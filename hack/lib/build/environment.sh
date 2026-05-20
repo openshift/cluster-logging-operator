@@ -21,7 +21,7 @@ function os::build::environment::create() {
       additional_context+=" -v ${OS_ROOT}:${workingdir} -u $(id -u)"
     elif [[ -n "${OS_BUILD_ENV_VOLUME:-}" ]]; then
       if docker volume inspect "${OS_BUILD_ENV_VOLUME}" >/dev/null 2>&1; then
-        os::log::debug "Re-using volume ${OS_BUILD_ENV_VOLUME}"
+        os::log::debug "Reusing volume ${OS_BUILD_ENV_VOLUME}"
       else
         # if OS_BUILD_ENV_VOLUME is set and no volume already exists, create a docker volume to
         # store the working output so successive iterations can reuse shared code.
@@ -31,7 +31,7 @@ function os::build::environment::create() {
 
       if [[ -n "${OS_BUILD_ENV_TMP_VOLUME:-}" ]]; then
         if docker volume inspect "${OS_BUILD_ENV_TMP_VOLUME}" >/dev/null 2>&1; then
-          os::log::debug "Re-using volume ${OS_BUILD_ENV_TMP_VOLUME}"
+          os::log::debug "Reusing volume ${OS_BUILD_ENV_TMP_VOLUME}"
         else
           # if OS_BUILD_ENV_VOLUME is set and no volume already exists, create a docker volume to
           # store the working output so successive iterations can reuse shared code.

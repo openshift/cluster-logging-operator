@@ -146,7 +146,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			var result string
 			outputFiles, ok := outputLogFile[string(outputSpec.Type)]
 			if !ok {
-				return nil, fmt.Errorf("cant find output of type %s in outputSpec %v", outputName, outputSpecs)
+				return nil, fmt.Errorf("can't find output of type %s in outputSpec %v", outputName, outputSpecs)
 			}
 			file, ok := outputFiles[sourceType]
 			if !ok {

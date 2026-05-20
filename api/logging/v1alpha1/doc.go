@@ -1,4 +1,4 @@
-// package v1alpha1 custom resorces for the cluster logging operator.
+// package v1alpha1 custom resources for the cluster logging operator.
 //
 // NOTE: This API is under construction and subject to change.
 //

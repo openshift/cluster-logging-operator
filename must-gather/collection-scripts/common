@@ -27,7 +27,7 @@ get_env() {
       echo Image info: $dockerfile > $env_file
       oc -n $ns exec $pod -c $container -- grep -o "\"build-date\"=\"[^[:blank:]]*\"" /root/buildinfo/$dockerfile >> $env_file || log "---- Unable to get build date"
     fi
-    log ----- Getting environement variables
+    log ----- Getting environment variables
     echo -- Environment Variables >> $env_file
     oc -n $ns exec $pod -c $container -- env | sort >> $env_file
   done

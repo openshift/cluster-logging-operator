@@ -15,5 +15,5 @@ var (
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "[internal][generator][vetor][output][lokistack] suite")
+	RunSpecs(t, "[internal][generator][vector][output][lokistack] suite")
 }

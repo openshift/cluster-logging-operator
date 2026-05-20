@@ -28,7 +28,7 @@ func init() {
 // Runner is for executing the command. It provides implementation for
 // the methods in oc.Command interface.
 // Other commands like oc.Exec, oc.Get, oc.Literal collect their arguments
-// and use Runner to run the commad with arguments.
+// and use Runner to run the command with arguments.
 // It provides different modes of executing the commands, Run/RunFor/Output/OutputFor
 //
 // As fas as possible, it is to be kept independent of oc command syntax.

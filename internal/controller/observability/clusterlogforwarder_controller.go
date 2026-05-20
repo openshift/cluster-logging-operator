@@ -136,7 +136,7 @@ func (r *ClusterLogForwarderReconciler) Reconcile(_ context.Context, req ctrl.Re
 }
 
 // RemoveStaleWorkload removes existing workload if the ClusterLogForwarder was modified such that the deployment will change
-// from a daemonSet to a deployment or vise versa
+// from a daemonSet to a deployment or vice versa
 func RemoveStaleWorkload(k8Client client.Client, forwarder *obsv1.ClusterLogForwarder) error {
 	remove := collector.RemoveDeployment
 	if internalobs.DeployAsDeployment(*forwarder) {

@@ -13,7 +13,7 @@ type VersionID struct {
 	ID      string // Unique identifier of the guest cluster.
 }
 
-// GetVersionID returns the guest cluster version and ID for a HCP namepace.
+// GetVersionID returns the guest cluster version and ID for a HCP namespace.
 // Returns nil if the namespace is not a valid HCP namespace with a non-empty version and ID.
 func GetVersionID(ctx context.Context, c client.Reader, namespace string) *VersionID {
 	hcps := &hypershiftv1beta1.HostedControlPlaneList{}

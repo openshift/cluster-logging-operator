@@ -75,7 +75,7 @@ func SecretPath(secretName string, file string, formatter ...string) string {
 	return fmt.Sprintf(formatString, filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }
 
-// SecretFrom formated string SECRET[<secret_component_id>.<secret_name>#<secret_key>]
+// SecretFrom formatted string SECRET[<secret_component_id>.<secret_name>#<secret_key>]
 func SecretFrom(secretKey *v1.SecretReference) string {
 	if secretKey != nil && secretKey.SecretName != "" && secretKey.Key != "" {
 		return fmt.Sprintf("SECRET[%s.%s/%s]",

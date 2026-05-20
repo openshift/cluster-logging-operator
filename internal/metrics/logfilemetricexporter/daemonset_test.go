@@ -63,7 +63,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(BeNil())
 	})
 
-	It("should reconcile successfully a daemonset with specificied resources.requests", func() {
+	It("should reconcile successfully a daemonset with specified resources.requests", func() {
 		lfmeInstance.Spec = loggingv1alpha1.LogFileMetricExporterSpec{
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -90,7 +90,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 
 	})
 
-	It("should reconcile successfully a daemonset with specificied resources.limits", func() {
+	It("should reconcile successfully a daemonset with specified resources.limits", func() {
 		lfmeInstance.Spec = loggingv1alpha1.LogFileMetricExporterSpec{
 			Resources: &corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{
@@ -117,7 +117,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 
 	})
 
-	It("should reconcile successfully a daemonset with specificied resources.limits and resources.requests", func() {
+	It("should reconcile successfully a daemonset with specified resources.limits and resources.requests", func() {
 
 		reqMem1 := resource.MustParse("10Gi")
 		reqCPU1 := resource.MustParse("100m")

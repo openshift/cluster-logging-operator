@@ -2,12 +2,13 @@ package aws
 
 import (
 	_ "embed"
-	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
-	"github.com/openshift/cluster-logging-operator/internal/collector/s3"
-	"github.com/openshift/cluster-logging-operator/version"
 	"html/template"
 	"regexp"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/collector/s3"
+	"github.com/openshift/cluster-logging-operator/version"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -113,7 +114,7 @@ func GenerateAwsProfileCreds(reader client.Reader, clfName string, outputs []obs
 	return profileCredentials
 }
 
-// ParseRoleArn search for valid AWS arn, return emtpy for no match
+// ParseRoleArn search for valid AWS arn, return empty for no match
 func ParseRoleArn(authSpec *obs.AwsAuthentication, secrets observability.Secrets) string {
 	var roleString string
 	if authSpec.IamRole != nil {

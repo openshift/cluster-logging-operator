@@ -1,4 +1,4 @@
-// Package apiaudit 'compiles' a Kube-API server audit policy into a Vector tranform that implements the policy.
+// Package apiaudit 'compiles' a Kube-API server audit policy into a Vector transform that implements the policy.
 //
 // This is a re-implementation of splunk-audit-exporter in Vector Remap Language.
 //

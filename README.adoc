@@ -14,7 +14,7 @@ pods), _infrastructure_ logs (from system pods and node logs), and _audit_ logs
 
 The CLO deploys:
 
-* A log collector/forwarder (current implimentation is https://vector.dev/[Vector])
+* A log collector/forwarder (current implementation is https://vector.dev/[Vector])
 
 and relies upon:
 

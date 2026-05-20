@@ -2,6 +2,7 @@ package flowcontrol
 
 import (
 	"fmt"
+
 	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -51,7 +52,7 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 			if _, err := l.QueryUntil(fmt.Sprintf(LokiNsQuery, AllLogs), "", 10); err != nil {
 				Fail(fmt.Sprintf("Failed to read logs from Loki Server: %v", err))
 			}
-			// Wait until atleast 10 logs have been received
+			// Wait until at least 10 logs have been received
 			r, err := l.Query(fmt.Sprintf(LokiNsQuery, AllLogs), "", 20)
 			Expect(err).To(BeNil())
 			records := r[0].Records()

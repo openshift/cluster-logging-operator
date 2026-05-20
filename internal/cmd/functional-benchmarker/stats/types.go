@@ -11,7 +11,7 @@ type PerfLog struct {
 	// ContainerName is the name of the container producing the logstream
 	ContainerName string `json:"container_name,omitempty"`
 
-	// Message is the receiver processed messsage, not the original message
+	// Message is the receiver processed message, not the original message
 	Message string `json:"message,omitempty"`
 
 	// MessageSize is the original message size before it was processed by the receiver

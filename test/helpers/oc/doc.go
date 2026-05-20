@@ -2,7 +2,7 @@ package oc
 
 // oc package is a DSL for running oc/kubectl command from within go programs.
 // Each oc command is exposed as an interface, with methods to  collect command specific arguments.
-// The collected arguments are passed to runner to execute the commad.
+// The collected arguments are passed to runner to execute the command.
 //
 // A feature of this DSL is ability to compose oc commands.
 // e.g. oc.Exec can be composed with oc.Get to fetch arguments for oc.Exec.

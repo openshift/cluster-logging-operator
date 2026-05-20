@@ -53,7 +53,7 @@ func InitOptions() Options {
 	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
 	fs.BoolVar(&options.DoCleanup, "do-cleanup", true, "set to false to preserve the namespace")
-	//fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
+	//fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supersedes --collector-config")
 	//fs.StringVar(&options.Platform, "platform", "cluster", "The runtime environment: cluster, local. local requires podman")
 	fs.StringVar(&options.PayloadSource, "payload-source", "synthetic", "The load message profile: synthetic,application,simple")
 

@@ -28,7 +28,7 @@ var secureSchemes = map[string]string{
 	"ssl":   "tcp",
 }
 
-// IsSecure determins if a URL specs a secure scheme
+// IsSecure determines if a URL specs a secure scheme
 func IsSecure(urlString string) bool {
 	if url, err := Parse(urlString); err == nil {
 		return IsTLSScheme(url.Scheme)

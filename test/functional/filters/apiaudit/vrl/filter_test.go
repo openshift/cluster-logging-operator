@@ -26,8 +26,8 @@ var _ = Describe("Policy to VRL Filter", func() {
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 409}})).To(BeNil())
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 200}})).NotTo(BeNil())
 		})
-		It("should not omit by code if explictly empty", func() {
-			p := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{}} // Explictly Empty
+		It("should not omit by code if explicitly empty", func() {
+			p := &obs.KubeAPIAudit{OmitResponseCodes: &[]int{}} // Explicitly Empty
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 409}})).NotTo(BeNil())
 			Expect(Filtered(p, Event{ResponseStatus: &v1.Status{Code: 200}})).NotTo(BeNil())
 		})

@@ -14,7 +14,7 @@ type ForwarderContext struct {
 	Client kubernetes.Client
 
 	// Reader is a read only client for retrieving kubernetes resources. This
-	// client hits the API server directly, by-passing the controller cache
+	// client hits the API server directly, bypassing the controller cache
 	Reader kubernetes.Reader
 
 	// Forwarder is the ClusterLogForwarder to be reconciled

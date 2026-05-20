@@ -1,12 +1,13 @@
 package misc
 
 import (
+	"time"
+
 	"github.com/onsi/gomega/format"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,7 +47,7 @@ var _ = Describe("[Functional][Misc] ", func() {
 		Expect(collectorLogs).ToNot(ContainSubstring(WarnFileTooSmall))
 	})
 
-	It("validate what collector emmit warning for big logs without new line", func() {
+	It("validate what collector emit warning for big logs without new line", func() {
 		big := rand.Word(1000)
 		msg := functional.NewCRIOLogMessage(timestamp, string(big), false)
 		// writing log, without new line symbol at the end
@@ -70,7 +71,7 @@ var _ = Describe("[Functional][Misc] ", func() {
 		Expect(len(logs)).To(Equal(1))
 	})
 
-	It("validate what collector emmit warning on creating new log file for container", func() {
+	It("validate what collector emit warning on creating new log file for container", func() {
 		matchers.ExpectOK(framework.EmulateCreationNewLogFileForContainer(), "Expected no errors")
 
 		time.Sleep(20 * time.Second)

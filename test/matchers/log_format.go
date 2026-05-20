@@ -2,11 +2,12 @@ package matchers
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/gomega/types"
@@ -187,7 +188,7 @@ func CompareLog(template interface{}, actual interface{}) (string, bool, error) 
 	// logger.V(3).Info("Marshalled", "template", templateString)
 	// allLog := &logtypes.AllLog{}
 	// test.MustUnmarshal(templateString, allLog)
-	// logger.V(3).Info("Unmarshled", "template", template)
+	// logger.V(3).Info("Unmarshalled", "template", template)
 	templateFieldValues, templateFieldNames := DeepFields(template, "")
 	log.V(3).Info("Template", "names", templateFieldNames)
 	for i := range templateFieldNames {

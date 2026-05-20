@@ -5,7 +5,7 @@ import "strings"
 // InputComponent is a vector sink, transformation, source that is
 // provided as input to other components
 type InputComponent interface {
-	// InputIDs are the ids of config elemements to use as input to other components
+	// InputIDs are the ids of config elements to use as input to other components
 	InputIDs() []string
 }
 

@@ -39,6 +39,7 @@ func (t *telemetryCollector) Describe(descs chan<- *prometheus.Desc) {
 	descs <- forwarderPipelinesDesc
 	descs <- forwarderInputTypeDesc
 	descs <- forwarderOutputTypeDesc
+	descs <- forwarderReadyDesc
 }
 
 func (t *telemetryCollector) Collect(m chan<- prometheus.Metric) {
@@ -96,6 +97,16 @@ func (t *telemetryCollector) collectForwarder(m chan<- prometheus.Metric) error 
 			m <- prometheus.MustNewConstMetric(forwarderOutputTypeDesc, prometheus.GaugeValue, float64(c),
 				t.version, clf.Namespace, clf.Name, string(output))
 		}
+
+		readyStatus := readyConditionStatus(clf.Status.Conditions)
+		for _, s := range []string{string(metav1.ConditionTrue), string(metav1.ConditionFalse), string(metav1.ConditionUnknown)} {
+			val := 0.0
+			if s == readyStatus {
+				val = 1.0
+			}
+			m <- prometheus.MustNewConstMetric(forwarderReadyDesc, prometheus.GaugeValue, val,
+				clf.Namespace, clf.Name, s)
+		}
 	}
 
 	return nil
@@ -141,4 +152,14 @@ func hasReadyCondition(conditions []metav1.Condition) bool {
 	}
 
 	return false
+}
+
+func readyConditionStatus(conditions []metav1.Condition) string {
+	for _, c := range conditions {
+		if c.Type == observabilityv1.ConditionTypeReady {
+			return string(c.Status)
+		}
+	}
+
+	return string(metav1.ConditionUnknown)
 }

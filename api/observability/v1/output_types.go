@@ -297,6 +297,8 @@ type HTTPAuthentication struct {
 
 // AzureLogsIngestionAuthType sets the authentication type used for Azure Log Ingestion.
 //
+// Valid values are: clientSecret, workloadIdentity.
+//
 // +kubebuilder:validation:Enum:=clientSecret;workloadIdentity
 type AzureLogsIngestionAuthType string
 
@@ -314,6 +316,8 @@ const (
 // +kubebuilder:validation:XValidation:rule="self.type != 'workloadIdentity' || has(self.workloadIdentity)", message="Additional type specific spec is required for authentication"
 type AzureLogsIngestionAuthentication struct {
 	// Type is the type of Azure authentication to configure.
+	//
+	// Valid values are: clientSecret, workloadIdentity.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
@@ -488,6 +492,8 @@ type CloudwatchTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	// It is an error if the compression type is not supported by the output.
 	//
+	// Valid values are: gzip, none, snappy, zlib, zstd.
+	//
 	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
@@ -542,7 +548,9 @@ type Cloudwatch struct {
 	GroupName string `json:"groupName"`
 }
 
-// AwsAuthType sets the authentication type used for CloudWatch.
+// AwsAuthType sets the authentication type used for an AWS service.
+//
+// Valid values are: awsAccessKey, iamRole.
 //
 // +kubebuilder:validation:Enum:=awsAccessKey;iamRole
 type AwsAuthType string
@@ -559,7 +567,9 @@ const (
 // +kubebuilder:validation:XValidation:rule="self.type != 'awsAccessKey' || has(self.awsAccessKey)", message="Additional type specific spec is required for authentication"
 // +kubebuilder:validation:XValidation:rule="self.type != 'iamRole' || has(self.iamRole)", message="Additional type specific spec is required for authentication"
 type AwsAuthentication struct {
-	// Type is the type of cloudwatch authentication to configure
+	// Type is the type of authentication to configure for an AWS service.
+	//
+	// Valid values are: awsAccessKey, iamRole.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Authentication Type"
@@ -656,6 +666,8 @@ type ElasticsearchTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
 
 	// Compression causes data to be compressed before sending over the network.
+	//
+	// Valid values are: none, gzip, zlib.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;zlib
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
@@ -812,6 +824,8 @@ type HTTPTuningSpec struct {
 
 	// Compression causes data to be compressed before sending over the network.
 	//
+	// Valid values are: none, gzip, snappy, zlib.
+	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy;zlib
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
 	Compression string `json:"compression,omitempty"`
@@ -892,6 +906,8 @@ type KafkaTuningSpec struct {
 	MaxWrite *resource.Quantity `json:"maxWrite,omitempty"`
 
 	// Compression causes data to be compressed before sending over the network.
+	//
+	// Valid values are: none, snappy, zstd, lz4.
 	//
 	// +kubebuilder:validation:Enum:=none;snappy;zstd;lz4
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
@@ -994,6 +1010,8 @@ type LokiTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
 
 	// Compression causes data to be compressed before sending over the network.
+	//
+	// Valid values are: none, gzip, snappy.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip;snappy
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
@@ -1245,6 +1263,8 @@ type SplunkTuningSpec struct {
 	BaseOutputTuningSpec `json:",inline"`
 
 	// Compression causes data to be compressed before sending over the network.
+	//
+	// Valid values are: none, gzip.
 	//
 	// +kubebuilder:validation:Enum:=none;gzip
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"
@@ -1594,6 +1614,8 @@ type OTLPTuningSpec struct {
 	// Compression causes data to be compressed before sending over the network.
 	// It is an error if the compression type is not supported by the output.
 	//
+	// Valid values are: gzip, snappy, zlib, zstd, none.
+	//
 	// +kubebuilder:validation:Enum:=gzip;snappy;zlib;zstd;none
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Compression string `json:"compression,omitempty"`
@@ -1634,6 +1656,8 @@ type S3TuningSpec struct {
 
 	// Compression causes data to be compressed before sending over the network.
 	// It is an error if the compression type is not supported by the output.
+	//
+	// Valid values are: gzip, none, snappy, zlib, zstd.
 	//
 	// +kubebuilder:validation:Enum:=gzip;none;snappy;zlib;zstd
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compression"

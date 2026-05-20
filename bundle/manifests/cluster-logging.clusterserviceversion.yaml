@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-05-15T10:01:10Z"
+    createdAt: "2026-05-20T19:24:21Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -511,7 +511,10 @@ spec:
         path: outputs[0].azureLogsIngestion.authentication.clientSecret.tenantId
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Type is the type of Azure authentication to configure.
+      - description: |-
+          Type is the type of Azure authentication to configure.
+
+          Valid values are: clientSecret, workloadIdentity.
         displayName: Authentication Type
         path: outputs[0].azureLogsIngestion.authentication.type
       - description: WorkloadIdentity contains the Azure AD Workload Identity credentials.
@@ -532,7 +535,10 @@ spec:
         path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].azureLogsIngestion.authentication.workloadIdentity.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -776,7 +782,10 @@ spec:
           requests.
         displayName: Token
         path: outputs[0].cloudwatch.authentication.iamRole.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].cloudwatch.authentication.iamRole.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -793,7 +802,10 @@ spec:
         path: outputs[0].cloudwatch.authentication.iamRole.token.secret.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Type is the type of cloudwatch authentication to configure
+      - description: |-
+          Type is the type of authentication to configure for an AWS service.
+
+          Valid values are: awsAccessKey, iamRole.
         displayName: Authentication Type
         path: outputs[0].cloudwatch.authentication.type
       - description: |-
@@ -826,6 +838,8 @@ spec:
       - description: |-
           Compression causes data to be compressed before sending over the network.
           It is an error if the compression type is not supported by the output.
+
+          Valid values are: gzip, none, snappy, zlib, zstd.
         displayName: Compression
         path: outputs[0].cloudwatch.tuning.compression
       - displayName: Delivery Mode
@@ -875,7 +889,10 @@ spec:
           requests.
         displayName: Bearer Token
         path: outputs[0].elasticsearch.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].elasticsearch.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -936,8 +953,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].elasticsearch.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, gzip, zlib.
         displayName: Compression
         path: outputs[0].elasticsearch.tuning.compression
       - displayName: Delivery Mode
@@ -999,7 +1018,10 @@ spec:
           file is an external_account type.
         displayName: Token
         path: outputs[0].googleCloudLogging.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].googleCloudLogging.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1088,7 +1110,10 @@ spec:
           requests.
         displayName: Bearer Token
         path: outputs[0].http.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].http.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1138,8 +1163,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].http.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, gzip, snappy, zlib.
         displayName: Compression
         path: outputs[0].http.tuning.compression
       - displayName: Delivery Mode
@@ -1239,8 +1266,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].kafka.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, snappy, zstd, lz4.
         displayName: Compression
         path: outputs[0].kafka.tuning.compression
       - displayName: Delivery Mode
@@ -1281,7 +1310,10 @@ spec:
           requests.
         displayName: Bearer Token
         path: outputs[0].loki.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].loki.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1370,8 +1402,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].loki.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, gzip, snappy.
         displayName: Compression
         path: outputs[0].loki.tuning.compression
       - displayName: Delivery Mode
@@ -1415,7 +1449,10 @@ spec:
           requests.
         displayName: Bearer Token
         path: outputs[0].lokiStack.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].lokiStack.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1552,8 +1589,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].lokiStack.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, gzip, snappy.
         displayName: Compression
         path: outputs[0].lokiStack.tuning.compression
       - displayName: Delivery Mode
@@ -1599,7 +1638,10 @@ spec:
           requests.
         displayName: Bearer Token
         path: outputs[0].otlp.authentication.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].otlp.authentication.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1636,6 +1678,8 @@ spec:
       - description: |-
           Compression causes data to be compressed before sending over the network.
           It is an error if the compression type is not supported by the output.
+
+          Valid values are: gzip, snappy, zlib, zstd, none.
         displayName: Compression
         path: outputs[0].otlp.tuning.compression
         x-descriptors:
@@ -1783,7 +1827,10 @@ spec:
           requests.
         displayName: Token
         path: outputs[0].s3.authentication.iamRole.token
-      - description: From is the source from where to find the token
+      - description: |-
+          From is the source from where to find the token.
+
+          Valid values are: secret, serviceAccount.
         displayName: Token Source
         path: outputs[0].s3.authentication.iamRole.token.from
       - description: Use Secret if the value should be sourced from a Secret in the
@@ -1800,7 +1847,10 @@ spec:
         path: outputs[0].s3.authentication.iamRole.token.secret.name
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
-      - description: Type is the type of cloudwatch authentication to configure
+      - description: |-
+          Type is the type of authentication to configure for an AWS service.
+
+          Valid values are: awsAccessKey, iamRole.
         displayName: Authentication Type
         path: outputs[0].s3.authentication.type
       - description: |-
@@ -1843,6 +1893,8 @@ spec:
       - description: |-
           Compression causes data to be compressed before sending over the network.
           It is an error if the compression type is not supported by the output.
+
+          Valid values are: gzip, none, snappy, zlib, zstd.
         displayName: Compression
         path: outputs[0].s3.tuning.compression
       - displayName: Delivery Mode
@@ -1984,8 +2036,10 @@ spec:
       - description: Tuning specs tuning for the output
         displayName: Tuning Options
         path: outputs[0].splunk.tuning
-      - description: Compression causes data to be compressed before sending over
-          the network.
+      - description: |-
+          Compression causes data to be compressed before sending over the network.
+
+          Valid values are: none, gzip.
         displayName: Compression
         path: outputs[0].splunk.tuning.compression
       - displayName: Delivery Mode

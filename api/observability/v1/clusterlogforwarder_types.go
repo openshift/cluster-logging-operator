@@ -259,7 +259,9 @@ type SecretReference struct {
 // +kubebuilder:validation:XValidation:rule="self.from != 'secret' || has(self.secret)", message="Additional secret spec is required when bearer token is sourced from a secret"
 type BearerToken struct {
 
-	// From is the source from where to find the token
+	// From is the source from where to find the token.
+	//
+	// Valid values are: secret, serviceAccount.
 	//
 	// +kubebuilder:validation:Required
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Token Source"
@@ -273,6 +275,8 @@ type BearerToken struct {
 }
 
 // BearerTokenFrom specifies the source used for the bearer token.
+//
+// Valid values are: secret, serviceAccount.
 //
 // +kubebuilder:validation:Enum:=secret;serviceAccount
 type BearerTokenFrom string

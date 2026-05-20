@@ -315,7 +315,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will
 be taken into consideration. The keys are used to lookup values from the
@@ -325,7 +324,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to.
 The term is applied to the union of the namespaces selected by this field
@@ -451,7 +449,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will
 be taken into consideration. The keys are used to lookup values from the
@@ -461,7 +458,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to.
 The term is applied to the union of the namespaces selected by this field
@@ -583,8 +579,8 @@ a node that violates one or more of the expressions. The node that is
 most preferred is the one with the greatest sum of weights, i.e.
 for each node that meets all of the scheduling requirements (resource
 request, requiredDuringScheduling anti-affinity expressions, etc.),
-compute a sum by iterating through the elements of this field and adding
-&#34;weight&#34; to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+compute a sum by iterating through the elements of this field and subtracting
+&#34;weight&#34; from the sum if the node has pods which matches the corresponding podAffinityTerm; the
 node(s) with the highest sum are the most preferred.
 |requiredDuringSchedulingIgnoredDuringExecution|array|  *(optional)* If the anti-affinity requirements specified by this field are not met at
 scheduling time, the pod will not be scheduled onto the node.
@@ -626,7 +622,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will
 be taken into consideration. The keys are used to lookup values from the
@@ -636,7 +631,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to.
 The term is applied to the union of the namespaces selected by this field
@@ -762,7 +756,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will
 be taken into consideration. The keys are used to lookup values from the
@@ -772,7 +765,6 @@ for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
 
 |namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to.
 The term is applied to the union of the namespaces selected by this field
@@ -920,7 +912,7 @@ Type:: object
 |claims|array|  *(optional)* Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-This is an alpha field and requires enabling the
+This field depends on the
 DynamicResourceAllocation feature gate.
 
 This field is immutable. It can only be set for containers.
@@ -971,9 +963,10 @@ When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
 |key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
 If the key is empty, operator must be Exists; this combination means to match all values and all keys.
 |operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-Valid operators are Exists and Equal. Defaults to Equal.
+Valid operators are Exists, Equal, Lt, and Gt. Defaults to Equal.
 Exists is equivalent to wildcard for value, so that a pod can
 tolerate all taints of a particular category.
+Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).
 |tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
 of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
 it is not set, which means tolerate the taint forever (do not evict). Zero and
@@ -1974,6 +1967,8 @@ Type:: object
 
 |type|string|  Type is the type of Azure authentication to configure.
 
+Valid values are: clientSecret, workloadIdentity.
+
 |workloadIdentity|object|  WorkloadIdentity contains the Azure AD Workload Identity credentials.
 
 |======================
@@ -2040,7 +2035,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -2286,7 +2283,9 @@ then assume a role in order to access cross-account services.
 This can be used for authentication in STS-enabled clusters when additionally specifying
 a web identity token
 
-|type|string|  Type is the type of cloudwatch authentication to configure
+|type|string|  Type is the type of authentication to configure for an AWS service.
+
+Valid values are: awsAccessKey, iamRole.
 
 |======================
 
@@ -2417,7 +2416,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -2454,6 +2455,8 @@ Type:: object
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 It is an error if the compression type is not supported by the output.
+
+Valid values are: gzip, none, snappy, zlib, zstd.
 
 |======================
 
@@ -2546,7 +2549,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -2602,6 +2607,8 @@ Type:: object
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
+
+Valid values are: none, gzip, zlib.
 
 |======================
 
@@ -2686,7 +2693,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -2812,7 +2821,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -2868,6 +2879,8 @@ Type:: object
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
+
+Valid values are: none, gzip, snappy, zlib.
 
 |======================
 
@@ -2990,6 +3003,8 @@ Type:: object
 |Property|Type|Description
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
+
+Valid values are: none, snappy, zstd, lz4.
 
 |deliveryMode|string|  
 |maxWrite|object|  MaxWrite limits the maximum payload in terms of bytes of a single &#34;send&#34; to the output.
@@ -3179,7 +3194,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -3235,6 +3252,8 @@ Type:: object
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
+
+Valid values are: none, gzip, snappy.
 
 |======================
 
@@ -3310,7 +3329,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -3472,6 +3493,8 @@ Type:: object
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 
+Valid values are: none, gzip, snappy.
+
 |======================
 
 === .spec.outputs[].otlp
@@ -3545,7 +3568,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -3598,6 +3623,8 @@ Type:: object
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 It is an error if the compression type is not supported by the output.
+
+Valid values are: gzip, snappy, zlib, zstd, none.
 
 |======================
 
@@ -3677,7 +3704,9 @@ then assume a role in order to access cross-account services.
 This can be used for authentication in STS-enabled clusters when additionally specifying
 a web identity token
 
-|type|string|  Type is the type of cloudwatch authentication to configure
+|type|string|  Type is the type of authentication to configure for an AWS service.
+
+Valid values are: awsAccessKey, iamRole.
 
 |======================
 
@@ -3808,7 +3837,9 @@ Type:: object
 |======================
 |Property|Type|Description
 
-|from|string|  From is the source from where to find the token
+|from|string|  From is the source from where to find the token.
+
+Valid values are: secret, serviceAccount.
 
 |secret|object|  Use Secret if the value should be sourced from a Secret in the same namespace.
 
@@ -3845,6 +3876,8 @@ Type:: object
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
 It is an error if the compression type is not supported by the output.
+
+Valid values are: gzip, none, snappy, zlib, zstd.
 
 |======================
 
@@ -3902,7 +3935,7 @@ Examples: `.kubernetes`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kub
 |source|string|  Source identifies the origin of a log event.
 The Source can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
 A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
-Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
 If not specified will be detected according to .log_source and .log_type value.
 Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
 
@@ -3913,6 +3946,30 @@ Example:
 2. {.foo\|\|.bar\|\|&#34;missing&#34;}
 
 3. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
+
+|sourceType|string|  SourceType can be used to specify a pretrained or custom source type in Splunk, but can only be set when PayloadKey is defined.
+
+WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match.
+
+If SourceType is not specified, the source type used is `_json`. If using PayloadKey without SourceType, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
+Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+
+The SourceType can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `{}` and MUST end with a static fallback value separated with `\|\|`.
+
+Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
+
+Examples:
+
+1. {.kubernetes.labels.&#34;splunk/sourcetype&#34;\|\|&#34;generic_single_line&#34;}
+
+2. log4j
+
+3. foo-{.bar\|\|&#34;none&#34;}
+
+4. {.foo\|\|.bar\|\|&#34;missing&#34;}
+
+5. foo.{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}-waldo.fred{.plugh\|\|&#34;none&#34;}
 
 |tuning|object|  Tuning specs tuning for the output
 
@@ -3974,6 +4031,8 @@ Type:: object
 |minRetryDuration|Duration|  MinRetryDuration is the minimum time to wait between attempts to retry after delivery a failure.
 
 |compression|string|  Compression causes data to be compressed before sending over the network.
+
+Valid values are: none, gzip.
 
 |======================
 

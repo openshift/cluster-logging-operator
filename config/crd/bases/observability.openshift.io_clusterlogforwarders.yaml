@@ -1893,8 +1893,10 @@ spec:
                               - tenantId
                               type: object
                             type:
-                              description: Type is the type of Azure authentication
-                                to configure.
+                              description: |-
+                                Type is the type of Azure authentication to configure.
+
+                                Valid values are: clientSecret, workloadIdentity.
                               enum:
                               - clientSecret
                               - workloadIdentity
@@ -1917,8 +1919,10 @@ spec:
                                     for authenticating the requests.
                                   properties:
                                     from:
-                                      description: From is the source from where to
-                                        find the token
+                                      description: |-
+                                        From is the source from where to find the token.
+
+                                        Valid values are: secret, serviceAccount.
                                       enum:
                                       - secret
                                       - serviceAccount
@@ -2241,8 +2245,10 @@ spec:
                                     used for authenticating requests.
                                   properties:
                                     from:
-                                      description: From is the source from where to
-                                        find the token
+                                      description: |-
+                                        From is the source from where to find the token.
+
+                                        Valid values are: secret, serviceAccount.
                                       enum:
                                       - secret
                                       - serviceAccount
@@ -2274,8 +2280,10 @@ spec:
                               - token
                               type: object
                             type:
-                              description: Type is the type of cloudwatch authentication
-                                to configure
+                              description: |-
+                                Type is the type of authentication to configure for an AWS service.
+
+                                Valid values are: awsAccessKey, iamRole.
                               enum:
                               - awsAccessKey
                               - iamRole
@@ -2319,6 +2327,8 @@ spec:
                               description: |-
                                 Compression causes data to be compressed before sending over the network.
                                 It is an error if the compression type is not supported by the output.
+
+                                Valid values are: gzip, none, snappy, zlib, zstd.
                               enum:
                               - gzip
                               - none
@@ -2399,8 +2409,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -2477,8 +2489,10 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, gzip, zlib.
                               enum:
                               - none
                               - gzip
@@ -2568,8 +2582,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -2703,8 +2719,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -2790,8 +2808,10 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, gzip, snappy, zlib.
                               enum:
                               - none
                               - gzip
@@ -2926,8 +2946,10 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, snappy, zstd, lz4.
                               enum:
                               - none
                               - snappy
@@ -2994,8 +3016,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -3107,8 +3131,10 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, gzip, snappy.
                               enum:
                               - none
                               - gzip
@@ -3177,8 +3203,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -3341,8 +3369,10 @@ spec:
                           description: Tuning specs tuning for the output
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, gzip, snappy.
                               enum:
                               - none
                               - gzip
@@ -3425,8 +3455,10 @@ spec:
                               nullable: true
                               properties:
                                 from:
-                                  description: From is the source from where to find
-                                    the token
+                                  description: |-
+                                    From is the source from where to find the token.
+
+                                    Valid values are: secret, serviceAccount.
                                   enum:
                                   - secret
                                   - serviceAccount
@@ -3478,6 +3510,8 @@ spec:
                               description: |-
                                 Compression causes data to be compressed before sending over the network.
                                 It is an error if the compression type is not supported by the output.
+
+                                Valid values are: gzip, snappy, zlib, zstd, none.
                               enum:
                               - gzip
                               - snappy
@@ -3674,8 +3708,10 @@ spec:
                                     used for authenticating requests.
                                   properties:
                                     from:
-                                      description: From is the source from where to
-                                        find the token
+                                      description: |-
+                                        From is the source from where to find the token.
+
+                                        Valid values are: secret, serviceAccount.
                                       enum:
                                       - secret
                                       - serviceAccount
@@ -3707,8 +3743,10 @@ spec:
                               - token
                               type: object
                             type:
-                              description: Type is the type of cloudwatch authentication
-                                to configure
+                              description: |-
+                                Type is the type of authentication to configure for an AWS service.
+
+                                Valid values are: awsAccessKey, iamRole.
                               enum:
                               - awsAccessKey
                               - iamRole
@@ -3761,6 +3799,8 @@ spec:
                               description: |-
                                 Compression causes data to be compressed before sending over the network.
                                 It is an error if the compression type is not supported by the output.
+
+                                Valid values are: gzip, none, snappy, zlib, zstd.
                               enum:
                               - gzip
                               - none
@@ -3939,8 +3979,10 @@ spec:
                           nullable: true
                           properties:
                             compression:
-                              description: Compression causes data to be compressed
-                                before sending over the network.
+                              description: |-
+                                Compression causes data to be compressed before sending over the network.
+
+                                Valid values are: none, gzip.
                               enum:
                               - none
                               - gzip

@@ -20,6 +20,7 @@ const (
 
 	labelInput  = "input"
 	labelOutput = "output"
+	labelStatus = "status"
 )
 
 var (
@@ -43,6 +44,11 @@ var (
 		metricsPrefix+"forwarder_output_type",
 		"Shows which output types a forwarder uses.",
 		[]string{labelVersion, labelResourceNamespace, labelResourceName, labelOutput}, nil,
+	)
+	forwarderReadyDesc = prometheus.NewDesc(
+		metricsPrefix+"forwarder_ready",
+		"Shows the ready condition status of a forwarder. Value is 1 for the current status, 0 otherwise.",
+		[]string{labelResourceNamespace, labelResourceName, labelStatus}, nil,
 	)
 )
 

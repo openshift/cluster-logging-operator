@@ -107,6 +107,11 @@ log_forwarder_output_type{output="lokiStack",resource_name="test-name",resource_
 # HELP log_forwarder_pipelines Metric counting the number of pipelines in a forwarder.
 # TYPE log_forwarder_pipelines gauge
 log_forwarder_pipelines{resource_name="test-name",resource_namespace="test-namespace",version="test-version"} 1
+# HELP log_forwarder_ready Shows the ready condition status of a forwarder. Value is 1 for the current status, 0 otherwise.
+# TYPE log_forwarder_ready gauge
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="False"} 0
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="True"} 1
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="Unknown"} 0
 `
 
 				ctx := context.Background()
@@ -115,6 +120,82 @@ log_forwarder_pipelines{resource_name="test-name",resource_namespace="test-names
 
 				metricsReader := strings.NewReader(wantMetrics)
 				err := testutil.CollectAndCompare(collector, metricsReader)
+				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("with ClusterLogForwarder Ready=False", func() {
+			It("should show ready status as false", func() {
+				clf := &observabilityv1.ClusterLogForwarder{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-namespace",
+						Name:      "test-name",
+					},
+					Spec: observabilityv1.ClusterLogForwarderSpec{
+						Pipelines: []observabilityv1.PipelineSpec{
+							{
+								Name:       "pipeline",
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"output"},
+							},
+						},
+					},
+					Status: observabilityv1.ClusterLogForwarderStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   observabilityv1.ConditionTypeReady,
+								Status: metav1.ConditionFalse,
+							},
+						},
+					},
+				}
+				wantMetrics := `# HELP log_forwarder_ready Shows the ready condition status of a forwarder. Value is 1 for the current status, 0 otherwise.
+# TYPE log_forwarder_ready gauge
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="False"} 1
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="True"} 0
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="Unknown"} 0
+`
+
+				ctx := context.Background()
+				k8s := fake.NewFakeClient(clf)
+				collector := newTelemetryCollector(ctx, k8s, testVersion)
+
+				metricsReader := strings.NewReader(wantMetrics)
+				err := testutil.CollectAndCompare(collector, metricsReader, "log_forwarder_ready")
+				Expect(err).To(BeNil())
+			})
+		})
+
+		Context("with ClusterLogForwarder without Ready condition", func() {
+			It("should default to unknown status", func() {
+				clf := &observabilityv1.ClusterLogForwarder{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "test-namespace",
+						Name:      "test-name",
+					},
+					Spec: observabilityv1.ClusterLogForwarderSpec{
+						Pipelines: []observabilityv1.PipelineSpec{
+							{
+								Name:       "pipeline",
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"output"},
+							},
+						},
+					},
+				}
+				wantMetrics := `# HELP log_forwarder_ready Shows the ready condition status of a forwarder. Value is 1 for the current status, 0 otherwise.
+# TYPE log_forwarder_ready gauge
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="False"} 0
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="True"} 0
+log_forwarder_ready{resource_name="test-name",resource_namespace="test-namespace",status="Unknown"} 1
+`
+
+				ctx := context.Background()
+				k8s := fake.NewFakeClient(clf)
+				collector := newTelemetryCollector(ctx, k8s, testVersion)
+
+				metricsReader := strings.NewReader(wantMetrics)
+				err := testutil.CollectAndCompare(collector, metricsReader, "log_forwarder_ready")
 				Expect(err).To(BeNil())
 			})
 		})

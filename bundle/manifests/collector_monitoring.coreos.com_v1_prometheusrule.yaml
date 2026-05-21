@@ -55,6 +55,21 @@ spec:
       labels:
         service: clusterlogforwarder
         severity: warning
+    - alert: ClusterLogForwarderNotReady
+      annotations:
+        message: ClusterLogForwarder {{ $labels.resource_namespace }}/{{ $labels.resource_name
+          }} is not ready.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/ClusterLogForwarderNotReady.md
+        summary: |-
+          The ClusterLogForwarder {{ $labels.resource_namespace }}/{{ $labels.resource_name }} has been in a not ready state
+          for more than 1 minute. This typically indicates a validation error in the ClusterLogForwarder spec.
+          Check the ClusterLogForwarder status conditions for details.
+      expr: |
+        log_forwarder_ready{status="False"} == 1
+      for: 1m
+      labels:
+        service: clusterlogforwarder
+        severity: error
     - alert: CollectorNodeDown
       annotations:
         description: Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod

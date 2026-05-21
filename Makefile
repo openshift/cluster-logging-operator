@@ -31,7 +31,7 @@ export LOKI_OPERATOR_CHANNEL?=stable-6.4
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.54.0
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:latest
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:v0.5.0
-IMAGE_TLS_SCANNER?=quay.io/jcantril/tls-scanner:latest
+IMAGE_TLS_SCANNER?=quay.io/openshift/tls-scanner:latest
 
 REPLICAS?=0
 export E2E_TEST_EXCLUDES?=flowcontrol

@@ -59,6 +59,7 @@ spec:
       annotations:
         description: Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod
           }} collector component for more than 10m.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/CollectorNodeDown.md
         summary: Collector cannot be scraped
       expr: |
         up{app_kubernetes_io_component = "collector", app_kubernetes_io_part_of = "cluster-logging"} == 0
@@ -79,6 +80,23 @@ spec:
       labels:
         service: collector
         severity: Warning
+    - alert: CollectorSourceDiscardedLogs
+      annotations:
+        description: |-
+          The collector source "{{ $labels.component_id }}" owned by ClusterLogForwarder "{{ $labels.namespace }}/{{ $labels.app_kubernetes_io_instance }}"
+          is discarding logs. This typically occurs when log lines exceed the configured maxMessageSize limit.
+        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/cluster-logging-operator/CollectorSourceDiscardedLogs.md
+        summary: Collector source "{{ $labels.component_id }}" in namespace "{{ $labels.namespace
+          }}" is discarding logs.
+      expr: |
+        sum by(namespace, app_kubernetes_io_instance, component_id, component_type)(
+          increase(vector_component_discarded_events_total{component_kind="source"}[10m])
+          or
+          increase(vector_component_errors_total{component_kind="source", error_code=~"reading_line_from_file|reading_line_from_kubernetes_log"}[10m])
+        ) > 0
+      labels:
+        service: collector
+        severity: warning
     - alert: CollectorHigh403ForbiddenResponseRate
       annotations:
         description: High rate of "HTTP 403 Forbidden" responses detected for collector

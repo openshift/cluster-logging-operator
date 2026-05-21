@@ -97,6 +97,7 @@ type ContainerInputTuningSpec struct {
 
 	// RateLimitPerContainer is the limit applied to each container
 	// by this input. This limit is applied per collector deployment.
+	// Log records exceeding the rate limit are dropped.
 	//
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Per-Container Rate Limit"

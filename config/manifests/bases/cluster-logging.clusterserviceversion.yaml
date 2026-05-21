@@ -289,11 +289,13 @@ spec:
       - description: |-
           RateLimitPerContainer is the limit applied to each container
           by this input. This limit is applied per collector deployment.
+          Log records exceeding the rate limit are dropped.
         displayName: Per-Container Rate Limit
         path: inputs[0].application.tuning.rateLimitPerContainer
       - description: |-
           MaxRecordsPerSecond is the maximum number of log records
-          allowed per input/output in a pipeline
+          allowed per input/output in a pipeline.
+          Log records exceeding this limit are dropped.
         displayName: Max Records Per Second
         path: inputs[0].application.tuning.rateLimitPerContainer.maxRecordsPerSecond
         x-descriptors:
@@ -340,11 +342,13 @@ spec:
       - description: |-
           RateLimitPerContainer is the limit applied to each container
           by this input. This limit is applied per collector deployment.
+          Log records exceeding the rate limit are dropped.
         displayName: Per-Container Rate Limit
         path: inputs[0].infrastructure.tuning.container.rateLimitPerContainer
       - description: |-
           MaxRecordsPerSecond is the maximum number of log records
-          allowed per input/output in a pipeline
+          allowed per input/output in a pipeline.
+          Log records exceeding this limit are dropped.
         displayName: Max Records Per Second
         path: inputs[0].infrastructure.tuning.container.rateLimitPerContainer.maxRecordsPerSecond
         x-descriptors:
@@ -1642,7 +1646,8 @@ spec:
         path: outputs[0].rateLimit
       - description: |-
           MaxRecordsPerSecond is the maximum number of log records
-          allowed per input/output in a pipeline
+          allowed per input/output in a pipeline.
+          Log records exceeding this limit are dropped.
         displayName: Max Records Per Second
         path: outputs[0].rateLimit.maxRecordsPerSecond
         x-descriptors:

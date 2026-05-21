@@ -41,6 +41,8 @@ for library_file in $( find "${OS_ROOT}/hack/lib" -type f -name '*.sh' -not -pat
 	source "${library_file}"
 done
 
+ginkgo_version=$(grep github.com/onsi/ginkgo/v2 ${init_source}/go.mod | head -n1 | grep -oE 'v([0-9]*\.[0-9]*\.[0-9]*)$')
+
 unset library_files library_file init_source
 
 # all of our Bash scripts need to have the stacktrace
@@ -60,5 +62,5 @@ fi
 if [[ -n "${JUNIT_REPORT:-}" ]]; then
   export JUNIT_REPORT_OUTPUT="${LOG_DIR}/raw_test_output.log"
 fi
-
-go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@v2.23.4
+go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@${ginkgo_version}
+export PATH=$(go env GOPATH)/bin:$PATH

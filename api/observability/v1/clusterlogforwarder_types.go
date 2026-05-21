@@ -208,7 +208,8 @@ type PipelineSpec struct {
 
 type LimitSpec struct {
 	// MaxRecordsPerSecond is the maximum number of log records
-	// allowed per input/output in a pipeline
+	// allowed per input/output in a pipeline.
+	// Log records exceeding this limit are dropped.
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum:=0

@@ -26,6 +26,7 @@ var collectorMinimalAllowlist = &metricAllowlistConfig{
 		"vector_buffer_byte_size",
 		"vector_component_errors_total",
 		"vector_component_received_events_total",
+		"vector_component_discarded_events_total",
 
 		// Metrics used in recording rules (collector_alerts.yaml, telemetry_rules.yaml)
 		"vector_component_received_bytes_total",
@@ -34,7 +35,6 @@ var collectorMinimalAllowlist = &metricAllowlistConfig{
 		"vector_component_sent_bytes_total",
 		"vector_component_received_event_bytes_total",
 		"vector_open_files",
-		"vector_component_discarded_events_total",
 
 		// Additional buffer and event metrics
 		"vector_buffer_discarded_events_total",

@@ -128,6 +128,11 @@ You can view this alerts in the OpenShift Container Platform web console.
 
 image::buffer-alert.png[Fired allert]
 
+=== ClusterLogForwarderNotReady
+Will be fired if a ClusterLogForwarder has been in a not ready state for more than 1 minute.
+This typically indicates a validation error in the ClusterLogForwarder spec.
+Check the ClusterLogForwarder status conditions for details.
+
 === CollectorNodeDown
 Will be fired if collector component was offline for more than 10m
 

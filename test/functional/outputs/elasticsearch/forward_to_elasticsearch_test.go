@@ -7,15 +7,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 )
 
@@ -65,6 +65,33 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 
 			Expect(logs[0].Message).To(Equal(ukr + jp + ch))
 			Expect(logs[1].Message).To(Equal("������������"))
+		})
+	})
+
+	Context("with journal logs", func() {
+		BeforeEach(func() {
+			framework = functional.NewCollectorFunctionalFramework()
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToElasticSearchOutput()
+			Expect(framework.Deploy()).To(BeNil())
+		})
+		AfterEach(func() {
+			framework.Cleanup()
+		})
+		It("should populate hostname for journal logs", func() {
+			logline := functional.NewJournalLog(6, "test journal message", "functional-test-node")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			raw, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeElasticsearch))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).ToNot(BeEmpty())
+
+			var logs []types.JournalLog
+			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs).ToNot(BeEmpty())
+			Expect(logs[0].Hostname).ToNot(BeEmpty(), "Expected hostname to be populated for journal logs")
 		})
 	})
 

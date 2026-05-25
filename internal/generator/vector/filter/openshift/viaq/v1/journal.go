@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	AddHostName      = `.hostname = del(._internal.host)`
+	AddHostName      = `if exists(._internal.host) { .hostname = del(._internal.host) }`
 	AddJournalLogTag = `.tag = ".journal.system"`
 
 	FixJournalLogLevel = `
@@ -49,7 +49,7 @@ if exists(._internal._CMDLINE) { ._internal.systemd.t.CMDLINE = del(._internal._
 if exists(._internal._COMM) { ._internal.systemd.t.COMM = del(._internal._COMM) }
 if exists(._internal._EXE) { ._internal.systemd.t.EXE = del(._internal._EXE) }
 if exists(._internal._GID) { ._internal.systemd.t.GID = del(._internal._GID) }
-if exists(._internal._HOSTNAME) { ._internal.systemd.t.HOSTNAME = ._internal.hostname }
+if exists(._internal._HOSTNAME) { ._internal.systemd.t.HOSTNAME = del(._internal._HOSTNAME) }
 if exists(._internal._LINE_BREAK) { ._internal.systemd.t.LINE_BREAK = del(._internal._LINE_BREAK) }
 if exists(._internal._MACHINE_ID) { ._internal.systemd.t.MACHINE_ID = del(._internal._MACHINE_ID) }
 if exists(._internal._PID) { ._internal.systemd.t.PID = del(._internal._PID) }

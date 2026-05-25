@@ -4,18 +4,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/azure/logsingestion"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 const (
@@ -102,6 +102,30 @@ var _ = Describe("Forwarding to Azure Log Ingestion", func() {
 				g.Expect(infraLogs).To(HaveLen(3))
 				for i := range 3 {
 					g.Expect(infraLogs[i].LogType).To(Equal("infrastructure"))
+				}
+			}, 30*time.Second, time.Second).Should(Succeed())
+		})
+
+		It("should populate hostname for journal logs", func() {
+			logline := functional.NewJournalLog(6, "test journal message", "functional-test-node")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			Eventually(func(g Gomega) {
+				collectorLog, err := framework.ReadCollectorLogs()
+				g.Expect(err).To(BeNil())
+				g.Expect(strings.Count(collectorLog, failedReason)).To(BeEquivalentTo(0))
+
+				rawLogs, err := logsingestion.ReadRawLogs(framework)
+				g.Expect(err).To(BeNil())
+				var journalLogs []map[string]interface{}
+				for _, log := range rawLogs {
+					if log["log_source"] == "node" {
+						journalLogs = append(journalLogs, log)
+					}
+				}
+				g.Expect(journalLogs).ToNot(BeEmpty(), "Expected at least one journal log")
+				for _, log := range journalLogs {
+					g.Expect(log["hostname"]).ToNot(BeEmpty(), "Expected hostname to be populated for journal logs")
 				}
 			}, 30*time.Second, time.Second).Should(Succeed())
 		})

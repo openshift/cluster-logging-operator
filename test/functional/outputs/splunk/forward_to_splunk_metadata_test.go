@@ -205,6 +205,35 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			}
 		})
 
+		It("should send correct hostname for journal logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToSplunkOutput(hecSecretKey, func(output *obs.OutputSpec) {})
+			framework.Secrets = append(framework.Secrets, secret)
+			Expect(framework.Deploy()).To(BeNil())
+
+			// Wait for splunk to be ready
+			splunk.WaitOnSplunk(framework)
+
+			// Write journal logs
+			logline := functional.NewJournalLog(6, "test journal message", "functional-test-node")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			// Read infra logs
+			logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeInfrastructure))
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(logs).ToNot(BeEmpty())
+
+			result, err := framework.ReadFieldByIndexFromSplunk(functional.SplunkDefaultIndex, "host", "json")
+			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
+			Expect(result).ToNot(BeEmpty())
+			for _, v := range result {
+				matches := regexpHost.FindStringSubmatch(v)
+				Expect(matches).To(HaveLen(2), "Expected to find host field")
+				Expect(matches[1]).ToNot(BeEmpty(), "Expected hostname to be populated for journal logs")
+			}
+		})
+
 		It("should send correct hostname with payloadKey settings", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).

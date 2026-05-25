@@ -544,6 +544,7 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 				fmt.Printf("log received %s\n", o)
 			}
 			fields := strings.Split(outputlogs[0], " ")
+			Expect(fields[2]).ToNot(Equal("-"), "Expected hostname to be populated for journal logs")
 			Expect(getAppName(fields)).To(Equal("myapp"))
 			Expect(getProcID(fields)).To(Equal("myproc"))
 			Expect(getMsgID(fields)).To(Equal("mymsg"))

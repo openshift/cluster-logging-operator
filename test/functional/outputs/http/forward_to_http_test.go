@@ -105,6 +105,30 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		}),
 	)
 
+	Context("with journal logs", func() {
+		It("should populate hostname for journal logs", func() {
+			framework = functional.NewCollectorFunctionalFramework()
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToHttpOutput()
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			logline := functional.NewJournalLog(6, "test journal message", "functional-test-node")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			raw, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).ToNot(BeEmpty())
+
+			var logs []types.JournalLog
+			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs).ToNot(BeEmpty())
+			Expect(logs[0].Hostname).ToNot(BeEmpty(), "Expected hostname to be populated for journal logs")
+		})
+	})
+
 	Context("with tuning parameters", func() {
 		var (
 			addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor

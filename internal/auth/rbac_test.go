@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("NewMetaDataReaderClusterRoleBinding", func() {
 	It("should stub a well-formed clusterrolebinding", func() {
-		Expect(test.YAMLString(auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "logcollector", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "logcollector"))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -26,15 +26,20 @@ subjects:
   namespace: openshift-logging
 `))
 	})
+
+	It("should not have owner references", func() {
+		crb := auth.NewMetaDataReaderClusterRoleBinding(constants.OpenshiftNS, "logcollector")
+		Expect(crb.OwnerReferences).To(BeEmpty())
+	})
 })
 
 var _ = Describe("ServiceAccount SCC Role & RoleBinding", func() {
 	It("should stub a well-formed role", func() {
-		Expect(test.YAMLString(auth.NewServiceAccountSCCRole(constants.OpenshiftNS, "my-sa", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRole(constants.OpenshiftNS, "my-clf", "my-sa", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: my-sa-scc
+  name: my-clf-my-sa-scc
   namespace: openshift-logging
 rules:
 - apiGroups:
@@ -49,19 +54,19 @@ rules:
 	})
 
 	It("should stub a well-formed roleBinding", func() {
-		Expect(test.YAMLString(auth.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "my-sa", "customSA-scc", "customSA", metav1.OwnerReference{}))).To(MatchYAML(
+		Expect(test.YAMLString(auth.NewServiceAccountSCCRoleBinding(constants.OpenshiftNS, "my-clf", "my-sa", metav1.OwnerReference{}))).To(MatchYAML(
 			`apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: my-sa-scc
+  name: my-clf-scc
   namespace: openshift-logging
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: customSA-scc
+  name: my-clf-my-sa-scc
 subjects:
   - kind: ServiceAccount
-    name: customSA
+    name: my-sa
     namespace: openshift-logging
 `))
 	})

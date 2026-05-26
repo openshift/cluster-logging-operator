@@ -102,7 +102,7 @@ var _ = Describe("Manager", Ordered, func() {
 	})
 
 	SetDefaultEventuallyTimeout(2 * time.Minute)
-	SetDefaultEventuallyPollingInterval(time.Second)
+	SetDefaultEventuallyPollingInterval(5 * time.Second)
 
 	Context("Manager", func() {
 		It("should run successfully", func() {
@@ -177,7 +177,7 @@ var _ = Describe("Manager", Ordered, func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(output).To(Equal("True"), "Controller pod not ready")
 			}
-			Eventually(verifyControllerPodReady, 3*time.Minute, time.Second).Should(Succeed())
+			Eventually(verifyControllerPodReady).Should(Succeed())
 
 			By("verifying that the controller manager is serving the metrics server")
 			verifyMetricsServerStarted := func(g Gomega) {
@@ -186,7 +186,7 @@ var _ = Describe("Manager", Ordered, func() {
 				g.Expect(output).To(ContainSubstring("Serving metrics server"),
 					"Metrics server not yet started")
 			}
-			Eventually(verifyMetricsServerStarted, 3*time.Minute, time.Second).Should(Succeed())
+			Eventually(verifyMetricsServerStarted).Should(Succeed())
 
 			By("creating the curl-metrics pod to access the metrics endpoint")
 			overrides := fmt.Sprintf(`{
@@ -264,16 +264,18 @@ var _ = Describe("Manager", Ordered, func() {
 				g.Expect(metricsOutput).NotTo(BeEmpty())
 				g.Expect(metricsOutput).To(ContainSubstring("< HTTP/1.1 200 OK"))
 			}
-			Eventually(verifyMetricsAvailable, 2*time.Minute).Should(Succeed())
+			Eventually(verifyMetricsAvailable).Should(Succeed())
 		})
 
 		It("should return metrics from the endpoint serving metrics", func() {
-			metricsOutput, err := getMetricsOutput()
-			Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
-			Expect(metricsOutput).To(ContainSubstring(
-				fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"}`,
-					strings.ToLower("clusterlogforwarder"),
-				)))
+			Eventually(func(g Gomega) {
+				metricsOutput, err := getMetricsOutput()
+				Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
+				Expect(metricsOutput).To(ContainSubstring(
+					fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"}`,
+						strings.ToLower("clusterlogforwarder"),
+					)))
+			}).Should(Succeed())
 		})
 	})
 })

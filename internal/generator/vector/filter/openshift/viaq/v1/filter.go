@@ -32,6 +32,7 @@ func New(inputs []string, inputSpecs []obs.InputSpec) types.Transform {
 	vrls = journalSource(vrls, inputSpecs)
 	vrls = receiverSource(vrls, inputSpecs)
 	vrls = append(vrls,
+		RemoveKubernetesForNonContainerLogs,
 		MergeStructuredIntoRoot,
 		`.timestamp = ._internal.timestamp`,
 		`."@timestamp" = ._internal.timestamp`,

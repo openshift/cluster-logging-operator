@@ -50,5 +50,10 @@ var _ = Describe("[functional][normalization] ViaQ message format of journal log
 		Expect(outputTestLog.Hostname).ToNot(BeEmpty(), "Expected hostname to be populated for journal logs")
 		Expect(outputTestLog.Systemd.T).NotTo(Equal(types.T{}), "Exp. to be populated with something")
 		Expect(outputTestLog.Systemd.U).NotTo(Equal(types.U{}), "Exp. to be populated with something")
+
+		// LOG-9423: journal logs must not contain a kubernetes field
+		for _, log := range raw {
+			Expect(log).ToNot(ContainSubstring(`"kubernetes"`), "journal logs should not have a kubernetes field")
+		}
 	})
 })

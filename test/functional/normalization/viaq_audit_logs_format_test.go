@@ -68,6 +68,10 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			results := strings.Join(raw, " ")
 			Expect(results).To(MatchRegexp("kind.*Event.*level.*Metadata.*k8s_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 
+			// LOG-9423: audit logs must not contain a kubernetes field
+			for _, log := range raw {
+				Expect(log).ToNot(ContainSubstring(`"kubernetes"`), "audit logs should not have a kubernetes field")
+			}
 		})
 		It("should parse openshift audit log format correctly", func() {
 			// Log message data
@@ -107,6 +111,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				results := strings.Join(raw, " ")
 				Expect(results).To(MatchRegexp("kind.*Event.*level.*Metadata.*openshift_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 			}
+
+			// LOG-9423: audit logs must not contain a kubernetes field
+			for _, log := range raw {
+				Expect(log).ToNot(ContainSubstring(`"kubernetes"`), "audit logs should not have a kubernetes field")
+			}
 		})
 		It("should parse linux audit log format correctly", func() {
 			// Log message data
@@ -144,6 +153,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 			results := strings.Join(raw, " ")
 			Expect(results).To(MatchRegexp("format=enriched kernel="), "Message should contain the audit log: %v", raw)
+
+			// LOG-9423: audit logs must not contain a kubernetes field
+			for _, log := range raw {
+				Expect(log).ToNot(ContainSubstring(`"kubernetes"`), "audit logs should not have a kubernetes field")
+			}
 		})
 		It("should parse ovn audit log correctly", func() {
 			// Log message data
@@ -182,6 +196,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			results := strings.Join(raw, " ")
 			Expect(results).To(MatchRegexp("name=verify-audit-logging_deny-all"), "Message should contain the audit log: %v", raw)
 			Expect(outputTestLog.TimestampLegacy).To(Equal(outputTestLog.Timestamp))
+
+			// LOG-9423: audit logs must not contain a kubernetes field
+			for _, log := range raw {
+				Expect(log).ToNot(ContainSubstring(`"kubernetes"`), "audit logs should not have a kubernetes field")
+			}
 		})
 
 		AfterEach(func() {

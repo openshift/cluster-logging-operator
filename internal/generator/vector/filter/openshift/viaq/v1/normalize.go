@@ -153,6 +153,11 @@ del(.kubernetes.node_labels)
 del(.kubernetes.container_image_id)
 del(.kubernetes.pod_ips)
 `
+	RemoveKubernetesForNonContainerLogs = `
+if .log_source != "container" && exists(.kubernetes) {
+  del(.kubernetes)
+}
+`
 	SetMessageOnRoot = `
 if !exists(._internal.structured) {
   .message = ._internal.message

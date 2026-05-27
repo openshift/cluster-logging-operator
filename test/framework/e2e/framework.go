@@ -177,16 +177,22 @@ func (tc *E2ETestFramework) DeployCURLLogGeneratorWithNamespaceAndEndpoint(names
 	return client.Get().WaitFor(pod, client.PodRunning)
 }
 
-func (tc *E2ETestFramework) CreateTestNamespace() string {
-	return tc.CreateTestNamespaceWithPrefix("clo-test")
+// CreateTestNamespace with a default prefix of 'clo-test'. Optionally include a list of functions to modify the object
+// before it is created
+func (tc *E2ETestFramework) CreateTestNamespace(visitors ...func(*corev1.Namespace)) string {
+	return tc.CreateTestNamespaceWithPrefix("clo-test", visitors...)
 }
 
-func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string) string {
+// CreateTestNamespaceWithPrefix using the given prefix. Optionally include a list of functions to modify the object
+// before it is created
+func (tc *E2ETestFramework) CreateTestNamespaceWithPrefix(prefix string, visitors ...func(*corev1.Namespace)) string {
 	name := fmt.Sprintf("%s-%d", prefix, rand.Intn(10000)) //nolint:gosec
-	return tc.CreateNamespace(name)
+	return tc.CreateNamespace(name, visitors...)
 }
 
-func (tc *E2ETestFramework) CreateNamespace(name string) string {
+// CreateNamespace using the given name. Optionally include a list of functions to modify the object
+// before it is created
+func (tc *E2ETestFramework) CreateNamespace(name string, visitors ...func(*corev1.Namespace)) string {
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
 		name = value
 	} else {
@@ -199,6 +205,9 @@ func (tc *E2ETestFramework) CreateNamespace(name string) string {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
+	}
+	for _, visitor := range visitors {
+		visitor(namespace)
 	}
 
 	if err := tc.Test.Recreate(namespace); err != nil {

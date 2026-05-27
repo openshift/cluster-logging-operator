@@ -2621,6 +2621,7 @@ spec:
                 kubectl.kubernetes.io/default-container: cluster-logging-operator
                 target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
               labels:
+                app.kubernetes.io/name: cluster-logging-operator
                 control-plane: controller-manager
                 name: cluster-logging-operator
             spec:

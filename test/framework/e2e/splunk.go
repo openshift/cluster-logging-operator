@@ -3,8 +3,9 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/url"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"

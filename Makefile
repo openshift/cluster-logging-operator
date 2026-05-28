@@ -64,7 +64,7 @@ compile-tests: generate
 ci-check: check
 	@echo
 	@git diff-index --name-status --exit-code HEAD || { \
-		echo -e '\nerror: files changed during "make check", not up-to-date\n' ; \
+		printf '\nerror: files changed during "make check", not up-to-date\n\n' ; \
 		exit 1 ; \
 	}
 
@@ -187,7 +187,7 @@ $(GEN_TIMESTAMP): $(shell find api -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_G
 	@$(CONTROLLER_GEN) object paths="./api/logging/v1alpha1"
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/observability/..." output:crd:artifacts:config=config/crd/bases
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging-operator paths="./api/logging/v1alpha1" output:crd:artifacts:config=config/crd/bases
-	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(VERSION))\"" > version/version.go
+	printf 'package version\n\nvar Version = "%s"\n' "$(or $(CI_CONTAINER_VERSION),$(VERSION))" > version/version.go
 	@$(MAKE) fmt
 	@touch $@
 

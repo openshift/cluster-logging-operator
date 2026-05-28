@@ -2371,7 +2371,7 @@ spec:
       version: v1alpha1
   description: |-
     # Red Hat OpenShift Logging
-    The Red Hat OpenShift Logging Operator orchestrates log collection and forwarding to Red Had managed log stores and
+    The Red Hat OpenShift Logging Operator orchestrates log collection and forwarding to Red Hat managed log stores and
     other third-party receivers.
 
     ##Features

@@ -221,7 +221,7 @@ oc get daemonset collector -n openshift-logging -o yaml | grep -A 5 updateStrate
 * link:./clusterlogforwarder.adoc[ClusterLogForwarder Configuration]
 * link:./collector-metrics-and-alerts.adoc[Collector Metrics and Alerts]
 * link:./troubleshooting.md[General Troubleshooting]
-* link:../reference/[API Reference Documentation]
+* link:../reference/operator/api_observability_v1.adoc[API Reference Documentation]
 
 == References
 

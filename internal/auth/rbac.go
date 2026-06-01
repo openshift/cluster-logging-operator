@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -31,8 +32,27 @@ func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string
 
 	// Cleanup old resources with previous naming scheme
 	oldRoleName := fmt.Sprintf("%s-scc", saName)
-	if err := reconcile.DeleteRole(k8sClient, saNamespace, oldRoleName); err != nil {
+
+	// List all RoleBindings in the namespace to check if any reference the old role
+	roleBindings := &rbacv1.RoleBindingList{}
+	if err := k8sClient.List(context.TODO(), roleBindings, client.InNamespace(saNamespace)); err != nil {
 		return err
+	}
+
+	// Check if any RoleBinding references the old role
+	hasReferences := false
+	for _, rb := range roleBindings.Items {
+		if rb.RoleRef.Name == oldRoleName {
+			hasReferences = true
+			break
+		}
+	}
+
+	// Only delete the old role if no RoleBindings reference it
+	if !hasReferences {
+		if err := reconcile.DeleteRole(k8sClient, saNamespace, oldRoleName); err != nil {
+			return err
+		}
 	}
 
 	return nil

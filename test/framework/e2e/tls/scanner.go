@@ -101,6 +101,7 @@ func (s *Scanner) Deploy(scannerNamespace, targetNamespace string) (*batchv1.Job
 
 	// Create the Job
 	backoffLimit := int32(0)
+	activeDeadlineSeconds := int64(int(JobTimeout.Seconds()) - 60)
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,7 +109,8 @@ func (s *Scanner) Deploy(scannerNamespace, targetNamespace string) (*batchv1.Job
 			Namespace: scannerNamespace,
 		},
 		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
+			BackoffLimit:          &backoffLimit,
+			ActiveDeadlineSeconds: &activeDeadlineSeconds,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					ServiceAccountName: sa.Name,
@@ -251,9 +253,39 @@ func (s *Scanner) WaitForCompletion(job *batchv1.Job, timeout time.Duration) err
 			return false, fmt.Errorf("TLS Scanner Job failed")
 		}
 
+		// Check pod status for early failure detection
+		if reason, podErr := s.checkPodStatus(job.Namespace, job.Name); podErr != nil {
+			return false, fmt.Errorf("TLS Scanner pod issue: %s: %w", reason, podErr)
+		}
+
 		clolog.V(3).Info("TLS Scanner Job still running", "job", job.Name, "active", currentJob.Status.Active)
 		return false, nil
 	})
+}
+
+// checkPodStatus checks the scanner pod for issues that would prevent the job from completing.
+// Returns a reason and non-nil error if a terminal issue is detected.
+func (s *Scanner) checkPodStatus(namespace, jobName string) (string, error) {
+	pods, err := s.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%s", jobName),
+	})
+	if err != nil || len(pods.Items) == 0 {
+		return "", nil
+	}
+
+	pod := pods.Items[0]
+	for _, cs := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		if cs.State.Waiting != nil {
+			reason := cs.State.Waiting.Reason
+			switch reason {
+			case "ImagePullBackOff", "ErrImagePull", "InvalidImageName":
+				return reason, fmt.Errorf("%s: %s", reason, cs.State.Waiting.Message)
+			default:
+				clolog.V(2).Info("Scanner pod container waiting", "container", cs.Name, "reason", reason)
+			}
+		}
+	}
+	return "", nil
 }
 
 // GetResults retrieves and parses the scan results from the TLS Scanner Job logs

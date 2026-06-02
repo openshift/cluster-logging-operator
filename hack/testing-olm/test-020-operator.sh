@@ -47,7 +47,7 @@ for dir in $(ls -d $TEST_DIR| grep -E "${INCLUDES}"); do
   mkdir -p $artifact_dir
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/operator/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
-    go test --ginkgo.v --ginkgo.no-color \
+    go test -timeout=30m --ginkgo.v --ginkgo.no-color \
       --ginkgo.trace  --ginkgo.poll-progress-after=300s --ginkgo.poll-progress-interval=30s \
       --ginkgo.timeout=60m "$dir" | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="

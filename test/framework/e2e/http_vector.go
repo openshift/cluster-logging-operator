@@ -219,8 +219,12 @@ type Query struct {
 	files []string
 }
 
-func (v VectorHttpReceiverLogStore) ListNamespaces() (namespaces []string) {
-	q, err := v.Query(nil)
+func (v VectorHttpReceiverLogStore) ListNamespaces(timeout ...time.Duration) (namespaces []string) {
+	var t *time.Duration
+	if len(timeout) > 0 {
+		t = &timeout[0]
+	}
+	q, err := v.Query(t)
 	if err != nil {
 		log.Error(err, "Error checking receiver")
 	}
@@ -245,8 +249,12 @@ func isFileDoesNotExistError(out string) bool {
 	return strings.Contains(out, "No such file or directory")
 }
 
-func (v VectorHttpReceiverLogStore) ListJournalLogs() ([]types.JournalLog, error) {
-	result, err := v.RunCmd("head -n 10 /tmp/journal/journal.json", nil)
+func (v VectorHttpReceiverLogStore) ListJournalLogs(timeout ...time.Duration) ([]types.JournalLog, error) {
+	var t *time.Duration
+	if len(timeout) > 0 {
+		t = &timeout[0]
+	}
+	result, err := v.RunCmd("head -n 10 /tmp/journal/journal.json", t)
 	if err != nil {
 		return nil, err
 	}

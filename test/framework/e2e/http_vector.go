@@ -227,6 +227,7 @@ func (v VectorHttpReceiverLogStore) ListNamespaces(timeout ...time.Duration) (na
 	q, err := v.Query(t)
 	if err != nil {
 		log.Error(err, "Error checking receiver")
+		return namespaces
 	}
 	for _, m := range q.Meta {
 		namespaces = append(namespaces, m.Namespace)
@@ -238,6 +239,7 @@ func (v VectorHttpReceiverLogStore) ListContainers() (containers []string) {
 	q, err := v.Query(nil)
 	if err != nil {
 		log.Error(err, "Error checking receiver")
+		return containers
 	}
 	for _, m := range q.Meta {
 		containers = append(containers, m.ContainerName)

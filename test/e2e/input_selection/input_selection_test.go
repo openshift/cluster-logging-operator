@@ -2,6 +2,8 @@ package input_selection
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -102,7 +104,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			nil,
 			func() {
 				Expect(receiver.ListJournalLogs()).ToNot(HaveLen(0), "exp only journal logs to be collected")
-				Expect(receiver.ListNamespaces()).To(HaveLen(0), "exp no containers logs to be collected")
+				Expect(receiver.ListNamespaces(15*time.Second)).To(HaveLen(0), "exp no containers logs to be collected")
 			}),
 		Entry("infrastructure inputs should allow specifying only container logs",
 			obs.InputSpec{
@@ -114,7 +116,7 @@ var _ = Describe("[e2e][InputSelection]", func() {
 			nil,
 			func() {
 				Expect(receiver.ListNamespaces()).To(HaveEach(MatchRegexp("^(openshift.*|kube.*|default)$")))
-				Expect(receiver.ListJournalLogs()).To(HaveLen(0), "exp no journal logs to be collected")
+				Expect(receiver.ListJournalLogs(15*time.Second)).To(HaveLen(0), "exp no journal logs to be collected")
 			}),
 		Entry("application inputs should only collect from matching pod label 'notin' expressions",
 			obs.InputSpec{

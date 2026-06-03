@@ -105,19 +105,16 @@ var _ = Describe("[e2e][collection][metrics] Metrics Collection Profiles", Order
 
 	Context("Full profile scraping", func() {
 		It("should have all collector metrics available in Prometheus under the full profile", func() {
-			By("waiting for collector metrics to appear in Thanos")
+			By("waiting for collector metrics to appear in Thanos and verifying non-allowlisted metric is also present")
 			Eventually(func(g Gomega) {
 				response, err := prometheus.Query(fmt.Sprintf(`%s{namespace="%s"}`, allowlistedMetric, constants.OpenshiftNS))
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to query allowlisted metric")
-				g.Expect(prometheus.HasResults(response)).To(BeTrue())
-			}, 5*time.Minute, 30*time.Second).Should(Succeed(), "Allowlisted metric should be present under full profile")
+				g.Expect(prometheus.HasResults(response)).To(BeTrue(), "Allowlisted metric should be present under full profile")
 
-			By("verifying a non-allowlisted metric is also present under full profile")
-			Eventually(func(g Gomega) {
-				response, err := prometheus.Query(fmt.Sprintf(`%s{namespace="%s"}`, nonAllowlistedMetric, constants.OpenshiftNS))
+				response, err = prometheus.Query(fmt.Sprintf(`%s{namespace="%s"}`, nonAllowlistedMetric, constants.OpenshiftNS))
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to query non-allowlisted metric")
-				g.Expect(prometheus.HasResults(response)).To(BeTrue())
-			}, 5*time.Minute, 15*time.Second).Should(Succeed(), "Non-allowlisted metric should also be present under full profile")
+				g.Expect(prometheus.HasResults(response)).To(BeTrue(), "Non-allowlisted metric should also be present under full profile")
+			}, 5*time.Minute, 15*time.Second).Should(Succeed())
 		})
 	})
 })

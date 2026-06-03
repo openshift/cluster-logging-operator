@@ -89,6 +89,7 @@ func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interfac
 	defer logBeginEnd(msg, o, &err)()
 	start := time.Now()
 	defer w.Stop()
+	deadline := time.After(c.Timeout())
 	for {
 		select {
 		case e, ok := <-w.ResultChan():
@@ -112,7 +113,7 @@ func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interfac
 			} else if err != nil {
 				return err
 			}
-		case <-time.After(c.Timeout()):
+		case <-deadline:
 			return ErrTimeout
 		}
 	}

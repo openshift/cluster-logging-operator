@@ -7,12 +7,12 @@
 
 {{ range .packages -}}
 
-= Package {{ packageDisplayName . }}
+== Package {{ packageDisplayName . }}
 
     {{ range (sortedTypes (visibleTypes .Types )) -}}
         {{- if isObjectRoot . -}}
 
-        == {{ (typeDisplayName .) }}
+        === {{ (typeDisplayName .) }}
         {{  (comments .CommentLines) }}
         {{- template "type" (nodeParent . "") -}}
 

@@ -13,8 +13,8 @@ s/\r//g for @lines;
 # Escape || so AsciiDoc does not treat them as column spans
 s/\|\|/\\|\\|/g for @lines;
 
-# Wrap bare {…} in backticks so AsciiDoc does not treat them as attribute refs
-s/(\{[^}]*\})/`$1`/g for @lines;
+# Escape bare {…} with passthrough so AsciiDoc does not treat them as attribute refs
+s/(\{[^}]*\})/pass:[$1]/g for @lines;
 
 # Join multi-line table cells onto a single line
 my @result;
@@ -35,16 +35,47 @@ while ($i < @lines) {
         my $row = $line;
         chomp($row);
 
+        my $has_list = 0;
+        my @cont_lines;
         while ($i + 1 < @lines && $lines[$i + 1] !~ /^(\||\[|=)/) {
             $i++;
             my $cont = $lines[$i];
             next if $cont =~ /^\s*$/;
             chomp($cont);
             $cont =~ s/^\s+//;
-            $row .= ' ' if $row !~ /[\s|]$/ && $cont !~ /^\s/;
-            $row .= $cont;
+            if ($cont =~ /^\d+\.\s|^[-*]\s/) {
+                $has_list = 1;
+            }
+            unless ($cont =~ /^a\|/) {
+                $cont =~ s/(?<!\\)\|/\\|/g;
+            }
+            push @cont_lines, $cont;
         }
-        $row .= "\n";
+
+        if ($has_list) {
+            # Use a| cell for multi-line content with lists;
+            # blank line before list and after content closes the a| cell
+            $row =~ s/^(\|[^|]*\|[^|]*)\|/$1\na| /;
+            my $prev_was_list = 0;
+            foreach my $cont (@cont_lines) {
+                my $is_list = ($cont =~ /^\d+\.\s|^[-*]\s/);
+                if ($is_list && !$prev_was_list) {
+                    $row .= "\n";
+                }
+                if ($is_list) {
+                    $cont =~ s/^\d+\.\s/. /;
+                }
+                $row .= "\n" . $cont;
+                $prev_was_list = $is_list;
+            }
+            $row .= "\n\n";
+        } else {
+            foreach my $cont (@cont_lines) {
+                $row .= ' ' if $row !~ /[\s|]$/ && $cont !~ /^\s/;
+                $row .= $cont;
+            }
+            $row .= "\n";
+        }
         push @result, $row;
         $i++;
         next;
@@ -62,7 +93,9 @@ foreach my $line (@result) {
 
     if ($line =~ /^(\|[^|]*\|[^|]*\|)(.*)$/) {
         my ($prefix, $desc) = ($1, $2);
-        $desc =~ s/\|/\\|/g;
+        # Escape only literal pipes inside the description text,
+        # but keep real column delimiters (" | ") intact.
+        $desc =~ s/(?<!\\)\|(?!\s)/\\|/g;
         $line = $prefix . $desc . "\n";
     }
 }

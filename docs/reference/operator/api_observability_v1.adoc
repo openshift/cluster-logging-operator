@@ -226,7 +226,7 @@ Type:: object
 |labelSelector|object|  *(optional)* A label query over a set of resources, in this case pods. If it&#39;s null, this PodAffinityTerm matches with no Pods.
 |matchLabelKeys|array|  *(optional)* MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (`{}`) matches all namespaces.
+|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (pass:[{}]) matches all namespaces.
 |namespaces|array|  *(optional)* namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means &#34;this pod&#39;s namespace&#34;.
 |topologyKey|string|  This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
 |======================
@@ -239,7 +239,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[].podAffinityTerm.labelSelector.matchExpressions[]
@@ -278,7 +278,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[].podAffinityTerm.namespaceSelector.matchExpressions[]
@@ -315,7 +315,7 @@ Type:: array
 |labelSelector|object|  *(optional)* A label query over a set of resources, in this case pods. If it&#39;s null, this PodAffinityTerm matches with no Pods.
 |matchLabelKeys|array|  *(optional)* MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (`{}`) matches all namespaces.
+|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (pass:[{}]) matches all namespaces.
 |namespaces|array|  *(optional)* namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means &#34;this pod&#39;s namespace&#34;.
 |topologyKey|string|  This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
 |======================
@@ -328,7 +328,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[].labelSelector.matchExpressions[]
@@ -367,7 +367,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[].namespaceSelector.matchExpressions[]
@@ -426,7 +426,7 @@ Type:: object
 |labelSelector|object|  *(optional)* A label query over a set of resources, in this case pods. If it&#39;s null, this PodAffinityTerm matches with no Pods.
 |matchLabelKeys|array|  *(optional)* MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (`{}`) matches all namespaces.
+|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (pass:[{}]) matches all namespaces.
 |namespaces|array|  *(optional)* namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means &#34;this pod&#39;s namespace&#34;.
 |topologyKey|string|  This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
 |======================
@@ -439,7 +439,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[].podAffinityTerm.labelSelector.matchExpressions[]
@@ -478,7 +478,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[].podAffinityTerm.namespaceSelector.matchExpressions[]
@@ -515,7 +515,7 @@ Type:: array
 |labelSelector|object|  *(optional)* A label query over a set of resources, in this case pods. If it&#39;s null, this PodAffinityTerm matches with no Pods.
 |matchLabelKeys|array|  *(optional)* MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn&#39;t set.
 |mismatchLabelKeys|array|  *(optional)* MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod&#39;s pod (anti) affinity. Keys that don&#39;t exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn&#39;t set.
-|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (`{}`) matches all namespaces.
+|namespaceSelector|object|  *(optional)* A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means &#34;this pod&#39;s namespace&#34;. An empty selector (pass:[{}]) matches all namespaces.
 |namespaces|array|  *(optional)* namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means &#34;this pod&#39;s namespace&#34;.
 |topologyKey|string|  This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
 |======================
@@ -528,7 +528,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].labelSelector.matchExpressions[]
@@ -567,7 +567,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.collector.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].namespaceSelector.matchExpressions[]
@@ -683,7 +683,17 @@ Type:: array
 |name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 |openshiftLabels|object|  Labels applied to log records passing through a pipeline. These labels appear in the `openshift.labels` map in the log record.
 |prune|object|  The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
-|type|string|  Type of filter. Possible filter types are: 1. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required. 2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration. 3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration. 4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration. 5. parse - Enables parsing of log entries into structured logs. No additional configuration required. 6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
+|type|string
+a|   Type of filter.
+Possible filter types are:
+
+. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required.
+. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
+. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
+. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
+. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
+
 |======================
 
 === .spec.filters[].drop[]
@@ -791,8 +801,25 @@ Type:: array
 |Property|Type|Description
 |level|string|  The Level that requests matching this rule are recorded at.
 |namespaces|array|  *(optional)* Namespaces that this rule matches. The empty string &#34;&#34; matches non-namespaced resources. An empty list implies every namespace.
-|nonResourceURLs|array|  *(optional)* NonResourceURLs is a set of URL paths that should be audited. `*`s are allowed, but only as the full, final step in the path. Examples: - `/metrics` - Log requests for apiserver metrics - `/healthz*` - Log all health checks
-|omitManagedFields|bool|  *(optional)* OmitManagedFields indicates whether to omit the managed fields of the request and response bodies from being written to the API audit log. - a value of &#39;true&#39; will drop the managed fields from the API audit log - a value of &#39;false&#39; indicates that the managed fileds should be included in the API audit log Note that the value, if specified, in this rule will override the global default If a value is not specified then the global default specified in Policy.OmitManagedFields will stand.
+|nonResourceURLs|array
+a|   *(optional)* NonResourceURLs is a set of URL paths that should be audited.
+`*`s are allowed, but only as the full, final step in the path.
+Examples:
+
+- `/metrics` - Log requests for apiserver metrics
+- `/healthz*` - Log all health checks
+
+|omitManagedFields|bool
+a|   *(optional)* OmitManagedFields indicates whether to omit the managed fields of the request
+and response bodies from being written to the API audit log.
+
+- a value of &#39;true&#39; will drop the managed fields from the API audit log
+- a value of &#39;false&#39; indicates that the managed fileds should be included
+in the API audit log
+Note that the value, if specified, in this rule will override the global default
+If a value is not specified then the global default specified in
+Policy.OmitManagedFields will stand.
+
 |omitStages|array|  *(optional)* OmitStages is a list of stages for which no events are created. Note that this can also be specified policy wide in which case the union of both are omitted. An empty list means no restrictions will apply.
 |resources|array|  *(optional)* Resources that this rule matches. An empty list implies all kinds in all API groups.
 |userGroups|array|  *(optional)* The user groups this rule applies to. A user is considered matching if it is a member of any of the UserGroups. An empty list implies every user group.
@@ -825,7 +852,19 @@ Type:: array
 |Property|Type|Description
 |group|string|  *(optional)* Group is the name of the API group that contains the resources. The empty string represents the core API group.
 |resourceNames|array|  *(optional)* ResourceNames is a list of resource instance names that the policy matches. Using this field requires Resources to be specified. An empty list implies that every instance of the resource is matched.
-|resources|array|  *(optional)* Resources is a list of resources this rule applies to. For example: - `pods` matches pods. - `pods/log` matches the log subresource of pods. - `*` matches all resources and their subresources. - `pods/*` matches all subresources of pods. - `*/scale` matches all scale subresources. If wildcard is present, the validation rule will ensure resources do not overlap with each other. An empty list implies all resources and subresources in this API groups apply.
+|resources|array
+a|   *(optional)* Resources is a list of resources this rule applies to.
+For example:
+
+- `pods` matches pods.
+- `pods/log` matches the log subresource of pods.
+- `*` matches all resources and their subresources.
+- `pods/*` matches all subresources of pods.
+- `*/scale` matches all scale subresources.
+If wildcard is present, the validation rule will ensure resources do not
+overlap with each other.
+An empty list implies all resources and subresources in this API groups apply.
+
 |======================
 
 === .spec.filters[].kubeAPIAudit.rules[].resources[].resourceNames[]
@@ -859,8 +898,37 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|in|array|  `In` is an array of dot-delimited field paths. Fields included here are removed from the log record. Each field path expression must start with a &#34;.&#34; The path can contain alphanumeric characters and underscores (a-zA-Z0-9_). If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted. Examples: - `.kubernetes.namespace_id` - `.hostname` - &#39;.kubernetes.labels.foobar&#39; - `.kubernetes.labels.&#34;foo-bar/baz&#34;` NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fields are required and cannot be pruned. NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field. NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
-|notIn|array|  `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record. Each field path expression must start with a &#34;.&#34; The path can contain alphanumeric characters and underscores (a-zA-Z0-9_). If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted. Examples: - `.kubernetes.namespace_name` - `.log_type` - &#39;.log_source&#39; - &#39;.message&#39; - `.kubernetes.labels.&#34;foo-bar/baz&#34;` NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned. NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field. NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
+|in|array
+a|   `In` is an array of dot-delimited field paths. Fields included here are removed from the log record.
+Each field path expression must start with a &#34;.&#34;
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+Examples:
+
+- `.kubernetes.namespace_id`
+- `.hostname`
+- &#39;.kubernetes.labels.foobar&#39;
+- `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+NOTE1: `In` CANNOT contain `.log_type`, `.log_source` or `.message` as those fields are required and cannot be pruned.
+NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` CANNOT be added to this list as it is a required field.
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
+
+|notIn|array
+a|   `NotIn` is an array of dot-delimited field paths. All fields besides the ones listed here are removed from the log record.
+Each field path expression must start with a &#34;.&#34;
+The path can contain alphanumeric characters and underscores (a-zA-Z0-9_).
+If segments contain characters outside of this range, the segment must be quoted otherwise paths do NOT need to be quoted.
+Examples:
+
+- `.kubernetes.namespace_name`
+- `.log_type`
+- &#39;.log_source&#39;
+- &#39;.message&#39;
+- `.kubernetes.labels.&#34;foo-bar/baz&#34;`
+NOTE1: `NotIn` MUST contain `.log_type`, `.log_source` and `.message` as those fields are required and cannot be pruned.
+NOTE2: If this filter is used in a pipeline with GoogleCloudLogging, `.hostname` MUST be added to this list as it is a required field.
+NOTE3: If used in a pipeline with a Lokistack output type, see Lokistack output documentation for additional fields that cannot be pruned.
+
 |======================
 
 === .spec.filters[].prune.in[]
@@ -946,7 +1014,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |matchExpressions|array|  *(optional)* matchExpressions is a list of label selector requirements. The requirements are ANDed.
-|matchLabels|object|  *(optional)* matchLabels is a map of `{key,value}` pairs. A single `{key,value}` in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
+|matchLabels|object|  *(optional)* matchLabels is a map of pass:[{key,value}] pairs. A single pass:[{key,value}] in the matchLabels map is equivalent to an element of matchExpressions, whose key field is &#34;key&#34;, the operator is &#34;In&#34;, and the values array contains only &#34;value&#34;. The requirements are ANDed.
 |======================
 
 === .spec.inputs[].application.selector.matchExpressions[]
@@ -977,7 +1045,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |maxMessageSize|object|  MaxMessageSize  The maximum message length in bytes that a single log event can be when all partial log lines are merged.  Messages exceeding this limit are dropped.
-|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container by this input. This limit is applied per collector deployment.
+|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container by this input. This limit is applied per collector deployment. Log records exceeding the rate limit are dropped.
 |======================
 
 === .spec.inputs[].application.tuning.maxMessageSize
@@ -1047,7 +1115,7 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline. Log records exceeding this limit are dropped.
 |======================
 
 === .spec.inputs[].audit
@@ -1133,7 +1201,7 @@ Type:: object
 |======================
 |Property|Type|Description
 |maxMessageSize|object|  MaxMessageSize  The maximum message length in bytes that a single log event can be when all partial log lines are merged.  Messages exceeding this limit are dropped.
-|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container by this input. This limit is applied per collector deployment.
+|rateLimitPerContainer|object|  RateLimitPerContainer is the limit applied to each container by this input. This limit is applied per collector deployment. Log records exceeding the rate limit are dropped.
 |======================
 
 === .spec.inputs[].infrastructure.tuning.container.maxMessageSize
@@ -1203,7 +1271,7 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline. Log records exceeding this limit are dropped.
 |======================
 
 === .spec.inputs[].receiver
@@ -1218,7 +1286,15 @@ Type:: object
 |http|object|  
 |port|int|  Port the Receiver listens on. It must be a value between 1024 and 65535
 |tls|object|  TLS contains settings for controlling options of TLS connections. The operator will request certificates from the cluster&#39;s cert signing service when TLS is not defined. The certificates are injected into a secret named &#34;&lt;clusterlogforwarder.name&gt;-&lt;input.name&gt;&#34; which is mounted into the collector. The collector is configured to use the public and private key provided by the service
-|type|string|  Type of Receiver plugin. Supported Receiver types are: 1. http - Currently only supports kubernetes audit logs (log_type = &#34;audit&#34;) 2. syslog - Currently only supports node infrastructure logs (log_type = &#34;infrastructure&#34;)
+|type|string
+a|   Type of Receiver plugin.
+Supported Receiver types are:
+
+. http
+- Currently only supports kubernetes audit logs (log_type = &#34;audit&#34;)
+. syslog
+- Currently only supports node infrastructure logs (log_type = &#34;infrastructure&#34;)
+
 |======================
 
 === .spec.inputs[].receiver.http
@@ -1317,7 +1393,16 @@ Type:: array
 |http|object|  HTTP configures forwarding log events to an HTTP server
 |kafka|object|  Kafka configures forwarding log events to Apache Kafka topics
 |loki|object|  Loki configures forwarding log events to a Loki aggregation system
-|lokiStack|object|  LokiStack configures forwarding log events to a Red Hat managed Loki deployment using the Red Hat tenancy model The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack. 1. .kubernetes.container_name 2. .kubernetes.namespace_name 3. .kubernetes.pod_name If these fields are not present in the log record, they will be set to the empty string.
+|lokiStack|object
+a|   LokiStack configures forwarding log events to a Red Hat managed Loki deployment
+using the Red Hat tenancy model
+The listed labelKeys cannot be pruned as they are required as default stream labels for LokiStack.
+
+. .kubernetes.container_name
+. .kubernetes.namespace_name
+. .kubernetes.pod_name
+If these fields are not present in the log record, they will be set to the empty string.
+
 |name|string|  Name used to refer to the output from a `pipeline`.
 |otlp|object|  OTLP configures forwarding log events to a receiver using the OpenTelemetry Protocol with Red Openshift logging semantic conventions (ref: https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md)
 |rateLimit|object|  Limit imposes a limit in records-per-second on the total aggregate rate of logs forwarded to this output from any given collector container. The total log flow from an individual collector container to this output cannot exceed the limit.  Generally, one collector is deployed per cluster node Logs may be dropped to enforce the limit. Missing or 0 means no rate limit.
@@ -1575,7 +1660,17 @@ Type:: object
 |======================
 |Property|Type|Description
 |authentication|object|  Authentication sets credentials for authenticating requests to cloudwatch services.
-|groupName|string|  GroupName defines the strategy for grouping logstreams The GroupName can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|groupName|string
+a|   GroupName defines the strategy for grouping logstreams
+The GroupName can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |region|string|  
 |tuning|object|  Tuning specs tuning for the output
 |url|string|  URL to send log records to. The &#39;username@password&#39; part of `url` is ignored.
@@ -1731,7 +1826,20 @@ Type:: object
 |url|string|  URL to send log records to. Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;). The &#39;username@password&#39; part of `url` is ignored.
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 |headers|object|  Headers specify optional headers to be sent with the request
-|index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values. The Index can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern `^(app\|infra\|audit)-write$` where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines with the openshiftLabels filter. See the product documentation for examples. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|index|string
+a|   Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
+The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+When forwarding logs to the Red Hat Managed Elasticsearch, the index must match the pattern `^(app\|infra\|audit)-write$`
+where the prefix depends upon the log_type. This requires defining a distinct output for each log type or distinct pipelines
+with the openshiftLabels filter. See the product documentation for examples.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |version|int|  Version specifies the API version of Elasticsearch to be used. Must be one of: 6-8 The value of &#39;8&#39; should be used when forwarding to Elasticsearch version v8 or greater.
 |======================
@@ -1831,7 +1939,17 @@ Type:: object
 |Property|Type|Description
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 |id|object|  ID must be one of the required ID fields for the output
-|logId|string|  LogId is the log ID to which to publish logs. This identifies log stream. The LogId can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|logId|string
+a|   LogId is the log ID to which to publish logs. This identifies log stream.
+The LogId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |======================
 
@@ -2024,7 +2142,17 @@ Type:: object
 |Property|Type|Description
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 |brokers|array|  Brokers specifies the list of broker endpoints of a Kafka cluster. The list represents only the initial set used by the collector&#39;s Kafka client for the first connection only. The collector&#39;s Kafka client fetches constantly an updated list from Kafka. These updates are not reconciled back to the collector configuration. If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number. If none is provided, the target URL from the OutputSpec is used as fallback.
-|topic|string|  Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39; The Topic can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|topic|string
+a|   Topic specifies the target topic to send logs to. The value when not specified is &#39;topic&#39;
+The Topic can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |url|string|  URL to send log records to. This field is optional. If provided, it must be a valid URL with a &#39;tcp&#39; or &#39;tls&#39; scheme and include a port number, for example: &#39;tls://kafka.secure.com:9093/app-topic&#39;. The &#39;username@password&#39; part of `url` is ignored.
 |======================
@@ -2166,9 +2294,41 @@ Type:: object
 |Property|Type|Description
 |url|string|  URL to send log records to. Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;). The &#39;username@password&#39; part of `url` is ignored.
 |authentication|object|  Authentication sets credentials for authenticating the requests.
-|labelKeys|array|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels. If LabelKeys is not set, the default keys are: - log_type - kubernetes.container_name - kubernetes.namespace_name - kubernetes.pod_name One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname where the collector is running and is always present. Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34; Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels. Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;. For example the default log record keys translate to these Loki labels: - log_type - kubernetes_container_name - kubernetes_namespace_name - kubernetes_pod_name Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed. See https://grafana.com/docs/loki/latest/configuration/#limits_config for more. Loki queries can also query based on any log record field (not just labels) using query filters.
+|labelKeys|array
+a|   LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
+If LabelKeys is not set, the default keys are:
+
+- log_type
+- kubernetes.container_name
+- kubernetes.namespace_name
+- kubernetes.pod_name
+One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname
+where the collector is running and is always present.
+Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
+Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
+Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
+For example the default log record keys translate to these Loki labels:
+
+- log_type
+- kubernetes_container_name
+- kubernetes_namespace_name
+- kubernetes_pod_name
+Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
+See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
+Loki queries can also query based on any log record field (not just labels) using query filters.
+
 |proxyURL|string|  ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
-|tenantKey|string|  TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values. The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|tenantKey|string
+a|   TenantKey is the tenant for the logs. This supports vector&#39;s template syntax to allow dynamic per-event values.
+The TenantKey can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |======================
 
@@ -2266,8 +2426,29 @@ Type:: object
 |======================
 |Property|Type|Description
 |authentication|object|  Authentication sets credentials for authenticating the requests.
-|dataModel|string|  DataModel can be used to customize how log data is stored in LokiStack. There are two different models to choose from: - Viaq - Otel When the data model is not set, it currently defaults to the &#34;Viaq&#34; data model.
-|labelKeys|object|  LabelKeys can be used to customize which log record keys are mapped to Loki stream labels. Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34; Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels. Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;. For example the default log record keys translate to these Loki labels: - log_type - kubernetes_container_name - kubernetes_namespace_name - kubernetes_pod_name Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed. See https://grafana.com/docs/loki/latest/configuration/#limits_config for more. Loki queries can also query based on any log record field (not just labels) using query filters.
+|dataModel|string
+a|   DataModel can be used to customize how log data is stored in LokiStack.
+There are two different models to choose from:
+
+- Viaq
+- Otel
+When the data model is not set, it currently defaults to the &#34;Viaq&#34; data model.
+
+|labelKeys|object
+a|   LabelKeys can be used to customize which log record keys are mapped to Loki stream labels.
+Note: Loki label names must match the regular expression &#34;[a-zA-Z_:][a-zA-Z0-9_:]*&#34;
+Log record keys may contain characters like &#34;.&#34; and &#34;/&#34; that are not allowed in Loki labels.
+Log record keys are translated to Loki labels by replacing any illegal characters with &#39;_&#39;.
+For example the default log record keys translate to these Loki labels:
+
+- log_type
+- kubernetes_container_name
+- kubernetes_namespace_name
+- kubernetes_pod_name
+Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
+See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.
+Loki queries can also query based on any log record field (not just labels) using query filters.
+
 |target|object|  Target points to the LokiStack resources that should be used as a target for the output.
 |tuning|object|  Tuning specs tuning for the output
 |======================
@@ -2320,7 +2501,17 @@ Type:: object
 |Property|Type|Description
 |application|object|  Application contains the label keys configuration for the &#34;application&#34; tenant.
 |audit|object|  Audit contains the label keys configuration for the &#34;audit&#34; tenant.
-|global|array|  Global contains a list of record keys which are used for all tenants. If LabelKeys is not set, the default keys are: - log_type - kubernetes.container_name - kubernetes.namespace_name - kubernetes.pod_name One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname where the collector is running and is always present.
+|global|array
+a|   Global contains a list of record keys which are used for all tenants.
+If LabelKeys is not set, the default keys are:
+
+- log_type
+- kubernetes.container_name
+- kubernetes.namespace_name
+- kubernetes.pod_name
+One additional label &#34;kubernetes_host&#34; is not part of the label keys configuration. It contains the hostname
+where the collector is running and is always present.
+
 |infrastructure|object|  Infrastructure contains the label keys configuration for the &#34;infrastructure&#34; tenant.
 |======================
 
@@ -2508,7 +2699,7 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records allowed per input/output in a pipeline. Log records exceeding this limit are dropped.
 |======================
 
 === .spec.outputs[].s3
@@ -2522,7 +2713,20 @@ Type:: object
 |Property|Type|Description
 |authentication|object|  Authentication sets credentials for authenticating the requests.
 |bucket|string|  Bucket specifies the S3 bucket name where logs will be stored. String name absent leading `s3://` or trailing `/` and truncated to 63 characters to meet length restrictions
-|keyPrefix|string|  KeyPrefix is a templated string that defines the S3 key prefix for log objects.  It is a combination of static or dynamic values consisting of field paths separated by `\\|\\|` and ending with a static fallback value (e.g. logs_`{.kubernetes.namespace_name\\|\\|.hostname\\|\\|&#34;unknown&#34;}`_my_workload_`{.openshift.sequence_id\\|\\|&#34;none&#34;}`). Prefixes are necessary for partitioning logs from other objects in the bucket.  If the prefix represents a directory, it must end in `/` to act as a directory path. A trailing `/` (forward slash) is not automatically added. Dynamic values are encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Examples: 1. logs_`{.kubernetes.namespace_name\\|\\|&#34;none&#34;}`/ 2. `{.log_type\\|\\|.log_source\\|\\|&#34;missing&#34;}`/ 3. my_workload.`{.hostname\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`/
+|keyPrefix|string
+a|   KeyPrefix is a templated string that defines the S3 key prefix for log objects.  It is a combination of
+static or dynamic values consisting of field paths separated by `\|\|` and ending with a static
+fallback value (e.g. logs_pass:[{.kubernetes.namespace_name\|\|.hostname\|\|&#34;unknown&#34;}]_my_workload_pass:[{.openshift.sequence_id\|\|&#34;none&#34;}]).
+Prefixes are necessary for partitioning logs from other objects in the bucket.  If the prefix represents a
+directory, it must end in `/` to act as a directory path. A trailing `/` (forward slash) is not automatically added.
+Dynamic values are encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated
+with `\|\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Examples:
+
+. logs_pass:[{.kubernetes.namespace_name\|\|&#34;none&#34;}]/
+. pass:[{.log_type\|\|.log_source\|\|&#34;missing&#34;}]/
+. my_workload.pass:[{.hostname\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]/
+
 |region|string|  
 |tuning|object|  Tuning specs tuning for the output
 |url|string|  URL is the custom S3-compatible endpoint URL. If not specified, the default AWS S3 endpoint will be used. This is useful for S3-compatible services like MinIO, Ceph Object Gateway, or Dell EMC ECS.
@@ -2680,11 +2884,48 @@ Type:: object
 |Property|Type|Description
 |url|string|  URL to send log records to. Basic TLS is enabled if the URL scheme requires it (for example &#39;https&#39; or &#39;tls&#39;). The &#39;username@password&#39; part of `url` is ignored.
 |authentication|object|  Authentication sets credentials for authenticating the requests.
-|index|string|  Index is the index for the logs. This supports template syntax to allow dynamic per-event values. The Index can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
-|indexedFields|array|  IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits. Nested fields are flattened into top-level fields. Field paths are joined using dot notation, and unsupported characters are replaced with underscores (_). Non-string values are automatically converted to strings (e.g., 3 → &#34;3&#34;, true → &#34;true&#34;). Object values serialized as JSON strings (e.g., `{ status: 200 }` → &#34;`{\&#34;status\&#34;:200}`&#34;). Examples: [`.kubernetes`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`]
+|index|string
+a|   Index is the index for the logs. This supports template syntax to allow dynamic per-event values.
+The Index can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
+|indexedFields|array|  IndexedFields are the list of fields to be indexed by Splunk, increase storage usage, they should be used sparingly and only for high-value fields that provide significant search benefits. Nested fields are flattened into top-level fields. Field paths are joined using dot notation, and unsupported characters are replaced with underscores (_). Non-string values are automatically converted to strings (e.g., 3 → &#34;3&#34;, true → &#34;true&#34;). Object values serialized as JSON strings (e.g., pass:[{ status: 200 }] → &#34;pass:[{\&#34;status\&#34;:200}]&#34;). Examples: [`.kubernetes`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`]
 |payloadKey|string|  PayloadKey specifies record field to use as payload. The PayloadKey must be a single field path. Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted. By default, payloadKey is not set, which means the complete log record is forwarded as the payload. Use payloadKey carefully. Selecting a single field as the payload may cause other important information in the log to be dropped, potentially leading to inconsistent or incomplete log events. Examples: `.kubernetes`, `.log_type`, &#39;.kubernetes.labels.foobar&#39;, `.kubernetes.labels.&#34;foo-bar/baz&#34;`
-|source|string|  Source identifies the origin of a log event. The Source can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes. If not specified will be detected according to .log_source and .log_type value. Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
-|sourceType|string|  SourceType can be used to specify a pretrained or custom source type in Splunk, but can only be set when PayloadKey is defined. WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match. If SourceType is not specified, the source type used is `_json`. If using PayloadKey without SourceType, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload. Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc The SourceType can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes. Examples: 1. `{.kubernetes.labels.&#34;splunk/sourcetype&#34;\\|\\|&#34;generic_single_line&#34;}` 2. log4j 3. foo-`{.bar\\|\\|&#34;none&#34;}` 4. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 5. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}`
+|source|string
+a|   Source identifies the origin of a log event.
+The Source can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
+If not specified will be detected according to .log_source and .log_type value.
+Details see in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
+|sourceType|string
+a|   SourceType can be used to specify a pretrained or custom source type in Splunk, but can only be set when PayloadKey is defined.
+WARNING: The administrator is responsible for configuring the pipeline so the source type matches the log entry. The collector makes no effort or validation to ensure they match.
+If SourceType is not specified, the source type used is `_json`. If using PayloadKey without SourceType, the source type used will be either `_json` or `generic_single_line`, depending on the structure of the final event payload.
+Details in: docs/features/logforwarding/outputs/splunk-forwarding.adoc
+The SourceType can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots, colons and forward slashes.
+Examples:
+
+. pass:[{.kubernetes.labels.&#34;splunk/sourcetype&#34;\|\|&#34;generic_single_line&#34;}]
+. log4j
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |======================
 
@@ -2746,14 +2987,100 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|appName|string|  AppName is APP-NAME part of the syslog-msg header. AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48 This supports template syntax to allow dynamic per-event values. The AppName can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}` TODO: DETERMINE HOW to default the app name that isn&#39;t based on fluentd assumptions of &#34;tag&#34; when this is empty
-|enrichment|string|  Enrichment is an additional modification to the log message before forwarding it to the receiver. Supported values are: 1. None - Adds no additional enrichment to the record 2. KubernetesMinimal - Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message=`{&#34;foo&#34;:&#34;bar&#34;}`). This may result in the message body being an invalid JSON structure.
-|facility|string|  Facility to set on outgoing syslog records. Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1. The value can be a decimal integer. Facility keywords are not standardized, this API recognizes at least the following case-insensitive keywords (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels): kernel user mail daemon auth syslog lpr news uucp cron authpriv ftp ntp security console solaris-cron local0 local1 local2 local3 local4 local5 local6 local7 The Facility can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. `{.foo\\|\\|&#34;user&#34;}`
-|msgId|string|  MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values. The MsgId can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}` MsgId needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
-|payloadKey|string|  PayloadKey specifies record field to use as payload. This supports template syntax to allow dynamic per-event values. The PayloadKey must be a single field path encased in single curly brackets ``{}``. Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted. If left empty, Syslog will use the whole message as the payload key Example: 1. `{.bar}` 2. `{.foo.bar.baz}` 3. `{.foo.bar.&#34;baz/with/slashes&#34;}`
-|procId|string|  ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values. The ProcId can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. foo-`{.bar\\|\\|&#34;none&#34;}` 2. `{.foo\\|\\|.bar\\|\\|&#34;missing&#34;}` 3. foo.`{.bar.baz\\|\\|.qux.quux.corge\\|\\|.grault\\|\\|&#34;nil&#34;}`-waldo.fred`{.plugh\\|\\|&#34;none&#34;}` ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
-|rfc|string|  The RFC to which the generated messages conform to. Supported values are: 1. RFC3164 2. RFC5424
-|severity|string|  Severity to set on outgoing syslog records. Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1 The value can be a decimal integer or one of these case-insensitive keywords: Emergency Alert Critical Error Warning Notice Informational Debug The Severity can be a combination of static and dynamic values consisting of field paths followed by `\\|\\|` followed by another field path or a static value. A dynamic value is encased in single curly brackets ``{}`` and MUST end with a static fallback value separated with `\\|\\|`. Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes. Example: 1. `{.foo\\|\\|&#34;Error&#34;}`
+|appName|string
+a|   AppName is APP-NAME part of the syslog-msg header.
+AppName needs to be specified if using rfc5424. The maximum length of the final values is truncated to 48
+This supports template syntax to allow dynamic per-event values.
+The AppName can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+TODO: DETERMINE HOW to default the app name that isn&#39;t based on fluentd assumptions of &#34;tag&#34; when this is empty
+
+|enrichment|string
+a|   Enrichment is an additional modification to the log message before forwarding it to the receiver.
+Supported values are:
+
+. None
+- Adds no additional enrichment to the record
+. KubernetesMinimal
+- Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message=pass:[{&#34;foo&#34;:&#34;bar&#34;}]).
+This may result in the message body being an invalid JSON structure.
+
+|facility|string
+a|   Facility to set on outgoing syslog records.
+Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
+The value can be a decimal integer. Facility keywords are not standardized,
+this API recognizes at least the following case-insensitive keywords
+(defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
+kernel user mail daemon auth syslog lpr news
+uucp cron authpriv ftp ntp security console solaris-cron
+local0 local1 local2 local3 local4 local5 local6 local7
+The Facility can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. pass:[{.foo\|\|&#34;user&#34;}]
+
+|msgId|string
+a|   MsgId is MSGID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+The MsgId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+MsgId needs to be specified if using rfc5424.  The maximum length of the final values is truncated to 32
+
+|payloadKey|string
+a|   PayloadKey specifies record field to use as payload. This supports template syntax to allow dynamic per-event values.
+The PayloadKey must be a single field path encased in single curly brackets `pass:[{}]`.
+Field paths must only contain alphanumeric and underscores. Any field with other characters must be quoted.
+If left empty, Syslog will use the whole message as the payload key
+Example:
+
+. pass:[{.bar}]
+. pass:[{.foo.bar.baz}]
+. pass:[{.foo.bar.&#34;baz/with/slashes&#34;}]
+
+|procId|string
+a|   ProcId is PROCID part of the syslog-msg header. This supports template syntax to allow dynamic per-event values.
+The ProcId can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. foo-pass:[{.bar\|\|&#34;none&#34;}]
+. pass:[{.foo\|\|.bar\|\|&#34;missing&#34;}]
+. foo.pass:[{.bar.baz\|\|.qux.quux.corge\|\|.grault\|\|&#34;nil&#34;}]-waldo.fredpass:[{.plugh\|\|&#34;none&#34;}]
+ProcId needs to be specified if using rfc5424. The maximum length of the final values is truncated to 128
+
+|rfc|string
+a|   The RFC to which the generated messages conform to.
+Supported values are:
+
+. RFC3164
+. RFC5424
+
+|severity|string
+a|   Severity to set on outgoing syslog records.
+Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
+The value can be a decimal integer or one of these case-insensitive keywords:
+Emergency Alert Critical Error Warning Notice Informational Debug
+The Severity can be a combination of static and dynamic values consisting of field paths followed by `\|\|` followed by another field path or a static value.
+A dynamic value is encased in single curly brackets `pass:[{}]` and MUST end with a static fallback value separated with `\|\|`.
+Static values can only contain alphanumeric characters along with dashes, underscores, dots and forward slashes.
+Example:
+
+. pass:[{.foo\|\|&#34;Error&#34;}]
+
 |tuning|object|  Tuning specs tuning for the output
 |url|string|  An absolute URL, with a scheme and a port number. Valid schemes are: `tcp`, `tls`, `udp` For example, to send syslog records using UDP: url: udp://syslog.example.com:514
 |======================
@@ -2792,10 +3119,85 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom profile as invalid configurations can be catastrophic. An example custom profile looks like this: ciphers: - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305 - ECDHE-RSA-AES128-GCM-SHA256 - ECDHE-ECDSA-AES128-GCM-SHA256 minTLSVersion: VersionTLS11
-|intermediate|object|  *(optional)* intermediate is a TLS security profile based on: https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29 and looks like this (yaml): ciphers: - TLS_AES_128_GCM_SHA256 - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256 - ECDHE-ECDSA-AES128-GCM-SHA256 - ECDHE-RSA-AES128-GCM-SHA256 - ECDHE-ECDSA-AES256-GCM-SHA384 - ECDHE-RSA-AES256-GCM-SHA384 - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305 - DHE-RSA-AES128-GCM-SHA256 - DHE-RSA-AES256-GCM-SHA384 minTLSVersion: VersionTLS12
-|modern|object|  *(optional)* modern is a TLS security profile based on: https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility and looks like this (yaml): ciphers: - TLS_AES_128_GCM_SHA256 - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256 minTLSVersion: VersionTLS13
-|old|object|  *(optional)* old is a TLS security profile based on: https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility and looks like this (yaml): ciphers: - TLS_AES_128_GCM_SHA256 - TLS_AES_256_GCM_SHA384 - TLS_CHACHA20_POLY1305_SHA256 - ECDHE-ECDSA-AES128-GCM-SHA256 - ECDHE-RSA-AES128-GCM-SHA256 - ECDHE-ECDSA-AES256-GCM-SHA384 - ECDHE-RSA-AES256-GCM-SHA384 - ECDHE-ECDSA-CHACHA20-POLY1305 - ECDHE-RSA-CHACHA20-POLY1305 - DHE-RSA-AES128-GCM-SHA256 - DHE-RSA-AES256-GCM-SHA384 - DHE-RSA-CHACHA20-POLY1305 - ECDHE-ECDSA-AES128-SHA256 - ECDHE-RSA-AES128-SHA256 - ECDHE-ECDSA-AES128-SHA - ECDHE-RSA-AES128-SHA - ECDHE-ECDSA-AES256-SHA384 - ECDHE-RSA-AES256-SHA384 - ECDHE-ECDSA-AES256-SHA - ECDHE-RSA-AES256-SHA - DHE-RSA-AES128-SHA256 - DHE-RSA-AES256-SHA256 - AES128-GCM-SHA256 - AES256-GCM-SHA384 - AES128-SHA256 - AES256-SHA256 - AES128-SHA - AES256-SHA - DES-CBC3-SHA minTLSVersion: VersionTLS10
+|custom|object
+a|   *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
+profile as invalid configurations can be catastrophic. An example custom profile
+looks like this:
+ciphers:
+
+- ECDHE-ECDSA-CHACHA20-POLY1305
+- ECDHE-RSA-CHACHA20-POLY1305
+- ECDHE-RSA-AES128-GCM-SHA256
+- ECDHE-ECDSA-AES128-GCM-SHA256
+minTLSVersion: VersionTLS11
+
+|intermediate|object
+a|   *(optional)* intermediate is a TLS security profile based on:
+https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
+and looks like this (yaml):
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+- TLS_AES_256_GCM_SHA384
+- TLS_CHACHA20_POLY1305_SHA256
+- ECDHE-ECDSA-AES128-GCM-SHA256
+- ECDHE-RSA-AES128-GCM-SHA256
+- ECDHE-ECDSA-AES256-GCM-SHA384
+- ECDHE-RSA-AES256-GCM-SHA384
+- ECDHE-ECDSA-CHACHA20-POLY1305
+- ECDHE-RSA-CHACHA20-POLY1305
+- DHE-RSA-AES128-GCM-SHA256
+- DHE-RSA-AES256-GCM-SHA384
+minTLSVersion: VersionTLS12
+
+|modern|object
+a|   *(optional)* modern is a TLS security profile based on:
+https://wiki.mozilla.org/Security/Server_Side_TLS#Modern_compatibility
+and looks like this (yaml):
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+- TLS_AES_256_GCM_SHA384
+- TLS_CHACHA20_POLY1305_SHA256
+minTLSVersion: VersionTLS13
+
+|old|object
+a|   *(optional)* old is a TLS security profile based on:
+https://wiki.mozilla.org/Security/Server_Side_TLS#Old_backward_compatibility
+and looks like this (yaml):
+ciphers:
+
+- TLS_AES_128_GCM_SHA256
+- TLS_AES_256_GCM_SHA384
+- TLS_CHACHA20_POLY1305_SHA256
+- ECDHE-ECDSA-AES128-GCM-SHA256
+- ECDHE-RSA-AES128-GCM-SHA256
+- ECDHE-ECDSA-AES256-GCM-SHA384
+- ECDHE-RSA-AES256-GCM-SHA384
+- ECDHE-ECDSA-CHACHA20-POLY1305
+- ECDHE-RSA-CHACHA20-POLY1305
+- DHE-RSA-AES128-GCM-SHA256
+- DHE-RSA-AES256-GCM-SHA384
+- DHE-RSA-CHACHA20-POLY1305
+- ECDHE-ECDSA-AES128-SHA256
+- ECDHE-RSA-AES128-SHA256
+- ECDHE-ECDSA-AES128-SHA
+- ECDHE-RSA-AES128-SHA
+- ECDHE-ECDSA-AES256-SHA384
+- ECDHE-RSA-AES256-SHA384
+- ECDHE-ECDSA-AES256-SHA
+- ECDHE-RSA-AES256-SHA
+- DHE-RSA-AES128-SHA256
+- DHE-RSA-AES256-SHA256
+- AES128-GCM-SHA256
+- AES256-GCM-SHA384
+- AES128-SHA256
+- AES256-SHA256
+- AES128-SHA
+- AES256-SHA
+- DES-CBC3-SHA
+minTLSVersion: VersionTLS10
+
 |type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides the ability to specify individual TLS security profile parameters. Old, Intermediate and Modern are TLS security profiles based on: https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations The profiles are intent based, so they may change over time as new ciphers are developed and existing ciphers are found to be insecure.  Depending on precisely which ciphers are available to a process, the list may be reduced. Note that the Modern profile is currently not supported because it is not yet well adopted by common software libraries.
 |======================
 
@@ -2806,7 +3208,14 @@ Type:: object
 [options="header"]
 |======================
 |Property|Type|Description
-|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated during the TLS handshake.  Operators may remove entries their operands do not support.  For example, to use DES-CBC3-SHA  (yaml): ciphers: - DES-CBC3-SHA
+|ciphers|array
+a|   ciphers is used to specify the cipher algorithms that are negotiated
+during the TLS handshake.  Operators may remove entries their operands
+do not support.  For example, to use DES-CBC3-SHA  (yaml):
+ciphers:
+
+- DES-CBC3-SHA
+
 |minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol that is negotiated during the TLS handshake. For example, to use TLS versions 1.1, 1.2 and 1.3 (yaml): minTLSVersion: VersionTLS11 NOTE: currently the highest minTLSVersion allowed is VersionTLS12
 |======================
 
@@ -2832,7 +3241,14 @@ Type:: array
 |======================
 |Property|Type|Description
 |filterRefs|array|  Filters lists the names of filters to be applied to records going through this pipeline. Each filter is applied in order. If a filter drops a records, subsequent filters are not applied.
-|inputRefs|array|  InputRefs lists the names (`input.name`) of inputs to this pipeline. The following built-in input names are always available: - `application` selects all logs from application pods. - `infrastructure` selects logs from openshift and kubernetes pods and some node logs. - `audit` selects node logs related to security audits.
+|inputRefs|array
+a|   InputRefs lists the names (`input.name`) of inputs to this pipeline.
+The following built-in input names are always available:
+
+- `application` selects all logs from application pods.
+- `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+- `audit` selects node logs related to security audits.
+
 |name|string|  Name of the pipeline
 |outputRefs|array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 |======================

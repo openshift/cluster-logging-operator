@@ -1,0 +1,4 @@
+# Carry forward from .codespellignore
+coo
+fileds
+notin

@@ -1,0 +1,43 @@
+# URLs
+https?://\S+
+
+# Email addresses
+\S+@\S+\.\S+
+
+# Git SHA references
+\b[0-9a-f]{7,40}\b
+
+# HTML entities in generated docs
+&#\d+;
+
+# Base64 encoded strings
+\b[A-Za-z0-9+/]{20,}={0,2}\b
+
+# Hex values
+\b0x[0-9a-fA-F]+\b
+
+# Version strings
+v\d+\.\d+(\.\d+)?
+
+# AsciiDoc directives and macros
+^include::.*$
+^ifdef::.*$
+^ifndef::.*$
+^endif::.*$
+^:[\w-]+:.*$
+image::[^\[]*\[
+link:[^\[]*\[
+xref:[^\[]*\[
+
+# AsciiDoc anchors and cross-references
+\[id="[^"]*"\]
+<<[^>]+>>
+
+# Inline code in backticks
+`[^`]+`
+
+# AWS ARN patterns
+arn:aws:\S+
+
+# YAML/JSON field paths
+\{\.[\w.]+\}

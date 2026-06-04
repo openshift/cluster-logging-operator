@@ -1,0 +1,12 @@
+# Spelling config directory
+\.github/actions/spelling/
+
+# Vendored and generated dependencies
+vendor/
+\.bingo/
+
+# Binary and image files
+\.png$
+\.jpg$
+\.svg$
+\.ico$

@@ -194,8 +194,23 @@ var _ = Describe("Generate vector config", func() {
 			spec.Loki.Tuning = &obs.LokiTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
-		}), Entry("with proxy", "with_proxy.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		}),
+		Entry("with tuning and auth", "with_tuning_and_auth.toml", framework.Options{
+			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
+		}, func(spec *obs.OutputSpec) {
+			spec.Loki.Tuning = &obs.LokiTuningSpec{
+				BaseOutputTuningSpec: *baseTune,
+				Compression:          "gzip",
+			}
+			spec.Loki.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				},
+			}
+		}),
+		Entry("with proxy", "with_proxy.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Loki.ProxyURL = "http://somewhere.org/proxy"
 		}),
 	)
+
 })

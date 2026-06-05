@@ -57,10 +57,24 @@ func (m *GeneratorElementMatcher) Match(expected interface{}) (_ bool, err error
 	if !castable {
 		return false, fmt.Errorf("actual can not be converted to an api.Config: %v", m.actual)
 	}
+
+	// Round-trip the actual config through TOML marshal/unmarshal to verify
+	// that serialization preserves all fields correctly. This catches bugs
+	// where struct field ordering causes fields to be nested under the wrong
+	// TOML table (e.g. LOG-9444: compression inside [auth]).
+	tomlStr, err := toml.Marshal(actualConfig)
+	if err != nil {
+		return false, fmt.Errorf("actual config can not be marshalled to TOML: %v", err)
+	}
+	roundTripped := &api.Config{}
+	if err = toml.Unmarshal(tomlStr, roundTripped); err != nil {
+		return false, fmt.Errorf("actual config TOML output can not be unmarshalled back: %v", err)
+	}
+
 	m.matcher = matchers.MatchYAMLMatcher{
 		YAMLToMatch: test.YAMLString(expConfig),
 	}
-	m.actual = test.YAMLString(actualConfig)
+	m.actual = test.YAMLString(roundTripped)
 	return m.matcher.Match(m.actual)
 }
 

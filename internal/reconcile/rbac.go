@@ -79,3 +79,14 @@ func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {
 	}
 	return err
 }
+
+func DeleteRole(k8sClient client.Client, namespace, name string) error {
+	object := runtime.NewRole(namespace, name)
+	log.V(3).Info("Deleting Role", "namespace", namespace, "name", name)
+	err := k8sClient.Delete(context.TODO(), object)
+	// Ignore NotFound errors - resource is already deleted
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}

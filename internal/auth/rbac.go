@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -12,21 +13,50 @@ import (
 
 // ReconcileRBAC reconciles the RBAC specifically for the service account and SCC
 func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string, owner metav1.OwnerReference) error {
-	desiredCRB := NewMetaDataReaderClusterRoleBinding(saNamespace, saName, owner)
+	desiredCRB := NewMetaDataReaderClusterRoleBinding(saNamespace, saName)
 	if err := reconcile.ClusterRoleBinding(k8sClient, desiredCRB.Name, func() *rbacv1.ClusterRoleBinding { return desiredCRB }); err != nil {
 		return err
 	}
-	desiredSCCRole := NewServiceAccountSCCRole(saNamespace, saName, owner)
+	desiredSCCRole := NewServiceAccountSCCRole(saNamespace, rbacName, saName, owner)
 	if err := reconcile.Role(k8sClient, desiredSCCRole); err != nil {
 		return err
 	}
 
-	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, rbacName, desiredSCCRole.Name, saName, owner)
-	return reconcile.RoleBinding(k8sClient, desiredSCCRoleBinding)
+	desiredSCCRoleBinding := NewServiceAccountSCCRoleBinding(saNamespace, rbacName, saName, owner)
+	if err := reconcile.RoleBinding(k8sClient, desiredSCCRoleBinding); err != nil {
+		return err
+	}
+
+	// Cleanup old resources with previous naming scheme
+	oldRoleName := fmt.Sprintf("%s-scc", saName)
+
+	// List all RoleBindings in the namespace to check if any reference the old role
+	roleBindings := &rbacv1.RoleBindingList{}
+	if err := k8sClient.List(context.TODO(), roleBindings, client.InNamespace(saNamespace)); err != nil {
+		return err
+	}
+
+	// Check if any RoleBinding references the old role
+	hasReferences := false
+	for _, rb := range roleBindings.Items {
+		if rb.RoleRef.Name == oldRoleName {
+			hasReferences = true
+			break
+		}
+	}
+
+	// Only delete the old role if no RoleBindings reference it
+	if !hasReferences {
+		if err := reconcile.DeleteRole(k8sClient, saNamespace, oldRoleName); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // NewMetaDataReaderClusterRoleBinding stubs a clusterrolebinding to allow reading of pod metadata (i.e. labels)
-func NewMetaDataReaderClusterRoleBinding(saNamespace, saName string, owner metav1.OwnerReference) *rbacv1.ClusterRoleBinding {
+func NewMetaDataReaderClusterRoleBinding(saNamespace, saName string) *rbacv1.ClusterRoleBinding {
 	name := fmt.Sprintf("metadata-reader-%s-%s", saNamespace, saName)
 	desired := runtime.NewClusterRoleBinding(name,
 		rbacv1.RoleRef{
@@ -41,12 +71,11 @@ func NewMetaDataReaderClusterRoleBinding(saNamespace, saName string, owner metav
 		},
 	)
 
-	utils.AddOwnerRefToObject(desired, owner)
 	return desired
 }
 
-func NewServiceAccountSCCRole(namespace, name string, owner metav1.OwnerReference) *rbacv1.Role {
-	name = fmt.Sprintf("%s-scc", name)
+func NewServiceAccountSCCRole(namespace, name, saName string, owner metav1.OwnerReference) *rbacv1.Role {
+	roleName := fmt.Sprintf("%s-%s-scc", name, saName)
 	sccRule := rbacv1.PolicyRule{
 		APIGroups:     []string{"security.openshift.io"},
 		ResourceNames: []string{sccName},
@@ -54,13 +83,14 @@ func NewServiceAccountSCCRole(namespace, name string, owner metav1.OwnerReferenc
 		Verbs:         []string{"use"},
 	}
 
-	desired := runtime.NewRole(namespace, name, sccRule)
+	desired := runtime.NewRole(namespace, roleName, sccRule)
 
 	utils.AddOwnerRefToObject(desired, owner)
 	return desired
 }
 
-func NewServiceAccountSCCRoleBinding(namespace, name, roleName, saName string, owner metav1.OwnerReference) *rbacv1.RoleBinding {
+func NewServiceAccountSCCRoleBinding(namespace, name, saName string, owner metav1.OwnerReference) *rbacv1.RoleBinding {
+	roleName := fmt.Sprintf("%s-%s-scc", name, saName)
 	roleRef := rbacv1.RoleRef{
 		APIGroup: rbacv1.GroupName,
 		Kind:     "Role",
@@ -73,8 +103,8 @@ func NewServiceAccountSCCRoleBinding(namespace, name, roleName, saName string, o
 		Namespace: namespace,
 	}
 
-	name = fmt.Sprintf("%s-scc", name)
-	desired := runtime.NewRoleBinding(namespace, name, roleRef, subject)
+	roleBindingName := fmt.Sprintf("%s-scc", name)
+	desired := runtime.NewRoleBinding(namespace, roleBindingName, roleRef, subject)
 
 	utils.AddOwnerRefToObject(desired, owner)
 	return desired

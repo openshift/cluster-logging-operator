@@ -7,6 +7,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -68,4 +69,15 @@ func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {
 	object := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
 	log.V(3).Info("Deleting", "object", object)
 	return k8sClient.Delete(context.TODO(), object)
+}
+
+func DeleteRole(k8sClient client.Client, namespace, name string) error {
+	object := runtime.NewRole(namespace, name)
+	log.V(3).Info("Deleting Role", "namespace", namespace, "name", name)
+	err := k8sClient.Delete(context.TODO(), object)
+	// Ignore NotFound errors - resource is already deleted
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }

@@ -41,3 +41,19 @@ arn:aws:\S+
 
 # YAML/JSON field paths
 \{\.[\w.]+\}
+
+# AsciiDoc source/listing blocks (---- or ....)
+(?s)^----$.*?^----$
+(?s)^\.\.\.\.$.*?^\.\.\.\.$
+
+# AsciiDoc literal blocks (+)
+(?s)^\+{4,}$.*?^\+{4,}$
+
+# Kubernetes resource names (e.g., openshift-logging, cluster-logging-operator)
+\b[a-z]+(?:-[a-z]+)+\b
+
+# Log format patterns with mixed identifiers
+\b\w+_\w+\b
+
+# Kubernetes pod/replicaset hash suffixes (e.g., 76d55f48df-cmccq)
+\b[0-9a-f]+-[a-z0-9]{4,5}\b

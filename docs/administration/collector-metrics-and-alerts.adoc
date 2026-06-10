@@ -126,7 +126,7 @@ image::buffer-metric-2.png[]
 In logging 6.0 (5.9.x) and later versions, added alerts for the Vector collector potentially consuming excessive node disk space.
 You can view this alerts in the OpenShift Container Platform web console.
 
-image::buffer-alert.png[Fired allert]
+image::buffer-alert.png[Fired alert]
 
 === ClusterLogForwarderNotReady
 Will be fired if a ClusterLogForwarder has been in a not ready state for more than 1 minute.

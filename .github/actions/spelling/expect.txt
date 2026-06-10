@@ -2,3 +2,48 @@
 coo
 fileds
 notin
+
+# Syslog/systemd fields referenced in docs
+CMDLINE
+DEVLINK
+DEVNODE
+ERRNO
+EXE
+LOGINUID
+MSGID
+PROCID
+SYSNAME
+UDEV
+
+# Timestamp format strings
+SSSSSSZ
+SSSZ
+
+# TLS cipher suite components
+DHE
+
+# Protocol and format terms
+ASIM
+iostream
+uucp
+
+# Code/config identifiers appearing in doc examples
+baz
+containerspass
+grault
+inputname
+lpr
+myproject
+nologformat
+plugh
+waldo
+
+# Fragments from camelCase/PascalCase splitting
+Ded
+DETERMIN
+Dcr
+
+# Other terms in current docs
+gnuplot
+sourced
+spec'd

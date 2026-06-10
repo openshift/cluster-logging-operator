@@ -45,5 +45,8 @@ secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access
 assume_role = "SECRET[kubernetes_secret.secretwithcredentials/my_role_arn]"
 external_id = "unique-external-id"
 
+[sinks.cw.batch]
+max_bytes = 1048576
+
 [sinks.cw.healthcheck]
 enabled = false

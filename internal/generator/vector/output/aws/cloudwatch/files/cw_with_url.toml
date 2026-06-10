@@ -44,5 +44,8 @@ except_fields = ["_internal"]
 access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
 secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"
 
+[sinks.cw.batch]
+max_bytes = 1048576
+
 [sinks.cw.healthcheck]
 enabled = false

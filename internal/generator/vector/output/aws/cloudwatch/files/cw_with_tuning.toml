@@ -40,7 +40,7 @@ codec = "json"
 except_fields = ["_internal"]
 
 [sinks.cw.batch]
-max_bytes = 10000000
+max_bytes = 1048576
 
 [sinks.cw.buffer]
 type = "disk"

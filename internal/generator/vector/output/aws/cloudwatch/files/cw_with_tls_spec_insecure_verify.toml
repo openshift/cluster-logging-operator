@@ -46,6 +46,9 @@ key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 
+[sinks.cw.batch]
+max_bytes = 1048576
+
 [sinks.cw.auth]
 access_key_id = "SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]"
 secret_access_key = "SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]"

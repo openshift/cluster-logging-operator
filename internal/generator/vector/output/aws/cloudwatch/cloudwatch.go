@@ -22,6 +22,9 @@ import (
 const (
 	groupNameField                  = "cw_group_name"
 	templatedInternalGroupNameField = `{{ _internal.` + groupNameField + ` }}`
+
+	// CloudwatchDefaultMaxBytes CloudWatch Logs PutLogEvents API has a 1MB per request limit
+	CloudwatchDefaultMaxBytes = 1_048_576
 )
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
@@ -42,7 +45,14 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		} else {
 			s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 		}
-		s.Batch = common.NewApiBatch(o)
+		if batch := common.NewApiBatch(o); batch != nil {
+			if batch.MaxBytes > CloudwatchDefaultMaxBytes {
+				batch.MaxBytes = CloudwatchDefaultMaxBytes
+			}
+			s.Batch = batch
+		} else {
+			s.Batch = &sinks.Batch{MaxBytes: CloudwatchDefaultMaxBytes}
+		}
 		s.Buffer = common.NewApiBuffer(o)
 		s.Request = common.NewApiRequest(o)
 		s.TLS = tls.NewTls(o, secrets, op)

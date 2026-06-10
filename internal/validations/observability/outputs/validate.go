@@ -25,6 +25,9 @@ func Validate(context internalcontext.ForwarderContext) {
 		switch out.Type {
 		case obs.OutputTypeCloudwatch, obs.OutputTypeS3:
 			messages = append(messages, ValidateAwsAuth(out, context)...)
+			if out.Type == obs.OutputTypeCloudwatch {
+				messages = append(messages, validateCloudwatchMaxWrite(out)...)
+			}
 		case obs.OutputTypeGoogleCloudLogging:
 			messages = append(messages, ValidateGCLAuth(out, context)...)
 		case obs.OutputTypeHTTP:

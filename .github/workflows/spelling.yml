@@ -43,6 +43,7 @@ jobs:
             cspell:docker/src/docker-words.txt
             cspell:shell/dict/shell-all-words.txt
             cspell:html/dict/html.txt
-            cspell:filetypes/dict/filetypes.txt
+            cspell:filetypes/filetypes.txt
             cspell:software-terms/dict/softwareTerms.txt
+          extra_dictionary_limit: 10
           check_extra_dictionaries: ""

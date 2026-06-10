@@ -19,7 +19,7 @@ The CLO deploys:
 and relies upon:
 
 * Loki as a log storage engine
-* The https://github.com/rhobs/observability-operator[cluster-obervability-operator] (COO) to provide a visualization plugin to the Openshift console.
+* The https://github.com/rhobs/observability-operator[cluster-observability-operator] (COO) to provide a visualization plugin to the Openshift console.
 
 The goal is to _abstract_ away the deployment and configuration of these technologies behind APIs so that:
 
@@ -38,4 +38,4 @@ The CLO _owns_ the following APIs:
 * To install a released version of cluster logging see the https://docs.redhat.com/en/documentation/red_hat_openshift_logging/6.5/html/installing_logging/index[Openshift Logging Documentation]
 * To experiment or contribute to the development of cluster logging, see the link:docs/contributing/README.adoc[hacking] and link:docs/contributing/REVIEW.adoc[review] documentation
 * To debug the cluster logging stack, see link:./must-gather/README.md[README.md]
-* To find currently known Cluster Logging Operator issues with work-arounds, see the link:docs/administration/troubleshooting.md[Troubleshooting] guide.
+* To find currently known Cluster Logging Operator issues with workarounds, see the link:docs/administration/troubleshooting.md[Troubleshooting] guide.

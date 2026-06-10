@@ -1,5 +1,0 @@
-# Known typos found in this repository
-implimentation
-obervability
-potentionally
-similiar

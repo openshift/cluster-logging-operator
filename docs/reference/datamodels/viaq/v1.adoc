@@ -518,7 +518,7 @@ Type:: object
 |labels
 |object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+|string a|  Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 ==== .openshift.cluster_id
@@ -536,7 +536,7 @@ Type:: object
 
 ==== .openshift.sequence
 
-Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
 Type:: string
@@ -916,7 +916,7 @@ Type:: object
 |labels
 |object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+|string a|  Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 ==== .openshift.cluster_id
@@ -934,7 +934,7 @@ Type:: object
 
 ==== .openshift.sequence
 
-Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
 Type:: string
@@ -1476,7 +1476,7 @@ Type:: object
 |labels
 |object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+|string a|  Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 ==== .openshift.cluster_id
@@ -1494,7 +1494,7 @@ Type:: object
 
 ==== .openshift.sequence
 
-Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
 Type:: string
@@ -2325,7 +2325,7 @@ Type:: object
 |labels
 |object a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding to be sent with the log Records
 |sequence
-|string a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+|string a|  Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 |======================
 
 ==== .openshift.cluster_id
@@ -2343,7 +2343,7 @@ Type:: object
 
 ==== .openshift.sequence
 
-Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline
 of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 
 Type:: string

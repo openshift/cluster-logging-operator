@@ -70,7 +70,7 @@ A more detailed summary of steps have been included in the https://github.com/op
 === Log Storage
 LokiStack is the only managed log storage solution available for this release.  It is based upon the **loki-operator** and has been available in prior releases as the preferred alternative to the managed Elasticsearch offering.  The deployment of this solution remains unchanged from previous releases. Read the https://docs.openshift.com/container-platform/4.16/observability/logging/log_storage/installing-log-storage.html[official] product documentation for more information.
 
-NOTE: To continue to use an existing Red Hat managed Elasticsearch deployment provided by the **elasticsearch-operator**, remove the owner references from the **Elasticsearch** resource named '**elasticsearch**' in the '**openshift-logging**' namespace before removing the **ClusterLogging** resourced named '**instance**' in the '**openshift-logging**' namespace
+NOTE: To continue to use an existing Red Hat managed Elasticsearch deployment provided by the **elasticsearch-operator**, remove the owner references from the **Elasticsearch** resource named '**elasticsearch**' in the '**openshift-logging**' namespace before removing the **ClusterLogging** resource named '**instance**' in the '**openshift-logging**' namespace
 
 .Example command to remove elasticsearch owner references
 [source]
@@ -83,7 +83,7 @@ for more information.
 
 NOTE: To continue to use an existing Red Hat managed Kibana deployment provided by the **elasticsearch-operator**,
 remove the owner references from the **Kibana** resource named '**kibana**' in the '**openshift-logging**'
-namespace before removing the **ClusterLogging** resourced named '**instance**' in the '**openshift-logging**' namespace
+namespace before removing the **ClusterLogging** resource named '**instance**' in the '**openshift-logging**' namespace
 
 .Example command to remove kibana owner references
 [source]

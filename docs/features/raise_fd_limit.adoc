@@ -1,0 +1,30 @@
+== Vector Collector: Raising File Descriptor Limits
+
+This feature enables Vector to automatically raise its file descriptor soft limit to match the hard limit at startup. This prevents "Too many open files" errors when Vector is monitoring a large number of log files concurrently.
+
+Systems often default to restrictive file descriptor soft limits (e.g. 1024 on Linux), which can cause Vector to fail when processing many log sources simultaneously. When enabled, the operator sets the `VECTOR_RAISE_FD_LIMIT` environment variable, which Vector reads natively to raise the soft limit at startup.
+
+Annotation: `observability.openshift.io/raise-fd-limit`.
+
+This feature is not enabled by default (`false`), matching Vector's default behavior.
+
+Supported values are:
+
+. `true` - raise the file descriptor soft limit to match the hard limit
+. `false` (default) - do not modify file descriptor limits
+
+=== Example
+.Enable Raising File Descriptor Limits
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+  annotations:
+    observability.openshift.io/raise-fd-limit: "true"
+spec:
+  # ... rest of your ClusterLogForwarder configuration
+----
+This annotation will enable Vector to raise its file descriptor soft limit at startup.

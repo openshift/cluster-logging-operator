@@ -49,6 +49,27 @@ var _ = Describe("[internal][validations] validate clusterlogforwarder annotatio
 			Entry("should pass with level off", "off"))
 	})
 
+	Context("#validateRaiseFdLimit", func() {
+		It("should pass validation if no annotations are set", func() {
+			validateRaiseFdLimitAnnotation(context)
+			Expect(clf.Status.Conditions).To(BeEmpty())
+		})
+
+		It("should fail validation if value is not true or false", func() {
+			clf.Annotations = map[string]string{constants.AnnotationVectorRaiseFdLimit: "yes"}
+			validateRaiseFdLimitAnnotation(context)
+			Expect(clf.Status.Conditions).To(HaveCondition(obs.ConditionTypeRaiseFdLimit, false, obs.ReasonRaiseFdLimitSupported, ".*must be one of.*"))
+		})
+
+		DescribeTable("valid raise-fd-limit values", func(value string) {
+			clf.Annotations = map[string]string{constants.AnnotationVectorRaiseFdLimit: value}
+			validateRaiseFdLimitAnnotation(context)
+			Expect(clf.Status.Conditions).To(BeEmpty())
+		},
+			Entry("should pass with value true", "true"),
+			Entry("should pass with value false", "false"))
+	})
+
 	Context("#validateMaxUnavailable", func() {
 		It("should pass validation if no annotations are set", func() {
 			validateMaxUnavailableAnnotation(context)

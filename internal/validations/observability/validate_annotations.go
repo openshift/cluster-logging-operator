@@ -19,6 +19,7 @@ const (
 var (
 	compiledMaxUnavailableRegex = regexp.MustCompile(validMaxUnavailableRegex)
 	allowedLogLevels            = sets.NewString("trace", "debug", "info", "warn", "error", "off")
+	allowedRaiseFdLimitValues   = sets.NewString("true", "false")
 	enabledValues               = sets.NewString("true", "enabled")
 )
 
@@ -51,6 +52,18 @@ func validateLogLevelAnnotation(context internalcontext.ForwarderContext) {
 	}
 	// Condition is only necessary when it is invalid, otherwise we can remove
 	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeLogLevel)
+}
+
+func validateRaiseFdLimitAnnotation(context internalcontext.ForwarderContext) {
+	if value, ok := context.Forwarder.Annotations[constants.AnnotationVectorRaiseFdLimit]; ok {
+		if !allowedRaiseFdLimitValues.Has(value) {
+			condition := internalobs.NewCondition(obs.ConditionTypeRaiseFdLimit, obs.ConditionFalse, obs.ReasonRaiseFdLimitSupported, "")
+			condition.Message = fmt.Sprintf("raise-fd-limit value %q must be one of [true, false]", value)
+			internalobs.SetCondition(&context.Forwarder.Status.Conditions, condition)
+			return
+		}
+	}
+	internalobs.RemoveConditionByType(&context.Forwarder.Status.Conditions, obs.ConditionTypeRaiseFdLimit)
 }
 
 func IsEnabledValue(val string) bool {

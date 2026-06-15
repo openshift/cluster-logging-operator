@@ -19,6 +19,9 @@ https?://\S+
 # Version strings
 v\d+\.\d+(\.\d+)?
 
+# AsciiDoc source/listing blocks (---- delimited)
+(?s)^----$.*?^----$
+
 # AsciiDoc directives and macros
 ^include::.*$
 ^ifdef::.*$

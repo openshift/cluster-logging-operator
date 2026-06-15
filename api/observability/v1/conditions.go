@@ -35,6 +35,9 @@ const (
 	// ConditionTypeMaxUnavailable validates the value of the max-unavailable-rollout annotation
 	ConditionTypeMaxUnavailable = GroupName + "/MaxUnavailableAnnotation"
 
+	// ConditionTypeRaiseFdLimit validates the value of the raise-fd-limit annotation
+	ConditionTypeRaiseFdLimit = GroupName + "/RaiseFdLimitAnnotation"
+
 	// ConditionTypeReady indicates the service is ready.
 	//
 	// Ready=True means the operands are running and providing some service.
@@ -88,6 +91,9 @@ const (
 
 	// ReasonKubeCacheSupported indicates the support for the use-apiserver-cache annotation value
 	ReasonKubeCacheSupported = "KubeCacheAnnotationSupported"
+
+	// ReasonRaiseFdLimitSupported indicates the support for the raise-fd-limit annotation value
+	ReasonRaiseFdLimitSupported = "RaiseFdLimitAnnotationSupported"
 
 	// ReasonReconciliationComplete when the operator has initialized, validated, and deployed the resources for the workload
 	ReasonReconciliationComplete = "ReconciliationComplete"

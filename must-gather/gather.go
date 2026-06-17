@@ -153,11 +153,7 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Co
 		collectors = append(collectors, NewCLOCollector(g.client, g.logger))
 	}
 
-	// LogStore collectors (Elasticsearch and/or LokiStack)
-	if g.isElasticsearchInstalled(ctx) {
-		collectors = append(collectors, NewLogStoreCollector(g.client, g.logger, "elasticsearch", g.config.LoggingNamespace))
-	}
-
+	// LogStore collectors (LokiStack only)
 	if g.isLokiStackInstalled(ctx) {
 		collectors = append(collectors, NewLogStoreCollector(g.client, g.logger, "lokistack", g.config.LoggingNamespace))
 	}
@@ -237,22 +233,6 @@ func (g *Gather) isUIPluginInstalled(ctx context.Context) bool {
 	}
 
 	return len(uiPluginList.Items) > 0
-}
-
-// isElasticsearchInstalled checks if Elasticsearch is installed
-func (g *Gather) isElasticsearchInstalled(ctx context.Context) bool {
-	esGVR := schema.GroupVersionResource{
-		Group:    "logging.openshift.io",
-		Version:  "v1",
-		Resource: "elasticsearches",
-	}
-
-	esList, err := g.client.dynamicClient.Resource(esGVR).Namespace(g.config.LoggingNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return false
-	}
-
-	return len(esList.Items) > 0
 }
 
 // isLokiStackInstalled checks if LokiStack is installed

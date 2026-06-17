@@ -6,23 +6,19 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Logger interface for logging operations
-type Logger interface {
-	Log(format string, args ...interface{})
-}
-
 // Collector collects Prometheus rules and alerts
 type Collector struct {
 	client *client.Client
-	logger Logger
+	logger api.Logger
 }
 
 // NewCollector creates a new monitoring collector
-func NewCollector(c *client.Client, logger Logger) *Collector {
+func NewCollector(c *client.Client, logger api.Logger) *Collector {
 	return &Collector{
 		client: c,
 		logger: logger,

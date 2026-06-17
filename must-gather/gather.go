@@ -12,7 +12,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/cluster"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/metrics"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/namespace"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/ui"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -21,7 +24,7 @@ import (
 type Gather struct {
 	config *api.Config
 	client *client.Client
-	logger *api.Logger
+	logger api.Logger
 }
 
 // NewGather creates a new must-gather orchestrator
@@ -39,11 +42,11 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 	}
 
 	config := &api.Config{
-		DestDir: absPath,
-		LoggingNamespace:   loggingNamespace,
-		LogFileName:        "gather-debug.log",
-		Logger:             logWriter,
-		Context:            context.Background(),
+		DestDir:          absPath,
+		LoggingNamespace: loggingNamespace,
+		LogFileName:      "gather-debug.log",
+		Logger:           logWriter,
+		Context:          context.Background(),
 	}
 
 	return &Gather{
@@ -138,11 +141,12 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []ap
 	collectors = append(collectors, &clusterCollectorAdapter{collector: clusterCollector})
 
 	// Namespace collectors
-	collectors = append(collectors, NewNamespaceCollector(g.client, g.logger, namespaces))
+	namespaceCollector := namespace.NewCollector(g.client, g.logger, namespaces)
+	collectors = append(collectors, &namespaceCollectorAdapter{collector: namespaceCollector})
 
 	// UIPlugin collector (if installed)
 	if g.isUIPluginInstalled(ctx) {
-		collectors = append(collectors, NewUIPluginCollector(g.client, g.logger))
+		collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger))
 	}
 
 	// Monitoring collector
@@ -151,7 +155,8 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []ap
 
 	// LogStore collectors (LokiStack only)
 	if g.isLokiStackInstalled(ctx) {
-		collectors = append(collectors, NewLogStoreCollector(g.client, g.logger, "lokistack", g.config.LoggingNamespace))
+		lokiCollector := lokistack.NewCollector(g.client, g.logger, g.config.LoggingNamespace)
+		collectors = append(collectors, &lokistackCollectorAdapter{collector: lokiCollector})
 	}
 
 	return collectors
@@ -259,5 +264,31 @@ func (a *metricsCollectorAdapter) Name() string {
 }
 
 func (a *metricsCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
+	return a.collector.Collect(ctx, config.DestDir)
+}
+
+// lokistackCollectorAdapter adapts lokistack.Collector to mustgather.Collector interface
+type lokistackCollectorAdapter struct {
+	collector *lokistack.Collector
+}
+
+func (a *lokistackCollectorAdapter) Name() string {
+	return a.collector.Name()
+}
+
+func (a *lokistackCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
+	return a.collector.Collect(ctx, config.DestDir, config.LoggingNamespace)
+}
+
+// namespaceCollectorAdapter adapts namespace.Collector to mustgather.Collector interface
+type namespaceCollectorAdapter struct {
+	collector *namespace.Collector
+}
+
+func (a *namespaceCollectorAdapter) Name() string {
+	return a.collector.Name()
+}
+
+func (a *namespaceCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
 	return a.collector.Collect(ctx, config.DestDir)
 }

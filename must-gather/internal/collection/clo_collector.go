@@ -1,13 +1,14 @@
-package mustgather
+package collection
 
 import (
-	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,11 +19,11 @@ import (
 // CLOCollector collects cluster logging operator resources
 type CLOCollector struct {
 	client *client.Client
-	logger *api.Logger
+	logger api.Logger
 }
 
 // NewCLOCollector creates a new CLO resource collector
-func NewCLOCollector(c *client.Client, logger *api.Logger) *CLOCollector {
+func NewCLOCollector(c *client.Client, logger api.Logger) *CLOCollector {
 	return &CLOCollector{
 		client: c,
 		logger: logger,

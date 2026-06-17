@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+// Logger interface for logging operations
+type Logger interface {
+	Log(format string, args ...interface{})
+}
+
 // Config holds the configuration for must-gather collection
 type Config struct {
 	// DestDir is the root directory where all collected data will be stored

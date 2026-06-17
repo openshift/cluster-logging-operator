@@ -1,10 +1,11 @@
-package mustgather
+package ui
 
 import (
-	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"context"
 	"fmt"
 	"path/filepath"
+
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,11 +15,11 @@ import (
 // UIPluginCollector collects UIPlugin and Console resources
 type UIPluginCollector struct {
 	client *client.Client
-	logger *api.Logger
+	logger api.Logger
 }
 
 // NewUIPluginCollector creates a new UIPlugin collector
-func NewUIPluginCollector(c *client.Client, logger *api.Logger) *UIPluginCollector {
+func NewUIPluginCollector(c *client.Client, logger api.Logger) *UIPluginCollector {
 	return &UIPluginCollector{
 		client: c,
 		logger: logger,

@@ -5,24 +5,20 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Logger interface for logging operations
-type Logger interface {
-	Log(format string, args ...interface{})
-}
-
 // Collector collects cluster-scoped resources
 type Collector struct {
 	client *client.Client
-	logger Logger
+	logger api.Logger
 }
 
 // NewCollector creates a new cluster resource collector
-func NewCollector(c *client.Client, logger Logger) *Collector {
+func NewCollector(c *client.Client, logger api.Logger) *Collector {
 	return &Collector{
 		client: c,
 		logger: logger,

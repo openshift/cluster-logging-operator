@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,21 +22,16 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// Logger interface for logging operations
-type Logger interface {
-	Log(format string, args ...interface{})
-}
-
 // Client wraps Kubernetes client functionality for must-gather operations
 type Client struct {
 	Clientset     *kubernetes.Clientset
 	DynamicClient dynamic.Interface
 	config        *rest.Config
-	logger        Logger
+	logger        api.Logger
 }
 
 // NewClient creates a new Kubernetes client for must-gather operations
-func NewClient(logger Logger) (*Client, error) {
+func NewClient(logger api.Logger) (*Client, error) {
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{},

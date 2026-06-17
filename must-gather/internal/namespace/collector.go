@@ -1,4 +1,4 @@
-package mustgather
+package namespace
 
 import (
 	"context"
@@ -15,16 +15,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// NamespaceCollector collects namespace-scoped resources
-type NamespaceCollector struct {
+// Collector collects namespace-scoped resources
+type Collector struct {
 	client     *client.Client
-	logger     *api.Logger
+	logger     api.Logger
 	namespaces []string
 }
 
-// NewNamespaceCollector creates a new namespace resource collector
-func NewNamespaceCollector(c *client.Client, logger *api.Logger, namespaces []string) *NamespaceCollector {
-	return &NamespaceCollector{
+// NewCollector creates a new namespace resource collector
+func NewCollector(c *client.Client, logger api.Logger, namespaces []string) *Collector {
+	return &Collector{
 		client:     c,
 		logger:     logger,
 		namespaces: namespaces,
@@ -32,12 +32,12 @@ func NewNamespaceCollector(c *client.Client, logger *api.Logger, namespaces []st
 }
 
 // Name returns the name of this collector
-func (n *NamespaceCollector) Name() string {
-	return "NamespaceCollector"
+func (n *Collector) Name() string {
+	return "Collector"
 }
 
 // Collect performs the collection of namespace-scoped resources
-func (n *NamespaceCollector) Collect(ctx context.Context, config *api.Config) error {
+func (n *Collector) Collect(ctx context.Context, destDir string) error {
 	n.logger.Log("BEGIN inspecting namespaced resources...")
 
 	// Define namespace-scoped resources to collect (matching oc adm inspect behavior)
@@ -121,7 +121,7 @@ func (n *NamespaceCollector) Collect(ctx context.Context, config *api.Config) er
 
 			// First collect the namespace itself
 			nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
-			nsDir := filepath.Join(config.DestDir, "namespaces", namespace)
+			nsDir := filepath.Join(destDir, "namespaces", namespace)
 
 			if err := n.client.GetResource(ctx, nsGVR, "", namespace, filepath.Join(nsDir, "namespace.yaml")); err != nil {
 				n.logger.Log("WARNING: Failed to collect namespace %s: %v", namespace, err)
@@ -168,7 +168,7 @@ func (n *NamespaceCollector) Collect(ctx context.Context, config *api.Config) er
 }
 
 // collectPodLogs collects logs for all pods in a namespace
-func (n *NamespaceCollector) collectPodLogs(ctx context.Context, namespace, nsDir string) error {
+func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string) error {
 	// Get all pods in the namespace
 	pods, err := n.client.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -228,7 +228,7 @@ func (n *NamespaceCollector) collectPodLogs(ctx context.Context, namespace, nsDi
 }
 
 // collectContainerLog collects a single container log
-func (n *NamespaceCollector) collectContainerLog(ctx context.Context, namespace, podName, containerName, destDir, filename string, previous bool) error {
+func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName, containerName, destDir, filename string, previous bool) error {
 	logOpts := &corev1.PodLogOptions{
 		Container: containerName,
 		Previous:  previous,

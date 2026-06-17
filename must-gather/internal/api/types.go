@@ -24,15 +24,12 @@ type Config struct {
 
 	// Logger is where log output should be written
 	Logger io.Writer
-
-	// Context for cancellation
-	Context context.Context
 }
 
 // Collector defines the interface for all must-gather collectors
 type Collector interface {
 	// Collect performs the collection and returns an error if collection fails
-	Collect(ctx context.Context, config *Config) error
+	Collect(ctx context.Context) error
 
 	// Name returns the name of this collector
 	Name() string

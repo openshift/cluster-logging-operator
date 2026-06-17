@@ -16,14 +16,16 @@ type Collector struct {
 	client    *client.Client
 	logger    api.Logger
 	namespace string
+	destDir   string
 }
 
 // NewCollector creates a new LokiStack collector
-func NewCollector(c *client.Client, logger api.Logger, namespace string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, namespace, destDir string) *Collector {
 	return &Collector{
 		client:    c,
 		logger:    logger,
 		namespace: namespace,
+		destDir:   destDir,
 	}
 }
 
@@ -33,7 +35,7 @@ func (l *Collector) Name() string {
 }
 
 // Collect performs the collection of LokiStack resources
-func (l *Collector) Collect(ctx context.Context, destDir, loggingNamespace string) error {
+func (l *Collector) Collect(ctx context.Context) error {
 	l.logger.Log("BEGIN gather_logstore_resources ...")
 	l.logger.Log("Gathering Lokistack resources")
 	l.logger.Log("-- Gather Lokistack CR")
@@ -45,7 +47,7 @@ func (l *Collector) Collect(ctx context.Context, destDir, loggingNamespace strin
 	}
 
 	// Write to namespace directory like other resources
-	lokiFolder := filepath.Join(destDir, "namespaces", l.namespace, "loki.grafana.com", "lokistacks")
+	lokiFolder := filepath.Join(l.destDir, "namespaces", l.namespace, "loki.grafana.com", "lokistacks")
 	if err := l.client.ListResources(ctx, lokiGVR, l.namespace, lokiFolder, metav1.ListOptions{}); err != nil {
 		return fmt.Errorf("failed to collect LokiStack CR: %w", err)
 	}

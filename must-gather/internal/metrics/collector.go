@@ -13,15 +13,17 @@ import (
 
 // Collector collects Prometheus rules and alerts
 type Collector struct {
-	client *client.Client
-	logger api.Logger
+	client  *client.Client
+	logger  api.Logger
+	destDir string
 }
 
 // NewCollector creates a new monitoring collector
-func NewCollector(c *client.Client, logger api.Logger) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, destDir string) *Collector {
 	return &Collector{
-		client: c,
-		logger: logger,
+		client:  c,
+		logger:  logger,
+		destDir: destDir,
 	}
 }
 
@@ -31,10 +33,10 @@ func (m *Collector) Name() string {
 }
 
 // Collect performs the collection of monitoring resources
-func (m *Collector) Collect(ctx context.Context, destDir string) error {
+func (m *Collector) Collect(ctx context.Context) error {
 	m.logger.Log("BEGIN gathering alerts ...")
 
-	monitoringPath := filepath.Join(destDir, "monitoring")
+	monitoringPath := filepath.Join(m.destDir, "monitoring")
 	if err := os.MkdirAll(monitoringPath, 0755); err != nil {
 		return fmt.Errorf("failed to create monitoring folder: %w", err)
 	}

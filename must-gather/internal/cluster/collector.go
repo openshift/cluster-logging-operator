@@ -13,15 +13,17 @@ import (
 
 // Collector collects cluster-scoped resources
 type Collector struct {
-	client *client.Client
-	logger api.Logger
+	client  *client.Client
+	logger  api.Logger
+	destDir string
 }
 
 // NewCollector creates a new cluster resource collector
-func NewCollector(c *client.Client, logger api.Logger) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, destDir string) *Collector {
 	return &Collector{
-		client: c,
-		logger: logger,
+		client:  c,
+		logger:  logger,
+		destDir: destDir,
 	}
 }
 
@@ -31,7 +33,7 @@ func (c *Collector) Name() string {
 }
 
 // Collect performs the collection of cluster-scoped resources
-func (c *Collector) Collect(ctx context.Context, baseCollectionPath string) error {
+func (c *Collector) Collect(ctx context.Context) error {
 	c.logger.Log("BEGIN inspecting cluster resources...")
 
 	// Define cluster-scoped resources to collect (matching /tmp/foo reference)
@@ -50,7 +52,7 @@ func (c *Collector) Collect(ctx context.Context, baseCollectionPath string) erro
 		{Group: "config.openshift.io", Version: "v1", Resource: "clusterversions"},
 	}
 
-	destDir := filepath.Join(baseCollectionPath, "cluster-scoped-resources")
+	destDir := filepath.Join(c.destDir, "cluster-scoped-resources")
 
 	var wg sync.WaitGroup
 	for _, gvr := range clusterResources {

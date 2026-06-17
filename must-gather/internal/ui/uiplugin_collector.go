@@ -14,15 +14,17 @@ import (
 
 // UIPluginCollector collects UIPlugin and Console resources
 type UIPluginCollector struct {
-	client *client.Client
-	logger api.Logger
+	client  *client.Client
+	logger  api.Logger
+	destDir string
 }
 
 // NewUIPluginCollector creates a new UIPlugin collector
-func NewUIPluginCollector(c *client.Client, logger api.Logger) *UIPluginCollector {
+func NewUIPluginCollector(c *client.Client, logger api.Logger, destDir string) *UIPluginCollector {
 	return &UIPluginCollector{
-		client: c,
-		logger: logger,
+		client:  c,
+		logger:  logger,
+		destDir: destDir,
 	}
 }
 
@@ -32,7 +34,7 @@ func (u *UIPluginCollector) Name() string {
 }
 
 // Collect performs the collection of UIPlugin resources
-func (u *UIPluginCollector) Collect(ctx context.Context, config *api.Config) error {
+func (u *UIPluginCollector) Collect(ctx context.Context) error {
 	u.logger.Log("BEGIN gathering uiplugin and console resources ...")
 
 	uipluginGVR := schema.GroupVersionResource{
@@ -41,7 +43,7 @@ func (u *UIPluginCollector) Collect(ctx context.Context, config *api.Config) err
 		Resource: "uiplugins",
 	}
 
-	destDir := filepath.Join(config.DestDir, "cluster-scoped-resources", "console.openshift.io", "uiplugins")
+	destDir := filepath.Join(u.destDir, "cluster-scoped-resources", "console.openshift.io", "uiplugins")
 
 	// Collect UIPlugin resources
 	if err := u.client.ListResources(ctx, uipluginGVR, "", destDir, metav1.ListOptions{}); err != nil {
@@ -55,7 +57,7 @@ func (u *UIPluginCollector) Collect(ctx context.Context, config *api.Config) err
 		Resource: "clusteroperators",
 	}
 
-	consoleDestDir := filepath.Join(config.DestDir, "cluster-scoped-resources", "config.openshift.io", "clusteroperators")
+	consoleDestDir := filepath.Join(u.destDir, "cluster-scoped-resources", "config.openshift.io", "clusteroperators")
 
 	if err := u.client.GetResource(ctx, coGVR, "", "console", filepath.Join(consoleDestDir, "console.yaml")); err != nil {
 		u.logger.Log("WARNING: Failed to collect console ClusterOperator: %v", err)

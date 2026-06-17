@@ -20,14 +20,16 @@ type Collector struct {
 	client     *client.Client
 	logger     api.Logger
 	namespaces []string
+	destDir    string
 }
 
 // NewCollector creates a new namespace resource collector
-func NewCollector(c *client.Client, logger api.Logger, namespaces []string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, namespaces []string, destDir string) *Collector {
 	return &Collector{
 		client:     c,
 		logger:     logger,
 		namespaces: namespaces,
+		destDir:    destDir,
 	}
 }
 
@@ -37,7 +39,7 @@ func (n *Collector) Name() string {
 }
 
 // Collect performs the collection of namespace-scoped resources
-func (n *Collector) Collect(ctx context.Context, destDir string) error {
+func (n *Collector) Collect(ctx context.Context) error {
 	n.logger.Log("BEGIN inspecting namespaced resources...")
 
 	// Define namespace-scoped resources to collect (matching oc adm inspect behavior)
@@ -121,7 +123,7 @@ func (n *Collector) Collect(ctx context.Context, destDir string) error {
 
 			// First collect the namespace itself
 			nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
-			nsDir := filepath.Join(destDir, "namespaces", namespace)
+			nsDir := filepath.Join(n.destDir, "namespaces", namespace)
 
 			if err := n.client.GetResource(ctx, nsGVR, "", namespace, filepath.Join(nsDir, "namespace.yaml")); err != nil {
 				n.logger.Log("WARNING: Failed to collect namespace %s: %v", namespace, err)

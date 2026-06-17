@@ -46,7 +46,6 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 		LoggingNamespace: loggingNamespace,
 		LogFileName:      "gather-debug.log",
 		Logger:           logWriter,
-		Context:          context.Background(),
 	}
 
 	return &Gather{
@@ -74,7 +73,7 @@ func (g *Gather) Run(ctx context.Context) error {
 	}
 
 	// Create collectors
-	collectors := g.createCollectors(ctx, namespaces)
+	collectors := g.createCollectors(namespaces)
 
 	// Run collectors concurrently
 	results := g.runCollectors(ctx, collectors)
@@ -133,30 +132,26 @@ func (g *Gather) discoverNamespaces(ctx context.Context) ([]string, error) {
 }
 
 // createCollectors creates all collectors needed for the gathering
-func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []api.Collector {
+func (g *Gather) createCollectors(namespaces []string) []api.Collector {
 	collectors := make([]api.Collector, 0)
 
 	// Cluster-scoped resources collector
-	clusterCollector := cluster.NewCollector(g.client, g.logger)
-	collectors = append(collectors, &clusterCollectorAdapter{collector: clusterCollector})
+	collectors = append(collectors, cluster.NewCollector(g.client, g.logger, g.config.DestDir))
 
 	// Namespace collectors
-	namespaceCollector := namespace.NewCollector(g.client, g.logger, namespaces)
-	collectors = append(collectors, &namespaceCollectorAdapter{collector: namespaceCollector})
+	collectors = append(collectors, namespace.NewCollector(g.client, g.logger, namespaces, g.config.DestDir))
 
 	// UIPlugin collector (if installed)
-	if g.isUIPluginInstalled(ctx) {
-		collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger))
+	if g.isUIPluginInstalled(context.Background()) {
+		collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger, g.config.DestDir))
 	}
 
 	// Monitoring collector
-	metricsCollector := metrics.NewCollector(g.client, g.logger)
-	collectors = append(collectors, &metricsCollectorAdapter{collector: metricsCollector})
+	collectors = append(collectors, metrics.NewCollector(g.client, g.logger, g.config.DestDir))
 
 	// LogStore collectors (LokiStack only)
-	if g.isLokiStackInstalled(ctx) {
-		lokiCollector := lokistack.NewCollector(g.client, g.logger, g.config.LoggingNamespace)
-		collectors = append(collectors, &lokistackCollectorAdapter{collector: lokiCollector})
+	if g.isLokiStackInstalled(context.Background()) {
+		collectors = append(collectors, lokistack.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
 	}
 
 	return collectors
@@ -173,7 +168,7 @@ func (g *Gather) runCollectors(ctx context.Context, collectors []api.Collector) 
 			defer wg.Done()
 
 			start := time.Now()
-			err := c.Collect(ctx, g.config)
+			err := c.Collect(ctx)
 			duration := time.Since(start)
 
 			resultsChan <- api.Result{
@@ -241,54 +236,3 @@ func (g *Gather) isLokiStackInstalled(ctx context.Context) bool {
 	return len(lokiList.Items) > 0
 }
 
-// clusterCollectorAdapter adapts cluster.Collector to mustgather.Collector interface
-type clusterCollectorAdapter struct {
-	collector *cluster.Collector
-}
-
-func (a *clusterCollectorAdapter) Name() string {
-	return a.collector.Name()
-}
-
-func (a *clusterCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
-	return a.collector.Collect(ctx, config.DestDir)
-}
-
-// metricsCollectorAdapter adapts metrics.Collector to mustgather.Collector interface
-type metricsCollectorAdapter struct {
-	collector *metrics.Collector
-}
-
-func (a *metricsCollectorAdapter) Name() string {
-	return a.collector.Name()
-}
-
-func (a *metricsCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
-	return a.collector.Collect(ctx, config.DestDir)
-}
-
-// lokistackCollectorAdapter adapts lokistack.Collector to mustgather.Collector interface
-type lokistackCollectorAdapter struct {
-	collector *lokistack.Collector
-}
-
-func (a *lokistackCollectorAdapter) Name() string {
-	return a.collector.Name()
-}
-
-func (a *lokistackCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
-	return a.collector.Collect(ctx, config.DestDir, config.LoggingNamespace)
-}
-
-// namespaceCollectorAdapter adapts namespace.Collector to mustgather.Collector interface
-type namespaceCollectorAdapter struct {
-	collector *namespace.Collector
-}
-
-func (a *namespaceCollectorAdapter) Name() string {
-	return a.collector.Name()
-}
-
-func (a *namespaceCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
-	return a.collector.Collect(ctx, config.DestDir)
-}

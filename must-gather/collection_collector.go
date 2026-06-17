@@ -1,12 +1,14 @@
 package mustgather
 
 import (
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -14,15 +16,15 @@ import (
 
 // CollectionCollector collects collector (vector) resources
 type CollectionCollector struct {
-	client    *Client
-	logger    *Logger
+	client    *client.Client
+	logger    *api.Logger
 	namespace string
 }
 
 // NewCollectionCollector creates a new collection resource collector
-func NewCollectionCollector(client *Client, logger *Logger, namespace string) *CollectionCollector {
+func NewCollectionCollector(c *client.Client, logger *api.Logger, namespace string) *CollectionCollector {
 	return &CollectionCollector{
-		client:    client,
+		client:    c,
 		logger:    logger,
 		namespace: namespace,
 	}
@@ -34,7 +36,7 @@ func (c *CollectionCollector) Name() string {
 }
 
 // Collect performs the collection of collector resources
-func (c *CollectionCollector) Collect(ctx context.Context, config *Config) error {
+func (c *CollectionCollector) Collect(ctx context.Context, config *api.Config) error {
 	c.logger.Log("- BEGIN <gather_collection_resources> for namespace: %s ...", c.namespace)
 
 	// Get ClusterLogForwarder resources
@@ -46,7 +48,7 @@ func (c *CollectionCollector) Collect(ctx context.Context, config *Config) error
 		Resource: "clusterlogforwarders",
 	}
 
-	clfListUnstructured, err := c.client.dynamicClient.Resource(clfGVR).Namespace(c.namespace).List(ctx, metav1.ListOptions{})
+	clfListUnstructured, err := c.client.DynamicClient.Resource(clfGVR).Namespace(c.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		c.logger.Log("WARNING: Failed to list ClusterLogForwarders: %v", err)
 		return nil
@@ -59,7 +61,7 @@ func (c *CollectionCollector) Collect(ctx context.Context, config *Config) error
 	}
 
 	// Create directory only if we have ClusterLogForwarders
-	collectorFolder := filepath.Join(config.BaseCollectionPath, "cluster-logging", "namespaces", c.namespace)
+	collectorFolder := filepath.Join(config.DestDir, "cluster-logging", "namespaces", c.namespace)
 	if err := os.MkdirAll(collectorFolder, 0755); err != nil {
 		return fmt.Errorf("failed to create collector folder: %w", err)
 	}
@@ -121,7 +123,7 @@ func (c *CollectionCollector) Collect(ctx context.Context, config *Config) error
 
 // getPodEvents gets events related to a pod
 func (c *CollectionCollector) getPodEvents(ctx context.Context, namespace, podName, destFolder string) error {
-	events, err := c.client.clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+	events, err := c.client.Clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=Pod", podName),
 	})
 	if err != nil {
@@ -138,7 +140,7 @@ func (c *CollectionCollector) getPodEvents(ctx context.Context, namespace, podNa
 
 // getPodLogs gets logs from all containers in a pod
 func (c *CollectionCollector) getPodLogs(ctx context.Context, namespace, podName, destFolder string) error {
-	pod, err := c.client.clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	pod, err := c.client.Clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -150,7 +152,7 @@ func (c *CollectionCollector) getPodLogs(ctx context.Context, namespace, podName
 			TailLines: int64Ptr(1000), // Last 1000 lines
 		}
 
-		req := c.client.clientset.CoreV1().Pods(namespace).GetLogs(podName, logOpts)
+		req := c.client.Clientset.CoreV1().Pods(namespace).GetLogs(podName, logOpts)
 		logs, err := req.Stream(ctx)
 		if err != nil {
 			c.logger.Log("INFO: Failed to get logs for container %s in pod %s: %v", container.Name, podName, err)
@@ -179,7 +181,7 @@ func int64Ptr(i int64) *int64 {
 
 // getVectorConfig extracts vector.toml from configmap
 func (c *CollectionCollector) getVectorConfig(ctx context.Context, namespace, configName, destFolder string) error {
-	cm, err := c.client.clientset.CoreV1().ConfigMaps(namespace).Get(ctx, configName, metav1.GetOptions{})
+	cm, err := c.client.Clientset.CoreV1().ConfigMaps(namespace).Get(ctx, configName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

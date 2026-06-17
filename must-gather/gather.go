@@ -9,21 +9,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/cluster"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/metrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Gather is the main must-gather orchestrator
 type Gather struct {
-	config *Config
-	client *Client
-	logger *Logger
+	config *api.Config
+	client *client.Client
+	logger *api.Logger
 }
 
 // NewGather creates a new must-gather orchestrator
 func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer) (*Gather, error) {
-	logger := NewLogger(logWriter)
-	client, err := NewClient(logger)
+	logger := api.NewLogger(logWriter)
+	k8sClient, err := client.NewClient(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
@@ -34,8 +38,8 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 		return nil, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	config := &Config{
-		BaseCollectionPath: absPath,
+	config := &api.Config{
+		DestDir: absPath,
 		LoggingNamespace:   loggingNamespace,
 		LogFileName:        "gather-debug.log",
 		Logger:             logWriter,
@@ -44,7 +48,7 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 
 	return &Gather{
 		config: config,
-		client: client,
+		client: k8sClient,
 		logger: logger,
 	}, nil
 }
@@ -52,10 +56,10 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 // Run executes the must-gather collection
 func (g *Gather) Run(ctx context.Context) error {
 	g.logger.Log("..... Cluster Logging must-gather script started .....")
-	g.logger.Log("must-gather logs are located at: '%s'", filepath.Join(g.config.BaseCollectionPath, g.config.LogFileName))
+	g.logger.Log("must-gather logs are located at: '%s'", filepath.Join(g.config.DestDir, g.config.LogFileName))
 
 	// Ensure base collection path exists
-	if err := os.MkdirAll(g.config.BaseCollectionPath, 0755); err != nil {
+	if err := os.MkdirAll(g.config.DestDir, 0755); err != nil {
 		return fmt.Errorf("failed to create base collection path: %w", err)
 	}
 
@@ -103,7 +107,7 @@ func (g *Gather) discoverNamespaces(ctx context.Context) ([]string, error) {
 	}
 
 	// List all ClusterLogForwarders across all namespaces
-	clfListUnstructured, err := g.client.dynamicClient.Resource(clfGVR).List(ctx, metav1.ListOptions{})
+	clfListUnstructured, err := g.client.DynamicClient.Resource(clfGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		g.logger.Log("WARNING: Failed to list ClusterLogForwarders: %v", err)
 	} else {
@@ -126,11 +130,12 @@ func (g *Gather) discoverNamespaces(ctx context.Context) ([]string, error) {
 }
 
 // createCollectors creates all collectors needed for the gathering
-func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Collector {
-	collectors := make([]Collector, 0)
+func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []api.Collector {
+	collectors := make([]api.Collector, 0)
 
 	// Cluster-scoped resources collector
-	collectors = append(collectors, NewClusterCollector(g.client, g.logger))
+	clusterCollector := cluster.NewCollector(g.client, g.logger)
+	collectors = append(collectors, &clusterCollectorAdapter{collector: clusterCollector})
 
 	// Namespace collectors
 	collectors = append(collectors, NewNamespaceCollector(g.client, g.logger, namespaces))
@@ -141,7 +146,8 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Co
 	}
 
 	// Monitoring collector
-	collectors = append(collectors, NewMonitoringCollector(g.client, g.logger))
+	metricsCollector := metrics.NewCollector(g.client, g.logger)
+	collectors = append(collectors, &metricsCollectorAdapter{collector: metricsCollector})
 
 	// LogStore collectors (LokiStack only)
 	if g.isLokiStackInstalled(ctx) {
@@ -152,20 +158,20 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Co
 }
 
 // runCollectors runs all collectors concurrently
-func (g *Gather) runCollectors(ctx context.Context, collectors []Collector) []Result {
+func (g *Gather) runCollectors(ctx context.Context, collectors []api.Collector) []api.Result {
 	var wg sync.WaitGroup
-	resultsChan := make(chan Result, len(collectors))
+	resultsChan := make(chan api.Result, len(collectors))
 
 	for _, collector := range collectors {
 		wg.Add(1)
-		go func(c Collector) {
+		go func(c api.Collector) {
 			defer wg.Done()
 
 			start := time.Now()
 			err := c.Collect(ctx, g.config)
 			duration := time.Since(start)
 
-			resultsChan <- Result{
+			resultsChan <- api.Result{
 				CollectorName: c.Name(),
 				Error:         err,
 				Duration:      duration,
@@ -178,7 +184,7 @@ func (g *Gather) runCollectors(ctx context.Context, collectors []Collector) []Re
 	close(resultsChan)
 
 	// Collect results
-	results := make([]Result, 0, len(collectors))
+	results := make([]api.Result, 0, len(collectors))
 	for result := range resultsChan {
 		results = append(results, result)
 	}
@@ -187,7 +193,7 @@ func (g *Gather) runCollectors(ctx context.Context, collectors []Collector) []Re
 }
 
 // logResults logs the results of all collectors
-func (g *Gather) logResults(results []Result) {
+func (g *Gather) logResults(results []api.Result) {
 	g.logger.Log("=== Must-gather collection complete ===")
 	for _, result := range results {
 		if result.Error != nil {
@@ -206,7 +212,7 @@ func (g *Gather) isUIPluginInstalled(ctx context.Context) bool {
 		Resource: "uiplugins",
 	}
 
-	uiPluginList, err := g.client.dynamicClient.Resource(uipluginGVR).List(ctx, metav1.ListOptions{})
+	uiPluginList, err := g.client.DynamicClient.Resource(uipluginGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return false
 	}
@@ -222,10 +228,36 @@ func (g *Gather) isLokiStackInstalled(ctx context.Context) bool {
 		Resource: "lokistacks",
 	}
 
-	lokiList, err := g.client.dynamicClient.Resource(lokiGVR).Namespace(g.config.LoggingNamespace).List(ctx, metav1.ListOptions{})
+	lokiList, err := g.client.DynamicClient.Resource(lokiGVR).Namespace(g.config.LoggingNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return false
 	}
 
 	return len(lokiList.Items) > 0
+}
+
+// clusterCollectorAdapter adapts cluster.Collector to mustgather.Collector interface
+type clusterCollectorAdapter struct {
+	collector *cluster.Collector
+}
+
+func (a *clusterCollectorAdapter) Name() string {
+	return a.collector.Name()
+}
+
+func (a *clusterCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
+	return a.collector.Collect(ctx, config.DestDir)
+}
+
+// metricsCollectorAdapter adapts metrics.Collector to mustgather.Collector interface
+type metricsCollectorAdapter struct {
+	collector *metrics.Collector
+}
+
+func (a *metricsCollectorAdapter) Name() string {
+	return a.collector.Name()
+}
+
+func (a *metricsCollectorAdapter) Collect(ctx context.Context, config *api.Config) error {
+	return a.collector.Collect(ctx, config.DestDir)
 }

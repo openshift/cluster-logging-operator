@@ -1,6 +1,7 @@
 package mustgather
 
 import (
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"context"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,14 +17,14 @@ import (
 
 // CLOCollector collects cluster logging operator resources
 type CLOCollector struct {
-	client *Client
-	logger *Logger
+	client *client.Client
+	logger *api.Logger
 }
 
 // NewCLOCollector creates a new CLO resource collector
-func NewCLOCollector(client *Client, logger *Logger) *CLOCollector {
+func NewCLOCollector(c *client.Client, logger *api.Logger) *CLOCollector {
 	return &CLOCollector{
-		client: client,
+		client: c,
 		logger: logger,
 	}
 }
@@ -33,10 +35,10 @@ func (c *CLOCollector) Name() string {
 }
 
 // Collect performs the collection of CLO resources
-func (c *CLOCollector) Collect(ctx context.Context, config *Config) error {
+func (c *CLOCollector) Collect(ctx context.Context, config *api.Config) error {
 	c.logger.Log("BEGIN <gather_cluster_logging_operator_resources> from namespace: %s ...", config.LoggingNamespace)
 
-	cloFolder := filepath.Join(config.BaseCollectionPath, "cluster-logging", "clo")
+	cloFolder := filepath.Join(config.DestDir, "cluster-logging", "clo")
 	if err := os.MkdirAll(cloFolder, 0755); err != nil {
 		return fmt.Errorf("failed to create CLO folder: %w", err)
 	}
@@ -78,7 +80,7 @@ func (c *CLOCollector) getEnv(ctx context.Context, namespace, podName, destFolde
 	var output strings.Builder
 
 	// Get pod to find containers
-	pods, err := c.client.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+	pods, err := c.client.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", podName),
 	})
 	if err != nil || len(pods.Items) == 0 {
@@ -146,7 +148,7 @@ func (c *CLOCollector) getVersion(ctx context.Context, namespace, destFolder str
 		Resource: "clusterserviceversions",
 	}
 
-	csvListUnstructured, err := c.client.dynamicClient.Resource(csvGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	csvListUnstructured, err := c.client.DynamicClient.Resource(csvGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list CSVs: %w", err)
 	}

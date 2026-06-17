@@ -13,24 +13,24 @@ import (
 
 func main() {
 	var (
-		baseCollectionPath string
-		loggingNamespace   string
-		logFileName        string
+		destDir          string
+		loggingNamespace string
+		logFileName      string
 	)
 
-	flag.StringVar(&baseCollectionPath, "base-collection-path", "/must-gather", "Base path for collecting must-gather data")
+	flag.StringVar(&destDir, "dest-dir", "/must-gather", "Destination directory for collecting must-gather data")
 	flag.StringVar(&loggingNamespace, "logging-namespace", "openshift-logging", "Namespace where cluster logging operator is deployed")
 	flag.StringVar(&logFileName, "log-file", "gather-debug.log", "Name of the debug log file")
 	flag.Parse()
 
-	// Ensure base collection path exists
-	if err := os.MkdirAll(baseCollectionPath, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create base collection path: %v\n", err)
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create destination directory: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Set up logging
-	logFilePath := filepath.Join(baseCollectionPath, logFileName)
+	logFilePath := filepath.Join(destDir, logFileName)
 	logFile, err := os.Create(logFilePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create log file: %v\n", err)
@@ -42,7 +42,7 @@ func main() {
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 
 	// Create and run the gather
-	gather, err := mustgather.NewGather(baseCollectionPath, loggingNamespace, multiWriter)
+	gather, err := mustgather.NewGather(destDir, loggingNamespace, multiWriter)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create gather: %v\n", err)
 		os.Exit(1)

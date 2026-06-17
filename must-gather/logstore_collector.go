@@ -1,26 +1,28 @@
 package mustgather
 
 import (
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"context"
 	"fmt"
 	"path/filepath"
 
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // LogStoreCollector collects log store resources (LokiStack)
 type LogStoreCollector struct {
-	client        *Client
-	logger        *Logger
+	client        *client.Client
+	logger        *api.Logger
 	logStoreType  string // "lokistack"
 	namespace     string
 }
 
 // NewLogStoreCollector creates a new log store resource collector
-func NewLogStoreCollector(client *Client, logger *Logger, logStoreType, namespace string) *LogStoreCollector {
+func NewLogStoreCollector(c *client.Client, logger *api.Logger, logStoreType, namespace string) *LogStoreCollector {
 	return &LogStoreCollector{
-		client:       client,
+		client:       c,
 		logger:       logger,
 		logStoreType: logStoreType,
 		namespace:    namespace,
@@ -33,7 +35,7 @@ func (l *LogStoreCollector) Name() string {
 }
 
 // Collect performs the collection of log store resources
-func (l *LogStoreCollector) Collect(ctx context.Context, config *Config) error {
+func (l *LogStoreCollector) Collect(ctx context.Context, config *api.Config) error {
 	l.logger.Log("BEGIN gather_logstore_resources ...")
 	l.logger.Log("Gathering data for logstore component")
 
@@ -48,7 +50,7 @@ func (l *LogStoreCollector) Collect(ctx context.Context, config *Config) error {
 }
 
 // collectLokiStack collects LokiStack resources
-func (l *LogStoreCollector) collectLokiStack(ctx context.Context, config *Config) error {
+func (l *LogStoreCollector) collectLokiStack(ctx context.Context, config *api.Config) error {
 	l.logger.Log("Gathering Lokistack resources")
 	l.logger.Log("-- Gather Lokistack CR")
 
@@ -58,7 +60,7 @@ func (l *LogStoreCollector) collectLokiStack(ctx context.Context, config *Config
 		Resource: "lokistacks",
 	}
 
-	lokiFolder := filepath.Join(config.BaseCollectionPath, "cluster-logging", "lokistack")
+	lokiFolder := filepath.Join(config.DestDir, "cluster-logging", "lokistack")
 	if err := l.client.ListResources(ctx, lokiGVR, l.namespace, lokiFolder, metav1.ListOptions{}); err != nil {
 		return fmt.Errorf("failed to collect LokiStack CR: %w", err)
 	}

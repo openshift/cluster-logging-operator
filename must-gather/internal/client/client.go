@@ -1,0 +1,276 @@
+package client
+
+import (
+	"context"
+	"fmt"
+	"io"
+
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
+	"sigs.k8s.io/yaml"
+)
+
+// Client wraps Kubernetes client functionality for must-gather operations
+type Client struct {
+	Clientset     *kubernetes.Clientset
+	DynamicClient dynamic.Interface
+	config        *rest.Config
+	logger        api.Logger
+}
+
+// NewClient creates a new Kubernetes client for must-gather operations
+func NewClient(logger api.Logger) (*Client, error) {
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	).ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
+	}
+
+	Clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Clientset: %w", err)
+	}
+
+	DynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	return &Client{
+		Clientset:     Clientset,
+		DynamicClient: DynamicClient,
+		config:        config,
+		logger:        logger,
+	}, nil
+}
+
+// GetPods returns a list of pods matching the label selector
+func (c *Client) GetPods(ctx context.Context, namespace string, labelSelector string) ([]corev1.Pod, error) {
+	podList, err := c.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods: %w", err)
+	}
+	return podList.Items, nil
+}
+
+// GetNamespaces returns all namespaces
+func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
+	nsList, err := c.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list namespaces: %w", err)
+	}
+
+	namespaces := make([]string, len(nsList.Items))
+	for i, ns := range nsList.Items {
+		namespaces[i] = ns.Name
+	}
+	return namespaces, nil
+}
+
+// ExecInPod executes a command in a pod container and returns the output
+func (c *Client) ExecInPod(ctx context.Context, namespace, pod, container string, command []string) (string, error) {
+	req := c.Clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(pod).
+		Namespace(namespace).
+		SubResource("exec")
+
+	req.VersionedParams(&corev1.PodExecOptions{
+		Container: container,
+		Command:   command,
+		Stdout:    true,
+		Stderr:    true,
+	}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
+	if err != nil {
+		return "", fmt.Errorf("failed to create executor: %w", err)
+	}
+
+	var stdout, stderr io.Writer
+	stdoutBuf := &writeBuffer{}
+	stderrBuf := &writeBuffer{}
+	stdout = stdoutBuf
+	stderr = stderrBuf
+
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdout: stdout,
+		Stderr: stderr,
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("exec failed: %w, stderr: %s", err, stderrBuf.String())
+	}
+
+	return stdoutBuf.String(), nil
+}
+
+// GetResource gets a resource and writes it as YAML to the destination file
+func (c *Client) GetResource(ctx context.Context, gvr schema.GroupVersionResource, namespace, name string, destPath api.Path) error {
+	var resource runtime.Object
+	var err error
+
+	if namespace != "" {
+		resource, err = c.DynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	} else {
+		resource, err = c.DynamicClient.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	return c.WriteResourceToFile(resource, destPath)
+}
+
+// ListResources lists resources and writes them to destination directory
+// Each resource is written as a separate file, similar to oc adm inspect
+func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResource, namespace string, destDir api.Path, opts metav1.ListOptions) error {
+	var listObj *unstructured.UnstructuredList
+	var err error
+
+	if namespace != "" {
+		listObj, err = c.DynamicClient.Resource(gvr).Namespace(namespace).List(ctx, opts)
+	} else {
+		listObj, err = c.DynamicClient.Resource(gvr).List(ctx, opts)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to list resources: %w", err)
+	}
+
+	// Only create directory if we have items to write
+	if len(listObj.Items) == 0 {
+		return nil
+	}
+
+	// Create destination directory
+	if err := destDir.MkdirAll(); err != nil {
+		return err
+	}
+
+	// Write each resource as a separate file
+	var writeErrors []error
+	for _, item := range listObj.Items {
+		name := item.GetName()
+		if name == "" {
+			name = item.GetGenerateName()
+		}
+
+		itemPath := destDir.Add(fmt.Sprintf("%s.yaml", name))
+		if err := c.WriteResourceToFile(&item, itemPath); err != nil {
+			c.logger.Warn("Failed to write %s: %v", name, err)
+			writeErrors = append(writeErrors, fmt.Errorf("failed to write %s: %w", name, err))
+			continue
+		}
+	}
+
+	if len(writeErrors) > 0 {
+		return fmt.Errorf("%d resource(s) failed to write: %v", len(writeErrors), writeErrors)
+	}
+
+	return nil
+}
+
+// WriteResourceToFile writes a Kubernetes resource as YAML to a file
+func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path) error {
+	// Sanitize secrets before writing
+	sanitizedResource, err := c.sanitizeResource(resource)
+	if err != nil {
+		return fmt.Errorf("failed to sanitize resource: %w", err)
+	}
+
+	// Marshal to YAML
+	yamlBytes, err := yaml.Marshal(sanitizedResource)
+	if err != nil {
+		return fmt.Errorf("failed to marshal resource to YAML: %w", err)
+	}
+
+	// Write to file (WriteFile creates parent directory automatically)
+	return destPath.WriteFile(yamlBytes)
+}
+
+// sanitizeResource redacts secret data values
+func (c *Client) sanitizeResource(resource runtime.Object) (runtime.Object, error) {
+	// Check if this is a Secret
+	if unstructuredObj, ok := resource.(*unstructured.Unstructured); ok {
+		if unstructuredObj.GetKind() == "Secret" {
+			// Make a deep copy to avoid modifying the original
+			sanitized := unstructuredObj.DeepCopy()
+
+			// Redact all data values (base64 encoded)
+			if data, found, err := unstructured.NestedMap(sanitized.Object, "data"); err != nil {
+				return nil, fmt.Errorf("failed to read secret data field: %w", err)
+			} else if found {
+				for key, val := range data {
+					length := 0
+					if strVal, ok := val.(string); ok {
+						length = len(strVal)
+					}
+					data[key] = fmt.Sprintf("REDACTED length=%d", length)
+				}
+				if err := unstructured.SetNestedMap(sanitized.Object, data, "data"); err != nil {
+					return nil, fmt.Errorf("failed to set redacted secret data: %w", err)
+				}
+			}
+
+			// Redact all stringData values (plain text)
+			if stringData, found, err := unstructured.NestedMap(sanitized.Object, "stringData"); err != nil {
+				return nil, fmt.Errorf("failed to read secret stringData field: %w", err)
+			} else if found {
+				for key, val := range stringData {
+					length := 0
+					if strVal, ok := val.(string); ok {
+						length = len(strVal)
+					}
+					stringData[key] = fmt.Sprintf("REDACTED length=%d", length)
+				}
+				if err := unstructured.SetNestedMap(sanitized.Object, stringData, "stringData"); err != nil {
+					return nil, fmt.Errorf("failed to set redacted secret stringData: %w", err)
+				}
+			}
+
+			return sanitized, nil
+		}
+	}
+
+	return resource, nil
+}
+
+// GetDynamicClient returns the underlying dynamic client
+func (c *Client) GetDynamicClient() dynamic.Interface {
+	return c.DynamicClient
+}
+
+// GetClientset returns the underlying Clientset
+func (c *Client) GetClientset() *kubernetes.Clientset {
+	return c.Clientset
+}
+
+// writeBuffer is a simple buffer that implements io.Writer
+type writeBuffer struct {
+	data []byte
+}
+
+func (w *writeBuffer) Write(p []byte) (n int, err error) {
+	w.data = append(w.data, p...)
+	return len(p), nil
+}
+
+func (w *writeBuffer) String() string {
+	return string(w.data)
+}

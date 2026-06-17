@@ -3,6 +3,7 @@ package mustgather
 import (
 	"context"
 	"path/filepath"
+	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -49,22 +50,29 @@ func (c *ClusterCollector) Collect(ctx context.Context, config *Config) error {
 
 	destDir := filepath.Join(config.BaseCollectionPath, "cluster-scoped-resources")
 
+	var wg sync.WaitGroup
 	for _, gvr := range clusterResources {
-		c.logger.Log("-- BEGIN inspecting cluster resource %s ...", gvr.Resource)
+		wg.Add(1)
+		go func(g schema.GroupVersionResource) {
+			defer wg.Done()
 
-		// Use "core" for core resources (empty group) to match reference structure
-		group := gvr.Group
-		if group == "" {
-			group = "core"
-		}
+			c.logger.Log("-- BEGIN inspecting cluster resource %s ...", g.Resource)
 
-		resourceDir := filepath.Join(destDir, group, gvr.Resource)
+			// Use "core" for core resources (empty group) to match reference structure
+			group := g.Group
+			if group == "" {
+				group = "core"
+			}
 
-		if err := c.client.ListResources(ctx, gvr, "", resourceDir, metav1.ListOptions{}); err != nil {
-			c.logger.Log("WARNING: Failed to collect %s: %v", gvr.Resource, err)
-			continue
-		}
+			resourceDir := filepath.Join(destDir, group, g.Resource)
+
+			if err := c.client.ListResources(ctx, g, "", resourceDir, metav1.ListOptions{}); err != nil {
+				c.logger.Log("WARNING: Failed to collect %s: %v", g.Resource, err)
+			}
+		}(gvr)
 	}
+
+	wg.Wait()
 
 	c.logger.Log("END inspecting cluster resources")
 	return nil

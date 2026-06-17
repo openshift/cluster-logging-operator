@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,43 +108,58 @@ func (n *NamespaceCollector) Collect(ctx context.Context, config *Config) error 
 		{Group: "observability.openshift.io", Version: "v1", Resource: "clusterlogforwarders"},
 	}
 
+	var wg sync.WaitGroup
+
 	for _, ns := range n.namespaces {
-		n.logger.Log("-- BEGIN inspecting namespace %s ...", ns)
+		wg.Add(1)
+		go func(namespace string) {
+			defer wg.Done()
 
-		// First collect the namespace itself
-		nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
-		nsDir := filepath.Join(config.BaseCollectionPath, "namespaces", ns)
+			n.logger.Log("-- BEGIN inspecting namespace %s ...", namespace)
 
-		if err := n.client.GetResource(ctx, nsGVR, "", ns, filepath.Join(nsDir, "namespace.yaml")); err != nil {
-			n.logger.Log("WARNING: Failed to collect namespace %s: %v", ns, err)
-			continue
-		}
+			// First collect the namespace itself
+			nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
+			nsDir := filepath.Join(config.BaseCollectionPath, "namespaces", namespace)
 
-		// Collect resources in the namespace
-		for _, gvr := range namespacedResources {
-			// Use "core" for core resources (empty group) to match reference structure
-			group := gvr.Group
-			if group == "" {
-				group = "core"
+			if err := n.client.GetResource(ctx, nsGVR, "", namespace, filepath.Join(nsDir, "namespace.yaml")); err != nil {
+				n.logger.Log("WARNING: Failed to collect namespace %s: %v", namespace, err)
+				return
 			}
 
-			resourceDir := filepath.Join(nsDir, group, gvr.Resource)
+			// Collect resources in the namespace in parallel
+			var resourceWg sync.WaitGroup
+			for _, gvr := range namespacedResources {
+				resourceWg.Add(1)
+				go func(g schema.GroupVersionResource) {
+					defer resourceWg.Done()
 
-			if err := n.client.ListResources(ctx, gvr, ns, resourceDir, metav1.ListOptions{}); err != nil {
-				// Some resources may not exist in all namespaces, just log and continue
-				n.logger.Log("INFO: Skipped %s in namespace %s: %v", gvr.Resource, ns, err)
-				continue
+					// Use "core" for core resources (empty group) to match reference structure
+					group := g.Group
+					if group == "" {
+						group = "core"
+					}
+
+					resourceDir := filepath.Join(nsDir, group, g.Resource)
+
+					if err := n.client.ListResources(ctx, g, namespace, resourceDir, metav1.ListOptions{}); err != nil {
+						// Some resources may not exist in all namespaces, just log and continue
+						n.logger.Log("INFO: Skipped %s in namespace %s: %v", g.Resource, namespace, err)
+					}
+				}(gvr)
 			}
-		}
+			resourceWg.Wait()
 
-		// Collect pod logs for all pods in the namespace
-		n.logger.Log("-- Collecting pod logs for namespace %s ...", ns)
-		if err := n.collectPodLogs(ctx, ns, nsDir); err != nil {
-			n.logger.Log("WARNING: Failed to collect pod logs for namespace %s: %v", ns, err)
-		}
+			// Collect pod logs for all pods in the namespace
+			n.logger.Log("-- Collecting pod logs for namespace %s ...", namespace)
+			if err := n.collectPodLogs(ctx, namespace, nsDir); err != nil {
+				n.logger.Log("WARNING: Failed to collect pod logs for namespace %s: %v", namespace, err)
+			}
 
-		n.logger.Log("-- END inspecting namespace %s", ns)
+			n.logger.Log("-- END inspecting namespace %s", namespace)
+		}(ns)
 	}
+
+	wg.Wait()
 
 	n.logger.Log("END inspecting namespaced resources")
 	return nil
@@ -157,48 +173,55 @@ func (n *NamespaceCollector) collectPodLogs(ctx context.Context, namespace, nsDi
 		return fmt.Errorf("failed to list pods: %w", err)
 	}
 
+	var wg sync.WaitGroup
 	for _, pod := range pods.Items {
-		podDir := filepath.Join(nsDir, "pods", pod.Name)
+		wg.Add(1)
+		go func(p corev1.Pod) {
+			defer wg.Done()
 
-		// Save pod YAML
-		podYamlPath := filepath.Join(podDir, fmt.Sprintf("%s.yaml", pod.Name))
-		if err := n.client.WriteResourceToFile(&pod, podYamlPath); err != nil {
-			n.logger.Log("WARNING: Failed to save pod YAML for %s: %v", pod.Name, err)
-		}
+			podDir := filepath.Join(nsDir, "pods", p.Name)
 
-		// Collect logs for each container
-		for _, container := range pod.Spec.Containers {
-			containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
-
-			// Collect current logs
-			if err := n.collectContainerLog(ctx, namespace, pod.Name, container.Name, containerDir, "current.log", false); err != nil {
-				n.logger.Log("INFO: Failed to get current logs for pod %s container %s: %v", pod.Name, container.Name, err)
+			// Save pod YAML
+			podYamlPath := filepath.Join(podDir, fmt.Sprintf("%s.yaml", p.Name))
+			if err := n.client.WriteResourceToFile(&p, podYamlPath); err != nil {
+				n.logger.Log("WARNING: Failed to save pod YAML for %s: %v", p.Name, err)
 			}
 
-			// Collect previous logs (from restarts)
-			if err := n.collectContainerLog(ctx, namespace, pod.Name, container.Name, containerDir, "previous.log", true); err != nil {
-				// Previous logs may not exist if the container hasn't restarted, don't log as warning
-				continue
-			}
-		}
+			// Collect logs for each container
+			for _, container := range p.Spec.Containers {
+				containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
 
-		// Collect logs for init containers if any
-		for _, container := range pod.Spec.InitContainers {
-			containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
+				// Collect current logs
+				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
+					n.logger.Log("INFO: Failed to get current logs for pod %s container %s: %v", p.Name, container.Name, err)
+				}
 
-			// Collect current logs
-			if err := n.collectContainerLog(ctx, namespace, pod.Name, container.Name, containerDir, "current.log", false); err != nil {
-				n.logger.Log("INFO: Failed to get current logs for init container %s in pod %s: %v", container.Name, pod.Name, err)
+				// Collect previous logs (from restarts)
+				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "previous.log", true); err != nil {
+					// Previous logs may not exist if the container hasn't restarted, don't log as warning
+					continue
+				}
 			}
 
-			// Collect previous logs (from restarts)
-			if err := n.collectContainerLog(ctx, namespace, pod.Name, container.Name, containerDir, "previous.log", true); err != nil {
-				// Previous logs may not exist if the container hasn't restarted
-				continue
+			// Collect logs for init containers if any
+			for _, container := range p.Spec.InitContainers {
+				containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
+
+				// Collect current logs
+				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
+					n.logger.Log("INFO: Failed to get current logs for init container %s in pod %s: %v", container.Name, p.Name, err)
+				}
+
+				// Collect previous logs (from restarts)
+				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "previous.log", true); err != nil {
+					// Previous logs may not exist if the container hasn't restarted
+					continue
+				}
 			}
-		}
+		}(pod)
 	}
 
+	wg.Wait()
 	return nil
 }
 

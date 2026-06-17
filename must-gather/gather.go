@@ -135,11 +135,6 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Co
 	// Namespace collectors
 	collectors = append(collectors, NewNamespaceCollector(g.client, g.logger, namespaces))
 
-	// Multi-forwarder collection collectors
-	for _, ns := range namespaces {
-		collectors = append(collectors, NewCollectionCollector(g.client, g.logger, ns))
-	}
-
 	// UIPlugin collector (if installed)
 	if g.isUIPluginInstalled(ctx) {
 		collectors = append(collectors, NewUIPluginCollector(g.client, g.logger))
@@ -147,11 +142,6 @@ func (g *Gather) createCollectors(ctx context.Context, namespaces []string) []Co
 
 	// Monitoring collector
 	collectors = append(collectors, NewMonitoringCollector(g.client, g.logger))
-
-	// CLO resources collector (if default CLO found)
-	if g.isDefaultCLOInstalled(ctx) {
-		collectors = append(collectors, NewCLOCollector(g.client, g.logger))
-	}
 
 	// LogStore collectors (LokiStack only)
 	if g.isLokiStackInstalled(ctx) {
@@ -206,17 +196,6 @@ func (g *Gather) logResults(results []Result) {
 			g.logger.Log("SUCCESS: %s (took %v)", result.CollectorName, result.Duration)
 		}
 	}
-}
-
-// isDefaultCLOInstalled checks if the default CLO is installed
-func (g *Gather) isDefaultCLOInstalled(ctx context.Context) bool {
-	deployments, err := g.client.clientset.AppsV1().Deployments(g.config.LoggingNamespace).List(ctx, metav1.ListOptions{
-		FieldSelector: "metadata.name=cluster-logging-operator",
-	})
-	if err != nil {
-		return false
-	}
-	return len(deployments.Items) > 0
 }
 
 // isUIPluginInstalled checks if the UIPlugin is installed

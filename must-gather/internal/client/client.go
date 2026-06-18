@@ -159,7 +159,6 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 	}
 
 	// Create destination directory
-	destDir.MkdirAll()
 	if err := destDir.MkdirAll(); err != nil {
 		return err
 	}
@@ -183,18 +182,14 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 
 // WriteResourceToFile writes a Kubernetes resource as YAML to a file
 func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path) error {
-	if err := destPath.MkdirAll(); err != nil {
-		return err
-	}
-
 	// Marshal to YAML
 	yamlBytes, err := yaml.Marshal(resource)
 	if err != nil {
 		return fmt.Errorf("failed to marshal resource to YAML: %w", err)
 	}
 
-	// Write to file
-	return destPath.WriteFile(destPath, yamlBytes)
+	// Write to file (WriteFile creates parent directory automatically)
+	return destPath.WriteFile(yamlBytes)
 }
 
 // GetDynamicClient returns the underlying dynamic client

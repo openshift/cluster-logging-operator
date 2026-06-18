@@ -12,6 +12,9 @@ import (
 
 const (
 	ArtifactRoot = "cluster-scoped-resources"
+	GroupConfig  = "config.openshift.io"
+
+	groupRbac = "rbac.authorization.k8s.io"
 )
 
 // Collector collects cluster-scoped resources
@@ -48,18 +51,18 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			{Group: "", Version: "v1", Resource: "nodes"},
 
 			// RBAC
-			{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"},
-			{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"},
+			{Group: groupRbac, Version: "v1", Resource: "clusterroles"},
+			{Group: groupRbac, Version: "v1", Resource: "clusterrolebindings"},
 
 			// API Extensions
 			{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"},
 
 			// OpenShift Config
-			{Group: "config.openshift.io", Version: "v1", Resource: "clusterversions"},
+			{Group: GroupConfig, Version: "v1", Resource: "clusterversions"},
 		}
 	}
 
-	basePath := api.NewArtifactPath(c.destDir.String(), ArtifactRoot)
+	basePath := api.NewPath(c.destDir.String(), ArtifactRoot)
 
 	var wg sync.WaitGroup
 	for _, gvr := range clusterResources {

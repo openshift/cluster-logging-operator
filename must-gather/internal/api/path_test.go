@@ -10,17 +10,17 @@ import (
 var _ = Describe("Path", func() {
 
 	It("#NewPath should return a path of the args", func() {
-		Expect(api.NewArtifactPath("foo", "bar").String()).To(Equal("foo/bar"))
+		Expect(api.NewPath("foo", "bar").String()).To(Equal("foo/bar"))
 	})
 
 	It("#Add should return the part to the path", func() {
-		Expect(api.NewArtifactPath("foo", "bar").Add("xyz").String()).To(Equal("foo/bar/xyz"))
+		Expect(api.NewPath("foo", "bar").Add("xyz").String()).To(Equal("foo/bar/xyz"))
 	})
 
 	Context("#ForResource", func() {
 
 		var (
-			path = api.NewArtifactPath("/root")
+			path = api.NewPath("/root")
 		)
 
 		It("should use the group and resource", func() {

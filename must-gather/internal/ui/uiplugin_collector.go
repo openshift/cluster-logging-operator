@@ -65,7 +65,7 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 
 	// Collect Console ClusterOperator
 	coGVR := schema.GroupVersionResource{
-		Group:    "config.openshift.io",
+		Group:    cluster.GroupConfig,
 		Version:  "v1",
 		Resource: "clusteroperators",
 	}

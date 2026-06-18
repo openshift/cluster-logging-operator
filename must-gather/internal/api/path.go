@@ -12,7 +12,7 @@ type Path struct {
 	string
 }
 
-func NewArtifactPath(parts ...string) Path {
+func NewPath(parts ...string) Path {
 	return Path{filepath.Join(parts...)}
 }
 
@@ -32,16 +32,21 @@ func (p Path) String() string {
 }
 
 func (p Path) MkdirAll() error {
-	dir := filepath.Dir(p.string)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	if err := os.MkdirAll(p.string, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", p.string, err)
 	}
 	return nil
 }
 
-func (p Path) WriteFile(filePath Path, data []byte) error {
-	if err := os.WriteFile(filePath.String(), data, 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", filePath, err)
+func (p Path) WriteFile(data []byte) error {
+	// Create parent directory if it doesn't exist
+	dir := filepath.Dir(p.string)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	if err := os.WriteFile(p.String(), data, 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", p, err)
 	}
 	return nil
 }

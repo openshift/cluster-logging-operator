@@ -3,8 +3,6 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
@@ -34,12 +32,12 @@ func (m *Collector) Name() string {
 }
 
 // Collect performs the collection of monitoring resources
-func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
+func (m *Collector) Collect(ctx context.Context, _ ...schema.GroupVersionResource) error {
 	defer m.logger.Begin("gathering alerts ...")()
 
-	monitoringPath := filepath.Join(m.destDir.String(), "monitoring")
-	if err := os.MkdirAll(monitoringPath, 0755); err != nil {
-		return fmt.Errorf("failed to create monitoring folder: %w", err)
+	monitoringPath := m.destDir.Add("monitoring")
+	if err := monitoringPath.MkdirAll(); err != nil {
+		return err
 	}
 
 	// Get Prometheus pods
@@ -68,10 +66,10 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 }
 
 // promGet makes HTTP GET requests to prometheus /api/v1/<object>
-func (m *Collector) promGet(ctx context.Context, pod, object, monitoringPath string) error {
-	resultPath := filepath.Join(monitoringPath, "prometheus", object)
-	if err := os.MkdirAll(filepath.Dir(resultPath), 0755); err != nil {
-		return fmt.Errorf("failed to create result directory: %w", err)
+func (m *Collector) promGet(ctx context.Context, pod, object string, monitoringPath api.Path) error {
+	resultPath := monitoringPath.Add("prometheus")
+	if err := resultPath.MkdirAll(); err != nil {
+		return err
 	}
 
 	// Execute curl command in Prometheus pod
@@ -81,14 +79,13 @@ func (m *Collector) promGet(ctx context.Context, pod, object, monitoringPath str
 	output, err := m.client.ExecInPod(ctx, "openshift-monitoring", pod, "prometheus", cmd)
 	if err != nil {
 		// Write error to stderr file
-		stderrFile := fmt.Sprintf("%s.stderr", resultPath)
-		os.WriteFile(stderrFile, []byte(err.Error()), 0644)
+		resultPath.Add("error.log").WriteFile([]byte(err.Error()))
 		return err
 	}
 
 	// Write output to json file
-	jsonFile := fmt.Sprintf("%s.json", resultPath)
-	return os.WriteFile(jsonFile, []byte(output), 0644)
+	jsonFile := resultPath.Add(fmt.Sprintf("%s.json", object))
+	return jsonFile.WriteFile([]byte(output))
 }
 
 // getFirstReadyPromPod returns the first ready Prometheus pod

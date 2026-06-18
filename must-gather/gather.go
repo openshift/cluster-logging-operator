@@ -50,7 +50,7 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 	}
 
 	config := &api.Config{
-		DestDir:          api.NewArtifactPath(absPath),
+		DestDir:          api.NewPath(absPath),
 		LoggingNamespace: loggingNamespace,
 		LogFileName:      "gather-debug.log",
 		Logger:           logWriter,
@@ -157,4 +157,3 @@ func (g *Gather) logResults(results []api.Result) {
 		}
 	}
 }
-

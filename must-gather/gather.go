@@ -109,10 +109,8 @@ func (g *Gather) createCollectors() []api.Collector {
 	// Monitoring collector
 	collectors = append(collectors, metrics.NewCollector(g.client, g.logger, g.config.DestDir))
 
-	// LogStore collectors (LokiStack only)
-	if g.isLokiStackInstalled(context.Background()) {
-		collectors = append(collectors, lokistack.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
-	}
+	// LogStore collector (checks for LokiStack installation internally)
+	collectors = append(collectors, lokistack.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
 
 	return collectors
 }
@@ -181,18 +179,3 @@ func (g *Gather) isUIPluginInstalled(ctx context.Context) bool {
 	return len(uiPluginList.Items) > 0
 }
 
-// isLokiStackInstalled checks if LokiStack is installed
-func (g *Gather) isLokiStackInstalled(ctx context.Context) bool {
-	lokiGVR := schema.GroupVersionResource{
-		Group:    "loki.grafana.com",
-		Version:  "v1",
-		Resource: "lokistacks",
-	}
-
-	lokiList, err := g.client.DynamicClient.Resource(lokiGVR).Namespace(g.config.LoggingNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return false
-	}
-
-	return len(lokiList.Items) > 0
-}

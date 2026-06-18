@@ -37,14 +37,27 @@ func (l *Collector) Name() string {
 // Collect performs the collection of LokiStack resources
 func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	l.logger.Log("BEGIN gather_logstore_resources ...")
-	l.logger.Log("Gathering Lokistack resources")
-	l.logger.Log("-- Gather Lokistack CR")
 
 	lokiGVR := schema.GroupVersionResource{
 		Group:    "loki.grafana.com",
 		Version:  "v1",
 		Resource: "lokistacks",
 	}
+
+	// Check if LokiStack is installed (cluster-wide check)
+	lokiList, err := l.client.DynamicClient.Resource(lokiGVR).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		l.logger.Log("INFO: LokiStack CRD not available, skipping logstore collection")
+		return nil
+	}
+
+	if len(lokiList.Items) == 0 {
+		l.logger.Log("INFO: No LokiStack resources found in any namespace, skipping logstore collection")
+		return nil
+	}
+
+	l.logger.Log("Gathering Lokistack resources")
+	l.logger.Log("-- Gather Lokistack CR")
 
 	// Write to namespace directory like other resources
 	lokiFolder := filepath.Join(l.destDir, "namespaces", l.namespace, "loki.grafana.com", "lokistacks")

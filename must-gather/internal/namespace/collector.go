@@ -61,10 +61,6 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		{Group: "apps", Version: "v1", Resource: "statefulsets"},
 		{Group: "apps", Version: "v1", Resource: "replicasets"},
 
-		// Batch
-		{Group: "batch", Version: "v1", Resource: "jobs"},
-		{Group: "batch", Version: "v1", Resource: "cronjobs"},
-
 		// RBAC
 		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"},
 		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "rolebindings"},
@@ -78,19 +74,6 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 		// Policy
 		{Group: "policy", Version: "v1", Resource: "poddisruptionbudgets"},
-
-		// OpenShift Apps
-		{Group: "apps.openshift.io", Version: "v1", Resource: "deploymentconfigs"},
-
-		// OpenShift Build
-		{Group: "build.openshift.io", Version: "v1", Resource: "builds"},
-		{Group: "build.openshift.io", Version: "v1", Resource: "buildconfigs"},
-
-		// OpenShift Image
-		{Group: "image.openshift.io", Version: "v1", Resource: "imagestreams"},
-
-		// OpenShift Route
-		{Group: "route.openshift.io", Version: "v1", Resource: "routes"},
 
 		// OpenShift Monitoring
 		{Group: "monitoring.coreos.com", Version: "v1", Resource: "servicemonitors"},

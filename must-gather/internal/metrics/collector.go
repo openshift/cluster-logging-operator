@@ -49,7 +49,7 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		return nil
 	}
 
-	m.logger.Log("INFO: Found %d Prometheus replicas", len(promPods))
+	m.logger.Info("Found %d Prometheus replicas", len(promPods))
 
 	// Get first ready pod
 	readyPod := m.getFirstReadyPromPod(promPods)
@@ -59,7 +59,7 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	}
 
 	// Get Prometheus rules
-	m.logger.Log("INFO: Getting rules from %s", readyPod)
+	m.logger.Info("Getting rules from %s", readyPod)
 	if err := m.promGet(ctx, readyPod, "rules", monitoringPath); err != nil {
 		m.logger.Warn("Failed to get Prometheus rules: %v", err)
 	}

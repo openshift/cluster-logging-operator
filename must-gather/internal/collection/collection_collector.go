@@ -71,7 +71,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 	// If no namespaces found and operator not present, nothing to collect
 	if len(namespaces) == 0 && !operatorFound {
-		c.logger.Log("INFO: No cluster-logging-operator or ClusterLogForwarders found, skipping collection")
+		c.logger.Info("No cluster-logging-operator or ClusterLogForwarders found, skipping collection")
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 
 	// Return early if no operator pods found with either label
 	if len(pods) == 0 {
-		c.logger.Log("INFO: No cluster-logging-operator pods found in namespace %s, skipping operator-specific collection", c.namespace)
+		c.logger.Info("No cluster-logging-operator pods found in namespace %s, skipping operator-specific collection", c.namespace)
 		return false, nil
 	}
 

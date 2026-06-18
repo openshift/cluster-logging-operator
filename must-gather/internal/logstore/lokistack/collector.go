@@ -47,12 +47,12 @@ func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	// Check if LokiStack is installed (cluster-wide check)
 	lokiList, err := l.client.DynamicClient.Resource(lokiGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		l.logger.Log("INFO: LokiStack CRD not available, skipping logstore collection")
+		l.logger.Info("LokiStack CRD not available, skipping logstore collection")
 		return nil
 	}
 
 	if len(lokiList.Items) == 0 {
-		l.logger.Log("INFO: No LokiStack resources found in any namespace, skipping logstore collection")
+		l.logger.Info("No LokiStack resources found in any namespace, skipping logstore collection")
 		return nil
 	}
 

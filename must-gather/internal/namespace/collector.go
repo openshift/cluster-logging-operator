@@ -128,7 +128,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 					if err := n.client.ListResources(ctx, g, namespace, resourceDir, metav1.ListOptions{}); err != nil {
 						// Some resources may not exist in all namespaces, just log and continue
-						n.logger.Log("INFO: Skipped %s in namespace %s: %v", g.Resource, namespace, err)
+						n.logger.Info("Skipped %s in namespace %s: %v", g.Resource, namespace, err)
 					}
 				}(gvr)
 			}
@@ -175,7 +175,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
-					n.logger.Log("INFO: Failed to get current logs for pod %s container %s: %v", p.Name, container.Name, err)
+					n.logger.Info("Failed to get current logs for pod %s container %s: %v", p.Name, container.Name, err)
 				}
 
 				// Collect previous logs (from restarts)
@@ -191,7 +191,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
-					n.logger.Log("INFO: Failed to get current logs for init container %s in pod %s: %v", container.Name, p.Name, err)
+					n.logger.Info("Failed to get current logs for init container %s in pod %s: %v", container.Name, p.Name, err)
 				}
 
 				// Collect previous logs (from restarts)

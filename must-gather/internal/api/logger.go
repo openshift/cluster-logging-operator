@@ -36,6 +36,11 @@ func (l *DefaultLogger) Warn(format string, args ...interface{}) {
 	l.Log("WARN: "+format, args...)
 }
 
+// Info logs an informational message with INFO prefix
+func (l *DefaultLogger) Info(format string, args ...interface{}) {
+	l.Log("INFO: "+format, args...)
+}
+
 // Logf is an alias for Log for convenience
 func (l *DefaultLogger) Logf(format string, args ...interface{}) {
 	l.Log(format, args...)

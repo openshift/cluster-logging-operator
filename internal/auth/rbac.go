@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -27,32 +29,32 @@ func ReconcileRBAC(k8sClient client.Client, rbacName, saNamespace, saName string
 		return err
 	}
 
-	// Cleanup old resources with previous naming scheme
-	oldRoleName := fmt.Sprintf("%s-scc", saName)
-
-	// List all RoleBindings in the namespace to check if any reference the old role
-	roleBindings := &rbacv1.RoleBindingList{}
-	if err := k8sClient.List(context.TODO(), roleBindings, client.InNamespace(saNamespace)); err != nil {
-		return err
-	}
-
-	// Check if any RoleBinding references the old role
-	hasReferences := false
-	for _, rb := range roleBindings.Items {
-		if rb.RoleRef.Name == oldRoleName {
-			hasReferences = true
-			break
-		}
-	}
-
-	// Only delete the old role if no RoleBindings reference it
-	if !hasReferences {
-		if err := reconcile.DeleteRole(k8sClient, saNamespace, oldRoleName); err != nil {
-			return err
-		}
-	}
+	// Best-effort cleanup of old resources with previous naming scheme.
+	// Errors are logged but not returned to avoid blocking reconciliation
+	// (e.g., namespace-scoped cache may not know about newly created namespaces).
+	cleanupLegacySCCRole(k8sClient, saNamespace, saName)
 
 	return nil
+}
+
+func cleanupLegacySCCRole(k8sClient client.Client, saNamespace, saName string) {
+	oldRoleName := fmt.Sprintf("%s-scc", saName)
+
+	roleBindings := &rbacv1.RoleBindingList{}
+	if err := k8sClient.List(context.TODO(), roleBindings, client.InNamespace(saNamespace)); err != nil {
+		log.V(3).Info("skipping legacy SCC role cleanup: unable to list rolebindings", "namespace", saNamespace, "error", err)
+		return
+	}
+
+	for _, rb := range roleBindings.Items {
+		if rb.RoleRef.Name == oldRoleName {
+			return
+		}
+	}
+
+	if err := reconcile.DeleteRole(k8sClient, saNamespace, oldRoleName); err != nil {
+		log.V(3).Info("skipping legacy SCC role cleanup: unable to delete old role", "namespace", saNamespace, "role", oldRoleName, "error", err)
+	}
 }
 
 // NewMetaDataReaderClusterRoleBinding stubs a clusterrolebinding to allow reading of pod metadata (i.e. labels)

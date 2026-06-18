@@ -35,7 +35,7 @@ func (l *Collector) Name() string {
 }
 
 // Collect performs the collection of LokiStack resources
-func (l *Collector) Collect(ctx context.Context) error {
+func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	l.logger.Log("BEGIN gather_logstore_resources ...")
 	l.logger.Log("Gathering Lokistack resources")
 	l.logger.Log("-- Gather Lokistack CR")

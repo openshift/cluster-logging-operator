@@ -33,23 +33,27 @@ func (c *Collector) Name() string {
 }
 
 // Collect performs the collection of cluster-scoped resources
-func (c *Collector) Collect(ctx context.Context) error {
+func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	c.logger.Log("BEGIN inspecting cluster resources...")
 
-	// Define cluster-scoped resources to collect (matching /tmp/foo reference)
-	clusterResources := []schema.GroupVersionResource{
-		// Core resources
-		{Group: "", Version: "v1", Resource: "nodes"},
+	// Use provided GVRs or default cluster-scoped resources
+	clusterResources := gvrs
+	if len(clusterResources) == 0 {
+		// Default cluster-scoped resources to collect (matching /tmp/foo reference)
+		clusterResources = []schema.GroupVersionResource{
+			// Core resources
+			{Group: "", Version: "v1", Resource: "nodes"},
 
-		// RBAC
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"},
-		{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"},
+			// RBAC
+			{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterroles"},
+			{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "clusterrolebindings"},
 
-		// API Extensions
-		{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"},
+			// API Extensions
+			{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"},
 
-		// OpenShift Config
-		{Group: "config.openshift.io", Version: "v1", Resource: "clusterversions"},
+			// OpenShift Config
+			{Group: "config.openshift.io", Version: "v1", Resource: "clusterversions"},
+		}
 	}
 
 	destDir := filepath.Join(c.destDir, "cluster-scoped-resources")

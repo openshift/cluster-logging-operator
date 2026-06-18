@@ -39,7 +39,7 @@ func (n *Collector) Name() string {
 }
 
 // Collect performs the collection of namespace-scoped resources
-func (n *Collector) Collect(ctx context.Context) error {
+func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	n.logger.Log("BEGIN inspecting namespaced resources...")
 
 	// Define namespace-scoped resources to collect (matching oc adm inspect behavior)
@@ -106,11 +106,10 @@ func (n *Collector) Collect(ctx context.Context) error {
 		{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"},
 		{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "subscriptions"},
 		{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "clusterserviceversions"},
-
-		// Cluster Logging specific
-		{Group: "observability.openshift.io", Version: "v1", Resource: "logfilemetricexporters"},
-		{Group: "observability.openshift.io", Version: "v1", Resource: "clusterlogforwarders"},
 	}
+
+	// Append any additional GVRs provided as arguments
+	namespacedResources = append(namespacedResources, gvrs...)
 
 	var wg sync.WaitGroup
 
@@ -183,7 +182,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 		go func(p corev1.Pod) {
 			defer wg.Done()
 
-			podDir := filepath.Join(nsDir, "pods", p.Name)
+			podDir := filepath.Join(nsDir, "core", "pods", p.Name)
 
 			// Save pod YAML
 			podYamlPath := filepath.Join(podDir, fmt.Sprintf("%s.yaml", p.Name))
@@ -193,7 +192,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 
 			// Collect logs for each container
 			for _, container := range p.Spec.Containers {
-				containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
+				containerDir := filepath.Join(podDir, container.Name, "logs")
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
@@ -209,7 +208,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 
 			// Collect logs for init containers if any
 			for _, container := range p.Spec.InitContainers {
-				containerDir := filepath.Join(podDir, container.Name, container.Name, "logs")
+				containerDir := filepath.Join(podDir, container.Name, "logs")
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {

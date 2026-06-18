@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Collector collects Prometheus rules and alerts
@@ -33,7 +34,7 @@ func (m *Collector) Name() string {
 }
 
 // Collect performs the collection of monitoring resources
-func (m *Collector) Collect(ctx context.Context) error {
+func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	m.logger.Log("BEGIN gathering alerts ...")
 
 	monitoringPath := filepath.Join(m.destDir, "monitoring")

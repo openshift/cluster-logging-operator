@@ -12,12 +12,23 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/cluster"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/collection"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/namespace"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/ui"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+var (
+	// Standard namespaces
+	standardNamespaces = []string{
+		"openshift-operator-lifecycle-manager",
+		"openshift-operators-redhat",
+		"openshift-operators",
+		"openshift-monitoring", // Contains Prometheus pods needed by monitoring collector
+	}
 )
 
 // Gather is the main must-gather orchestrator
@@ -65,15 +76,8 @@ func (g *Gather) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create base collection path: %w", err)
 	}
 
-	// Discover namespaces
-	namespaces, err := g.discoverNamespaces(ctx)
-	if err != nil {
-		g.logger.Log("WARNING: Failed to discover namespaces: %v", err)
-		namespaces = []string{g.config.LoggingNamespace}
-	}
-
 	// Create collectors
-	collectors := g.createCollectors(namespaces)
+	collectors := g.createCollectors()
 
 	// Run collectors concurrently
 	results := g.runCollectors(ctx, collectors)
@@ -84,62 +88,18 @@ func (g *Gather) Run(ctx context.Context) error {
 	return nil
 }
 
-// discoverNamespaces discovers all relevant namespaces for collection
-func (g *Gather) discoverNamespaces(ctx context.Context) ([]string, error) {
-	namespaceSet := make(map[string]bool)
-
-	// Standard namespaces
-	standardNamespaces := []string{
-		"openshift-operator-lifecycle-manager",
-		g.config.LoggingNamespace,
-		"openshift-operators-redhat",
-		"openshift-operators",
-		"openshift-monitoring", // Contains Prometheus pods needed by monitoring collector
-	}
-
-	for _, ns := range standardNamespaces {
-		namespaceSet[ns] = true
-	}
-
-	// Find multi-forwarder namespaces
-	clfGVR := schema.GroupVersionResource{
-		Group:    "observability.openshift.io",
-		Version:  "v1",
-		Resource: "clusterlogforwarders",
-	}
-
-	// List all ClusterLogForwarders across all namespaces
-	clfListUnstructured, err := g.client.DynamicClient.Resource(clfGVR).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		g.logger.Log("WARNING: Failed to list ClusterLogForwarders: %v", err)
-	} else {
-		for _, item := range clfListUnstructured.Items {
-			ns := item.GetNamespace()
-			if ns != "" && ns != g.config.LoggingNamespace {
-				namespaceSet[ns] = true
-				g.logger.Log("Adding namespace '%s' to cluster resources list", ns)
-			}
-		}
-	}
-
-	// Convert set to slice
-	namespaces := make([]string, 0, len(namespaceSet))
-	for ns := range namespaceSet {
-		namespaces = append(namespaces, ns)
-	}
-
-	return namespaces, nil
-}
-
 // createCollectors creates all collectors needed for the gathering
-func (g *Gather) createCollectors(namespaces []string) []api.Collector {
+func (g *Gather) createCollectors() []api.Collector {
 	collectors := make([]api.Collector, 0)
 
 	// Cluster-scoped resources collector
 	collectors = append(collectors, cluster.NewCollector(g.client, g.logger, g.config.DestDir))
 
 	// Namespace collectors
-	collectors = append(collectors, namespace.NewCollector(g.client, g.logger, namespaces, g.config.DestDir))
+	collectors = append(collectors, namespace.NewCollector(g.client, g.logger, standardNamespaces, g.config.DestDir))
+
+	// Log Collection collector
+	collectors = append(collectors, collection.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
 
 	// UIPlugin collector (if installed)
 	if g.isUIPluginInstalled(context.Background()) {
@@ -168,6 +128,7 @@ func (g *Gather) runCollectors(ctx context.Context, collectors []api.Collector) 
 			defer wg.Done()
 
 			start := time.Now()
+			// Call Collect with no GVRs to use defaults
 			err := c.Collect(ctx)
 			duration := time.Since(start)
 
@@ -235,4 +196,3 @@ func (g *Gather) isLokiStackInstalled(ctx context.Context) bool {
 
 	return len(lokiList.Items) > 0
 }
-

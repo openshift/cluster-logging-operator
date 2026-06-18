@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Logger interface for logging operations
@@ -29,7 +31,8 @@ type Config struct {
 // Collector defines the interface for all must-gather collectors
 type Collector interface {
 	// Collect performs the collection and returns an error if collection fails
-	Collect(ctx context.Context) error
+	// Accepts optional GroupVersionResource parameters to collect specific resources
+	Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error
 
 	// Name returns the name of this collector
 	Name() string

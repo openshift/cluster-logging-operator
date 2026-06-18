@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
-
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,7 +33,7 @@ func (u *UIPluginCollector) Name() string {
 }
 
 // Collect performs the collection of UIPlugin resources
-func (u *UIPluginCollector) Collect(ctx context.Context) error {
+func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	u.logger.Log("BEGIN gathering uiplugin and console resources ...")
 
 	uipluginGVR := schema.GroupVersionResource{

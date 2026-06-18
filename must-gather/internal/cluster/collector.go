@@ -11,6 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+const (
+	ArtifactRoot = "cluster-scoped-resources"
+)
+
 // Collector collects cluster-scoped resources
 type Collector struct {
 	client  *client.Client
@@ -56,7 +60,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		}
 	}
 
-	destDir := filepath.Join(c.destDir, "cluster-scoped-resources")
+	destDir := filepath.Join(c.destDir, ArtifactRoot)
 
 	var wg sync.WaitGroup
 	for _, gvr := range clusterResources {

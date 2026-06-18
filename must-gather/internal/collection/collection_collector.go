@@ -50,12 +50,12 @@ func NewCollector(c *client.Client, logger api.Logger, loggingNamespace, destDir
 
 // Name returns the name of this collector
 func (c *Collector) Name() string {
-	return "Collector"
+	return "Log Collection"
 }
 
 // Collect performs the collection of CLO resources
 func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	defer c.logger.Begin("<gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)()
+	defer c.logger.Begin("gather cluster-logging-operator from namespace: %s ...", c.namespace)()
 
 	// Collect operator-specific artifacts (only if operator is deployed)
 	operatorFound, err := c.CollectForOperator(ctx)

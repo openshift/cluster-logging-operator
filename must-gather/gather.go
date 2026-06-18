@@ -17,8 +17,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/namespace"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/ui"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
@@ -101,10 +99,8 @@ func (g *Gather) createCollectors() []api.Collector {
 	// Log Collection collector
 	collectors = append(collectors, collection.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
 
-	// UIPlugin collector (if installed)
-	if g.isUIPluginInstalled(context.Background()) {
-		collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger, g.config.DestDir))
-	}
+	// UIPlugin collector (checks for installation internally)
+	collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger, g.config.DestDir))
 
 	// Monitoring collector
 	collectors = append(collectors, metrics.NewCollector(g.client, g.logger, g.config.DestDir))
@@ -161,21 +157,5 @@ func (g *Gather) logResults(results []api.Result) {
 			g.logger.Log("SUCCESS: %s (took %v)", result.CollectorName, result.Duration)
 		}
 	}
-}
-
-// isUIPluginInstalled checks if the UIPlugin is installed
-func (g *Gather) isUIPluginInstalled(ctx context.Context) bool {
-	uipluginGVR := schema.GroupVersionResource{
-		Group:    "console.openshift.io",
-		Version:  "v1",
-		Resource: "uiplugins",
-	}
-
-	uiPluginList, err := g.client.DynamicClient.Resource(uipluginGVR).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return false
-	}
-
-	return len(uiPluginList.Items) > 0
 }
 

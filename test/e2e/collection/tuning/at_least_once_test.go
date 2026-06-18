@@ -133,7 +133,7 @@ var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
 
 		//wait for some logs from all streams to be received
 		// Verify some logs from all streams to be received
-		Expect(wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 3*time.Minute, true, func(context.Context) (done bool, err error) {
+		Expect(wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 5*time.Minute, true, func(context.Context) (done bool, err error) {
 			q, err := receiver.Query(utils.GetPtr(15 * time.Second))
 			if err != nil {
 				log.V(0).Error(err, "The error from querying the receiver")

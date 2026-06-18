@@ -11,6 +11,7 @@ import (
 // Logger interface for logging operations
 type Logger interface {
 	Log(format string, args ...interface{})
+	Begin(format string, args ...interface{}) func()
 }
 
 // Config holds the configuration for must-gather collection

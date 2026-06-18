@@ -40,7 +40,7 @@ func (n *Collector) Name() string {
 
 // Collect performs the collection of namespace-scoped resources
 func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	n.logger.Log("BEGIN inspecting namespaced resources...")
+	defer n.logger.Begin("inspecting namespaced resources...")()
 
 	// Define namespace-scoped resources to collect (matching oc adm inspect behavior)
 	namespacedResources := []schema.GroupVersionResource{
@@ -100,8 +100,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		wg.Add(1)
 		go func(namespace string) {
 			defer wg.Done()
-
-			n.logger.Log("-- BEGIN inspecting namespace %s ...", namespace)
+			defer n.logger.Begin("-- inspecting namespace %s ...", namespace)()
 
 			// First collect the namespace itself
 			nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
@@ -140,14 +139,11 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			if err := n.collectPodLogs(ctx, namespace, nsDir); err != nil {
 				n.logger.Log("WARNING: Failed to collect pod logs for namespace %s: %v", namespace, err)
 			}
-
-			n.logger.Log("-- END inspecting namespace %s", namespace)
 		}(ns)
 	}
 
 	wg.Wait()
 
-	n.logger.Log("END inspecting namespaced resources")
 	return nil
 }
 

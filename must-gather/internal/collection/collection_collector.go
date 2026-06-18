@@ -55,7 +55,7 @@ func (c *Collector) Name() string {
 
 // Collect performs the collection of CLO resources
 func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	c.logger.Log("BEGIN <gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)
+	defer c.logger.Begin("<gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)()
 
 	// Collect operator-specific artifacts (only if operator is deployed)
 	operatorFound, err := c.CollectForOperator(ctx)
@@ -114,7 +114,7 @@ func (c *Collector) discoverNamespaces(ctx context.Context) ([]string, error) {
 }
 
 func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
-	c.logger.Log("BEGIN <gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)
+	defer c.logger.Begin("<gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)()
 
 	// Try to get CLO pods with standard Kubernetes label first
 	pods, err := c.client.GetPods(ctx, c.namespace, "app.kubernetes.io/name=cluster-logging-operator")
@@ -151,13 +151,12 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 		}
 	}
 
-	c.logger.Log("END <gather_cluster_logging_operator_resources> from namespace: %s ...", c.namespace)
 	return true, nil
 }
 
 // getEnv gets environment variables and build info from a pod
 func (c *Collector) getEnv(ctx context.Context, namespace, podName, destFolder, dockerfilePattern string) error {
-	c.logger.Log("BEGIN get_env ...")
+	defer c.logger.Begin("get_env ...")()
 	c.logger.Log("---- Env for %s", podName)
 
 	destDir := filepath.Join(destFolder, podName)
@@ -224,6 +223,5 @@ func (c *Collector) getEnv(ctx context.Context, namespace, podName, destFolder, 
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 
-	c.logger.Log("END get_env ...")
 	return nil
 }

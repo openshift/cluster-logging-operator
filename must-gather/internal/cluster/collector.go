@@ -34,7 +34,7 @@ func (c *Collector) Name() string {
 
 // Collect performs the collection of cluster-scoped resources
 func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	c.logger.Log("BEGIN inspecting cluster resources...")
+	defer c.logger.Begin("inspecting cluster resources...")()
 
 	// Use provided GVRs or default cluster-scoped resources
 	clusterResources := gvrs
@@ -63,8 +63,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		wg.Add(1)
 		go func(g schema.GroupVersionResource) {
 			defer wg.Done()
-
-			c.logger.Log("-- BEGIN inspecting cluster resource %s ...", g.Resource)
+			defer c.logger.Begin("-- inspecting cluster resource %s ...", g.Resource)()
 
 			// Use "core" for core resources (empty group) to match reference structure
 			group := g.Group
@@ -82,6 +81,5 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 	wg.Wait()
 
-	c.logger.Log("END inspecting cluster resources")
 	return nil
 }

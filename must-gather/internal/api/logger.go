@@ -23,6 +23,14 @@ func (l *DefaultLogger) Log(format string, args ...interface{}) {
 	fmt.Fprintf(l.writer, "%s %s\n", timestamp, message)
 }
 
+// Begin logs a BEGIN message and returns a function that logs the corresponding END message
+func (l *DefaultLogger) Begin(format string, args ...interface{}) func() {
+	l.Log("BEGIN "+format, args...)
+	return func() {
+		l.Log("END "+format, args...)
+	}
+}
+
 // Logf is an alias for Log for convenience
 func (l *DefaultLogger) Logf(format string, args ...interface{}) {
 	l.Log(format, args...)

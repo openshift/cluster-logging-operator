@@ -34,7 +34,7 @@ func (u *UIPluginCollector) Name() string {
 
 // Collect performs the collection of UIPlugin resources
 func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	u.logger.Log("BEGIN gathering uiplugin and console resources ...")
+	defer u.logger.Begin("gathering uiplugin and console resources ...")()
 
 	uipluginGVR := schema.GroupVersionResource{
 		Group:    "console.openshift.io",
@@ -62,6 +62,5 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 		u.logger.Log("WARNING: Failed to collect console ClusterOperator: %v", err)
 	}
 
-	u.logger.Log("END gathering uiplugin and console resources")
 	return nil
 }

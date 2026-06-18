@@ -36,7 +36,7 @@ func (l *Collector) Name() string {
 
 // Collect performs the collection of LokiStack resources
 func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	l.logger.Log("BEGIN gather_logstore_resources ...")
+	defer l.logger.Begin("gather_logstore_resources ...")()
 
 	lokiGVR := schema.GroupVersionResource{
 		Group:    "loki.grafana.com",
@@ -65,6 +65,5 @@ func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		return fmt.Errorf("failed to collect LokiStack CR: %w", err)
 	}
 
-	l.logger.Log("END gather_logstore_resources ...")
 	return nil
 }

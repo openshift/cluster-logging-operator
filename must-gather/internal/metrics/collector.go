@@ -35,7 +35,7 @@ func (m *Collector) Name() string {
 
 // Collect performs the collection of monitoring resources
 func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
-	m.logger.Log("BEGIN gathering alerts ...")
+	defer m.logger.Begin("gathering alerts ...")()
 
 	monitoringPath := filepath.Join(m.destDir, "monitoring")
 	if err := os.MkdirAll(monitoringPath, 0755); err != nil {
@@ -64,7 +64,6 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		m.logger.Log("WARNING: Failed to get Prometheus rules: %v", err)
 	}
 
-	m.logger.Log("END gathering alerts")
 	return nil
 }
 

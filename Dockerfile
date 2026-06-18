@@ -19,7 +19,13 @@ RUN make build
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
-RUN mkdir /tmp/ocp-clo && \
+RUN INSTALL_PKGS=" \
+      openssl \
+      " && \
+    microdnf install -y ${INSTALL_PKGS} && \
+    rpm -V ${INSTALL_PKGS} && \
+    microdnf clean all && \
+    mkdir /tmp/ocp-clo && \
     chmod og+w /tmp/ocp-clo
 
 COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/

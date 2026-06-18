@@ -10,7 +10,13 @@ RUN make build BUILD_OPTS="-tags strictfipsruntime"
 
 FROM registry.redhat.io/ubi9/ubi-minimal:9.7
 
-RUN mkdir /tmp/ocp-clo && \
+RUN INSTALL_PKGS=" \
+      openssl \
+      " && \
+    microdnf install -y $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    microdnf clean all && \
+    mkdir /tmp/ocp-clo && \
     chmod og+w /tmp/ocp-clo
 
 COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/

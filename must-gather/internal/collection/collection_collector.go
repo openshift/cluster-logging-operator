@@ -24,8 +24,8 @@ var (
 		Resource: "clusterlogforwarders",
 	}
 	lfmeGVE = schema.GroupVersionResource{
-		Group:    "observability.openshift.io",
-		Version:  "v1",
+		Group:    "logging.openshift.io",
+		Version:  "v1alpha1",
 		Resource: "logfilemetricexporters",
 	}
 )

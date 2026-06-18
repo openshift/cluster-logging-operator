@@ -3,7 +3,6 @@ package lokistack
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
@@ -16,11 +15,11 @@ type Collector struct {
 	client    *client.Client
 	logger    api.Logger
 	namespace string
-	destDir   string
+	destDir   api.Path
 }
 
 // NewCollector creates a new LokiStack collector
-func NewCollector(c *client.Client, logger api.Logger, namespace, destDir string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, namespace string, destDir api.Path) *Collector {
 	return &Collector{
 		client:    c,
 		logger:    logger,
@@ -60,7 +59,7 @@ func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	l.logger.Log("-- Gather Lokistack CR")
 
 	// Write to namespace directory like other resources
-	lokiFolder := filepath.Join(l.destDir, "namespaces", l.namespace, "loki.grafana.com", "lokistacks")
+	lokiFolder := l.destDir.Add("namespaces", l.namespace).ForResource(lokiGVR)
 	if err := l.client.ListResources(ctx, lokiGVR, l.namespace, lokiFolder, metav1.ListOptions{}); err != nil {
 		return fmt.Errorf("failed to collect LokiStack CR: %w", err)
 	}

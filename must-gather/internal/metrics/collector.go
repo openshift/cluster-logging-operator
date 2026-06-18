@@ -16,11 +16,11 @@ import (
 type Collector struct {
 	client  *client.Client
 	logger  api.Logger
-	destDir string
+	destDir api.Path
 }
 
 // NewCollector creates a new monitoring collector
-func NewCollector(c *client.Client, logger api.Logger, destDir string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, destDir api.Path) *Collector {
 	return &Collector{
 		client:  c,
 		logger:  logger,
@@ -37,7 +37,7 @@ func (m *Collector) Name() string {
 func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	defer m.logger.Begin("gathering alerts ...")()
 
-	monitoringPath := filepath.Join(m.destDir, "monitoring")
+	monitoringPath := filepath.Join(m.destDir.String(), "monitoring")
 	if err := os.MkdirAll(monitoringPath, 0755); err != nil {
 		return fmt.Errorf("failed to create monitoring folder: %w", err)
 	}

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
@@ -20,11 +18,11 @@ type Collector struct {
 	client     *client.Client
 	logger     api.Logger
 	namespaces []string
-	destDir    string
+	destDir    api.Path
 }
 
 // NewCollector creates a new namespace resource collector
-func NewCollector(c *client.Client, logger api.Logger, namespaces []string, destDir string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, namespaces []string, destDir api.Path) *Collector {
 	return &Collector{
 		client:     c,
 		logger:     logger,
@@ -96,6 +94,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 	var wg sync.WaitGroup
 
+	namespacesPath := n.destDir.Add("namespaces")
 	for _, ns := range n.namespaces {
 		wg.Add(1)
 		go func(namespace string) {
@@ -104,9 +103,10 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 			// First collect the namespace itself
 			nsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
-			nsDir := filepath.Join(n.destDir, "namespaces", namespace)
+			nsDir := namespacesPath.Add(namespace)
+			//nsDir := n.destDir. filepath.Join(n.destDir.String(), "namespaces", namespace)
 
-			if err := n.client.GetResource(ctx, nsGVR, "", namespace, filepath.Join(nsDir, "namespace.yaml")); err != nil {
+			if err := n.client.GetResource(ctx, nsGVR, "", namespace, nsDir.Add("namespace.yaml")); err != nil {
 				n.logger.Warn("Failed to collect namespace %s: %v", namespace, err)
 				return
 			}
@@ -119,14 +119,12 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 					defer resourceWg.Done()
 
 					// Use "core" for core resources (empty group) to match reference structure
+					resourceDir := nsDir
 					group := g.Group
 					if group == "" {
-						group = "core"
+						resourceDir = resourceDir.Add("core")
 					}
-
-					resourceDir := filepath.Join(nsDir, group, g.Resource)
-
-					if err := n.client.ListResources(ctx, g, namespace, resourceDir, metav1.ListOptions{}); err != nil {
+					if err := n.client.ListResources(ctx, g, namespace, resourceDir.ForResource(g), metav1.ListOptions{}); err != nil {
 						// Some resources may not exist in all namespaces, just log and continue
 						n.logger.Info("Skipped %s in namespace %s: %v", g.Resource, namespace, err)
 					}
@@ -148,7 +146,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 }
 
 // collectPodLogs collects logs for all pods in a namespace
-func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string) error {
+func (n *Collector) collectPodLogs(ctx context.Context, namespace string, nsDir api.Path) error {
 	// Get all pods in the namespace
 	pods, err := n.client.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -161,17 +159,17 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 		go func(p corev1.Pod) {
 			defer wg.Done()
 
-			podDir := filepath.Join(nsDir, "core", "pods", p.Name)
+			podDir := nsDir.Add("core", "pods", p.Name)
 
 			// Save pod YAML
-			podYamlPath := filepath.Join(podDir, fmt.Sprintf("%s.yaml", p.Name))
+			podYamlPath := podDir.Add(fmt.Sprintf("%s.yaml", p.Name))
 			if err := n.client.WriteResourceToFile(&p, podYamlPath); err != nil {
 				n.logger.Warn("Failed to save pod YAML for %s: %v", p.Name, err)
 			}
 
 			// Collect logs for each container
 			for _, container := range p.Spec.Containers {
-				containerDir := filepath.Join(podDir, container.Name, "logs")
+				containerDir := podDir.Add(container.Name, "logs")
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
@@ -187,7 +185,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 
 			// Collect logs for init containers if any
 			for _, container := range p.Spec.InitContainers {
-				containerDir := filepath.Join(podDir, container.Name, "logs")
+				containerDir := podDir.Add(container.Name, "logs")
 
 				// Collect current logs
 				if err := n.collectContainerLog(ctx, namespace, p.Name, container.Name, containerDir, "current.log", false); err != nil {
@@ -208,7 +206,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 }
 
 // collectContainerLog collects a single container log
-func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName, containerName, destDir, filename string, previous bool) error {
+func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName, containerName string, destDir api.Path, filename string, previous bool) error {
 	logOpts := &corev1.PodLogOptions{
 		Container: containerName,
 		Previous:  previous,
@@ -231,14 +229,10 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 		return nil
 	}
 
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", destDir, err)
+	if err := destDir.MkdirAll(); err != nil {
+		return err
 	}
 
-	logFile := filepath.Join(destDir, filename)
-	if err := os.WriteFile(logFile, logData, 0644); err != nil {
-		return fmt.Errorf("failed to write log file %s: %w", logFile, err)
-	}
-
-	return nil
+	logFile := destDir.Add(filename)
+	return logFile.WriteFile(logFile, logData)
 }

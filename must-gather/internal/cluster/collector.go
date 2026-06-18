@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"path/filepath"
 	"sync"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
@@ -19,11 +18,11 @@ const (
 type Collector struct {
 	client  *client.Client
 	logger  api.Logger
-	destDir string
+	destDir api.Path
 }
 
 // NewCollector creates a new cluster resource collector
-func NewCollector(c *client.Client, logger api.Logger, destDir string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, destDir api.Path) *Collector {
 	return &Collector{
 		client:  c,
 		logger:  logger,
@@ -60,7 +59,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		}
 	}
 
-	destDir := filepath.Join(c.destDir, ArtifactRoot)
+	basePath := api.NewArtifactPath(c.destDir.String(), ArtifactRoot)
 
 	var wg sync.WaitGroup
 	for _, gvr := range clusterResources {
@@ -70,14 +69,14 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			defer c.logger.Begin("-- inspecting cluster resource %s ...", g.Resource)()
 
 			// Use "core" for core resources (empty group) to match reference structure
-			group := g.Group
-			if group == "" {
-				group = "core"
+			gvr := g
+			if gvr.Group == "" {
+				gvr.Group = "core"
 			}
 
-			resourceDir := filepath.Join(destDir, group, g.Resource)
+			resourcePath := basePath.ForResource(gvr)
 
-			if err := c.client.ListResources(ctx, g, "", resourceDir, metav1.ListOptions{}); err != nil {
+			if err := c.client.ListResources(ctx, g, "", resourcePath, metav1.ListOptions{}); err != nil {
 				c.logger.Warn("Failed to collect %s: %v", g.Resource, err)
 			}
 		}(gvr)

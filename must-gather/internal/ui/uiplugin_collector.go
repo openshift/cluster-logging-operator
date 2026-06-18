@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
@@ -24,11 +23,11 @@ var (
 type UIPluginCollector struct {
 	client  *client.Client
 	logger  api.Logger
-	destDir string
+	destDir api.Path
 }
 
 // NewUIPluginCollector creates a new UIPlugin collector
-func NewUIPluginCollector(c *client.Client, logger api.Logger, destDir string) *UIPluginCollector {
+func NewUIPluginCollector(c *client.Client, logger api.Logger, destDir api.Path) *UIPluginCollector {
 	return &UIPluginCollector{
 		client:  c,
 		logger:  logger,
@@ -57,7 +56,7 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 		return nil
 	}
 
-	destDir := filepath.Join(u.destDir, "cluster-scoped-resources", uipluginGVR.Group, uipluginGVR.Resource)
+	destDir := u.destDir.Add(cluster.ArtifactRoot).ForResource(uipluginGVR)
 
 	// Collect UIPlugin resources
 	if err := u.client.ListResources(ctx, uipluginGVR, "", destDir, metav1.ListOptions{}); err != nil {
@@ -71,9 +70,9 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 		Resource: "clusteroperators",
 	}
 
-	consoleDestDir := filepath.Join(u.destDir, cluster.ArtifactRoot, coGVR.Group, coGVR.Resource)
+	consoleDestDir := u.destDir.Add(cluster.ArtifactRoot).ForResource(coGVR)
 
-	if err := u.client.GetResource(ctx, coGVR, "", "console", filepath.Join(consoleDestDir, "console.yaml")); err != nil {
+	if err := u.client.GetResource(ctx, coGVR, "", "console", consoleDestDir.Add("console.yaml")); err != nil {
 		u.logger.Warn("Failed to collect console ClusterOperator: %v", err)
 	}
 

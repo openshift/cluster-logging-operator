@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -51,7 +50,7 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 	}
 
 	config := &api.Config{
-		DestDir:          absPath,
+		DestDir:          api.NewArtifactPath(absPath),
 		LoggingNamespace: loggingNamespace,
 		LogFileName:      "gather-debug.log",
 		Logger:           logWriter,
@@ -67,11 +66,11 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 // Run executes the must-gather collection
 func (g *Gather) Run(ctx context.Context) error {
 	g.logger.Log("..... Cluster Logging must-gather script started .....")
-	g.logger.Log("must-gather logs are located at: '%s'", filepath.Join(g.config.DestDir, g.config.LogFileName))
+	g.logger.Log("must-gather logs are located at: '%s'", filepath.Join(g.config.DestDir.String(), g.config.LogFileName))
 
 	// Ensure base collection path exists
-	if err := os.MkdirAll(g.config.DestDir, 0755); err != nil {
-		return fmt.Errorf("failed to create base collection path: %w", err)
+	if err := g.config.DestDir.MkdirAll(); err != nil {
+		return err
 	}
 
 	// Create collectors

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	corev1 "k8s.io/api/core/v1"
@@ -122,7 +120,7 @@ func (c *Client) ExecInPod(ctx context.Context, namespace, pod, container string
 }
 
 // GetResource gets a resource and writes it as YAML to the destination file
-func (c *Client) GetResource(ctx context.Context, gvr schema.GroupVersionResource, namespace, name, destPath string) error {
+func (c *Client) GetResource(ctx context.Context, gvr schema.GroupVersionResource, namespace, name string, destPath api.Path) error {
 	var resource runtime.Object
 	var err error
 
@@ -141,7 +139,7 @@ func (c *Client) GetResource(ctx context.Context, gvr schema.GroupVersionResourc
 
 // ListResources lists resources and writes them to destination directory
 // Each resource is written as a separate file, similar to oc adm inspect
-func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResource, namespace, destDir string, opts metav1.ListOptions) error {
+func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResource, namespace string, destDir api.Path, opts metav1.ListOptions) error {
 	var listObj *unstructured.UnstructuredList
 	var err error
 
@@ -161,8 +159,9 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 	}
 
 	// Create destination directory
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", destDir, err)
+	destDir.MkdirAll()
+	if err := destDir.MkdirAll(); err != nil {
+		return err
 	}
 
 	// Write each resource as a separate file
@@ -172,7 +171,7 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 			name = item.GetGenerateName()
 		}
 
-		itemPath := filepath.Join(destDir, fmt.Sprintf("%s.yaml", name))
+		itemPath := destDir.Add(fmt.Sprintf("%s.yaml", name))
 		if err := c.WriteResourceToFile(&item, itemPath); err != nil {
 			c.logger.Warn("Failed to write %s: %v", name, err)
 			continue
@@ -183,11 +182,9 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 }
 
 // WriteResourceToFile writes a Kubernetes resource as YAML to a file
-func (c *Client) WriteResourceToFile(resource runtime.Object, destPath string) error {
-	// Ensure directory exists
-	dir := filepath.Dir(destPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path) error {
+	if err := destPath.MkdirAll(); err != nil {
+		return err
 	}
 
 	// Marshal to YAML
@@ -197,11 +194,7 @@ func (c *Client) WriteResourceToFile(resource runtime.Object, destPath string) e
 	}
 
 	// Write to file
-	if err := os.WriteFile(destPath, yamlBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", destPath, err)
-	}
-
-	return nil
+	return destPath.WriteFile(destPath, yamlBytes)
 }
 
 // GetDynamicClient returns the underlying dynamic client

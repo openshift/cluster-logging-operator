@@ -2,10 +2,7 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,7 +19,7 @@ type Logger interface {
 // Config holds the configuration for must-gather collection
 type Config struct {
 	// DestDir is the root directory where all collected data will be stored
-	DestDir string
+	DestDir Path
 
 	// LoggingNamespace is the namespace where cluster logging operator is deployed
 	LoggingNamespace string
@@ -49,28 +46,4 @@ type Result struct {
 	CollectorName string
 	Error         error
 	Duration      time.Duration
-}
-
-type Path struct {
-	string
-}
-
-func NewArtifactPath(parts ...string) Path {
-	return Path{filepath.Join(parts...)}
-}
-
-func (p Path) WithResource(gvr schema.GroupVersionResource) Path {
-	p.string = filepath.Join(p.string, gvr.Group, gvr.Resource)
-	return p
-}
-
-func (p Path) String() string {
-	return p.string
-}
-
-func (p Path) MkdirAll() error {
-	if err := os.MkdirAll(p.string, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", p.string, err)
-	}
-	return nil
 }

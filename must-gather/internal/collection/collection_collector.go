@@ -35,11 +35,11 @@ type Collector struct {
 	client    *client.Client
 	logger    api.Logger
 	namespace string
-	destDir   string
+	destDir   api.Path
 }
 
 // NewCollector creates a new CLO resource collector
-func NewCollector(c *client.Client, logger api.Logger, loggingNamespace, destDir string) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, loggingNamespace string, destDir api.Path) *Collector {
 	return &Collector{
 		client:    c,
 		logger:    logger,
@@ -138,7 +138,7 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	cloFolder := filepath.Join(c.destDir, "namespaces", c.namespace, "core", "pods")
+	cloFolder := filepath.Join(c.destDir.String(), "namespaces", c.namespace, "core", "pods")
 	if err := os.MkdirAll(cloFolder, 0755); err != nil {
 		return true, fmt.Errorf("failed to create CLO folder: %w", err)
 	}

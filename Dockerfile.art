@@ -8,36 +8,15 @@ WORKDIR /opt/app-root/src
 
 RUN make build BUILD_OPTS="-tags strictfipsruntime"
 
-
-FROM quay.io/openshift/origin-cli-artifacts:4.21 AS origincli
-
-RUN case $(uname -m) in \
-    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
-    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
-    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
-    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
-    *) echo "Unsupported architecture"; exit 1 ;; \
-esac
-
 FROM registry.redhat.io/ubi9/ubi-minimal:9.7
 
-RUN INSTALL_PKGS=" \
-      cpio \
-      rsync \
-      file \
-      xz \
-      " && \
-    microdnf install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
-    microdnf clean all && \
-    mkdir /tmp/ocp-clo && \
+RUN mkdir /tmp/ocp-clo && \
     chmod og+w /tmp/ocp-clo
 
 COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder /opt/app-root/src/bin/must-gather /usr/bin/
 
-COPY --from=builder /opt/app-root/src/must-gather/collection-scripts/* /usr/bin/
-
-COPY --from=origincli /tmp/oc /usr/bin/oc
+RUN ln -s /usr/bin/must-gather /usr/bin/gather
 
 USER 1000
 

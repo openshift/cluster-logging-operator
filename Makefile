@@ -87,7 +87,6 @@ bin/forwarder-generator:
 bin/cluster-logging-operator:
 	go build $(BUILD_OPTS) -o $@ ./cmd
 
-.PHONY: bin/must-gather
 bin/must-gather:
 	go build $(BUILD_OPTS) -o $@ ./must-gather/cmd
 
@@ -99,7 +98,7 @@ openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
 .PHONY: build
-build: bin/cluster-logging-operator
+build: bin/cluster-logging-operator bin/must-gather
 
 .PHONY: build-debug
 build-debug:

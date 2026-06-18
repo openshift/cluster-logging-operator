@@ -31,6 +31,11 @@ func (l *DefaultLogger) Begin(format string, args ...interface{}) func() {
 	}
 }
 
+// Warn logs a warning message with WARN prefix
+func (l *DefaultLogger) Warn(format string, args ...interface{}) {
+	l.Log("WARN: "+format, args...)
+}
+
 // Logf is an alias for Log for convenience
 func (l *DefaultLogger) Logf(format string, args ...interface{}) {
 	l.Log(format, args...)

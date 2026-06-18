@@ -174,7 +174,7 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 
 		itemPath := filepath.Join(destDir, fmt.Sprintf("%s.yaml", name))
 		if err := c.WriteResourceToFile(&item, itemPath); err != nil {
-			c.logger.Log("WARNING: Failed to write %s: %v", name, err)
+			c.logger.Warn("Failed to write %s: %v", name, err)
 			continue
 		}
 	}

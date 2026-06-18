@@ -59,7 +59,7 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 	consoleDestDir := filepath.Join(u.destDir, "cluster-scoped-resources", "config.openshift.io", "clusteroperators")
 
 	if err := u.client.GetResource(ctx, coGVR, "", "console", filepath.Join(consoleDestDir, "console.yaml")); err != nil {
-		u.logger.Log("WARNING: Failed to collect console ClusterOperator: %v", err)
+		u.logger.Warn("Failed to collect console ClusterOperator: %v", err)
 	}
 
 	return nil

@@ -45,7 +45,7 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	// Get Prometheus pods
 	promPods, err := m.client.GetPods(ctx, "openshift-monitoring", "prometheus=k8s")
 	if err != nil {
-		m.logger.Log("WARNING: Failed to get Prometheus pods: %v", err)
+		m.logger.Warn("Failed to get Prometheus pods: %v", err)
 		return nil
 	}
 
@@ -54,14 +54,14 @@ func (m *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	// Get first ready pod
 	readyPod := m.getFirstReadyPromPod(promPods)
 	if readyPod == "" {
-		m.logger.Log("WARNING: No ready Prometheus pod found")
+		m.logger.Warn("No ready Prometheus pod found")
 		return nil
 	}
 
 	// Get Prometheus rules
 	m.logger.Log("INFO: Getting rules from %s", readyPod)
 	if err := m.promGet(ctx, readyPod, "rules", monitoringPath); err != nil {
-		m.logger.Log("WARNING: Failed to get Prometheus rules: %v", err)
+		m.logger.Warn("Failed to get Prometheus rules: %v", err)
 	}
 
 	return nil

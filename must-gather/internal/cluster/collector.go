@@ -74,7 +74,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			resourceDir := filepath.Join(destDir, group, g.Resource)
 
 			if err := c.client.ListResources(ctx, g, "", resourceDir, metav1.ListOptions{}); err != nil {
-				c.logger.Log("WARNING: Failed to collect %s: %v", g.Resource, err)
+				c.logger.Warn("Failed to collect %s: %v", g.Resource, err)
 			}
 		}(gvr)
 	}

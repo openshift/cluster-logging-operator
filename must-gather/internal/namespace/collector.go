@@ -107,7 +107,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			nsDir := filepath.Join(n.destDir, "namespaces", namespace)
 
 			if err := n.client.GetResource(ctx, nsGVR, "", namespace, filepath.Join(nsDir, "namespace.yaml")); err != nil {
-				n.logger.Log("WARNING: Failed to collect namespace %s: %v", namespace, err)
+				n.logger.Warn("Failed to collect namespace %s: %v", namespace, err)
 				return
 			}
 
@@ -137,7 +137,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			// Collect pod logs for all pods in the namespace
 			n.logger.Log("-- Collecting pod logs for namespace %s ...", namespace)
 			if err := n.collectPodLogs(ctx, namespace, nsDir); err != nil {
-				n.logger.Log("WARNING: Failed to collect pod logs for namespace %s: %v", namespace, err)
+				n.logger.Warn("Failed to collect pod logs for namespace %s: %v", namespace, err)
 			}
 		}(ns)
 	}
@@ -166,7 +166,7 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace, nsDir string)
 			// Save pod YAML
 			podYamlPath := filepath.Join(podDir, fmt.Sprintf("%s.yaml", p.Name))
 			if err := n.client.WriteResourceToFile(&p, podYamlPath); err != nil {
-				n.logger.Log("WARNING: Failed to save pod YAML for %s: %v", p.Name, err)
+				n.logger.Warn("Failed to save pod YAML for %s: %v", p.Name, err)
 			}
 
 			// Collect logs for each container

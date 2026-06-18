@@ -60,7 +60,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	// Collect operator-specific artifacts (only if operator is deployed)
 	operatorFound, err := c.CollectForOperator(ctx)
 	if err != nil {
-		c.logger.Log("WARNING", "failed to collect operator artifacts", "namespace", c.namespace, "err", err)
+		c.logger.Warn("failed to collect operator artifacts in namespace %s: %v", c.namespace, err)
 	}
 
 	// Discover namespaces with ClusterLogForwarders (independent of operator presence)
@@ -91,7 +91,7 @@ func (c *Collector) discoverNamespaces(ctx context.Context) ([]string, error) {
 	// List all ClusterLogForwarders across all namespaces
 	clfListUnstructured, err := c.client.DynamicClient.Resource(clfGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		c.logger.Log("WARNING: Failed to list ClusterLogForwarders: %v", err)
+		c.logger.Warn("Failed to list ClusterLogForwarders: %v", err)
 	} else {
 		for _, item := range clfListUnstructured.Items {
 			ns := item.GetNamespace()
@@ -119,7 +119,7 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 	// Try to get CLO pods with standard Kubernetes label first
 	pods, err := c.client.GetPods(ctx, c.namespace, "app.kubernetes.io/name=cluster-logging-operator")
 	if err != nil {
-		c.logger.Log("WARNING: Failed to get CLO pods with standard label: %v", err)
+		c.logger.Warn("Failed to get CLO pods with standard label: %v", err)
 		return false, nil
 	}
 
@@ -127,7 +127,7 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 	if len(pods) == 0 {
 		pods, err = c.client.GetPods(ctx, c.namespace, "name=cluster-logging-operator")
 		if err != nil {
-			c.logger.Log("WARNING: Failed to get CLO pods with legacy label: %v", err)
+			c.logger.Warn("Failed to get CLO pods with legacy label: %v", err)
 			return false, nil
 		}
 	}
@@ -147,7 +147,7 @@ func (c *Collector) CollectForOperator(ctx context.Context) (bool, error) {
 	for _, pod := range pods {
 		c.logger.Log("Inspecting %s", pod.Name)
 		if err := c.getEnv(ctx, c.namespace, pod.Name, cloFolder, "Dockerfile-.*operator*"); err != nil {
-			c.logger.Log("WARNING: Failed to get env for pod %s: %v", pod.Name, err)
+			c.logger.Warn("Failed to get env for pod %s: %v", pod.Name, err)
 		}
 	}
 

@@ -54,7 +54,7 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // - User events (ie. non-system and non-serviceaccount) are forwarded
 // - Read-only system events (get/list/watch etc) are dropped
 // - Service account write events that occur within the same namespace as the service account are dropped
-// - All other events are forwarded, subject to any configured [rate limits][#rate-lmiting]
+// - All other events are forwarded, subject to any configured [rate limits][#rate-limiting]
 //
 // If you want to disable these defaults, end your rules list with rule that has only a `level` field.
 // An empty rule matches any event, and prevents the defaults from taking effect.

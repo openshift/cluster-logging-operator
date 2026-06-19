@@ -1,0 +1,130 @@
+[files]
+extend-exclude = [
+    "vendor/",
+    ".bingo/",
+    ".github/actions/spelling/",
+    "bundle/",
+    "*.go",
+    "*.yaml",
+    "*.yml",
+    "*.json",
+    "*.sh",
+    "*.bash",
+    "*.toml",
+    "*.sum",
+    "*.mod",
+    "*.png",
+    "*.jpg",
+    "*.svg",
+    "*.ico",
+    "*.pb.go",
+    "*.pb",
+    "*.proto",
+    "*.csv",
+    "*.log",
+    "*.lock",
+    "*.cfg",
+    "*.conf",
+    "*.ini",
+    "*.xml",
+    "Makefile",
+    "Dockerfile*",
+    "LICENSE",
+    "go.sum",
+    "go.mod",
+    ".cache/",
+    "tmp/",
+    "config/",
+    "hack/",
+    "test/",
+    "internal/",
+    "api/",
+    "cmd/",
+    "must-gather/collection-scripts/",
+]
+
+[default]
+check-filename = false
+
+[default.extend-words]
+# Carry forward from .codespellignore
+coo = "coo"
+notin = "notin"
+fileds = "fileds"
+
+# Project-specific terms
+CLF = "CLF"
+CLO = "CLO"
+VIAQ = "VIAQ"
+viaq = "viaq"
+DCR = "DCR"
+dcr = "dcr"
+Dcr = "Dcr"
+HEC = "HEC"
+hec = "hec"
+OTLP = "OTLP"
+otlp = "otlp"
+SASL = "SASL"
+sasl = "sasl"
+OIDC = "OIDC"
+OVN = "OVN"
+WIF = "WIF"
+
+# Syslog/systemd fields
+CMDLINE = "CMDLINE"
+DEVLINK = "DEVLINK"
+DEVNODE = "DEVNODE"
+LOGINUID = "LOGINUID"
+MSGID = "MSGID"
+PROCID = "PROCID"
+SYSNAME = "SYSNAME"
+UDEV = "UDEV"
+
+# Timestamp format strings
+SSSSSSZ = "SSSSSSZ"
+SSSZ = "SSSZ"
+
+# TLS cipher suite components
+DHE = "DHE"
+
+# Protocol and format terms
+ASIM = "ASIM"
+iostream = "iostream"
+uucp = "uucp"
+
+# Code/config identifiers in doc examples
+baz = "baz"
+containerspass = "containerspass"
+grault = "grault"
+inputname = "inputname"
+lpr = "lpr"
+nologformat = "nologformat"
+plugh = "plugh"
+waldo = "waldo"
+Otel = "Otel"
+
+# Fragments from camelCase/PascalCase splitting
+Ded = "Ded"
+DETERMIN = "DETERMIN"
+
+# Technical terms
+gnuplot = "gnuplot"
+adoc = "adoc"
+deconflict = "deconflict"
+nolint = "nolint"
+govet = "govet"
+templated = "templated"
+topk = "topk"
+zstd = "zstd"
+unparseable = "unparseable"
+
+# Kubernetes/OpenShift terms
+clusterrole = "clusterrole"
+configmap = "configmap"
+rolebinding = "rolebinding"
+serviceaccount = "serviceaccount"
+containername = "containername"
+podname = "podname"
+apiservers = "apiservers"
+sourcetype = "sourcetype"
+bucketnames = "bucketnames"

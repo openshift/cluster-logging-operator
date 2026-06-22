@@ -78,8 +78,10 @@ func (m *Collector) promGet(ctx context.Context, pod, object string, monitoringP
 
 	output, err := m.client.ExecInPod(ctx, "openshift-monitoring", pod, "prometheus", cmd)
 	if err != nil {
-		// Write error to stderr file
-		resultPath.Add("error.log").WriteFile([]byte(err.Error()))
+		// Write error to error.log file
+		if writeErr := resultPath.Add("error.log").WriteFile([]byte(err.Error())); writeErr != nil {
+			m.logger.Warn("Failed to write error log: %v", writeErr)
+		}
 		return err
 	}
 

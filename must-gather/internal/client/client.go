@@ -164,6 +164,7 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 	}
 
 	// Write each resource as a separate file
+	var writeErrors []error
 	for _, item := range listObj.Items {
 		name := item.GetName()
 		if name == "" {
@@ -173,8 +174,13 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 		itemPath := destDir.Add(fmt.Sprintf("%s.yaml", name))
 		if err := c.WriteResourceToFile(&item, itemPath); err != nil {
 			c.logger.Warn("Failed to write %s: %v", name, err)
+			writeErrors = append(writeErrors, fmt.Errorf("failed to write %s: %w", name, err))
 			continue
 		}
+	}
+
+	if len(writeErrors) > 0 {
+		return fmt.Errorf("%d resource(s) failed to write: %v", len(writeErrors), writeErrors)
 	}
 
 	return nil

@@ -6,6 +6,8 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -46,8 +48,13 @@ func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	// Check if LokiStack is installed (cluster-wide check)
 	lokiList, err := l.client.DynamicClient.Resource(lokiGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		l.logger.Info("LokiStack CRD not available, skipping logstore collection")
-		return nil
+		// Only skip if CRD doesn't exist (NotFound or NoKindMatchError)
+		// Return other errors (RBAC, API issues, etc.) to caller
+		if kerrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+			l.logger.Info("LokiStack CRD not available, skipping logstore collection")
+			return nil
+		}
+		return fmt.Errorf("failed to check for LokiStack resources: %w", err)
 	}
 
 	if len(lokiList.Items) == 0 {

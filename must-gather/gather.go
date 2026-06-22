@@ -36,7 +36,7 @@ type Gather struct {
 }
 
 // NewGather creates a new must-gather orchestrator
-func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer) (*Gather, error) {
+func NewGather(baseCollectionPath, loggingNamespace, logFileName string, logWriter io.Writer) (*Gather, error) {
 	logger := api.NewLogger(logWriter)
 	k8sClient, err := client.NewClient(logger)
 	if err != nil {
@@ -52,7 +52,7 @@ func NewGather(baseCollectionPath, loggingNamespace string, logWriter io.Writer)
 	config := &api.Config{
 		DestDir:          api.NewPath(absPath),
 		LoggingNamespace: loggingNamespace,
-		LogFileName:      "gather-debug.log",
+		LogFileName:      logFileName,
 		Logger:           logWriter,
 	}
 
@@ -81,6 +81,18 @@ func (g *Gather) Run(ctx context.Context) error {
 
 	// Log results
 	g.logResults(results)
+
+	// Check for failures and aggregate errors
+	var failures []error
+	for _, result := range results {
+		if result.Error != nil {
+			failures = append(failures, fmt.Errorf("%s: %w", result.CollectorName, result.Error))
+		}
+	}
+
+	if len(failures) > 0 {
+		return fmt.Errorf("one or more collectors failed: %v", failures)
+	}
 
 	return nil
 }

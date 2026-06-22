@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
@@ -11,6 +12,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+	// Maximum concurrent goroutines for namespace collection
+	maxConcurrentNamespaces = 5
+	// Maximum concurrent goroutines for resource collection per namespace
+	maxConcurrentResources = 10
+	// Maximum concurrent goroutines for pod log collection per namespace
+	maxConcurrentPods = 10
 )
 
 const (
@@ -106,12 +116,16 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	namespacedResources = append(namespacedResources, gvrs...)
 
 	var wg sync.WaitGroup
+	// Semaphore to limit concurrent namespace processing
+	namespaceSem := make(chan struct{}, maxConcurrentNamespaces)
 
 	namespacesPath := n.destDir.Add("namespaces")
 	for _, ns := range n.namespaces {
 		wg.Add(1)
+		namespaceSem <- struct{}{} // Acquire semaphore
 		go func(namespace string) {
 			defer wg.Done()
+			defer func() { <-namespaceSem }() // Release semaphore
 			defer n.logger.Begin("-- inspecting namespace %s ...", namespace)()
 
 			// First collect the namespace itself
@@ -126,10 +140,14 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 			// Collect resources in the namespace in parallel
 			var resourceWg sync.WaitGroup
+			// Semaphore to limit concurrent resource collection
+			resourceSem := make(chan struct{}, maxConcurrentResources)
 			for _, gvr := range namespacedResources {
 				resourceWg.Add(1)
+				resourceSem <- struct{}{} // Acquire semaphore
 				go func(g schema.GroupVersionResource) {
 					defer resourceWg.Done()
+					defer func() { <-resourceSem }() // Release semaphore
 
 					// Use "core" for core resources (empty group) to match reference structure
 					resourceDir := nsDir
@@ -167,10 +185,14 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace string, nsDir 
 	}
 
 	var wg sync.WaitGroup
+	// Semaphore to limit concurrent pod log collection
+	podSem := make(chan struct{}, maxConcurrentPods)
 	for _, pod := range pods.Items {
 		wg.Add(1)
+		podSem <- struct{}{} // Acquire semaphore
 		go func(p corev1.Pod) {
 			defer wg.Done()
+			defer func() { <-podSem }() // Release semaphore
 
 			podDir := nsDir.Add("core", "pods", p.Name)
 
@@ -230,22 +252,40 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 	if err != nil {
 		return err
 	}
-	defer logs.Close()
+	defer func() {
+		if err := logs.Close(); err != nil {
+			n.logger.Warn("Failed to close log stream for pod %s container %s: %v", podName, containerName, err)
+		}
+	}()
 
-	logData, err := io.ReadAll(logs)
-	if err != nil {
-		return fmt.Errorf("failed to read logs: %w", err)
-	}
-
-	// Only create directory and write file if we have log data
-	if len(logData) == 0 {
-		return nil
-	}
-
+	// Create destination directory
 	if err := destDir.MkdirAll(); err != nil {
 		return err
 	}
 
-	logFile := destDir.Add(filename)
-	return logFile.WriteFile(logData)
+	// Create destination file
+	logFilePath := destDir.Add(filename)
+	logFile, err := os.Create(logFilePath.String())
+	if err != nil {
+		return fmt.Errorf("failed to create log file: %w", err)
+	}
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			n.logger.Warn("Failed to close log file %s: %v", logFilePath.String(), err)
+		}
+	}()
+
+	// Stream logs directly to file without buffering in memory
+	bytesWritten, err := io.Copy(logFile, logs)
+	if err != nil {
+		return fmt.Errorf("failed to write logs: %w", err)
+	}
+
+	// If no data was written, remove the empty file
+	if bytesWritten == 0 {
+		logFile.Close() // Close before removing
+		os.Remove(logFilePath.String())
+	}
+
+	return nil
 }

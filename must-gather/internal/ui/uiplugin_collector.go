@@ -7,6 +7,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/api"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/client"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/cluster"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -47,8 +49,13 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 	// Check if UIPlugin is installed
 	uiPluginList, err := u.client.DynamicClient.Resource(uipluginGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		u.logger.Info("UIPlugin CRD not available, skipping uiplugin collection")
-		return nil
+		// Only skip if CRD doesn't exist (NotFound or NoKindMatchError)
+		// Return other errors (RBAC, API issues, etc.) to caller
+		if kerrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+			u.logger.Info("UIPlugin CRD not available, skipping uiplugin collection")
+			return nil
+		}
+		return fmt.Errorf("failed to check for UIPlugin resources: %w", err)
 	}
 
 	if len(uiPluginList.Items) == 0 {

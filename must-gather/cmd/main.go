@@ -36,13 +36,17 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to create log file: %v\n", err)
 		os.Exit(1)
 	}
-	defer logFile.Close()
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to close log file: %v\n", err)
+		}
+	}()
 
 	// Use multi-writer to write to both file and stdout
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 
 	// Create and run the gather
-	gather, err := mustgather.NewGather(destDir, loggingNamespace, multiWriter)
+	gather, err := mustgather.NewGather(destDir, loggingNamespace, logFileName, multiWriter)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create gather: %v\n", err)
 		os.Exit(1)

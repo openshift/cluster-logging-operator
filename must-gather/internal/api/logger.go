@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
 )
 
@@ -20,7 +21,10 @@ func NewLogger(w io.Writer) Logger {
 func (l *DefaultLogger) Log(format string, args ...interface{}) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	message := fmt.Sprintf(format, args...)
-	fmt.Fprintf(l.writer, "%s %s\n", timestamp, message)
+	if _, err := fmt.Fprintf(l.writer, "%s %s\n", timestamp, message); err != nil {
+		// Fallback to stderr if primary writer fails
+		fmt.Fprintf(os.Stderr, "LOGGER ERROR: failed to write log: %v\nOriginal message: %s %s\n", err, timestamp, message)
+	}
 }
 
 // Begin logs a BEGIN message and returns a function that logs the corresponding END message

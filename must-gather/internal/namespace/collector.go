@@ -283,8 +283,10 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 
 	// If no data was written, remove the empty file
 	if bytesWritten == 0 {
-		logFile.Close() // Close before removing
-		os.Remove(logFilePath.String())
+		// Close file before removing (ignore error since we're deleting anyway)
+		_ = logFile.Close()
+		// Remove empty file (ignore error since file may not exist)
+		_ = os.Remove(logFilePath.String())
 	}
 
 	return nil

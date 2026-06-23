@@ -188,14 +188,56 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 
 // WriteResourceToFile writes a Kubernetes resource as YAML to a file
 func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path) error {
+	// Sanitize secrets before writing
+	sanitizedResource := c.sanitizeResource(resource)
+
 	// Marshal to YAML
-	yamlBytes, err := yaml.Marshal(resource)
+	yamlBytes, err := yaml.Marshal(sanitizedResource)
 	if err != nil {
 		return fmt.Errorf("failed to marshal resource to YAML: %w", err)
 	}
 
 	// Write to file (WriteFile creates parent directory automatically)
 	return destPath.WriteFile(yamlBytes)
+}
+
+// sanitizeResource redacts secret data values
+func (c *Client) sanitizeResource(resource runtime.Object) runtime.Object {
+	// Check if this is a Secret
+	if unstructuredObj, ok := resource.(*unstructured.Unstructured); ok {
+		if unstructuredObj.GetKind() == "Secret" {
+			// Make a deep copy to avoid modifying the original
+			sanitized := unstructuredObj.DeepCopy()
+
+			// Redact all data values (base64 encoded)
+			if data, found, _ := unstructured.NestedMap(sanitized.Object, "data"); found {
+				for key, val := range data {
+					length := 0
+					if strVal, ok := val.(string); ok {
+						length = len(strVal)
+					}
+					data[key] = fmt.Sprintf("REDACTED length=%d", length)
+				}
+				unstructured.SetNestedMap(sanitized.Object, data, "data")
+			}
+
+			// Redact all stringData values (plain text)
+			if stringData, found, _ := unstructured.NestedMap(sanitized.Object, "stringData"); found {
+				for key, val := range stringData {
+					length := 0
+					if strVal, ok := val.(string); ok {
+						length = len(strVal)
+					}
+					stringData[key] = fmt.Sprintf("REDACTED length=%d", length)
+				}
+				unstructured.SetNestedMap(sanitized.Object, stringData, "stringData")
+			}
+
+			return sanitized
+		}
+	}
+
+	return resource
 }
 
 // GetDynamicClient returns the underlying dynamic client

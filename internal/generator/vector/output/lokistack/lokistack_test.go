@@ -3,6 +3,7 @@ package lokistack
 import (
 	_ "embed"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,6 +18,7 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("Generate vector config", func() {
@@ -152,6 +154,18 @@ var _ = Describe("Generate vector config", func() {
 		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), func(spec *obs.OutputSpec) {}),
 		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+		}),
+		Entry("with Otel datamodel and tuning", "lokistack_otel_tuning.toml", initOptions(), func(spec *obs.OutputSpec) {
+			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+			spec.LokiStack.Tuning = &obs.LokiTuningSpec{
+				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+					DeliveryMode:     obs.DeliveryModeAtLeastOnce,
+					MaxWrite:         utils.GetPtr(resource.MustParse("10M")),
+					MaxRetryDuration: utils.GetPtr(time.Duration(35)),
+					MinRetryDuration: utils.GetPtr(time.Duration(20)),
+				},
+				Compression: "gzip",
+			}
 		}),
 		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), func(spec *obs.OutputSpec) {}),
 	)

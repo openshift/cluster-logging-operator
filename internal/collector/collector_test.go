@@ -138,6 +138,30 @@ var _ = Describe("Factory#Daemonset", func() {
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
 			})
 
+			It("should set VECTOR_RAISE_FD_LIMIT to false by default", func() {
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_RAISE_FD_LIMIT", Value: "false"}))
+			})
+
+			It("should set VECTOR_RAISE_FD_LIMIT to true when annotation is set", func() {
+				factory.annotations = map[string]string{
+					constants.AnnotationVectorRaiseFdLimit: "true",
+				}
+
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+				collector = podSpec.Containers[0]
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_RAISE_FD_LIMIT", Value: "true"}))
+			})
+
+			It("should default VECTOR_RAISE_FD_LIMIT to false when annotation has invalid value", func() {
+				factory.annotations = map[string]string{
+					constants.AnnotationVectorRaiseFdLimit: "yes",
+				}
+
+				podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+				collector = podSpec.Containers[0]
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_RAISE_FD_LIMIT", Value: "false"}))
+			})
+
 			Context("the volume mounts", func() {
 				It("should mount all output configmaps", func() {
 					Expect(collector.VolumeMounts).To(IncludeVolumeMount(

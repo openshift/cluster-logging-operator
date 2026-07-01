@@ -20,12 +20,7 @@ func ValidateInfrastructure(spec obs.InputSpec) []metav1.Condition {
 			internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonMissingSpec, fmt.Sprintf("%s has nil infrastructure spec", spec.Name)),
 		}
 	}
-	if len(spec.Infrastructure.Sources) == 0 {
-		return []metav1.Condition{
-			internalobs.NewConditionFromPrefix(obs.ConditionTypeValidInputPrefix, spec.Name, false, obs.ReasonValidationFailure, fmt.Sprintf("%s must define at least one valid source", spec.Name)),
-		}
-	}
-	if !set.New(spec.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer) && spec.Infrastructure.Tuning != nil &&
+	if len(spec.Infrastructure.Sources) > 0 && !set.New(spec.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer) && spec.Infrastructure.Tuning != nil &&
 		spec.Infrastructure.Tuning.Container != nil && spec.Infrastructure.Tuning.Container.MaxMessageSize != nil {
 		sources := make([]string, len(spec.Infrastructure.Sources))
 		for i, s := range spec.Infrastructure.Sources {

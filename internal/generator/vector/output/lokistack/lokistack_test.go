@@ -153,6 +153,29 @@ var _ = Describe("Generate vector config", func() {
 		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
+		Entry("with Otel datamodel and empty audit sources", "lokistack_otel.toml", func() utils.Options {
+			output := initOutput()
+			return utils.Options{
+				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
+				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{output},
+					Pipelines: []obs.PipelineSpec{
+						{
+							Name:       "lokistack",
+							InputRefs:  []string{obs.InputTypeApplication.String(), obs.InputTypeInfrastructure.String(), obs.InputTypeAudit.String()},
+							OutputRefs: []string{output.Name},
+						},
+					},
+					Inputs: []obs.InputSpec{
+						{Name: obs.InputTypeApplication.String(), Type: obs.InputTypeApplication},
+						{Name: obs.InputTypeInfrastructure.String(), Type: obs.InputTypeInfrastructure, Infrastructure: &obs.Infrastructure{Sources: obs.InfrastructureSources}},
+						{Name: obs.InputTypeAudit.String(), Type: obs.InputTypeAudit, Audit: &obs.Audit{}},
+					},
+				}),
+			}
+		}(), func(spec *obs.OutputSpec) {
+			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+		}),
 		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), func(spec *obs.OutputSpec) {}),
 	)
 })

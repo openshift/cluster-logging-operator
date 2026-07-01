@@ -116,13 +116,7 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 
 func getInputSources(inputSpecs []obs.InputSpec, inputType obs.InputType) []string {
 	inputSources := observability.Inputs(inputSpecs).InputSources(inputType)
-
-	if len(inputSources) == 0 && inputType == obs.InputTypeInfrastructure {
-		inputSources = append(inputSources, observability.ReservedInfrastructureSources.List()...)
-	}
-
 	addReceiverSources(&inputSources, inputSpecs, inputType)
-
 	return inputSources
 }
 

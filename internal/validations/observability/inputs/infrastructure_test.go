@@ -39,9 +39,24 @@ var _ = Describe("#ValidateInfrastructure", func() {
 		Expect(conds).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 
 	})
-	It("should fail when no sources are defined", func() {
+	It("should pass when sources is empty", func() {
 		input.Infrastructure.Sources = []obs.InfrastructureSource{}
-		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, "must define at least one valid source"))
+		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
+	})
+	It("should pass when sources is nil", func() {
+		input.Infrastructure.Sources = nil
+		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
+	})
+	It("should pass with empty sources and container tuning", func() {
+		input.Infrastructure = &obs.Infrastructure{
+			Sources: []obs.InfrastructureSource{},
+			Tuning: &obs.InfrastructureInputTuningSpec{
+				Container: &obs.ContainerInputTuningSpec{
+					MaxMessageSize: utils.GetPtr(resource.MustParse("1Mi")),
+				},
+			},
+		}
+		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 	})
 	It("should pass for valid infrastructure input with container source and MaxMessageSize", func() {
 		input.Infrastructure = &obs.Infrastructure{
@@ -54,7 +69,7 @@ var _ = Describe("#ValidateInfrastructure", func() {
 		}
 		Expect(ValidateInfrastructure(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 	})
-	It("should fail for valid infrastructure input with node source and MaxMessageSiz", func() {
+	It("should fail for valid infrastructure input with node source and MaxMessageSize", func() {
 		input.Infrastructure = &obs.Infrastructure{
 			Sources: []obs.InfrastructureSource{obs.InfrastructureSourceNode},
 			Tuning: &obs.InfrastructureInputTuningSpec{

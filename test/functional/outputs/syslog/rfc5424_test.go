@@ -164,6 +164,34 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		})
 	})
 
+	DescribeTable("should correctly encode short-form severity keywords", func(severity string, expectedPriority string) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
+				spec.Syslog.Facility = "user"
+				spec.Syslog.Severity = severity
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), `{"index":1}`)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+		Expect(outputlogs[0]).To(HavePrefix(expectedPriority), "Expected priority to match facility(user/1)*8 + severity")
+	},
+		// facility "user" = 1, priority = 1*8 + severity_code
+		Entry("crit", "crit", "<10>1 "),    // 8 + 2
+		Entry("emerg", "emerg", "<8>1 "),    // 8 + 0
+		Entry("err", "err", "<11>1 "),       // 8 + 3
+		Entry("info", "info", "<14>1 "),     // 8 + 6
+		Entry("warn", "warn", "<12>1 "),     // 8 + 4
+		Entry("debug", "debug", "<15>1 "),   // 8 + 7
+		Entry("notice", "notice", "<13>1 "), // 8 + 5
+		Entry("alert", "alert", "<9>1 "),    // 8 + 1
+	)
+
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(obs.InputTypeApplication).

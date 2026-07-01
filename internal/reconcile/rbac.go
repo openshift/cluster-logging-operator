@@ -28,19 +28,29 @@ func Role(k8Client client.Client, desired *rbacv1.Role) error {
 }
 
 func RoleBinding(k8Client client.Client, desired *rbacv1.RoleBinding) error {
-	roleBinding := runtime.NewRoleBinding(desired.Namespace, desired.Name, desired.RoleRef)
-	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, roleBinding, func() error {
-		// Update the rolebinding with our desired state
-		roleBinding.RoleRef = desired.RoleRef
-		roleBinding.Subjects = desired.Subjects
-		roleBinding.OwnerReferences = desired.OwnerReferences
-		return nil
-	})
-
-	if err == nil {
-		log.V(3).Info(fmt.Sprintf("reconciled roleBinding - operation: %s", op))
+	existing := runtime.NewRoleBinding(desired.Namespace, desired.Name, rbacv1.RoleRef{})
+	err := k8Client.Get(context.TODO(), client.ObjectKeyFromObject(existing), existing)
+	if apierrors.IsNotFound(err) {
+		log.V(3).Info("Creating roleBinding", "name", desired.Name, "namespace", desired.Namespace)
+		return k8Client.Create(context.TODO(), desired)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+
+	if existing.RoleRef != desired.RoleRef {
+		log.V(3).Info("Deleting roleBinding due to roleRef change", "name", desired.Name, "namespace", desired.Namespace)
+		if err := k8Client.Delete(context.TODO(), existing); err != nil {
+			return err
+		}
+		log.V(3).Info("Recreating roleBinding", "name", desired.Name, "namespace", desired.Namespace)
+		return k8Client.Create(context.TODO(), desired)
+	}
+
+	existing.Subjects = desired.Subjects
+	existing.OwnerReferences = desired.OwnerReferences
+	log.V(3).Info("Updating roleBinding", "name", desired.Name, "namespace", desired.Namespace)
+	return k8Client.Update(context.TODO(), existing)
 }
 
 func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRoleBinding) error {

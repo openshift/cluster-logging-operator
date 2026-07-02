@@ -37,10 +37,10 @@ if exists(._syslog.facility) {
       if err3 == null {
         ._syslog.facility = facility
       } else {
-        log("Invalid syslog facility code: " + to_string!(._syslog.facility) , level: "warn")
+        log("Invalid syslog facility code: " + (to_string(._syslog.facility) ?? "") , level: "warn")
       }
     } else {
-      log("Invalid syslog facility value: " + to_string!(._syslog.facility), level: "warn")
+      log("Invalid syslog facility value: " + (to_string(._syslog.facility) ?? ""), level: "warn")
     }
   }
   # else: already a valid name, leave it as-is
@@ -56,10 +56,10 @@ if exists(._syslog.severity) {
       if err3 == null {
         ._syslog.severity = severity
       } else {
-        log("Invalid syslog severity code: " + to_string!(._syslog.severity), level: "warn")
+        log("Invalid syslog severity code: " + (to_string(._syslog.severity) ?? ""), level: "warn")
       }
     } else {
-      log("Invalid syslog severity value: " + to_string!(._syslog.severity), level: "warn")
+      log("Invalid syslog severity value: " + (to_string(._syslog.severity) ?? ""), level: "warn")
     }
   }
   # else: already a valid name, leave it as-is

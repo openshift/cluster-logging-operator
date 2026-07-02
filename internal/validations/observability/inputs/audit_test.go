@@ -7,7 +7,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("#ValidateInfrastructure", func() {
+var _ = Describe("#ValidateAudit", func() {
 
 	var (
 		input              obs.InputSpec
@@ -36,8 +36,12 @@ var _ = Describe("#ValidateInfrastructure", func() {
 		conds := ValidateAudit(input)
 		Expect(conds).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 	})
-	It("should fail when no sources are defined", func() {
+	It("should pass when sources is empty", func() {
 		input.Audit.Sources = []obs.AuditSource{}
-		Expect(ValidateAudit(input)).To(HaveCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, "must define at least one valid source"))
+		Expect(ValidateAudit(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
+	})
+	It("should pass when sources is nil", func() {
+		input.Audit.Sources = nil
+		Expect(ValidateAudit(input)).To(HaveCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `input.*is valid`))
 	})
 })

@@ -17,6 +17,7 @@ var (
 	)
 	ReservedApplicationSources    = sets.NewString(obs.ApplicationSourceContainer.String())
 	ReservedInfrastructureSources = sets.NewString(obs.InfrastructureSourceContainer.String(), obs.InfrastructureSourceNode.String())
+	ReservedAuditSources          = sets.NewString(obs.AuditSourceKube.String(), obs.AuditSourceOpenShift.String(), obs.AuditSourceAuditd.String(), obs.AuditSourceOVN.String())
 
 	InfraNSRegex = regexp.MustCompile(`^(?P<default>default)|(?P<openshift>openshift.*)|(?P<kube>kube.*)$`)
 )
@@ -90,9 +91,17 @@ func (inputs Inputs) InputSources(inputType obs.InputType) []string {
 			case obs.InputTypeApplication:
 				types.Insert(ReservedApplicationSources.List()...)
 			case obs.InputTypeInfrastructure:
-				types.Insert(InfrastructureSources(i.Infrastructure.Sources).AsStrings()...)
+				if i.Infrastructure == nil || len(i.Infrastructure.Sources) == 0 {
+					types.Insert(ReservedInfrastructureSources.List()...)
+				} else {
+					types.Insert(InfrastructureSources(i.Infrastructure.Sources).AsStrings()...)
+				}
 			case obs.InputTypeAudit:
-				types.Insert(AuditSources(i.Audit.Sources).AsStrings()...)
+				if i.Audit == nil || len(i.Audit.Sources) == 0 {
+					types.Insert(ReservedAuditSources.List()...)
+				} else {
+					types.Insert(AuditSources(i.Audit.Sources).AsStrings()...)
+				}
 			}
 		}
 	}

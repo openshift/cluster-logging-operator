@@ -108,7 +108,32 @@ type ContainerInputTuningSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Message Size"
 	MaxMessageSize *resource.Quantity `json:"maxMessageSize,omitempty"`
+
+	// OversizedMessageBehavior controls what happens when a log line exceeds MaxMessageSize.
+	// Valid values are:
+	// - "drop": drop the oversized log line (default)
+	// - "truncate": truncate the oversized log line to MaxMessageSize
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum:=drop;truncate
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Oversized Line Behavior"
+	OversizedMessageBehavior *OversizedMessageBehavior `json:"oversizedMessageBehavior,omitempty"`
 }
+
+// OversizedMessageBehavior specifies how to handle log message exceeding MaxMessageSize.
+//
+// +kubebuilder:validation:Enum:=drop;truncate
+type OversizedMessageBehavior string
+
+func (s OversizedMessageBehavior) String() string {
+	return string(s)
+}
+
+const (
+	// OversizedMessageBehaviorDrop drops the oversized log message entirely (default behaviour) .
+	OversizedMessageBehaviorDrop OversizedMessageBehavior = "drop"
+	// OversizedMessageBehaviorTruncate truncates the oversized log message to MaxMessageSize.
+	OversizedMessageBehaviorTruncate OversizedMessageBehavior = "truncate"
+)
 
 // ApplicationSource defines the type of ApplicationSource log source to use.
 //

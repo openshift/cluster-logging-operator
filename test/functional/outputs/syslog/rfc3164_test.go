@@ -57,6 +57,36 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		})
 	})
 
+	DescribeTable("should correctly encode severity keywords in all forms", func(severity string, expectedPriority string) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
+				spec.Syslog.Facility = "user"
+				spec.Syslog.Severity = severity
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), `{"index":1}`)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+		Expect(outputlogs[0]).To(HavePrefix(expectedPriority), "Expected priority to match facility(user/1)*8 + severity")
+	},
+		// facility "user" = 1, priority = 1*8 + severity_code
+		// full-form keywords (RFC 5424)
+		Entry("full-form: critical", "critical", "<10>"),         // 8 + 2
+		Entry("full-form: emergency", "emergency", "<8>"),        // 8 + 0
+		Entry("full-form: error", "error", "<11>"),               // 8 + 3
+		Entry("full-form: informational", "informational", "<14>"), // 8 + 6
+		Entry("full-form: warning", "warning", "<12>"),           // 8 + 4
+		// capitalized keywords (as documented in oc explain)
+		Entry("capitalized: Critical", "Critical", "<10>"),         // 8 + 2
+		Entry("capitalized: Emergency", "Emergency", "<8>"),        // 8 + 0
+		Entry("capitalized: Informational", "Informational", "<14>"), // 8 + 6
+	)
+
 	DescribeTable("should enrich logs based upon the enrichment type", func(source obs.InputType, enrichment obs.EnrichmentType) {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(source).

@@ -115,6 +115,35 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Entry("should include the message when payloadkey is not found", `{.structured.appname_key||"none"}`, `{.structured.msgid_key||"none"}`, `{.structured.procid_key||"none"}`, "{.key_not_available}"),
 	)
 
+	It("should set message to the value of the specified payload key field", func() {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithParseJson().
+			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				output.Syslog.Facility = "user"
+				output.Syslog.Severity = "debug"
+				output.Syslog.PayloadKey = "{.structured.msgcontent}"
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		record := `{"msgcontent":"My life is my message","appname_key":"rec_appname"}`
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+
+		fields := strings.Split(outputlogs[0], " - ")
+		payload := strings.TrimSpace(fields[1])
+		Expect(payload).To(Equal("My life is my message"),
+			fmt.Sprintf("Expected payload to be the value of the specified payloadKey field, got: %q", payload))
+
+		collectorLogs, err := framework.ReadCollectorLogs()
+		Expect(err).To(BeNil())
+		Expect(collectorLogs).ToNot(ContainSubstring("payload_key not found in event"))
+	})
+
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).

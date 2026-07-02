@@ -125,16 +125,14 @@ for_each(excluded_fields) -> |_index, field| {
 
 	payloadKeyConfiguredVRL = `
 # Payload key configured, going to use the payload key for .message field
-payload_key = %s
-if payload_key != null && payload_key != "" {
-  payload_key = string!(payload_key)
-  path = split!(payload_key, ".")
-  value, err = get(., path)
-  if err == null && value != null {
-    .message = value
-  } else {
-    log("payload_key not found in event, skipping", level: "warn")
-  }
+payload_key = "%s"
+if starts_with(payload_key, ".") {
+  payload_key = slice!(payload_key, 1)
+}
+path = split!(payload_key, ".")
+value, err = get(., path)
+if err == null && value != null {
+  .message = value
 } else {
   excluded_fields = ["_internal", "_syslog"]
   temp = .

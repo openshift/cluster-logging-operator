@@ -1,7 +1,6 @@
 package syslog
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -80,10 +79,10 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Expect(logLine).To(MatchRegexp(`functionalcollector:`))
 
 		if enrichment == obs.EnrichmentTypeKubernetesMinimal {
-			Expect(logLine).To(MatchRegexp(`namespace_name="[^"]+"`))
-			Expect(logLine).To(ContainSubstring(`container_name="collector"`))
-			Expect(logLine).To(ContainSubstring(`pod_name="functional"`))
-			Expect(logLine).To(ContainSubstring(fmt.Sprintf("message=%q", payload)))
+			Expect(logLine).To(MatchRegexp(`namespace_name=[^,]+`))
+			Expect(logLine).To(ContainSubstring(`container_name=collector`))
+			Expect(logLine).To(ContainSubstring(`pod_name=functional`))
+			Expect(logLine).To(ContainSubstring("message=" + payload))
 		} else {
 			Expect(logLine).To(ContainSubstring(payload))
 		}

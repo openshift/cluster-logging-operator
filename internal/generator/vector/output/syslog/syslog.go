@@ -152,11 +152,11 @@ if payload_key != null && payload_key != "" {
 namespace = to_string(.kubernetes.namespace_name) ?? ""
 container = to_string(.kubernetes.container_name) ?? ""
 pod = to_string(.kubernetes.pod_name) ?? ""
-msg_value = encode_json(.message)
+msg_value = to_string(.message) ?? encode_json(.message)
 
-.message = "namespace_name=\"" + namespace + "\"" +
-           ", container_name=\"" + container + "\"" +
-           ", pod_name=\"" + pod + "\"" +
+.message = "namespace_name=" + namespace +
+           ", container_name=" + container +
+           ", pod_name=" + pod +
            ", message=" + msg_value`
 )
 

@@ -87,12 +87,18 @@ bin/forwarder-generator:
 bin/cluster-logging-operator:
 	go build $(BUILD_OPTS) -o $@ ./cmd
 
+bin/must-gather:
+	go build $(BUILD_OPTS) -o $@ ./must-gather/cmd
+
+.PHONY: must-gather
+must-gather: bin/must-gather
+
 .PHONY: openshift-client
 openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
 .PHONY: build
-build: bin/cluster-logging-operator
+build: bin/cluster-logging-operator bin/must-gather
 
 .PHONY: build-debug
 build-debug:

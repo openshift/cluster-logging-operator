@@ -133,6 +133,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
+		Fail(">>>>> REMOVE ME <<< TESTING MUST-GATHER")
 	})
 
 	It("should send logs to lokistack when dataModel is not spec'd", func() {

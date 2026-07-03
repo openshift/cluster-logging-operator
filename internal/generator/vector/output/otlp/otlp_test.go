@@ -121,6 +121,33 @@ var _ = Describe("Generate vector config", func() {
 			},
 			"otlp_tuning.toml",
 		),
+		Entry("with tuning, compression and TLS",
+			map[string]*corev1.Secret{
+				"test-ca": {
+					Data: map[string][]byte{
+						constants.TrustedCABundleKey: []byte("test-ca-bundle"),
+					},
+				},
+			},
+			initOptions(),
+			true,
+			func(spec *obs.OutputSpec) {
+				spec.OTLP.URL = "https://localhost:4318/v1/logs"
+				spec.OTLP.Tuning = &obs.OTLPTuningSpec{
+					BaseOutputTuningSpec: *baseTune,
+					Compression:          "gzip",
+				}
+				spec.TLS = &obs.OutputTLSSpec{
+					TLSSpec: obs.TLSSpec{
+						CA: &obs.ValueReference{
+							Key:           constants.TrustedCABundleKey,
+							ConfigMapName: "test-ca",
+						},
+					},
+				}
+			},
+			"otlp_tuning_with_tls.toml",
+		),
 		Entry("with token auth from secret",
 			secrets,
 			initOptions(),

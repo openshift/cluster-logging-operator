@@ -36,8 +36,8 @@ type OpenTelemetryProtocol struct {
 	Method        MethodType      `json:"method,omitempty" yaml:"method,omitempty" toml:"method,omitempty"`
 	PayloadPrefix string          `json:"payload_prefix,omitempty" yaml:"payload_prefix,omitempty" toml:"payload_prefix,omitempty"`
 	PayloadSuffix string          `json:"payload_suffix,omitempty" yaml:"payload_suffix,omitempty" toml:"payload_suffix,omitempty"`
-	TLS           *transport.TLS  `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
 	Compression   CompressionType `json:"compression,omitempty" yaml:"compression,omitempty" toml:"compression,omitempty"`
+	TLS           *transport.TLS  `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
 	Encoding      *Encoding       `json:"encoding,omitempty" yaml:"encoding,omitempty" toml:"encoding,omitempty"`
 	Auth          *HttpAuth       `json:"auth,omitempty" yaml:"auth,omitempty" toml:"auth,omitempty"`
 	Request       *Request        `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`

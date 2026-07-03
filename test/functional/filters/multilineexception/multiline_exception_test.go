@@ -24,6 +24,12 @@ var _ = Describe("[Functional][Filters][MultilineException] Multi-line exception
        at testjava.Main.printMe(Main.java:19)
        at testjava.Main.main(Main.java:10)`
 
+		javaExceptionWithNonNestedLines = `java.sql.SQLException: Listener refused the connection with the following error:
+ORA-12521, TNS:listener does not currently know of instance requested in connect descriptor
+  (CONNECTION_ID=r6n2ZPL0TqS/BLDhIydj+A==)
+    at oracle.jdbc.driver.T4CConnection.handleLogonNetException(T4CConnection.java:893)
+    at oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:698)`
+
 		jsClientSideException = `Error
 				at bls (<anonymous>:3:9)
 				at <anonymous>:6:4
@@ -107,6 +113,7 @@ created by main.main
 		}
 	},
 		Entry("of Java services to stderr stream", constants.STDERR, javaException, nil),
+		Entry("of Java services with non-nested continuation lines to stderr stream", constants.STDERR, javaExceptionWithNonNestedLines, nil),
 		Entry("of JS client side exception to stdout stream", constants.STDOUT, jsClientSideException, nil),
 		Entry("of V8 errors stack trace to stdout stream", constants.STDOUT, jsV8Exception, nil),
 		Entry("of NodeJS services to stdout stream", constants.STDOUT, nodeJSException, nil),

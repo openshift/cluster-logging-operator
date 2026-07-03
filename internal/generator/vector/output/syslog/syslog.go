@@ -29,8 +29,8 @@ const (
 	vrlKeySyslogAppName  = "._syslog.app_name"
 	vrlKeySyslogMsgID    = "._syslog.msg_id"
 
-	defProcIdRFC3164 = `to_string!(._syslog.proc_id || "")
-if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_id))) { del(._syslog.proc_id) }
+	defProcIdRFC3164 = `to_string(._syslog.proc_id)
+if is_empty(strip_whitespace(._syslog.proc_id)) { del(._syslog.proc_id) }
 `
 	defAppNameRFC3164 = `to_string!(._syslog.app_name || "")`
 
@@ -63,7 +63,7 @@ if err != null {
 
 	// Default values for Syslog fields for audit logType
 	auditAppName  = `._syslog.app_name = .log_source`
-	auditSeverity = `._syslog.severity = "informational"`
+	auditSeverity = `._syslog.severity = "info"`
 	auditFacility = `._syslog.facility = "security"`
 	auditProcId   = `._syslog.proc_id = to_string!(.auditID || "-")`
 
@@ -74,7 +74,7 @@ if err != null {
 	isContainerLogCond          = `.log_source == "container"`
 	isAuditLogCond              = `.log_type == "audit"`
 
-	facilitySeverityConversionVRL = `
+	facilityConversionVRL = `
 # try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
 if exists(._syslog.facility) && !is_null(._syslog.facility) {
   _, err = to_syslog_facility_code(._syslog.facility)
@@ -93,9 +93,23 @@ if exists(._syslog.facility) && !is_null(._syslog.facility) {
     }
   }
   # else: already a valid name, leave it as-is
-}
+}`
 
+	// severityNormalizationInfallibleVRL is used when VRL already knows ._syslog.severity is a string (dynamic severity with field references).
+	severityNormalizationInfallibleVRL = `
+  ._syslog.severity = downcase(._syslog.severity)
+  if ._syslog.severity == "emergency" { ._syslog.severity = "emerg" } else if ._syslog.severity == "critical" { ._syslog.severity = "crit" } else if ._syslog.severity == "informational" { ._syslog.severity = "info" }`
+
+	// severityNormalizationFallibleVRL is used when ._syslog.severity type is unknown (empty/default severity).
+	severityNormalizationFallibleVRL = `
+  if is_string(._syslog.severity) {
+    ._syslog.severity = downcase(._syslog.severity) ?? ._syslog.severity
+    if ._syslog.severity == "emergency" { ._syslog.severity = "emerg" } else if ._syslog.severity == "critical" { ._syslog.severity = "crit" } else if ._syslog.severity == "informational" { ._syslog.severity = "info" }
+  }`
+
+	severityValidationVRL = `
 if exists(._syslog.severity) && !is_null(._syslog.severity) {
+%s
   _, err = to_syslog_severity(._syslog.severity)
   if err != null {
     # Field is not a valid name — try treating it as a code (int or string int)
@@ -179,6 +193,20 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	return id, sink, tfs
 }
 
+func normalizeSeverity(s string) string {
+	lower := strings.ToLower(s)
+	switch lower {
+	case "emergency":
+		return "emerg"
+	case "critical":
+		return "crit"
+	case "informational":
+		return "info"
+	default:
+		return lower
+	}
+}
+
 func socketMode(urlScheme string) sinks.SocketMode {
 	switch strings.ToLower(urlScheme) {
 	case TCP, TLS:
@@ -223,7 +251,13 @@ func parseEncoding(inputs []string, o *obs.Syslog) types.Transform {
 	}
 
 	appendField(vrlKeySyslogFacility, o.Facility, "")
-	appendField(vrlKeySyslogSeverity, o.Severity, "")
+
+	severity := o.Severity
+	isDynamicSeverity := strings.Contains(severity, "{")
+	if !isDynamicSeverity && severity != "" {
+		severity = normalizeSeverity(severity)
+	}
+	appendField(vrlKeySyslogSeverity, severity, "")
 
 	if o.RFC == obs.SyslogRFC3164 {
 		appendField(vrlKeySyslogProcID, o.ProcId, defProcIdRFC3164)
@@ -234,7 +268,15 @@ func parseEncoding(inputs []string, o *obs.Syslog) types.Transform {
 		appendField(vrlKeySyslogMsgID, o.MsgId, "")
 	}
 
-	vrls = append(vrls, facilitySeverityConversionVRL)
+	vrls = append(vrls, facilityConversionVRL)
+
+	normVRL := ""
+	if isDynamicSeverity {
+		normVRL = severityNormalizationInfallibleVRL
+	} else if severity == "" {
+		normVRL = severityNormalizationFallibleVRL
+	}
+	vrls = append(vrls, fmt.Sprintf(severityValidationVRL, normVRL))
 
 	if key := PayloadKey(o.PayloadKey); key != "" {
 		vrls = append(vrls, fmt.Sprintf(payloadKeyConfiguredVRL, strings.ReplaceAll(key, `"`, `\"`)))

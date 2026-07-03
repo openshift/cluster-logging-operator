@@ -344,10 +344,20 @@ inputs = ["input_infrastructure_container"]
 source = '''
 . = {"_internal": .}
 if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
+
+if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
+  parsed_path, err = parse_regex(string!(._internal.file), r'^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_(?P<uid>[a-f0-9-]{36})/(?P<container>[^/]+)/\d+\.log$')
+  if err == null {
+    ._internal.kubernetes.namespace_name = parsed_path.namespace
+    ._internal.kubernetes.pod_name = parsed_path.pod
+    ._internal.kubernetes.pod_id = parsed_path.uid
+    ._internal.kubernetes.container_name = parsed_path.container
+  }
+}
 ._internal.log_source = "container"
 
 # If namespace is infra, label log_type as infra
-if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+if match_any(string(._internal.kubernetes.namespace_name) ?? "", [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
   ._internal.log_type = "infrastructure"
 } else {
   ._internal.log_type = "application"
@@ -561,10 +571,20 @@ inputs = ["input_mytestapp_container"]
 source = '''
 . = {"_internal": .}
 if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}
+
+if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
+  parsed_path, err = parse_regex(string!(._internal.file), r'^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_(?P<uid>[a-f0-9-]{36})/(?P<container>[^/]+)/\d+\.log$')
+  if err == null {
+    ._internal.kubernetes.namespace_name = parsed_path.namespace
+    ._internal.kubernetes.pod_name = parsed_path.pod
+    ._internal.kubernetes.pod_id = parsed_path.uid
+    ._internal.kubernetes.container_name = parsed_path.container
+  }
+}
 ._internal.log_source = "container"
 
 # If namespace is infra, label log_type as infra
-if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+if match_any(string(._internal.kubernetes.namespace_name) ?? "", [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
   ._internal.log_type = "infrastructure"
 } else {
   ._internal.log_type = "application"

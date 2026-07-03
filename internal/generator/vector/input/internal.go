@@ -19,7 +19,7 @@ const (
 	fmtLogType       = `._internal.log_type = %q`
 	logTypeContainer = `
   # If namespace is infra, label log_type as infra
-  if match_any(string!(._internal.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+  if match_any(string(._internal.kubernetes.namespace_name) ?? "", [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
       ._internal.log_type = "infrastructure"
   } else {
       ._internal.log_type = "application"
@@ -36,6 +36,21 @@ const (
 	setKubernetesContainerIOStream = `if exists(._internal.stream) {._internal.kubernetes.container_iostream = ._internal.stream}`
 	setEnvelopeToStructured        = `. = {"_internal": {"structured": .}}`
 	setHostName                    = `._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
+
+	// Fallback: when Vector fails to annotate pod metadata (e.g. pod already deleted),
+	// extract kubernetes metadata from the log file path which is always available.
+	// Path format: /var/log/pods/<namespace>_<podname>_<pod-uid>/<container>/<n>.log
+	recoverMetadataFromFilePath = `
+if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
+  parsed_path, err = parse_regex(string!(._internal.file), r'^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_(?P<uid>[a-f0-9-]{36})/(?P<container>[^/]+)/\d+\.log$')
+  if err == null {
+    ._internal.kubernetes.namespace_name = parsed_path.namespace
+    ._internal.kubernetes.pod_name = parsed_path.pod
+    ._internal.kubernetes.pod_id = parsed_path.uid
+    ._internal.kubernetes.container_name = parsed_path.container
+  }
+}
+`
 )
 
 // NewAuditInternalNormalization returns configuration elements to normalize audit log entries to an internal, common data model
@@ -66,8 +81,10 @@ func NewInternalNormalization(id string, logSource, logType interface{}, inputs 
 
 	if logSource == obs.InfrastructureSourceContainer {
 		logTypeVRL = logTypeContainer
-		// Add kubernetes container iostream for all container sources
-		vrls = append(vrls, setKubernetesContainerIOStream)
+		vrls = append(vrls,
+			setKubernetesContainerIOStream,
+			recoverMetadataFromFilePath,
+		)
 	}
 	vrls = append(vrls, fmt.Sprintf(fmtLogSource, logSource),
 		logTypeVRL,

@@ -2,8 +2,11 @@ package collector
 
 import (
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/collector/otel"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -12,16 +15,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func (f *Factory) configFileData(namespace, collectorConfig string) map[string]string {
+	if f.ImageName == constants.OTELCollectorName {
+		return map[string]string{
+			otel.ConfigFile: collectorConfig,
+		}
+	}
+	return map[string]string{
+		vector.ConfigFile:    collectorConfig,
+		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)),
+	}
+}
+
 // ReconcileCollectorConfig reconciles a collector config specifically for the collector defined by the factory
 func (f *Factory) ReconcileCollectorConfig(k8sClient client.Client, reader client.Reader, namespace, collectorConfig string, owner metav1.OwnerReference) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
 	configMap := runtime.NewConfigMap(
 		namespace,
 		f.ResourceNames.ConfigMap,
-		map[string]string{
-			vector.ConfigFile:    collectorConfig,
-			vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)),
-		},
+		f.configFileData(namespace, collectorConfig),
 		f.CommonLabelInitializer)
 
 	utils.AddOwnerRefToObject(configMap, owner)

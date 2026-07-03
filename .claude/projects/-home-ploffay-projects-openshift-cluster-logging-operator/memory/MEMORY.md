@@ -1,0 +1,1 @@
+- [CLO OTEL Migration](project_clo_otel_migration.md) — Migrating CLO from Vector to OTEL collector, multi-milestone proposal

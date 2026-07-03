@@ -14,6 +14,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/collector/otel"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -106,29 +107,40 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
-	factory := &Factory{
+
+	imageName := constants.VectorName
+	visit := Visitor(vector.CollectorVisitor)
+	podLabelVisitor := PodLabelVisitor(vector.PodLogExcludeLabel)
+
+	if annotations[constants.AnnotationCollectorType] == constants.OTELCollectorName {
+		imageName = constants.OTELCollectorName
+		visit = otel.CollectorVisitor
+		podLabelVisitor = otel.PodLogExcludeLabel
+	}
+
+	f := &Factory{
 		ClusterID:     clusterID,
 		ConfigHash:    confHash,
 		CollectorSpec: *collectorSpec,
-		ImageName:     constants.VectorName,
-		Visit:         vector.CollectorVisitor,
+		ImageName:     imageName,
+		Visit:         visit,
 		ConfigMaps:    configMaps,
 		Secrets:       secrets,
 		ForwarderSpec: forwarderSpec,
 		CommonLabelInitializer: func(o runtime.Object) {
-			runtime.SetCommonLabels(o, constants.VectorName, resNames.ForwarderName, constants.CollectorName)
+			runtime.SetCommonLabels(o, imageName, resNames.ForwarderName, constants.CollectorName)
 		},
 		ResourceNames:   resNames,
-		PodLabelVisitor: vector.PodLogExcludeLabel,
+		PodLabelVisitor: podLabelVisitor,
 		isDaemonset:     isDaemonset,
 		annotations:     annotations,
 	}
-	return factory
+	return f
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
-	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable(), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, f.ImageName, f.MaxUnavailable(), *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	ds.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return ds
@@ -136,7 +148,7 @@ func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.Confi
 
 func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.Deployment {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
-	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, f.ImageName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	dpl.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
 	dpl.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return dpl

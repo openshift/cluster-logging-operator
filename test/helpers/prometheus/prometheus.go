@@ -33,9 +33,7 @@ func GetThanosHost() (string, error) {
 	return strings.TrimSpace(host), err
 }
 
-func QueryPrometheus(host, token, query string) map[string]interface{} {
-	empty := map[string]any{}
-
+func QueryPrometheus(host, token, query string) (map[string]interface{}, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, //nolint:gosec
@@ -44,8 +42,7 @@ func QueryPrometheus(host, token, query string) map[string]interface{} {
 	client := &http.Client{Transport: tr, Timeout: 30 * time.Second}
 	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/api/v1/query", host), nil)
 	if err != nil {
-		log.V(0).Error(err, "Failed to create request", "host", host)
-		return empty
+		return nil, fmt.Errorf("failed to create request for host %s: %w", host, err)
 	}
 	request.Header.Add("Authorization", "Bearer "+token)
 	request.Header.Add("Accept", "application/json")
@@ -56,8 +53,7 @@ func QueryPrometheus(host, token, query string) map[string]interface{} {
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.V(0).Error(err, "Error sending request to Thanos")
-		return empty
+		return nil, fmt.Errorf("error sending request to Thanos: %w", err)
 	}
 	defer func() {
 		if err := response.Body.Close(); err != nil {
@@ -66,23 +62,20 @@ func QueryPrometheus(host, token, query string) map[string]interface{} {
 	}()
 
 	if response.StatusCode != http.StatusOK {
-		log.V(0).Info("Unexpected status from Thanos", "status", response.StatusCode, "query", query)
-		return empty
+		return nil, fmt.Errorf("unexpected status %d from Thanos for query %q", response.StatusCode, query)
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.V(0).Error(err, "Failed to read response body")
-		return empty
+		return nil, fmt.Errorf("failed to read Thanos response body: %w", err)
 	}
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		log.V(0).Error(err, "Failed to unmarshal Thanos response")
-		return empty
+		return nil, fmt.Errorf("failed to unmarshal Thanos response: %w", err)
 	}
 
-	return result
+	return result, nil
 }
 
 func Query(query string) (map[string]interface{}, error) {
@@ -94,7 +87,7 @@ func Query(query string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return QueryPrometheus(host, token, query), nil
+	return QueryPrometheus(host, token, query)
 }
 
 func HasResults(response map[string]interface{}) bool {

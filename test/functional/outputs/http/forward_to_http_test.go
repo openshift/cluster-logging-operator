@@ -176,6 +176,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	Context("timestamp in audit logs", func() {
 		DescribeTable("audit log should have a valid timestamp",
 			func(writeLog func() error, logSource obs.AuditSource) {
+				framework = functional.NewCollectorFunctionalFramework()
 				obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(obs.InputTypeAudit).
 					ToHttpOutput()

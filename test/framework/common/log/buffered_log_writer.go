@@ -37,31 +37,38 @@ func NewBufferedLogWriter() *BufferedLogWriter {
 }
 
 func (w *BufferedLogWriter) FlushToArtifactsDir(name string) {
+	w.mtx.Lock()
+	defer w.mtx.Unlock()
 	if dir := os.Getenv("ARTIFACT_DIR"); dir != "" {
 		if parts := strings.SplitAfter(name, "/test/"); len(parts) == 2 {
 			name = strings.ReplaceAll(parts[1], "/", "_")
 			fullPath := path.Join(dir, name)
 			if file, err := os.Create(fullPath); err != nil {
-				w.out = os.Stdout
 				w.log.Error(err, fmt.Sprintf("Unable to flush logs to file: %s", fullPath))
 			} else {
 				w.out = file
-				defer errors.LogIfError(file.Close())
+				w.flushLocked()
+				errors.LogIfError(file.Close())
+				w.out = os.Stdout
+				return
 			}
 		}
-
 	}
-	w.Flush()
+	w.flushLocked()
+}
+
+func (w *BufferedLogWriter) flushLocked() {
+	if _, err := w.out.Write(w.buffer); err != nil {
+		w.log.Error(err, "error flushing log messages")
+	}
+	w.buffer = []byte{}
 }
 
 // Flush the contents of the sink
 func (w *BufferedLogWriter) Flush() {
 	w.mtx.Lock()
 	defer w.mtx.Unlock()
-	if _, err := w.out.Write(w.buffer); err != nil {
-		w.log.Error(err, "error flushing log messages")
-	}
-	w.buffer = []byte{}
+	w.flushLocked()
 }
 
 func (w *BufferedLogWriter) Write(p []byte) (n int, err error) {

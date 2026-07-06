@@ -16,18 +16,21 @@ import (
 
 const (
 	VectorCompSentEvents = `rate(vector_component_sent_events_total{component_name="%s"}[30s])`
-	VectorUpTotal        = `vector_started_total`
+	VectorUpTotal        = `vector_uptime_seconds`
 )
 
 func WaitForMetricsToShow() bool {
+	var lastErr error
 	if err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		response, err := prometheus.Query(VectorUpTotal)
 		if err != nil {
-			return false, err
+			lastErr = err
+			log.V(3).Error(err, "Transient error querying metrics, will retry")
+			return false, nil
 		}
 		return prometheus.HasResults(response), nil
 	}); err != nil {
-		log.V(0).Error(err, "Error waiting for metrics to be available")
+		log.V(0).Error(err, "Error waiting for metrics to be available", "lastQueryError", lastErr)
 		return false
 	}
 	return true

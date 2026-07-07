@@ -1,4 +1,4 @@
-package e2e
+package syslog
 
 const (
 	TcpSyslogInput = `
@@ -54,7 +54,12 @@ input(type="imudp" port="24224" ruleset="test")
 	RuleSetRfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc5424"]){
-    action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+    # Check message content for log_type field
+    if ($msg contains "\"log_type\":\"application\"") then {
+        action(type="omfile" file="/tmp/app.log" Template="RSYSLOG_SyslogProtocol23Format")
+    } else {
+        action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+    }
 }
 	`
 

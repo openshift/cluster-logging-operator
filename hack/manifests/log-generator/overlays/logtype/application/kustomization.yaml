@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../../base
+
+patches:
+- patch: |-
+    - op: replace
+      path: /spec/template/spec/containers/0/args
+      value:
+        - --logs-per-second=$(LOGS_PER_SECOND)
+        - --log-type=application
+        - --log-format=raw
+  target:
+    kind: Deployment

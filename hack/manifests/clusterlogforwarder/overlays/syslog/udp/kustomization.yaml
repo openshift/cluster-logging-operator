@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../../base
+
+patches:
+- patch: |-
+    - op: replace
+      path: /spec/pipelines/0/outputRefs/0
+      value: rsyslog
+    - op: add
+      path: /spec/outputs
+      value:
+      - name: rsyslog
+        type: syslog
+        syslog:
+          tuning:
+            deliveryMode: AtLeastOnce
+          url: 'udp://rsyslog-server-service.openshift-logging.svc.cluster.local:514'
+          rfc: RFC5424
+          facility: local0
+          enrichment: KubernetesMinimal
+          appName: '{.systemd.u.SYSLOG_IDENTIFIER||.log_type||"-"}'
+          procId: '{.systemd.t.PID||"-"}'
+          msgId: '{.systemd.u.MESSAGE_ID||"-"}'
+  target:
+    kind: ClusterLogForwarder

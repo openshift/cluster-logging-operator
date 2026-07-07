@@ -122,6 +122,15 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tolerations"
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// TerminationGracePeriodSeconds defines the termination grace period for collector pods
+	// in seconds. If not specified, the default is 10 seconds.
+	//
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum:=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Termination Grace Period Seconds",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 }
 
 // PipelineSpec links a set of inputs and transformations to a set of outputs.

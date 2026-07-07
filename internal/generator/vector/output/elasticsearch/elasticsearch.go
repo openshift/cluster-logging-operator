@@ -38,6 +38,7 @@ if exists(.kubernetes.event.metadata.uid) {
 		}
 		s.ApiVersion = apiVersionFrom(o.Elasticsearch.Version)
 		s.Encoding = common.NewApiEncoding("")
+		s.Compression = sinks.CompressionType(o.GetTuning().Compression)
 		s.Batch = common.NewApiBatch(o)
 		s.Buffer = common.NewApiBuffer(o)
 		s.Request = common.NewApiRequest(o)

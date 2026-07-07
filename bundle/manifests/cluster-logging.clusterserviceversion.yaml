@@ -172,6 +172,13 @@ spec:
         path: collector.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: |-
+          TerminationGracePeriodSeconds defines the termination grace period for collector pods
+          in seconds. If not specified, the default is 10 seconds.
+        displayName: Termination Grace Period Seconds
+        path: collector.terminationGracePeriodSeconds
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: Define the tolerations the collector pods will accept
         displayName: Tolerations
         path: collector.tolerations

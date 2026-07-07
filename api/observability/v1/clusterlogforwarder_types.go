@@ -143,6 +143,15 @@ type CollectorSpec struct {
 	// +kubebuilder:validation:Pattern="^(?:[0-9]{1,2}|100)%?$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Unavailable",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
+
+	// TerminationGracePeriodSeconds defines the termination grace period for collector pods
+	// in seconds. If not specified, the default is 10 seconds.
+	//
+	// +nullable
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Minimum:=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Termination Grace Period Seconds",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 }
 
 type NetworkPolicy struct {

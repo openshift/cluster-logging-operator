@@ -26,30 +26,31 @@ const (
 	//DefaultMaxUnavailable is the maxUnavailable collector setting when not defined by spec.collector.maxUnavailable
 	DefaultMaxUnavailable = "100%"
 
-	defaultAudience                 = "openshift"
-	clusterLoggingPriorityClassName = "system-node-critical"
-	metricsVolumeName               = "metrics"
-	metricsVolumePath               = "/etc/collector/metrics"
-	saTokenVolumeName               = "sa-token"
-	saTokenExpirationSecs           = 3600 //1 hour
-	sourcePodsName                  = "varlogpods"
-	sourcePodsPath                  = "/var/log/pods"
-	sourceJournalName               = "varlogjournal"
-	sourceJournalPath               = "/var/log/journal"
-	sourceAuditdName                = "varlogaudit"
-	sourceAuditdPath                = "/var/log/audit"
-	sourceAuditOVNName              = "varlogovn"
-	sourceOVNPath                   = "/var/log/ovn"
-	sourceOAuthServerName           = "varlogoauthserver"
-	sourceOAuthServerPath           = "/var/log/oauth-server"
-	sourceOAuthAPIServerName        = "varlogoauthapiserver"
-	sourceOAuthAPIServerPath        = "/var/log/oauth-apiserver"
-	sourceOpenshiftAPIServerName    = "varlogopenshiftapiserver"
-	sourceOpenshiftAPIServerPath    = "/var/log/openshift-apiserver"
-	sourceKubeAPIServerName         = "varlogkubeapiserver"
-	sourceKubeAPIServerPath         = "/var/log/kube-apiserver"
-	tmpVolumeName                   = "tmp"
-	tmpPath                         = "/tmp"
+	defaultAudience                            = "openshift"
+	clusterLoggingPriorityClassName            = "system-node-critical"
+	metricsVolumeName                          = "metrics"
+	metricsVolumePath                          = "/etc/collector/metrics"
+	saTokenVolumeName                          = "sa-token"
+	saTokenExpirationSecs                      = 3600 //1 hour
+	defaultTerminationGracePeriodSeconds int64 = 10
+	sourcePodsName                             = "varlogpods"
+	sourcePodsPath                             = "/var/log/pods"
+	sourceJournalName                          = "varlogjournal"
+	sourceJournalPath                          = "/var/log/journal"
+	sourceAuditdName                           = "varlogaudit"
+	sourceAuditdPath                           = "/var/log/audit"
+	sourceAuditOVNName                         = "varlogovn"
+	sourceOVNPath                              = "/var/log/ovn"
+	sourceOAuthServerName                      = "varlogoauthserver"
+	sourceOAuthServerPath                      = "/var/log/oauth-server"
+	sourceOAuthAPIServerName                   = "varlogoauthapiserver"
+	sourceOAuthAPIServerPath                   = "/var/log/oauth-apiserver"
+	sourceOpenshiftAPIServerName               = "varlogopenshiftapiserver"
+	sourceOpenshiftAPIServerPath               = "/var/log/openshift-apiserver"
+	sourceKubeAPIServerName                    = "varlogkubeapiserver"
+	sourceKubeAPIServerPath                    = "/var/log/kube-apiserver"
+	tmpVolumeName                              = "tmp"
+	tmpPath                                    = "/tmp"
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -144,11 +145,18 @@ func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.Conf
 
 func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID string, tlsProfileSpec configv1.TLSProfileSpec, namespace string) *v1.PodSpec {
 
+	var gracePeriod *int64
+	if f.CollectorSpec.TerminationGracePeriodSeconds != nil {
+		gracePeriod = f.CollectorSpec.TerminationGracePeriodSeconds
+	} else {
+		gracePeriod = utils.GetPtr(defaultTerminationGracePeriodSeconds)
+	}
+
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
-		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
+		TerminationGracePeriodSeconds: gracePeriod,
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Affinity:                      f.Affinity(),
 

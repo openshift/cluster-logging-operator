@@ -77,6 +77,9 @@ Type:: object
 
 |resources|object|  The resource requirements for the collector
 
+|terminationGracePeriodSeconds|int|  TerminationGracePeriodSeconds defines the termination grace period for collector pods
+in seconds. If not specified, the default is 10 seconds.
+
 |tolerations|array|  Define the tolerations the collector pods will accept
 
 |======================
@@ -129,6 +132,10 @@ Type:: object
 === .spec.collector.resources.requests
 
 Type:: object
+
+=== .spec.collector.terminationGracePeriodSeconds
+
+Type:: int
 
 === .spec.collector.tolerations[]
 

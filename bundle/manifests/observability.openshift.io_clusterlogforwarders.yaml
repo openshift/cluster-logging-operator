@@ -113,6 +113,14 @@ spec:
                           More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                         type: object
                     type: object
+                  terminationGracePeriodSeconds:
+                    description: |-
+                      TerminationGracePeriodSeconds defines the termination grace period for collector pods
+                      in seconds. If not specified, the default is 10 seconds.
+                    format: int64
+                    minimum: 1
+                    nullable: true
+                    type: integer
                   tolerations:
                     description: Define the tolerations the collector pods will accept
                     items:

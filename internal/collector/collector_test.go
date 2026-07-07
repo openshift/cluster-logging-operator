@@ -134,6 +134,20 @@ var _ = Describe("Factory#Daemonset", func() {
 
 		Describe("when creating the podSpec", func() {
 
+			Context("and evaluating terminationGracePeriodSeconds", func() {
+				It("should default to 10 when not specified", func() {
+					Expect(*podSpec.TerminationGracePeriodSeconds).To(Equal(int64(10)))
+				})
+
+				It("should use spec value when specified", func() {
+					factory.CollectorSpec = obs.CollectorSpec{
+						TerminationGracePeriodSeconds: utils.GetPtr[int64](60),
+					}
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(*podSpec.TerminationGracePeriodSeconds).To(Equal(int64(60)))
+				})
+			})
+
 			Context("and evaluating tolerations", func() {
 				It("should add only defaults when none are defined", func() {
 					Expect(podSpec.Tolerations).To(Equal(constants.DefaultTolerations()))
@@ -410,6 +424,20 @@ var _ = Describe("Factory#Deployment", func() {
 		})
 
 		Describe("when creating the podSpec", func() {
+
+			Context("and evaluating terminationGracePeriodSeconds", func() {
+				It("should default to 10 when not specified", func() {
+					Expect(*podSpec.TerminationGracePeriodSeconds).To(Equal(int64(10)))
+				})
+
+				It("should use spec value when specified", func() {
+					factory.CollectorSpec = obs.CollectorSpec{
+						TerminationGracePeriodSeconds: utils.GetPtr[int64](60),
+					}
+					podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{}, "1234", tls.GetClusterTLSProfileSpec(nil), constants.OpenshiftNS)
+					Expect(*podSpec.TerminationGracePeriodSeconds).To(Equal(int64(60)))
+				})
+			})
 
 			Context("and mounting volumes", func() {
 				It("should not mount host path or sa token volumes", func() {

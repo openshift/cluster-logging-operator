@@ -1,0 +1,42 @@
+[transforms.es_1_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+._internal.es_1_index = to_string!(._internal.log_type||"none")
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_index"]
+endpoints = ["https://es.svc.infra.cluster:9200"]
+api_version = "v8"
+compression = "gzip"
+
+[sinks.es_1.bulk]
+index = "{{ _internal.es_1_index }}"
+action = "create"
+
+[sinks.es_1.auth]
+strategy = "basic"
+user = "SECRET[kubernetes_secret.es-1/username]"
+password = "SECRET[kubernetes_secret.es-1/password]"
+
+[sinks.es_1.encoding]
+except_fields = ["_internal"]
+
+[sinks.es_1.batch]
+max_bytes = 10000000
+
+[sinks.es_1.buffer]
+type = "disk"
+when_full = "block"
+max_size = 268435488
+
+[sinks.es_1.request]
+retry_initial_backoff_secs = 20
+retry_max_duration_secs = 35
+
+[sinks.es_1.tls]
+key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"

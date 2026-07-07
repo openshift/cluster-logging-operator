@@ -147,6 +147,13 @@ var _ = Describe("Generate Vector config", func() {
 				BaseOutputTuningSpec: *baseTune,
 			}
 		}, true, framework.NoOptions, "es_with_tune.toml"),
+		Entry("with tuning and compression", func(spec *obs.OutputSpec) {
+			spec.TLS = tlsSpec
+			spec.Elasticsearch.Tuning = &obs.ElasticsearchTuningSpec{
+				BaseOutputTuningSpec: *baseTune,
+				Compression:          "gzip",
+			}
+		}, true, framework.NoOptions, "es_with_tune_and_compression.toml"),
 		Entry("with headers", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Headers = map[string]string{
 				"Key": "Value",

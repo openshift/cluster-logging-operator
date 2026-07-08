@@ -11,6 +11,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -217,9 +218,9 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 				expectedPodSelector := runtime.Selectors(lfmeInstance.Name, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName)
 				Expect(networkPolicyInstance.Spec.PodSelector.MatchLabels).To(Equal(expectedPodSelector))
 
-				// Verify policy types include Egress and Ingress (AllowIngressMetrics ruleset)
-				expectedPolicyTypes := []networkingv1.PolicyType{networkingv1.PolicyTypeEgress, networkingv1.PolicyTypeIngress}
-				Expect(networkPolicyInstance.Spec.PolicyTypes).To(Equal(expectedPolicyTypes))
+				// Verify policy types include Ingress and Egress (AllowIngressMetrics ruleset)
+				expectedPolicyTypes := []networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress}
+				Expect(networkPolicyInstance.Spec.PolicyTypes).To(ConsistOf(expectedPolicyTypes))
 
 				// Verify ingress rules allow only the named metrics port
 				Expect(networkPolicyInstance.Spec.Ingress).To(HaveLen(1))
@@ -231,8 +232,18 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 				}
 				Expect(networkPolicyInstance.Spec.Ingress[0].Ports[0]).To(Equal(expectedPort))
 
-				// Verify egress rules are not present to deny all egress traffic
-				Expect(networkPolicyInstance.Spec.Egress).To(HaveLen(0))
+				// Verify egress rules allow DNS and KubeAPI (required for secure metrics token validation)
+				Expect(networkPolicyInstance.Spec.Egress).To(HaveLen(1))
+				Expect(networkPolicyInstance.Spec.Egress[0].Ports).To(ConsistOf(
+					networkingv1.NetworkPolicyPort{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: factory.KubeAPIPort}}[0],
+					},
+					networkingv1.NetworkPolicyPort{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: factory.DNSPortName}}[0],
+					},
+				))
 
 				// Verify common labels are set
 				expectedLabels := map[string]string{

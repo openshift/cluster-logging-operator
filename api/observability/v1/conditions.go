@@ -35,6 +35,9 @@ const (
 	// ConditionTypeMaxUnavailable validates the value of the max-unavailable-rollout annotation
 	ConditionTypeMaxUnavailable = GroupName + "/MaxUnavailableAnnotation"
 
+	// ConditionTypeName validates the ClusterLogForwarder name does not conflict with other operators
+	ConditionTypeName = GroupName + "/Name"
+
 	// ConditionTypeReady indicates the service is ready.
 	//
 	// Ready=True means the operands are running and providing some service.
@@ -85,6 +88,9 @@ const (
 
 	// ReasonMaxUnavailableSupported indicates the support for the max-unavailable-rollout annotation value
 	ReasonMaxUnavailableSupported = "MaxUnavailableAnnotationSupported"
+
+	// ReasonNameConflict indicates the ClusterLogForwarder name conflicts with another resource
+	ReasonNameConflict = "NameConflict"
 
 	// ReasonKubeCacheSupported indicates the support for the use-apiserver-cache annotation value
 	ReasonKubeCacheSupported = "KubeCacheAnnotationSupported"

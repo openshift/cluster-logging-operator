@@ -29,6 +29,13 @@ var _ = Describe("validations", func() {
 				}
 				Expect(MustUndeployCollector(cond)).To(BeTrue())
 			})
+			It("when the forwarder name conflicts with a LokiStack", func() {
+				cond := []metav1.Condition{
+					internalobs.NewCondition(obs.ConditionTypeAuthorized, obs.ConditionTrue, obs.ReasonClusterRolesExist, "authorized"),
+					internalobs.NewCondition(obs.ConditionTypeName, obs.ConditionFalse, obs.ReasonNameConflict, "name conflict"),
+				}
+				Expect(MustUndeployCollector(cond)).To(BeTrue())
+			})
 		})
 
 	})

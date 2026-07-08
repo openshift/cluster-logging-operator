@@ -8,6 +8,7 @@ import (
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -41,6 +42,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 		)
 		instanceName = "test-instance"
 		protocolTCP  = corev1.ProtocolTCP
+		protocolUDP  = corev1.ProtocolUDP
 	)
 
 	Context("when the collector NetworkPolicy is reconciled", func() {
@@ -93,7 +95,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 				networkingv1.PolicyTypeIngress,
 				networkingv1.PolicyTypeEgress,
 			}
-			Expect(policyInstance.Spec.PolicyTypes).To(Equal(expectedPolicyTypes))
+			Expect(policyInstance.Spec.PolicyTypes).To(ConsistOf(expectedPolicyTypes))
 
 			expectedIngressRules := []networkingv1.NetworkPolicyIngressRule{
 				{},
@@ -224,24 +226,24 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 
 			expectedEgressPorts := []networkingv1.NetworkPolicyPort{
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Protocol: &protocolTCP,
 					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9200},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
-					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: "dns"},
+					Protocol: &protocolUDP,
+					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: factory.DNSPortName},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Protocol: &protocolTCP,
 					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 8088},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Protocol: &protocolTCP,
 					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 3100},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 6443},
+					Protocol: &protocolTCP,
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: factory.KubeAPIPort},
 				},
 			}
 
@@ -329,20 +331,20 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 
 			expectedEgressPorts := []networkingv1.NetworkPolicyPort{
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Protocol: &protocolTCP,
 					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9200},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+					Protocol: &protocolTCP,
 					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 9092},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 6443},
+					Protocol: &protocolTCP,
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: factory.KubeAPIPort},
 				},
 				{
-					Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
-					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: "dns"},
+					Protocol: &protocolUDP,
+					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: factory.DNSPortName},
 				},
 			}
 			Expect(egressRule.Ports).To(ConsistOf(expectedEgressPorts))
@@ -391,12 +393,12 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			expectedPodSelector := runtime.Selectors(instanceName, componentName, constants.LogfilesmetricexporterName)
 			Expect(policyInstance.Spec.PodSelector.MatchLabels).To(Equal(expectedPodSelector))
 
-			// Verify policy types includes Egress and Ingress
+			// Verify policy types includes Ingress and Egress
 			expectedPolicyTypes := []networkingv1.PolicyType{
-				networkingv1.PolicyTypeEgress,
 				networkingv1.PolicyTypeIngress,
+				networkingv1.PolicyTypeEgress,
 			}
-			Expect(policyInstance.Spec.PolicyTypes).To(Equal(expectedPolicyTypes))
+			Expect(policyInstance.Spec.PolicyTypes).To(ConsistOf(expectedPolicyTypes))
 
 			// Verify ingress rules allow only the named metrics port
 			expectedIngressRules := []networkingv1.NetworkPolicyIngressRule{
@@ -411,8 +413,18 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 			}
 			Expect(policyInstance.Spec.Ingress).To(Equal(expectedIngressRules))
 
-			// Verify egress rules are not present to deny all egress traffic
-			Expect(policyInstance.Spec.Egress).To(BeNil())
+			// Verify egress rules allow DNS and KubeAPI (required for secure metrics token validation)
+			Expect(policyInstance.Spec.Egress).To(HaveLen(1))
+			Expect(policyInstance.Spec.Egress[0].Ports).To(ConsistOf(
+				networkingv1.NetworkPolicyPort{
+					Protocol: &protocolTCP,
+					Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: factory.KubeAPIPort},
+				},
+				networkingv1.NetworkPolicyPort{
+					Protocol: &protocolUDP,
+					Port:     &intstr.IntOrString{Type: intstr.String, StrVal: factory.DNSPortName},
+				},
+			))
 
 			// Verify common labels are applied
 			Expect(policyInstance.Labels).To(HaveKey(constants.LabelK8sName))

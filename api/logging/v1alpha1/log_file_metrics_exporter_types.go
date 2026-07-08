@@ -46,7 +46,7 @@ type NetworkPolicy struct {
 type NetworkPolicyRuleSetType string
 
 const (
-	// NetworkPolicyRuleSetTypeAllowIngressMetrics is the type of network policy rule set to use for allowing only ingress metrics
+	// NetworkPolicyRuleSetTypeAllowIngressMetrics allows ingress on the metrics port and restricts egress to DNS and the Kubernetes API server for secure metrics token validation
 	NetworkPolicyRuleSetTypeAllowIngressMetrics NetworkPolicyRuleSetType = "AllowIngressMetrics"
 
 	// NetworkPolicyRuleSetTypeAllowAllIngressEgress is the type of network policy rule set to use for allowing all ingress and egress traffic

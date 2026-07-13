@@ -143,7 +143,7 @@ payload_key = "%s"
 if starts_with(payload_key, ".") {
   payload_key = slice!(payload_key, 1)
 }
-path = split!(payload_key, ".")
+path = split(payload_key, ".")
 value, err = get(., path)
 if err == null && value != null {
   .message = value

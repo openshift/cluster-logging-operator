@@ -100,6 +100,10 @@ var _ = Describe("[Functional][Outputs][OTLP] Functional tests", func() {
 			// (Deprecated) compatibility attribute
 			Expect(logAttributeNames).To(ContainElement(otlp.Level), "Expect logRecord attributes to contain level")
 			Expect(logRecord.Attribute(otlp.Level).String()).To(Equal("err"))
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"))
 		})
 	})
 })

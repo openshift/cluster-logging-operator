@@ -142,6 +142,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		collectorLogs, err := framework.ReadCollectorLogs()
 		Expect(err).To(BeNil())
 		Expect(collectorLogs).ToNot(ContainSubstring("payload_key not found in event"))
+		Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"))
 	})
 
 	Describe("configured with values for facility,severity", func() {

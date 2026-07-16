@@ -242,4 +242,39 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Entry("should pass with zstd", "zstd"),
 		)
 	})
+
+	// Regression test for https://redhat.atlassian.net/browse/LOG-7893
+	//
+	// vector_component_sent_bytes_total must carry component_id, component_kind,
+	// and component_type labels so dashboards can filter by component_kind="sink".
+	// A bug in Vector's AwsBytesSent causes these labels to be lost when the
+	// metric is emitted from tower::buffer worker tasks outside the component
+	// tracing span.
+	Context("When checking collector metrics for CloudWatch output", func() {
+		It("should emit component_sent_bytes_total with component_id and region labels, and no unlabeled duplicates (LOG-7893)", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToCloudwatchOutput(*obsCwAuth)
+			framework.Secrets = append(framework.Secrets, secret)
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
+			// Allow logs to populate in CloudWatch
+			time.Sleep(10 * time.Second)
+
+			lines, err := framework.CollectMetricLines("component_sent_bytes_total", `component_id="output_cloudwatch"`, 30*time.Second)
+			Expect(err).To(BeNil(), "Timed out waiting for component_sent_bytes_total metric")
+
+			for _, line := range lines {
+				log.V(2).Info("component_sent_bytes_total line", "line", line)
+				Expect(line).To(ContainSubstring(`component_id=`),
+					"component_sent_bytes_total without component_id label (transport-layer duplicate): %s", line)
+				if strings.Contains(line, `component_id="output_cloudwatch"`) {
+					Expect(line).To(ContainSubstring(`region=`),
+						"component_sent_bytes_total for CloudWatch output is missing region label: %s", line)
+				}
+			}
+		})
+	})
 })

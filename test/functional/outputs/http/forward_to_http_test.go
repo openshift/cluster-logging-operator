@@ -9,6 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -107,27 +108,15 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	)
 
 	Context("with tuning parameters", func() {
-		var (
-			addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor
-		)
 		DescribeTable("with compression", func(compression string) {
-			framework = functional.NewCollectorFunctionalFramework()
-			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(obs.InputTypeApplication).
-				ToHttpOutput(func(output *obs.OutputSpec) {
-					output.HTTP.Tuning = &obs.HTTPTuningSpec{
-						Compression: compression,
-					}
-				})
-
-			addDestinationContainer = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
-				return func(b *runtime.PodBuilder) error {
-					return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0])
-				}
+			framework.Forwarder.Spec.Outputs[0].HTTP.Tuning = &obs.HTTPTuningSpec{
+				Compression: compression,
 			}
 
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addDestinationContainer(framework),
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				},
 				func(builder *runtime.PodBuilder) error {
 					builder.AddLabels(map[string]string{
 						"app.kubernetes.io/name": "somevalue",
@@ -148,6 +137,29 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			Entry("should pass with snappy", "snappy"),
 			Entry("should pass with zlib", "zlib"),
 			Entry("should pass with no compression", "none"))
+	})
+
+	// Verify that component_sent_bytes_total carries component_id for the HTTP
+	// output. This serves as a positive control alongside the CloudWatch
+	// regression test for LOG-7893 — the HTTP sink emits bytes metrics from
+	// within the Driver's future context (not a spawned buffer worker), so its
+	// labels should always be correct.
+	Context("When checking collector metrics for HTTP output", func() {
+		It("should emit component_sent_bytes_total with component_id label", func() {
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				},
+			})).To(BeNil())
+
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "metrics test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(msg, 10)).To(BeNil())
+
+			lines, err := framework.CollectMetricLines("component_sent_bytes_total", `component_id="output_http"`, 30*time.Second)
+			Expect(err).To(BeNil(), "Timed out waiting for component_sent_bytes_total with component_id label")
+
+			log.V(2).Info("matched metric lines", "lines", lines)
+		})
 	})
 
 })

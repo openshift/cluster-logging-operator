@@ -32,6 +32,7 @@ import (
 	yaml "sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -129,20 +130,36 @@ func (f *CollectorFunctionalFramework) AddSecret(secret *corev1.Secret) *Collect
 }
 
 func (f *CollectorFunctionalFramework) Cleanup() {
-	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed() {
-		for _, container := range f.Pod.Spec.Containers {
-			log.Info("Dumping logs for container", "container", container.Name)
-			logs, err := oc.Logs().WithNamespace(f.Namespace).WithPod(f.Pod.Name).WithContainer(container.Name).Run()
-			if err != nil {
-				log.Error(err, "Unable to retrieve logs", "container", container.Name)
+	defer f.closeClient()
+
+	if g, ok := test.GinkgoCurrentTest(); ok {
+		if g.Failed() {
+			for _, container := range f.Pod.Spec.Containers {
+				log.Info("Dumping logs for container", "container", container.Name)
+				logs, err := oc.Logs().WithNamespace(f.Namespace).WithPod(f.Pod.Name).WithContainer(container.Name).Run()
+				if err != nil {
+					log.Error(err, "Unable to retrieve logs", "container", container.Name)
+				}
+				if _, err = fmt.Fprintln(f.delayedWriter, logs); err != nil {
+					log.Error(err, "Error writing", "container", container.Name)
+				}
 			}
-			if _, err = fmt.Fprintln(f.delayedWriter, logs); err != nil {
-				log.Error(err, "Error writing", "container", container.Name)
+			f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName(), g.LineNumber()))
+		}
+
+		if !g.Failed() {
+			if collectorLogs, err := f.ReadCollectorLogs(); err != nil {
+				log.Error(err, "Unable to read collector logs for VRL warning check")
+			} else if strings.Contains(collectorLogs, "VRL compilation warning") {
+				log.Info("VRL compilation warning detected in collector logs")
+				if _, err := fmt.Fprintln(f.delayedWriter, collectorLogs); err != nil {
+					log.Error(err, "Error writing collector logs")
+				}
+				f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName(), g.LineNumber()))
+				gomega.Expect(collectorLogs).ToNot(gomega.ContainSubstring("VRL compilation warning"))
 			}
 		}
-		f.delayedWriter.FlushToArtifactsDir(fmt.Sprintf("%s_%d.log", g.FileName(), g.LineNumber()))
 	}
-	f.closeClient()
 }
 
 func (f *CollectorFunctionalFramework) GetMaxReadDuration() time.Duration {

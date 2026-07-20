@@ -211,7 +211,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs[0]).To(HavePrefix(expectedPriority), "Expected priority to match facility(user/1)*8 + severity")
 	},
 		// facility "user" = 1, priority = 1*8 + severity_code
-		Entry("crit", "crit", "<10>1 "),    // 8 + 2
+		Entry("crit", "crit", "<10>1 "),     // 8 + 2
 		Entry("emerg", "emerg", "<8>1 "),    // 8 + 0
 		Entry("err", "err", "<11>1 "),       // 8 + 3
 		Entry("info", "info", "<14>1 "),     // 8 + 6

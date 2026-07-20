@@ -46,14 +46,14 @@ This first command is not required, but can be used to set the `$NAME` substitut
 . Edit the configmap directly using `oc edit` and modify the vector.toml as needed
 [source,bash]
 ----
-  oc edit configmap/$NAME-config
+  oc edit configmap/clf-$NAME-config
 ----
 [sidebar]
 ====
 *Alternatively*: If you prefer more controlled editing of the vector.toml file, you can extract the file, make your changes locally, then apply the updated config
 [source,bash]
 ----
-  oc extract configmap/$NAME-config --keys=vector.toml  --confirm
+  oc extract configmap/clf-$NAME-config --keys=vector.toml  --confirm
 ----
 Modify this local config file using your favorite text editor (e.g. nano)
 [source,bash]
@@ -63,7 +63,7 @@ Modify this local config file using your favorite text editor (e.g. nano)
 Use `oc set` to update the configmap with the modified vector.toml file
 [source,bash]
 ----
-  oc set data configmap/$NAME-config --from-file=vector.toml=vector.toml
+  oc set data configmap/clf-$NAME-config --from-file=vector.toml=vector.toml
 ----
 ====
 [start=3]

@@ -45,7 +45,7 @@ for collector in ${crs}; do
       oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe --cache-dir=${KUBECACHEDIR} 2>&1
   done
 
-  config_name="$collector-config"
+  config_name="clf-$collector-config"
   log "-- Gathering $config_name#vector.toml from namespace: $NAMESPACE"
   data=$(oc -n $NAMESPACE get "configmap/$config_name" -o jsonpath='{.data.vector\.toml}' --ignore-not-found)
   if [ "$data" != "" ] ; then

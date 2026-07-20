@@ -78,12 +78,6 @@ var _ = Describe("[internal][api][observability]", func() {
 			}
 			Expect(IsValidSpec(forwarder)).To(BeFalse())
 		})
-		It("should be false when the forwarder name conflicts with a LokiStack", func() {
-			forwarder.Status.Conditions = append(forwarder.Status.Conditions,
-				NewCondition(obs.ConditionTypeName, obs.ConditionFalse, obs.ReasonNameConflict, "name conflict"),
-			)
-			Expect(IsValidSpec(forwarder)).To(BeFalse())
-		})
 	})
 
 	Context("#DeployAsDeployment", func() {

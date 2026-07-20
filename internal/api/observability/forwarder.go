@@ -32,7 +32,6 @@ func IsValidSpec(forwarder obs.ClusterLogForwarder) bool {
 	log.V(3).Info("IsValidSpec", "outputs", forwarder.Spec.Outputs)
 	status := forwarder.Status
 	return isAuthorized(status.Conditions) &&
-		isNameValid(status.Conditions) &&
 		isValid(obs.ConditionTypeValidInputPrefix, status.InputConditions, len(forwarder.Spec.Inputs)) &&
 		isValid(obs.ConditionTypeValidOutputPrefix, status.OutputConditions, len(forwarder.Spec.Outputs)) &&
 		isValid(obs.ConditionTypeValidPipelinePrefix, status.PipelineConditions, len(forwarder.Spec.Pipelines)) &&
@@ -61,15 +60,6 @@ func isAuthorized(conditions []metav1.Condition) bool {
 		}
 	}
 	return false
-}
-
-func isNameValid(conditions []metav1.Condition) bool {
-	for _, cond := range conditions {
-		if cond.Type == obs.ConditionTypeName && cond.Status == obs.ConditionFalse {
-			return false
-		}
-	}
-	return true
 }
 
 type ClusterLogForwarderSpec obs.ClusterLogForwarderSpec

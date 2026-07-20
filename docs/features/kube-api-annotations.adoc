@@ -44,7 +44,7 @@ If you need guidance on updating your forwarder instance, please see the section
 .vector configuration file
 [source,bash]
 ----
-  oc get cm <my-forwarder-name>-config -o jsonpath='{.data.vector\.toml}' | grep use_apiserver_cache
+  oc get cm clf-<my-forwarder-name>-config -o jsonpath='{.data.vector\.toml}' | grep use_apiserver_cache
 ----
 +
 .forwarder daemonset

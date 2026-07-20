@@ -91,6 +91,54 @@ namespace before removing the **ClusterLogging** resource named '**instance**' i
   oc patch -n openshift-logging Kibana kibana --type=merge -p '{"metadata": {"ownerReferences": [], "labels": {"pod-template-hash":null}}}'
 ----
 
+=== Log File Metric Exporter
+If you had a **LogFileMetricExporter** deployed in Logging 5, the existing `logfilesmetricexporter` DaemonSet must be deleted and recreated during the upgrade.  Logging 6 updated the DaemonSet label selectors, and because Kubernetes does not allow changes to the `spec.selector` field of a DaemonSet, the operator cannot update it in place.
+
+==== Before Upgrading
+Delete the **LogFileMetricExporter** CR before upgrading the operator.  After deleting the CR, verify that the `logfilesmetricexporter` DaemonSet has also been removed.  If the DaemonSet remains, delete it manually before proceeding.
+
+.Delete the CR before upgrading
+[source]
+----
+  oc delete logfilemetricexporters instance -n openshift-logging
+----
+
+.Verify the DaemonSet is absent
+[source]
+----
+  oc get daemonset logfilesmetricexporter -n openshift-logging
+----
+
+If the DaemonSet still exists, delete it:
+
+[source]
+----
+  oc delete daemonset logfilesmetricexporter -n openshift-logging
+----
+
+After the operator upgrade is complete, recreate the CR.
+
+.Recreate the CR after upgrading
+[source,yaml]
+----
+apiVersion: logging.openshift.io/v1alpha1
+kind: LogFileMetricExporter
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  ... # your previous spec
+----
+
+==== After Upgrading
+If the operator is already upgraded and reporting a reconciler error for the **LogFileMetricExporter**, delete the DaemonSet directly.  The operator will recreate it automatically.
+
+.Delete the DaemonSet
+[source]
+----
+  oc delete daemonset logfilesmetricexporter -n openshift-logging
+----
+
 === Log Collection & Forwarding
 Log collection and forwarding configuration is spec'd from a new link:../../reference/operator/api_observability_v1.adoc[API]
 that is included in the API group **observability.openshift.io**. The following sections highlight the differences from the

@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-06-17T14:13:34Z"
+    createdAt: "2026-07-07T19:26:30Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -172,6 +172,13 @@ spec:
         path: collector.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: |-
+          TerminationGracePeriodSeconds defines the termination grace period for collector pods
+          in seconds. If not specified, the default is 10 seconds.
+        displayName: Termination Grace Period Seconds
+        path: collector.terminationGracePeriodSeconds
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
       - description: Define the tolerations the collector pods will accept
         displayName: Tolerations
         path: collector.tolerations

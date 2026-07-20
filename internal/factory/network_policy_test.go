@@ -136,14 +136,25 @@ var _ = Describe("#NewNetworkPolicy", func() {
 			string(loggingv1alpha1.NetworkPolicyRuleSetTypeAllowIngressMetrics),
 			nil,
 			nil,
-			[]networkingv1.PolicyType{networkingv1.PolicyTypeEgress, networkingv1.PolicyTypeIngress},
+			[]networkingv1.PolicyType{networkingv1.PolicyTypeIngress, networkingv1.PolicyTypeEgress},
 			[]networkingv1.NetworkPolicyIngressRule{{
 				Ports: []networkingv1.NetworkPolicyPort{{
 					Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
 					Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: constants.MetricsPort}}[0],
 				}},
 			}},
-			nil, // No egress rules
+			[]networkingv1.NetworkPolicyEgressRule{{
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: KubeAPIPort}}[0],
+					},
+					{
+						Protocol: &[]corev1.Protocol{corev1.ProtocolUDP}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.String, StrVal: DNSPortName}}[0],
+					},
+				},
+			}},
 		),
 		Entry("with RestrictIngressEgress ruleset",
 			string(obsv1.NetworkPolicyRuleSetTypeRestrictIngressEgress),
@@ -170,7 +181,7 @@ var _ = Describe("#NewNetworkPolicy", func() {
 					},
 					{
 						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],
-						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: 6443}}[0],
+						Port:     &[]intstr.IntOrString{{Type: intstr.Int, IntVal: KubeAPIPort}}[0],
 					},
 					{
 						Protocol: &[]corev1.Protocol{corev1.ProtocolTCP}[0],

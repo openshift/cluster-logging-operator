@@ -9,7 +9,10 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 )
 
-const DNSPortName = "dns"
+const (
+	DNSPortName       = "dns"
+	KubeAPIPort int32 = 6443
+)
 
 // PortProtocol represents a port with its associated protocol
 type PortProtocol struct {
@@ -35,7 +38,7 @@ func NewNetworkPolicyWithProtocolPorts(namespace, policyName, instanceName, comp
 	// allow all ingress and egress traffic
 	case string(loggingv1alpha1.NetworkPolicyRuleSetTypeAllowAllIngressEgress):
 		NetworkPolicyTypeAllowAllIngressEgress(npBuilder)
-	// allow ingress on the metrics port only and deny all egress traffic
+	// allow ingress on the metrics port only; restrict egress to DNS and KubeAPI for secure metrics token validation
 	case string(loggingv1alpha1.NetworkPolicyRuleSetTypeAllowIngressMetrics):
 
 		NetworkPolicyTypeAllowIngressMetrics(npBuilder, metricsPort)
@@ -56,13 +59,10 @@ func NetworkPolicyTypeAllowAllIngressEgress(npBuilder *runtime.NetworkPolicyBuil
 		AllowAllEgress()
 }
 
-// NetworkPolicyTypeAllowIngressMetrics configures the network policy to allow ingress on the metrics port only and deny all egress traffic.
+// NetworkPolicyTypeAllowIngressMetrics configures the network policy to allow ingress on the metrics port only
+// and restrict egress to only the Kubernetes API server and DNS (required for secure metrics token validation).
 func NetworkPolicyTypeAllowIngressMetrics(npBuilder *runtime.NetworkPolicyBuilder, port int32) *runtime.NetworkPolicyBuilder {
-	return npBuilder.
-		WithEgressPolicyType(). // Adding egress policy type without any rules to deny all egress traffic
-		NewIngressRule().
-		OnPort(corev1.ProtocolTCP, port).
-		End()
+	return NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder, nil, nil, port)
 }
 
 // NetworkPolicyTypeRestrictIngressEgressWithProtocols configures the network policy to restrict ingress and egress traffic
@@ -81,7 +81,7 @@ func NetworkPolicyTypeRestrictIngressEgressWithProtocols(npBuilder *runtime.Netw
 	// Egress rules are allowed on all spec'd egress ports with their detected protocols
 	egressRule := npBuilder.NewEgressRule().
 		OnNamedPort(corev1.ProtocolUDP, DNSPortName). // allow egress to openshift DNS service port
-		OnPort(corev1.ProtocolTCP, 6443)              // allow egress to KubeAPI port
+		OnPort(corev1.ProtocolTCP, KubeAPIPort)       // allow egress to KubeAPI port
 
 	for _, portProtocol := range egressPorts {
 		egressRule.OnPort(portProtocol.Protocol, portProtocol.Port)

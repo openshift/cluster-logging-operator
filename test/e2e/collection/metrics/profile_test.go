@@ -21,7 +21,7 @@ import (
 
 const (
 	allowlistedMetric    = `vector_open_files`
-	nonAllowlistedMetric = `vector_started_total`
+	nonAllowlistedMetric = `vector_uptime_seconds`
 )
 
 var _ = Describe("[e2e][collection][metrics] Metrics Collection Profiles", Ordered, func() {

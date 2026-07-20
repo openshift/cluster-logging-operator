@@ -115,6 +115,36 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Entry("should include the message when payloadkey is not found", `{.structured.appname_key||"none"}`, `{.structured.msgid_key||"none"}`, `{.structured.procid_key||"none"}`, "{.key_not_available}"),
 	)
 
+	It("should set message to the value of the specified payload key field", func() {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithParseJson().
+			ToSyslogOutput(obs.SyslogRFC5424, func(output *obs.OutputSpec) {
+				output.Syslog.Facility = "user"
+				output.Syslog.Severity = "debug"
+				output.Syslog.PayloadKey = "{.structured.msgcontent}"
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		record := `{"msgcontent":"My life is my message","appname_key":"rec_appname"}`
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), record)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+
+		fields := strings.Split(outputlogs[0], " - ")
+		payload := strings.TrimSpace(fields[1])
+		Expect(payload).To(Equal("My life is my message"),
+			fmt.Sprintf("Expected payload to be the value of the specified payloadKey field, got: %q", payload))
+
+		collectorLogs, err := framework.ReadCollectorLogs()
+		Expect(err).To(BeNil())
+		Expect(collectorLogs).ToNot(ContainSubstring("payload_key not found in event"))
+		Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"))
+	})
+
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {
 			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -138,6 +168,10 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			// The 1 after <134> is version, which is always set to 1
 			expectedPriority := "<134>1 "
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"), "Expected no VRL compilation warnings in collector logs")
 		})
 
 		It("should use numeric value", func() {
@@ -163,6 +197,50 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 			Expect(outputlogs[0]).To(MatchRegexp(expectedPriority), "Exp to find tag in received message")
 		})
 	})
+
+	DescribeTable("should correctly encode severity keywords in all forms", func(severity string, expectedPriority string) {
+		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			ToSyslogOutput(obs.SyslogRFC5424, func(spec *obs.OutputSpec) {
+				spec.Syslog.Facility = "user"
+				spec.Syslog.Severity = severity
+			})
+		Expect(framework.Deploy()).To(BeNil())
+
+		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), `{"index":1}`)
+		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+		outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
+		Expect(outputlogs[0]).To(HavePrefix(expectedPriority), "Expected priority to match facility(user/1)*8 + severity")
+
+		collectorLogs, err := framework.ReadCollectorLogs()
+		Expect(err).To(BeNil())
+		Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"), "Expected no VRL compilation warnings in collector logs")
+		Expect(collectorLogs).ToNot(ContainSubstring("Invalid syslog severity"), "Expected no invalid severity warnings in collector logs")
+	},
+		// facility "user" = 1, priority = 1*8 + severity_code
+		// full-form keywords (RFC 5424)
+		Entry("full-form: critical", "critical", "<10>1 "),           // 8 + 2
+		Entry("full-form: emergency", "emergency", "<8>1 "),          // 8 + 0
+		Entry("full-form: error", "error", "<11>1 "),                 // 8 + 3
+		Entry("full-form: informational", "informational", "<14>1 "), // 8 + 6
+		Entry("full-form: warning", "warning", "<12>1 "),             // 8 + 4
+		Entry("full-form: debug", "debug", "<15>1 "),                 // 8 + 7
+		Entry("full-form: notice", "notice", "<13>1 "),               // 8 + 5
+		Entry("full-form: alert", "alert", "<9>1 "),                  // 8 + 1
+		// short-form keywords (VRL to_syslog_level output)
+		Entry("short-form: crit", "crit", "<10>1 "),    // 8 + 2
+		Entry("short-form: emerg", "emerg", "<8>1 "),    // 8 + 0
+		Entry("short-form: err", "err", "<11>1 "),       // 8 + 3
+		Entry("short-form: info", "info", "<14>1 "),     // 8 + 6
+		Entry("short-form: warn", "warn", "<12>1 "),     // 8 + 4
+		// capitalized keywords (as documented in oc explain)
+		Entry("capitalized: Critical", "Critical", "<10>1 "),           // 8 + 2
+		Entry("capitalized: Emergency", "Emergency", "<8>1 "),          // 8 + 0
+		Entry("capitalized: Informational", "Informational", "<14>1 "), // 8 + 6
+	)
 
 	It("should be able to send a large payload", func() {
 		obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).

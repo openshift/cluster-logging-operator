@@ -23,11 +23,11 @@ if .log_source == "container" {
 }
 if .log_type == "audit" {
    ._syslog.app_name = .log_source
-   ._syslog.severity = "informational"
+   ._syslog.severity = "info"
    ._syslog.facility = "security"
 }
-._syslog.proc_id = to_string!(._syslog.proc_id || "")
-if exists(._syslog.proc_id) && is_empty(strip_whitespace(string!(._syslog.proc_id))) { del(._syslog.proc_id) }
+._syslog.proc_id = to_string(._syslog.proc_id)
+if is_empty(strip_whitespace(._syslog.proc_id)) { del(._syslog.proc_id) }
 ._syslog.app_name = to_string!(._syslog.app_name || "")
 
 # try to convert syslog code to the facility, severity names (e.g. 4 -> "warning", "4" -> "warning"  )
@@ -41,16 +41,21 @@ if exists(._syslog.facility) && !is_null(._syslog.facility) {
       if err3 == null {
         ._syslog.facility = facility
       } else {
-        log("Invalid syslog facility code: " + to_string!(._syslog.facility) , level: "warn")
+        log("Invalid syslog facility code", level: "warn")
       }
     } else {
-      log("Invalid syslog facility value: " + to_string!(._syslog.facility), level: "warn")
+      log("Invalid syslog facility value", level: "warn")
     }
   }
   # else: already a valid name, leave it as-is
 }
 
 if exists(._syslog.severity) && !is_null(._syslog.severity) {
+  if is_string(._syslog.severity) {
+    ._syslog.severity = downcase(._syslog.severity) ?? ._syslog.severity
+    if ._syslog.severity == "emergency" { ._syslog.severity = "emerg" } else if ._syslog.severity == "critical" { ._syslog.severity = "crit" } else if ._syslog.severity == "informational" { ._syslog.severity = "info" }
+  }
+
   _, err = to_syslog_severity(._syslog.severity)
   if err != null {
     # Field is not a valid name — try treating it as a code (int or string int)
@@ -60,10 +65,10 @@ if exists(._syslog.severity) && !is_null(._syslog.severity) {
       if err3 == null {
         ._syslog.severity = severity
       } else {
-        log("Invalid syslog severity code: " + to_string!(._syslog.severity), level: "warn")
+        log("Invalid syslog severity code", level: "warn")
       }
     } else {
-      log("Invalid syslog severity value: " + to_string!(._syslog.severity), level: "warn")
+      log("Invalid syslog severity value", level: "warn")
     }
   }
   # else: already a valid name, leave it as-is

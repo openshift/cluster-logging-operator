@@ -1,13 +1,9 @@
 name: Spell checking
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - "**"
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 permissions:
   contents: read
@@ -15,9 +11,6 @@ permissions:
 jobs:
   spelling:
     name: Spell checking
-    permissions:
-      contents: read
-      pull-requests: read
     runs-on: ubuntu-latest
     concurrency:
       group: spelling-${{ github.event.pull_request.number || github.ref }}
@@ -26,9 +19,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
       - name: Spell Check
-        uses: crate-ci/typos@v1.33.1
+        uses: crate-ci/typos@v1.48.0
         continue-on-error: true
         with:
           config: .github/actions/spelling/_typos.toml

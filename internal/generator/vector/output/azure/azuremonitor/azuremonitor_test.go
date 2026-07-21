@@ -21,7 +21,7 @@ import (
 var _ = Describe("Generating vector config for Azure Monitor Logs output:", func() {
 
 	const (
-		sharedKeyValue = "z9ndQSFH1RLDnS6WR35m84u326p3"
+		sharedKeyValue = "z9zdQSFH1RLDnS6WR35m84u326p3"
 		azureId        = "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage"
 		hostCN         = "ods.opinsights.azure.cn"
 		customerId     = "6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt"

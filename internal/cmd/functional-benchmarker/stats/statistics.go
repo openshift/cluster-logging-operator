@@ -13,7 +13,7 @@ type Statistics struct {
 	Losses    LossStats
 }
 
-func NewStatisics(logs PerfLogs, msgSize int, elapsed time.Duration) *Statistics {
+func NewStatistics(logs PerfLogs, msgSize int, elapsed time.Duration) *Statistics {
 	return &Statistics{
 		logs,
 		msgSize,

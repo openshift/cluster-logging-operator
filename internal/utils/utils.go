@@ -279,35 +279,35 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 	return true
 }
 
-func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
-	if (esource1.FieldRef != nil && esource2.FieldRef == nil) ||
-		(esource1.FieldRef == nil && esource2.FieldRef != nil) ||
-		(esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
-		(esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
-		(esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
-		(esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
-		(esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
-		(esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
+func EnvVarSourceEqual(envVarSource1, envVarSource2 v1.EnvVarSource) bool {
+	if (envVarSource1.FieldRef != nil && envVarSource2.FieldRef == nil) ||
+		(envVarSource1.FieldRef == nil && envVarSource2.FieldRef != nil) ||
+		(envVarSource1.ResourceFieldRef != nil && envVarSource2.ResourceFieldRef == nil) ||
+		(envVarSource1.ResourceFieldRef == nil && envVarSource2.ResourceFieldRef != nil) ||
+		(envVarSource1.ConfigMapKeyRef != nil && envVarSource2.ConfigMapKeyRef == nil) ||
+		(envVarSource1.ConfigMapKeyRef == nil && envVarSource2.ConfigMapKeyRef != nil) ||
+		(envVarSource1.SecretKeyRef != nil && envVarSource2.SecretKeyRef == nil) ||
+		(envVarSource1.SecretKeyRef == nil && envVarSource2.SecretKeyRef != nil) {
 		return false
 	}
 	var rval bool
-	if esource1.FieldRef != nil {
-		if rval = reflect.DeepEqual(*esource1.FieldRef, *esource2.FieldRef); !rval {
+	if envVarSource1.FieldRef != nil {
+		if rval = reflect.DeepEqual(*envVarSource1.FieldRef, *envVarSource2.FieldRef); !rval {
 			return rval
 		}
 	}
-	if esource1.ResourceFieldRef != nil {
-		if rval = EnvVarResourceFieldSelectorEqual(*esource1.ResourceFieldRef, *esource2.ResourceFieldRef); !rval {
+	if envVarSource1.ResourceFieldRef != nil {
+		if rval = EnvVarResourceFieldSelectorEqual(*envVarSource1.ResourceFieldRef, *envVarSource2.ResourceFieldRef); !rval {
 			return rval
 		}
 	}
-	if esource1.ConfigMapKeyRef != nil {
-		if rval = reflect.DeepEqual(*esource1.ConfigMapKeyRef, *esource2.ConfigMapKeyRef); !rval {
+	if envVarSource1.ConfigMapKeyRef != nil {
+		if rval = reflect.DeepEqual(*envVarSource1.ConfigMapKeyRef, *envVarSource2.ConfigMapKeyRef); !rval {
 			return rval
 		}
 	}
-	if esource1.SecretKeyRef != nil {
-		if rval = reflect.DeepEqual(*esource1.SecretKeyRef, *esource2.SecretKeyRef); !rval {
+	if envVarSource1.SecretKeyRef != nil {
+		if rval = reflect.DeepEqual(*envVarSource1.SecretKeyRef, *envVarSource2.SecretKeyRef); !rval {
 			return rval
 		}
 	}

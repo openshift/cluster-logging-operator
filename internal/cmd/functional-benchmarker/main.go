@@ -121,7 +121,7 @@ func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime
 		return &stats.Statistics{}
 	}
 	log.V(4).Info("Parsed logs", "parsed", logs)
-	return stats.NewStatisics(logs, msgSize, endTime.Sub(startTime))
+	return stats.NewStatistics(logs, msgSize, endTime.Sub(startTime))
 }
 
 func createArtifactDir(artifactDir string) string {

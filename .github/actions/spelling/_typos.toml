@@ -1,46 +1,18 @@
 [files]
 extend-exclude = [
-    "vendor/",
-    ".bingo/",
-    ".github/actions/spelling/",
-    "bundle/",
-    "*.go",
-    "*.yaml",
-    "*.yml",
-    "*.json",
-    "*.sh",
-    "*.bash",
-    "*.toml",
-    "*.sum",
-    "*.mod",
+    # Directories: too noisy for spell checking (encoded data, UUIDs, base64)
+    "test/",
+
+    # Files: binary or generated, never useful to spell-check
     "*.png",
     "*.jpg",
-    "*.svg",
-    "*.ico",
-    "*.pb.go",
-    "*.pb",
-    "*.proto",
-    "*.csv",
-    "*.log",
-    "*.lock",
-    "*.cfg",
-    "*.conf",
-    "*.ini",
-    "*.xml",
-    "Makefile",
-    "Dockerfile*",
-    "LICENSE",
+    "*.sum",
+    "*.mod",
     "go.sum",
     "go.mod",
-    ".cache/",
-    "tmp/",
-    "config/",
-    "hack/",
-    "test/",
-    "internal/",
-    "api/",
-    "cmd/",
-    "must-gather/collection-scripts/",
+
+    # Source code: too many false positives from encoded data
+    "*.json",
 ]
 
 [default]

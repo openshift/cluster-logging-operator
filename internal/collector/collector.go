@@ -216,6 +216,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		{Name: "OPENSHIFT_CLUSTER_ID", Value: clusterID},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 		{Name: "POD_IPS", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
+		{Name: "VECTOR_RAISE_FD_LIMIT", Value: RaiseFdLimit(f.annotations)},
 	}
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
 
@@ -412,4 +413,14 @@ func LogLevel(annotations map[string]string) string {
 		return level
 	}
 	return "warn"
+}
+
+func RaiseFdLimit(annotations map[string]string) string {
+	if value, ok := annotations[constants.AnnotationVectorRaiseFdLimit]; ok {
+		if value == "true" || value == "false" {
+			return value
+		}
+		log.V(0).Info("Invalid value for annotation, using default", "annotation", constants.AnnotationVectorRaiseFdLimit, "value", value, "default", "false")
+	}
+	return "false"
 }

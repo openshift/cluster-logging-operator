@@ -13,6 +13,10 @@ const (
 	// CLO's default log level for vector is `warn`: https://issues.redhat.com/browse/LOG-3435
 	AnnotationVectorLogLevel = "observability.openshift.io/log-level"
 
+	// AnnotationVectorRaiseFdLimit controls whether Vector raises its file descriptor soft limit at startup.
+	// Valid values are "true" or "false". Default is "false" (matching Vector's default).
+	AnnotationVectorRaiseFdLimit = "observability.openshift.io/raise-fd-limit"
+
 	AnnotationSecretHash    = "observability.openshift.io/secret-hash"
 	AnnotationConfigMapHash = "observability.openshift.io/configmap-hash"
 

@@ -14,6 +14,7 @@ var (
 	clfValidators = []func(internalcontext.ForwarderContext){
 		validateLogLevelAnnotation,
 		validateMaxUnavailableAnnotation,
+		validateName,
 		ValidatePermissions,
 		inputs.Validate,
 		outputs.Validate,
@@ -32,6 +33,9 @@ func ValidateClusterLogForwarder(context internalcontext.ForwarderContext) {
 func MustUndeployCollector(conditions []metav1.Condition) bool {
 	for _, condition := range conditions {
 		if condition.Type == obs.ConditionTypeAuthorized && condition.Status == obs.ConditionFalse {
+			return true
+		}
+		if condition.Type == obs.ConditionTypeName && condition.Status == obs.ConditionFalse {
 			return true
 		}
 	}

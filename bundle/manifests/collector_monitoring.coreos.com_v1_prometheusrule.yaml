@@ -23,7 +23,7 @@ spec:
         severity: info
     - alert: ClusterLogForwarderAzureMonitorLogsDeprecation
       annotations:
-        message: A ClusterLogForwarder, {{ $labels.namespace }}/{{ $labels.app_kubernetes_io_instance
+        message: A ClusterLogForwarder, {{ $labels.resource_namespace }}/{{ $labels.resource_name
           }}, is configured to forward logs to Azure Monitor using the deprecated
           HTTP Data Collector API.
         summary: "The Azure Monitor HTTP Data Collector API used by the azureMonitor
@@ -35,7 +35,7 @@ spec:
           the Microsoft migration guide: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/custom-logs-migrate\nSee
           the Microsoft Logs Ingestion API documentation: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview"
       expr: |
-        log_forwarder_output_type{output="azureMonitor"} > 0
+        sum by(resource_namespace, resource_name) (log_forwarder_output_type{output="azureMonitor"}) > 0
       for: 1m
       labels:
         service: clusterlogforwarder

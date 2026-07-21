@@ -27,5 +27,5 @@ func WriteToSyslogInputWithNetcat(framework *functional.CollectorFunctionalFrame
 			return err
 		}
 	}
-	return fmt.Errorf("WriteToHttpInput: no HTTP input named %s", inputName)
+	return fmt.Errorf("WriteToSyslogInputWithNetcat: no syslog input named %s", inputName)
 }

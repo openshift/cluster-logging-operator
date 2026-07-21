@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator
+spec:
+  replicas: 1
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: log-generator
+        env:
+        - name: LOGS_PER_SECOND
+          value: "1"
+        - name: PAYLOAD_SIZE
+          value: "512"
+        image: quay.io/openshift-logging/cluster-logging-load-client:latest
+        imagePullPolicy: Always
+        args:
+        - --logs-per-second=$(LOGS_PER_SECOND)
+        - --synthetic-payload-size=$(PAYLOAD_SIZE)
+        - --log-type=synthetic
+        ports:
+        - containerPort: 8081
+          name: metrics
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL

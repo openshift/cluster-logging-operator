@@ -38,7 +38,7 @@ func (tc *E2ETestFramework) WaitForDaemonSet(namespace, name string) error {
 
 		ds, err := tc.KubeClient.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
-			clolog.V(0).Error(err, "error polling and waiting for daemonset", "namespace", namespace, "name", name)
+			clolog.V(3).Error(err, "error polling and waiting for daemonset", "namespace", namespace, "name", name)
 			return false, nil
 		}
 		if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {

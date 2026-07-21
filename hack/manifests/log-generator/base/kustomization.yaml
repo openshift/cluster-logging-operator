@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: log-generator
+      app.kubernetes.io/component: log-generator
+      app.kubernetes.io/part-of: cluster-logging
+    includeSelectors: true 
+    includeTemplates: true 
+resources:
+- log_generator_deployment.yaml
+- servicemonitor.yaml
+- service.yaml

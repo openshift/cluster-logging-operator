@@ -33,17 +33,26 @@ type PipelineBuilder struct {
 	inputRefs    []string
 }
 
+type ClusterLogForwarderVisitor func(clf *obs.ClusterLogForwarder)
 type InputSpecVisitor func(spec *obs.InputSpec)
 type OutputSpecVisitor func(spec *obs.OutputSpec)
 type FilterSpecVisitor func(spec *obs.FilterSpec)
 type PipelineSpecVisitor func(spec *obs.PipelineSpec)
 
-func NewClusterLogForwarderBuilder(clf *obs.ClusterLogForwarder) *ClusterLogForwarderBuilder {
+func NewClusterLogForwarderBuilder(clf *obs.ClusterLogForwarder, visitors ...ClusterLogForwarderVisitor) *ClusterLogForwarderBuilder {
+	for _, v := range visitors {
+		v(clf)
+	}
 	return &ClusterLogForwarderBuilder{
 		Forwarder:   clf,
 		inputSpecs:  map[string]*obs.InputSpec{},
 		filterSpecs: map[string]*obs.FilterSpec{},
 	}
+}
+
+// End returns the ClusterLogForwarder when done with the builder
+func (b *ClusterLogForwarderBuilder) End() *obs.ClusterLogForwarder {
+	return b.Forwarder
 }
 
 func (b *ClusterLogForwarderBuilder) FromInput(inputType obs.InputType, visitors ...InputSpecVisitor) *PipelineBuilder {

@@ -161,7 +161,7 @@ o = {
   "logRecords": r
 }
 `
-	// The (M)inimum (V)iable (P)roduct Labels (MVP)
+	// The Minimum Viable Product (MVP) labels
 	BackwardCompatBaseResourceAttributes = `
 # Append backward compatibility attributes
 resource.attributes = append( resource.attributes,

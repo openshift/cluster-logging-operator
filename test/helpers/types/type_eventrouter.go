@@ -4,7 +4,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// EventRouterLog is a Viaq wrappered log from the eventrouter of
+// EventRouterLog is a Viaq wrapped log from the eventrouter of
 // kubernetes core events
 type EventRouterLog struct {
 	ViaQCommon `json:",inline,omitempty"`

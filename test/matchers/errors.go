@@ -7,7 +7,7 @@ import (
 
 // ExpectOK is shorthand for these annoyingly long ginkgo forms:
 //
-//	Expect(err).NotTo(HaveOccured()
+//	Expect(err).NotTo(HaveOccurred ()
 //	Expect(err).To(Succeed())
 //
 // It also does a WrapError to show stderr for *exec.ExitError.

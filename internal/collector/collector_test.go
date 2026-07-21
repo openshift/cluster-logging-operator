@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = Describe("Factory#MaxUnavalable", func() {
+var _ = Describe("Factory#MaxUnavailable", func() {
 	var (
 		factory Factory
 	)

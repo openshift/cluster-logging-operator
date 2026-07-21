@@ -10,7 +10,7 @@ func AreResourcesSame(current, desired *v1.ResourceRequirements) bool {
 		return true
 	}
 	if (current != nil && desired == nil) || (current == nil && desired != nil) {
-		log.V(3).Info("Resources are not the same missing ResoureRequirement", "current", current, "desired", desired)
+		log.V(3).Info("Resources are not the same missing ResourceRequirement", "current", current, "desired", desired)
 		return false
 	}
 	// Check CPU limits

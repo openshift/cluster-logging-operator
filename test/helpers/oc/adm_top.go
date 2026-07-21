@@ -6,14 +6,14 @@ import (
 )
 
 // Execer is interface for collecting arguments for Exec command
-type AdmTopComman interface {
+type AdmTopCommand interface {
 	Command
 
 	//ForContainers to retrieve `oc adm top` of containers
-	ForContainers() AdmTopComman
+	ForContainers() AdmTopCommand
 
 	//NoHeaders to not include noHeaders
-	NoHeaders() AdmTopComman
+	NoHeaders() AdmTopCommand
 }
 
 type admTop struct {
@@ -25,7 +25,7 @@ type admTop struct {
 }
 
 // AdmTop creates an 'oc adm top' command
-func AdmTop(namespace, name string) AdmTopComman {
+func AdmTop(namespace, name string) AdmTopCommand {
 	e := &admTop{
 		runner:    &runner{},
 		namespace: namespace,
@@ -35,12 +35,12 @@ func AdmTop(namespace, name string) AdmTopComman {
 	return e
 }
 
-func (e *admTop) ForContainers() AdmTopComman {
+func (e *admTop) ForContainers() AdmTopCommand {
 	e.containers = true
 	return e
 }
 
-func (e *admTop) NoHeaders() AdmTopComman {
+func (e *admTop) NoHeaders() AdmTopCommand {
 	e.noHeaders = true
 	return e
 }

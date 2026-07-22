@@ -44,6 +44,7 @@ const (
 	TrustedCABundleMountDir           = "/etc/pki/ca-trust/extracted/pem/"
 	ElasticsearchName                 = "elasticsearch"
 	VectorName                        = "vector"
+	OTELCollectorName                 = "otelcol"
 	KibanaName                        = "kibana"
 	LogfilesmetricexporterName        = "logfilesmetricexporter"
 	LogfilesmetricexporterPort        = int32(2112)
@@ -63,7 +64,8 @@ const (
 	CollectorServiceAccountName = "logcollector"
 	CollectorTrustedCAName      = "collector-trusted-ca-bundle"
 
-	VectorImageEnvVar         = "RELATED_IMAGE_VECTOR"
+	VectorImageEnvVar           = "RELATED_IMAGE_VECTOR"
+	OTELCollectorImageEnvVar    = "RELATED_IMAGE_OTEL_COLLECTOR"
 	LogfilesmetricImageEnvVar = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
 
 	ContainerLogDir = "/var/log/containers"

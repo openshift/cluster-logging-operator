@@ -49,6 +49,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 		clusterResources = []schema.GroupVersionResource{
 			// Core resources
 			{Group: "", Version: "v1", Resource: "nodes"},
+			{Group: "", Version: "v1", Resource: "persistentvolumes"},
 
 			// RBAC
 			{Group: groupRbac, Version: "v1", Resource: "clusterroles"},

@@ -197,10 +197,11 @@ func (n *Collector) collectPodLogs(ctx context.Context, namespace string, nsDir 
 			defer wg.Done()
 			defer func() { <-podSem }() // Release semaphore
 
-			podDir := nsDir.Add("core", "pods", p.Name)
+			podsDir := nsDir.Add("core", "pods")
+			podDir := podsDir.Add(p.Name)
 
 			// Save pod YAML
-			podYamlPath := podDir.Add(fmt.Sprintf("%s.yaml", p.Name))
+			podYamlPath := podsDir.Add(fmt.Sprintf("%s.yaml", p.Name))
 			if err := n.client.WriteResourceToFile(&p, podYamlPath); err != nil {
 				n.logger.Warn("Failed to save pod YAML for %s: %v", p.Name, err)
 			}

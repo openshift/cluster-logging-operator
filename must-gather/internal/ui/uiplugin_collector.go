@@ -70,6 +70,18 @@ func (u *UIPluginCollector) Collect(ctx context.Context, gvrs ...schema.GroupVer
 		return fmt.Errorf("failed to collect UIPlugin resources: %w", err)
 	}
 
+	// Collect ConsolePlugins
+	consolePluginGVR := schema.GroupVersionResource{
+		Group:    "console.openshift.io",
+		Version:  "v1",
+		Resource: "consoleplugins",
+	}
+
+	consolePluginDestDir := u.destDir.Add(cluster.ArtifactRoot).ForResource(consolePluginGVR)
+	if err := u.client.ListResources(ctx, consolePluginGVR, "", consolePluginDestDir, metav1.ListOptions{}); err != nil {
+		u.logger.Warn("Failed to collect ConsolePlugins: %v", err)
+	}
+
 	// Collect Console ClusterOperator
 	coGVR := schema.GroupVersionResource{
 		Group:    cluster.GroupConfig,

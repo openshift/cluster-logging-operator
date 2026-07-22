@@ -156,7 +156,7 @@ scale-olm:
 
 .PHONY: clean
 clean:
-	rm -rf bin/cluster-logging-operator bin/forwarder-generator bin/functional-benchmarker tmp _output .target .cache
+	rm -rf bin/cluster-logging-operator bin/forwarder-generator bin/functional-benchmarker bin/must-gather tmp _output .target .cache
 	find -name .kube | xargs rm -rf
 
 spotless: clean

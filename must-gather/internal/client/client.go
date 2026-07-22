@@ -188,8 +188,14 @@ func (c *Client) ListResources(ctx context.Context, gvr schema.GroupVersionResou
 
 // WriteResourceToFile writes a Kubernetes resource as YAML to a file
 func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path) error {
+	// Convert typed objects to unstructured to preserve apiVersion/kind
+	obj, err := c.toUnstructured(resource)
+	if err != nil {
+		return fmt.Errorf("failed to convert resource: %w", err)
+	}
+
 	// Sanitize secrets before writing
-	sanitizedResource, err := c.sanitizeResource(resource)
+	sanitizedResource, err := c.sanitizeResource(obj)
 	if err != nil {
 		return fmt.Errorf("failed to sanitize resource: %w", err)
 	}
@@ -202,6 +208,24 @@ func (c *Client) WriteResourceToFile(resource runtime.Object, destPath api.Path)
 
 	// Write to file (WriteFile creates parent directory automatically)
 	return destPath.WriteFile(yamlBytes)
+}
+
+// toUnstructured converts a typed runtime.Object to an Unstructured object,
+// ensuring apiVersion and kind are preserved
+func (c *Client) toUnstructured(resource runtime.Object) (runtime.Object, error) {
+	if _, ok := resource.(*unstructured.Unstructured); ok {
+		return resource, nil
+	}
+	data, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
+	if err != nil {
+		return nil, err
+	}
+	obj := &unstructured.Unstructured{Object: data}
+	gvks, _, _ := scheme.Scheme.ObjectKinds(resource)
+	if len(gvks) > 0 {
+		obj.SetGroupVersionKind(gvks[0])
+	}
+	return obj, nil
 }
 
 // sanitizeResource redacts secret data values

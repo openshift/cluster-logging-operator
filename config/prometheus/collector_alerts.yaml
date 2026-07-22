@@ -37,6 +37,24 @@ spec:
       labels:
         service: clusterlogforwarder
         severity: critical
+        severity: info
+    - alert: ClusterLogForwarderAzureMonitorLogsDeprecation
+      annotations:
+        message: "A ClusterLogForwarder, {{ $labels.resource_namespace }}/{{ $labels.resource_name }}, is configured to forward logs to Azure Monitor using the deprecated HTTP Data Collector API."
+        summary: |-
+          The Azure Monitor HTTP Data Collector API used by the azureMonitor output type will be retired on September 14, 2026.
+          After this date, log forwarding to Azure Monitor using this output type will no longer be possible.
+          Administrators must migrate to the Azure Monitor Logs Ingestion output that is supported by Logging version 6.6 or 
+          contact Red Hat customer support for alternative options.
+          See the Red Hat OpenShift Logging 6.6 documentation: https://docs.redhat.com/en/documentation/red_hat_openshift_logging/6.6
+          See the Microsoft migration guide: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/custom-logs-migrate
+          See the Microsoft Logs Ingestion API documentation: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
+      expr: |
+        sum by(resource_namespace, resource_name) (log_forwarder_output_type{output="azureMonitor"}) > 0
+      for: 1m
+      labels:
+        service: clusterlogforwarder
+        severity: warning
     - alert: CollectorNodeDown
       annotations:
         description: "Prometheus could not scrape {{ $labels.namespace }}/{{ $labels.pod }} collector component for more than 10m."

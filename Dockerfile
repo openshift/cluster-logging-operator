@@ -1,4 +1,4 @@
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 
 ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
 ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-.}
@@ -19,7 +19,7 @@ COPY ${APP_DIR}/internal ./internal
 USER 0
 RUN make build
 
-FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
+FROM quay.io/openshift/origin-cli-artifacts:4.19 AS origincli
 
 RUN case $(uname -m) in \
     x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \

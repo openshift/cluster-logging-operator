@@ -81,16 +81,30 @@ for_each(excluded_fields) -> |_index, field| {
 # KubernetesMinimal
 # Adds namespace_name, pod_name, and container_name to the beginning of the message body (e.g. namespace_name=myproject, container_name=server, pod_name=pod-123, message={"foo":"bar"}).
 # This may result in the message body being an invalid JSON structure.
+# Fields are only added when present and non-empty (e.g. audit/journald logs have no Kubernetes metadata).
 
-namespace = to_string(.kubernetes.namespace_name) ?? ""
-container = to_string(.kubernetes.container_name) ?? ""
-pod = to_string(.kubernetes.pod_name) ?? ""
+parts = []
+
+if exists(.kubernetes.namespace_name) && ((to_string(.kubernetes.namespace_name) ?? "") != "") {
+  parts = push(parts, "namespace_name=" + to_string!(.kubernetes.namespace_name))
+}
+
+if exists(.kubernetes.container_name) && ((to_string(.kubernetes.container_name) ?? "") != "") {
+  parts = push(parts, "container_name=" + to_string!(.kubernetes.container_name))
+}
+
+if exists(.kubernetes.pod_name) && ((to_string(.kubernetes.pod_name) ?? "") != "") {
+  parts = push(parts, "pod_name=" + to_string!(.kubernetes.pod_name))
+}
+
 msg_value = to_string(.message) ?? encode_json(.message)
 
-.message = "namespace_name=" + namespace +
-           ", container_name=" + container +
-           ", pod_name=" + pod +
-           ", message=" + msg_value
+if length(parts) > 0 {
+  parts = push(parts, "message=" + msg_value)
+  .message = join!(parts, ", ")
+} else {
+  .message = msg_value
+}
 '''
 
 [sinks.example]

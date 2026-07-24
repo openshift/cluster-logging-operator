@@ -164,15 +164,15 @@ if err == null && value != null {
 
 parts = []
 
-if exists(.kubernetes.namespace_name) && to_string(.kubernetes.namespace_name) ?? "" != "" {
+if exists(.kubernetes.namespace_name) && ((to_string(.kubernetes.namespace_name) ?? "") != "") {
   parts = push(parts, "namespace_name=" + to_string!(.kubernetes.namespace_name))
 }
 
-if exists(.kubernetes.container_name) && to_string(.kubernetes.container_name) ?? "" != "" {
+if exists(.kubernetes.container_name) && ((to_string(.kubernetes.container_name) ?? "") != "") {
   parts = push(parts, "container_name=" + to_string!(.kubernetes.container_name))
 }
 
-if exists(.kubernetes.pod_name) && to_string(.kubernetes.pod_name) ?? "" != "" {
+if exists(.kubernetes.pod_name) && ((to_string(.kubernetes.pod_name) ?? "") != "") {
   parts = push(parts, "pod_name=" + to_string!(.kubernetes.pod_name))
 }
 

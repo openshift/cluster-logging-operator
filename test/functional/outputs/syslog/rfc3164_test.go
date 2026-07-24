@@ -129,4 +129,62 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		Entry("should enrich application logs with container source info", obs.InputTypeApplication, obs.EnrichmentTypeKubernetesMinimal),
 		Entry("should do nothing additional to the application logs", obs.InputTypeApplication, obs.EnrichmentTypeNone),
 	)
+
+	Context("KubernetesMinimal enrichment should not add empty prefixes to non-container logs", func() {
+
+		It("should not add empty kubernetes prefixes to audit logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeAudit).
+				ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
+					spec.Syslog.Facility = "user"
+					spec.Syslog.Severity = "debug"
+					spec.Syslog.PayloadKey = "{.message}"
+					spec.Syslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.WriteK8sAuditLog(1)).To(BeNil())
+
+			logs, err := framework.ReadAuditLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).ToNot(BeEmpty(), "Expected the receiver to receive the message")
+
+			logLine := strings.TrimSpace(logs[0])
+			Expect(logLine).ToNot(ContainSubstring("namespace_name=,"), "Audit logs should not have empty namespace_name prefix")
+			Expect(logLine).ToNot(ContainSubstring("container_name=,"), "Audit logs should not have empty container_name prefix")
+			Expect(logLine).ToNot(ContainSubstring("pod_name=,"), "Audit logs should not have empty pod_name prefix")
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"))
+		})
+
+		It("should not add empty kubernetes prefixes to infrastructure journal logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeInfrastructure).
+				ToSyslogOutput(obs.SyslogRFC3164, func(spec *obs.OutputSpec) {
+					spec.Syslog.Facility = "user"
+					spec.Syslog.Severity = "debug"
+					spec.Syslog.PayloadKey = "{.message}"
+					spec.Syslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
+				})
+			Expect(framework.Deploy()).To(BeNil())
+
+			logline := functional.NewJournalLog(3, "*", "*")
+			Expect(framework.WriteMessagesToInfraJournalLog(logline, 1)).To(BeNil())
+
+			logs, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).ToNot(BeEmpty(), "Expected the receiver to receive the message")
+
+			logLine := strings.TrimSpace(logs[0])
+			Expect(logLine).ToNot(ContainSubstring("namespace_name=,"), "Journal logs should not have empty namespace_name prefix")
+			Expect(logLine).ToNot(ContainSubstring("container_name=,"), "Journal logs should not have empty container_name prefix")
+			Expect(logLine).ToNot(ContainSubstring("pod_name=,"), "Journal logs should not have empty pod_name prefix")
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring("VRL compilation warning"))
+		})
+	})
 })

@@ -173,6 +173,64 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			Entry("should pass with no compression", "none"))
 	})
 
+	// LOG-9386: Verify that deeply nested JSON events (>32 protobuf nesting levels)
+	// don't crash Vector when disk buffering is enabled (AtLeastOnce delivery mode).
+	// Requires JSON parse filter so the nested JSON becomes a nested object in Vector.
+	Context("with deeply nested JSON and disk buffering", func() {
+		It("should drop over-nested events gracefully without crashing (LOG-9386)", func() {
+			f := functional.NewCollectorFunctionalFramework()
+			defer f.Cleanup()
+			obstestruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				WithParseJson().
+				ToHttpOutput(func(output *obs.OutputSpec) {
+					output.HTTP.Tuning = &obs.HTTPTuningSpec{
+						BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
+							DeliveryMode: obs.DeliveryModeAtLeastOnce,
+						},
+					}
+				})
+
+			Expect(f.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				func(b *runtime.PodBuilder) error {
+					return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0])
+				},
+			})).To(BeNil())
+
+			// Generate 40-level deep nested JSON (protobuf decode limit is 32)
+			nested := `{"msg":"deep"}`
+			for i := 0; i < 40; i++ {
+				nested = fmt.Sprintf(`{"l%d":%s}`, i, nested)
+			}
+			deepMsg := functional.CreateAppLogFromJson(nested)
+			Expect(f.WriteMessagesToApplicationLog(deepMsg, 1)).To(BeNil())
+
+			// Write a normal message to confirm the pipeline still works after dropping the nested one
+			marker := fmt.Sprintf("normal-log-%d", time.Now().UnixNano())
+			normalMsg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), fmt.Sprintf(`{"msg":"%s"}`, marker), false)
+			Expect(f.WriteMessagesToApplicationLog(normalMsg, 1)).To(BeNil())
+
+			raw, err := f.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			output := strings.Join(raw, "\n")
+			Expect(output).To(ContainSubstring(marker),
+				"Expected the normal message to be delivered")
+			Expect(output).ToNot(ContainSubstring("l39"),
+				"Expected the deeply nested event to be dropped, not delivered")
+
+			collectorLogs, err := f.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring("InvalidProtobufPayload"),
+				"Vector should not crash with InvalidProtobufPayload on deeply nested events")
+			Expect(collectorLogs).ToNot(ContainSubstring("failed to decoded record"),
+				"Vector should not fail to decode buffered records")
+			Expect(collectorLogs).To(ContainSubstring("Events dropped"),
+				"Expected over-nested event to be reported as dropped")
+			Expect(collectorLogs).To(ContainSubstring("Event nesting cost exceeds maximum"),
+				"Expected nesting cost warning for the over-nested event")
+		})
+	})
+
 	Context("timestamp in audit logs", func() {
 		DescribeTable("audit log should have a valid timestamp",
 			func(writeLog func() error, logSource obs.AuditSource) {

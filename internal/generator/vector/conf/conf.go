@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"fmt"
 	"sort"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -64,7 +65,7 @@ const (
        output_mykafka_dedot
 */
 //nolint:govet // using declarative style
-func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) (config *api.Config) {
+func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) (*api.Config, error) {
 	op[helpers.CLFSpec] = internalobs.ClusterLogForwarderSpec(clfspec)
 
 	// Init inputs, outputs, pipelines
@@ -90,7 +91,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		pipelineMap[p.Name] = a
 	}
 
-	config = api.NewConfig(func(c *api.Config) {
+	config := api.NewConfig(func(c *api.Config) {
 		Global(c, namespace, forwarderName)
 		c.Sources[InternalMetricsSourceName] = sources.NewInternalMetrics()
 	})
@@ -100,7 +101,11 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 		config.AddTransforms(transforms)
 	}
 	for _, p := range sortAdapters(pipelineMap) {
-		config.AddTransforms(p.Transforms())
+		transforms, err := p.Transforms()
+		if err != nil {
+			return nil, fmt.Errorf("generating pipeline transforms: %w", err)
+		}
+		config.AddTransforms(transforms)
 	}
 	for _, o := range sortAdapters(outputMap) {
 		sinks, transforms := output.New(o, o.InputIDs, secrets, op)
@@ -109,7 +114,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 	}
 	config.Transforms[metrics.AddNodenameToMetricTransformName] = metrics.AddNodeNameToMetric([]string{InternalMetricsSourceName})
 	config.Sinks[metrics.PrometheusOutputSinkName] = metrics.PrometheusOutput([]string{metrics.AddNodenameToMetricTransformName}, op)
-	return config
+	return config, nil
 }
 
 // sortAdapters sorts ClusterLogForwarder adapters to ensure consistent generation of component configs

@@ -1,0 +1,35 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: clf-validation-test
+spec:
+  filters:
+    - name: my-drop-filter
+      type: drop
+      drop:
+        - test:
+            - field: .kubernetes.namespace_name
+              matches: busybox
+  managementState: Managed
+  outputs:
+    - name: splunk-aosqe
+      splunk:
+        authentication:
+          token:
+            key: hecToken
+            secretName: to-splunk-secret-54980
+        index: main
+        tuning:
+          compression: none
+        url: http://to-nowhere.svc:8088
+      type: splunk
+  pipelines:
+    - filterRefs:
+        - my-drop-filter
+      inputRefs:
+        - application
+      name: forward-log-splunk
+      outputRefs:
+        - splunk-aosqe
+  serviceAccount:
+    name: clf-validation-test

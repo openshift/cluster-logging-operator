@@ -61,7 +61,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		if op == nil {
 			op = clusterOptions
 		}
-		conf := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
+		conf, err := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("with complex spec",

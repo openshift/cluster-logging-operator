@@ -156,5 +156,16 @@ var _ = Describe("", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(MatchRegexp("sourceType can only be set when payloadKey is defined"))
 		}),
+		Entry("should pass for drop filter with valid matches", "drop-filter-valid.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for drop filter with single quote in matches", "drop-filter-single-quote-matches.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
+		}),
+		Entry("should fail for drop filter with single quote in notMatches", "drop-filter-single-quote-notmatches.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
+		}),
 	)
 })

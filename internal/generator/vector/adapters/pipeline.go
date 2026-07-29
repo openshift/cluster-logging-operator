@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -23,12 +24,16 @@ type Pipeline struct {
 }
 
 // Transforms creates instances of transforms based upon the pipeline spec
-func (p *Pipeline) Transforms() (tfs api.Transforms) {
-	tfs = api.Transforms{}
+func (p *Pipeline) Transforms() (api.Transforms, error) {
+	tfs := api.Transforms{}
 	for _, pf := range p.Filters {
-		tfs.Add(pf.ID(), pf.Transform())
+		tf := pf.Transform()
+		if tf == nil {
+			return nil, fmt.Errorf("filter %q produced nil transform for pipeline %q", pf.ID(), p.Name())
+		}
+		tfs.Add(pf.ID(), tf)
 	}
-	return tfs
+	return tfs, nil
 }
 
 func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*Output, filters map[string]*InternalFilterSpec, inputSpecs []obs.InputSpec, addPostFilters func(p *Pipeline)) *Pipeline {

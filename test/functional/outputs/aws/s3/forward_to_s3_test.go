@@ -2,6 +2,7 @@ package s3
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -186,5 +187,50 @@ var _ = Describe("[Functional][Outputs][S3] Forward Output to s3 (minIO)", func(
 			Entry("should pass with zlib", "zlib"),
 			Entry("should pass with zstd", "zstd"),
 		)
+	})
+
+	// Regression test for https://redhat.atlassian.net/browse/LOG-7893
+	//
+	// vector_component_sent_bytes_total must carry component_id, component_kind,
+	// and component_type labels so dashboards can filter by component_kind="sink".
+	// A bug in Vector's AwsBytesSent causes these labels to be lost when the
+	// metric is emitted from tower::buffer worker tasks outside the component
+	// tracing span.
+	Context("When checking collector metrics for S3 output", func() {
+		BeforeEach(func() {
+			role, binding, tokenBinding, err := framework.SetupMetricsRBAC()
+			Expect(err).To(Succeed())
+			DeferCleanup(func() {
+				_ = framework.Test.Delete(tokenBinding)
+				_ = framework.Test.Delete(binding)
+				_ = framework.Test.Delete(role)
+			})
+		})
+
+		It("should emit component_sent_bytes_total with component_id and region labels, and no unlabeled duplicates (LOG-7893)", func() {
+			const keyPrefix = "metrics-test/"
+
+			setupS3Output(obs.InputTypeApplication, "none", keyPrefix)
+			Expect(framework.Deploy()).To(BeNil())
+
+			Expect(framework.SetupS3Bucket(TestBucketName)).
+				To(Succeed(), "should set up the minIO test bucket")
+
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
+			time.Sleep(15 * time.Second)
+
+			lines, err := framework.CollectMetricLines("component_sent_bytes_total", `component_id="output_s3"`, 30*time.Second)
+			Expect(err).To(BeNil(), "Timed out waiting for component_sent_bytes_total metric")
+
+			for _, line := range lines {
+				log.V(2).Info("component_sent_bytes_total line", "line", line)
+				Expect(line).To(ContainSubstring(`component_id=`),
+					"component_sent_bytes_total without component_id label (transport-layer duplicate): %s", line)
+				if strings.Contains(line, `component_id="output_s3"`) {
+					Expect(line).To(ContainSubstring(`region=`),
+						"component_sent_bytes_total for S3 output is missing region label: %s", line)
+				}
+			}
+		})
 	})
 })

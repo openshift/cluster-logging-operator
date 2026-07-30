@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,7 +16,9 @@ import (
 func Role(k8Client client.Client, desired *rbacv1.Role) error {
 	role := runtime.NewRole(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, role, func() error {
-		// Update the role with our desired state
+		if err := utils.EnsureCanUpdateOwnedResource(role, desired.OwnerReferences); err != nil {
+			return err
+		}
 		role.Rules = desired.Rules
 		role.OwnerReferences = desired.OwnerReferences
 		return nil
@@ -35,6 +38,10 @@ func RoleBinding(k8Client client.Client, desired *rbacv1.RoleBinding) error {
 		return k8Client.Create(context.TODO(), desired)
 	}
 	if err != nil {
+		return err
+	}
+
+	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences); err != nil {
 		return err
 	}
 
@@ -65,6 +72,10 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 		return err
 	}
 
+	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences); err != nil {
+		return err
+	}
+
 	if existing.RoleRef != desired.RoleRef {
 		log.V(3).Info("Deleting clusterRoleBinding due to roleRef change", "name", name)
 		if err := k8sClient.Delete(context.TODO(), existing); err != nil {
@@ -75,6 +86,7 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 	}
 
 	existing.Subjects = desired.Subjects
+	existing.OwnerReferences = desired.OwnerReferences
 	log.V(3).Info("Updating clusterRoleBinding", "name", name)
 	return k8sClient.Update(context.TODO(), existing)
 }

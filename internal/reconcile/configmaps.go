@@ -13,10 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Configmap creates or updates a ConfigMap owned by the ClusterLogForwarder.
+// Configmap creates or updates a ConfigMap owned by the desired ownerReferences.
 // If a ConfigMap with the same name already exists and is not owned by the desired
-// owner (for example, a LokiStack ConfigMap), it is left unchanged and an error is
-// returned so the operator does not overwrite foreign resources (LOG-9591).
+// owners, it is left unchanged and an error is returned (LOG-9591).
 func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.ConfigMap, opts ...comparators.ComparisonOption) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &corev1.ConfigMap{}
@@ -28,11 +27,8 @@ func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.C
 			return fmt.Errorf("failed to get %v configmap: %v", key, err)
 		}
 
-		if !utils.HasSameOwner(current.OwnerReferences, configMap.OwnerReferences) {
-			return fmt.Errorf(
-				"configmap %s/%s already exists and is not owned by this ClusterLogForwarder; refusing to overwrite",
-				key.Namespace, key.Name,
-			)
+		if err := utils.EnsureCanUpdateOwnedResource(current, configMap.OwnerReferences); err != nil {
+			return err
 		}
 
 		if configmaps.AreSame(current, configMap, opts...) {

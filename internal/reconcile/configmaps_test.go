@@ -105,6 +105,18 @@ var _ = Describe("reconciling ConfigMap", func() {
 		Expect(result.OwnerReferences).To(Equal([]metav1.OwnerReference{lokiOwner}))
 	})
 
+	It("should refuse an identical ConfigMap owned by another resource", func() {
+		existing := runtime.NewConfigMap(namespace, name, map[string]string{
+			"vector.toml": "data_dir = \"/var/lib/vector\"",
+		})
+		utils.AddOwnerRefToObject(existing, lokiOwner)
+		k8sClient := newClient(existing)
+
+		err := reconcile.Configmap(k8sClient, k8sClient, desiredCollectorCM(), comparators.CompareLabels)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("refusing to overwrite"))
+	})
+
 	It("should refuse to take ownership of an existing ConfigMap with no owner", func() {
 		existing := runtime.NewConfigMap(namespace, name, map[string]string{
 			"config.yaml": "auth_enabled: false",
@@ -119,5 +131,23 @@ var _ = Describe("reconciling ConfigMap", func() {
 		result := getConfigMap(k8sClient)
 		Expect(result.Data).To(HaveKey("config.yaml"))
 		Expect(result.OwnerReferences).To(BeEmpty())
+	})
+
+	It("should allow update when the desired owner UID is present among additional owners", func() {
+		existing := runtime.NewConfigMap(namespace, name, map[string]string{
+			"vector.toml": "old",
+		})
+		utils.AddOwnerRefToObject(existing, clfOwner)
+		utils.AddOwnerRefToObject(existing, metav1.OwnerReference{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+			Name:       "extra",
+			UID:        "extra-uid",
+		})
+		k8sClient := newClient(existing)
+
+		Expect(reconcile.Configmap(k8sClient, k8sClient, desiredCollectorCM(), comparators.CompareLabels)).To(Succeed())
+		result := getConfigMap(k8sClient)
+		Expect(result.Data["vector.toml"]).To(Equal("data_dir = \"/var/lib/vector\""))
 	})
 })

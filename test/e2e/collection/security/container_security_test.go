@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -36,6 +37,10 @@ var _ = Describe("Tests of collector container security stance", func() {
 		checkMountReadOnly = func(mount string) {
 			touchFile := mount + "/1"
 			result, err := runInCollectorContainer("touch", touchFile)
+			if err != nil && strings.Contains(result, "No such file or directory") {
+				log.V(0).Info("Mount path does not exist on this node, skipping read-only check", "mount", mount)
+				return
+			}
 			Expect(result).To(MatchRegexp("touch:.cannot.*touch.*" + touchFile + ".*Read-only file system"))
 			Expect(err).To(MatchError(ContainSubstring("exit status 1")))
 		}

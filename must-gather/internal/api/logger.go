@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+// Logger interface for logging operations
+type Logger interface {
+	Log(format string, args ...interface{})
+	Begin(format string, args ...interface{}) func()
+	Warn(format string, args ...interface{})
+	Info(format string, args ...interface{})
+}
+
 // DefaultLogger provides timestamped logging similar to the bash script
 type DefaultLogger struct {
 	writer io.Writer

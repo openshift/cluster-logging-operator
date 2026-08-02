@@ -39,12 +39,6 @@ func (l *Collector) Name() string {
 func (l *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	defer l.logger.Begin("gather_logstore_resources ...")()
 
-	lokiGVR := schema.GroupVersionResource{
-		Group:    "loki.grafana.com",
-		Version:  "v1",
-		Resource: "lokistacks",
-	}
-
 	// Check if LokiStack is installed (cluster-wide check)
 	lokiList, err := l.client.DynamicClient.Resource(lokiGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {

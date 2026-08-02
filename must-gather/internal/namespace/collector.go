@@ -23,18 +23,6 @@ const (
 	maxConcurrentPods = 10
 )
 
-const (
-	groupApps       = "apps"
-	groupK8sOvn     = "k8s.ovn.org"
-	groupMonitoring = "monitoring.coreos.com"
-	groupOperators  = "operators.coreos.com"
-	groupRbac       = "rbac.authorization.k8s.io"
-
-	v1       = "v1"
-	v2       = "v2"
-	v1Alpha1 = "v1alpha1"
-)
-
 // Collector collects namespace-scoped resources
 type Collector struct {
 	client     *client.Client
@@ -55,68 +43,15 @@ func NewCollector(c *client.Client, logger api.Logger, namespaces []string, dest
 
 // Name returns the name of this collector
 func (n *Collector) Name() string {
-	return "Collector"
+	return "NamespaceCollector"
 }
 
 // Collect performs the collection of namespace-scoped resources
 func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionResource) error {
 	defer n.logger.Begin("inspecting namespaced resources...")()
 
-	// Define namespace-scoped resources to collect (matching oc adm inspect behavior)
-
-	namespacedResources := []schema.GroupVersionResource{
-		// Core resources
-		{Group: "", Version: v1, Resource: "pods"},
-		{Group: "", Version: v1, Resource: "services"},
-		{Group: "", Version: v1, Resource: "configmaps"},
-		{Group: "", Version: v1, Resource: "secrets"},
-		{Group: "", Version: v1, Resource: "serviceaccounts"},
-		{Group: "", Version: v1, Resource: "events"},
-		{Group: "", Version: v1, Resource: "endpoints"},
-		{Group: "", Version: v1, Resource: "persistentvolumeclaims"},
-		{Group: "", Version: v1, Resource: "replicationcontrollers"},
-
-		// Apps
-		{Group: groupApps, Version: v1, Resource: "deployments"},
-		{Group: groupApps, Version: v1, Resource: "daemonsets"},
-		{Group: groupApps, Version: v1, Resource: "statefulsets"},
-		{Group: groupApps, Version: v1, Resource: "replicasets"},
-
-		// RBAC
-		{Group: groupRbac, Version: v1, Resource: "roles"},
-		{Group: groupRbac, Version: v1, Resource: "rolebindings"},
-
-		// Networking
-		{Group: "networking.k8s.io", Version: v1, Resource: "networkpolicies"},
-		{Group: "discovery.k8s.io", Version: v1, Resource: "endpointslices"},
-
-		// OpenShift Routes
-		{Group: "route.openshift.io", Version: v1, Resource: "routes"},
-
-		// Autoscaling
-		{Group: "autoscaling", Version: v2, Resource: "horizontalpodautoscalers"},
-
-		// Policy
-		{Group: "policy", Version: v1, Resource: "poddisruptionbudgets"},
-
-		// OpenShift Monitoring
-		{Group: groupMonitoring, Version: v1, Resource: "servicemonitors"},
-		{Group: groupMonitoring, Version: v1, Resource: "podmonitors"},
-		{Group: groupMonitoring, Version: v1, Resource: "prometheusrules"},
-
-		// OVN Kubernetes
-		{Group: groupK8sOvn, Version: v1, Resource: "egressfirewalls"},
-		{Group: groupK8sOvn, Version: v1, Resource: "egressqoses"},
-		{Group: groupK8sOvn, Version: v1, Resource: "userdefinednetworks"},
-
-		// Operators
-		{Group: groupOperators, Version: v1Alpha1, Resource: "installplans"},
-		{Group: groupOperators, Version: v1Alpha1, Resource: "subscriptions"},
-		{Group: groupOperators, Version: v1Alpha1, Resource: "clusterserviceversions"},
-	}
-
 	// Append any additional GVRs provided as arguments
-	namespacedResources = append(namespacedResources, gvrs...)
+	namespacedResources := append(defaultNamespacedResources, gvrs...)
 
 	var wg sync.WaitGroup
 	// Semaphore to limit concurrent namespace processing
@@ -132,9 +67,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 			defer n.logger.Begin("-- inspecting namespace %s ...", namespace)()
 
 			// First collect the namespace itself
-			nsGVR := schema.GroupVersionResource{Group: "", Version: v1, Resource: "namespaces"}
 			nsDir := namespacesPath.Add(namespace)
-			//nsDir := n.destDir. filepath.Join(n.destDir.String(), "namespaces", namespace)
 
 			if err := n.client.GetResource(ctx, nsGVR, "", namespace, nsDir.Add("namespace.yaml")); err != nil {
 				n.logger.Warn("Failed to collect namespace %s: %v", namespace, err)
@@ -182,7 +115,7 @@ func (n *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 // collectPodLogs collects logs for all pods in a namespace
 func (n *Collector) collectPodLogs(ctx context.Context, namespace string, nsDir api.Path) error {
 	// Get all pods in the namespace
-	pods, err := n.client.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	pods, err := n.client.KubernetesClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list pods: %w", err)
 	}
@@ -251,7 +184,7 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 		Previous:  previous,
 	}
 
-	req := n.client.Clientset.CoreV1().Pods(namespace).GetLogs(podName, logOpts)
+	req := n.client.KubernetesClient.CoreV1().Pods(namespace).GetLogs(podName, logOpts)
 	logs, err := req.Stream(ctx)
 	if err != nil {
 		return err

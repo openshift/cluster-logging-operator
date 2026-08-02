@@ -46,21 +46,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	clusterResources := gvrs
 	if len(clusterResources) == 0 {
 		// Default cluster-scoped resources to collect (matching /tmp/foo reference)
-		clusterResources = []schema.GroupVersionResource{
-			// Core resources
-			{Group: "", Version: "v1", Resource: "nodes"},
-			{Group: "", Version: "v1", Resource: "persistentvolumes"},
-
-			// RBAC
-			{Group: groupRbac, Version: "v1", Resource: "clusterroles"},
-			{Group: groupRbac, Version: "v1", Resource: "clusterrolebindings"},
-
-			// API Extensions
-			{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"},
-
-			// OpenShift Config
-			{Group: GroupConfig, Version: "v1", Resource: "clusterversions"},
-		}
+		clusterResources = defaultClusterResources
 	}
 
 	basePath := api.NewPath(c.destDir.String(), ArtifactRoot)

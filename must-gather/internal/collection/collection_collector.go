@@ -17,19 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	clfGVR = schema.GroupVersionResource{
-		Group:    "observability.openshift.io",
-		Version:  "v1",
-		Resource: "clusterlogforwarders",
-	}
-	lfmeGVE = schema.GroupVersionResource{
-		Group:    "logging.openshift.io",
-		Version:  "v1alpha1",
-		Resource: "logfilemetricexporters",
-	}
-)
-
 // Collector collects cluster logging operator resources
 type Collector struct {
 	client    *client.Client
@@ -50,7 +37,7 @@ func NewCollector(c *client.Client, logger api.Logger, loggingNamespace string, 
 
 // Name returns the name of this collector
 func (c *Collector) Name() string {
-	return "Log Collection"
+	return "LogCollectorCollector"
 }
 
 // Collect performs the collection of CLO resources
@@ -76,7 +63,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 	}
 
 	// Collect namespace resources with collection-specific GVRs
-	gvrs = append(gvrs, clfGVR, lfmeGVE)
+	gvrs = append(gvrs, clfGVR, lfmeGVR)
 	nsCollector := namespace.NewCollector(c.client, c.logger, namespaces, c.destDir)
 	return nsCollector.Collect(ctx, gvrs...)
 }
@@ -164,20 +151,16 @@ func (c *Collector) getEnv(ctx context.Context, namespace, podName, destFolder, 
 	var output strings.Builder
 
 	// Get pod to find containers
-	pods, err := c.client.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", podName),
-	})
-	if err != nil || len(pods.Items) == 0 {
+	pod, err := c.client.GetPod(ctx, namespace, podName)
+	if err != nil {
 		return fmt.Errorf("failed to get pod: %w", err)
 	}
-
-	pod := pods.Items[0]
 
 	for _, container := range pod.Spec.Containers {
 		c.logger.Log("----- Inspecting container %s", container.Name)
 
 		// Try to get dockerfile info
-		lsOutput, err := c.client.ExecInPod(ctx, namespace, podName, container.Name, []string{"ls", "/root/buildinfo"})
+		lsOutput, err := c.client.PodExec(ctx, namespace, podName, container.Name, []string{"ls", "/root/buildinfo"})
 		if err == nil {
 			// Find dockerfile matching pattern
 			re := regexp.MustCompile(dockerfilePattern)
@@ -188,7 +171,7 @@ func (c *Collector) getEnv(ctx context.Context, namespace, podName, destFolder, 
 					output.WriteString(fmt.Sprintf("Image info: %s\n", line))
 
 					// Get build date
-					buildDateOutput, err := c.client.ExecInPod(ctx, namespace, podName, container.Name,
+					buildDateOutput, err := c.client.PodExec(ctx, namespace, podName, container.Name,
 						[]string{"grep", "-o", "\"build-date\"=\"[^[:blank:]]*\"", "/root/buildinfo/" + line})
 					if err == nil {
 						output.WriteString(buildDateOutput)
@@ -204,7 +187,7 @@ func (c *Collector) getEnv(ctx context.Context, namespace, podName, destFolder, 
 		c.logger.Log("----- Getting environment variables")
 		output.WriteString("-- Environment Variables\n")
 
-		envOutput, err := c.client.ExecInPod(ctx, namespace, podName, container.Name, []string{"env"})
+		envOutput, err := c.client.PodExec(ctx, namespace, podName, container.Name, []string{"env"})
 		if err == nil {
 			envLines := strings.Split(envOutput, "\n")
 			sort.Strings(envLines)

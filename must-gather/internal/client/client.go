@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -22,10 +23,10 @@ import (
 
 // Client wraps Kubernetes client functionality for must-gather operations
 type Client struct {
-	Clientset     *kubernetes.Clientset
-	DynamicClient dynamic.Interface
-	config        *rest.Config
-	logger        api.Logger
+	KubernetesClient *kubernetes.Clientset
+	DynamicClient    dynamic.Interface
+	config           *rest.Config
+	logger           api.Logger
 }
 
 // NewClient creates a new Kubernetes client for must-gather operations
@@ -38,27 +39,36 @@ func NewClient(logger api.Logger) (*Client, error) {
 		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
 
-	Clientset, err := kubernetes.NewForConfig(config)
+	k8sClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Clientset: %w", err)
+		return nil, fmt.Errorf("failed to create k8sClient: %w", err)
 	}
 
-	DynamicClient, err := dynamic.NewForConfig(config)
+	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
 	return &Client{
-		Clientset:     Clientset,
-		DynamicClient: DynamicClient,
-		config:        config,
-		logger:        logger,
+		KubernetesClient: k8sClient,
+		DynamicClient:    dynamicClient,
+		config:           config,
+		logger:           logger,
 	}, nil
+}
+
+// GetPod returns a list of pods matching the label selector
+func (c *Client) GetPod(ctx context.Context, namespace string, name string) (pod *corev1.Pod, err error) {
+	pod, err = c.KubernetesClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pods: %w", err)
+	}
+	return pod, nil
 }
 
 // GetPods returns a list of pods matching the label selector
 func (c *Client) GetPods(ctx context.Context, namespace string, labelSelector string) ([]corev1.Pod, error) {
-	podList, err := c.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+	podList, err := c.KubernetesClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
@@ -69,7 +79,7 @@ func (c *Client) GetPods(ctx context.Context, namespace string, labelSelector st
 
 // GetNamespaces returns all namespaces
 func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
-	nsList, err := c.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	nsList, err := c.KubernetesClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list namespaces: %w", err)
 	}
@@ -81,9 +91,9 @@ func (c *Client) GetNamespaces(ctx context.Context) ([]string, error) {
 	return namespaces, nil
 }
 
-// ExecInPod executes a command in a pod container and returns the output
-func (c *Client) ExecInPod(ctx context.Context, namespace, pod, container string, command []string) (string, error) {
-	req := c.Clientset.CoreV1().RESTClient().Post().
+// PodExec executes a command in a pod container and returns the output
+func (c *Client) PodExec(ctx context.Context, namespace, pod, container string, command []string) (string, error) {
+	req := c.KubernetesClient.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod).
 		Namespace(namespace).
@@ -102,8 +112,8 @@ func (c *Client) ExecInPod(ctx context.Context, namespace, pod, container string
 	}
 
 	var stdout, stderr io.Writer
-	stdoutBuf := &writeBuffer{}
-	stderrBuf := &writeBuffer{}
+	stdoutBuf := &bytes.Buffer{}
+	stderrBuf := &bytes.Buffer{}
 	stdout = stdoutBuf
 	stderr = stderrBuf
 
@@ -273,28 +283,4 @@ func (c *Client) sanitizeResource(resource runtime.Object) (runtime.Object, erro
 	}
 
 	return resource, nil
-}
-
-// GetDynamicClient returns the underlying dynamic client
-func (c *Client) GetDynamicClient() dynamic.Interface {
-	return c.DynamicClient
-}
-
-// GetClientset returns the underlying Clientset
-func (c *Client) GetClientset() *kubernetes.Clientset {
-	return c.Clientset
-}
-
-// writeBuffer is a simple buffer that implements io.Writer
-type writeBuffer struct {
-	data []byte
-}
-
-func (w *writeBuffer) Write(p []byte) (n int, err error) {
-	w.data = append(w.data, p...)
-	return len(p), nil
-}
-
-func (w *writeBuffer) String() string {
-	return string(w.data)
 }

@@ -76,7 +76,7 @@ func (m *Collector) promGet(ctx context.Context, pod, object string, monitoringP
 	cmd := []string{"/bin/bash", "-c",
 		fmt.Sprintf("curl -sG http://localhost:9090/api/v1/%s", object)}
 
-	output, err := m.client.ExecInPod(ctx, "openshift-monitoring", pod, "prometheus", cmd)
+	output, err := m.client.PodExec(ctx, "openshift-monitoring", pod, "prometheus", cmd)
 	if err != nil {
 		// Write error to error.log file
 		if writeErr := resultPath.Add("error.log").WriteFile([]byte(err.Error())); writeErr != nil {

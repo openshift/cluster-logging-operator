@@ -167,16 +167,39 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 	}
 
 	if f.isDaemonset {
-		podSpec.Volumes = append(podSpec.Volumes,
-			v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}},
-			v1.Volume{Name: sourceJournalName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceJournalPath}}},
-			v1.Volume{Name: sourceAuditdName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceAuditdPath}}},
-			v1.Volume{Name: sourceAuditOVNName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOVNPath}}},
-			v1.Volume{Name: sourceOAuthServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthServerPath}}},
-			v1.Volume{Name: sourceOAuthAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthAPIServerPath}}},
-			v1.Volume{Name: sourceOpenshiftAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOpenshiftAPIServerPath}}},
-			v1.Volume{Name: sourceKubeAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceKubeAPIServerPath}}},
-		)
+		inputs := internalobs.Inputs(spec.Inputs)
+		if inputs.HasContainerSource() {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourcePodsName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourcePodsPath}}},
+			)
+		}
+		if inputs.HasJournalSource() {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourceJournalName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceJournalPath}}},
+			)
+		}
+		if inputs.HasAuditSource(obs.AuditSourceAuditd) {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourceAuditdName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceAuditdPath}}},
+			)
+		}
+		if inputs.HasAuditSource(obs.AuditSourceKube) {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourceKubeAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceKubeAPIServerPath}}},
+			)
+		}
+		if inputs.HasAuditSource(obs.AuditSourceOpenShift) {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourceOpenshiftAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOpenshiftAPIServerPath}}},
+				v1.Volume{Name: sourceOAuthServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthServerPath}}},
+				v1.Volume{Name: sourceOAuthAPIServerName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOAuthAPIServerPath}}},
+			)
+		}
+		if inputs.HasAuditSource(obs.AuditSourceOVN) {
+			podSpec.Volumes = append(podSpec.Volumes,
+				v1.Volume{Name: sourceAuditOVNName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: sourceOVNPath}}},
+			)
+		}
 	}
 
 	secretVolumes := AddSecretVolumes(podSpec, f.Secrets)

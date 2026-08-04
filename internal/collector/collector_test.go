@@ -77,6 +77,11 @@ var _ = Describe("Factory#Daemonset", func() {
 			PodLabelVisitor: vector.PodLogExcludeLabel,
 		}
 		podSpec = *factory.NewPodSpec(nil, obs.ClusterLogForwarderSpec{
+			Inputs: []obs.InputSpec{
+				{Name: "app", Type: obs.InputTypeApplication},
+				{Name: "infra", Type: obs.InputTypeInfrastructure, Infrastructure: &obs.Infrastructure{}},
+				{Name: "audit", Type: obs.InputTypeAudit, Audit: &obs.Audit{}},
+			},
 			Outputs: []obs.OutputSpec{
 				{
 					Name: "myloki",

@@ -26,6 +26,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	observabilitycontroller "github.com/openshift/cluster-logging-operator/internal/controller/observability"
+	clfwebhook "github.com/openshift/cluster-logging-operator/internal/webhook"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
@@ -146,7 +147,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "b430cc2e.openshift.io",
-		Cache:                  cacheOptions,
+		Cache: cacheOptions,
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -209,6 +210,11 @@ func main() {
 		},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
+		os.Exit(1)
+	}
+
+	if err = clfwebhook.SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "ClusterLogForwarder")
 		os.Exit(1)
 	}
 

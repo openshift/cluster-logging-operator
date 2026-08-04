@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-02-19T21:00:21Z"
+    createdAt: "2026-08-04T17:40:36Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2392,6 +2392,10 @@ spec:
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
                 resources: {}
                 securityContext:
                   allowPrivilegeEscalation: false
@@ -2401,11 +2405,20 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
               nodeSelector:
                 kubernetes.io/os: linux
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: cluster-logging-operator
+              volumes:
+              - name: cert
+                secret:
+                  defaultMode: 420
+                  secretName: webhook-server-cert
     strategy: deployment
   installModes:
   - supported: true
@@ -2438,3 +2451,24 @@ spec:
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
   version: 6.5.0
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-logging-operator
+    failurePolicy: Fail
+    generateName: vclusterlogforwarder.observability.openshift.io
+    rules:
+    - apiGroups:
+      - observability.openshift.io
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clusterlogforwarders
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-observability-openshift-io-v1-clusterlogforwarder

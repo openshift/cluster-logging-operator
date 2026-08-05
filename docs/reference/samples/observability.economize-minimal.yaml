@@ -1,0 +1,218 @@
+# Economize Log Forwarding — Minimal Tier
+#
+# Keeps only essential fields for each log type using the "notIn" (allowlist)
+# approach: only fields listed are preserved, everything else is removed.
+#
+# Measured savings on a stock OCP cluster:
+#   Container logs: ~70-75% byte reduction
+#   Journal logs:   ~65-70% byte reduction
+#   Audit logs:     ~70-75% byte reduction (with aggressive kubeAPIAudit filtering)
+#
+# WARNING: This tier removes most metadata. Use only when storage/bandwidth
+# cost reduction is the primary concern and detailed troubleshooting metadata
+# is not needed.
+#
+# Prerequisites:
+#   - logcollector ServiceAccount with appropriate ClusterRoleBindings
+#   - LokiStack deployed (adjust output section for your log store)
+#
+# Usage: oc apply -f observability.economize-minimal.yaml
+#
+# See also: docs/administration/economizing-log-forwarding/economizing-log-forwarding.md
+#           docs/administration/economizing-log-forwarding/output-field-requirements.md
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logcollector
+  filters:
+    # Route infrastructure logs to separate pipelines for type-specific pruning
+    - name: drop-journal
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "node"
+
+    - name: drop-container
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "container"
+
+    # Route audit logs to separate pipelines for API vs host/OVN audit
+    - name: drop-host-audit
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "auditd"
+        - test:
+            - field: .log_source
+              matches: "ovn"
+
+    - name: drop-api-audit
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "kubeAPI"
+        - test:
+            - field: .log_source
+              matches: "openshiftAPI"
+
+    # Container logs: keep only message, level, timestamp, hostname,
+    # and the minimum Kubernetes identity fields.
+    - name: prune-container-minimal
+      type: prune
+      prune:
+        notIn:
+          - .log_type
+          - .log_source
+          - .message
+          - .level
+          - .timestamp
+          - .hostname
+          - .kubernetes.namespace_name
+          - .kubernetes.pod_name
+          - .kubernetes.container_name
+
+    # Journal logs: keep only message, level, timestamp, hostname,
+    # and the systemd unit name for service identification.
+    - name: prune-journal-minimal
+      type: prune
+      prune:
+        notIn:
+          - .log_type
+          - .log_source
+          - .message
+          - .level
+          - .timestamp
+          - .hostname
+          - .systemd.t.SYSTEMD_UNIT
+
+    # Kubernetes API audit: aggressive filtering. Drops RequestReceived,
+    # noisy response codes including 304, and silences read-only system
+    # service account events entirely.
+    - name: audit-policy-minimal
+      type: kubeAPIAudit
+      kubeAPIAudit:
+        omitStages:
+          - RequestReceived
+        omitResponseCodes:
+          - 404
+          - 409
+          - 422
+          - 429
+          - 304
+        rules:
+          - level: None
+            users:
+              - "system:kube-proxy"
+              - "system:node"
+              - "system:kube-controller-manager"
+              - "system:kube-scheduler"
+            verbs:
+              - get
+              - list
+              - watch
+          - level: Metadata
+
+    # Prune surviving API audit events to bare essentials:
+    # who, what, where, when, and the response code.
+    - name: prune-audit-minimal
+      type: prune
+      prune:
+        notIn:
+          - .log_type
+          - .log_source
+          - .message
+          - .hostname
+          - .auditID
+          - .verb
+          - .user.username
+          - .objectRef.resource
+          - .objectRef.namespace
+          - .objectRef.name
+          - .responseStatus.code
+          - .k8s_audit_level
+          - .timestamp
+
+    # Host/OVN audit: keep only the message, hostname, and timestamp.
+    - name: prune-host-audit-minimal
+      type: prune
+      prune:
+        notIn:
+          - .log_type
+          - .log_source
+          - .message
+          - .hostname
+          - .timestamp
+
+  outputs:
+    - name: lokistack
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          key: service-ca.crt
+          configMapName: openshift-service-ca.crt
+    # To add other outputs, define them here and add to outputRefs below.
+    # See docs/administration/economizing-log-forwarding/output-field-requirements.md for field
+    # constraints specific to each output type.
+
+  pipelines:
+    - name: app-container-logs
+      inputRefs:
+        - application
+      filterRefs:
+        - prune-container-minimal
+      outputRefs:
+        - lokistack
+
+    - name: infra-container-logs
+      inputRefs:
+        - infrastructure
+      filterRefs:
+        - drop-journal
+        - prune-container-minimal
+      outputRefs:
+        - lokistack
+
+    - name: infra-journal-logs
+      inputRefs:
+        - infrastructure
+      filterRefs:
+        - drop-container
+        - prune-journal-minimal
+      outputRefs:
+        - lokistack
+
+    - name: api-audit-logs
+      inputRefs:
+        - audit
+      filterRefs:
+        - drop-host-audit
+        - audit-policy-minimal
+        - prune-audit-minimal
+      outputRefs:
+        - lokistack
+
+    - name: host-audit-logs
+      inputRefs:
+        - audit
+      filterRefs:
+        - drop-api-audit
+        - prune-host-audit-minimal
+      outputRefs:
+        - lokistack

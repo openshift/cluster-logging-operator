@@ -2,5 +2,7 @@ package api
 
 // Api is the API vector configurations
 type Api struct {
-	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty" toml:"enabled,omitempty"`
+	Enabled    bool   `json:"enabled,omitempty" yaml:"enabled,omitempty" toml:"enabled,omitempty"`
+	Address    string `json:"address,omitempty" yaml:"address,omitempty" toml:"address,omitempty"`
+	Playground bool   `json:"playground" yaml:"playground" toml:"playground"`
 }

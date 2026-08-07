@@ -19,6 +19,7 @@ data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
 
 [api]
 enabled = true
+address = "127.0.0.1:8686"
 
 [log_schema]
 host_key = "hostname"
@@ -37,10 +38,11 @@ path = "/var/run/ocp-collector/secrets"
 
 	[api]
 	enabled = true
+	address = "127.0.0.1:8686"
 
     [log_schema]
     host_key = "hostname"
-	
+
 	[secret.kubernetes_secret]
 	type = "directory"
 	path = "/var/run/ocp-collector/secrets"

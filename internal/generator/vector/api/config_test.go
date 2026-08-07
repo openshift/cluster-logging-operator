@@ -15,6 +15,7 @@ data_dir = "/var/lib/vector/openshift-logging/collector"
 
 [api]
 enabled = true
+address = "127.0.0.1:8686"
 
 [log_schema]
 host_key = "hostname"
@@ -43,7 +44,9 @@ expire_metrics_secs: 60
 data_dir: "/var/lib/vector/openshift-logging/collector"
 api:
   enabled: true
-log_schema: 
+  address: "127.0.0.1:8686"
+  playground: false
+log_schema:
   host_key: "hostname"
 secret:
   kubernetes_secret:

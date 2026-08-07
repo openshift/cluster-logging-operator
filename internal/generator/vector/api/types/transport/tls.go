@@ -3,6 +3,7 @@ package transport
 type TLS struct {
 	MinTlsVersion     string `json:"min_tls_version,omitempty" yaml:"min_tls_version,omitempty" toml:"min_tls_version,omitempty"`
 	CipherSuites      string `json:"ciphersuites,omitempty" yaml:"ciphersuites,omitempty" toml:"ciphersuites,omitempty"`
+	Curves            string `json:"curves,omitempty" yaml:"curves,omitempty" toml:"curves,omitempty"`
 	VerifyCertificate *bool  `json:"verify_certificate,omitempty" yaml:"verify_certificate,omitempty" toml:"verify_certificate,omitempty"`
 	VerifyHostname    *bool  `json:"verify_hostname,omitempty" yaml:"verify_hostname,omitempty" toml:"verify_hostname,omitempty"`
 	KeyFile           string `json:"key_file,omitempty" yaml:"key_file,omitempty" toml:"key_file,omitempty"`

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"reflect"
+	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
@@ -25,9 +26,28 @@ var (
 	// DefaultMinTLSVersion is the default minimum TLS version for API servers
 	DefaultMinTLSVersion = configv1.TLSProfiles[DefaultTLSProfileType].MinTLSVersion
 	// DefaultTLSGroups are the default TLS groups (elliptic curves) for key exchange.
-	// TODO: When openshift/api is updated to include Groups in TLSProfileSpec,
-	// read from configv1.TLSProfiles[DefaultTLSProfileType].Groups directly.
-	DefaultTLSGroups = []string{"X25519", "secp256r1", "secp384r1", "X25519MLKEM768"}
+	DefaultTLSGroups = tlsGroupsToStrings(configv1.TLSProfiles[DefaultTLSProfileType].Groups)
+
+	// supportedTLSGroups maps OpenShift API TLS group names to Go tls.CurveID values.
+	supportedTLSGroups = map[configv1.TLSGroup]tls.CurveID{
+		configv1.TLSGroupX25519:         tls.X25519,
+		configv1.TLSGroupSecP256r1:      tls.CurveP256,
+		configv1.TLSGroupSecP384r1:      tls.CurveP384,
+		configv1.TLSGroupSecP521r1:      tls.CurveP521,
+		configv1.TLSGroupX25519MLKEM768: tls.X25519MLKEM768,
+	}
+
+	// opensslGroupNames maps OpenShift API TLS group names to OpenSSL curve names.
+	// Most names are the same; secp256r1 is the notable exception.
+	opensslGroupNames = map[configv1.TLSGroup]string{
+		configv1.TLSGroupX25519:             "X25519",
+		configv1.TLSGroupSecP256r1:          "prime256v1",
+		configv1.TLSGroupSecP384r1:          "secp384r1",
+		configv1.TLSGroupSecP521r1:          "secp521r1",
+		configv1.TLSGroupX25519MLKEM768:     "X25519MLKEM768",
+		configv1.TLSGroupSecP256r1MLKEM768:  "SecP256r1MLKEM768",
+		configv1.TLSGroupSecP384r1MLKEM1024: "SecP384r1MLKEM1024",
+	}
 )
 
 // FetchAPIServerTlsProfile fetches tlsSecurityProfile configured in APIServer
@@ -58,14 +78,42 @@ func MinTLSVersion(profile configv1.TLSProfileSpec) string {
 	return string(profile.MinTLSVersion)
 }
 
-// TLSGroups returns the TLS groups for key exchange.
-// TODO: When openshift/api is updated with the Groups field in TLSProfileSpec,
-// update this to accept configv1.TLSProfileSpec like TLSCiphers and MinTLSVersion.
-func TLSGroups(groups []string) []string {
-	if len(groups) == 0 {
+// TLSGroups returns the TLS groups for the TLS security profile.
+func TLSGroups(profile configv1.TLSProfileSpec) []string {
+	if len(profile.Groups) == 0 {
 		return DefaultTLSGroups
 	}
-	return groups
+	return tlsGroupsToStrings(profile.Groups)
+}
+
+// TLSGroupToID converts an OpenShift API TLS group name to a Go crypto/tls CurveID.
+func TLSGroupToID(group configv1.TLSGroup) (tls.CurveID, error) {
+	if id, ok := supportedTLSGroups[group]; ok {
+		return id, nil
+	}
+	return 0, fmt.Errorf("unsupported TLS group: %s", group)
+}
+
+// TLSGroupsToOpenSSL converts OpenShift API TLS groups to a colon-separated
+// string of OpenSSL curve names for use in Vector TLS configuration.
+func TLSGroupsToOpenSSL(groups []configv1.TLSGroup) string {
+	names := make([]string, 0, len(groups))
+	for _, g := range groups {
+		if name, ok := opensslGroupNames[g]; ok {
+			names = append(names, name)
+		} else {
+			log.V(1).Info("Skipping unknown TLS group for OpenSSL", "group", g)
+		}
+	}
+	return strings.Join(names, ":")
+}
+
+func tlsGroupsToStrings(groups []configv1.TLSGroup) []string {
+	s := make([]string, len(groups))
+	for i, g := range groups {
+		s[i] = string(g)
+	}
+	return s
 }
 
 // GetClusterTLSProfileSpec returns TLSProfileSpec
@@ -147,6 +195,21 @@ func TLSConfigFromProfile(profileSpec configv1.TLSProfileSpec) (*tls.Config, err
 		}
 		if len(cipherSuites) > 0 {
 			config.CipherSuites = cipherSuites
+		}
+	}
+
+	if len(profileSpec.Groups) > 0 {
+		curvePreferences := make([]tls.CurveID, 0, len(profileSpec.Groups))
+		for _, group := range profileSpec.Groups {
+			curveID, err := TLSGroupToID(group)
+			if err != nil {
+				log.V(1).Info("Skipping unsupported TLS group", "group", group)
+				continue
+			}
+			curvePreferences = append(curvePreferences, curveID)
+		}
+		if len(curvePreferences) > 0 {
+			config.CurvePreferences = curvePreferences
 		}
 	}
 

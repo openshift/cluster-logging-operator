@@ -9,10 +9,12 @@ import (
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	apps "k8s.io/api/apps/v1"
@@ -22,8 +24,9 @@ import (
 )
 
 const (
-	HttpReceiver   = "http-receiver"
-	vectorHttpConf = "" +
+	HttpReceiver             = "http-receiver"
+	HttpReceiverTLSSecretName = "http-receiver-tls"
+	vectorHttpConf            = "" +
 		`[sources.my_source]
 type = "http_server"
 address = "0.0.0.0:8090"
@@ -65,7 +68,8 @@ codec = "json"
 
 type VectorHttpReceiverLogStore struct {
 	*apps.Deployment
-	tc *E2ETestFramework
+	tc  *E2ETestFramework
+	tls bool
 }
 
 func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHttpReceiverLogStore, err error) {
@@ -372,5 +376,204 @@ func (v VectorHttpReceiverLogStore) RetrieveLogs() (map[string]string, error) {
 }
 
 func (v VectorHttpReceiverLogStore) ClusterLocalEndpoint() string {
-	return fmt.Sprintf("http://%s.%s.svc.cluster.local:8090", v.Name, v.Namespace)
+	scheme := "http"
+	if v.tls {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s.%s.svc.cluster.local:8090", scheme, v.Name, v.Namespace)
+}
+
+func vectorHttpConfWithTLSProfile(profileSpec configv1.TLSProfileSpec) string {
+	minTLS := internaltls.MinTLSVersion(profileSpec)
+	ciphers := strings.Join(internaltls.TLSCiphers(profileSpec), ",")
+	curves := internaltls.TLSGroupsToOpenSSL(profileSpec.Groups)
+
+	conf := `[sources.my_source]
+type = "http_server"
+address = "0.0.0.0:8090"
+decoding.codec = "json"
+framing.method = "newline_delimited"
+
+[sources.my_source.tls]
+enabled = true
+key_file = "/etc/vector/secrets/tls.key"
+crt_file = "/etc/vector/secrets/tls.crt"
+min_tls_version = "` + minTLS + `"
+ciphersuites = "` + ciphers + `"`
+
+	if curves != "" {
+		conf += `
+curves = "` + curves + `"`
+	}
+
+	conf += `
+
+[transforms.route_logs]
+type = "route"
+inputs = ["my_source"]
+route.audit = '.log_type == "audit"'
+route.container = 'exists(.kubernetes)'
+route.journal = '!exists(.kubernetes)'
+
+[sinks.container]
+inputs = ["route_logs.container"]
+type = "file"
+path = "/tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json"
+
+[sinks.container.encoding]
+codec = "json"
+
+[sinks.out_journal]
+inputs = ["route_logs.journal"]
+type = "file"
+path = "/tmp/journal/journal.json"
+
+[sinks.out_journal.encoding]
+codec = "json"
+
+[sinks.out_audit]
+inputs = ["route_logs.audit"]
+type = "file"
+path = "/tmp/audit/audit.json"
+
+[sinks.out_audit.encoding]
+codec = "json"
+`
+	return conf
+}
+
+func (tc *E2ETestFramework) DeployHttpReceiverWithTLS(ns string, profileSpec configv1.TLSProfileSpec) (deployment *VectorHttpReceiverLogStore, err error) {
+	logStore := &VectorHttpReceiverLogStore{
+		tc:  tc,
+		tls: true,
+	}
+
+	secret, err := tc.CreatePipelineSecret(ns, HttpReceiver, HttpReceiverTLSSecretName, nil)
+	if err != nil {
+		return nil, err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.CoreV1().Secrets(ns).Delete(context.TODO(), HttpReceiverTLSSecretName, metav1.DeleteOptions{})
+	})
+
+	serviceAccount, err := tc.createServiceAccount(ns, HttpReceiver)
+	if err != nil {
+		log.Error(err, "Unable to create service account")
+		return nil, err
+	}
+
+	container := corev1.Container{
+		Name:  HttpReceiver,
+		Image: utils.GetComponentImage(constants.VectorName),
+		Ports: []corev1.ContainerPort{
+			{Name: "https", ContainerPort: 8090},
+		},
+		Command:         []string{"bash", path.Join("/opt", vector.RunVectorFile)},
+		ImagePullPolicy: corev1.PullAlways,
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetPtr(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+			RunAsNonRoot: utils.GetPtr(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{Name: "config", ReadOnly: true, MountPath: "/etc/vector"},
+			{Name: "config", ReadOnly: true, MountPath: "/opt"},
+			{Name: "certs", ReadOnly: true, MountPath: "/etc/vector/secrets"},
+		},
+	}
+
+	vectorConf := vectorHttpConfWithTLSProfile(profileSpec)
+	config := runtime.NewConfigMap(ns, container.Name, map[string]string{
+		vector.ConfigFile:    vectorConf,
+		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
+	})
+
+	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.toml", vectorConf)
+	opts := metav1.CreateOptions{}
+	config, err = tc.KubeClient.CoreV1().ConfigMaps(ns).Create(context.TODO(), config, opts)
+	if err != nil {
+		log.Error(err, "Unable to create configmap", "configmap.meta", config.ObjectMeta)
+		return nil, err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.CoreV1().ConfigMaps(ns).Delete(context.TODO(), config.Name, metav1.DeleteOptions{})
+	})
+
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{container},
+		Volumes: []corev1.Volume{
+			{
+				Name: "config", VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: container.Name,
+						},
+					},
+				},
+			},
+			{
+				Name: "certs", VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: secret.Name,
+					},
+				},
+			},
+		},
+		ServiceAccountName: serviceAccount.Name,
+	}
+
+	commonLabeler := func(o runtime.Object) {
+		runtime.SetCommonLabels(o, HttpReceiver, HttpReceiver, HttpReceiver)
+	}
+	dOpts := metav1.CreateOptions{}
+	logStore.Deployment = factory.NewDeployment(
+		ns,
+		container.Name,
+		HttpReceiver,
+		HttpReceiver,
+		1,
+		podSpec,
+		commonLabeler,
+	)
+	logStore.Spec.Template.Labels["vector.dev/exclude"] = "true"
+
+	log.V(1).Info("Deploying http receiver with TLS", "namespace", ns, "name", logStore.Name)
+	logStore.Deployment, err = tc.KubeClient.AppsV1().Deployments(ns).Create(context.TODO(), logStore.Deployment, dOpts)
+	if err != nil {
+		log.Error(err, "Unable to create Deployment", "deployment", logStore.Deployment)
+		return nil, err
+	}
+	tc.AddCleanup(func() error {
+		var zerograce int64
+		return tc.KubeClient.AppsV1().Deployments(ns).Delete(context.TODO(), logStore.Name, metav1.DeleteOptions{GracePeriodSeconds: &zerograce})
+	})
+
+	service := factory.NewService(
+		serviceAccount.Name,
+		ns,
+		serviceAccount.Name,
+		serviceAccount.Name,
+		[]corev1.ServicePort{
+			{Port: 8090},
+		},
+		commonLabeler,
+	)
+
+	sOpts := metav1.CreateOptions{}
+	service, err = tc.KubeClient.CoreV1().Services(ns).Create(context.TODO(), service, sOpts)
+	if err != nil {
+		log.Error(err, "Unable to create service", "meta", service.ObjectMeta)
+		return nil, err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.CoreV1().Services(ns).Delete(context.TODO(), service.Name, metav1.DeleteOptions{})
+	})
+
+	tc.LogStores[logStore.Name] = logStore
+	return logStore, tc.WaitForDeployment(ns, logStore.Name, defaultRetryInterval, 1*time.Minute)
 }

@@ -8,6 +8,7 @@ const (
 	ClusterTLSProfileSpec               = "tlsProfileSpec"
 	MinTLSVersion                       = "minTLSVersion"
 	Ciphers                             = "ciphers"
+	Groups                              = "groups"
 	URL                                 = "url"
 	OptionServiceAccountTokenSecretName = "serviceAccountTokenSecretName"
 	OptionForwarderName                 = "forwarderName"

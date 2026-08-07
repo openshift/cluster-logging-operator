@@ -13,7 +13,7 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
-	github.com/openshift/api v0.0.0-20250131155403-30a036067514
+	github.com/openshift/api v0.0.0-20260601143908-70f01b82bb53
 	github.com/openshift/cluster-logging-operator/api/observability v0.0.0-00010101000000-000000000000
 	github.com/openshift/hypershift/api v0.0.0-20250331115040-26fc3ceb1929
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
@@ -73,7 +73,6 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.26.0 // indirect

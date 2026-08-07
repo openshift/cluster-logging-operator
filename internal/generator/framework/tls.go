@@ -9,8 +9,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-// TLSProfileInfo returns the minTLSVersion, ciphers as a delimited list given the available TLSSecurityProfile
-func TLSProfileInfo(op utils.Options, tlsSpec internalobs.TransportLayerSecurity, separator string) (string, string) {
+// TLSProfileInfo returns the minTLSVersion, ciphers, and groups given the available TLSSecurityProfile.
+// Ciphers are returned as a delimited list using the provided separator.
+// Groups are returned as a colon-separated string of OpenSSL curve names for Vector.
+func TLSProfileInfo(op utils.Options, tlsSpec internalobs.TransportLayerSecurity, separator string) (string, string, string) {
 	var tlsProfileSpec configv1.TLSProfileSpec
 	if tlsSpec != nil && tlsSpec.GetTlsSecurityProfile() != nil {
 		tlsProfileSpec = tls.GetClusterTLSProfileSpec(tlsSpec.GetTlsSecurityProfile())
@@ -21,10 +23,14 @@ func TLSProfileInfo(op utils.Options, tlsSpec internalobs.TransportLayerSecurity
 
 	minTlsVersion := tls.MinTLSVersion(tlsProfileSpec)
 	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), separator)
-	return minTlsVersion, cipherSuites
+	groups := tls.TLSGroupsToOpenSSL(tlsProfileSpec.Groups)
+	if groups == "" {
+		groups = tls.TLSGroupsToOpenSSL(configv1.TLSProfiles[tls.DefaultTLSProfileType].Groups)
+	}
+	return minTlsVersion, cipherSuites, groups
 }
 
 // SetTLSProfileOptionsFrom updates options to set the TLS profile based upon the output spec
 func SetTLSProfileOptionsFrom(op utils.Options, tlsSpec internalobs.TransportLayerSecurity) {
-	op[MinTLSVersion], op[Ciphers] = TLSProfileInfo(op, tlsSpec, ",")
+	op[MinTLSVersion], op[Ciphers], op[Groups] = TLSProfileInfo(op, tlsSpec, ",")
 }

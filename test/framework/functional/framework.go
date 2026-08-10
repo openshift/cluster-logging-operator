@@ -192,6 +192,22 @@ func (f *CollectorFunctionalFramework) AddOutputContainersVisitors() []runtime.P
 	return visitors
 }
 
+const ToolsContainerName = "tools"
+
+func (f *CollectorFunctionalFramework) AddToolsContainerVisitor(volumeName, mountPath string) runtime.PodBuilderVisitor {
+	return func(b *runtime.PodBuilder) error {
+		b.AddEmptyDirVolume(volumeName)
+		b.GetContainer(constants.CollectorName).
+			AddVolumeMount(volumeName, mountPath, "", false).
+			Update()
+		b.AddContainer(ToolsContainerName, "registry.access.redhat.com/ubi9/ubi-minimal:latest").
+			AddVolumeMount(volumeName, mountPath, "", false).
+			WithCmd([]string{"sleep", "infinity"}).
+			End()
+		return nil
+	}
+}
+
 // Deploy the objects needed to functional Test
 func (f *CollectorFunctionalFramework) Deploy() (err error) {
 	return f.DeployWithVisitors(f.AddOutputContainersVisitors())

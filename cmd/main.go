@@ -261,7 +261,7 @@ func main() {
 
 	//+kubebuilder:scaffold:builder
 
-	if err := mgr.Add(internaladmission.NewSAUsageAdmissionRunnable(mgr.GetClient())); err != nil {
+	if err := mgr.Add(internaladmission.NewSAUsageAdmissionRunnable(k8sClient)); err != nil {
 		log.Error(err, "unable to register SA usage admission runnable")
 		os.Exit(1)
 	}

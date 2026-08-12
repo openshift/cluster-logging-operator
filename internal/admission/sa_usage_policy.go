@@ -3,12 +3,15 @@ package admission
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/yaml"
@@ -114,5 +117,15 @@ func reconcileValidatingAdmissionPolicyBinding(ctx context.Context, k8sClient cl
 }
 
 func isUnsupportedAdmissionPolicyAPI(err error) bool {
-	return meta.IsNoMatchError(err)
+	if err == nil {
+		return false
+	}
+	if meta.IsNoMatchError(err) {
+		return true
+	}
+	if apiruntime.IsNotRegisteredError(err) {
+		return true
+	}
+	var groupDiscoveryErr *discovery.ErrGroupDiscoveryFailed
+	return errors.As(err, &groupDiscoveryErr)
 }

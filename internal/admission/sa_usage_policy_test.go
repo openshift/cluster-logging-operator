@@ -2,12 +2,16 @@ package admission
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/api/meta"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -25,7 +29,7 @@ var _ = Describe("SA usage ValidatingAdmissionPolicy", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		scheme := runtime.NewScheme()
+		scheme := apiruntime.NewScheme()
 		Expect(admissionregistrationv1.AddToScheme(scheme)).To(Succeed())
 		fakeClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 	})
@@ -70,5 +74,20 @@ var _ = Describe("SA usage ValidatingAdmissionPolicy", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(binding.Name).To(Equal(SAUsagePolicyBindingName))
 		Expect(binding.Spec.PolicyName).To(Equal(SAUsagePolicyName))
+	})
+
+	It("recognizes unsupported admission policy API errors", func() {
+		Expect(isUnsupportedAdmissionPolicyAPI(&meta.NoKindMatchError{
+			GroupKind: schema.GroupKind{Group: admissionregistrationv1.GroupName, Kind: "ValidatingAdmissionPolicy"},
+		})).To(BeTrue())
+		Expect(isUnsupportedAdmissionPolicyAPI(apiruntime.NewNotRegisteredErrForKind(
+			"test", schema.GroupVersionKind{Group: admissionregistrationv1.GroupName, Version: "v1", Kind: "ValidatingAdmissionPolicy"},
+		))).To(BeTrue())
+		Expect(isUnsupportedAdmissionPolicyAPI(&discovery.ErrGroupDiscoveryFailed{
+			Groups: map[schema.GroupVersion]error{
+				{Group: admissionregistrationv1.GroupName, Version: "v1"}: fmt.Errorf("discovery failed"),
+			},
+		})).To(BeTrue())
+		Expect(isUnsupportedAdmissionPolicyAPI(fmt.Errorf("forbidden"))).To(BeFalse())
 	})
 })

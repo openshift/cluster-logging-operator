@@ -1,0 +1,3 @@
+resources:
+- clf-sa-usage-authorization.yaml
+- clf-sa-usage-authorization-binding.yaml

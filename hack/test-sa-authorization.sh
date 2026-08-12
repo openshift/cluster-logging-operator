@@ -216,6 +216,15 @@ test_update_denied_without_use() {
     fail "CLF update was denied but message was unexpected: ${out}"
   fi
   pass "update denied without 'use'"
+
+  info "Test: update CLF with 'use' on ServiceAccount should succeed"
+  grant_sa_usage
+  if ! out="$("${OC}" patch clusterlogforwarder "${CLF_NAME}" -n "${NS}" \
+    --as="$(restricted_user)" \
+    --type=merge -p '{"metadata":{"annotations":{"sa-auth-test":"update-allowed"}}}' 2>&1)"; then
+    fail "CLF update failed but was expected to succeed: ${out}"
+  fi
+  pass "update allowed with 'use'"
 }
 
 test_delete_allowed_without_use() {

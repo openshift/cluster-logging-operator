@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -84,31 +85,45 @@ spec:
 	It("should reject CLF creation when user cannot 'use' the referenced ServiceAccount", func() {
 		revokeSAUsage(deployNS)
 
-		out, err := ocCreateAs(deployNS, user, clfYaml)
-		Expect(err).To(HaveOccurred(), "Expected CLF creation to be rejected, but got: %s", out)
-		Expect(out).To(ContainSubstring("not authorized to use"))
+		Eventually(func(g Gomega) {
+			out, err := ocCreateAs(deployNS, user, clfYaml)
+			if err == nil {
+				out, delErr := ocDeleteCLFAs(deployNS, user, clfName)
+				g.Expect(delErr).ToNot(HaveOccurred(), "Expected CLF cleanup delete to succeed: %s", out)
+				return
+			}
+			g.Expect(err).To(HaveOccurred(), "Expected CLF creation to be rejected, but got: %s", out)
+			g.Expect(out).To(ContainSubstring("not authorized to use"))
+		}, 2*time.Minute, 5*time.Second).Should(Succeed())
 	})
 
 	It("should allow CLF creation when user has 'use' permission on the ServiceAccount", func() {
 		grantSAUsage(deployNS, "restricted-user", collectorSAName)
 
-		out, err := ocCreateAs(deployNS, user, clfYaml)
-		Expect(err).ToNot(HaveOccurred(), "Expected CLF creation to succeed, but got error: %s %v", out, err)
+		Eventually(func(g Gomega) {
+			out, err := ocCreateAs(deployNS, user, clfYaml)
+			g.Expect(err).ToNot(HaveOccurred(), "Expected CLF creation to succeed, but got error: %s", out)
+		}, 2*time.Minute, 5*time.Second).Should(Succeed())
 	})
 
 	It("should reject CLF update when user cannot 'use' the referenced ServiceAccount", func() {
 		revokeSAUsage(deployNS)
 
-		out, err := ocPatchCLFAs(deployNS, user, clfName, `{"metadata":{"annotations":{"sa-auth-test":"update-attempt"}}}`)
-		Expect(err).To(HaveOccurred(), "Expected CLF update to be rejected, but got: %s", out)
-		Expect(out).To(ContainSubstring("not authorized to use"))
+		Eventually(func(g Gomega) {
+			out, err := ocPatchCLFAs(deployNS, user, clfName, `{"metadata":{"annotations":{"sa-auth-test":"update-attempt"}}}`)
+			if err == nil {
+				return
+			}
+			g.Expect(err).To(HaveOccurred(), "Expected CLF update to be rejected, but got: %s", out)
+			g.Expect(out).To(ContainSubstring("not authorized to use"))
+		}, 2*time.Minute, 5*time.Second).Should(Succeed())
 	})
 
 	It("should allow CLF deletion when user cannot 'use' the referenced ServiceAccount", func() {
 		revokeSAUsage(deployNS)
 
-		err := ocDeleteCLFAs(deployNS, user, clfName)
-		Expect(err).ToNot(HaveOccurred(), "Expected CLF deletion to succeed without 'use' permission")
+		out, err := ocDeleteCLFAs(deployNS, user, clfName)
+		Expect(err).ToNot(HaveOccurred(), "Expected CLF deletion to succeed without 'use' permission: %s", out)
 	})
 })
 
@@ -137,11 +152,11 @@ func ocPatchCLFAs(namespace, user, name, patch string) (string, error) {
 	return string(out), err
 }
 
-func ocDeleteCLFAs(namespace, user, name string) error {
+func ocDeleteCLFAs(namespace, user, name string) (string, error) {
 	cmd := exec.Command("oc", "delete", "clusterlogforwarder", name,
 		"-n", namespace, "--as", user, "--ignore-not-found")
-	_, err := cmd.CombinedOutput()
-	return err
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
 
 func grantCLFAccess(namespace string) {

@@ -289,6 +289,10 @@ WAIT_FOR_OPERATOR=oc wait -n $(NAMESPACE) --for=condition=available deployment/c
 namespace:
 	echo '{"apiVersion": "v1", "kind": "Namespace","metadata":{"name":"$(NAMESPACE)","labels":{"openshift.io/cluster-monitoring":"true"}}}' | oc apply -f -
 
+.PHONY: apply-admission
+apply-admission: $(KUSTOMIZE) ## Apply the SA usage ValidatingAdmissionPolicy (for dev/e2e without waiting for operator startup).
+	$(KUSTOMIZE) build config/admission | oc apply -f -
+
 .PHONY: apply
 apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.
 	$(OPERATOR_SDK) generate kustomize manifests -q

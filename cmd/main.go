@@ -12,6 +12,7 @@ import (
 
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -166,6 +167,11 @@ func main() {
 		os.Exit(1)
 	}
 	migrateManifestResources(mgr.GetClient())
+
+	if err := internaladmission.ReconcileSAUsageAuthorization(context.TODO(), mgr.GetClient()); err != nil {
+		log.Error(err, "unable to reconcile SA usage ValidatingAdmissionPolicy")
+		os.Exit(1)
+	}
 
 	log.Info("Registering Components.")
 

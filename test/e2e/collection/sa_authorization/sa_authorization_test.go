@@ -7,16 +7,21 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/admission"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 )
 
 // This test validates CVE-2026-10609 fix:
 // A ValidatingAdmissionPolicy enforces that users must have 'use' permission
 // on a ServiceAccount to reference it in a ClusterLogForwarder.
+//
+// It mirrors hack/test-sa-authorization.sh: admission-only checks without
+// collector RBAC or a ready CLF status.
 
-var _ = Describe("[CVE-2026-10609] ServiceAccount usage authorization", func() {
+var _ = Describe("[CVE-2026-10609] ServiceAccount usage authorization", Ordered, func() {
 
 	const (
+		clfName           = "sa-auth-test"
 		collectorSAName   = "log-collector"
 		restrictedUser    = "system:serviceaccount:%s:restricted-user"
 		clfWithSATokenFmt = `
@@ -49,55 +54,74 @@ spec:
 	var (
 		e2e      *framework.E2ETestFramework
 		deployNS string
+		user     string
+		clfYaml  string
 	)
 
-	BeforeEach(func() {
+	BeforeAll(func() {
 		e2e = framework.NewE2ETestFramework()
 		deployNS = e2e.Test.NS.Name
+		user = fmt.Sprintf(restrictedUser, deployNS)
+		clfYaml = fmt.Sprintf(clfWithSATokenFmt, collectorSAName)
 
-		// Create the collector SA with collect permissions
-		_, err := e2e.BuildAuthorizationFor(deployNS, collectorSAName).
-			AllowClusterRole(framework.ClusterRoleCollectApplicationLogs).
-			AllowClusterRole(framework.ClusterRoleCollectInfrastructureLogs).
-			Create()
+		checkVAPInstalled()
+
+		_, err := e2e.BuildAuthorizationFor(deployNS, collectorSAName).Create()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Create a restricted user SA (used for impersonation)
 		_, err = e2e.BuildAuthorizationFor(deployNS, "restricted-user").Create()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Grant restricted-user permission to create CLFs in the namespace
 		grantCLFAccess(deployNS)
 	})
 
-	AfterEach(func() {
+	AfterAll(func() {
 		if e2e != nil {
 			e2e.Cleanup()
 		}
 	})
 
 	It("should reject CLF creation when user cannot 'use' the referenced ServiceAccount", func() {
-		user := fmt.Sprintf(restrictedUser, deployNS)
-		clfYaml := fmt.Sprintf(clfWithSATokenFmt, collectorSAName)
+		revokeSAUsage(deployNS)
 
-		// Create CLF as restricted-user who does NOT have 'use' permission on the collector SA
 		out, err := ocCreateAs(deployNS, user, clfYaml)
 		Expect(err).To(HaveOccurred(), "Expected CLF creation to be rejected, but got: %s", out)
 		Expect(out).To(ContainSubstring("not authorized to use"))
 	})
 
 	It("should allow CLF creation when user has 'use' permission on the ServiceAccount", func() {
-		user := fmt.Sprintf(restrictedUser, deployNS)
-		clfYaml := fmt.Sprintf(clfWithSATokenFmt, collectorSAName)
-
-		// Grant 'use' permission on the collector SA to restricted-user
 		grantSAUsage(deployNS, "restricted-user", collectorSAName)
 
-		// Create CLF as restricted-user who now HAS 'use' permission
 		out, err := ocCreateAs(deployNS, user, clfYaml)
 		Expect(err).ToNot(HaveOccurred(), "Expected CLF creation to succeed, but got error: %s %v", out, err)
 	})
+
+	It("should reject CLF update when user cannot 'use' the referenced ServiceAccount", func() {
+		revokeSAUsage(deployNS)
+
+		out, err := ocPatchCLFAs(deployNS, user, clfName, `{"metadata":{"annotations":{"sa-auth-test":"update-attempt"}}}`)
+		Expect(err).To(HaveOccurred(), "Expected CLF update to be rejected, but got: %s", out)
+		Expect(out).To(ContainSubstring("not authorized to use"))
+	})
+
+	It("should allow CLF deletion when user cannot 'use' the referenced ServiceAccount", func() {
+		revokeSAUsage(deployNS)
+
+		err := ocDeleteCLFAs(deployNS, user, clfName)
+		Expect(err).ToNot(HaveOccurred(), "Expected CLF deletion to succeed without 'use' permission")
+	})
 })
+
+func checkVAPInstalled() {
+	for _, resource := range []string{
+		"validatingadmissionpolicy/" + admission.SAUsagePolicyName,
+		"validatingadmissionpolicybinding/" + admission.SAUsagePolicyBindingName,
+	} {
+		cmd := exec.Command("oc", "get", resource)
+		out, err := cmd.CombinedOutput()
+		Expect(err).ToNot(HaveOccurred(), "Expected %s to exist (operator must reconcile VAP): %s", resource, out)
+	}
+}
 
 func ocCreateAs(namespace, user, yaml string) (string, error) {
 	cmd := exec.Command("oc", "create", "-n", namespace, "--as", user, "-f", "-")
@@ -106,9 +130,23 @@ func ocCreateAs(namespace, user, yaml string) (string, error) {
 	return string(out), err
 }
 
+func ocPatchCLFAs(namespace, user, name, patch string) (string, error) {
+	cmd := exec.Command("oc", "patch", "clusterlogforwarder", name,
+		"-n", namespace, "--as", user, "--type=merge", "-p", patch)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+func ocDeleteCLFAs(namespace, user, name string) error {
+	cmd := exec.Command("oc", "delete", "clusterlogforwarder", name,
+		"-n", namespace, "--as", user, "--ignore-not-found")
+	_, err := cmd.CombinedOutput()
+	return err
+}
+
 func grantCLFAccess(namespace string) {
 	cmd := exec.Command("oc", "create", "role", "clf-editor",
-		"--verb=create,update,get,list,watch,delete",
+		"--verb=create,update,patch,get,list,watch,delete",
 		"--resource=clusterlogforwarders.observability.openshift.io",
 		"-n", namespace)
 	out, err := cmd.CombinedOutput()
@@ -126,9 +164,14 @@ func grantCLFAccess(namespace string) {
 	}
 }
 
+func revokeSAUsage(namespace string) {
+	_ = exec.Command("oc", "delete", "rolebinding", "restricted-user-sa-user",
+		"-n", namespace, "--ignore-not-found").Run()
+	_ = exec.Command("oc", "delete", "role", "sa-user",
+		"-n", namespace, "--ignore-not-found").Run()
+}
+
 func grantSAUsage(namespace, userName, saName string) {
-	// 'use' is not a standard Kubernetes verb, so 'oc create role' rejects it.
-	// Create the Role via YAML instead.
 	roleYaml := fmt.Sprintf(`apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

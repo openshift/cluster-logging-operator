@@ -168,11 +168,6 @@ func main() {
 	}
 	migrateManifestResources(mgr.GetClient())
 
-	if err := internaladmission.ReconcileSAUsageAuthorization(context.TODO(), mgr.GetClient()); err != nil {
-		log.Error(err, "unable to reconcile SA usage ValidatingAdmissionPolicy")
-		os.Exit(1)
-	}
-
 	log.Info("Registering Components.")
 
 	// The Log File Metric Exporter Controller
@@ -219,6 +214,11 @@ func main() {
 	}
 
 	//+kubebuilder:scaffold:builder
+
+	if err := mgr.Add(internaladmission.NewSAUsageAdmissionRunnable(mgr.GetClient())); err != nil {
+		log.Error(err, "unable to register SA usage admission runnable")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		log.Error(err, "unable to set up health check")

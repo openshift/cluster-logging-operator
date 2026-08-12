@@ -1,0 +1,21 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: clf-sa-usage-authorization
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["observability.openshift.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["clusterlogforwarders"]
+  validations:
+    - expression: >-
+        !has(object.spec.serviceAccount) ||
+        !has(object.spec.serviceAccount.name) ||
+        object.spec.serviceAccount.name == '' ||
+        authorizer.group('').resource('serviceaccounts').namespace(object.metadata.namespace).name(object.spec.serviceAccount.name).check('use').allowed()
+      message: >-
+        User is not authorized to use the referenced ServiceAccount.
+        A Role granting the 'use' verb on the ServiceAccount is required.

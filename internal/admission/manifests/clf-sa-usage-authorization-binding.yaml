@@ -1,0 +1,8 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: clf-sa-usage-authorization-binding
+spec:
+  policyName: clf-sa-usage-authorization
+  validationActions: [Deny]
+  matchResources: {}

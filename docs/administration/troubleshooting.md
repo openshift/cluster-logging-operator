@@ -44,3 +44,37 @@ Does it have a newline character at the end? If not, the application writing the
 
 **Check the source application**: Ensure that the application generating the logs is configured to append a newline character 
 (\n) to every log entry. This is standard practice for most logging libraries and systems.
+
+### 3. ClusterLogForwarder create or update denied: `not authorized to use the referenced ServiceAccount`
+
+The cluster logging operator installs a ValidatingAdmissionPolicy that requires the identity creating or updating a `ClusterLogForwarder` to have the `use` verb on the ServiceAccount named in `spec.serviceAccount.name`.
+
+**Common causes**
+
+- A namespace-scoped user can edit `ClusterLogForwarder` resources but was not granted `use` on the collector ServiceAccount.
+- An update changes `spec.serviceAccount.name` to a ServiceAccount the user cannot use.
+- The ValidatingAdmissionPolicy is active but RBAC was never updated for delegated administrators.
+
+**What to do**
+
+1. Confirm the policy is present (operator must be running):
+
+   ```sh
+   oc get validatingadmissionpolicy clf-sa-usage-authorization
+   oc get validatingadmissionpolicybinding clf-sa-usage-authorization-binding
+   ```
+
+2. Grant `use` on the collector ServiceAccount to the user or ServiceAccount that manages the CLF. Example Role rule:
+
+   ```yaml
+   - apiGroups: [""]
+     resources: ["serviceaccounts"]
+     resourceNames: ["log-collector"]
+     verbs: ["use"]
+   ```
+
+3. Ensure CLF management Roles include `patch` if users update forwarders with `oc patch` or similar APIs.
+
+4. Remember that admission `use` checks are separate from collector `Authorized` status: a CLF may be admitted while status still reports missing `collect-*-logs` ClusterRoleBindings for the collector ServiceAccount.
+
+See [ServiceAccount usage authorization](serviceaccount-authorization.adoc) for a full walkthrough and `./hack/test-sa-authorization.sh` for a lightweight verification script.

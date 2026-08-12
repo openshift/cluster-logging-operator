@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-07-15T11:39:59Z"
+    createdAt: "2026-08-12T13:43:48Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2373,8 +2373,13 @@ spec:
           the collector pods.
         displayName: Service Account
         path: serviceAccount
-      - description: Name of the ServiceAccount to use to deploy the Forwarder.  The
-          ServiceAccount is created by the administrator
+      - description: |-
+          Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
+          in the same namespace as the ClusterLogForwarder.
+
+          Users who create or update a ClusterLogForwarder must have the 'use' verb on this ServiceAccount.
+          The cluster logging operator installs a ValidatingAdmissionPolicy that enforces this at admission time.
+          Cluster administrators and other identities with wildcard RBAC on ServiceAccounts are not affected.
         displayName: ServiceAccount Name
         path: serviceAccount.name
         x-descriptors:
@@ -2495,6 +2500,19 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - validatingadmissionpolicies
+          - validatingadmissionpolicybindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - apps
           resources:

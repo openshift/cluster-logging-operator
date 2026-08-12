@@ -11,6 +11,7 @@ import (
 	"time"
 
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -259,6 +260,11 @@ func main() {
 	}
 
 	//+kubebuilder:scaffold:builder
+
+	if err := mgr.Add(internaladmission.NewSAUsageAdmissionRunnable(mgr.GetClient())); err != nil {
+		log.Error(err, "unable to register SA usage admission runnable")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		log.Error(err, "unable to set up health check")

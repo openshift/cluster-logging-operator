@@ -1,0 +1,3 @@
+resources:
+- ../../internal/admission/manifests/clf-sa-usage-authorization.yaml
+- ../../internal/admission/manifests/clf-sa-usage-authorization-binding.yaml

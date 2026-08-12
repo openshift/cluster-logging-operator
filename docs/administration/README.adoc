@@ -2,6 +2,7 @@
 
 * link:upgrade/v6.0_changes.adoc[Changes doc] for the new v6.0 observability API
 * link:clusterlogforwarder.adoc[Log Collection and Forwarding]
+* link:serviceaccount-authorization.adoc[ServiceAccount usage authorization]
 * link:kubernetes-api-server-impact.adoc[Kubernetes API Server Impact During Collector Restarts]
 * Enabling event collection by link:deploy-event-router.md[Deploying the Event Router]
 * link:logfilemetricexporter.adoc[Collecting Container Log Metrics]

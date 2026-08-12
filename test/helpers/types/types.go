@@ -165,7 +165,7 @@ type OpenshiftMeta struct {
 	//+optional
 	Labels map[string]string `json:"labels,omitempty"`
 
-	//Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+	//Sequence is increasing id used in conjunction with the timestamp to establish a linear timeline
 	//of log records.  This was added as a workaround for logstores that do not have nano-second precision.
 	Sequence OptionalInt `json:"sequence,omitempty"`
 }

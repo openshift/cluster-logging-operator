@@ -184,6 +184,8 @@ ClusterRoleBindings can be used to customize user access to log viewing.  More d
  oc create -n openshift-logging sa logging-admin
 ----
 +
+NOTE: Users who create or update a `ClusterLogForwarder` must have the `use` RBAC verb on the collector ServiceAccount named in `spec.serviceAccount.name`. See link:serviceaccount-authorization.adoc[ServiceAccount usage authorization].
++
 
 
 === Roles and Bindings

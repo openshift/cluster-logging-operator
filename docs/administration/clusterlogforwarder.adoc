@@ -21,6 +21,7 @@ in response to an instance of ClusterLogForwarder:
 * an existing serviceaccount for use by the collector and referenced in the ClusterLogForwarder spec
 * the serviceaccount bound to one or more cluster roles deployed by the operator: collect-application-logs, collect-infrastructure-logs, collect-audit-logs
 * a serviceaccount token if required by any outputs
+* users who create or update the ClusterLogForwarder must have the `use` RBAC verb on the referenced ServiceAccount (enforced by a ValidatingAdmissionPolicy installed by the operator). See link:serviceaccount-authorization.adoc[ServiceAccount usage authorization] for details and examples.
 
 NOTE: Each input type defined in the ClusterLogForwarder spec must have a corresponding rolebinding for the spec to be valid
 
@@ -28,6 +29,8 @@ NOTE: Each input type defined in the ClusterLogForwarder spec must have a corres
 
 Fields are validated by the API server upon admission or update and provide immediate feedback to the user.  Additional validation
 is performed post creation and is reflected in status.
+
+When `spec.serviceAccount.name` is set, the API server also verifies that the requesting user may `use` that ServiceAccount.  Denied requests fail before the resource is stored.  Deleting a ClusterLogForwarder is not subject to this check.
 
 NOTE: The status section of the ClusterLogForwarder may provide useful information when collectors do not deploy as expected
 

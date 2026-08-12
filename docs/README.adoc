@@ -17,6 +17,7 @@ Open an issue in this repository
 * link:contributing/README.adoc[Contributing the Cluster Logging Operator]
 * link:contributing/REVIEW.adoc[PR Review Guidelines]
 * link:administration/troubleshooting.md[Troubleshooting the cluster logging operator]
+* link:administration/serviceaccount-authorization.adoc[ServiceAccount usage authorization]
 * link:administration/output_url_field.md[Using the clusterlogforwarder.output.url field]
 * link:contributing/how-to-add-new-output.md[How-to add a new output type]
 * link:features/logforwarding/outputs/googlecloud/google-cloud-forwarding.adoc[Forward logs to Google Cloud Logging]

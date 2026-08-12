@@ -82,6 +82,11 @@ type ClusterLogForwarderSpec struct {
 
 type ServiceAccount struct {
 	// Name of the ServiceAccount to use to deploy the Forwarder.  The ServiceAccount is created by the administrator
+	// in the same namespace as the ClusterLogForwarder.
+	//
+	// Users who create or update a ClusterLogForwarder must have the 'use' verb on this ServiceAccount.
+	// The cluster logging operator installs a ValidatingAdmissionPolicy that enforces this at admission time.
+	// Cluster administrators and other identities with wildcard RBAC on ServiceAccounts are not affected.
 	//
 	// +kubebuilder:validation:Pattern:="^[a-z][a-z0-9-]{2,62}[a-z0-9]$"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ServiceAccount Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}

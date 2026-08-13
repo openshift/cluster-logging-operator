@@ -206,7 +206,7 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.
 	}
 
 	log.V(2).Info("Adding vector container", "name", name)
-	containerBuilder := b.AddContainer(name, utils.GetComponentImage(constants.VectorName)).
+	containerBuilder := b.AddContainer(name, utils.GetComponentImage(constants.VectorReceiverName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		AddEnvVar("VECTOR_LOG", common.AdaptLogLevel()).
 		AddEnvVar("VECTOR_INTERNAL_LOG_RATE_LIMIT", "0").

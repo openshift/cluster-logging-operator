@@ -79,7 +79,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 	}
 	container := corev1.Container{
 		Name:  HttpReceiver,
-		Image: utils.GetComponentImage(constants.VectorName),
+		Image: utils.GetComponentImage(constants.VectorReceiverName),
 		Ports: []corev1.ContainerPort{
 			{Name: "http", ContainerPort: 8090},
 		},

@@ -38,6 +38,7 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYam
 
 func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, nodeName string) *runtime.ContainerBuilder {
 	return b.AddEnvVar("VECTOR_LOG", common.AdaptLogLevel()).
+		AddEnvVar("VECTOR_RAISE_FD_LIMIT", "true").
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
 		AddEnvVar("NODE_NAME", nodeName).
 		AddEnvVar("VECTOR_INTERNAL_LOG_RATE_LIMIT", "0").

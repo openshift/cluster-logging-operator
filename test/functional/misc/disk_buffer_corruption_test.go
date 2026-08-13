@@ -313,7 +313,7 @@ func corruptBufferFile(framework *functional.CollectorFunctionalFramework, datFi
 
 	const chunkSize = 65536
 	for i := 0; i < len(corruptedB64); i += chunkSize {
-		end := min(i + chunkSize, len(corruptedB64))
+		end := min(i+chunkSize, len(corruptedB64))
 		chunk := corruptedB64[i:end]
 		appendCmd := fmt.Sprintf("echo -n '%s' >> '%s'", chunk, stagingFile)
 		_, err = framework.RunCommand(functional.ToolsContainerName, "bash", "-c", appendCmd)

@@ -31,6 +31,7 @@ var (
 // COMPONENT_IMAGES are keys based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
 	constants.VectorName:                 constants.VectorImageEnvVar,
+	constants.VectorReceiverName:         constants.VectorReceiverImageEnvVar,
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
 }
 

@@ -1,0 +1,7 @@
+== Vector Collector: Raising File Descriptor Limits
+
+The operator always sets `VECTOR_RAISE_FD_LIMIT=true` on the collector container so Vector raises its file descriptor soft limit to the hard limit at startup. This prevents "Too many open files" errors when Vector monitors a large number of log files concurrently.
+
+Systems often default to restrictive file descriptor soft limits (e.g. 1024 on Linux), which can cause Vector to fail when processing many log sources simultaneously. Vector reads `VECTOR_RAISE_FD_LIMIT` natively and raises the soft limit without requiring manual sysadmin intervention. The hard limit remains the safety ceiling set by the OS/container runtime.
+
+This behavior is not configurable. A collector tuning option may be added in the future if needed.

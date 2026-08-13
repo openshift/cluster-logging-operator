@@ -143,6 +143,10 @@ var _ = Describe("Factory#Daemonset", func() {
 				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_LOG", Value: logLevelDebug}))
 			})
 
+			It("should set VECTOR_RAISE_FD_LIMIT to true", func() {
+				Expect(collector.Env).To(IncludeEnvVar(v1.EnvVar{Name: "VECTOR_RAISE_FD_LIMIT", Value: "true"}))
+			})
+
 			Context("the volume mounts", func() {
 				It("should mount all output configmaps", func() {
 					Expect(collector.VolumeMounts).To(IncludeVolumeMount(

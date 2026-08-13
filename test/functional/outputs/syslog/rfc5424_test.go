@@ -231,11 +231,11 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Entry("full-form: notice", "notice", "<13>1 "),               // 8 + 5
 		Entry("full-form: alert", "alert", "<9>1 "),                  // 8 + 1
 		// short-form keywords (VRL to_syslog_level output)
-		Entry("short-form: crit", "crit", "<10>1 "),    // 8 + 2
-		Entry("short-form: emerg", "emerg", "<8>1 "),    // 8 + 0
-		Entry("short-form: err", "err", "<11>1 "),       // 8 + 3
-		Entry("short-form: info", "info", "<14>1 "),     // 8 + 6
-		Entry("short-form: warn", "warn", "<12>1 "),     // 8 + 4
+		Entry("short-form: crit", "crit", "<10>1 "),  // 8 + 2
+		Entry("short-form: emerg", "emerg", "<8>1 "), // 8 + 0
+		Entry("short-form: err", "err", "<11>1 "),    // 8 + 3
+		Entry("short-form: info", "info", "<14>1 "),  // 8 + 6
+		Entry("short-form: warn", "warn", "<12>1 "),  // 8 + 4
 		// capitalized keywords (as documented in oc explain)
 		Entry("capitalized: Critical", "Critical", "<10>1 "),           // 8 + 2
 		Entry("capitalized: Emergency", "Emergency", "<8>1 "),          // 8 + 0

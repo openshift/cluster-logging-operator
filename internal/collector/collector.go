@@ -239,6 +239,7 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		{Name: "OPENSHIFT_CLUSTER_ID", Value: clusterID},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 		{Name: "POD_IPS", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
+		{Name: "VECTOR_RAISE_FD_LIMIT", Value: "true"},
 	}
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
 

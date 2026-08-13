@@ -29,6 +29,10 @@ var (
 	DefaultTLSGroups = tlsGroupsToStrings(configv1.TLSProfiles[DefaultTLSProfileType].Groups)
 
 	// supportedTLSGroups maps OpenShift API TLS group names to Go tls.CurveID values.
+	// Go 1.25 only provides tls.X25519MLKEM768; it lacks CurveID constants for
+	// TLSGroupSecP256r1MLKEM768 and TLSGroupSecP384r1MLKEM1024. Those groups are
+	// still forwarded to Vector via opensslGroupNames (OpenSSL supports them), but
+	// TLSConfigFromProfile will skip them when building the Go tls.Config.
 	supportedTLSGroups = map[configv1.TLSGroup]tls.CurveID{
 		configv1.TLSGroupX25519:         tls.X25519,
 		configv1.TLSGroupSecP256r1:      tls.CurveP256,
@@ -236,6 +240,7 @@ func GetTLSConfigOptions(k8sClient client.Client) ([]func(*tls.Config), error) {
 		func(cfg *tls.Config) {
 			cfg.MinVersion = tlsConfig.MinVersion
 			cfg.CipherSuites = tlsConfig.CipherSuites
+			cfg.CurvePreferences = tlsConfig.CurvePreferences
 		},
 	}, nil
 }

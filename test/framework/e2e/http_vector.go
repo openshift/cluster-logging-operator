@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -448,7 +449,18 @@ func (tc *E2ETestFramework) DeployHttpReceiverWithTLS(ns string, profileSpec con
 		tls: true,
 	}
 
-	secret, err := tc.CreatePipelineSecret(ns, HttpReceiver, HttpReceiverTLSSecretName, nil)
+	ca := certificate.NewCA(nil, "Self-signed Root CA")
+	serverCert := certificate.NewCert(ca, "HTTP Receiver",
+		HttpReceiver,
+		fmt.Sprintf("%s.%s.svc", HttpReceiver, ns),
+		fmt.Sprintf("%s.%s.svc.cluster.local", HttpReceiver, ns),
+	)
+	secret := runtime.NewSecret(ns, HttpReceiverTLSSecretName, map[string][]byte{
+		"tls.key":       serverCert.PrivateKeyPEM(),
+		"tls.crt":       serverCert.CertificatePEM(),
+		"ca-bundle.crt": ca.CertificatePEM(),
+	})
+	secret, err = tc.KubeClient.CoreV1().Secrets(ns).Create(context.TODO(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -179,6 +179,11 @@ func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourc
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clf.Annotations, op)
+
+	if clf.Annotations[constants.AnnotationCollectorType] == constants.OTELCollectorName {
+		return generateOTELConfig(clf.Spec)
+	}
+
 	g := forwardergenerator.New()
 	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
@@ -189,6 +194,40 @@ func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourc
 
 	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
 	return generatedConfig, err
+}
+
+// generateOTELConfig returns a minimal OTEL collector configuration.
+// TODO: Replace with full config generation from CLF spec.
+func generateOTELConfig(_ obs.ClusterLogForwarderSpec) (string, error) {
+	return `receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/*/*.log
+    exclude:
+      - /var/log/pods/openshift-logging_collector-*/*/*.log
+    start_at: end
+    include_file_path: true
+    include_file_name: false
+    operators:
+      - type: container
+        id: container-parser
+
+processors:
+  batch:
+    send_batch_size: 8192
+    timeout: 2s
+
+exporters:
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [debug]
+`, nil
 }
 
 // EvaluateAnnotationsForEnabledCapabilities populates generator options with capabilities enabled by the ClusterLogForwarder

@@ -19,4 +19,7 @@ const (
 	// AnnotationMaxUnavailable (Deprecated) configures the maximum number of DaemonSet pods that can be unavailable during a rolling update.
 	// This can be an absolute number (e.g., 1) or a percentage (e.g., 10%). Default is 100%.
 	AnnotationMaxUnavailable = "observability.openshift.io/max-unavailable-rollout"
+
+	// AnnotationCollectorType selects the collector implementation. Supported values: "vector" (default), "otelcol".
+	AnnotationCollectorType = "logging.openshift.io/dev-preview-collector-type"
 )

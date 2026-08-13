@@ -117,7 +117,7 @@ func (r *ClusterRunner) Deploy() {
 				})
 			}
 			collectorBuilder.Update()
-			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0], utils.GetComponentImage(constants.VectorName))
+			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0], utils.GetComponentImage(constants.VectorReceiverName))
 		},
 	})
 	if err != nil {

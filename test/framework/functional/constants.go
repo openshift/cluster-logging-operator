@@ -48,7 +48,7 @@ var (
 			string(obs.InputTypeInfrastructure): ApplicationLogFile,
 		},
 		string(obs.OutputTypeSyslog): {
-			applicationLog:                      "/tmp/infra.log",
+			applicationLog:                      "/tmp/app.log",
 			auditLog:                            "/tmp/infra.log",
 			k8sAuditLog:                         "/tmp/infra.log",
 			ovnAuditLog:                         "/tmp/infra.log",

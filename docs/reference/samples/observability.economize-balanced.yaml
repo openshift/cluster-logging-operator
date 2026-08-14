@@ -1,0 +1,175 @@
+# Economize Log Forwarding — Balanced Tier
+#
+# Removes high-cost, low-debugging-value fields from each log type while
+# preserving fields needed for troubleshooting. Uses the "in" (blocklist)
+# approach: fields listed are removed, everything else is kept.
+#
+# Measured savings on a stock OCP cluster:
+#   Container logs: ~60-65% byte reduction
+#   Journal logs:   ~40-45% byte reduction
+#   Audit logs:     ~45-50% byte reduction (with kubeAPIAudit event filtering)
+#
+# Prerequisites:
+#   - logcollector ServiceAccount with appropriate ClusterRoleBindings
+#   - LokiStack deployed (adjust output section for your log store)
+#
+# Usage: oc apply -f observability.economize-balanced.yaml
+#
+# See also: docs/administration/economizing-log-forwarding/economizing-log-forwarding.md
+#           docs/administration/economizing-log-forwarding/output-field-requirements.md
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logcollector
+  filters:
+    # Route infrastructure logs to separate pipelines for type-specific pruning
+    - name: drop-journal
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "node"
+
+    - name: drop-container
+      type: drop
+      drop:
+        - test:
+            - field: .log_source
+              matches: "container"
+
+    # Container log pruning: removes annotations, namespace labels, UUIDs,
+    # container image SHA, and other high-cost fields that are rarely used
+    # in day-to-day troubleshooting.
+    - name: prune-container-balanced
+      type: prune
+      prune:
+        in:
+          - .kubernetes.annotations
+          - .kubernetes.namespace_labels
+          - .kubernetes.namespace_id
+          - .kubernetes.container_image
+          - .kubernetes.container_id
+          - .kubernetes.pod_id
+          - .openshift.cluster_id
+          - .openshift.sequence
+          - .kubernetes.pod_owner
+          - .kubernetes.pod_ip
+
+    # Journal log pruning: removes systemd transport metadata (cgroup paths,
+    # boot/machine IDs, SELinux contexts) while keeping SYSTEMD_UNIT, COMM,
+    # PID, and TRANSPORT for service identification.
+    - name: prune-journal-balanced
+      type: prune
+      prune:
+        in:
+          - .systemd.t.CMDLINE
+          - .systemd.t.SYSTEMD_CGROUP
+          - .systemd.t.BOOT_ID
+          - .systemd.t.MACHINE_ID
+          - .systemd.t.STREAM_ID
+          - .systemd.t.SYSTEMD_INVOCATION_ID
+          - .systemd.t.SELINUX_CONTEXT
+          - .systemd.t.SOURCE_REALTIME_TIMESTAMP
+          - .systemd.t.AUDIT_LOGINUID
+          - .systemd.t.AUDIT_SESSION
+          - .systemd.t.CAP_EFFECTIVE
+          - .systemd.t.EXE
+          - .systemd.t.GID
+          - .systemd.t.HOSTNAME
+          - .systemd.t.LINE_BREAK
+          - .systemd.t.UID
+          - .systemd.k
+          - .systemd.u.CODE_FILE
+          - .systemd.u.CODE_FUNCTION
+          - .systemd.u.CODE_LINE
+          - .systemd.u.ERRNO
+          - .systemd.u.MESSAGE_ID
+          - .systemd.u.SYSLOG_FACILITY
+          - .systemd.u.SYSLOG_PID
+          - .systemd.u.RESULT
+          - .systemd.u.UNIT
+
+    # Kubernetes API audit: drops RequestReceived stage and noisy response
+    # codes (404, 409, 422, 429), logs remaining events at Metadata level.
+    - name: audit-policy-balanced
+      type: kubeAPIAudit
+      kubeAPIAudit:
+        omitStages:
+          - RequestReceived
+        omitResponseCodes:
+          - 404
+          - 409
+          - 422
+          - 429
+        rules:
+          - level: Metadata
+
+    # Prune surviving audit events: removes RBAC evaluation detail,
+    # request URIs (redundant with objectRef), user agent strings,
+    # and deep credential metadata.
+    - name: prune-audit-balanced
+      type: prune
+      prune:
+        in:
+          - .userAgent
+          - .annotations
+          - .requestURI
+          - .user.extra
+
+  outputs:
+    - name: lokistack
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          key: service-ca.crt
+          configMapName: openshift-service-ca.crt
+    # To add other outputs, define them here and add to outputRefs below.
+    # See docs/administration/economizing-log-forwarding/output-field-requirements.md for field
+    # constraints specific to each output type.
+
+  pipelines:
+    - name: app-container-logs
+      inputRefs:
+        - application
+      filterRefs:
+        - prune-container-balanced
+      outputRefs:
+        - lokistack
+
+    - name: infra-container-logs
+      inputRefs:
+        - infrastructure
+      filterRefs:
+        - drop-journal
+        - prune-container-balanced
+      outputRefs:
+        - lokistack
+
+    - name: infra-journal-logs
+      inputRefs:
+        - infrastructure
+      filterRefs:
+        - drop-container
+        - prune-journal-balanced
+      outputRefs:
+        - lokistack
+
+    - name: audit-logs
+      inputRefs:
+        - audit
+      filterRefs:
+        - audit-policy-balanced
+        - prune-audit-balanced
+      outputRefs:
+        - lokistack

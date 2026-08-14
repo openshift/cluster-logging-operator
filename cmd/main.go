@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
@@ -258,7 +259,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Keep the protected collector ServiceAccount param ConfigMap in sync with
+	// the set of ClusterLogForwarders.
+	operatorNS := internaladmission.OperatorNamespace()
+	if err = (&internaladmission.ProtectedSAReconciler{
+		Client:     mgr.GetClient(),
+		OperatorNS: operatorNS,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "ProtectedServiceAccounts")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
+
+	if err := mgr.Add(internaladmission.NewProtectedSAAdmissionRunnable(k8sClient, operatorNS)); err != nil {
+		log.Error(err, "unable to register protected SA admission runnable")
+		os.Exit(1)
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		log.Error(err, "unable to set up health check")

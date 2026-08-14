@@ -265,6 +265,17 @@ test-unit: test-forwarder-generator test-unit-api
 test-unit-api:
 	@cd ./api/observability && go test -coverprofile=test.cov ./...
 
+# Validates the protected-SA ValidatingAdmissionPolicies' CEL against a real
+# kube-apiserver via envtest (no cluster needed). setup-envtest downloads the
+# apiserver/etcd binaries; its version tracks controller-runtime (release-0.23).
+# The admission suite skips these specs when KUBEBUILDER_ASSETS is unset, so
+# test-unit is unaffected.
+ENVTEST_K8S_VERSION ?= 1.31.0
+.PHONY: test-admission-envtest
+test-admission-envtest:
+	KUBEBUILDER_ASSETS="$$(go run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.23 use $(ENVTEST_K8S_VERSION) -p path)" \
+	go test -count=1 -run TestAdmission ./internal/admission/...
+
 .PHONY: coverage
 coverage: test-unit
 	go tool cover -html=test.cov -o $${ARTIFACTS_DIR:-.}/coverage.html
@@ -310,6 +321,10 @@ WAIT_FOR_OPERATOR=oc wait -n $(NAMESPACE) --for=condition=available deployment/c
 .PHONY: namespace
 namespace:
 	echo '{"apiVersion": "v1", "kind": "Namespace","metadata":{"name":"$(NAMESPACE)","labels":{"openshift.io/cluster-monitoring":"true"}}}' | oc apply -f -
+
+.PHONY: apply-admission
+apply-admission: $(KUSTOMIZE) ## Apply the protected-SA ValidatingAdmissionPolicies (for dev/e2e without waiting for operator startup).
+	$(KUSTOMIZE) build config/admission | oc apply -f -
 
 .PHONY: apply
 apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.

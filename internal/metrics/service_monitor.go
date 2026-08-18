@@ -13,15 +13,17 @@ import (
 )
 
 const (
-	prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+	prometheusCAFile          = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+	prometheusBearerTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 func newServiceMonitor(namespace, name string, owner metav1.OwnerReference, selector map[string]string, portName string) *monitoringv1.ServiceMonitor {
 	var endpoint = []monitoringv1.Endpoint{
 		{
-			Port:   portName,
-			Path:   "/metrics",
-			Scheme: "https",
+			Port:            portName,
+			Path:            "/metrics",
+			Scheme:          "https",
+			BearerTokenFile: prometheusBearerTokenFile,
 			TLSConfig: &monitoringv1.TLSConfig{
 				CAFile: prometheusCAFile,
 				SafeTLSConfig: monitoringv1.SafeTLSConfig{

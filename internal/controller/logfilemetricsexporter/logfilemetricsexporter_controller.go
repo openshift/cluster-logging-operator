@@ -62,7 +62,12 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	if lfmeInstance.DeletionTimestamp != nil {
-		// Resource is being deleted, no further reconciliation
+		// Resource is being deleted, clean up cluster-scoped resources that cannot be garbage
+		// collected via owner references, then stop reconciliation.
+		if err := logmetricexporter.Cleanup(r.Client, lfmeInstance.Namespace); err != nil {
+			log.V(3).Error(err, "Failed to cleanup cluster-scoped resources")
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{}, nil
 	}
 

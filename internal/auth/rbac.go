@@ -79,3 +79,35 @@ func NewServiceAccountSCCRoleBinding(namespace, name, roleName, saName string, o
 	utils.AddOwnerRefToObject(desired, owner)
 	return desired
 }
+
+const systemAuthDelegatorClusterRoleName = "system:auth-delegator"
+
+// NewMetricsAuthClusterRoleBinding binds the system:auth-delegator ClusterRole to the
+// given service account so it may create TokenReview/SubjectAccessReview requests.
+func NewMetricsAuthClusterRoleBinding(name, saNamespace, saName string) *rbacv1.ClusterRoleBinding {
+	return runtime.NewClusterRoleBinding(
+		name,
+		rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "ClusterRole",
+			Name:     systemAuthDelegatorClusterRoleName,
+		},
+		rbacv1.Subject{
+			Kind:      "ServiceAccount",
+			Name:      saName,
+			Namespace: saNamespace,
+		},
+	)
+}
+
+// ReconcileMetricsAuthRBAC reconciles the ClusterRoleBinding that binds
+// system:auth-delegator to the service account.
+func ReconcileMetricsAuthRBAC(k8sClient client.Client, name, saNamespace, saName string) error {
+	desired := NewMetricsAuthClusterRoleBinding(name, saNamespace, saName)
+	return reconcile.ClusterRoleBinding(k8sClient, desired.Name, func() *rbacv1.ClusterRoleBinding { return desired })
+}
+
+// DeleteMetricsAuthRBAC deletes the metrics-auth ClusterRoleBinding (NotFound ignored).
+func DeleteMetricsAuthRBAC(k8sClient client.Client, name string) error {
+	return reconcile.DeleteClusterRoleBinding(k8sClient, name)
+}

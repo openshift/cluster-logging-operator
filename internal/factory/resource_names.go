@@ -10,12 +10,14 @@ type ForwarderResourceNames struct {
 	SecretMetrics                    string
 	ConfigMap                        string
 	MetadataReaderClusterRoleBinding string
-	CaTrustBundle                    string
-	ServiceAccount                   string
-	InternalLogStoreSecret           string
-	ServiceAccountTokenSecret        string
-	ForwarderName                    string
-	Secrets                          string
+	// MetricsAuthClusterRoleBinding is the cluster-scoped binding to system:auth-delegator
+	MetricsAuthClusterRoleBinding string
+	CaTrustBundle                 string
+	ServiceAccount                string
+	InternalLogStoreSecret        string
+	ServiceAccountTokenSecret     string
+	ForwarderName                 string
+	Secrets                       string
 }
 
 func (f *ForwarderResourceNames) DaemonSetName() string {

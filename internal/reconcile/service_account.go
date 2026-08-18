@@ -24,9 +24,19 @@ func ServiceAccount(k8Client client.Client, desired *v1.ServiceAccount) (*v1.Ser
 			return fmt.Errorf("failed to get %v ServiceAccount: %w", key, err)
 		}
 
+		finalizersMatch := len(current.Finalizers) == len(desired.Finalizers)
+		if finalizersMatch {
+			for i := range desired.Finalizers {
+				if current.Finalizers[i] != desired.Finalizers[i] {
+					finalizersMatch = false
+					break
+				}
+			}
+		}
 		same := false
 		if same = (utils.AreMapsSame(current.Annotations, desired.Annotations) &&
-			utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences)); same {
+			utils.HasSameOwner(current.OwnerReferences, desired.OwnerReferences) &&
+			finalizersMatch); same {
 			log.V(3).Info("ServiceAccount are the same skipping update")
 			return nil
 		}
@@ -40,6 +50,7 @@ func ServiceAccount(k8Client client.Client, desired *v1.ServiceAccount) (*v1.Ser
 		}
 
 		current.OwnerReferences = desired.OwnerReferences
+		current.Finalizers = desired.Finalizers
 
 		return k8Client.Update(context.TODO(), current)
 	})

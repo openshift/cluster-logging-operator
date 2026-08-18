@@ -70,3 +70,18 @@ subjects:
 	})
 
 })
+
+var _ = Describe("NewMetricsAuthClusterRoleBinding", func() {
+	It("should stub a well-formed system:auth-delegator binding", func() {
+		crb := auth.NewMetricsAuthClusterRoleBinding("cluster-logging-logfilesmetricexporter-metrics-auth", "openshift-logging", "logfilesmetricexporter")
+
+		Expect(crb.Name).To(Equal("cluster-logging-logfilesmetricexporter-metrics-auth"))
+		Expect(crb.RoleRef.Kind).To(Equal("ClusterRole"))
+		Expect(crb.RoleRef.Name).To(Equal("system:auth-delegator"))
+		Expect(crb.RoleRef.APIGroup).To(Equal("rbac.authorization.k8s.io"))
+		Expect(crb.Subjects).To(HaveLen(1))
+		Expect(crb.Subjects[0].Kind).To(Equal("ServiceAccount"))
+		Expect(crb.Subjects[0].Name).To(Equal("logfilesmetricexporter"))
+		Expect(crb.Subjects[0].Namespace).To(Equal("openshift-logging"))
+	})
+})

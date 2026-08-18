@@ -11,6 +11,7 @@ resources:
 - write-audit-logs-clusterrole.yaml
 - write-infrastructure-logs-clusterrole.yaml
 - logging-collector-logs-writer.yaml
+- metrics_reader_role.yaml
 #- leader_election_role.yaml
 #- leader_election_role_binding.yaml
 # Comment the following 4 lines if you want to disable

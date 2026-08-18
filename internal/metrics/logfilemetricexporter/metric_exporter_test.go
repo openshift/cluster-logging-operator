@@ -15,6 +15,8 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -124,5 +126,28 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
 			To(Equal(svcURL))
+	})
+
+	It("should delete the cluster-scoped metrics-auth ClusterRoleBinding on Cleanup", func() {
+		runtime.Initialize(lfmeInstance, constants.OpenshiftNS, constants.SingletonName)
+
+		// Reconcile creates the cluster-scoped metrics-auth ClusterRoleBinding
+		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+
+		crbName := ResourceNames(constants.OpenshiftNS).MetricsAuthClusterRoleBinding
+		crbKey := types.NamespacedName{Name: crbName}
+		crb := &rbacv1.ClusterRoleBinding{}
+		Expect(reqClient.Get(context.TODO(), crbKey, crb)).Should(Succeed(),
+			"exp. the metrics-auth ClusterRoleBinding to be created by Reconcile")
+
+		// Cleanup removes the cluster-scoped binding, which cannot be garbage collected via owner refs
+		Expect(Cleanup(reqClient, constants.OpenshiftNS)).To(Succeed())
+
+		err := reqClient.Get(context.TODO(), crbKey, crb)
+		Expect(apierrors.IsNotFound(err)).To(BeTrue(),
+			"exp. the metrics-auth ClusterRoleBinding to be deleted by Cleanup")
+
+		// Cleanup is idempotent - deleting an already-absent binding is a no-op
+		Expect(Cleanup(reqClient, constants.OpenshiftNS)).To(Succeed())
 	})
 })

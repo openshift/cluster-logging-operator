@@ -119,7 +119,18 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 			return nil
 		}
 
-		current.RoleRef = wantRoleBinding.RoleRef
+		// roleRef is immutable; delete and recreate when it changes.
+		if current.RoleRef != wantRoleBinding.RoleRef {
+			log.V(3).Info("Deleting ClusterRoleBinding due to roleRef change", "name", name)
+			if err := k8sClient.Delete(context.TODO(), current); err != nil {
+				return fmt.Errorf("failed to delete ClusterRoleBinding: %w", err)
+			}
+			if err := k8sClient.Create(context.TODO(), wantRoleBinding); err != nil {
+				return fmt.Errorf("failed to recreate ClusterRoleBinding: %w", err)
+			}
+			return nil
+		}
+
 		current.Subjects = wantRoleBinding.Subjects
 
 		return k8sClient.Update(context.TODO(), current)
@@ -135,6 +146,11 @@ func DeleteClusterRole(k8sClient client.Client, name string) error {
 
 func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {
 	object := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
-	log.V(3).Info("Deleting", "object", object)
-	return k8sClient.Delete(context.TODO(), object)
+	log.V(3).Info("Deleting ClusterRoleBinding", "name", name)
+	err := k8sClient.Delete(context.TODO(), object)
+	// Ignore NotFound errors - resource is already deleted
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }

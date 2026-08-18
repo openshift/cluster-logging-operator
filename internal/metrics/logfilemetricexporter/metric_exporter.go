@@ -19,6 +19,26 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
+// ResourceNames returns the names of the resources reconciled for the LogFileMetricExporter in the
+// given namespace. It is the single source of truth for these names, shared by Reconcile and Cleanup.
+func ResourceNames(namespace string) *factory.ForwarderResourceNames {
+	return &factory.ForwarderResourceNames{
+		CommonName:                       constants.LogfilesmetricexporterName,
+		ServiceAccount:                   constants.LogfilesmetricexporterName,
+		ServiceAccountTokenSecret:        constants.LogfilesmetricexporterName + "-token",
+		MetadataReaderClusterRoleBinding: fmt.Sprintf("cluster-logging-%s-%s-metadata-reader", namespace, constants.LogfilesmetricexporterName),
+		MetricsAuthClusterRoleBinding:    fmt.Sprintf("cluster-logging-%s-%s-metrics-auth", namespace, constants.LogfilesmetricexporterName),
+	}
+}
+
+// Cleanup removes cluster-scoped resources created for the LogFileMetricExporter that cannot be
+// garbage collected via owner references (they are cluster-scoped, owned by a namespaced CR).
+func Cleanup(requestClient client.Client, namespace string) error {
+	resNames := ResourceNames(namespace)
+	// Delete the metrics auth ClusterRoleBinding (NotFound errors are ignored by DeleteMetricsAuthRBAC)
+	return auth.DeleteMetricsAuthRBAC(requestClient, resNames.MetricsAuthClusterRoleBinding)
+}
+
 func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	requestClient client.Client,
 	uncachedReader client.Reader,
@@ -34,12 +54,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		return err
 	}
 
-	resNames := &factory.ForwarderResourceNames{
-		CommonName:                       constants.LogfilesmetricexporterName,
-		ServiceAccount:                   constants.LogfilesmetricexporterName,
-		ServiceAccountTokenSecret:        constants.LogfilesmetricexporterName + "-token",
-		MetadataReaderClusterRoleBinding: "cluster-logging-" + constants.LogfilesmetricexporterName + "-metadata-reader",
-	}
+	resNames := ResourceNames(lfmeInstance.Namespace)
 
 	if err := auth.ReconcileServiceAccount(requestClient, lfmeInstance.Namespace, resNames, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileServiceAccount")
@@ -48,6 +63,11 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 
 	if err := auth.ReconcileRBAC(requestClient, resNames.CommonName, lfmeInstance.Namespace, resNames.ServiceAccount, owner); err != nil {
 		log.Error(err, "logfilemetricexporter.ReconcileRBAC")
+		return err
+	}
+
+	if err := auth.ReconcileMetricsAuthRBAC(requestClient, resNames.MetricsAuthClusterRoleBinding, lfmeInstance.Namespace, resNames.ServiceAccount); err != nil {
+		log.Error(err, "logfilemetricexporter.ReconcileMetricsAuthRBAC")
 		return err
 	}
 

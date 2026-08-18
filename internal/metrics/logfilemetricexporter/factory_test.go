@@ -15,6 +15,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -60,6 +61,10 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		// Service Monitor
 		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
 		smInstance        = &monitoringv1.ServiceMonitor{}
+
+		// Metrics-auth ClusterRoleBinding (cluster-scoped: name only)
+		metricsAuthCRBKey = types.NamespacedName{Name: "cluster-logging-" + constants.OpenshiftNS + "-" + constants.LogfilesmetricexporterName + "-metrics-auth"}
+		metricsAuthCRB    = &rbacv1.ClusterRoleBinding{}
 	)
 
 	It("Should reconcile successfully a daemonset, service, and service monitor", func() {
@@ -86,6 +91,8 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
 		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+		Expect(dsInstance.Spec.Template.Spec.Containers[0].Args).To(HaveLen(2))
+		Expect(dsInstance.Spec.Template.Spec.Containers[0].Args[1]).To(ContainSubstring("-secureMetrics=true"))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(Not(BeNil()))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits).To(Not(BeNil()))
 
@@ -120,9 +127,22 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
 		Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
 		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(exporterPortName))
+		Expect(smInstance.Spec.Endpoints[0].BearerTokenFile).To(Equal("/var/run/secrets/kubernetes.io/serviceaccount/token"))
 
 		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
 		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
 			To(Equal(svcURL))
+	})
+
+	It("Should provision the metrics-auth ClusterRoleBinding bound to system:auth-delegator", func() {
+		runtime.Initialize(lfmeInstance, constants.OpenshiftNS, constants.SingletonName)
+		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+
+		Expect(reqClient.Get(context.TODO(), metricsAuthCRBKey, metricsAuthCRB)).Should(Succeed())
+		Expect(metricsAuthCRB.RoleRef.Name).To(Equal("system:auth-delegator"))
+		Expect(metricsAuthCRB.RoleRef.Kind).To(Equal("ClusterRole"))
+		Expect(metricsAuthCRB.Subjects).To(HaveLen(1))
+		Expect(metricsAuthCRB.Subjects[0].Kind).To(Equal("ServiceAccount"))
+		Expect(metricsAuthCRB.Subjects[0].Name).To(Equal(constants.LogfilesmetricexporterName))
 	})
 })

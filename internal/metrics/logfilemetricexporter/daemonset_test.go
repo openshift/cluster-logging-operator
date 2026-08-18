@@ -63,6 +63,21 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(BeNil())
 	})
 
+	It("should pass -secureMetrics=true so the metrics endpoint requires authentication", func() {
+
+		// Reconcile the exporter daemonset
+		Expect(ReconcileDaemonset(*lfmeInstance,
+			reqClient,
+			constants.OpenshiftNS,
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+
+		// Get and check the daemonset
+		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
+		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+		Expect(dsInstance.Spec.Template.Spec.Containers[0].Args).
+			To(ContainElement(ContainSubstring("-secureMetrics=true")))
+	})
+
 	It("should reconcile successfully a daemonset with specified resources.requests", func() {
 		lfmeInstance.Spec = loggingv1alpha1.LogFileMetricExporterSpec{
 			Resources: &corev1.ResourceRequirements{

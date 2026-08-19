@@ -87,6 +87,8 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
 		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+		Expect(dsInstance.Spec.Template.Spec.Containers[0].Args).To(HaveLen(2))
+		Expect(dsInstance.Spec.Template.Spec.Containers[0].Args[1]).To(ContainSubstring("-secureMetrics=false"))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(Not(BeNil()))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits).To(Not(BeNil()))
 

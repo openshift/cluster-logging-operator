@@ -4,6 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,10 +16,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"regexp"
-	"strings"
-	"time"
 )
 
 //go:embed valid.yaml
@@ -55,10 +57,37 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
 
-		args := []string{"-k", "-s", fmt.Sprintf("https://%s.%s.svc:2112/metrics", constants.LogfilesmetricexporterName, constants.OpenshiftNS)}
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(context.Context) (done bool, err error) {
-			out, err := oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(fmt.Sprintf("ds/%s", constants.LogfilesmetricexporterName)).WithCmd("curl", args...).Run()
-			Expect(err).ToNot(HaveOccurred(), out)
+		// Give the exporter a moment to start collecting logs
+		time.Sleep(5 * time.Second)
+
+		// Get a pod from the DaemonSet using the standard Kubernetes label
+		pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(pods.Items).ToNot(BeEmpty(), "Expected to find at least one LFME pod")
+		podName := pods.Items[0].Name
+
+		// Use Kubernetes API proxy to access pod's metrics endpoint
+		// The metrics endpoint serves HTTPS, so we need to use https: prefix
+		// Format: pods/https:{podName}:{port}/proxy/{path}
+		req := e2e.KubeClient.CoreV1().RESTClient().Get().
+			Namespace(constants.OpenshiftNS).
+			Resource("pods").
+			SubResource("proxy").
+			Name(fmt.Sprintf("https:%s:2112", podName)).
+			Suffix("metrics")
+
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(ctx context.Context) (done bool, err error) {
+			// Execute the request through the Kubernetes proxy
+			result := req.Do(ctx)
+			body, err := result.Raw()
+			if err != nil {
+				log.V(5).Info("Failed to fetch metrics", "error", err)
+				return false, nil
+			}
+
+			out := string(body)
 			log.V(5).Info("Polling metrics", "result", out)
 			if !strings.Contains(out, "log_logged_bytes_total") {
 				return false, nil

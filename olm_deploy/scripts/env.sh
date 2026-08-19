@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -eou pipefail
 
 LOGGING_VERSION=${LOGGING_VERSION:-6.1}

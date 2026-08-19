@@ -113,11 +113,10 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 		},
 	}
 	exporterContainer.Command = []string{"/bin/bash"}
-	// TODO: When openshift/api is updated with the Groups field in TLSProfileSpec,
-	// pass groups from the profile spec instead of nil.
 	exporterContainer.Args = []string{"-c",
 		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/logfilemetricexporter/metrics/tls.key -crtFile=/etc/logfilemetricexporter/metrics/tls.crt -secureMetrics -tlsMinVersion=" +
-			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")}
+			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",") +
+			" -groups=" + strings.Join(tls.TLSGroups(tlsProfileSpec), ",")}
 
 	exporterContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},

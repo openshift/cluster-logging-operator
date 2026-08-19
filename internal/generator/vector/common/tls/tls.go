@@ -53,14 +53,16 @@ func NewTls(comp observability.TransportLayerSecurity, secrets observability.Sec
 	return conf
 }
 
-// SetTLSProfile updates the tls and cipher specs from the options given
-// TODO: Remove internal/generator/vector/output/common/tls
+// SetTLSProfile updates the tls, cipher, and curve specs from the options given
 func SetTLSProfile(t *transport.TLS, op utils.Options) *transport.TLS {
 	if version, found := op[framework.MinTLSVersion]; found {
 		t.MinTlsVersion = version.(string)
 	}
 	if ciphers, found := op[framework.Ciphers]; found {
 		t.CipherSuites = ciphers.(string)
+	}
+	if groups, found := op[framework.Groups]; found {
+		t.Curves = groups.(string)
 	}
 	return t
 }

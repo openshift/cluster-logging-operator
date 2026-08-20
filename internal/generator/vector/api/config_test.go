@@ -45,7 +45,6 @@ data_dir: "/var/lib/vector/openshift-logging/collector"
 api:
   enabled: true
   address: "127.0.0.1:8686"
-  playground: false
 log_schema:
   host_key: "hostname"
 secret:

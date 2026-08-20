@@ -1,0 +1,73 @@
+= Cluster Logging Operator 6.5 Release Notes
+
+== 6.5.3
+
+=== Bug Fixes
+
+* *LOG-9424* - Before this update, when MultiClusterLogForwarder resources shared the same serviceAccount, the cluster-logging-operator updated the Role resource in a loop, alternating ownerReferences between resources. With this update, the operator prevents this continuous cycle, resolving API server flooding and cluster instability.
+
+* *LOG-9584* - Before this update, null values in log events caused the match_any function to fail during remap transformations under the following conditions: when log metadata from deleted pods was missing. With this update, null-safe validation in the remap engine resolves the issue and logs are processed successfully without errors.
+
+=== Security
+
+* *CVE-2026-27136 (LOG-9617)* - Bump golang.org/x/net to v0.55.0 for CVE-2026-27136
+
+* *CVE-2026-33813* - Upgrade golang.org/x/image to 0.42.0
+
+== 6.5.2
+
+=== Bug Fixes
+
+* *LOG-8769* - Before this update, specifying compression: none in the S3 output tuning configuration was ignored, causing logs to be forwarded as gzip-compressed files. With this update, the operator correctly honors the compression: none setting and forwards uncompressed logs to S3.
+
+* *LOG-8982* - Before this update, the ClusterLogForwarderDeprecations alert was triggered even though the deprecated features were promoted to GA in v6.4, causing administrators to silence warnings upon upgrade. With this update, the alert is removed, resolving unnecessary noise for users running supported configurations.
+
+=== Security
+
+* *CVE-2026-33813 (LOG-9379)* - Fix CVE-2026-33813 and refactor Go versioning
+
+== 6.5.1
+
+=== Features
+
+* *LOG-5843* - Before this update, logs forwarded over OTLP lacked tracing attributes needed to correlate logs with other observability signals. With this update, adding traceid, spanid, and sampled flag attributes using OpenTelemetry semantic conventions resolves the issue and users can now correlate logs with traces successfully.
+
+* *LOG-7892* - Before this update, HTTP sinks could not forward logs in NDJSON format, preventing integration with vendor-neutral log ingestors like VictoriaLogs. With this update, adding NDJSON format support to the HTTP sink resolves the issue and logs can be sent in line-delimited JSON format successfully.
+
+* *LOG-8645* - Before this update, the Loki output did not support HTTP proxy configuration, limiting deployment options in environments with proxy requirements. With this update, adding ProxyURL setting to the Loki output following HTTP output syntax resolves the issue and users can configure proxies for Loki outputs.
+
+=== Bug Fixes
+
+* *LOG-8241* - Before this update, socket-level transport outputs (syslog, kafka) could be created without specifying a port, causing configuration errors at runtime. With this update, declarative validation requires port specifications on socket-level transports, and administrators receive immediate feedback during resource admission.
+
+* *LOG-8578* - Before this update, OpenTelemetry forwarding required a feature gate and carried tech-preview restrictions, limiting adoption of the logging data model. With this update, removing feature gate requirements and marking OTLP as GA resolves the issue and users can forward logs to OTLP endpoints without restrictions.
+
+* *LOG-8581* - Before this update, duplicate case-variant header names (Accept and accept) in CLF outputs caused Elasticsearch to reject requests with a media_type_header_exception. With this update, header deduplication logic resolves the issue and logs can be forwarded to Elasticsearch successfully.
+
+* *LOG-8713* - Before this update, linting failures existed in the codebase due to Go 1.24 linter updates, preventing clean builds. With this update, updating code to satisfy the latest linter rules resolves the issue and all linting checks pass without exceptions.
+
+* *LOG-8876* - Before this update, logs with non-standard trace context formats (from Zipkin, AWS X-Ray, SkyWalking) were rejected by LokiStack and OpenTelemetry Collector when IDs did not comply with W3C standards. With this update, implementing validation that strips non-compliant trace attributes resolves the issue and logs with custom trace formats can be successfully ingested.
+
+== 6.5.0
+
+Initial release of Cluster Logging Operator 6.5.
+
+=== Features
+
+* *LOG-5843* - Before this update, logs forwarded over OTLP lacked tracing attributes needed to correlate logs with other observability signals. With this update, adding traceid, spanid, and sampled flag attributes using OpenTelemetry semantic conventions resolves the issue and users can now correlate logs with traces successfully.
+
+* *LOG-7892* - Before this update, HTTP sinks could not forward logs in NDJSON format, preventing integration with vendor-neutral log ingestors like VictoriaLogs. With this update, adding NDJSON format support to the HTTP sink resolves the issue and logs can be sent in line-delimited JSON format successfully.
+
+* *LOG-8645* - Before this update, the Loki output did not support HTTP proxy configuration, limiting deployment options in environments with proxy requirements. With this update, adding ProxyURL setting to the Loki output following HTTP output syntax resolves the issue and users can configure proxies for Loki outputs.
+
+=== Bug Fixes
+
+* *LOG-8241* - Before this update, socket-level transport outputs (syslog, kafka) could be created without specifying a port, causing configuration errors at runtime. With this update, declarative validation requires port specifications on socket-level transports, and administrators receive immediate feedback during resource admission.
+
+* *LOG-8578* - Before this update, OpenTelemetry forwarding required a feature gate and carried tech-preview restrictions, limiting adoption of the logging data model. With this update, removing feature gate requirements and marking OTLP as GA resolves the issue and users can forward logs to OTLP endpoints without restrictions.
+
+* *LOG-8581* - Before this update, duplicate case-variant header names (Accept and accept) in CLF outputs caused Elasticsearch to reject requests with a media_type_header_exception. With this update, header deduplication logic resolves the issue and logs can be forwarded to Elasticsearch successfully.
+
+* *LOG-8713* - Before this update, linting failures existed in the codebase due to Go 1.24 linter updates, preventing clean builds. With this update, updating code to satisfy the latest linter rules resolves the issue and all linting checks pass without exceptions.
+
+* *LOG-8876* - Before this update, logs with non-standard trace context formats (from Zipkin, AWS X-Ray, SkyWalking) were rejected by LokiStack and OpenTelemetry Collector when IDs did not comply with W3C standards. With this update, implementing validation that strips non-compliant trace attributes resolves the issue and logs with custom trace formats can be successfully ingested.

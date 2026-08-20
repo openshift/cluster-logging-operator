@@ -1,0 +1,5 @@
+resources:
+- protected-sa-pods.yaml
+- protected-sa-pods-binding.yaml
+- protected-sa-workloads.yaml
+- protected-sa-workloads-binding.yaml

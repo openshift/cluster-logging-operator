@@ -44,3 +44,40 @@ Does it have a newline character at the end? If not, the application writing the
 
 **Check the source application**: Ensure that the application generating the logs is configured to append a newline character 
 (\n) to every log entry. This is standard practice for most logging libraries and systems.
+
+### 3. A Pod or workload is denied: `uses protected collector ServiceAccount ... may only be created by a CLO-managed collector controller`
+
+The cluster logging operator installs ValidatingAdmissionPolicies that prevent a
+collector ServiceAccount (one referenced by a `ClusterLogForwarder`) from being
+reused by an arbitrary Pod or workload. This stops a user who can create Pods
+from inheriting the collector SA's privileges (e.g. `logging-scc` host mounts).
+Only the operator and the built-in controllers that deploy the collector may run
+Pods as a protected SA.
+
+**Common causes**
+
+- A user tried to create a standalone Pod/Deployment/DaemonSet that sets
+  `serviceAccountName` to a collector ServiceAccount.
+- A workload copies the collector's labels/annotations/name — this does not help;
+  the policy keys on the authenticated creator identity, not on Pod metadata.
+
+**What to do**
+
+1. Confirm the policies are present (operator must be running):
+
+   ```sh
+   oc get validatingadmissionpolicy clo-protected-sa-pods clo-protected-sa-workloads
+   oc get validatingadmissionpolicybinding clo-protected-sa-pods-binding clo-protected-sa-workloads-binding
+   ```
+
+2. Do not reuse a collector ServiceAccount for non-collector workloads. Use a
+   ServiceAccount that is not referenced by any `ClusterLogForwarder`, and grant
+   it only the permissions your workload actually needs.
+
+3. The set of protected ServiceAccounts is maintained by the operator in the
+   `clo-protected-serviceaccounts` ConfigMap in the operator namespace; it is
+   rebuilt from the current `ClusterLogForwarder` list on every change.
+
+See [`docs/design/validatingadmissionpolicy-guide.md`](../design/validatingadmissionpolicy-guide.md)
+for how the policies work and `./hack/test-protected-sa.sh` for a lightweight
+verification script.

@@ -111,7 +111,7 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 	}
 	exporterContainer.Command = []string{"/bin/bash"}
 	exporterContainer.Args = []string{"-c",
-		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/logfilemetricexporter/metrics/tls.key -crtFile=/etc/logfilemetricexporter/metrics/tls.crt -tlsMinVersion=" +
+		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/logfilemetricexporter/metrics/tls.key -crtFile=/etc/logfilemetricexporter/metrics/tls.crt -secureMetrics=false -tlsMinVersion=" +
 			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")}
 
 	exporterContainer.VolumeMounts = []v1.VolumeMount{

@@ -13,7 +13,7 @@ import (
 )
 
 type ConfigGenerator struct {
-	conf func(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) *api.Config
+	conf func(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) (*api.Config, error)
 }
 
 func New() *ConfigGenerator {
@@ -24,6 +24,9 @@ func New() *ConfigGenerator {
 }
 
 func (cg *ConfigGenerator) GenerateConf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op framework.Options) (string, error) {
-	config := cg.conf(secrets, clfspec, namespace, forwarderName, resNames, op)
+	config, err := cg.conf(secrets, clfspec, namespace, forwarderName, resNames, op)
+	if err != nil {
+		return "", err
+	}
 	return toml.Marshal(config)
 }

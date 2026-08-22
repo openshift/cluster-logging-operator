@@ -80,12 +80,46 @@ var _ = Describe("Pipeline adapters", func() {
 				},
 			)
 			Expect(adapter.Filters).To(HaveLen(2), "expected the filter and post-filter to be added to the pipeline")
+			tfs, err := adapter.Transforms()
+			Expect(err).ToNot(HaveOccurred())
 			Expect(api.Transforms{
 				"pipeline_mypipeline_dropfilter_0": transforms.NewRemap("fakeElementVRL", "input_app_in_container_meta"),
 				"pipeline_mypipeline_fakefilter_1": transforms.NewRemap("updatedFromAddPostfilter: mypipeline", "pipeline_mypipeline_dropfilter_0"),
-			}).To(Equal(adapter.Transforms()))
+			}).To(Equal(tfs))
 			Expect(outputMap["referenced"].Inputs()).To(Equal([]string{"pipeline_mypipeline_fakefilter_1"}))
 			Expect(outputMap["notReferenced"].Inputs()).To(BeNil(), "Exp. the unreferenced output to not have the filter as an input")
+		})
+	})
+
+	Describe("#Transforms with nil-returning factory", func() {
+		It("should return an error when a filter factory produces a nil transform", func() {
+			nilFilterMap := map[string]*adapters.InternalFilterSpec{
+				"nilFilter": {
+					FilterSpec: &obs.FilterSpec{
+						Name: "nilFilter",
+						Type: obs.FilterTypeDrop,
+					},
+					Factory: func(inputs ...string) types.Transform {
+						return nil
+					},
+				},
+			}
+			adapter := adapters.NewPipeline(0, obs.PipelineSpec{
+				Name:       "mypipeline",
+				InputRefs:  []string{"app-in"},
+				FilterRefs: []string{"nilFilter"},
+				OutputRefs: []string{"referenced"},
+			}, inputMap,
+				outputMap,
+				nilFilterMap,
+				inputSpecs,
+				func(p *adapters.Pipeline) {},
+			)
+			Expect(adapter.Filters).To(HaveLen(1))
+			_, err := adapter.Transforms()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("nil transform"))
+			Expect(err.Error()).To(ContainSubstring("mypipeline"))
 		})
 	})
 
@@ -104,9 +138,11 @@ var _ = Describe("Pipeline adapters", func() {
 				func(p *adapters.Pipeline) {},
 			)
 			Expect(adapter.Filters).To(HaveLen(1), "")
+			tfs, err := adapter.Transforms()
+			Expect(err).ToNot(HaveOccurred())
 			Expect(api.Transforms{
 				"pipeline_mypipeline_dropfilter_0": transforms.NewRemap("fakeElementVRL", "input_app_in_container_meta"),
-			}).To(Equal(adapter.Transforms()))
+			}).To(Equal(tfs))
 			Expect(outputMap["referenced"].Inputs()).To(Equal([]string{"pipeline_mypipeline_dropfilter_0"}))
 			Expect(outputMap["notReferenced"].Inputs()).To(BeNil(), "Exp. the unreferenced output to not have the filter as an input")
 

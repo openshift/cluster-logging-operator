@@ -1115,12 +1115,14 @@ spec:
                                     A regular expression that the field will match.
                                     If the value of the field defined in the DropTest matches the regular expression, the log record will be dropped.
                                     Must define only one of matches OR notMatches
+                                  pattern: ^[^'\n\r]*$
                                   type: string
                                 notMatches:
                                   description: |-
                                     A regular expression that the field does not match.
                                     If the value of the field defined in the DropTest does not match the regular expression, the log record will be dropped.
                                     Must define only one of matches or notMatches
+                                  pattern: ^[^'\n\r]*$
                                   type: string
                               type: object
                               x-kubernetes-validations:

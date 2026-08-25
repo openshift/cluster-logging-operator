@@ -109,7 +109,11 @@ func (r *ClusterLogForwarderReconciler) Reconcile(_ context.Context, req ctrl.Re
 		readyCond.Reason = obsv1.ReasonValidationFailure
 		readyCond.Message = "collector not ready"
 		if validations.MustUndeployCollector(cxt.Forwarder.Status.Conditions) {
-			if deleteErr := collector.Remove(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Name); deleteErr != nil {
+			removeFunc := collector.RemoveDaemonset
+			if internalobs.DeployAsDeployment(*cxt.Forwarder) {
+				removeFunc = collector.RemoveDeployment
+			}
+			if deleteErr := removeFunc(cxt.Client, cxt.Forwarder.Namespace, cxt.Forwarder.Name); deleteErr != nil {
 				log.V(0).Error(deleteErr, "Unable to remove collector deployment")
 			}
 		}
@@ -140,7 +144,7 @@ func (r *ClusterLogForwarderReconciler) Reconcile(_ context.Context, req ctrl.Re
 func RemoveStaleWorkload(k8Client client.Client, forwarder *obsv1.ClusterLogForwarder) error {
 	remove := collector.RemoveDeployment
 	if internalobs.DeployAsDeployment(*forwarder) {
-		remove = collector.Remove
+		remove = collector.RemoveDaemonset
 	}
 	return remove(k8Client, forwarder.Namespace, forwarder.Name)
 }

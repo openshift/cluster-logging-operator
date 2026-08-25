@@ -26,6 +26,12 @@ func (f *Factory) ReconcileDeployment(k8sClient client.Client, namespace string,
 func RemoveDeployment(k8sClient client.Client, namespace, name string) (err error) {
 	log.V(3).Info("Removing collector deployment", "namespace", namespace, "name", name)
 	ds := runtime.NewDeployment(namespace, name)
+	if err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(ds), ds); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failure checking deployment %s/%s: %v", namespace, name, err)
+	}
 	if err = k8sClient.Delete(context.TODO(), ds); err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failure deleting deployment %s/%s: %v", namespace, name, err)
 	}

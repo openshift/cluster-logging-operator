@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	HttpReceiver             = "http-receiver"
+	HttpReceiver              = "http-receiver"
 	HttpReceiverTLSSecretName = "http-receiver-tls"
 	vectorHttpConf            = "" +
 		`[sources.my_source]

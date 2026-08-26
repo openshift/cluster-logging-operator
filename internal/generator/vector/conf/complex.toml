@@ -704,7 +704,7 @@ if exists(._internal.openshift) {.openshift = ._internal.openshift}
 if exists(._internal.dedot_openshift_labels) {.openshift.labels = del(._internal.dedot_openshift_labels)}
 
 if ._internal.log_type == "audit" && ._internal.log_source == "auditd" {
-  if !exists(._internal.structured) {
+  if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
     .message = ._internal.message
   }
   ."audit.linux" = ._internal."audit.linux"
@@ -720,7 +720,7 @@ if ._internal.log_type == "audit" && ._internal.log_source == "openshiftAPI" {
 }
 
 if ._internal.log_type == "audit" && ._internal.log_source == "ovn" {
-  if !exists(._internal.structured) {
+  if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
     .message = ._internal.message
   }
   .level = ._internal.level
@@ -786,7 +786,7 @@ if .log_source == "container" {
   del(.kubernetes.node_labels)
   del(.kubernetes.container_image_id)
   del(.kubernetes.pod_ips)
-  if !exists(._internal.structured) {
+  if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
     .message = ._internal.message
   }
 }
@@ -799,7 +799,7 @@ if ._internal.log_source == "node" {
 
   .systemd = ._internal.systemd
 
-  if !exists(._internal.structured) {
+  if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
     .message = ._internal.message
   }
 }

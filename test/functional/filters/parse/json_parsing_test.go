@@ -163,6 +163,76 @@ var _ = Describe("[functional][filters][parse] Json log parsing", func() {
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
 
+	It("should add a JSON object to the root without overwriting collector fields", func() {
+		framework = functional.NewCollectorFunctionalFramework()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithParseJson(func(spec *obs.FilterSpec) {
+				spec.Parse = &obs.ParseFilterSpec{AddToRoot: true}
+			}).
+			ToHttpOutput()
+		ExpectOK(framework.Deploy())
+
+		applicationLogLine := functional.CreateAppLogFromJson(`{"description":"JSON test trace","log_type":"forged"}`)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(raw).To(HaveLen(1))
+		var event map[string]interface{}
+		ExpectOK(json.Unmarshal([]byte(raw[0]), &event))
+		Expect(event).To(HaveKeyWithValue("description", "JSON test trace"))
+		Expect(event).To(HaveKeyWithValue("log_type", "application"))
+		Expect(event).NotTo(HaveKey("structured"))
+		Expect(event).NotTo(HaveKey("message"))
+	})
+
+	It("should preserve message when adding a JSON object to the root", func() {
+		framework = functional.NewCollectorFunctionalFramework()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithParseJson(func(spec *obs.FilterSpec) {
+				spec.Parse = &obs.ParseFilterSpec{AddToRoot: true, PreserveMessage: true}
+			}).
+			ToHttpOutput()
+		ExpectOK(framework.Deploy())
+
+		message := `{"description":"JSON test trace"}`
+		applicationLogLine := functional.CreateAppLogFromJson(message)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(raw).To(HaveLen(1))
+		var event map[string]interface{}
+		ExpectOK(json.Unmarshal([]byte(raw[0]), &event))
+		Expect(event).To(HaveKeyWithValue("description", "JSON test trace"))
+		Expect(event).To(HaveKeyWithValue("message", message))
+	})
+
+	It("should keep a non-object JSON value in message", func() {
+		framework = functional.NewCollectorFunctionalFramework()
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithParseJson(func(spec *obs.FilterSpec) {
+				spec.Parse = &obs.ParseFilterSpec{AddToRoot: true}
+			}).
+			ToHttpOutput()
+		ExpectOK(framework.Deploy())
+
+		message := `["not","an","object"]`
+		applicationLogLine := functional.CreateAppLogFromJson(message)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(raw).To(HaveLen(1))
+		var event map[string]interface{}
+		ExpectOK(json.Unmarshal([]byte(raw[0]), &event))
+		Expect(event).To(HaveKeyWithValue("message", message))
+		Expect(event).NotTo(HaveKey("structured"))
+	})
+
 	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).

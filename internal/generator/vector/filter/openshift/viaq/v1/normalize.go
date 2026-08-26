@@ -159,7 +159,7 @@ if .log_source != "container" && exists(.kubernetes) {
 }
 `
 	SetMessageOnRoot = `
-if !exists(._internal.structured) {
+if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
   .message = ._internal.message
 }
 `

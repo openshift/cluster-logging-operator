@@ -687,6 +687,7 @@ Type:: array
 |kubeAPIAudit|object|  
 |name|string|  Name used to refer to the filter from a &#34;pipeline&#34;.
 |openshiftLabels|object|  Labels applied to log records passing through a pipeline. These labels appear in the `openshift.labels` map in the log record.
+|parse|object|  Configuration for parsing JSON log messages. When omitted, parsed fields are stored under `structured` and the original message is removed.
 |prune|object|  The PruneFilterSpec consists of two arrays, namely in and notIn, which dictate the fields to be pruned.
 |type|string
 a|   Type of filter.
@@ -696,7 +697,7 @@ Possible filter types are:
 . drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
 . kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
 . openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
-. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+. parse - Enables parsing of log entries into structured logs. See field `parse` for optional configuration.
 . prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
 
 |======================
@@ -895,6 +896,19 @@ Type:: array
 === .spec.filters[].openshiftLabels
 
 Type:: object
+
+=== .spec.filters[].parse
+
+ParseFilterSpec configures how JSON log messages are added to a log record.
+
+Type:: object
+
+[options="header"]
+|======================
+|Property|Type|Description
+|addToRoot|bool|  AddToRoot merges fields from a parsed JSON object into the log record root instead of storing the parsed value under `structured`. Existing log record fields take precedence on collision. Valid JSON values that are not objects remain unparsed in `message`.
+|preserveMessage|bool|  PreserveMessage keeps the original `message` after a JSON object is successfully added to the log record root. It has no effect unless `addToRoot` is true.
+|======================
 
 === .spec.filters[].prune
 

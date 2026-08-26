@@ -8,9 +8,11 @@ WORKDIR /opt/app-root/src
 
 RUN make build BUILD_OPTS="-tags strictfipsruntime"
 
-FROM registry.redhat.io/ubi9/ubi-minimal:9.7
+FROM registry.redhat.io/ubi9/ubi-micro:9.7
 
 RUN INSTALL_PKGS=" \
+      openssl-libs \
+      ca-certificates \
       rsync \
       file \
       xz \

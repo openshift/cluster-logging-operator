@@ -17,10 +17,11 @@ COPY ./must-gather ./must-gather
 USER 0
 RUN make build
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-micro
 
 RUN INSTALL_PKGS=" \
-      openssl \
+      openssl-libs \
+      ca-certificates \
       rsync \
       file \
       xz \

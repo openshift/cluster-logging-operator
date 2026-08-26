@@ -49,7 +49,7 @@ var (
 var _ = BeforeSuite(func() {
 	c = client.NewTest()
 	name := "apiaudit-test"
-	image := utils.GetComponentImage(constants.VectorName)
+	image := utils.GetComponentImage(constants.VectorReceiverName)
 	pod = runtime.NewPodBuilder(runtime.NewPod(c.NS.Name, name)).
 		AddContainer(name, image).
 		AddEnvVar("VECTOR_LOG", "warn").

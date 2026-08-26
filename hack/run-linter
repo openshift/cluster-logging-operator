@@ -38,6 +38,10 @@ if [ "$check" != "" ]; then
     echo "$check"
     echo ""
 fi
+
+# Validate release notes
+hack/validate-release-notes.sh || rc=1
+
 set -e
 
 exit $rc
